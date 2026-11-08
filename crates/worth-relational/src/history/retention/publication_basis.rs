@@ -42,6 +42,7 @@ pub(crate) struct RetainedPublicationBasis {
     pub(crate) descriptor: RelationalBranchBasisDescriptor,
     pub(crate) root: Arc<RelationalBranchRoot>,
     pub(crate) binding: super::RelationalBranchRetentionBinding,
+    pub(crate) applied: Option<Arc<dyn crate::history::data::AppliedPublicationInputAccess>>,
     _hold: super::RelationalObservationRetentionObligation,
     _funding: Option<worth_execution::ExecutionMemoryReservation>,
 }
@@ -111,11 +112,10 @@ impl PublicationBasisImage {
                         .map_err(request)?;
                         let route = PublicationBasisRoute::of(&origin.meaning);
                         routes.remove(&route, execution, context)?;
-                        // Coupled writers consumed their pre-writer applied
-                        // images, not this transaction's committed C basis.
-                        // Until that exact image is carried by this owner, the
-                        // existing predecessor API must report unavailable.
-                        if envelope.coupled_authored_publication.is_some()
+                        let applied = crate::history::data::LivePublicationInputs::take_verified(envelope, origin);
+                        // Cold/deep-cloned coupled envelopes have no issuance
+                        // for D. Never approximate that input with committed C.
+                        if (envelope.coupled_authored_publication.is_some() && applied.is_none())
                             || !origin.source_scope_owned
                             || matches!(
                                 origin.publication,
@@ -163,6 +163,7 @@ impl PublicationBasisImage {
                                 descriptor: basis.descriptor().clone(),
                                 root: Arc::clone(&basis.inner.root),
                                 binding: basis.inner.retention_binding.clone(),
+                                applied,
                                 _hold: hold,
                                 _funding: funding,
                             }),

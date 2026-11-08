@@ -107,3 +107,42 @@ No P5 READY until all stages and evidence are complete. Public #93, further
 history features, ownership deltas, hashing, and proprietary consumer edits are
 outside this slice. Root owns independent certification of #84 and sends any
 findings for immediate priority.
+
+## Applied producer input join (qualified checkpoint)
+
+Each Native coupled part now carries the already captured pre-append pin. The
+canonical installer associates it with the actual installed origin. Final
+freezing binds the temporary packet to that exact envelope; the live-route
+retention owner takes it once, so canonical history does not retain replaced
+input pins. Deep canonical clones and codecs omit issuance. The existing route
+index continues to own succession/release, with no parallel input catalog.
+
+`RelationalPredecessorInput` distinguishes its genuine committed before basis
+from an optional genuine applied pin. The committed-basis-only API refuses an
+applied input. Query's sealed predecessor reader consumes the input posture;
+its descriptive history evidence records before basis and applied qualification
+separately. Current operation permission remains at C. Coupled handlers loan
+the existing current read proof together with the actual held coordination,
+calling the same head/currentness owner without entering the lane again.
+
+The applied operation-reader entrance must carry this predecessor loan rather
+than discard it. It does not enable nested current queries as a replacement for
+candidate reads: those still need the genuine applied query posture in step 2.
+Undeclared or refused reads remain latched and veto the entire edit even when a
+handler catches them. Handler predecessor evidence now lives in the existing
+shared producer-handler completion owner for both registered-demand and coupled
+execution; no fabricated output demand is constructed.
+
+Checkpoint evidence: the full public Decl/Host carrier passes 540 tests (2 ignored),
+legacy coupled ownership carrier passes 35, and the Native carrier passes 356
+with 2 ignored and only the 2 #64 historical-kind failures reproduced exactly
+on clean master `f3c161bfd3`. Native unit tests passed 2,294 (31 ignored) before
+the final event-only metadata narrowing; the final Native carrier and public
+cold/worker paths requalify that narrowing. Seven mutants fail assertions and
+are restored by SHA-256. The new input-handle construction fence passes.
+
+The packet belongs to the coupled event, not every canonical envelope. Its
+binding is one-time, so cloning an event cannot rebind issuance to another
+envelope. Ordinary envelope layout, artifact encoding and content commitments
+are unchanged. This checkpoint closes the input/read-control join only; Birth,
+dependent waves, the seal envelope and full P5/S6 qualification remain open.

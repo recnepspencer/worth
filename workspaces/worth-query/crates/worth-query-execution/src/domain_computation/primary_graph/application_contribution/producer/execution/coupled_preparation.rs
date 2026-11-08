@@ -132,12 +132,43 @@ where
         )
         .map_err(|cause| failed(Binding::IDENTITY, cause))?;
     admission.graph_work_mut().arm_coupled_handler();
+    let predecessor_reads =
+        super::super::predecessor_reads::ProducerPredecessorReadAccess::prepare_coupled::<
+            Schema,
+            Binding,
+        >(
+            admission
+                .graph_work_mut()
+                .coupled_handler_mut()
+                .expect("armed handler"),
+            source.checkpoint_identity(),
+            edition,
+        );
+    let producer_request = admission.retain_admitted_request();
+    let producer_principal = admission.operation_scope_binding().principal();
+    let read_admission = prepared.scope.as_ref().map(|scope| {
+        crate::domain_computation::authorization::BorrowedReadOperationAdmission::new(
+            runtime,
+            prepared.principal.principal(),
+            scope,
+            request,
+            admission.graph_work().identity(),
+        )
+    });
+    let source_query = crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess::ordinary(
+        runtime, &shared, external, request,
+    ).with_coordinated_control(
+        crate::domain_computation::primary_graph::product_operation::current_read::CurrentReadControl::new(
+            shared.selected().product().read_lease_ref(), &producer_request, &producer_principal,
+        ), coordination,
+    ).map_err(super::denial::request_admission_rejected)?
+        .with_predecessor_reads(read_admission, predecessor_reads);
     let prepared_handler = runtime
         .prepare_mutation_handler_plan_on_basis::<Operation<Schema, Binding>>(
             phase,
             &identities,
             prepared.principal.principal().principal_identity(),
-            None,
+            Some(&source_query),
             admission,
             Some((before_pin, candidate)),
             || {
@@ -152,6 +183,9 @@ where
         Ok(handler) => handler.run(runtime, &identities),
         Err(report) => report,
     };
+    if let Some(stop) = source_query.take_control_failure() {
+        return Err(super::denial::request_admission_rejected(stop));
+    }
     let completed = completed_handler::<
         _,
         _,

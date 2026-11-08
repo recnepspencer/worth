@@ -42,6 +42,12 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         before: &RelationalPinnedRead,
         candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        predecessor_access: Option<
+            &crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess<
+                '_,
+                Schema,
+            >,
+        >,
         projection: impl FnOnce(
             &mut WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>,
             &WorthQueryInvariantEntityIdentity<Schema, Scope>,
@@ -85,7 +91,13 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
                         admission,
                         product,
                         projection,
-                        super::admitted::SourceAccess::none(),
+                        super::admitted::SourceAccess {
+                            source_query: predecessor_access,
+                            // Nested query/managed-index reads need a genuine
+                            // applied query posture. This loan admits only the
+                            // sealed predecessor reader, which checks C itself.
+                            source_context_use: None,
+                        },
                     )
                 },
                 StorageControl::new(allocation, Some(admission.publication_request()))

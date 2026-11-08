@@ -32,7 +32,7 @@ pub fn declare(
         .unwrap()
         .reverse(ModelMember::reference())
         .allow(Model::reference());
-    schema
+    synchronous::declare(schema)
         .declared_operation::<UndeclaredRead>(
             UndeclaredRead::reference()
                 .definition()
@@ -129,6 +129,7 @@ mod control;
 mod courts;
 mod foreign;
 pub(super) mod program;
+pub(super) mod synchronous;
 type Host = WorthQueryProgramApplicationRuntime<Schema, program::Program>;
 fn install(worker: bool) -> Host {
     let limits = if worker {

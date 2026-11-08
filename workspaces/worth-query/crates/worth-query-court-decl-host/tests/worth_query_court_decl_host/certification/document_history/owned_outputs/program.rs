@@ -183,6 +183,8 @@ impl ApplicationProgramDefinition<Schema> for Program {
         vec![
             ApplicationFeatureSpec::root::<Schema, Entry>()
                 .provides::<EntryOutput>()
+                .action::<predecessor::synchronous::Binding, Completion>()
+                .finish_action()
                 .action::<synchronous_edit::Binding, Completion>()
                 .finish_action()
                 .action::<edit::Binding, Completion>()

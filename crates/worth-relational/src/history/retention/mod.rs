@@ -10,7 +10,9 @@ mod owner;
 mod publication_basis;
 mod publication_basis_tree;
 mod publication_reclamation;
-pub(crate) use publication_basis::{PublicationBasisAccess, PublicationBasisImage};
+pub(crate) use publication_basis::{
+    PublicationBasisAccess, PublicationBasisImage, PublicationBasisRoute,
+};
 mod reclamation;
 mod root_locators;
 mod storage_inventory;

@@ -24,7 +24,6 @@ pub struct RequiredOutputDemandContext {
     ready_backing: Option<PreparedReadyBacking>,
     handler: ProducerHandlerPreparation,
     reuses_live_output_only: bool,
-    predecessor_reads: Option<Arc<crate::domain_computation::primary_graph::application_contribution::producer::predecessor_reads::ProducerPredecessorReadState>>,
 }
 
 /// Both parts are issued together before an installed producer can execute.
@@ -46,17 +45,12 @@ impl RequiredOutputDemandContext {
         &mut self,
         state: Arc<crate::domain_computation::primary_graph::application_contribution::producer::predecessor_reads::ProducerPredecessorReadState>,
     ) {
-        assert!(
-            self.predecessor_reads.replace(state).is_none(),
-            "one producer read context"
-        );
+        self.handler.bind_predecessor_reads(state);
     }
     pub(in crate::domain_computation::primary_graph) fn selected_read_predecessor(
         &self,
     ) -> Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication> {
-        self.predecessor_reads
-            .as_ref()
-            .and_then(|state| state.selected())
+        self.handler.selected_read_predecessor()
     }
     pub(in crate::domain_computation::primary_graph) fn publication_family(&self) -> &'static str {
         self.family
@@ -135,14 +129,9 @@ impl RequiredOutputDemandContext {
 
     pub(in crate::domain_computation) fn record_completed_handler_facts(
         &mut self,
-        mut boundary: CompletedHandlerFactBoundary,
+        boundary: CompletedHandlerFactBoundary,
         computation: SealedComputationRetention,
     ) {
-        boundary.retain_historical_reads(
-            self.predecessor_reads
-                .as_ref()
-                .and_then(|state| state.take_historical()),
-        );
         self.handler
             .record_completed_handler_facts(boundary, computation)
     }
@@ -217,7 +206,6 @@ impl WorthQueryOutputDemandInterest {
             ready_backing: Some(ready_backing),
             handler: ProducerHandlerPreparation::new(),
             reuses_live_output_only: false,
-            predecessor_reads: None,
         })
     }
 }

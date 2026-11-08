@@ -23,8 +23,10 @@ use crate::transactions::data::{
 mod authored_index_writes;
 mod construction;
 mod live_managed_source_history;
+mod live_publication_inputs;
 pub(crate) use authored_index_writes::{CanonicalAuthoredIndexWrite, CanonicalAuthoredIndexWrites};
 pub(crate) use live_managed_source_history::LiveManagedSourceHistory;
+pub(crate) use live_publication_inputs::{AppliedPublicationInputAccess, LivePublicationInputs};
 mod authoritative_artifact_encoding;
 mod embedded_checkpoint;
 mod lineage_projection;

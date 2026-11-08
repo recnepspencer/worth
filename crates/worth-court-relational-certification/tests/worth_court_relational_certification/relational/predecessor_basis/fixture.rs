@@ -338,16 +338,15 @@ impl World {
         };
         let restored = cold
             .runtime
-            .readmit_required_output_publication(
+            .readmit_current_owned_output_successor(
                 execution,
                 &cold.installed,
                 &cold.basis(),
                 prior.producer(),
-                &[1; 32],
                 prior.meaning(),
-                &roles(prior, RequiredOutputRolePosture::Create),
             )
-            .unwrap();
+            .unwrap()
+            .expect("the checkpoint preserves this exact current route");
         (cold, restored)
     }
 }

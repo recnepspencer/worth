@@ -15,6 +15,7 @@ use worth_testkit_relational::aspect_storage::{
 struct Echo<'a> {
     world: &'a World,
     prior: RelationalRequiredOutputPublication,
+    expected: &'static str,
 }
 impl RelationalAuthoredCoupledProducerAssembly for Echo<'_> {
     fn assemble(
@@ -38,7 +39,7 @@ impl RelationalAuthoredCoupledProducerAssembly for Echo<'_> {
             )
             .unwrap()
             .expect("the actual applied source");
-        assert_eq!(source, AspectValue::String("new-input".into()));
+        assert_eq!(source, AspectValue::String(self.expected.into()));
         let AspectValue::String(value) = source else {
             unreachable!()
         };
@@ -91,9 +92,29 @@ impl RelationalAuthoredCoupledProducerAssembly for Echo<'_> {
 }
 
 #[test]
-fn a_coupled_producer_cannot_claim_the_transaction_before_basis_as_its_inputs() {
+fn coupled_publication_retains_its_actual_applied_inputs() {
     let host = request();
-    let execution = &ExecutionRequest::serial(&host);
+    run(&ExecutionRequest::serial(&host));
+}
+#[test]
+fn worker_only_coupled_publication_retains_its_actual_applied_inputs() {
+    use worth_execution::{ExecutionResourceLease, LeaseRequest};
+    use worth_foundational::{DeterminismContract, ExecutionPosture, ExecutionRequestPolicy};
+    let lease = ExecutionResourceLease::serial(LeaseRequest {
+        policy: ExecutionRequestPolicy::for_workers(
+            ExecutionPosture::Automatic,
+            DeterminismContract::CanonicalBitwise,
+            std::num::NonZeroUsize::new(1).unwrap(),
+        ),
+        deadline: None,
+        cancellation: worth_execution::CancellationToken::new(),
+    })
+    .unwrap();
+    let execution = ExecutionRequest::leased(&lease);
+    assert!(!execution.has_accounting());
+    run(&execution);
+}
+fn run(execution: &ExecutionRequest<'_, '_>) {
     let world = World::new(execution);
     let prior = world.birth(execution);
     let before = world.basis();
@@ -129,6 +150,7 @@ fn a_coupled_producer_cannot_claim_the_transaction_before_basis_as_its_inputs() 
             &Echo {
                 world: &world,
                 prior: prior.clone(),
+                expected: "new-input",
             },
         )
         .unwrap()
@@ -166,7 +188,69 @@ fn a_coupled_producer_cannot_claim_the_transaction_before_basis_as_its_inputs() 
         )
         .unwrap()
         .unwrap();
-    assert_eq!(world.runtime.predecessor_publication_basis(execution, &selected, Some(&current), Some(commit(&current))),
+    assert_eq!(
+        world.runtime.predecessor_publication_basis(
+            execution,
+            &selected,
+            Some(&current),
+            Some(commit(&current))
+        ),
         Err(Denial::PredecessorBasisUnavailable),
-        "until Native retains the exact applied input image, it must not supply C as the producer's consumed D");
+        "an applied input cannot issue a committed branch basis"
+    );
+    let input = world
+        .runtime
+        .predecessor_publication_input(execution, &selected, Some(&current), Some(commit(&current)))
+        .unwrap();
+    assert_eq!(input.before_basis(), &before);
+    let read = input
+        .applied_read()
+        .expect("the actual coupled pre-writer image");
+    assert_eq!(
+        read.candidate_identity()
+            .qualification()
+            .proposed_version_id(),
+        result.commit.version_id
+    );
+    let value = |entity| {
+        read.project_candidate()
+            .entity_record_with_projection_scope(
+                execution,
+                entity,
+                ProjectionAspectScope::fields(aspect_key("name"), [field_key("name")]),
+                |record| {
+                    record
+                        .aspect_field_value(&aspect_key("name"), &field_key("name"))
+                        .cloned()
+                },
+            )
+            .unwrap()
+    };
+    assert_eq!(
+        value(world.source),
+        Some(AspectValue::String("new-input".into()))
+    );
+    assert_eq!(
+        value(current.members().next().unwrap().3),
+        Some(AspectValue::String("output".into())),
+        "inputs precede this writer's own output update"
+    );
+    world.change_source(execution, "later-current-input");
+    assert_eq!(
+        value(world.source),
+        Some(AspectValue::String("new-input".into()))
+    );
+    let (cold, restored) = world.reopen(execution, &current);
+    assert!(
+        matches!(
+            cold.runtime.predecessor_publication_input(
+                execution,
+                &cold.basis(),
+                Some(&restored),
+                Some(commit(&restored)),
+            ),
+            Err(Denial::PredecessorBasisUnavailable)
+        ),
+        "cold recovery cannot reconstruct applied inputs from current truth"
+    );
 }

@@ -2,6 +2,7 @@
 use super::courts::{demand_denial, edit_model, reset, settle};
 use super::*;
 use family::predecessor_family as derived;
+use worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock;
 #[test]
 fn authentication_expiring_during_old_read_prevents_delivering_its_value() {
     use worth_query_host::facade::admission::authenticated_principal::{
@@ -91,9 +92,7 @@ fn authentication_expiring_during_old_read_prevents_delivering_its_value() {
         .unwrap();
 }
 
-struct ClockSource(
-    worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock,
-);
+pub(super) struct ClockSource(pub(super) WorthQueryAdmissionClock);
 impl WorthQueryRuntimeTimeSource for ClockSource {
     fn admission_clock(
         &self,

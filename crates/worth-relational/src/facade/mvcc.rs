@@ -44,7 +44,7 @@ pub use crate::mvcc::{
     RelationalAuthoredRestoration, RelationalAuthoredRetirement, RelationalCoupledAssemblyFailure,
     RelationalCoupledAuthoredPublication, RelationalDeclaredCoupledOwner,
     RelationalHistoricalOutputSelection, RelationalPerformedOutputPublications,
-    RelationalPredecessorBasisDenial, RelationalPredecessorBasisOrigin,
+    RelationalPredecessorBasisDenial, RelationalPredecessorBasisOrigin, RelationalPredecessorInput,
     RelationalPreparedOutputPublications, RelationalRequiredOutputPublication,
     RelationalRequiredOutputRouteAbsence, RelationalRestoredProducerPrior,
     RequiredOutputProducingImplementation, RequiredOutputPublication,

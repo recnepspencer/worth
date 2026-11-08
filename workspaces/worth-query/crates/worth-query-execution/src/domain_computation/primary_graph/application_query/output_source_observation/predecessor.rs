@@ -2,7 +2,7 @@
 use super::*;
 pub(super) use crate::domain_computation::primary_graph::application_contribution::producer::predecessor_reads::WorthQueryPredecessorReadDenial as Denial;
 use worth_query_declaration::facade::application_schema::{ApplicationOperationMarkerIdentity, ApplicationOperationRef};
-use worth_relational::facade::{runtime::RelationalRuntime, branch::AdmittedRelationalBranchBasis, mvcc::RelationalRequiredOutputPublication};
+use worth_relational::facade::{runtime::RelationalRuntime, mvcc::{RelationalPredecessorInput, RelationalRequiredOutputPublication}};
 
 impl<S: ApplicationSchema> SourceQueryReaderAccess<'_, S> {
     pub(in crate::domain_computation::primary_graph) fn predecessor_control(
@@ -40,7 +40,7 @@ impl<S: ApplicationSchema> SourceQueryReaderAccess<'_, S> {
         partition: [u8; 32],
     ) -> Result<(
         RelationalRequiredOutputPublication,
-        AdmittedRelationalBranchBasis,
+        RelationalPredecessorInput,
         Arc<worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts>,
         Arc<crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorization>,
     ), Denial>

@@ -222,6 +222,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             self.identity.proposed_version_id(),
         );
         let part = CoupledPublicationPart {
+            input: read,
             publication,
             commands: plan.clone(),
             records: outcome.effect.publication.changed_records.clone(),

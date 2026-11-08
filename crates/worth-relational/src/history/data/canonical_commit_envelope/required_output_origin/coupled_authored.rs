@@ -24,6 +24,8 @@ pub(crate) struct CanonicalCoupledParticipant {
 pub(crate) struct CanonicalCoupledAuthoredPublication {
     pub(crate) sources: CanonicalCoupledAuthoredSources,
     pub(crate) participants: Vec<CanonicalCoupledParticipant>,
+    #[serde(skip)]
+    pub(crate) live_inputs: crate::history::data::LivePublicationInputs,
 }
 impl CanonicalCoupledAuthoredPublication {
     pub(crate) fn output_origins(
@@ -125,6 +127,7 @@ pub(super) fn install(
             context,
         )?;
         let mut participants = Vec::with_capacity(group.parts.len());
+        let mut live_inputs = crate::history::data::LivePublicationInputs::default();
         for part in group.parts {
             restrict(
                 envelope,
@@ -150,17 +153,20 @@ pub(super) fn install(
                 validated_history,
                 context,
             )?;
+            let origin = envelope
+                .required_output_origin
+                .take()
+                .expect("Native installed coupled successor");
+            live_inputs.insert(Arc::clone(&origin), part.input);
             participants.push(CanonicalCoupledParticipant {
-                origin: envelope
-                    .required_output_origin
-                    .take()
-                    .expect("Native installed coupled successor"),
+                origin,
                 retirement: envelope.producer_cascade_retirement.take(),
             });
         }
         let event = CanonicalCoupledAuthoredPublication {
             sources,
             participants,
+            live_inputs,
         };
         let mut positions = basis.inner.root.output_publication_positions.clone();
         for origin in event.output_origins() {

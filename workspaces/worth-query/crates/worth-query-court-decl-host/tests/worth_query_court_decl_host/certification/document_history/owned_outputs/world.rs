@@ -38,6 +38,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         setup.handler::<authored_member::restore::Binding, _>(authored_member::restore::Handler)?;
         setup.handler::<edit::Binding, _>(edit::Handler)?;
         setup.handler::<synchronous_edit::Binding, _>(synchronous_edit::Handler)?;
+        setup.handler::<predecessor::synchronous::Binding, _>(predecessor::synchronous::Handler)?;
         setup.handler::<member_edit::Binding, _>(member_edit::Handler)?;
         setup.handler::<member_delete::Binding, _>(member_delete::Handler)?;
         family::predecessor_family::install(setup)?;

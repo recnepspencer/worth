@@ -4274,9 +4274,10 @@ an unavailable source as `CoupledSourceNotLive`.
 
 This finite Preserve capability is the first part of
 [P5/S6 synchronous edit publication](../plans/WORTH-query/synchronous-edit-publication.md).
-Initial output creation, transitive dependent discovery, producer predecessor
-observations and the explicit document-seal envelope remain in that
-implementation plan. Native never labels the transaction-before basis as a
+Initial output creation, transitive dependent discovery and the explicit
+document-seal envelope remain in that implementation plan. Declared predecessor
+observations also work inside the coupled handler, with independently admitted
+current-C read permission and the edit's genuinely held commit lane. Native never labels the transaction-before basis as a
 coupled producer's consumed applied input image.
 
 For an authored splice that changes relations, add typed relation loci to the
@@ -4398,7 +4399,12 @@ Admission and control loss veto publication even when a handler catches them.
 
 Native chooses exactly the predecessor checked by the ordinary succession fence.
 Its decision root is retained by reference under the live head/candidate lifecycle;
-succession replaces the hold and retirement releases it. Historical keys and
+succession replaces the hold and retirement releases it. For a coupled writer,
+Native retains that writer's exact pre-append applied image: the authored edits
+and earlier writers are visible, while its own new output is not. This is an
+applied input posture, never an invented committed branch basis. Deep envelope
+clones and codecs cannot reissue the live input hold. The historical envelope
+transfers the pin once to the live-route retention owner. Historical keys and
 publication/basis provenance remain separate from current dependencies. Current
 READ authorization support remains a current dependency. No old value is
 substituted with a current value, and no old root is retained by Query evidence.
