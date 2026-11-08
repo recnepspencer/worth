@@ -41,7 +41,7 @@ Source: `e787b51b3ec261df01fcb55fe76352e489f60dad`.
 
 ### `worth-court-relational-certification::worth_court_relational_certification$content::durable_publication::content_durable_artifact_cancellation_after_original_allocation_never_calls_medium`
 
-CLEANUP-C2-resource-accounting — root owning court / recorded cleanup.
+CLEANUP-C2-resource-accounting â€” root owning court / recorded cleanup.
 
 The failing assertion is the explicit work, quota, refund or footprint bound, not benign setup (independent review of all69 records).
 
@@ -59,7 +59,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-court-relational-certification::worth_court_relational_certification$content::durable_publication::content_durable_artifact_memory_refuses_before_the_medium_and_selected_commit`
 
-CLEANUP-C2-resource-accounting — root owning court / recorded cleanup.
+CLEANUP-C2-resource-accounting â€” root owning court / recorded cleanup.
 
 The failing assertion is the explicit work, quota, refund or footprint bound, not benign setup (independent review of all69 records).
 
@@ -77,7 +77,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-court-relational-certification::worth_court_relational_certification$content::durable_publication::content_durable_artifact_original_work_exhaustion_is_exact_and_pre_effect`
 
-CLEANUP-C2-resource-accounting — root owning court / recorded cleanup.
+CLEANUP-C2-resource-accounting â€” root owning court / recorded cleanup.
 
 The failing assertion is the explicit work, quota, refund or footprint bound, not benign setup (independent review of all69 records).
 
@@ -95,7 +95,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-court-relational-certification::worth_court_relational_certification$content::historical_kind::custody::original_kind_custody_survives_successor_basis_checkpoint_tail_and_reopen`
 
-CLEANUP-C2-resource-accounting — root owning court / recorded cleanup.
+CLEANUP-C2-resource-accounting â€” root owning court / recorded cleanup.
 
 The failing assertion is the explicit work, quota, refund or footprint bound, not benign setup (independent review of all69 records).
 
@@ -113,7 +113,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-court-relational-certification::worth_court_relational_certification$content::historical_kind::funding::historical_kind_reconstruction_preserves_literal_original_stops_and_releases_scratch`
 
-CLEANUP-C2-resource-accounting — root owning court / recorded cleanup.
+CLEANUP-C2-resource-accounting â€” root owning court / recorded cleanup.
 
 The failing assertion is the explicit work, quota, refund or footprint bound, not benign setup (independent review of all69 records).
 
@@ -129,7 +129,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-court-relational-certification::worth_court_relational_certification$relational::validated_proposal_memory::unfunded_validated_proposal_backing_refuses_and_releases_original_custody`
 
-CLEANUP-C2-resource-accounting — root owning court / recorded cleanup.
+CLEANUP-C2-resource-accounting â€” root owning court / recorded cleanup.
 
 The failing assertion is the explicit work, quota, refund or footprint bound, not benign setup (independent review of all69 records).
 
@@ -145,7 +145,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-relational::worth_relational$authority::commit::pipeline::request_checkpoints::work_account::one_work_account_bounds_each_entry_with_its_original_canonical_evidence`
 
-CLEANUP-C2-resource-accounting — root owning court / recorded cleanup.
+CLEANUP-C2-resource-accounting â€” root owning court / recorded cleanup.
 
 The failing assertion is the explicit work, quota, refund or footprint bound, not benign setup (independent review of all69 records).
 
@@ -163,7 +163,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-relational::worth_relational$authority::commit::pipeline::request_checkpoints::work_account::one_work_account_bounds_the_same_proposal_on_every_entry`
 
-CLEANUP-C2-resource-accounting — root owning court / recorded cleanup.
+CLEANUP-C2-resource-accounting â€” root owning court / recorded cleanup.
 
 The failing assertion is the explicit work, quota, refund or footprint bound, not benign setup (independent review of all69 records).
 
@@ -182,7 +182,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-relational::worth_relational$durability::log::native_checkpoint_codec::kind_authentication_tests::forged_cross_region_kind_commitment_is_refused_before_member_reads`
 
-CLEANUP-malformed-input-boundary — root owning court / recorded cleanup.
+CLEANUP-malformed-input-boundary â€” root owning court / recorded cleanup.
 
 The failing assertion compares ordering or typed malformed-input diagnostics in a fault court.
 
@@ -200,7 +200,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-relational::worth_relational$history::commit::envelope_residency::memory_publication_tests::memory_frame_quota_and_cancel_refuse_before_position_or_head`
 
-CLEANUP-C2-resource-accounting — root owning court / recorded cleanup.
+CLEANUP-C2-resource-accounting â€” root owning court / recorded cleanup.
 
 The failing assertion is the explicit work, quota, refund or footprint bound, not benign setup (independent review of all69 records).
 
@@ -216,7 +216,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-relational::worth_relational$storage::overlay::partition_content::digest_index::carrier_tests::inline_digest_headers_measure_empty_singleton_dense_and_retained_owners`
 
-CLEANUP-C2-resource-accounting — root owning court / recorded cleanup.
+CLEANUP-C2-resource-accounting â€” root owning court / recorded cleanup.
 
 The failing assertion is the explicit work, quota, refund or footprint bound, not benign setup (independent review of all69 records).
 
@@ -235,7 +235,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-relational::worth_relational$storage::substrate::record_arena::values::metadata::tests::metadata_controls_follow_actual_history_snapshots_and_refund`
 
-CLEANUP-C2-resource-accounting — root owning court / recorded cleanup.
+CLEANUP-C2-resource-accounting â€” root owning court / recorded cleanup.
 
 The failing assertion is the explicit work, quota, refund or footprint bound, not benign setup (independent review of all69 records).
 
@@ -253,7 +253,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-relational::worth_relational$storage::substrate::record_arena::values::metadata::tests::metadata_controls_refuse_before_history_edits_with_typed_cause`
 
-CLEANUP-C2-resource-accounting — root owning court / recorded cleanup.
+CLEANUP-C2-resource-accounting â€” root owning court / recorded cleanup.
 
 The failing assertion is the explicit work, quota, refund or footprint bound, not benign setup (independent review of all69 records).
 
@@ -270,7 +270,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-relational::worth_relational$storage::substrate::record_arena::values::metadata::tests::metadata_footer_preserves_legacy_named_and_compact_wire`
 
-CLEANUP-C2-resource-accounting — root owning court / recorded cleanup.
+CLEANUP-C2-resource-accounting â€” root owning court / recorded cleanup.
 
 The failing assertion is the explicit work, quota, refund or footprint bound, not benign setup (independent review of all69 records).
 
@@ -288,7 +288,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-relational::worth_relational$storage::substrate::record_arena::values::metadata::tests::moved_metadata_retains_only_its_fixed_bill_and_ordinary_clone_is_independent`
 
-CLEANUP-C2-resource-accounting — root owning court / recorded cleanup.
+CLEANUP-C2-resource-accounting â€” root owning court / recorded cleanup.
 
 The failing assertion is the explicit work, quota, refund or footprint bound, not benign setup (independent review of all69 records).
 
@@ -306,7 +306,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-relational::worth_relational$storage::substrate::record_arena::values::tests::escaped_extra_carrier_keeps_only_its_own_bill_after_node_drop`
 
-CLEANUP-C2-resource-accounting — root owning court / recorded cleanup.
+CLEANUP-C2-resource-accounting â€” root owning court / recorded cleanup.
 
 The failing assertion is the explicit work, quota, refund or footprint bound, not benign setup (independent review of all69 records).
 
@@ -324,7 +324,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-relational::worth_relational$storage::substrate::record_arena::values::tests::funded_extra_refuses_copy_and_replacement_before_growth`
 
-CLEANUP-C2-resource-accounting — root owning court / recorded cleanup.
+CLEANUP-C2-resource-accounting â€” root owning court / recorded cleanup.
 
 The failing assertion is the explicit work, quota, refund or footprint bound, not benign setup (independent review of all69 records).
 
@@ -342,7 +342,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-relational::worth_relational$storage::substrate::record_arena::values::tests::funded_extra_shares_actual_row_history_and_private_holds_until_last_drop`
 
-CLEANUP-C2-resource-accounting — root owning court / recorded cleanup.
+CLEANUP-C2-resource-accounting â€” root owning court / recorded cleanup.
 
 The failing assertion is the explicit work, quota, refund or footprint bound, not benign setup (independent review of all69 records).
 
@@ -360,7 +360,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-relational::worth_relational$storage::substrate::record_arena::values::tests::unique_extra_move_and_borrowed_export_preserve_original_funding`
 
-CLEANUP-C2-resource-accounting — root owning court / recorded cleanup.
+CLEANUP-C2-resource-accounting â€” root owning court / recorded cleanup.
 
 The failing assertion is the explicit work, quota, refund or footprint bound, not benign setup (independent review of all69 records).
 
@@ -378,7 +378,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-relational::worth_relational$storage::substrate::shared_map::custody_tests::map_cow_owns_only_actual_nodes_and_unique_replacement_refunds_nothing_early`
 
-CLEANUP-C2-resource-accounting — root owning court / recorded cleanup.
+CLEANUP-C2-resource-accounting â€” root owning court / recorded cleanup.
 
 The failing assertion is the explicit work, quota, refund or footprint bound, not benign setup (independent review of all69 records).
 
@@ -396,7 +396,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-relational::worth_relational$storage::substrate::shared_map::tests::inline_header_footprints_remove_only_actual_header_arcs`
 
-CLEANUP-C2-resource-accounting — root owning court / recorded cleanup.
+CLEANUP-C2-resource-accounting â€” root owning court / recorded cleanup.
 
 The failing assertion is the explicit work, quota, refund or footprint bound, not benign setup (independent review of all69 records).
 
@@ -414,7 +414,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-relational::worth_relational$tests::durability::contracts::branch_root_shared_target_binding::checkpoint_rejects_later_shared_root_cell_with_relabeled_schema_root`
 
-CLEANUP-malformed-input-boundary — root owning court / recorded cleanup.
+CLEANUP-malformed-input-boundary â€” root owning court / recorded cleanup.
 
 The failing assertion compares ordering or typed malformed-input diagnostics in a fault court.
 
@@ -430,7 +430,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-relational::worth_relational$tests::durability::contracts::branch_root_shared_target_binding::checkpoint_rejects_later_shared_root_cell_with_relabeled_truth_root`
 
-CLEANUP-malformed-input-boundary — root owning court / recorded cleanup.
+CLEANUP-malformed-input-boundary â€” root owning court / recorded cleanup.
 
 The failing assertion compares ordering or typed malformed-input diagnostics in a fault court.
 
@@ -446,7 +446,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-relational::worth_relational$visibility::materialization::read_records::projection::field_revisions::restore_tests::checkpoint_restore_rejects_incomplete_field_revision_column`
 
-CLEANUP-malformed-input-boundary — root owning court / recorded cleanup.
+CLEANUP-malformed-input-boundary â€” root owning court / recorded cleanup.
 
 The failing assertion compares ordering or typed malformed-input diagnostics in a fault court.
 
@@ -462,7 +462,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-court-relational-certification::worth_court_relational_certification$cost::relational::relational_certification::retained_entity_selection::equal_payload_jumps_charge_the_same_receiving_owner_work_at_near_and_distant_history_nodes`
 
-CLEANUP-C2-resource-accounting — root owning court / recorded cleanup.
+CLEANUP-C2-resource-accounting â€” root owning court / recorded cleanup.
 
 The failing assertion is the explicit work, quota, refund or footprint bound, not benign setup (independent review of all69 records).
 
@@ -480,7 +480,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-court-relational-certification::worth_court_relational_certification$cost::relational::checkpoint_stage::checkpoint_stage_charges_the_documented_rate_for_each_encoded_byte`
 
-CLEANUP-C2-resource-accounting — root owning court / recorded cleanup.
+CLEANUP-C2-resource-accounting â€” root owning court / recorded cleanup.
 
 The failing assertion is the explicit work, quota, refund or footprint bound, not benign setup (independent review of all69 records).
 
@@ -498,7 +498,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-court-relational-certification::worth_court_relational_certification$cost::relational::checkpoint_stage::empty_checkpoint_memory_boundary_is_its_bytes_plus_one_stage`
 
-CLEANUP-C2-resource-accounting — root owning court / recorded cleanup.
+CLEANUP-C2-resource-accounting â€” root owning court / recorded cleanup.
 
 The failing assertion is the explicit work, quota, refund or footprint bound, not benign setup (independent review of all69 records).
 
@@ -514,7 +514,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-court-relational-certification::worth_court_relational_certification$cost::relational::checkpoint_stage::checkpoint_capture_sets_up_exactly_one_stage_whatever_the_row_count`
 
-CLEANUP-C2-resource-accounting — root owning court / recorded cleanup.
+CLEANUP-C2-resource-accounting â€” root owning court / recorded cleanup.
 
 The failing assertion is the explicit work, quota, refund or footprint bound, not benign setup (independent review of all69 records).
 
@@ -532,7 +532,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-court-relational-certification::worth_court_relational_certification$cost::relational::checkpoint_stage::empty_checkpoint_work_ceiling_bounds_the_whole_capture`
 
-CLEANUP-C2-resource-accounting — root owning court / recorded cleanup.
+CLEANUP-C2-resource-accounting â€” root owning court / recorded cleanup.
 
 The failing assertion is the explicit work, quota, refund or footprint bound, not benign setup (independent review of all69 records).
 
@@ -550,7 +550,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-court-relational-certification::worth_court_relational_certification$process::serial::relational::leased_preparation::preimage::preimage_endpoint_slots`
 
-CLEANUP-C2-resource-accounting — root owning court / recorded cleanup.
+CLEANUP-C2-resource-accounting â€” root owning court / recorded cleanup.
 
 Exact child exit101: actual1024-endpoint commit exceeds remaining64MiB fixture grant by1118 bytes before COW growth assertions; no overflow. Evidence: pa-merge-preimage-child-exit.log; milestone C2 backing/work-budget and growth courts.
 
@@ -567,7 +567,7 @@ running 1 test
 
 ### `worth-query-court-query-decl-host::worth_query_court_query_decl_host$process::certification::program_example_authority::execution_memory::execution_memory_is_shared_by_installed_worlds_and_reselected_on_checkpoint_reopen`
 
-CLEANUP-C2-memory-ledger — query owning court / recorded cleanup.
+CLEANUP-C2-memory-ledger â€” query owning court / recorded cleanup.
 
 Exact existing child probe fails expected process-capacity denial after checkpoint reopen; actual variant not printed, no overflow evidence.
 
@@ -583,7 +583,7 @@ running 1 test
 
 ### `worth-query-court-query-decl-host::worth_query_court_query_decl_host$process::host::durable_retry::affinity::inherited_directory_key_refuses_a_sibling_product_affinity`
 
-HAPPY-HELD-H6-durable-sibling — P-C H6.
+HAPPY-HELD-H6-durable-sibling â€” P-C H6.
 
 D16 track H does not include durable sibling publication; H6 is explicitly held.
 
@@ -599,7 +599,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-query-court-query-decl-host::worth_query_court_query_decl_host$process::host::durable_retry::request_stops::original_directory_receipt_preserves_cancellation_at_every_consult`
 
-CLEANUP-C1-incomplete-consult-cancellation-sweep — query owning court / recorded cleanup.
+CLEANUP-C1-incomplete-consult-cancellation-sweep â€” query owning court / recorded cleanup.
 
 Cancellation at every consult; stopped exact own busy child after>10min. Incomplete, not passed; abort evidence retained.
 
@@ -612,7 +612,7 @@ test process::host::durable_retry::request_stops::original_directory_receipt_pre
 
 ### `worth-query::worth_query$domain_installation::operation_execution::workflow_parallel_progression::frontier::tests::dispatch::reversed_completion_still_applies_canonical_effects_and_receipts`
 
-CLEANUP-C2-cost-or-growth — query owning court / recorded cleanup.
+CLEANUP-C2-cost-or-growth â€” query owning court / recorded cleanup.
 
 Complete original SDK invoice45717 versus1992.
 
@@ -630,7 +630,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-query::worth_query$domain_installation::operation_execution::workflow_parallel_progression::frontier::tests::dispatch::stops::admitted_opening_refuses_the_owned_maps_declared_reservation`
 
-CLEANUP-C2-cost-or-growth — query owning court / recorded cleanup.
+CLEANUP-C2-cost-or-growth â€” query owning court / recorded cleanup.
 
 Declared owned-map reservation3184 versus1002.
 
@@ -646,7 +646,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-query-court-decl-execution-package-archive::worth_query_court_decl_execution_package_archive$domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::retained_recovery::checkpoint_inspection_compares_query_header_count_and_output_metadata_bytes`
 
-CLEANUP-C1-recovery-or-fault — query owning court / recorded cleanup.
+CLEANUP-C1-recovery-or-fault â€” query owning court / recorded cleanup.
 
 Authenticated metadata fault uses stale v13 offsets; attacks Native bytes and hits work denial before comparison.
 
@@ -662,7 +662,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-query-court-decl-host::worth_query_court_decl_host$certification::document_history::group::recovery::an_unpublished_first_member_resumes_once_then_completes_the_one_group_step`
 
-CLEANUP-C1-recovery-or-fault — query owning court / recorded cleanup.
+CLEANUP-C1-recovery-or-fault â€” query owning court / recorded cleanup.
 
 Cancellation injected between owner effect and product movement; unpublished group recovery assertion fails.
 
@@ -679,7 +679,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-query-court-decl-host::worth_query_court_decl_host$certification::document_history::recording::recovery::unpublished_candidate_keeps_its_original_recovery_until_one_recorded_selection`
 
-CLEANUP-C1-recovery-or-fault — query owning court / recorded cleanup.
+CLEANUP-C1-recovery-or-fault â€” query owning court / recorded cleanup.
 
 Cancellation injected between owner effect and product movement; original retained recovery assertion fails.
 
@@ -695,7 +695,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-query-court-decl-host::worth_query_court_decl_host$content_door::source::directory_home::a_nonempty_declared_source_reads_and_mutates_after_directory_home_reopen`
 
-HAPPY-content-data-before-codecs — Native original-source schema admission.
+HAPPY-content-data-before-codecs â€” Native original-source schema admission.
 
 Authenticated source DATA is incorrectly bound to absent receiver codecs before installation.
 
@@ -711,7 +711,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-query-court-decl-host::worth_query_court_decl_host$producer_succession::history_courts::checkpoint_keeps_exact_per_route_retirement_and_recovers_the_surviving_generator`
 
-CLEANUP-C2-cost-or-growth — query owning court / recorded cleanup.
+CLEANUP-C2-cost-or-growth â€” query owning court / recorded cleanup.
 
 Coordinator explicitly holds exact per-route retirement shrink asC2; retained roots0 versus4.
 
@@ -729,7 +729,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-query-court-decl-host-package-archive-replay-application-graph::worth_query_court_decl_host_package_archive_replay_application_graph$certification::application_graph::restored_primary_backend::the_first_production_write_after_restore_answers_as_before_the_capture`
 
-CLEANUP-C1-recovery-or-fault — query owning court / recorded cleanup.
+CLEANUP-C1-recovery-or-fault â€” query owning court / recorded cleanup.
 
 CommitThenDecline adapter injects post-Native-effect refusal twice before capture; WrongImmutableTarget before cold first-write proof.
 
@@ -745,7 +745,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-query-court-execution-primary-graph::worth_query_court_execution_primary_graph$domain_computation::primary_graph::tests::application_attempt::unwind_custody::world_unwind_retains_and_releases_the_exact_query_idempotency_slot`
 
-CLEANUP-C1-recovery-or-fault — query owning court / recorded cleanup.
+CLEANUP-C1-recovery-or-fault â€” query owning court / recorded cleanup.
 
 Injected unwind custody cleanup leaves Query idempotency slot1, expected0.
 
@@ -766,7 +766,7 @@ assertion `left == right` failed: cleanup releases Query's exact recovery-indexe
 
 ### `worth-query-court-execution-primary-graph::worth_query_court_execution_primary_graph$domain_computation::primary_graph::tests::checkpoint_allocation::leased_checkpoint_retains_one_frame_charge_through_native_handoff_and_reopen`
 
-CLEANUP-C2-cost-or-growth — query owning court / recorded cleanup.
+CLEANUP-C2-cost-or-growth â€” query owning court / recorded cleanup.
 
 Leased checkpoint allocation child first fails zero-memory denial category; actual variant not printed, later stale offsets unreached; no overflow evidence.
 
@@ -782,7 +782,7 @@ running 1 test
 
 ### `worth-query-court-query-decl-host::worth_query_court_query_decl_host$certification::application_graph::canonical_transition::related::companion_transition::capture::companion_post_ack_capture_refusal_repairs_same_capsule_with_historical_roster`
 
-CLEANUP-C1-post-ACK-deliberate-refusal — query owning court / recorded cleanup.
+CLEANUP-C1-post-ACK-deliberate-refusal â€” query owning court / recorded cleanup.
 
 Benign restored-model setup/post-restore mutation reads canonical commit/version through resident-only lookup; cold catalog evidence is available through original-request demand.
 
@@ -798,7 +798,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-query-court-query-decl-host::worth_query_court_query_decl_host$certification::application_graph::canonical_transition::related::settlement::related_acknowledged_successor_repairs_capture_without_reauthoring_or_old_decode`
 
-CLEANUP-C1-post-ACK-deliberate-refusal — query owning court / recorded cleanup.
+CLEANUP-C1-post-ACK-deliberate-refusal â€” query owning court / recorded cleanup.
 
 Benign restored-model setup/post-restore mutation reads canonical commit/version through resident-only lookup; cold catalog evidence is available through original-request demand.
 
@@ -814,7 +814,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::recovered_custody::continued_recovered_custody_closes_cooperatively_and_resumes_after_reopen`
 
-CLEANUP-C1-recovery-or-fault — query owning court / recorded cleanup.
+CLEANUP-C1-recovery-or-fault â€” query owning court / recorded cleanup.
 
 Injected unwind recovery reaches cross-incarnation attempt identity inequality before cooperative close; held ProductBasisStale not reached.
 
@@ -835,7 +835,7 @@ assertion `left == right` failed
 
 ### `worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::recovered_custody::recovered_original_custody_reaches_service_and_continues_without_reexecution`
 
-CLEANUP-C1-recovery-or-fault — query owning court / recorded cleanup.
+CLEANUP-C1-recovery-or-fault â€” query owning court / recorded cleanup.
 
 Injected unwind recovery reaches cross-incarnation attempt identity inequality before continuing; held ProductBasisStale not reached.
 
@@ -856,7 +856,7 @@ assertion `left == right` failed
 
 ### `worth-query-court-query-decl-host::worth_query_court_query_decl_host$host::application_home::recovered_custody::recovered_original_custody_reaches_service_and_release_stays_released`
 
-CLEANUP-C1-recovery-or-fault — query owning court / recorded cleanup.
+CLEANUP-C1-recovery-or-fault â€” query owning court / recorded cleanup.
 
 Injected unwind recovery reaches cross-incarnation attempt identity inequality before releasing; held ProductBasisStale not reached.
 
@@ -877,7 +877,7 @@ assertion `left == right` failed
 
 ### `worth-query-court-execution-primary-graph-application-attempt::worth_query_court_execution_primary_graph_application_attempt$domain_computation::primary_graph::application_attempt::compare_and_commit::commit_outcome::denial::execution::authority_cause::tests::authority_evidence_exposes_request_resources_by_value_through_the_commit_door`
 
-CLEANUP-C2-incomplete-charge-prefix-sweep — query owning court / recorded cleanup.
+CLEANUP-C2-incomplete-charge-prefix-sweep â€” query owning court / recorded cleanup.
 
 All unique charged prefixes are replayed at required-1; stopped exact own process after prolonged busy execution. Incomplete, not passed or an assertion result; abort-v2 evidence retained.
 
@@ -1052,7 +1052,7 @@ authority probe=6400, required=60408, reached=96
 
 ### `worth-query-court-decl-host-package-archive-replay-application-graph::worth_query_court_decl_host_package_archive_replay_application_graph$certification::application_graph::relation_laws::logical::locality::logical_local_rule_business_acquisitions_ignore_ten_and_ten_thousand_unrelated_cohorts`
 
-CLEANUP-C2-cost-or-growth — query owning court / recorded cleanup.
+CLEANUP-C2-cost-or-growth â€” query owning court / recorded cleanup.
 
 Ten-versus-ten-thousand cohort growth journey expires30000ms candidate during setup.
 
@@ -1069,7 +1069,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-query-bank-court-external-rail-server::worth_query_bank_court_external_rail_server$cost::server::ordinary_reads::canonical_work_scale::policy_fact_fanout_does_not_leak_into_closed_disclosure_evidence`
 
-CLEANUP-C2-cost-or-growth — bank owning court / recorded cleanup.
+CLEANUP-C2-cost-or-growth â€” bank owning court / recorded cleanup.
 
 Explicit fanout/linear growth court is denied by original seed-memory quota during large-population setup, before the work-bound assertion. Grants and assertions unchanged.
 
@@ -1085,7 +1085,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-query-bank-court-external-rail-server::worth_query_bank_court_external_rail_server$cost::server::ordinary_reads::canonical_work_scale::result_and_graph_fanout_is_visible_only_as_closed_public_work`
 
-CLEANUP-C2-cost-or-growth — bank owning court / recorded cleanup.
+CLEANUP-C2-cost-or-growth â€” bank owning court / recorded cleanup.
 
 Explicit fanout/linear growth court is denied by original seed-memory quota during large-population setup, before the work-bound assertion. Grants and assertions unchanged.
 
@@ -1101,7 +1101,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-query-bank-court-external-rail-server::worth_query_bank_court_external_rail_server$cost::server::ordinary_reads::locality::account_discovery_root_union_work_grows_at_most_linearly`
 
-CLEANUP-C2-cost-or-growth — bank owning court / recorded cleanup.
+CLEANUP-C2-cost-or-growth â€” bank owning court / recorded cleanup.
 
 Explicit fanout/linear growth court is denied by original seed-memory quota during large-population setup, before the work-bound assertion. Grants and assertions unchanged.
 
@@ -1117,7 +1117,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-query-bank-court-external-rail-server::worth_query_bank_court_external_rail_server$server::ordinary_reads::pending_payments::empty_guarded_frontier_work_grows_at_most_linearly`
 
-CLEANUP-C2-cost-or-growth — bank owning court / recorded cleanup.
+CLEANUP-C2-cost-or-growth â€” bank owning court / recorded cleanup.
 
 Explicit fanout/linear growth court is denied by original seed-memory quota during large-population setup, before the work-bound assertion. Grants and assertions unchanged.
 
@@ -1133,7 +1133,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-store-court-application::worth_store_court_application$process::application::host_oracle::continuation::bounded_host_oracle_seed_one_continues_across_real_process_reopens`
 
-CLEANUP-C1-host-abandonment-convergence — Host oracle / Native-Query recovery.
+CLEANUP-C1-host-abandonment-convergence â€” Host oracle / Native-Query recovery.
 
 Reference-prefix entity meaning diverges at step25 reopen after abandonment; comparator remains unchanged.
 
@@ -1177,7 +1177,7 @@ seed 1 step 25 recovered prefix: Meaning { part: EntityMeaning, index: 0 }; Home
 
 ### `worth-store-court-application::worth_store_court_application$process::application::host_oracle::continuation::bounded_host_oracle_seed_zero_continues_across_real_process_reopens`
 
-CLEANUP-C1-host-abandonment-convergence — Host oracle / Native-Query recovery.
+CLEANUP-C1-host-abandonment-convergence â€” Host oracle / Native-Query recovery.
 
 Reference-prefix entity meaning diverges at step25 reopen after abandonment; comparator remains unchanged.
 
@@ -1221,7 +1221,7 @@ seed 0 step 25 recovered prefix: Meaning { part: EntityMeaning, index: 0 }; Home
 
 ### `worth-store-court-application::worth_store_court_application$process::application::no_pending_owners::transition_catalog_readmission::a_completed_transition_occurrence_restores_target_contracts_and_continues_only_its_missing_suffix`
 
-CLEANUP-C2-zero-budget-transition-boundary — Store transition court.
+CLEANUP-C2-zero-budget-transition-boundary â€” Store transition court.
 
 Explicit zero-memory admission now refuses earlier at authenticated schema image; normal B reopen is green.
 
@@ -1237,7 +1237,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-store-court-application::worth_store_court_application$process::application::query_readmission::bootstrap_publication::retired_format::retired_bootstrap_completion_format_refuses_existing_home_without_replaying_seeds`
 
-CLEANUP-C1-retired-format-refusal-shape — store owning court / recorded cleanup.
+CLEANUP-C1-retired-format-refusal-shape â€” store owning court / recorded cleanup.
 
 Deliberately altered completion record is correctly refused by D8 quarantined primary-graph denial; court expects old ExistingQueryAttachment shape. No service conversion restored.
 
@@ -1253,7 +1253,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-store-court-application::worth_store_court_application$process::application::world_occurrence_readmission::late_history_refusal_retains_actual_partial_root_caps_and_home_lease_until_cleanup`
 
-CLEANUP-C1-injected-recovery-custody — Host recovery cleanup.
+CLEANUP-C1-injected-recovery-custody â€” Host recovery cleanup.
 
 Injected late-history refusal exercises partial opening cleanup, not a graceful service journey.
 
@@ -1274,7 +1274,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-store-court-application::worth_store_court_application$process::relational::relational_home::incarnation::anchor_replay::wal_replays_the_thirty_second_anchor_advance_after_process_death`
 
-CLEANUP-C1-C2-anchor-growth-kill — store owning court / recorded cleanup.
+CLEANUP-C1-C2-anchor-growth-kill â€” store owning court / recorded cleanup.
 
 32-anchor/high-generation process-death control hits AnchorTableFull before WAL pause; no successful kill/replay proof.
 
@@ -1306,7 +1306,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-store-court-application::worth_store_court_application$process::relational::relational_home::open_refusals::a_checkpoint_record_store_accepts_but_relational_cannot_readmit_refuses`
 
-CLEANUP-C1-worldless-damage-fixture — store owning court / recorded cleanup.
+CLEANUP-C1-worldless-damage-fixture â€” store owning court / recorded cleanup.
 
 Damage/refusal court stops at benign WorldSectionRequired setup before fault assertion. Cleanup must compose actual World and preserve chosen checkpoint/tail/abort; no fake bytes or graceful-close substitution.
 
@@ -1322,7 +1322,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-store-court-application::worth_store_court_application$process::relational::relational_home::open_refusals::a_damaged_checkpoint_in_the_store_files_refuses_before_service`
 
-CLEANUP-C1-worldless-damage-fixture — store owning court / recorded cleanup.
+CLEANUP-C1-worldless-damage-fixture â€” store owning court / recorded cleanup.
 
 Damage/refusal court stops at benign WorldSectionRequired setup before fault assertion. Cleanup must compose actual World and preserve chosen checkpoint/tail/abort; no fake bytes or graceful-close substitution.
 
@@ -1338,7 +1338,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-store-court-application::worth_store_court_application$process::relational::relational_home::open_refusals::a_damaged_journal_entry_in_the_store_files_refuses_before_service`
 
-CLEANUP-C1-worldless-damage-fixture — store owning court / recorded cleanup.
+CLEANUP-C1-worldless-damage-fixture â€” store owning court / recorded cleanup.
 
 Damage/refusal court stops at benign WorldSectionRequired setup before fault assertion. Cleanup must compose actual World and preserve chosen checkpoint/tail/abort; no fake bytes or graceful-close substitution.
 
@@ -1354,7 +1354,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-store-court-application::worth_store_court_application$process::relational::relational_home::open_refusals::a_journal_entry_store_accepts_but_relational_cannot_readmit_refuses`
 
-CLEANUP-C1-worldless-damage-fixture — store owning court / recorded cleanup.
+CLEANUP-C1-worldless-damage-fixture â€” store owning court / recorded cleanup.
 
 Damage/refusal court stops at benign WorldSectionRequired setup before fault assertion. Cleanup must compose actual World and preserve chosen checkpoint/tail/abort; no fake bytes or graceful-close substitution.
 
@@ -1370,7 +1370,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-store-court-application::worth_store_court_application$process::application::query_readmission::native_artifacts::home_close::host_checkpoint_memory_failure_is_reported_while_original_retired_owners_remain_physically_closed`
 
-CLEANUP-C2-close-memory-boundary — store owning court / recorded cleanup.
+CLEANUP-C2-close-memory-boundary â€” store owning court / recorded cleanup.
 
 Fixed1.5MiB capture now succeeds; declared-failure assertion remains red without grant/claim weakening.
 
@@ -1386,7 +1386,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-store-court-application::worth_store_court_application$process::relational::relational_home::publication_refusals::a_commit_the_medium_refuses_before_any_effect_is_denied_and_not_installed`
 
-CLEANUP-C1-after-lifecycle-termination — store owning court / recorded cleanup.
+CLEANUP-C1-after-lifecycle-termination â€” store owning court / recorded cleanup.
 
 SourceUnavailable artifact snapshot occurs after explicit lifecycle termination injection atpublication_refusals/mod.rs94-118, not before fault.
 
@@ -1402,7 +1402,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-store-court-application::worth_store_court_application$process::relational::relational_home::residency_agreement::cold_warm_and_full_home_reads_and_retained_observations_agree_with_memory`
 
-CLEANUP-C2-cold-member-read-bound — store owning court / recorded cleanup.
+CLEANUP-C2-cold-member-read-bound â€” store owning court / recorded cleanup.
 
 Ordinary semantic residency/reopen journey uses Native-only Home checkpoint, which correctly requires actual World section. Existing durable_run::world owner provides fresh/reopen/bootstrap/close; preserve semantic and later cost assertions.
 
@@ -1420,7 +1420,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-store-court-application::worth_store_court_application$process::relational::relational_home::residency_capture::a_one_partition_commit_publishes_constant_new_members_and_capture_reads_nothing`
 
-CLEANUP-C2-worldless-capture-count-fixture — store owning court / recorded cleanup.
+CLEANUP-C2-worldless-capture-count-fixture â€” store owning court / recorded cleanup.
 
 Constant-new-member/load-free capture court stops at WorldSectionRequired setup; actual count assertions unreached and unchanged.
 
@@ -1436,7 +1436,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-store-court-application::worth_store_court_application$process::relational::relational_home::residency_reopen::a_cold_schema_transition_replays_and_reframes_all_carriers_before_load_free_capture`
 
-CLEANUP-C2-cold-member-read-bound — store owning court / recorded cleanup.
+CLEANUP-C2-cold-member-read-bound â€” store owning court / recorded cleanup.
 
 Ordinary semantic residency/reopen journey uses Native-only Home checkpoint, which correctly requires actual World section. Existing durable_run::world owner provides fresh/reopen/bootstrap/close; preserve semantic and later cost assertions.
 
@@ -1454,7 +1454,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-store-court-application::worth_store_court_application$process::relational::relational_home::residency_digest::a_checksum_valid_substituted_member_refuses_its_digest_and_keeps_subject_damage_sticky`
 
-CLEANUP-C1-worldless-damage-fixture — store owning court / recorded cleanup.
+CLEANUP-C1-worldless-damage-fixture â€” store owning court / recorded cleanup.
 
 Damage/refusal court stops at benign WorldSectionRequired setup before fault assertion. Cleanup must compose actual World and preserve chosen checkpoint/tail/abort; no fake bytes or graceful-close substitution.
 
@@ -1470,7 +1470,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-store-court-application::worth_store_court_application$process::relational::relational_home::residency_reopen::reopen_keeps_regions_cold_and_a_point_read_and_commit_demand_only_their_partition`
 
-CLEANUP-C2-cold-member-read-bound — store owning court / recorded cleanup.
+CLEANUP-C2-cold-member-read-bound â€” store owning court / recorded cleanup.
 
 Ordinary semantic residency/reopen journey uses Native-only Home checkpoint, which correctly requires actual World section. Existing durable_run::world owner provides fresh/reopen/bootstrap/close; preserve semantic and later cost assertions.
 
@@ -1488,7 +1488,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-store-court-recovery-runtime-replication::worth_store_court_recovery_runtime_replication$compile_fail::recovery_runtime::authority_compile::recovery_entry_authority_is_compiler_sealed`
 
-HAPPY-recovery-construction-contract — Store recovery compiler court.
+HAPPY-recovery-construction-contract â€” Store recovery compiler court.
 
 Two literals name retired fields; three rendered snapshots must become semantic private-construction denials.
 
@@ -1504,7 +1504,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-store-court-recovery-runtime-replication-phase-eight-process::worth_store_court_recovery_runtime_replication_phase_eight_process$cost::recovery_runtime::phase_eight_process::production::size_independence::recovery_work_is_independent_of_unrelated_persisted_store_size`
 
-CLEANUP-C2-recovery-growth — Store physical recovery court.
+CLEANUP-C2-recovery-growth â€” Store physical recovery court.
 
 Larger persisted-size twin cannot be built within the bounded residue fixture.
 
@@ -1522,7 +1522,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-store-court-recovery-runtime-replication-phase-eight-process::worth_store_court_recovery_runtime_replication_phase_eight_process$process::recovery_runtime::phase_eight_process::production::recovery_crash::cancelled_recovery_process_reports_a_blocked_post_effect_outcome`
 
-CLEANUP-C1-C2-recovery-interruption-fixture — Store physical recovery court.
+CLEANUP-C1-C2-recovery-interruption-fixture â€” Store physical recovery court.
 
 Cancellation campaign fixture asserts its footprint exceeds admission before the interruption.
 
@@ -1538,7 +1538,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-store-court-recovery-runtime-replication-phase-eight-process::worth_store_court_recovery_runtime_replication_phase_eight_process$process::recovery_runtime::phase_eight_process::production::recovery_crash::killed_recovery_process_reopens_after_each_named_recovery_seam`
 
-CLEANUP-C1-C2-recovery-interruption-fixture — Store physical recovery court.
+CLEANUP-C1-C2-recovery-interruption-fixture â€” Store physical recovery court.
 
 Kill-at-recovery-seams fixture asserts its footprint exceeds admission before the interruption.
 
@@ -1554,7 +1554,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-store-court-store-replication-physical-record-journeys-durability-admission::worth_store_court_store_replication_physical_record_journeys_durability_admission$process::store::physical_media_journeys::independent_observer_reads_closed_media_without_runtime_authority`
 
-HAPPY-observer-prebuild — Store executable prebuild owner.
+HAPPY-observer-prebuild â€” Store executable prebuild owner.
 
 The selected gate omits the genuine physical_media_os_observer executable prerequisite.
 
@@ -1570,7 +1570,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-store-court-store-replication-physical-record-journeys-durability-admission::worth_store_court_store_replication_physical_record_journeys_durability_admission$process::store::physical_media_journeys::independent_observer_rejects_every_identity_grammar_corruption_class`
 
-HAPPY-observer-prebuild — Store executable prebuild owner.
+HAPPY-observer-prebuild â€” Store executable prebuild owner.
 
 The selected gate omits the genuine physical_media_os_observer executable prerequisite.
 
@@ -1586,7 +1586,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-store-court-store-replication-physical-record-journeys-durability-admission::worth_store_court_store_replication_physical_record_journeys_durability_admission$process::store::physical_media_journeys::mutation_contention::mutation_contention_confinement_and_readmission`
 
-HAPPY-observer-prebuild — Store executable prebuild owner.
+HAPPY-observer-prebuild â€” Store executable prebuild owner.
 
 The selected gate omits the genuine physical_media_os_observer executable prerequisite.
 
@@ -1602,7 +1602,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-store-court-store-replication-physical-record-journeys-durability-admission::worth_store_court_store_replication_physical_record_journeys_durability_admission$process::store::physical_media_journeys::namespace_discovery::namespace_creation_and_fresh_process_discovery`
 
-HAPPY-observer-prebuild — Store executable prebuild owner.
+HAPPY-observer-prebuild â€” Store executable prebuild owner.
 
 The selected gate omits the genuine physical_media_os_observer executable prerequisite.
 
@@ -1618,7 +1618,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-store-court-store-replication-physical-record-journeys-durability-admission::worth_store_court_store_replication_physical_record_journeys_durability_admission$process::store::physical_media_journeys::partial_effects::partial_effects_and_barrier_honesty`
 
-HAPPY-observer-prebuild — Store executable prebuild owner.
+HAPPY-observer-prebuild â€” Store executable prebuild owner.
 
 The selected gate omits the genuine physical_media_os_observer executable prerequisite.
 
@@ -1635,7 +1635,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `worth-store-relational::worth_store_relational$section::checkpoint::journal_tests::complete::genuine_complete_section_retains_capture_and_resumes_same_selection_ack`
 
-HAPPY-HELD-complete-ack-contract — P-A.
+HAPPY-HELD-complete-ack-contract â€” P-A.
 
 Acknowledgement(CaptureNotBound): the coordinator explicitly holds the Complete/ACK contract for P-A.
 
@@ -1651,7 +1651,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ### `parameter_invariant::lease_tests::parameter_lease_one_unit_short_is_the_work_stop`
 
-CLEANUP-C2-exact-work-boundary — fixture owning court / recorded cleanup.
+CLEANUP-C2-exact-work-boundary â€” fixture owning court / recorded cleanup.
 
 Explicit paid.work-1 or2*ENTRY_WORK-1 resource court; original boundary and exact outcome assertion stay unchanged.
 
@@ -1673,7 +1673,7 @@ test result: FAILED. 2 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; 
 
 ### `fast::shared_execution::installed_roots_and_reopen_record_real_unaccounted_owner_work`
 
-HAPPY_HELD-owner-unaccounted-capture — fixture owning court / recorded cleanup.
+HAPPY_HELD-owner-unaccounted-capture â€” fixture owning court / recorded cleanup.
 
 Worker-only for_workers policy has no work invoice. Protected World interim charge and Query preflight unconditionally charge; must poll when unaccounted. Do not change example policy.
 
@@ -1695,7 +1695,7 @@ test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; 
 
 ### `application_invariant_acceptance::proof::application_program::discovered::retention::discovered_committed_retention_refuses_twice_then_promotes_original_carrier`
 
-CLEANUP-C1-retention-or-publication-interruption — fixture owning court / recorded cleanup.
+CLEANUP-C1-retention-or-publication-interruption â€” fixture owning court / recorded cleanup.
 
 Actual retention reservation refusal, abandoned performed result, cancellation or paused publication precedes failing recovery assertion.
 
@@ -1769,7 +1769,7 @@ test application_invariant_
 
 ### `application_invariant_acceptance::proof::application_program::discovered_owning::retention::discovered_owning_committed_retention_retry_preserves_fresh_result_and_source`
 
-CLEANUP-C1-retention-or-publication-interruption — fixture owning court / recorded cleanup.
+CLEANUP-C1-retention-or-publication-interruption â€” fixture owning court / recorded cleanup.
 
 Actual retention reservation refusal, abandoned performed result, cancellation or paused publication precedes failing recovery assertion.
 
@@ -1803,7 +1803,7 @@ test result: FAILED. 119 passed; 3 failed; 0 ignored; 0 measured; 150 filtered o
 
 ### `application_invariant_acceptance::proof::application_program::document_history::navigation_outputs::publication::stopped_recovery::stopped_original_recovery_retries_without_reexecuting_the_producer`
 
-CLEANUP-C1-retention-or-publication-interruption — fixture owning court / recorded cleanup.
+CLEANUP-C1-retention-or-publication-interruption â€” fixture owning court / recorded cleanup.
 
 Actual retention reservation refusal, abandoned performed result, cancellation or paused publication precedes failing recovery assertion.
 
@@ -1831,7 +1831,7 @@ test result: FAILED. 119 passed; 3 failed; 0 ignored; 0 measured; 150 filtered o
 
 ### `application_invariant_acceptance::proof::application_program::document_history::navigation_outputs::publication::unpublished_history_producer_resumes_original_effect_once_before_selecting_the_same_candidate`
 
-CLEANUP-C1-retention-or-publication-interruption — fixture owning court / recorded cleanup.
+CLEANUP-C1-retention-or-publication-interruption â€” fixture owning court / recorded cleanup.
 
 Actual retention reservation refusal, abandoned performed result, cancellation or paused publication precedes failing recovery assertion.
 
@@ -1854,7 +1854,7 @@ test result: FAILED. 119 passed; 3 failed; 0 ignored; 0 measured; 150 filtered o
 
 ### `checkpoint_recovery::component_islands::locality::serial::real_split_component_reads_are_unchanged_with_ten_and_ten_thousand_unrelated_islands`
 
-CLEANUP-C2-population-growth — fixture owning court / recorded cleanup.
+CLEANUP-C2-population-growth â€” fixture owning court / recorded cleanup.
 
 10/10000-island setup reaches canonical artifact size268435459 >268435456 before locality assertion.
 
@@ -1876,7 +1876,7 @@ test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 319 filtered out
 
 ### `checkpoint_recovery::computation_partition::oracle::absence::serial::checkpoint_absence_rebuilds_every_owner_call_like_fresh`
 
-HAPPY-fixture-finite-capture-funding — fixture owning court / recorded cleanup.
+HAPPY-fixture-finite-capture-funding â€” fixture owning court / recorded cleanup.
 
 Ordinary settled capture exceeds installed mutation/demand allowance. Existing16B/20B finite setup grants separately fund capture; no public pre-capture quote found and no observed peak/new unbounded grant is substituted.
 
@@ -1898,7 +1898,7 @@ test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 319 filtered out
 
 ### `checkpoint_recovery::computation_partition::oracle::advancement_custody::serial::caller_refresh_retry_spends_what_the_first_attempt_left`
 
-CLEANUP-C2-exact-work-boundary — fixture owning court / recorded cleanup.
+CLEANUP-C2-exact-work-boundary â€” fixture owning court / recorded cleanup.
 
 Explicit paid.work-1 or2*ENTRY_WORK-1 resource court; original boundary and exact outcome assertion stay unchanged.
 
@@ -1922,7 +1922,7 @@ test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 319 filtered out
 
 ### `checkpoint_recovery::computation_partition::oracle::courtroom::lifecycle::serial::seeded_edits_cross_restore_and_republication_with_model_counts`
 
-CLEANUP-C4-generated-fault-or-race-oracle — fixture owning court / recorded cleanup.
+CLEANUP-C4-generated-fault-or-race-oracle â€” fixture owning court / recorded cleanup.
 
 Generated sequences include Fault/Repair and/or own-write interleavings and charged-work/observation comparison; actual failure after restored prefix or capture is preserved.
 
@@ -1944,7 +1944,7 @@ test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 319 filtered out
 
 ### `checkpoint_recovery::computation_partition::oracle::differential::serial::every_reused_run_equals_a_full_run_of_the_same_facts`
 
-CLEANUP-C4-generated-fault-or-race-oracle — fixture owning court / recorded cleanup.
+CLEANUP-C4-generated-fault-or-race-oracle â€” fixture owning court / recorded cleanup.
 
 Generated sequences include Fault/Repair and/or own-write interleavings and charged-work/observation comparison; actual failure after restored prefix or capture is preserved.
 
@@ -1966,7 +1966,7 @@ test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 319 filtered out
 
 ### `checkpoint_recovery::computation_partition::oracle::restoration::serial::restoration_after_seeded_edits_rebuilds_fresh_state`
 
-CLEANUP-C4-generated-fault-or-race-oracle — fixture owning court / recorded cleanup.
+CLEANUP-C4-generated-fault-or-race-oracle â€” fixture owning court / recorded cleanup.
 
 Generated sequences include Fault/Repair and/or own-write interleavings and charged-work/observation comparison; actual failure after restored prefix or capture is preserved.
 
@@ -1988,7 +1988,7 @@ test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 319 filtered out
 
 ### `checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_chain_settles_through_its_last_consumer_alone`
 
-HAPPY-fixture-finite-capture-funding — fixture owning court / recorded cleanup.
+HAPPY-fixture-finite-capture-funding â€” fixture owning court / recorded cleanup.
 
 Ordinary settled capture exceeds installed mutation/demand allowance. Existing16B/20B finite setup grants separately fund capture; no public pre-capture quote found and no observed peak/new unbounded grant is substituted.
 
@@ -2010,7 +2010,7 @@ test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 319 filtered out
 
 ### `checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_consumer_never_settles_over_a_stale_upstream`
 
-HAPPY-fixture-finite-capture-funding — fixture owning court / recorded cleanup.
+HAPPY-fixture-finite-capture-funding â€” fixture owning court / recorded cleanup.
 
 Ordinary settled capture exceeds installed mutation/demand allowance. Existing16B/20B finite setup grants separately fund capture; no public pre-capture quote found and no observed peak/new unbounded grant is substituted.
 
@@ -2032,7 +2032,7 @@ test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 319 filtered out
 
 ### `checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_world_verifies_each_root_and_decides_each_consumer_once`
 
-HAPPY-fixture-finite-capture-funding — fixture owning court / recorded cleanup.
+HAPPY-fixture-finite-capture-funding â€” fixture owning court / recorded cleanup.
 
 Ordinary settled capture exceeds installed mutation/demand allowance. Existing16B/20B finite setup grants separately fund capture; no public pre-capture quote found and no observed peak/new unbounded grant is substituted.
 
@@ -2054,7 +2054,7 @@ test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 319 filtered out
 
 ### `checkpoint_recovery::required_chain::exact_invalidation::locality::lifecycle::serial::authored_ring_checkpoint_reopens_then_accepts_a_new_source_edit`
 
-HAPPY-fixture-finite-capture-funding — fixture owning court / recorded cleanup.
+HAPPY-fixture-finite-capture-funding â€” fixture owning court / recorded cleanup.
 
 Ordinary settled capture exceeds installed mutation/demand allowance. Existing16B/20B finite setup grants separately fund capture; no public pre-capture quote found and no observed peak/new unbounded grant is substituted.
 
@@ -2076,7 +2076,7 @@ test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 319 filtered out
 
 ### `checkpoint_recovery::required_chain::exact_invalidation::randomized::serial::randomized_marking_agrees_with_full_verification`
 
-CLEANUP-C4-generated-fault-or-race-oracle — fixture owning court / recorded cleanup.
+CLEANUP-C4-generated-fault-or-race-oracle â€” fixture owning court / recorded cleanup.
 
 Generated sequences include Fault/Repair and/or own-write interleavings and charged-work/observation comparison; actual failure after restored prefix or capture is preserved.
 
@@ -2142,7 +2142,7 @@ test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 319 filtered out
 
 ### `checkpoint_recovery::required_chain::exact_invalidation::randomized::serial::randomized_marking_makes_room_on_a_branch_with_few_observations`
 
-CLEANUP-C4-generated-fault-or-race-oracle — fixture owning court / recorded cleanup.
+CLEANUP-C4-generated-fault-or-race-oracle â€” fixture owning court / recorded cleanup.
 
 Generated sequences include Fault/Repair and/or own-write interleavings and charged-work/observation comparison; actual failure after restored prefix or capture is preserved.
 
@@ -2208,7 +2208,7 @@ test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 319 filtered out
 
 ### `application_invariant_acceptance::managed_index::maintained::geometry::court::growth::geometry_chain_growth_uses_real_source_and_original_sdk_invoice`
 
-CLEANUP-C2-incomplete-growth-campaign — fixture owning court / recorded cleanup.
+CLEANUP-C2-incomplete-growth-campaign â€” fixture owning court / recorded cleanup.
 
 Busy finite growth process stopped after>10min; exact PID/artifact/parent/sole remaining case verified. Completed prefix retained; no assertion or timeout claim.
 

@@ -10,7 +10,7 @@ r = Path.cwd()
 e = r / 'target/lane-evidence'
 subprocess.run([sys.executable, str(e / 'pc_merge_result_census.py')], check=True,
                stdout=subprocess.DEVNULL)
-data = json.loads((e / 'pc-merge-raw-result-census.json').read_text())
+data = json.loads((e / 'pc-merge-raw-result-census.json').read_text(encoding='utf8'))
 overrides = {
     'genuine_complete_section_retains_capture_and_resumes_same_selection_ack':
         ('HAPPY-HELD-complete-ack-contract', 'P-A',
@@ -56,7 +56,7 @@ for word in ('zero', 'one'):
         'Reference-prefix entity meaning diverges at step25 reopen after abandonment; comparator remains unchanged.')
 
 previous = {row['name']: row for row in
-            json.loads((e / 'pa-merge-final-families.json').read_text())['outcomes']}
+            json.loads((e / 'pa-merge-final-families.json').read_text(encoding='utf8'))['outcomes']}
 unknown = []
 for row in data['failures']:
     case = row['name'].split('$')[-1].rsplit('::', 1)[-1]
@@ -80,9 +80,9 @@ data.update(head=subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True
             note='Full failure census before repair; final outcomes are appended after focused verification.')
 name = 'pc-merge-families' if '--finalize' in sys.argv else 'pc-merge-families-preview'
 if '--finalize' in sys.argv:
-    assert len(json.loads((e / 'pc-merge-tier2-results.json').read_text())) == 11
+    assert len(json.loads((e / 'pc-merge-tier2-results.json').read_text(encoding='utf8'))) == 11
     assert not unknown, unknown
-(e / (name + '.json')).write_text(json.dumps(data, indent=2))
+(e / (name + '.json')).write_text(json.dumps(data, indent=2), encoding='utf8')
 lines = ['# P-C merge failure families', '', 'Source: `' + data['head'] + '`.', '',
          '| Family | Cases | Owner |', '|---|---:|---|']
 for family, count in sorted(counts.items()):
@@ -94,7 +94,7 @@ for row in data['failures']:
               row['family'] + ' — ' + row['owner'] + '.', '', row['reason'], '',
               'Evidence: `' + row['log'] + '`.', '', '```text',
               row['failure'][:10000] if row['failure'] else 'Audited incomplete campaign; see interruption_audit in JSON.', '```', '']
-(e / (name + '.md')).write_text('\n'.join(lines))
+(e / (name + '.md')).write_text('\n'.join(lines), encoding='utf8')
 print(json.dumps(counts, indent=2))
 print('UNCLASSIFIED', len(unknown))
 for name in unknown:
