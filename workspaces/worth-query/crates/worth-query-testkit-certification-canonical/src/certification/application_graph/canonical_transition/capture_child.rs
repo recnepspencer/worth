@@ -16,7 +16,7 @@ pub use worth_query_host::facade::{
     application_contribution::{
         with_bootstrap_advancement_from_request, WorthQueryBootstrapAdvancementPhase,
     },
-    application_installation::WorthQueryInMemoryApplicationDenial,
+    application_installation::WorthQueryApplicationPreparationDenial,
 };
 
 pub fn request(
@@ -44,13 +44,24 @@ pub fn funding(
     request(64 * 1024 * 1024, 8_000_000, cancellation, deadline)
 }
 
+/// Whole-image positive journeys use the existing finite full-capture allowance.
+/// No public pre-capture work quote is exposed; installed serving limits stay unchanged.
+pub fn complete_capture_funding() -> LeaseRequest {
+    request(
+        64 * 1024 * 1024,
+        16_000_000_000,
+        CancellationToken::new(),
+        None,
+    )
+}
+
 /// Runs one in-advancement transition funded by `funding`.
 pub fn funded_by<T>(
     funding: &ExecutionResourceLease<'_>,
     transition: impl FnOnce(
         &WorthQueryBootstrapAdvancementPhase<'_>,
-    ) -> Result<T, WorthQueryInMemoryApplicationDenial>,
-) -> Result<T, WorthQueryInMemoryApplicationDenial> {
+    ) -> Result<T, WorthQueryApplicationPreparationDenial>,
+) -> Result<T, WorthQueryApplicationPreparationDenial> {
     with_bootstrap_advancement_from_request(ExecutionRequest::leased(funding), |phase| {
         transition(&phase)
     })

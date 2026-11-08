@@ -74,7 +74,7 @@ mod serial {
                 )
                 .err()
                 .expect("the declared bootstrap policy refuses");
-                let application_installation::WorthQueryInMemoryApplicationDenial::Graph(denial) =
+                let application_installation::WorthQueryApplicationPreparationDenial::Graph(denial) =
                     *denial
                 else {
                     panic!("the installation retains request admission");

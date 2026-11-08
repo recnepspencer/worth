@@ -12,6 +12,7 @@ pub(crate) const RELATIONAL_INITIAL_INPUTS_ANCHOR: &str = "relational.initial-in
 pub(crate) enum HomeJournalAdmission {
     Native,
     World,
+    Transition,
     RequireAbsent,
 }
 
@@ -24,7 +25,7 @@ pub(crate) struct HomeJournal {
 pub(crate) const HOME_JOURNALS: [HomeJournal; 11] = [
     HomeJournal {
         name: "home.transitions",
-        admission: HomeJournalAdmission::RequireAbsent,
+        admission: HomeJournalAdmission::Transition,
     },
     HomeJournal {
         name: RELATIONAL_CANONICAL_COMMITS,

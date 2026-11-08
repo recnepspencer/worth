@@ -64,7 +64,7 @@ pub use super::application_attempt::{
 pub use super::application_checkpoint::{
     WorthQueryApplicationCheckpoint, WorthQueryApplicationCheckpointSectionBytes,
     WorthQueryCheckpointCaptureDenial, WorthQueryCheckpointCapturePolicy,
-    WorthQueryNativeCheckpointSectionBytes,
+    WorthQueryInterimCheckpointOrigin, WorthQueryNativeCheckpointSectionBytes,
 };
 pub use super::application_contribution::{
     bound_advancement_requests_on_this_thread_for_test,

@@ -1,13 +1,17 @@
 //! Assemble the same concrete manifest DATA without materializing legacy images.
-use super::{
-    canonical::CanonicalOutput, capture::CapturedCompleteMetadata,
-    metadata::CheckpointMetadataMembers, Denial,
-};
+use super::{canonical::CanonicalOutput, metadata::CheckpointMetadataMembers, Denial};
 use crate::durability::data::*;
 use crate::durability::medium::RelationalDurableMemberLocator;
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
+pub(super) struct CheckpointDraftMetadata<'a> {
+    pub(super) branches: &'a crate::branch::CheckpointBranchMetadata,
+    pub(super) identity: &'a DurableRecordIdentityState,
+    pub(super) indexes: &'a crate::runtime::OriginalCheckpointIndexes,
+    pub(super) symbol_frontier: u32,
+    pub(super) through: crate::branch::RelationalBranchTransitionSequence,
+}
 pub(super) fn assemble(
-    source: &CapturedCompleteMetadata,
+    source: &CheckpointDraftMetadata<'_>,
     canonical: &CanonicalOutput,
     schemas: CheckpointSchemaImages,
     lineage_basis: CheckpointLineageBasis,
@@ -40,10 +44,7 @@ pub(super) fn assemble(
     let coverage = CheckpointCoverage {
         up_to_commit: last.cloned(),
         up_to_version: last.map(|commit| commit.version_id),
-        up_to_branch_transition: source.original.branches.transitions().last().map_or(
-            crate::branch::RelationalBranchTransitionSequence(0),
-            |entry| entry.positioned.sequence(),
-        ),
+        up_to_branch_transition: source.through,
     };
     let definitions =
         CheckpointIndexDefinitions::capture_for_request(&source.indexes.catalog, request)

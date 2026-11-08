@@ -1,4 +1,4 @@
-use crate::history::data::CanonicalCommitEnvelope;
+use crate::history::data::CanonicalCommitEnvelopeBody;
 
 use super::RelationalBranchRootCaptureDenial;
 use super::RelationalRootCorrectnessIndex;
@@ -19,7 +19,7 @@ impl RelationalBranchVisibilityCommitment {
         Self(digest)
     }
     pub(super) fn for_root(
-        envelope: &CanonicalCommitEnvelope,
+        envelope: &CanonicalCommitEnvelopeBody,
         storage_root: [u8; 32],
         schema_root: [u8; 32],
         correctness_index: RelationalRootCorrectnessIndex,
@@ -29,7 +29,7 @@ impl RelationalBranchVisibilityCommitment {
     }
 
     pub(in crate::branch) fn for_root_for_request(
-        envelope: &CanonicalCommitEnvelope,
+        envelope: &CanonicalCommitEnvelopeBody,
         storage_root: [u8; 32],
         schema_root: [u8; 32],
         correctness_index: RelationalRootCorrectnessIndex,
@@ -55,7 +55,7 @@ impl RelationalBranchVisibilityCommitment {
 }
 
 fn compute(
-    envelope: &CanonicalCommitEnvelope,
+    envelope: &CanonicalCommitEnvelopeBody,
     storage_root: [u8; 32],
     schema_root: [u8; 32],
     correctness_index: RelationalRootCorrectnessIndex,

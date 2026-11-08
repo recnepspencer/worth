@@ -70,6 +70,7 @@ pub use admission::residency_policy::{
 };
 pub use admission::RecoveredPhysicalCheckpointCustody;
 pub(in crate::physical_runtime) use admission::VerifiedRecoveredCheckpointCustody;
+#[cfg(feature = "recovery-runtime-owner")]
 pub(in crate::physical_runtime) use admission::{
     GenerationZeroNoReleaseCustody, PreparedRecoveredCustodyBacking, RecoveredNoReleaseCustody,
     RecoveredReleaseCustody,

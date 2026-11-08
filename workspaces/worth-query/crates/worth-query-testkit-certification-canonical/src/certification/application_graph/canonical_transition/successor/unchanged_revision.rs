@@ -61,9 +61,9 @@ pub mod schema;
 pub fn assert_missing_revision_refused(
     checkpoint: worth_query_host::facade::application_installation::WorthQueryApplicationCheckpoint,
 ) {
-    use worth_query_host::facade::application_installation::in_memory_program_from_checkpoint;
+    use worth_query_host::facade::application_installation::WorthQueryInterimCheckpointRestore;
     output::reset_decodes();
-    let refusal = in_memory_program_from_checkpoint(
+    let refusal = WorthQueryInterimCheckpointRestore::program(
         host::program(),
         schema::CanonicalSchema::declaration().unwrap(),
         ((),),
@@ -74,7 +74,7 @@ pub fn assert_missing_revision_refused(
     .err()
     .expect("changed codec meaning requires an actual declared aspect revision");
     assert_eq!(output::decodes(), 0);
-    let worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationDenial::Graph(refusal) = refusal else {
+    let worth_query_host::facade::application_installation::WorthQueryApplicationPreparationDenial::Graph(refusal) = refusal else {
         panic!("expected native checkpoint graph refusal: {refusal:?}");
     };
     assert_eq!(refusal.kind(), worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected);

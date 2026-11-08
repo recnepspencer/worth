@@ -28,6 +28,14 @@ pub(super) fn prepare<Schema: ApplicationSchemaComposition, Program: 'static>(
             drop(query);
             OpeningClosePlan::RelationalAttachment(home)
         }
+        NativePreparation {
+            query,
+            home,
+            cause: _,
+        } => {
+            drop(query);
+            OpeningClosePlan::Unrecovered(home)
+        }
         NativeInstallation { query, home } => {
             // These unshared meanings contain no Native/source handle.
             // Explicit disposal releases them before the real raw close.

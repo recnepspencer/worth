@@ -61,7 +61,7 @@ use worth_query_host::facade::{
 | `…host::facade` | `WorthQueryApplicationHomeRequest`, `WorthQueryApplicationHomeLocation`, `WorthQueryApplicationHome`, owning opening and close refusals |
 | `â€¦decl::facade::application_program` | `ApplicationFeature`, `ApplicationFeatureSpec`, `ApplicationProgramDefinition`, `ApplicationProgramAuthoring`, `ValidatedApplicationProgram`, ports and connections, `ApplicationWorkflowSpec`, `ApplicationWorkflowDefinitionBuilder` |
 | `â€¦decl::facade::application_operation` | `ApplicationMutationBinding`, `ApplicationMutationIntent`, `ApplicationCapabilityMutationBinding` |
-| `â€¦host::facade::application_installation` | `WorthQueryApplicationProgramRoster`, `WorthQueryInMemoryApplicationLimits`, `WorthQueryProgramApplicationRuntime`, `WorthQueryProgramOwner` (a trait: import it to call `owned_revision()`) |
+| `â€¦host::facade::application_installation` | `WorthQueryApplicationProgramRoster`, `WorthQueryApplicationLimits`, `WorthQueryProgramApplicationRuntime`, `WorthQueryProgramOwner` (a trait: import it to call `owned_revision()`) |
 | `â€¦host::facade::application_entry` | `WorthQueryApplicationRequestExt`, `WorthQueryOperationBuilder`, `WorthQueryOperationDescription`, `WorthQueryOperationAdvance`, `WorthQuerySettledFixedOperation`, `WorthQueryTerminalFixedOperation`, `WorthQueryWorkflowOperation`, `WorthQueryApplicationMutationOutcome`, `WorthQueryBranchAdoptionPublicationOutcome`, `Workflow*Outcome`, `Published*Ref` |
 | `â€¦host::facade::application_discovery` | `WorthQueryWorkflowDefinitionDiscovery`, `WorthQueryWorkflowInstanceRead`, `WorthQueryWorkflowInstancePage`, `WorthQueryWorkflowHistoryPage`, `WorthQueryWorkflowHistoryMark` |
 | `â€¦host::facade::domain` | `WorthQueryApplicationWorkflowSpecInstallation`, `WorthQueryApplicationWorkflowResourceCeiling`, `WorthQueryInstalledApplicationSchema` |
@@ -1954,7 +1954,7 @@ let request = WorthQueryApplicationHomeRequest::new(
     declaration,                       // MySchema::declaration()
     configuration,                     // one value per contribution
     ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID"))?,
-    limits,                            // WorthQueryInMemoryApplicationLimits
+    limits,                            // WorthQueryApplicationLimits
     |_phase, graph, installed| seed_graph(graph, installed),
 );
 let opening = with_bootstrap_advancement_from_request(original_request, |phase| {
@@ -1970,8 +1970,7 @@ an opening refusal may own the physical Home and mutation lease. Its consuming
 custody. A failed open is not permission to initialize or discard the directory.
 The outer bootstrap result and the inner opening result are separate failures.
 
-The limits type is currently named `WorthQueryInMemoryApplicationLimits` and is
-used by both locations. It carries World resources, the query resource profile,
+`WorthQueryApplicationLimits` is used by both locations. It carries World resources, the query resource profile,
 Signal conditional evaluation budget and the process execution service.
 Use `request.with_authorization_time_source(source)` to supply trusted capability
 time in either location. Reopening can supply a new trusted source. Opening does
@@ -2006,7 +2005,7 @@ trusted authorization time use the shared installation path. A declaration that
 needs Signal node allocation or Bridge correspondence is unsupported. In
 particular, producers, conditionals and application resource pools return
 `WorthQueryApplicationHomeOpenRefused::Preparation` with
-`WorthQueryInMemoryApplicationDenial::UnsupportedSeed` before contribution
+`WorthQueryApplicationPreparationDenial::UnsupportedSeed` before contribution
 configuration, physical Home creation, initialization or World bootstrap.
 Its `WorthQueryDurableStateAdmissionDenial::Unsupported` cause identifies the
 family (`SignalNodeDefinitions`, `BridgeConditionalDefinitions` or
@@ -2035,7 +2034,7 @@ valid durable retry is separate from reusing a stale selector.
 Supply `WorthQueryApplicationProgramRoster::new().support(successor)` as the
 roster argument when a validated successor must be installed. Roster support is
 not permission to transition an existing Directory to different program/schema
-meaning. The development workflow for such changes remains pending below.
+meaning. Use the Directory development workflow in §4.4 for such changes.
 MemoryOnly retains its ordinary roster and branch-adoption contracts in §7.
 
 ### Commit, retry and close a Directory Home
@@ -2631,12 +2630,52 @@ See [native source and cleanup custody](../crates/worth-runtime-world/README.md#
 
 ### 4.4 Checkpoint program transitions
 
-#### Development workflow — pending (owner P-C, D16)
+#### Development workflow for Directory Homes
+
+Keep the predecessor's complete declaration, validated program and configuration
+available alongside the successor. Each schema type owns a closed static
+declaration: a schema edit needs a corresponding successor schema definition,
+not a different declaration passed under the old type. The latter refuses with
+`SchemaMeaningChanged`.
+
+Construct the successor Home request, then call
+`with_program_transition(predecessor, resources, author)` and open it through
+the same bootstrap advancement. The predecessor request supplies the old
+meaning; its location and initializer do not run. The successor request selects
+the physical Home and its opening options.
+
+The author receives a read-only source over the readmitted predecessor and a
+prepared target. Read declared kinds with bounded `entities` and `relations`
+calls. Use their schema observations and `planned_field` locators to construct
+relational DATA from `host::home_program_transition`. Return a complete
+`WorthQueryHomeProgramTransitionPlan` with nonempty `steps`, a `target` index,
+and the actual `ProposedSchemaTransition` and optional reconciliation policy
+when changing the Native schema. Steps before that index use the old meaning;
+the target and following steps use the prepared successor. Supply positive,
+finite work, cold-record and derived-row limits in the exported
+`DerivedIndexMaintenanceBudget`; the opening request's cancellation, deadline
+and remaining resources still apply.
+
+The Host records the intent before performing any step. It uses the same Native,
+World and registered Source owners throughout and returns the Home only after
+the final binding is acknowledged. User bodies cannot address private Query
+records or materialization maintenance. Signal node allocation, Bridge
+correspondence, producers and conditionals retain their Relational-only refusals.
+
+A fresh or already-current Home skips the author. After a successful transition,
+close normally; subsequent opens need only the successor request. Original
+entities and durable history remain, and initialization is not replayed. Keep
+an owning refusal if opening fails after recording the intent; inspect
+`refused.phase()` rather than treating it as a fresh installation.
+
+#### Interrupted Directory transitions — cleanup track (owner P-C)
+
+Resume, drift, interrupted binding and process-kill qualification remain pending.
 
 ### Checkpoint admission — pending (owner P-A, D12)
 
 Ordinary checkpoint restore has the same original-request option:
-`host::application_installation::in_memory_rostered_program_from_checkpoint_in_advancement`
+`host::application_installation::WorthQueryInterimCheckpointRestore::rostered_program_in_advancement`
 takes that bootstrap phase first, followed by the validated program, roster,
 declaration, configuration, build identity, unchanged World limits and checkpoint.
 It reconstructs through the ordinary restore core and accepts no seed or transition
@@ -2647,7 +2686,7 @@ checkpoint restoration continues to open from the World request policy.
 When installation belongs to an already admitted execution attempt, borrow its
 `ExecutionRequest` through `host::application_contribution::with_bootstrap_advancement_from_request`
 and pass the resulting phase to
-`host::application_installation::in_memory_rostered_program_from_checkpoint_with_transition_in_advancement`.
+`host::application_installation::WorthQueryInterimCheckpointRestore::rostered_program_with_transition_in_advancement`.
 This variant takes the existing transition arguments with the phase first and a
 required capture policy. It borrows the original cancellation/deadline and
 remaining cumulative work through construction, roster admission, native transition,

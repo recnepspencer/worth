@@ -1,0 +1,46 @@
+command: python target/lane-evidence/funding_merge_boundary_handoff.py
+HEAD: 25619ac5d1ae6092ab5a91bc4b7123be6042475c
+git_status_short_empty: false
+start_utc: 2026-11-06T18:15:23.393240+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+BC7012_CONTROL_SEAL workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/affinity_tests/retained_program.rs: control `test_host_request_for_test` requires its owner or an exact caller
+  disposition: Lifecycle/integration handoff required ; Lifecycle quiet-diff exit: 1
+BC7013_CERTIFICATION_CONSTRUCTION_SEAL workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_catalog_readmission.rs: factory `world_recovery_authority` requires its owner or an exact caller
+  disposition: Lifecycle/integration handoff required ; Lifecycle quiet-diff exit: 1
+BC7013_CERTIFICATION_CONSTRUCTION_SEAL workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_compilation/fresh_installation.rs: factory `prepare_fresh_home_schema_installation` requires its owner or an exact caller
+  disposition: Lifecycle/integration handoff required ; Lifecycle quiet-diff exit: 1
+BC7013_CERTIFICATION_CONSTRUCTION_SEAL workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_compilation/fresh_installation.rs: factory `prepare_native_schema_for_home` requires its owner or an exact caller
+  disposition: Lifecycle/integration handoff required ; Lifecycle quiet-diff exit: 1
+BC7013_CERTIFICATION_CONSTRUCTION_SEAL workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_native_effect/native_original.rs: factory `bind_query_native_proposal` requires its owner or an exact caller
+  disposition: Lifecycle/integration handoff required ; Lifecycle quiet-diff exit: 1
+BC9002_TEST_TOPOLOGY crates/worth-relational/src/runtime/home_program_transition/body_digest/tests.rs::file
+  disposition: Lifecycle/integration handoff required ; Lifecycle quiet-diff exit: 1
+BC9002_TEST_TOPOLOGY crates/worth-relational/src/runtime/home_program_transition/catalog_digest/tests.rs::file
+  disposition: Lifecycle/integration handoff required ; Lifecycle quiet-diff exit: 1
+BC9002_TEST_TOPOLOGY crates/worth-relational/src/runtime/state/subsystems/record_identity/partition_frontier/tests.rs::file
+  disposition: P-A queued migration ; Lifecycle quiet-diff exit: 1
+BC9002_TEST_TOPOLOGY crates/worth-relational/src/tests/durability/contracts/native_checkpoint/allocation/encoded_payload.rs::file
+  disposition: P-A queued migration ; Lifecycle quiet-diff exit: 1
+BC9002_TEST_TOPOLOGY crates/worth-relational/src/tests/durability/contracts/semantic_result/execution_posture.rs::file
+  disposition: P-A queued migration ; Lifecycle quiet-diff exit: 1
+BC9002_TEST_TOPOLOGY crates/worth-relational/src/tests/durability/medium/cold_source.rs::file
+  disposition: P-A queued migration ; Lifecycle quiet-diff exit: 0
+BC9002_TEST_TOPOLOGY crates/worth-relational/src/tests/durability/medium/cold_source/protected_reads.rs::file
+  disposition: P-A queued migration ; Lifecycle quiet-diff exit: 0
+BC9002_TEST_TOPOLOGY crates/worth-relational/src/tests/support/durable_medium/runtime_attachment.rs::file
+  disposition: P-A queued migration ; Lifecycle quiet-diff exit: 0
+BC9002_TEST_TOPOLOGY crates/worth-runtime-world/src/durability/artifact/retention_tests.rs::file
+  disposition: Lifecycle/integration handoff required ; Lifecycle quiet-diff exit: 1
+BC9002_TEST_TOPOLOGY crates/worth-runtime-world/src/durability/occurrence_custody/retention_tests.rs::file
+  disposition: Lifecycle/integration handoff required ; Lifecycle quiet-diff exit: 1
+BC9002_TEST_TOPOLOGY crates/worth-runtime-world/src/lifecycle/owner/execution_service/tests/public_ports/released_source.rs::file
+  disposition: Lifecycle/integration handoff required ; Lifecycle quiet-diff exit: 1
+BC9002_TEST_TOPOLOGY workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/authorization_denial/instruction_tests.rs::file
+  disposition: integration/Bank ; Lifecycle quiet-diff exit: 1
+Total unresolved: 17
+
+end_utc: 2026-11-06T18:15:29.216045+00:00
+exit_code: 0
+tests_passed: 0
+tests_failed: 0
+tests_ignored: 0

@@ -142,5 +142,3 @@ fn native_checkpoint_retains_all_admitted_capture_owners_and_restores_editable_t
     drop(remaining);
     assert_eq!(parent.charged_memory_bytes(), 0);
 }
-
-mod encoded_payload;

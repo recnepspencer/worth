@@ -5,11 +5,14 @@ pub use admission_projection::CapturedRelationalCheckpointAdmissionImage;
 mod canonical;
 mod capture;
 mod contracts;
+mod covered_prefix;
+mod current_metadata;
+mod destination_members;
 mod draft;
+pub(in crate::durability::authority) mod interim;
 mod metadata;
 mod original_image;
 mod prepare;
-mod records;
 mod regions;
 mod roots;
 mod schemas;
@@ -18,6 +21,10 @@ mod symbols;
 mod verified_originals;
 use crate::durability::data::{
     RelationalNativeCheckpoint, RelationalNativeCheckpointCaptureDenial as Denial,
+};
+pub use interim::{
+    AdmittedNativeInterimReceiver, CapturedNativeInterimAdmission, CapturedNativeInterimComponent,
+    CapturedNativeInterimOrigin, NativeInterimBootstrapContinuation,
 };
 
 /// The all-root producer's strong result, retaining its original read and ACK custody.
@@ -54,21 +61,6 @@ fn root_stop(cause: crate::branch::RelationalBranchRootCaptureDenial) -> Denial 
         cause => Denial::Durability(crate::durability::data::DurabilityError::new(
             crate::durability::data::RecoveryFailureClass::CorruptCanonicalArtifact,
             format!("original all-root reconstruction disagrees: {cause:?}"),
-        )),
-    }
-}
-fn transaction_stop(cause: crate::transactions::data::TransactionCommitError) -> Denial {
-    match cause {
-        crate::transactions::data::TransactionCommitError::Execution { denial, .. } => {
-            match denial.kind {
-                crate::transactions::data::CommitExecutionDenialKind::Cause(cause) => {
-                    Denial::Request(cause)
-                }
-            }
-        }
-        cause => Denial::Durability(crate::durability::data::DurabilityError::new(
-            crate::durability::data::RecoveryFailureClass::CorruptCanonicalArtifact,
-            format!("sealed original mutation input refused: {cause:?}"),
         )),
     }
 }

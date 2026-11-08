@@ -40,7 +40,7 @@ impl WorthQueryApplicationContribution<CanonicalSchema> for CanonicalContributio
 
 pub type Host = WorthQueryProgramApplicationRuntime<CanonicalSchema, Program>;
 
-pub fn install(value: NestedValue) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
+pub fn install(value: NestedValue) -> Result<Host, WorthQueryApplicationPreparationDenial> {
     install_owned(value, |_| {})
 }
 
@@ -55,7 +55,7 @@ pub fn install_with_projection(
         Host,
         WorthQueryApplicationInvariantProjectionAuthority<CanonicalSchema>,
     ),
-    WorthQueryInMemoryApplicationDenial,
+    WorthQueryApplicationPreparationDenial,
 > {
     let mut projection = None;
     let host = install_owned(value, |graph| {
@@ -70,7 +70,7 @@ pub fn install_with_projection(
 pub fn install_owned(
     value: NestedValue,
     retain: impl FnOnce(&WorthQueryPrimaryGraphBootstrap<CanonicalSchema>),
-) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
+) -> Result<Host, WorthQueryApplicationPreparationDenial> {
     in_memory_program(
         ApplicationProgramAuthoring::<CanonicalSchema, Program>::begin()
             .validated_program()
@@ -108,7 +108,7 @@ pub fn install_owned(
 }
 
 pub fn restore(checkpoint: WorthQueryApplicationCheckpoint) -> Host {
-    in_memory_program_from_checkpoint(
+    WorthQueryInterimCheckpointRestore::program(
         ApplicationProgramAuthoring::<CanonicalSchema, Program>::begin()
             .validated_program()
             .unwrap(),
@@ -178,7 +178,7 @@ pub fn edit_source(
         .clone()
 }
 
-pub fn limits() -> WorthQueryInMemoryApplicationLimits {
+pub fn limits() -> WorthQueryApplicationLimits {
     host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
 }
 pub fn program() -> ValidatedApplicationProgram<CanonicalSchema, Program> {

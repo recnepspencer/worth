@@ -56,9 +56,17 @@ pub fn register_primary_graph_indexes(
     posture: IndexInstallationPosture,
 ) -> Result<(), String> {
     let installation = IndexInstallation::new(runtime, posture);
+    install_primary_graph_indexes(layout, |definition| installation.install(definition))
+}
+
+/// One Query definition compiler, with identity issuance supplied by its owner.
+pub(crate) fn install_primary_graph_indexes(
+    layout: &mut WorthQueryPrimaryGraphLayout,
+    mut install: impl FnMut(DerivedIndexDefinition) -> Result<DerivedIndexDefinition, String>,
+) -> Result<(), String> {
     let mut indexes_by_locator = BTreeMap::new();
     for (binding, binding_layout) in layout.principal_bindings_mut() {
-        let installed = installation.install(DerivedIndexDefinition {
+        let installed = install(DerivedIndexDefinition {
             index_id: worth_relational::facade::indexes::DerivedIndexId(0),
             name: format!("application-principal.{binding}"),
             kind: DerivedIndexKind::EntityField {
@@ -73,7 +81,7 @@ pub fn register_primary_graph_indexes(
         let index_id = if let Some(index_id) = indexes_by_locator.get(&field_layout.locator) {
             *index_id
         } else {
-            let installed = installation.install(DerivedIndexDefinition {
+            let installed = install(DerivedIndexDefinition {
                 index_id: worth_relational::facade::indexes::DerivedIndexId(0),
                 name: format!("application-entity.{entity}.{aspect}.{field}"),
                 kind: DerivedIndexKind::EntityField {
@@ -87,17 +95,13 @@ pub fn register_primary_graph_indexes(
         field_layout.equality_index_id = Some(index_id);
     }
     layout.register_continuation_orderings(|definition| {
-        installation
-            .install(definition)
-            .map(|installed| installed.index_id)
+        install(definition).map(|installed| installed.index_id)
     })?;
     layout.register_capability_grant_joins(|definition| {
-        installation
-            .install(definition)
-            .map(|installed| installed.index_id)
+        install(definition).map(|installed| installed.index_id)
     })?;
     let provider_idempotency = layout.provider_idempotency_mut();
-    let installed = installation.install(DerivedIndexDefinition {
+    let installed = install(DerivedIndexDefinition {
         index_id: worth_relational::facade::indexes::DerivedIndexId(0),
         name: "worth-query-provider.idempotency-key".to_owned(),
         kind: DerivedIndexKind::EntityField {
@@ -107,7 +111,7 @@ pub fn register_primary_graph_indexes(
     })?;
     provider_idempotency.key_index_id = installed.index_id;
     let aftermath_causality = layout.provider_aftermath_causality_mut();
-    let installed = installation.install(DerivedIndexDefinition {
+    let installed = install(DerivedIndexDefinition {
         index_id: worth_relational::facade::indexes::DerivedIndexId(0),
         name: "worth-query-provider.aftermath-causality-key".to_owned(),
         kind: DerivedIndexKind::EntityField {
@@ -134,23 +138,22 @@ pub fn register_primary_graph_indexes(
             &mut lineage.consumed_reversal_index,
         ),
     ] {
-        *index_id = installation
-            .install(DerivedIndexDefinition {
-                index_id: worth_relational::facade::indexes::DerivedIndexId(0),
-                name: format!("worth-query-provider.{name}"),
-                kind: DerivedIndexKind::EntityField {
-                    field_locator: locator.clone(),
-                },
-                branch_scoped: false,
-            })?
-            .index_id;
+        *index_id = install(DerivedIndexDefinition {
+            index_id: worth_relational::facade::indexes::DerivedIndexId(0),
+            name: format!("worth-query-provider.{name}"),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: locator.clone(),
+            },
+            branch_scoped: false,
+        })?
+        .index_id;
     }
     super::super::workflow::schema::register_indexes(layout.workflow_mut(), |definition| {
-        installation.install(definition)
+        install(definition)
     })?;
     let read_indexes = super::super::application_discovery::WorkflowReadIndexes::install(
         layout.workflow(),
-        |definition| installation.install(definition),
+        |definition| install(definition),
     )?;
     layout.set_workflow_reads(read_indexes);
     Ok(())

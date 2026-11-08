@@ -5,7 +5,7 @@ mod construction;
 mod contribution_preparation;
 pub(crate) mod home_preparation;
 mod prepared_meaning;
-use construction::in_memory_with_contributions_in_advancement;
+use construction::construct_with_contributions_in_advancement;
 mod denial;
 mod limits;
 mod profile;
@@ -17,30 +17,25 @@ pub use super::bootstrap::checkpoint_transition::{
     WorthQueryCheckpointMigrationWriter, WorthQueryCheckpointProgramPredecessor,
     WorthQueryCheckpointTransitionRecovery, WorthQueryCheckpointTransitionResources,
 };
-pub use denial::WorthQueryInMemoryApplicationDenial;
-pub use limits::WorthQueryInMemoryApplicationLimits;
-pub use profile::WorthQueryInMemoryApplicationProfile;
+pub use denial::WorthQueryApplicationPreparationDenial;
+pub use limits::WorthQueryApplicationLimits;
+pub use profile::WorthQueryApplicationProfile;
 pub(crate) use program::workflow_approval_authentication_intent;
 pub use program::{
-    in_memory_program, in_memory_program_from_checkpoint,
-    in_memory_program_from_checkpoint_with_projection,
-    in_memory_program_with_authorization_time_source, in_memory_rostered_program,
-    in_memory_rostered_program_from_checkpoint,
-    in_memory_rostered_program_from_checkpoint_in_advancement,
-    in_memory_rostered_program_from_checkpoint_with_transition,
-    in_memory_rostered_program_from_checkpoint_with_transition_in_advancement,
-    in_memory_rostered_program_in_advancement,
+    in_memory_program, in_memory_program_with_authorization_time_source,
+    in_memory_rostered_program, in_memory_rostered_program_in_advancement,
     in_memory_rostered_program_with_authorization_time_source,
     in_memory_rostered_program_with_authorization_time_source_in_advancement,
     WorthQueryAdmittedProgramOperation, WorthQueryAdmittedProgramOutput,
     WorthQueryApplicationPreviewReadmissionDenial, WorthQueryApplicationPreviewRequest,
     WorthQueryApplicationPreviewSession, WorthQueryApplicationProgramRoots,
     WorthQueryApplicationProgramRoster, WorthQueryHomeRetirementAdvance,
-    WorthQueryPreparedHomeQuery, WorthQueryProgramApplicationRuntime,
-    WorthQueryProgramOutputAdvance, WorthQueryProgramOwner, WorthQueryProgramRootDemand,
-    WorthQueryProgramSupportRetirementFailure, WorthQueryProgramSupportRetirementReceipt,
-    WorthQueryReadmittedApplicationPreview, WorthQueryRecoveredProgramOutputSource,
-    WorthQueryRetiredHomeQuery, WorthQueryRetiringHomeQuery, WorthQuerySelectedProgramOwner,
+    WorthQueryInterimCheckpointRestore, WorthQueryPreparedHomeQuery,
+    WorthQueryProgramApplicationRuntime, WorthQueryProgramOutputAdvance, WorthQueryProgramOwner,
+    WorthQueryProgramRootDemand, WorthQueryProgramSupportRetirementFailure,
+    WorthQueryProgramSupportRetirementReceipt, WorthQueryReadmittedApplicationPreview,
+    WorthQueryRecoveredProgramOutputSource, WorthQueryRetiredHomeQuery,
+    WorthQueryRetiringHomeQuery, WorthQuerySelectedProgramOwner,
     WorthQuerySelectedProgramOwnerDenial, WorthQuerySettledProgramOutput,
     WorthQuerySigningOwnerInstallationDenial, WorthQuerySupportedProgramHandle,
     WorthQueryUnpublishedProgramOutputSource, WorthQueryWorkflowApplicationRuntime,
@@ -69,7 +64,7 @@ use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 /// ```
 /// use worth_query_execution::facade::{
 ///     application_contribution::WorthQueryApplicationContributionTuple,
-///     application_installation::{in_memory, ApplicationBuildIdentity, WorthQueryInMemoryApplicationLimits},
+///     application_installation::{in_memory, ApplicationBuildIdentity, WorthQueryApplicationLimits},
 /// };
 /// use worth_query_declaration::facade::application_schema::{
 ///     ApplicationSchemaComposition, ApplicationSchemaDeclaration,
@@ -78,7 +73,7 @@ use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 ///     declaration: ApplicationSchemaDeclaration<Schema>,
 ///     configuration: <Schema::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
 ///     build: ApplicationBuildIdentity,
-///     limits: WorthQueryInMemoryApplicationLimits,
+///     limits: WorthQueryApplicationLimits,
 /// ) where
 ///     Schema: ApplicationSchemaComposition,
 ///     Schema::Contributions: WorthQueryApplicationContributionTuple<Schema>,
@@ -92,7 +87,7 @@ use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 /// ```compile_fail,E0061
 /// use worth_query_execution::facade::{
 ///     application_contribution::WorthQueryApplicationContributionTuple,
-///     application_installation::{in_memory, ApplicationBuildIdentity, WorthQueryInMemoryApplicationLimits},
+///     application_installation::{in_memory, ApplicationBuildIdentity, WorthQueryApplicationLimits},
 /// };
 /// use worth_query_declaration::facade::application_schema::{
 ///     ApplicationSchemaComposition, ApplicationSchemaDeclaration,
@@ -101,7 +96,7 @@ use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 ///     declaration: ApplicationSchemaDeclaration<Schema>,
 ///     configuration: <Schema::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
 ///     build: ApplicationBuildIdentity,
-///     limits: WorthQueryInMemoryApplicationLimits,
+///     limits: WorthQueryApplicationLimits,
 /// ) where
 ///     Schema: ApplicationSchemaComposition,
 ///     Schema::Contributions: WorthQueryApplicationContributionTuple<Schema>,
@@ -114,13 +109,13 @@ pub fn in_memory<Schema>(
     declaration: ApplicationSchemaDeclaration<Schema>,
     configuration: <Schema::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
     build_identity: worth_foundational::facade::ApplicationBuildIdentity,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     initial_state: impl FnOnce(
         &super::WorthQueryBootstrapAdvancementPhase<'_>,
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
-) -> Result<WorthQueryPrimaryGraphApplicationRuntime<Schema>, WorthQueryInMemoryApplicationDenial>
+) -> Result<WorthQueryPrimaryGraphApplicationRuntime<Schema>, WorthQueryApplicationPreparationDenial>
 where
     Schema: ApplicationSchemaComposition,
     Schema::Contributions: WorthQueryApplicationContributionTuple<Schema>,
@@ -142,7 +137,7 @@ pub(super) fn in_memory_with_contributions<Schema, Contributions>(
     declaration: ApplicationSchemaDeclaration<Schema>,
     configuration: <Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
     build_identity: worth_foundational::facade::ApplicationBuildIdentity,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     initial_state: impl FnOnce(
         &super::WorthQueryBootstrapAdvancementPhase<'_>,
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
@@ -156,14 +151,14 @@ pub(super) fn in_memory_with_contributions<Schema, Contributions>(
     checkpoint_transition: Option<
         super::bootstrap::checkpoint_transition::CheckpointTransition<'_, '_, Schema>,
     >,
-) -> Result<WorthQueryPrimaryGraphApplicationRuntime<Schema>, WorthQueryInMemoryApplicationDenial>
+) -> Result<WorthQueryPrimaryGraphApplicationRuntime<Schema>, WorthQueryApplicationPreparationDenial>
 where
     Schema: ApplicationSchemaComposition,
     Contributions: WorthQueryApplicationContributionTuple<Schema>,
 {
     let policy = limits.world.execution_policy();
     super::application_contribution::with_bootstrap_advancement(policy, |phase| {
-        in_memory_with_contributions_in_advancement::<Schema, Contributions>(
+        construct_with_contributions_in_advancement::<Schema, Contributions>(
             &phase,
             declaration,
             configuration,
@@ -177,7 +172,7 @@ where
         )
     })
     .map_err(|cause| {
-        WorthQueryInMemoryApplicationDenial::Graph(super::bootstrap::request_denial(cause))
+        WorthQueryApplicationPreparationDenial::Graph(super::bootstrap::request_denial(cause))
     })?
 }
 

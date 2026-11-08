@@ -1,7 +1,7 @@
 //! The retained root roster carries logical references and exact immutable leaves.
 use super::{reference, Denial};
 use crate::durability::{
-    authority::checkpoint_complete::roots::FoldedRoots,
+    authority::checkpoint_complete::roots::CapturedRoots,
     data::{RelationalCheckpointManifest, RelationalCheckpointRegion},
 };
 use serde::{
@@ -9,10 +9,11 @@ use serde::{
     Serialize, Serializer,
 };
 use worth_execution::{ExecutionImmutableBytes, ExecutionRequest};
+use worth_foundational::CanonicalDigestId;
 
-pub(super) fn encode(
+pub(in crate::durability::authority::checkpoint_complete) fn encode(
     manifest: &RelationalCheckpointManifest,
-    originals: &FoldedRoots,
+    originals: &CapturedRoots,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<ExecutionImmutableBytes, Denial> {
     super::encode(
@@ -26,7 +27,7 @@ pub(super) fn encode(
 
 struct RootDirectory<'a> {
     manifest: &'a RelationalCheckpointManifest,
-    originals: &'a FoldedRoots,
+    originals: &'a CapturedRoots,
 }
 impl Serialize for RootDirectory<'_> {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
@@ -51,10 +52,10 @@ impl Serialize for RootRows<'_> {
                 Header {
                     commit: header.commit_id,
                     components: Components(&header.recorded_components),
-                    schema: header.schema_carrier_digest,
+                    schema: CanonicalDigestId::new(header.schema_carrier_digest),
                     regions: &header.regions,
                 },
-                original.root.output_publication_positions.checkpoint_view(),
+                original.output_publication_positions.checkpoint_view(),
             ))?;
         }
         sequence.end()
@@ -64,7 +65,7 @@ impl Serialize for RootRows<'_> {
 struct Header<'a> {
     commit: crate::history::data::CommitId,
     components: Components<'a>,
-    schema: [u8; 32],
+    schema: CanonicalDigestId,
     regions: &'a [RelationalCheckpointRegion],
 }
 struct Components<'a>(&'a [crate::branch::RelationalBranchBasisDescriptor]);
@@ -85,7 +86,7 @@ impl Serialize for EmptyRows<'_> {
         for header in &self.0.retained_empty_components {
             sequence.serialize_element(&Empty {
                 descriptor: reference::component(&header.descriptor),
-                schema: header.schema_carrier_digest,
+                schema: CanonicalDigestId::new(header.schema_carrier_digest),
             })?;
         }
         sequence.end()
@@ -94,7 +95,7 @@ impl Serialize for EmptyRows<'_> {
 #[derive(Serialize)]
 struct Empty<'a> {
     descriptor: reference::Component<'a>,
-    schema: [u8; 32],
+    schema: CanonicalDigestId,
 }
 
 /// Join authenticated projections to the SAME CHK18 directory. The manifest's
@@ -128,7 +129,7 @@ pub(in crate::durability) fn validate_manifest(
                 .map_err(crate::durability::checkpoint_admission::projected_stop)?;
             require_projection(&Header {
                 commit: header.commit_id, components: Components(&header.recorded_components),
-                schema: header.schema_carrier_digest, regions: &header.regions,
+                schema: CanonicalDigestId::new(header.schema_carrier_digest), regions: &header.regions,
             }, first.ok_or(Refusal::InvalidProjectedMeaning)?.0, request)?;
             ordinal += 1;
             Ok(())

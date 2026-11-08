@@ -83,6 +83,7 @@ impl UnclaimedWorldSlot {
     pub(crate) fn from_admitted_home(
         serving: Arc<ServingPhysicalRuntime>,
         descriptor: &crate::descriptor::HomeDescriptor,
+        source_binding: Option<WorldDurableHomeBinding>,
         transition: worth_proof::HomeProgramTransitionAuthority,
         transition_attempt_frontier: Option<u64>,
         checkpoint: &Arc<crate::checkpoint::owner::HomeCheckpointOwner>,
@@ -97,13 +98,16 @@ impl UnclaimedWorldSlot {
             medium: Arc::new(super::ApplicationWorldMedium {
                 serving: std::sync::Mutex::new(Some(serving)),
                 _funding: funding,
-                binding: WorldDurableHomeBinding::from_admitted_adapter(
-                    owner,
-                    descriptor.incarnation,
-                    *descriptor.binding.selected().revision().bytes(),
-                )
-                .with_home_transition_authority(transition)
-                .with_home_transition_attempt_frontier(transition_attempt_frontier),
+                binding: source_binding
+                    .unwrap_or_else(|| {
+                        WorldDurableHomeBinding::from_admitted_adapter(
+                            owner,
+                            descriptor.incarnation,
+                            *descriptor.binding.selected().revision().bytes(),
+                        )
+                    })
+                    .with_home_transition_authority(transition)
+                    .with_home_transition_attempt_frontier(transition_attempt_frontier),
                 placement: crate::open::physical_admission::placement(),
                 publications: Arc::new(super::WorldPublications::default()),
                 checkpoint: Arc::downgrade(checkpoint),

@@ -68,18 +68,18 @@ fn configured(calls: &Arc<prefix_observation::Calls>) -> (host::Configuration, A
     )
 }
 fn publication_denial(
-    error: WorthQueryInMemoryApplicationDenial,
+    error: WorthQueryApplicationPreparationDenial,
 ) -> WorthQueryPrimaryGraphInstallationDenial {
     match error {
-        WorthQueryInMemoryApplicationDenial::Publication(denial) => denial,
+        WorthQueryApplicationPreparationDenial::Publication(denial) => denial,
         other => panic!("expected the actual unpublished graph denial: {other:?}"),
     }
 }
 fn initial_state_denial(
-    error: WorthQueryInMemoryApplicationDenial,
+    error: WorthQueryApplicationPreparationDenial,
 ) -> WorthQueryPrimaryGraphInstallationDenial {
     match error {
-        WorthQueryInMemoryApplicationDenial::InitialState(denial) => denial,
+        WorthQueryApplicationPreparationDenial::InitialState(denial) => denial,
         other => panic!("expected the actual initial-state API denial: {other:?}"),
     }
 }

@@ -15,7 +15,7 @@ fn descriptive_collection_association_cannot_install_a_custom_computation_as_sou
         .err()
         .expect("the real setup/seal must reject the custom owner");
     assert!(
-        matches!(denied,worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationDenial::
+        matches!(denied,worth_query_host::facade::application_installation::WorthQueryApplicationPreparationDenial::
         Contributions(ref cause) if cause.kind()==WorthQueryPrimaryGraphInstallationDenialKind::CollectionOwnerMeaningMismatch),
         "actual exact installation refusal: {denied:?}"
     );

@@ -84,6 +84,20 @@ impl DurabilityRecoveryAuthority<'_> {
     ) -> Result<worth_proof::RelationalReadmitted<RelationalHomeProgramTransitionSource>, Refusal>
     {
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
+        let admitted = admit_recovery_or_emit(self.runtime, plan)?;
+        self.recover_admitted_home_program_transition_source(execution, admitted, admission)
+    }
+
+    pub(super) fn recover_admitted_home_program_transition_source(
+        &mut self,
+        execution: &ExecutionRequest<'_, '_>,
+        admitted: super::admission::AdmittedRecoveryPlan,
+        admission: &worth_proof::AdmittedHomeProgramTransitionCatalog<
+            RelationalHomeProgramCatalogReadmissionSource<'_>,
+        >,
+    ) -> Result<worth_proof::RelationalReadmitted<RelationalHomeProgramTransitionSource>, Refusal>
+    {
+        crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
         let source = admission.source();
         self.runtime
             .durability
@@ -103,7 +117,6 @@ impl DurabilityRecoveryAuthority<'_> {
         let original = self.runtime.configuration_binding().snapshot();
         let declared = original.config.schema.registry.authority_snapshot();
         let initial = self.runtime.initial_schema_authority_snapshot();
-        let admitted = admit_recovery_or_emit(self.runtime, plan)?;
         let mut material = rebuild_admitted_recovery_or_emit(execution, self.runtime, admitted)?;
         material
             .restored

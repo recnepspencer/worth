@@ -2,19 +2,21 @@
 use super::*;
 use crate::branch::RelationalBranchRootSchemaAuthority;
 use crate::history::data::CommitId;
+use worth_foundational::CanonicalDigestId;
 #[derive(Clone)]
 pub(super) struct RootGroup {
     pub(super) count: usize,
     pub(super) first_ordinal: usize,
     pub(super) schema: Arc<RelationalBranchRootSchemaAuthority>,
-    pub(super) carrier: [u8; 32],
+    pub(super) carrier: CanonicalDigestId,
     pub(super) current_main: bool,
 }
 pub(super) struct Grouped<'a> {
     pub(super) groups: ExecutionOrderedMap<CommitId, RootGroup>,
     pub(super) descriptors:
         ExecutionOrderedMap<(CommitId, usize), &'a RelationalBranchBasisDescriptor>,
-    pub(super) empty: ExecutionOrderedMap<usize, (&'a RelationalBranchBasisDescriptor, [u8; 32])>,
+    pub(super) empty:
+        ExecutionOrderedMap<usize, (&'a RelationalBranchBasisDescriptor, CanonicalDigestId)>,
     pub(super) mirror: Option<CommitId>,
 }
 impl<'a> Grouped<'a> {
@@ -29,7 +31,7 @@ impl<'a> Grouped<'a> {
         observations: impl Fn() -> I,
         main: &BranchId,
         branches: &BranchImages<'_>,
-        roots: &FoldedRoots,
+        roots: &CapturedRoots,
         schemas: &CompleteSchemas<'_>,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, Denial> {
@@ -42,7 +44,7 @@ impl<'a> Grouped<'a> {
         let mut saw_current_main = false;
         for (ordinal, (descriptor, observed)) in observations().enumerate() {
             crate::execution::check_request(request).map_err(request_stop)?;
-            let schema = branches.require_component(descriptor, roots)?;
+            let schema = branches.require_component(descriptor, observed)?;
             let carrier = schemas
                 .carrier_for(&schema)
                 .ok_or(Denial::OriginalAuthorityUnavailable)?;
@@ -51,7 +53,7 @@ impl<'a> Grouped<'a> {
                 return Err(Denial::OriginalAuthorityUnavailable);
             }
             let current_main =
-                descriptor.branch_id() == main && branches.is_current_component(descriptor, roots);
+                descriptor.branch_id() == main && branches.is_current_component(descriptor);
             if current_main {
                 if saw_current_main {
                     return Err(Denial::OriginalAuthorityUnavailable);
@@ -73,16 +75,16 @@ impl<'a> Grouped<'a> {
                 .get(commit)
                 .ok_or(Denial::OriginalAuthorityUnavailable)?;
             if observed.descriptor() != Some(target.roots())
-                || observed.descriptor() != folded.root.descriptor()
-                || observed.axes() != folded.root.axes()
+                || observed.descriptor() != folded.descriptor()
+                || observed.axes() != folded.axes()
                 || !observed
                     .commit_receipt()
-                    .zip(folded.root.commit_receipt())
+                    .zip(folded.commit_receipt())
                     .is_some_and(|(observed, derived)| observed == derived)
             {
                 return Err(Denial::OriginalAuthorityUnavailable);
             }
-            if schemas.carrier_for(&folded.root.retained_schema_authority()) != Some(carrier) {
+            if schemas.carrier_for(&folded.retained_schema_authority()) != Some(carrier) {
                 return Err(Denial::OriginalAuthorityUnavailable);
             }
             let group = match result.groups.get(&commit) {
@@ -147,7 +149,7 @@ impl<'a> Grouped<'a> {
             crate::execution::check_request(request).map_err(request_stop)?;
             empty.push(RelationalCheckpointEmptyComponent {
                 descriptor: (**descriptor).clone(),
-                schema_carrier_digest: *carrier,
+                schema_carrier_digest: *carrier.bytes(),
             });
         }
         Ok((empty, memory))

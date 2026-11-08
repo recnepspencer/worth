@@ -6,6 +6,7 @@ mod integrity_admission;
 mod journal_counters;
 mod locator;
 mod observation;
+#[cfg(feature = "recovery-runtime-owner")]
 mod recovered_admission;
 
 #[cfg(test)]
@@ -28,4 +29,5 @@ pub use observation::{
     PhysicalWorkRecoveryAdmissionOutcome, PhysicalWorkRecoveryIngressRejection,
     PhysicalWorkRecoveryObservationSubject,
 };
+#[cfg(feature = "recovery-runtime-owner")]
 pub(in crate::physical_runtime) use recovered_admission::admit_recovered_obligation;

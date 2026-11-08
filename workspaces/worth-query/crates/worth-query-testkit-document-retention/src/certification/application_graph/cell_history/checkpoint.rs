@@ -6,9 +6,8 @@ use super::{
 use worth_query_decl::facade::application_program::*;
 use worth_query_host::facade::application_installation::*;
 
-pub fn capture(host: &Host) -> Box<[u8]> {
-    let checkpoint = host
-        .runtime()
+pub fn capture(host: &Host) -> WorthQueryApplicationCheckpoint {
+    host.runtime()
         .with_host_advancement(|phase| {
             host.runtime()
                 .capture_application_checkpoint(
@@ -17,12 +16,11 @@ pub fn capture(host: &Host) -> Box<[u8]> {
                 )
                 .expect("the native cell application captures")
         })
-        .expect("explicit host checkpoint maintenance opens");
-    checkpoint.bytes().to_vec().into_boxed_slice()
+        .expect("explicit host checkpoint maintenance opens")
 }
 
-pub fn restore(bytes: Box<[u8]>, retained_steps: u64) -> Host {
-    in_memory_program_from_checkpoint(
+pub fn restore(checkpoint: WorthQueryApplicationCheckpoint, retained_steps: u64) -> Host {
+    WorthQueryInterimCheckpointRestore::program(
         ApplicationProgramAuthoring::<Schema, Program>::begin()
             .validated_program()
             .unwrap(),
@@ -30,7 +28,7 @@ pub fn restore(bytes: Box<[u8]>, retained_steps: u64) -> Host {
         ((),),
         ApplicationBuildIdentity::parse("16161616-1616-1616-1616-161616161616").unwrap(),
         host::limits(retained_steps),
-        WorthQueryApplicationCheckpoint::from_untrusted_bytes(bytes),
+        checkpoint,
     )
     .expect("the complete native cell checkpoint readmits through its owner")
 }

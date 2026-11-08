@@ -410,19 +410,20 @@ pub use crate::durability::{
     DurableSignalOwnerIdentity, DurableSignalSnapshotIdentity, DurableStateFamily,
     DurableWorldBootstrapAttemptIdentity, DurableWorldOwnerIdentity, HomeIdentity,
     HomeIdentityDenial, HomeIncarnation, HomeIncarnationExhausted, HomeProgramBinding,
-    HomeProgramTransitionBodyDigest, HomeProgramTransitionCaller,
+    HomeProgramRevisionBoundary, HomeProgramTransitionBodyDigest, HomeProgramTransitionCaller,
     HomeProgramTransitionCallerDenial, HomeProgramTransitionCatalogDigest,
     HomeProgramTransitionDescriptionDenial, HomeProgramTransitionIdentity,
-    HomeProgramTransitionPlanDescription, HomeProgramTransitionPlanDigest,
-    HomeProgramTransitionStepAssociation, HomeProgramTransitionStepRole,
-    HomeProgramTransitionTargetMeaning, MemoryProductBranchReference,
-    NativeCheckpointBranchObservation, NativeCheckpointBranchReference,
-    NativeCheckpointBranchTarget, RecordedCompositePublicationAttemptIdentity,
-    RecordedProductBranchReference, RetentionClass, SignalBranchAdvanceIdentity,
-    SignalConditionalDefinitionOwnerMismatch, SignalDefinitionProjectionOutcome,
-    SignalDefinitionTransitionIdentity, SignalDefinitionTransitionReference, SignalDurableJournal,
-    SignalOwnerSlotIdentity, UnsupportedDurableOwnerTag, WorldDurableJournal, WorldOwnerCoordinate,
-    WorldOwnerSlotIdentity,
+    HomeProgramTransitionInstallationBinding, HomeProgramTransitionPlanDescription,
+    HomeProgramTransitionPlanDigest, HomeProgramTransitionSchemaCarrierDigest,
+    HomeProgramTransitionSchemaDigest, HomeProgramTransitionStepAssociation,
+    HomeProgramTransitionStepRole, HomeProgramTransitionTargetMeaning,
+    MemoryProductBranchReference, NativeCheckpointBranchObservation,
+    NativeCheckpointBranchReference, NativeCheckpointBranchTarget,
+    RecordedCompositePublicationAttemptIdentity, RecordedProductBranchReference, RetentionClass,
+    SignalBranchAdvanceIdentity, SignalConditionalDefinitionOwnerMismatch,
+    SignalDefinitionProjectionOutcome, SignalDefinitionTransitionIdentity,
+    SignalDefinitionTransitionReference, SignalDurableJournal, SignalOwnerSlotIdentity,
+    UnsupportedDurableOwnerTag, WorldDurableJournal, WorldOwnerCoordinate, WorldOwnerSlotIdentity,
 };
 pub use crate::durable_publication::DurablePublicationFate;
 pub use crate::execution::{
@@ -748,3 +749,5 @@ pub use crate::value_shape::{
 pub use worth_value_shape_derive::{ChargedBytes, WorthValue};
 
 pub use crate::projected_candidate_content::ProjectedCandidateContentV1;
+
+pub use crate::durability::WorldOriginalFate;

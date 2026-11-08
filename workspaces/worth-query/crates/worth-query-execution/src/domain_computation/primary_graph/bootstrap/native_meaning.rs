@@ -1,6 +1,12 @@
 //! Exclusive schema and custom-invariant installation on the actual Native owner.
 use super::*;
 use worth_relational::facade::runtime::RelationalInitialSchemaInstallationReceipt;
+mod compilation;
+mod inventory;
+pub(in crate::domain_computation::primary_graph) use compilation::{
+    CompiledNativeSchemaMeaning, NativeSchemaCompilation,
+};
+pub(in crate::domain_computation::primary_graph) use inventory::NativeSchemaInventory;
 
 pub(in crate::domain_computation::primary_graph) struct PreparedNativeSchemaMeaning {
     pub(in crate::domain_computation::primary_graph) managed_sources:
@@ -42,6 +48,7 @@ impl WorthQueryExecutionInstallationAuthority {
             relational_runtime,
             invariant_factories,
             None,
+            None,
         )
     }
 
@@ -65,6 +72,31 @@ impl WorthQueryExecutionInstallationAuthority {
             relational_runtime,
             invariant_factories,
             Some(initialization),
+            None,
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn prepare_native_schema_from_original<
+        Schema: ApplicationSchema,
+    >(
+        &self,
+        phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
+        runtime: &WorthQueryExecutionRuntime,
+        installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
+        relational_runtime: &mut RelationalRuntime,
+        invariant_factories: WorthQueryApplicationInvariantFactories<Schema>,
+        source: &worth_relational::facade::schema::RelationalSchemaRegistry,
+        maximum_kind: Option<worth_relational::facade::identity::KindId>,
+        maximum_aspect: Option<worth_foundational::facade::AspectIdentity>,
+    ) -> Result<PreparedNativeSchemaMeaning, WorthQueryPrimaryGraphInstallationDenial> {
+        self.prepare_native_schema_with_initialization(
+            phase,
+            runtime,
+            installed_schema,
+            relational_runtime,
+            invariant_factories,
+            None,
+            Some((source, maximum_kind, maximum_aspect)),
         )
     }
 
@@ -80,55 +112,35 @@ impl WorthQueryExecutionInstallationAuthority {
                 worth_relational::facade::durability::RelationalFreshInitialization,
             >,
         >,
+        source: Option<(
+            &worth_relational::facade::schema::RelationalSchemaRegistry,
+            Option<worth_relational::facade::identity::KindId>,
+            Option<worth_foundational::facade::AspectIdentity>,
+        )>,
     ) -> Result<PreparedNativeSchemaMeaning, WorthQueryPrimaryGraphInstallationDenial> {
-        if !self.belongs_to(runtime) {
-            return Err(primary_graph_denial(
-                WorthQueryPrimaryGraphInstallationDenialKind::ForeignRuntime,
-                "execution installation authority belongs to another runtime",
-            ));
-        }
-        if runtime.primary_graph().is_some() {
-            return Err(primary_graph_denial(
-                WorthQueryPrimaryGraphInstallationDenialKind::AlreadyInstalled,
-                "execution runtime already owns a primary graph",
-            ));
-        }
-        runtime
-            .installed_packages()
-            .validate_application_schema(installed_schema)
-            .map_err(|denial| {
-                primary_graph_denial(
-                    WorthQueryPrimaryGraphInstallationDenialKind::StaleInstalledSchema,
-                    denial.subject(),
-                )
-            })?;
-        let (layout, additions) = WorthQueryPrimaryGraphLayout::lower(
-            installed_schema.installed_declaration(),
-            installed_schema.native_contracts(),
-            &relational_runtime.config().schema.registry,
-            installed_schema.value_bindings(),
+        let config = relational_runtime.config();
+        let source = match source {
+            Some((source, maximum_kind, maximum_aspect)) => NativeSchemaCompilation::Original {
+                base: &config.schema.registry,
+                source,
+                maximum_kind,
+                maximum_aspect,
+            },
+            None => NativeSchemaCompilation::Fresh(&config.schema.registry),
+        };
+        let compiled = self.compile_native_schema(
+            _phase,
+            runtime,
+            installed_schema,
+            source,
+            invariant_factories,
         )?;
-        let (registrations, managed_sources, source_initializer) = invariant_factories.lower(
+        super::initial_installation::install(
+            relational_runtime,
+            compiled,
             &_phase.execution_request(),
-            installed_schema.binding_identity(),
-            &layout,
-        )?;
-        let (invariant_installation_receipt, expected_invariant_inventory_digest) =
-            super::initial_installation::install(
-                relational_runtime,
-                additions,
-                registrations,
-                &layout,
-                &_phase.execution_request(),
-                initialization,
-            )?;
-        Ok(PreparedNativeSchemaMeaning {
-            managed_sources,
-            source_initializer,
-            layout,
-            receipt: invariant_installation_receipt,
-            expected_invariant_inventory_digest,
-        })
+            initialization,
+        )
     }
 }
 

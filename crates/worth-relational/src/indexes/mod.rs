@@ -1,3 +1,6 @@
+mod retained_definition;
+pub use retained_definition::RetainedDerivedIndexDefinition;
+pub(crate) use retained_definition::{IndexDefinitionBacking, RetainedIndexDefinitionMeaning};
 mod access;
 pub use access::{
     BoundedEntityFieldLookupRead, BoundedEntityFieldSelectedLookup, DerivedIndexDefinitionLookup,

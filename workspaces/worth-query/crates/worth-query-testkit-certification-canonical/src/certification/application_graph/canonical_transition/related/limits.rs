@@ -3,11 +3,11 @@ pub use worth_foundational::DeterminismContract;
 pub use worth_foundational::ExecutionBudget;
 pub use worth_foundational::ExecutionPosture;
 pub use worth_foundational::ExecutionRequestPolicy;
-pub use worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits;
+pub use worth_query_host::facade::application_installation::WorthQueryApplicationLimits;
 pub use worth_query_host::facade::primary_graph::SignalConditionalEvaluationBudget;
 pub use worth_query_host::facade::runtime::*;
 
-pub fn limits(work: u64) -> WorthQueryInMemoryApplicationLimits {
+pub fn limits(work: u64) -> WorthQueryApplicationLimits {
     let policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
@@ -49,7 +49,7 @@ pub fn limits(work: u64) -> WorthQueryInMemoryApplicationLimits {
         policy,
     )
     .unwrap();
-    WorthQueryInMemoryApplicationLimits::new(
+    WorthQueryApplicationLimits::new(
         resources,
         WorthQueryApplicationQueryResourceProfile::new(
             std::num::NonZeroUsize::new(64).expect("concurrent graph work is non-zero"),

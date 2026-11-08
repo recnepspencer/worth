@@ -1,0 +1,34 @@
+{
+  "invariant_reads": {
+    "exe": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\target\\release\\examples\\invariant_reads.exe",
+    "cwd": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\topology_entry",
+    "crate": "invariant_reads"
+  },
+  "required_feature": {
+    "exe": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\target\\release\\examples\\required_feature.exe",
+    "cwd": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\topology_entry",
+    "crate": "required_feature"
+  },
+  "shared_execution": {
+    "exe": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\target\\release\\examples\\shared_execution.exe",
+    "cwd": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\topology_entry",
+    "crate": "shared_execution"
+  },
+  "worth-query-consumer-root": {
+    "exe": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\target\\release\\worth-query-consumer-root.exe",
+    "cwd": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\consumer_root",
+    "crate": "worth_query_consumer_root"
+  },
+  "oracle::server_owned_effects::server::parallel_history::assessment_history::assessment_history_settles_at_each_request_width": {
+    "exe": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query-bank-world\\target\\release\\deps\\worth_query_bank_court_external_rail_server-253e46c60ca359bb.exe",
+    "cwd": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query-bank-world\\crates\\worth-query-bank-court-external-rail-server",
+    "crate": "worth_query_bank_court_external_rail_server",
+    "test": "oracle::server_owned_effects::server::parallel_history::assessment_history::assessment_history_settles_at_each_request_width"
+  },
+  "oracle::server_owned_effects::server::parallel_history::transfer_history::seeded_transfers_match_at_host_policy_and_each_request_width": {
+    "exe": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query-bank-world\\target\\release\\deps\\worth_query_bank_court_external_rail_server-253e46c60ca359bb.exe",
+    "cwd": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query-bank-world\\crates\\worth-query-bank-court-external-rail-server",
+    "crate": "worth_query_bank_court_external_rail_server",
+    "test": "oracle::server_owned_effects::server::parallel_history::transfer_history::seeded_transfers_match_at_host_policy_and_each_request_width"
+  }
+}

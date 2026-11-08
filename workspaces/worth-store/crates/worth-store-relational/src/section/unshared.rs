@@ -2,6 +2,7 @@
 mod close;
 use super::*;
 mod source_attachment;
+mod source_schema;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::{
@@ -41,6 +42,13 @@ impl AttachedRelationalRuntime {
         checkpoint_selection: Arc<dyn RelationalCheckpointSelectionSource>,
         transition: Option<worth_proof::HomeProgramTransitionAuthority>,
         transition_required: Option<worth_proof::HomeProgramTransitionRequired>,
+        world_selection: Option<
+            Arc<
+                worth_proof::VerifiedHomeWorldSelection<
+                    Arc<worth_relational::facade::durability::RelationalWorldSourceCatalog>,
+                >,
+            >,
+        >,
     ) -> Result<Self, RelationalRuntimeConstructionDenial> {
         let medium = crate::journal_medium::StoreJournalMedium::new(
             serving.clone(),
@@ -48,7 +56,8 @@ impl AttachedRelationalRuntime {
             cold_source.clone(),
             checkpoint_selection.clone(),
         )
-        .with_home_transition_authority(transition, transition_required);
+        .with_home_transition_authority(transition, transition_required)
+        .with_home_world_selection(world_selection);
         let runtime = definition.build_durable(Box::new(medium))?;
         Ok(Self {
             runtime,
@@ -111,6 +120,7 @@ impl UnrecoveredRelationalSection {
             checkpoint_selection,
             transition,
             transition_required,
+            None,
         )
         .map(|attached| Self {
             attached,

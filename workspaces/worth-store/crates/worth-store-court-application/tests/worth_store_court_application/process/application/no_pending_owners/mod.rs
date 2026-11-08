@@ -7,6 +7,8 @@ mod journal_absence;
 mod transition_attestation;
 mod transition_executor;
 mod transition_history;
+mod transition_identity_space;
+mod transition_indexes;
 mod transition_intent;
 mod transition_interruption;
 mod transition_native_effect;

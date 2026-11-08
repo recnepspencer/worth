@@ -51,11 +51,10 @@ pub(crate) fn close(fixture: world_home::WorldHomeFixture, execution: &Execution
         .home
         .close(execution)
         .unwrap_or_else(|refused| panic!("actual World Home close: {:?}", refused.reason()));
-    assert!(
-        matches!(
-            outcome,
-            worth_store_application::ApplicationHomeCloseOutcome::Closed { .. }
-        ),
-        "graceful World Home close must retire its actual owners"
-    );
+    match outcome {
+        worth_store_application::ApplicationHomeCloseOutcome::Closed { .. } => {}
+        worth_store_application::ApplicationHomeCloseOutcome::CloseRefused { reason, .. } => {
+            panic!("graceful World Home close must retire its actual owners: {reason:?}");
+        }
+    }
 }

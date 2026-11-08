@@ -3,6 +3,7 @@ use crate::durability::data::DurableBranchRootSchemaImage;
 use crate::execution::RelationalExecutionDenialCause as Cause;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use worth_execution::{ExecutionMemoryReservation, ExecutionOrderedMap, ExecutionRequest};
+use worth_foundational::CanonicalDigestId;
 #[derive(Debug, Default)]
 pub(crate) struct CheckpointSchemaImages {
     images: Vec<DurableBranchRootSchemaImage>,
@@ -21,7 +22,7 @@ impl CheckpointSchemaImages {
         self.images.clone()
     }
     pub(in crate::durability) fn copy_for_request(
-        source: &ExecutionOrderedMap<[u8; 32], DurableBranchRootSchemaImage>,
+        source: &ExecutionOrderedMap<CanonicalDigestId, DurableBranchRootSchemaImage>,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, Cause> {
         crate::execution::check_request(request)?;

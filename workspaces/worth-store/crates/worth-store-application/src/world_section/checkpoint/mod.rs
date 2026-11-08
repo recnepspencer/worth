@@ -39,23 +39,34 @@ pub(super) fn capture(
         _funding: funding,
     }))
 }
-pub(in crate::world_section) fn readmission_source(
-    home: &crate::ReadmittedApplicationHome,
+pub(crate) fn readmission_source(
+    context: &crate::home_context::HomeContext,
+    request: &ExecutionRequest<'_, '_>,
+) -> Result<Box<dyn WorldCheckpointReadSource>, Denial> {
+    let selected = context
+        .selected_home_source
+        .as_ref()
+        .ok_or(Denial::Unavailable)?;
+    prepare_source(
+        selected,
+        &context.serving,
+        Arc::downgrade(&context.checkpoint),
+        request,
+    )
+}
+pub(crate) fn prepare_source(
+    selected: &crate::checkpoint::SelectedHomeSource,
+    serving: &Arc<ServingPhysicalRuntime>,
+    owner: Weak<crate::checkpoint::owner::HomeCheckpointOwner>,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<Box<dyn WorldCheckpointReadSource>, Denial> {
     let funding = request
         .reserve_retained_memory(std::mem::size_of::<ApplicationWorldCheckpointSource>() as u64)
         .map_err(Denial::Request)?;
-    let selected = home
-        .context
-        .selected_home_source
-        .as_ref()
-        .ok_or(Denial::Unavailable)?
-        .clone();
     Ok(Box::new(ApplicationWorldCheckpointSource {
-        selected,
-        serving: home.context.serving.clone(),
-        owner: Arc::downgrade(&home.context.checkpoint),
+        selected: selected.clone(),
+        serving: serving.clone(),
+        owner,
         _funding: funding,
     }))
 }

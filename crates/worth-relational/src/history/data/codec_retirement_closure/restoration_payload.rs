@@ -3,7 +3,6 @@ use super::{charge, CodecRetirementClosureStop as Stop};
 use crate::{
     history::data::{CanonicalCommitEnvelope, CommitId},
     identity::data::EntityId,
-    runtime::RelationalRuntime,
     transactions::data::RecordRef,
 };
 use std::sync::Arc;
@@ -11,7 +10,7 @@ use worth_execution::{ExecutionResourceLease, MapKernelContext};
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn validate_member(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     current: &Arc<CanonicalCommitEnvelope>,
     id: EntityId,
     retirement: CommitId,
@@ -27,7 +26,7 @@ pub(super) fn validate_member(
     let origin = current.output_origin_for_entity(id, context)?;
     charge(
         context,
-        event.entities.len() + runtime.history.catalog_len(),
+        event.entities.len() + runtime.runtime.history.catalog_len(),
     )?;
     let old = event
         .entities
@@ -36,12 +35,10 @@ pub(super) fn validate_member(
         .ok_or("restored birth has no exact original member")?
         .0;
     let retired = runtime
-        .history
-        .canonical_envelope(retirement)
+        .commit(retirement)?
         .ok_or("original retirement unavailable")?;
     let original = runtime
-        .history
-        .canonical_envelope(predecessor)
+        .commit(predecessor)?
         .ok_or("original producer unavailable")?;
     let prior = retired.output_origin_for_entity(old, context)?;
     let member = original
@@ -99,7 +96,7 @@ pub(super) fn validate_member(
 /// Compare the whole inverse roster to its exact recorded retirement before
 /// any single member can be treated as a restored producer birth.
 pub(super) fn validate_groups(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     current: &CanonicalCommitEnvelope,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), Stop> {
@@ -107,10 +104,9 @@ pub(super) fn validate_groups(
         return Ok(());
     };
     current.validate_restoration_header(context)?;
-    charge(context, runtime.history.catalog_len())?;
+    charge(context, runtime.runtime.history.catalog_len())?;
     let retired = runtime
-        .history
-        .canonical_envelope(event.retirement)
+        .commit(event.retirement)?
         .ok_or("restoration retirement absent")?;
     let original = retired
         .authored_cascade_retirement
@@ -174,10 +170,9 @@ pub(super) fn validate_groups(
         {
             return Err("restoration changes producer provenance or membership".into());
         }
-        charge(context, runtime.history.catalog_len())?;
+        charge(context, runtime.runtime.history.catalog_len())?;
         let live = runtime
-            .history
-            .canonical_envelope(predecessor)
+            .commit(predecessor)?
             .ok_or("restoration live predecessor absent")?;
         if live.commit.version_id >= retired.commit.version_id {
             return Err("restoration ancestry moves forward".into());
@@ -235,7 +230,7 @@ pub(super) fn validate_groups(
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn validate_relation(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     current: &Arc<CanonicalCommitEnvelope>,
     id: crate::identity::data::RelationId,
     retirement: CommitId,
@@ -255,7 +250,7 @@ pub(super) fn validate_relation(
     }
     charge(
         context,
-        event.relations.len() + runtime.history.catalog_len(),
+        event.relations.len() + runtime.runtime.history.catalog_len(),
     )?;
     let old = event
         .relations
@@ -264,8 +259,7 @@ pub(super) fn validate_relation(
         .ok_or("restored edge lost original")?
         .0;
     let original = runtime
-        .history
-        .canonical_envelope(predecessor)
+        .commit(predecessor)?
         .ok_or("restored edge predecessor absent")?;
     if original.commit.version_id >= current.commit.version_id {
         return Err("restored edge ancestry moves forward".into());

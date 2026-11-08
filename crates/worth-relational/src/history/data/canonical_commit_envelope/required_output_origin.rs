@@ -7,6 +7,7 @@ use crate::transactions::data::TransactionCommitError;
 use serde::{Deserialize, Serialize};
 mod authored_cascade;
 mod authored_restoration;
+mod history_request;
 mod installation;
 pub(crate) use authored_cascade::CanonicalAuthoredRetirement;
 pub(crate) use authored_restoration::CanonicalAuthoredRestoration;

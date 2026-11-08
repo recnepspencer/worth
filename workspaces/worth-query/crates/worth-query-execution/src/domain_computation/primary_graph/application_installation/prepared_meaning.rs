@@ -4,7 +4,7 @@ use super::super::application_contribution::{
 };
 use super::super::application_installation::program_admission::WorthQueryAdmittedProgramSupport;
 use super::{
-    WorthQueryInMemoryApplicationDenial as Denial, WorthQueryInMemoryApplicationLimits,
+    WorthQueryApplicationLimits, WorthQueryApplicationPreparationDenial as Denial,
     WorthQueryProgramAdmissionStep,
 };
 use crate::domain_computation::execution_runtime::{
@@ -31,7 +31,7 @@ pub(super) struct PreparedInstalledMeaning<Schema: ApplicationSchemaComposition>
 pub(super) fn prepare<Schema, Contributions>(
     declaration: ApplicationSchemaDeclaration<Schema>,
     configuration: <Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
-    limits: &WorthQueryInMemoryApplicationLimits,
+    limits: &WorthQueryApplicationLimits,
     program_admission: Option<WorthQueryProgramAdmissionStep<'_, Schema>>,
     directory_support: Option<fn(worth_foundational::facade::DurableStateFamily, u8) -> Option<u8>>,
 ) -> Result<PreparedInstalledMeaning<Schema>, Denial>

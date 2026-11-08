@@ -12,39 +12,11 @@ pub struct UnrecoveredApplicationHome {
     pub(super) context: crate::home_context::HomeContext,
 }
 
-/// Source-origin routing precedes schema effects. Existing receivers receive
-/// configuration preparation only; they cannot obtain initialization permission.
-pub enum ApplicationHomeNativeSchemaPreparation<'runtime> {
-    Fresh {
-        native: &'runtime mut RelationalRuntime,
-        initialization: worth_proof::FreshNativeInitialization<
-            worth_relational::facade::durability::RelationalFreshInitialization,
-        >,
-    },
-    Existing {
-        native: &'runtime mut RelationalRuntime,
-    },
-}
+mod schema_preparation;
+pub use schema_preparation::{
+    ApplicationHomeNativeSchemaPreparation, ApplicationHomeNativeSchemaPreparationDenial,
+};
 impl UnrecoveredApplicationHome {
-    pub fn prepare_native_schema_for_home(
-        &mut self,
-        request: &ExecutionRequest<'_, '_>,
-    ) -> Result<
-        ApplicationHomeNativeSchemaPreparation<'_>,
-        worth_relational::facade::runtime::RelationalInitialSchemaInstallationDenial,
-    > {
-        use super::initialization::HomeInitializationOrigin;
-        use worth_store::physical_runtime::RecoveryStorePresence;
-        match &self.context.initialization {
-            HomeInitializationOrigin::Available(RecoveryStorePresence::ProvenAbsent) => {
-                let initialization = self.relational.home_fresh_schema_initialization(request)?;
-                Ok(ApplicationHomeNativeSchemaPreparation::Fresh { native: self.relational.home_schema_installation_runtime(), initialization })
-            },
-            HomeInitializationOrigin::Available(RecoveryStorePresence::ExistingArtifacts) => Ok(ApplicationHomeNativeSchemaPreparation::Existing { native: self.relational.home_schema_installation_runtime() }),
-            HomeInitializationOrigin::ConsumedNewHome => Err(worth_relational::facade::runtime::RelationalInitialSchemaInstallationDenial::from_initial_inputs(
-                worth_relational::facade::durability::RelationalInitialInputsRefusal::Malformed)),
-        }
-    }
     pub fn home_identity(&self) -> worth_foundational::facade::HomeIdentity {
         self.context.descriptor.identity
     }
@@ -76,7 +48,7 @@ impl UnrecoveredApplicationHome {
                 home: Box::new(self),
             });
         }
-        self.readmit_selected_source(manifest, request)
+        self.readmit_selected_source(manifest, request, Some(expected))
     }
 
     pub(crate) fn readmit_source_for_home(
@@ -90,7 +62,7 @@ impl UnrecoveredApplicationHome {
             Ok(manifest) => manifest,
             Err(cause) => return Err(self.refused(cause)),
         };
-        self.readmit_selected_source(manifest, request)
+        self.readmit_selected_source(manifest, request, None)
     }
 
     fn selected_source(
@@ -117,6 +89,7 @@ impl UnrecoveredApplicationHome {
         self,
         manifest: Option<crate::checkpoint::SelectedHomeManifest>,
         request: &ExecutionRequest<'_, '_>,
+        expected: Option<&RelationalInitialSchemaInstallationReceipt>,
     ) -> Result<
         RelationalReadmitted<UnsharedReadmittedApplicationHome>,
         RelationalHomeReadmissionRefused,
@@ -149,7 +122,7 @@ impl UnrecoveredApplicationHome {
                 }
             }
             HomeInitializationOrigin::Available(RecoveryStorePresence::ExistingArtifacts) => {
-                relational.readmit_prepared_home(request, catalog.as_ref())
+                relational.readmit_prepared_home(request, expected, catalog.as_ref())
             }
             HomeInitializationOrigin::ConsumedNewHome => {
                 Err((relational, ReadmissionDenial::MalformedSection))

@@ -1,3 +1,7 @@
+mod readmission_funding;
+mod readmission_work;
+pub(crate) use readmission_funding::contract_clone_bytes;
+pub(super) use readmission_funding::readmit_state_using;
 use worth_foundational::facade::{
     export_portable_record_aspect_state, readmit_portable_record_aspect_state, AspectContract,
     AspectContractRevision, AspectIdentity, AspectKey, AuthoritativeRecordAspectState,
@@ -54,6 +58,16 @@ pub(crate) struct CheckpointAspectContractCatalog {
 }
 
 impl CheckpointAspectContractCatalog {
+    pub(super) fn max_clone_bound(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<u64, crate::durability::data::RelationalRecoveryStop> {
+        let mut largest = 0;
+        for contract in self.contracts.values() {
+            largest = largest.max(contract_clone_bytes(contract, request)?);
+        }
+        Ok(largest)
+    }
     pub(crate) fn readmit(candidates: &[PortableAspectContract]) -> Result<Self, DurabilityError> {
         let mut contracts = std::collections::BTreeMap::new();
         for candidate in candidates {

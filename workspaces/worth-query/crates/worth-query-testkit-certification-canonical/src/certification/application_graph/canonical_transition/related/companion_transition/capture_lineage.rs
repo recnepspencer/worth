@@ -12,10 +12,10 @@ pub use worth_query_host::facade::{
 };
 
 pub fn assert_refused_at_entry(
-    denied: Result<Target, installation::WorthQueryInMemoryApplicationDenial>,
+    denied: Result<Target, installation::WorthQueryApplicationPreparationDenial>,
     unleased: bool,
 ) {
-    let installation::WorthQueryInMemoryApplicationDenial::Graph(denial) = denied
+    let installation::WorthQueryApplicationPreparationDenial::Graph(denial) = denied
         .err()
         .expect("a capture outside the funding lineage must refuse at entry")
     else {

@@ -6,7 +6,6 @@ use std::sync::{
 };
 use worth_foundational::facade::{
     HomeProgramTransitionPlanDigest, HomeProgramTransitionStepAssociation,
-    HomeProgramTransitionTargetMeaning,
 };
 use worth_relational::facade::mvcc::{RelationalCallerAssociation, RelationalPublicationOutcome};
 use worth_runtime_world::facade::{
@@ -61,7 +60,7 @@ fn a_durable_native_transition_effect_continues_its_original_world_occurrence_wi
                 &claim,
                 HomeProgramTransitionPlanDigest::from_recorded([7; 32]),
                 1,
-                HomeProgramTransitionTargetMeaning::from_recorded(0, contracts.catalog_digest()),
+                contracts.target_meaning(&execution, 0).unwrap(),
                 &crate::batches::transition_body_roster(&execution, 1),
                 &execution,
             )

@@ -1,115 +1,69 @@
-# P-A integration handoff and parked C2 work
+IN PROGRESS — BC9002 not landed
+Reviewed code HEAD41ab134fa1. This evidence-only child changes no Rust source.
 
-Integration branch: codex/m3-p3-reopen. Source HEAD: ea739387f6a20e134462c6811fe08c3a361d5165.
-Final branch HEAD is the documentation commit containing turn-end-state.md;
-resolve it with git rev-parse codex/m3-p3-reopen.
-Parked branch: codex/m3-p3-reopen-wip, HEAD a5fd44a3131a20c5c68e996a5e44ba6bf503dcac.
+## This turn's committed source
+41ab134fa1 refactor(native): retire unused root reconstruction and extract completeness values.
+Removed readmit_for_request and its explicitly ordered whole caller test under
+coordinator ruling 'readmit_for_request has no production caller'. Its test also
+contained successful unchanged-root sharing/lifetime assertions; retirement of
+that whole test is explicit,not silently described as solely dead assertions.
+Shipping unchanged-root constructor/caller and exact refusal test remain intact.
 
-## On the integration branch
+Actual Root::is_complete now calls the extracted value predicate. Original
+visibility is recomputed inside it using existing descriptive Body writer. All
+nine checks remain. Tests construct no runtime or admitted envelope. No public
+API,facade,boundary-config,format/version,budget or protected-owner change.
+No additional Homes stop opening. No local provider or hook deleted prematurely.
 
-- Accepted D12 data/admission work and all prior committed evidence, including
-  7b6d17eba7, fab7d6e943 and29f8c2eaf0.
-- Host automatic maintenance allowance and ordinary8M fixtures from bf5e74e0c3.
-- Shared joined maintenance worker in HomeCheckpointOwner. Host and coupled
-  close use that actual owner/allowance. Explicit checkpoints remain caller-funded.
-- Partial-Home readmission fix03cd58269c, unchanged. Integration owns replacing
-  its empty-catalog/definition inference with its typed bootstrap-completion record.
-- Exact installation factory ownership rule and one exact Host caller entry,
-  facade exports and generated Host context for the reviewed maintenance cutover.
-- No Native replay removal or selected-capture-base/funded-materialization WIP.
+## Evidence: target/lane-evidence/
+| Lane | Result | Passed/failed/ignored | Log |
+|---|---|---|---|
+| scoped Root Clippy |exit0,32lib/23lib-test warnings|0/0/0|bc-final-root-clippy.log|
+| owned focused build/run |exit0|5/0/0|bc-final-root-proof-root.log|
+| dirty line caps |5Rust files pass|0/0/0|bc-final-root-line-caps.log|
+| mandatory boundary |exit1,14findings incl3owned adapters|0/0/0|bc-final-root-boundary.log|
+| generated context |exit0|0/0/0|bc-final-root-agent-context.log|
+| formatting |exit0|0/0/0|bc-final-root-format.log|
+Exact five names are frozen in bc-final-root-proof-selection.json. No test/compiler
+failure occurred; no lane reran. A Python proof-driver preparation quoting error
+was fixed before any build/test invocation. No code/source qualification changed
+following green evidence. Full logs include exact commands,baseHEAD,dirty state,
+start/end,exit and counts. Query/Store lanes unrun because no public/wire input
+changed. No ignored,query-scale,exhaustive oracle,Home oracle or scenario ran.
 
-Committed fold audit: git grep at the retained source finds
-checkpoint_complete/prepare.rs:28 calling FoldedRoots::derive and
-checkpoint_complete/roots.rs:58 calling records::apply_original_commit.
-No committed full-history-fold removal was found; that removal was entirely
-uncommitted and is parked. No existing commit was reverted or rewritten.
+Standing lint skips: branch/root_region.rs::new_for_request and
+storage/residency/region_publication/full.rs::initial_for_request. Both were already
+library warning sites; deleting the sole test caller exposes them in lib-test too.
+Both have Lifecycle/master diffs against7d0e5189bc,so leave untouched under rules2/3.
+Probes in bc-final-root-lint-ownership.json. Other warnings match accepted sites;
+removed parent constructor warning reduces library33->32. No allow/suppression.
 
-## Parked in the single wip commit
+## Unresolved owned work
+HAPPY: shipping exact private unchanged-root allocation claim is still preserved
+and green. Existing public recovery does not identify that exact allocation among
+prior funded work. Allocation boundary review in bc-final-allocation-boundary-review.md
+traces actual caller,reservation layout,default-vs-funded issuer and public failure
+observations. A generic earlier refusal is insufficient. The user-facing retirement/
+owner-surface clarification is pending; no elapsed time/default option is approval.
+HAPPY: finish remaining provider consumers,remove cold_source.rs,
+cold_source/protected_reads.rs,runtime_attachment.rs and hooks,then shrink baseline.
+All three findings remain; no baseline growth or enforcement workaround. Other
+mapped root value/public-flow migrations remain as well; the allocation decision
+alone does not implement the rest of this closure.
+HAPPY: cold family audit now maps80files/86tests to external provider and identifies
+existing public replacements. Two private resident-only pin actions and exact
+resident dictionary/cache controls still need genuine owner decomposition or an
+explicit assertion-placement ruling; they are not silently replaced with reads.
+See bc-cold-consumer-boundary-review.md and closure/owner JSON. Pin/cache owner
+quiet-diffs are0; this is a design/proof issue,not a missing per-file grant.
+CLEANUP/C2: unchanged retirement court and its actual holder handoff retain prior
+coordinator disposition. No protected release owner changed or court rerun.
 
-- Full-history replay removal and selected capture bases/carriers/recovery,
-  selected Embedded refusal, lineage/member carry, branch visibility DATA,
-  selected region reuse/emission, and associated Native/court/testkit edits.
-- Cold Head/Full/history funding preflight and same-cell DATA materialization
-  changes, including the four private funding files. The design and independent
-  reviews remain valid; no requested 16-owner/four-leaf extension was applied.
-- Cost/growth/zero-covered-read courts and fixture migrations, instrumentation
-  support/caller entry, uncommitted runner slot-history changes, and the small
-  Query needless-borrow cleanup. None is represented as complete.
-- All remaining uncommitted tracked/untracked work from the starting worktree,
-  including generated slot data. No task work was discarded.
-
-## Focused evidence for the retained source
-
-| Current-source lane (target/lane-evidence/) | Result | Passed/failed/executed ignored |
-| --- | --- | ---: |
-| parking-maintenance-happy-controls.log | PASS, exit0 | 2/0/0 |
-| parking-maintenance-recheckpoint-after-reopen.log | PASS, exit0 | 1/0/0 |
-
-The first lane selected exactly
-same_directory_reopens_reads_and_commits_without_replaying_initializer_or_old_key
-and flushed_and_pending_multibatch_homes_readmit_their_completed_publication.
-The second selected exactly
-selected_complete_home_reopens_and_selects_another_complete_checkpoint.
-It proves a real selected Home reopens, mutates and selects a later checkpoint.
-That last control terminates the original process between completed operations;
-it is not an interrupted-write campaign. No selected test was ignored.
-No red focused lane remains on the retained source. No broader green claim.
-
-Both log headers identify29f8c2eaf0 with the isolated staged maintenance subset.
-The source commit's entire tree exactly equals the validated index tree recorded
-in parking-maintenance-validated-index.json. Thus these are exact-source results
-for the retained code, not results from the earlier dirty C2 implementation.
-Only documentation/evidence is committed after that source HEAD. No unchanged
-passing lane was rerun after committing the identical source.
-
-
-Source approval: parking-maintenance-integration-independent-review.md,
-APPROVE, no blocking findings. The review is limited to the maintenance subset;
-it does not override the C2 accounting reviews' REJECT findings.
-Validated staged tree/blob inventory: parking-maintenance-validated-index.json.
-The only subsequent integration-source change is committing those same blobs;
-turn-end documentation does not change production source.
-
-No broad qualification, ignored tests, query-scale, exhaustive Home oracle,
-Store scenario suite, merge, push, other-worktree edit or cleanup ran.
-Full phase gates and full Root/Store Clippy were not rerun in this parking turn.
-Earlier Native3/Host2/Store/fault/cost results on dirty C2 source do not qualify
-or condemn this restored integration source; they remain historical evidence.
-
-## Open queue by track
-
-- HAPPY: default-stack decode_payload/reopen qualification and repair remains
-  open; it was not worked as part of parking. Do not treat an owned runner pass
-  as the separate direct default-stack qualification requested earlier.
-- HAPPY: D13 interim restore door and capture-origin/World registry restoration
-  remain open and unqualified; confirm the actual graceful restore journey at
-  the joint merge. No D13 implementation is included in this maintenance commit.
-- HAPPY: integration's typed bootstrap-completion replacement for the accepted
-  partial-Home predicate is the explicit merge seam; this branch does not add it.
-- HAPPY: previously held Native initial-input/World/member-scope cases require
-  merged-tree disposition. They were not run or changed during parking.
-- CLEANUP C2: state-bounded capture, finite maintenance cost/growth
-  qualification, zero-covered-body recapture, and the five accepted accounting
-  findings: actual backing ticket lifetime; Head dependency roster/provider
-  funding; independent scalar-column shape; inventory work before charge;
-  and missing cold runtime denial/refund/recapture evidence.
-- CLEANUP: fault/ACK/damage campaigns, kill-boundary refinements beyond the
-  selected between-operations reopen control, CDC/recovery campaigns, scale,
-  exhaustive oracle and Store scenario certification at the later joint gate.
-- CLEANUP: remaining digest representation/cost determinism cleanup outside
-  checkpoint_complete, and BC9002 public-observation/provider/topology migrations.
-  The last boundary evidence reported the three queued Native BC9002 sites;
-  this parking turn does not claim a fresh boundary pass.
-
-## Preservation and final state
-
-parking-preservation-verification.json verifies all163 original dirty paths
-and deletions against the saved tracked/untracked Git trees and the WIP commit.
-A caller-list conflict during the temporary stash apply was resolved to its
-exact original saved content, retaining both exact entries on WIP. Main retains
-only the reviewed Host installation caller. No implementation was redesigned
-or repaired while parking.
-Original branch returned clean; no staged/unstaged/untracked task changes remain.
-The temporary split stash was removed only after its complete WIP contents were
-committed and checked on the named -wip branch. Other stashes/branches/worktrees
-were not modified. Each new commit has the required co-author trailer.
+## Review and counters
+Fresh bc_root_retirement_final_review APPROVE source candidate,no blocking findings;
+all5tests and gates verified read-only. Full BC9002 explicitly NOT ACHIEVED.
+Boundary/design reviews approve only the relevant partial slices and identify
+remaining proof gaps. All reviewers ran0builds/tests.
+This turn0cargo check,1Clippy invocation,1focused build,1selected test run;
+2mandatory tool cargo-run commands. No rebuild after doc/evidence-only changes.
+No push,merge,branch switch,other-worktree edit or parked work.

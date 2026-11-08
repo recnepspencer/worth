@@ -2,7 +2,6 @@
 use super::{charge, memory_overflow, reserve, CodecRetirementClosureStop, OutputOrigin};
 use crate::branch::RelationalBranchRoot;
 use crate::identity::data::RelationId;
-use crate::runtime::RelationalRuntime;
 use worth_execution::{ExecutionMemoryReservation, ExecutionResourceLease, MapKernelContext};
 
 mod association;
@@ -16,7 +15,7 @@ pub(super) enum RelationClosurePurpose {
 pub(super) use association::validate_complete_publication;
 
 pub(super) fn derive_closed_relations(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     root: &RelationalBranchRoot,
     origins: &[OutputOrigin],
     purpose: RelationClosurePurpose,
@@ -98,8 +97,7 @@ pub(super) fn derive_closed_relations(
             .binary_search_by_key(&ends.source, |(id, _, _)| *id)
             .map_err(|_| "relation source outside complete output closure")?;
         let envelope = runtime
-            .history
-            .canonical_envelope(origins[source].2.commit.commit_id)
+            .commit(origins[source].2.commit.commit_id)?
             .ok_or("complete relation publication absent")?;
         super::relation_payload::validate(runtime, root, &envelope, *id, context, lease)?;
     }

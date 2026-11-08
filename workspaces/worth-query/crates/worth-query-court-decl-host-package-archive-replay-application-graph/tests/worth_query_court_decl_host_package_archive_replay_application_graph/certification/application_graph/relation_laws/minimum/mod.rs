@@ -64,7 +64,7 @@ fn deleting_a_target_rechecks_distinct_visible_targets_and_source_removal_remove
 fn declared_unreachable_kinds_do_not_count_and_bootstrap_preserves_original_publication_fields() {
     use super::program::GraphProgram;
     use worth_query_host::facade::{
-        application_installation::WorthQueryInMemoryApplicationDenial,
+        application_installation::WorthQueryApplicationPreparationDenial,
         declaration::{
             application_program::ApplicationProgramAuthoring, application_schema::ApplicationSchema,
         },
@@ -77,7 +77,7 @@ fn declared_unreachable_kinds_do_not_count_and_bootstrap_preserves_original_publ
             .unwrap();
     // A real Principal exists for authentication, but Feeds reaches only one Leaf.
     let refusal = match install_program(program, 1, &[], 1, &[(0, 0)]) {
-        Err(WorthQueryInMemoryApplicationDenial::Publication(refusal)) => refusal,
+        Err(WorthQueryApplicationPreparationDenial::Publication(refusal)) => refusal,
         Err(other) => panic!("{other:?}"),
         Ok(world) => {
             world.close();

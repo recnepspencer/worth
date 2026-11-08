@@ -19,6 +19,12 @@ pub struct HomeProgramTransitionBindingCommitted {
     plan: [u8; 32],
 }
 
+impl HomeProgramTransitionRequired {
+    pub(super) fn binding_commitment(&self) -> &[u8; 32] {
+        &self.binding
+    }
+}
+
 impl HomeProgramTransitionOwner {
     pub fn require_transition(&self, binding: [u8; 32]) -> HomeProgramTransitionRequired {
         HomeProgramTransitionRequired {

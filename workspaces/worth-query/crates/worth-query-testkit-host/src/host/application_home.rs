@@ -7,8 +7,7 @@ use std::sync::{
 use worth_query_decl::facade::application_program::*;
 use worth_query_host::facade::{
     application_installation::{
-        ApplicationBuildIdentity, WorthQueryApplicationProgramRoster,
-        WorthQueryInMemoryApplicationLimits,
+        ApplicationBuildIdentity, WorthQueryApplicationLimits, WorthQueryApplicationProgramRoster,
     },
     primary_graph::SignalConditionalEvaluationBudget,
     runtime::WorthQueryApplicationQueryResourceProfile,
@@ -135,7 +134,7 @@ fn request_at_location_with_initializer(
         declaration,
         (contacts,),
         build,
-        WorthQueryInMemoryApplicationLimits::new(
+        WorthQueryApplicationLimits::new(
             identity::world_resources(),
             WorthQueryApplicationQueryResourceProfile::default(),
             SignalConditionalEvaluationBudget::development(),

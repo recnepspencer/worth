@@ -1,0 +1,15 @@
+command: git apply --check target/lane-evidence/proposed-outside-area-clippy.patch
+HEAD: 367ddc069042a3b024fea129dde92aea8bceb837
+git_status_short_empty: false
+start_utc: 2026-11-05T01:10:01.607087+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+error: patch failed: crates/worth-relational/src/durability/medium/recovery_source/home_preflight.rs:135
+error: crates/worth-relational/src/durability/medium/recovery_source/home_preflight.rs: patch does not apply
+error: patch failed: crates/worth-relational/src/history/data/required_output_positions/readmission/node.rs:52
+error: crates/worth-relational/src/history/data/required_output_positions/readmission/node.rs: patch does not apply
+
+end_utc: 2026-11-05T01:10:01.646489+00:00
+exit_code: 1
+tests_passed: 0
+tests_failed: 0
+tests_ignored: 0

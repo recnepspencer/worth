@@ -201,7 +201,7 @@ let host = in_memory_rostered_program(
     limits,
     |bootstrap, installed_schema| Ok(()),                   // initial state
 )?;                // Result<WorthQueryProgramApplicationRuntime<OrderSchema, OrdersV1>,
-                   //        WorthQueryInMemoryApplicationDenial>
+                   //        WorthQueryApplicationPreparationDenial>
 ```
 
 - The initial program is the one the host activates. Every other rostered
@@ -212,7 +212,7 @@ let host = in_memory_rostered_program(
   It is `None` when `P` was never rostered on this host. The handle offers
   `installed_program()` (whose `revision()` is the revision),
   `contains_action::<Binding>()`, and `runtime()`.
-- `in_memory_rostered_program_from_checkpoint` restores the same roster from a
+- `WorthQueryInterimCheckpointRestore::rostered_program` restores the same roster from a
   Query-issued checkpoint, so a branch recorded under a supported program still
   runs it.
 - A workflow vocabulary is installed per program. To keep a branch's workflows

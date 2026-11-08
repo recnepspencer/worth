@@ -1,19 +1,31 @@
 //! One admitted schema graph is shared by source roles and selected roots.
 use crate::branch::RelationalBranchRootSchemaAuthority;
 use crate::durability::checkpoints::region_directory::corrupt;
-use crate::durability::data::{DurableBranchRootSchemaImage, RecoveryPlan, RelationalRecoveryStop};
+use crate::durability::data::{RecoveryPlan, RelationalRecoveryStop};
 use crate::durability::source_initial_inputs::schema_catalog::ReadmittedSourceSchemaCatalog;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 
-pub(super) struct OriginalSchemaGraph {
-    pub(super) original:
+#[derive(Debug)]
+pub(crate) struct OriginalSchemaGraph {
+    pub(crate) original:
         Arc<crate::durability::source_initial_inputs::source_admission::SourceOriginalInputs>,
-    pub(super) schemas: Arc<ReadmittedSourceSchemaCatalog>,
+    pub(crate) schemas: Arc<ReadmittedSourceSchemaCatalog>,
 }
 impl OriginalSchemaGraph {
-    pub(super) fn admit(
+    pub(crate) fn admit(
         plan: &mut RecoveryPlan,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Option<Self>, RelationalRecoveryStop> {
+        let graph = Self::admit_unbound(plan, request)?;
+        if let Some(graph) = &graph {
+            graph.bind_directories(plan, request)?;
+        }
+        Ok(graph)
+    }
+
+    pub(crate) fn admit_unbound(
+        plan: &RecoveryPlan,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Option<Self>, RelationalRecoveryStop> {
         let Some(original) = &plan.original_source else {
@@ -28,11 +40,21 @@ impl OriginalSchemaGraph {
             schemas: ReadmittedSourceSchemaCatalog::prepare(request, directory_copies)?,
         };
         for image in &original.current.schemas {
-            graph.insert(image, &plan.config.schema.registry, request)?;
+            ReadmittedSourceSchemaCatalog::insert_image(
+                &mut graph.schemas,
+                image,
+                &plan.config.schema.registry,
+                request,
+            )?;
         }
         if let Some(checkpoint) = &plan.checkpoint {
             for image in &checkpoint.branch_root_schema_images {
-                graph.insert(image, &plan.config.schema.registry, request)?;
+                ReadmittedSourceSchemaCatalog::insert_image(
+                    &mut graph.schemas,
+                    image,
+                    &plan.config.schema.registry,
+                    request,
+                )?;
             }
         }
         for commit in &plan.tail_log {
@@ -46,7 +68,12 @@ impl OriginalSchemaGraph {
                 {
                     return Err(corrupt("Home tail result carrier attribution disagrees").into());
                 }
-                graph.insert(image, &plan.config.schema.registry, request)?;
+                ReadmittedSourceSchemaCatalog::insert_image(
+                    &mut graph.schemas,
+                    image,
+                    &plan.config.schema.registry,
+                    request,
+                )?;
             } else if input.prestate_schema != input.result_schema {
                 return Err(corrupt(
                     "schema-changing canonical publication lacks its result carrier",
@@ -71,6 +98,14 @@ impl OriginalSchemaGraph {
                     .ok_or_else(|| corrupt("Home transition lacks its original schema role"))?,
             )?;
         }
+        Ok(Some(graph))
+    }
+
+    pub(crate) fn bind_directories(
+        &self,
+        plan: &mut RecoveryPlan,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), RelationalRecoveryStop> {
         if let Some(checkpoint) = &mut plan.checkpoint {
             for directory in checkpoint
                 .directory
@@ -81,14 +116,52 @@ impl OriginalSchemaGraph {
                 // attempt owns only this fixed-size binding; intrinsic manifest,
                 // history and actual selected-read custody stay shared.
                 *directory = crate::durability::data::NativeCheckpointDirectoryEdge::new(
-                    directory.with_source_schemas(graph.schemas.clone(), request)?,
+                    directory.with_source_schemas(self.schemas.clone(), request)?,
                 );
             }
         }
-        Ok(Some(graph))
+        Ok(())
     }
 
-    pub(super) fn get(
+    pub(crate) fn bind_home_executables(
+        &mut self,
+        available: &crate::content::RelationalContentFormatRegistry,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), RelationalRecoveryStop> {
+        if self
+            .schemas
+            .rows
+            .values()
+            .all(|schema| schema.registry().content_formats.is_bound_to(available))
+        {
+            return Ok(());
+        }
+        if Arc::get_mut(&mut self.schemas).is_none() {
+            return Err(crate::durability::data::DurabilityError::new(
+                crate::durability::data::RecoveryFailureClass::SchemaMismatch,
+                "receiving codecs changed after the original schema graph was shared",
+            )
+            .into());
+        }
+        // Stage funded map edits before publishing them to this same unshared
+        // catalog. Source registrations and its original catalog identity stay.
+        let mut rows = self.schemas.rows.clone();
+        for (digest, schema) in &self.schemas.rows {
+            let bound = schema
+                .bind_home_executables(available, request)
+                .map_err(super::original_inputs::root_stop)?;
+            if !Arc::ptr_eq(schema, &bound) {
+                rows.insert_cloned_native_for_request(digest, &bound, *request)
+                    .map_err(crate::durability::checkpoint_history::capture::map_stop)?;
+            }
+        }
+        Arc::get_mut(&mut self.schemas)
+            .expect("unshared receiving schema catalog")
+            .rows = rows;
+        Ok(())
+    }
+
+    pub(crate) fn get(
         &self,
         digest: [u8; 32],
     ) -> Result<Arc<RelationalBranchRootSchemaAuthority>, RelationalRecoveryStop> {
@@ -97,44 +170,5 @@ impl OriginalSchemaGraph {
             .get(&digest)
             .cloned()
             .ok_or_else(|| corrupt("original role names a missing schema carrier").into())
-    }
-
-    fn insert(
-        &mut self,
-        image: &DurableBranchRootSchemaImage,
-        configured: &crate::schema::data::RelationalSchemaRegistry,
-        request: &ExecutionRequest<'_, '_>,
-    ) -> Result<(), RelationalRecoveryStop> {
-        crate::execution::check_request(request).map_err(RelationalRecoveryStop::Request)?;
-        if let Some(prior) = self.schemas.rows.get(&image.carrier_digest()) {
-            if prior.recorded_image(request)? != *image {
-                return Err(corrupt("same source carrier has differing full schema DATA").into());
-            }
-            return Ok(());
-        }
-        let (registry, contracts) = image.readmit_registry().map_err(corrupt)?;
-        let expected = registry.authority_snapshot();
-        let registry = if configured.authority_snapshot() == expected {
-            configured.clone()
-        } else {
-            registry
-        };
-        let schema = RelationalBranchRootSchemaAuthority::readmit_exact(
-            self.schemas.rows.len() as u64 + 1,
-            registry,
-            contracts,
-            &expected,
-            image.descriptor_semantics_version(),
-        )
-        .ok_or_else(|| corrupt("original schema carrier executable admission failed"))?;
-        schema
-            .retain_readmitted_image(image.clone())
-            .map_err(corrupt)?;
-        Arc::get_mut(&mut self.schemas)
-            .ok_or_else(|| corrupt("source schema graph was shared before admission completed"))?
-            .rows
-            .insert_cloned_native_for_request(&image.carrier_digest(), &schema, *request)
-            .map_err(crate::durability::checkpoint_history::capture::map_stop)?;
-        Ok(())
     }
 }

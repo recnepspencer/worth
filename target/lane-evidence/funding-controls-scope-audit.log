@@ -1,0 +1,22 @@
+command: python target/lane-evidence/funding_controls_scope_audit.py
+HEAD: 05755fb657382fae17e168c86b6b00b08b10d479
+git_status_short_empty: false
+start_utc: 2026-11-05T02:35:06.929537+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+git apply --reverse --check target/lane-evidence/proposed-outside-area-clippy.patch
+error: patch failed: workspaces/worth-store/crates/worth-store-application/src/world_section/close.rs:51
+error: workspaces/worth-store/crates/worth-store-application/src/world_section/close.rs: patch does not apply
+Traceback (most recent call last):
+  File "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\funding_controls_scope_audit.py", line 12, in <module>
+    run(["git", "apply", "--reverse", "--check", "target/lane-evidence/" + patch])
+    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\funding_controls_scope_audit.py", line 9, in run
+    assert observed.returncode == 0, observed.returncode
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 1
+
+end_utc: 2026-11-05T02:35:07.744997+00:00
+exit_code: 1
+tests_passed: 0
+tests_failed: 0
+tests_ignored: 0

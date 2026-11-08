@@ -6,9 +6,9 @@ pub(super) fn prepare<Schema: ApplicationSchemaComposition>(
     prepared: BootstrapPublicationStorage<PreparedMemoryApplication<Schema>>,
 ) -> Result<
     BootstrapPublicationStorage<ConfiguredMemoryService<Schema>>,
-    WorthQueryInMemoryApplicationDenial,
+    WorthQueryApplicationPreparationDenial,
 > {
-    use WorthQueryInMemoryApplicationDenial as Denial;
+    use WorthQueryApplicationPreparationDenial as Denial;
     let storage = BootstrapPublicationReservation::prepare(&phase.execution_request())
         .map_err(Denial::Graph)?;
     let completion = BootstrapPublicationReservation::prepare(&phase.execution_request())
@@ -26,6 +26,7 @@ pub(super) fn prepare<Schema: ApplicationSchemaComposition>(
         admitted_program_support,
         activation,
         decoded_checkpoint,
+        interim_continuation,
     } = prepared.consume();
     let (route, installed_conditionals) = if conditionals.is_empty() && producers.is_empty() {
         let route = BootstrapPublicationReservation::prepare(&phase.execution_request())
@@ -78,6 +79,7 @@ pub(super) fn prepare<Schema: ApplicationSchemaComposition>(
         admitted_program_support,
         activation,
         decoded_checkpoint,
+        interim_continuation,
     });
     Ok(storage.fill(ConfiguredMemoryService {
         route,

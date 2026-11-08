@@ -1,0 +1,22 @@
+{
+  "root": {
+    "sample_count": 25260,
+    "source_count": 13,
+    "measured_identities": 8790,
+    "pending_claim_count": 0,
+    "parent_sample_counts": [
+      8079,
+      25252
+    ]
+  },
+  "store": {
+    "sample_count": 6835,
+    "source_count": 12,
+    "measured_identities": 4807,
+    "pending_claim_count": 0,
+    "parent_sample_counts": [
+      5829,
+      6831
+    ]
+  }
+}

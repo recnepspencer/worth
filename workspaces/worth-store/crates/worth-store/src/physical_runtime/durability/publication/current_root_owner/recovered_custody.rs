@@ -3,9 +3,9 @@
 //! and never performs fallible allocation.
 
 use super::{certificate_capacity, release_capacity, PhysicalCurrentRootOwner};
-use crate::physical_runtime::record_serving::{
-    RecoveredReleaseCustody, VerifiedRecoveredCheckpointCustody,
-};
+#[cfg(feature = "recovery-runtime-owner")]
+use crate::physical_runtime::record_serving::RecoveredReleaseCustody;
+use crate::physical_runtime::record_serving::VerifiedRecoveredCheckpointCustody;
 #[cfg(feature = "recovery-runtime-owner")]
 use crate::physical_runtime::recovery_residency::StoreRejoinResidentLedger;
 

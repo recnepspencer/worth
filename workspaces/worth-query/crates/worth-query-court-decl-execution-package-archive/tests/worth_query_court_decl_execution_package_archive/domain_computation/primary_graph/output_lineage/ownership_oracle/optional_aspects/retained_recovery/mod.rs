@@ -208,11 +208,33 @@ fn restored_projection_reads_the_checkpoint_without_authoring_initial_state() {
                 .unwrap()
         })
         .unwrap();
+    let before = restored
+        .with_host_advancement(|phase| {
+            restored
+                .inspect_application_checkpoint(&phase, before.bytes())
+                .unwrap()
+        })
+        .unwrap();
+    let after = restored
+        .with_host_advancement(|phase| {
+            restored
+                .inspect_application_checkpoint(&phase, after.bytes())
+                .unwrap()
+        })
+        .unwrap();
+    // D13 captures bind a fresh transport origin; exact model meaning and
+    // allocator identity remain unchanged by a read-only projection.
     assert_eq!(
-        before.bytes(),
-        after.bytes(),
+        before.model, after.model,
         "restoring and observing author no model state"
     );
+    assert_eq!(
+        before.symbol_identity_frontier,
+        after.symbol_identity_frontier
+    );
+    assert_eq!(before.frontiers, after.frontiers);
+    assert_eq!(before.generations, after.generations);
+    assert_eq!(before.live_records, after.live_records);
 }
 
 #[test]

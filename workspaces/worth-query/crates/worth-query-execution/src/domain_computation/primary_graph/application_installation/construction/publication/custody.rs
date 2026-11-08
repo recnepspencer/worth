@@ -16,6 +16,8 @@ pub(super) struct MemoryPublicationCompletion<S: ApplicationSchemaComposition> {
     pub(super) admitted_program_support: Option<WorthQueryAdmittedProgramSupport<S>>,
     pub(super) activation: WorthQueryProgramActivationCell,
     pub(super) decoded_checkpoint: Option<DecodedApplicationCheckpoint>,
+    pub(super) interim_continuation:
+        Option<worth_relational::facade::durability::NativeInterimBootstrapContinuation>,
 }
 pub(super) struct PlainMemoryService<S: ApplicationSchemaComposition> {
     pub(super) graph: WorthQueryPrimaryGraphBootstrap<S>,

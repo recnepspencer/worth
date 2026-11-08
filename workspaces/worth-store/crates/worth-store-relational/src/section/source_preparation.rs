@@ -1,4 +1,5 @@
 //! Closed Home preparation retains its exact source before descriptor effects.
+pub(super) mod receiver;
 use super::RelationalSectionReadmissionDenial as Denial;
 use std::sync::Arc;
 use worth_execution::{ExecutionArray, ExecutionImmutableBytes, ExecutionRequest};
@@ -17,6 +18,14 @@ pub struct PreparedFreshRelationalHomeSource {
     pub(super) transition_required: Option<worth_proof::HomeProgramTransitionRequired>,
 }
 pub struct PreparedRelationalHomeSource {
+    pub(super) receiver: receiver::HomeReceiverPreparation,
+    pub(super) world_selection: Option<
+        Arc<
+            worth_proof::VerifiedHomeWorldSelection<
+                Arc<worth_relational::facade::durability::RelationalWorldSourceCatalog>,
+            >,
+        >,
+    >,
     pub(super) transition: Option<worth_proof::HomeProgramTransitionAuthority>,
     pub(super) transition_required: Option<worth_proof::HomeProgramTransitionRequired>,
     pub(super) source: Arc<crate::cold_source::StoreColdSource>,
@@ -37,6 +46,20 @@ impl PreparedFreshRelationalHomeSource {
     }
 }
 impl PreparedRelationalHomeSource {
+    pub fn with_home_world_selection(
+        mut self,
+        selection: Option<
+            Arc<
+                worth_proof::VerifiedHomeWorldSelection<
+                    Arc<worth_relational::facade::durability::RelationalWorldSourceCatalog>,
+                >,
+            >,
+        >,
+    ) -> Self {
+        self.world_selection = selection;
+        self
+    }
+
     pub fn with_home_transition_authority(
         mut self,
         authority: worth_proof::HomeProgramTransitionAuthority,
@@ -155,6 +178,9 @@ impl RelationalHomeSourcePreparation {
         canonical: ExecutionArray<ExecutionImmutableBytes>,
         transitions: ExecutionArray<ExecutionImmutableBytes>,
         bounds: RelationalDurableReadBounds,
+        world_selection: Option<
+            Arc<worth_relational::facade::durability::RelationalWorldSourceCatalog>,
+        >,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<PreparedRelationalHomeSource, Denial> {
         let covered = self.coverage()[0];
@@ -177,12 +203,15 @@ impl RelationalHomeSourcePreparation {
                     transitions,
                     bounds,
                     self.source.clone(),
+                    world_selection,
                     request,
                 )
             })
             .map_err(Denial::Execution)?
             .map_err(Denial::InitialInputs)?;
         Ok(PreparedRelationalHomeSource {
+            receiver: receiver::HomeReceiverPreparation::NotRequested,
+            world_selection: None,
             transition: None,
             transition_required: None,
             source: self.source,

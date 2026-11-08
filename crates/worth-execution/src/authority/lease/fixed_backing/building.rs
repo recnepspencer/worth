@@ -35,16 +35,14 @@ impl<T> BuildingFixedBacking<T> {
         u64::try_from(layout.size()).map_err(|_| Denial::new(Kind::Layout, None))
     }
 
-    /// Only the array request owner may transfer its sealed admission here.
+    /// Request backing owners transfer admission and controls from the same stage.
     /// The reservation is never accepted through a public adoption surface.
     pub(in super::super) fn allocate_reserved(
         element_count: usize,
         reservation: Option<super::super::ExecutionMemoryReservation>,
+        status: Option<ExecutionLeaseStatus>,
     ) -> Result<Self, Denial> {
         let quote = Self::payload_quote(element_count)?;
-        let status = reservation
-            .as_ref()
-            .and_then(|held| held.allocation_status());
         Self::allocate_prepared(element_count, quote, reservation, status)
     }
 

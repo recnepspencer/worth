@@ -124,7 +124,7 @@ impl DurabilityRecoveryAuthority<'_> {
                         .runtime
                         .schema_contract_runtime
                         .custom_invariant_registries,
-                    indexes.values().map(std::sync::Arc::as_ref),
+                    indexes.values().map(AsRef::as_ref),
                     &changes,
                 )
             })

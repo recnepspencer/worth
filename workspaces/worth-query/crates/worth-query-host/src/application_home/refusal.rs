@@ -2,7 +2,8 @@
 use super::runtime::DirectoryHome;
 use worth_query_declaration::facade::application_schema::ApplicationSchemaComposition;
 use worth_query_execution::facade::{
-    application_home_integration::*, application_installation::WorthQueryInMemoryApplicationDenial,
+    application_home_integration::*,
+    application_installation::WorthQueryApplicationPreparationDenial,
     primary_graph::WorthQueryPrimaryGraphInstallationDenial,
 };
 use worth_store_application::*;
@@ -11,7 +12,7 @@ mod query_custody;
 pub use query_custody::{UnadmittedHomeQueryCustodyRefused, UnadmittedHomeQueryService};
 
 pub enum WorthQueryApplicationHomeOpenRefused<Schema: ApplicationSchemaComposition, Program> {
-    Preparation(WorthQueryInMemoryApplicationDenial),
+    Preparation(WorthQueryApplicationPreparationDenial),
     Binding {
         query: PreparedHomeApplication<Schema, Program>,
         cause: worth_query_installation::facade::WorthQueryHomeBindingDenial,
@@ -23,6 +24,11 @@ pub enum WorthQueryApplicationHomeOpenRefused<Schema: ApplicationSchemaCompositi
     RelationalAttachment {
         query: PreparedHomeApplication<Schema, Program>,
         home: RelationalAttachmentRefused,
+    },
+    NativePreparation {
+        query: PreparedHomeApplication<Schema, Program>,
+        home: UnrecoveredApplicationHome,
+        cause: ApplicationHomeNativeSchemaPreparationDenial,
     },
     NativeInstallation {
         query: QueryHomeNativeInstallationRefused<Schema, Program>,
@@ -157,6 +163,7 @@ impl<Schema: ApplicationSchemaComposition, Program>
             Self::Binding { cause, .. } => format!("{cause:?}"),
             Self::Physical { cause, .. } => format!("{cause:?}"),
             Self::RelationalAttachment { home, .. } => format!("{home:?}"),
+            Self::NativePreparation { cause, .. } => format!("{cause:?}"),
             Self::NativeInstallation { query, .. } => query.reason().to_string(),
             Self::NativeReadmission { home, .. } => format!("{:?}", home.reason()),
             Self::QueryPublicationReadmissionRequired { home, .. } => {

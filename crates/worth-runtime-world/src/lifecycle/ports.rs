@@ -179,6 +179,17 @@ pub(crate) trait RuntimeWorldObservationService:
 pub(crate) trait RuntimeWorldBranchService:
     super::availability::RuntimeWorldAvailability
 {
+    fn with_home_program_binding(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        expected: &ProductBranchObservation,
+        required: &worth_proof::HomeProgramTransitionRequired,
+        successor: &worth_proof::AdmittedHomeProgramTransitionSuccessor<
+            &worth_foundational::facade::ApplicationHomeBinding,
+        >,
+        handoff: &mut dyn for<'owner> FnMut(super::PreparedWorldHomeProgramBinding<'owner>),
+    ) -> Result<(), super::WorldHomeProgramBindingDenial>;
+
     fn admit_retained_branch_source(
         &self,
         source: &ProductBranchObservation,

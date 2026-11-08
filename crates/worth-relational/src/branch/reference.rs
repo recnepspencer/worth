@@ -1,3 +1,5 @@
+#[path = "reference_world_selection.rs"]
+mod world_selection;
 use std::sync::{Arc, Mutex};
 use worth_foundational::{FoundationalBranchReferenceGeneration, FoundationalBranchTarget};
 

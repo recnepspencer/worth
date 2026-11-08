@@ -15,6 +15,7 @@ pub(in crate::domain_computation::primary_graph) struct ProjectedMemberDomainLay
 }
 
 pub(super) fn lower(
+    sources: super::source_registration::SourceRegistration<'_>,
     mut registry: RelationalSchemaRegistry,
     schema: &ErasedApplicationSchemaDeclaration,
     basis: (&SchemaId, SchemaVersionId),
@@ -44,8 +45,8 @@ pub(super) fn lower(
         });
         carriers.insert(parts.domain.as_str(), parts.carrier.as_str());
     }
-    registry = registry
-        .register_projected_member_domains(definitions)
+    registry = sources
+        .domains(registry, definitions)
         .map_err(|cause| invalid_member(&format!("projected Native registration: {cause:?}")))?;
     let mut layouts = BTreeMap::new();
     for (name, carrier) in carriers {

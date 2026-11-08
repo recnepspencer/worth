@@ -187,6 +187,10 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
         pairs(input.text(&format!("{CONFIG}certification-construction-callers.txt")))
             .into_iter()
             .collect();
+    let interim: BTreeSet<_> =
+        pairs(input.text(&format!("{CONFIG}interim-checkpoint-callers.txt")))
+            .into_iter()
+            .collect();
     for (path, t) in &sources {
         let names: BTreeSet<_> = t
             .iter()
@@ -205,7 +209,12 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
             }
             if FACTORIES.contains(name) {
                 let (class, owner) = factory_ownership::ownership(name);
-                if !path.starts_with(owner) && !factories.contains(&(class, path.as_str())) {
+                let callers = if *name == "WorthQueryInterimCheckpointRestore" {
+                    &interim
+                } else {
+                    &factories
+                };
+                if !path.starts_with(owner) && !callers.contains(&(class, path.as_str())) {
                     out.push(diagnostic(
                         Code::Construction,
                         path,
@@ -217,5 +226,7 @@ pub fn check(input: &Inputs) -> Vec<Diagnostic> {
     }
     out
 }
+#[cfg(test)]
+mod interim_tests;
 #[cfg(test)]
 mod tests;

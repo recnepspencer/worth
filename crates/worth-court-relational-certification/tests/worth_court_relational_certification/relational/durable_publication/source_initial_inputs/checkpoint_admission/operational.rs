@@ -34,6 +34,7 @@ fn checkpoint_image_restores_publication_bases_and_creations_without_canonical_b
     create_entity(request, &source, "image-later-current");
     let current_source = current(request, &source);
     let capture = capture_external(&source, &medium, request);
+    let members = selected_members(&capture, request);
     medium.file_checkpoint(capture.checkpoint().clone());
     let reads = medium.canonical_member_reads();
     let input = home_image_input(&medium, &capture, request).unwrap();
@@ -129,7 +130,9 @@ fn checkpoint_image_restores_publication_bases_and_creations_without_canonical_b
         reads,
         "covered image admission opens no canonical bodies"
     );
-    let next = capture_external(&receiver, &medium, request);
+    let next = capture_selected_external(&receiver, &medium, &members, request);
+    let _selected_source =
+        home_image_checkpoint(&next, next.source_artifact().clone(), request).unwrap();
     medium.file_checkpoint(next.checkpoint().clone());
     request
         .run_native_with_checkpoint(|context| {

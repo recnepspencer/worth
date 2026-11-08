@@ -2,6 +2,7 @@
 use super::*;
 mod court;
 mod fixture;
+mod original_registration;
 mod pinned;
 pub(super) mod probe;
 mod refusal;

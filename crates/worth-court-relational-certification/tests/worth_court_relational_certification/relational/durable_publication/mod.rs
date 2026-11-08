@@ -1,7 +1,9 @@
 //! Public Native durability workflows, independent of source-unit privacy.
 mod associated_effects;
+mod cold_envelope_custody;
 mod index_catalog;
 mod initial_schema_recovery;
+mod prepared_home_schema;
 mod recorded_basis;
 mod recorded_component_checkpoint;
 mod recorded_component_recovery;
@@ -10,7 +12,7 @@ mod recovered_associated_effects;
 mod recovered_publication;
 mod result_snapshot_cleanup;
 mod semantic_result;
-mod source_initial_inputs;
+pub(crate) mod source_initial_inputs;
 
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::{
@@ -40,3 +42,7 @@ use worth_testkit_relational::{
         original_with_retained_successor, perform, recover, source_journey,
     },
 };
+
+mod encoded_checkpoint_backing;
+mod partition_frontier;
+mod validation_posture;

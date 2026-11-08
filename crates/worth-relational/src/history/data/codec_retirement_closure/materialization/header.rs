@@ -5,7 +5,7 @@ use crate::transactions::data::{MaterializationMutationIntent as Materialization
 
 pub(in super::super) fn validate(
     restored: &CanonicalCommitEnvelope,
-    lookup: &mut impl FnMut(CommitId) -> Option<Arc<CanonicalCommitEnvelope>>,
+    lookup: &mut impl FnMut(CommitId) -> Result<Option<Arc<CanonicalCommitEnvelope>>, Stop>,
     maximum: usize,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), Stop> {
@@ -14,9 +14,9 @@ pub(in super::super) fn validate(
         .required_output_materialization
         .as_ref()
         .ok_or("maintenance absent")?;
-    let source = lookup(event.source_commit).ok_or("maintenance source absent")?;
+    let source = lookup(event.source_commit)?.ok_or("maintenance source absent")?;
     for publication in &event.producer_publications {
-        let original = lookup(*publication).ok_or("maintenance producer absent")?;
+        let original = lookup(*publication)?.ok_or("maintenance producer absent")?;
         source_gap(&source, &original, lookup, maximum, context)?;
     }
     Ok(())
@@ -24,7 +24,7 @@ pub(in super::super) fn validate(
 
 fn validate_local(
     restored: &CanonicalCommitEnvelope,
-    lookup: &mut impl FnMut(CommitId) -> Option<Arc<CanonicalCommitEnvelope>>,
+    lookup: &mut impl FnMut(CommitId) -> Result<Option<Arc<CanonicalCommitEnvelope>>, Stop>,
     maximum: usize,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), Stop> {
@@ -49,8 +49,8 @@ fn validate_local(
     {
         return Err("maintenance has mixed or incomplete canonical association".into());
     }
-    let suspension = lookup(event.suspension_commit).ok_or("maintenance suspension absent")?;
-    let source = lookup(event.source_commit).ok_or("maintenance source absent")?;
+    let suspension = lookup(event.suspension_commit)?.ok_or("maintenance suspension absent")?;
+    let source = lookup(event.source_commit)?.ok_or("maintenance source absent")?;
     if suspension.commit.parents.as_slice() != [event.source_commit]
         || suspension.branch_context != restored.branch_context
         || source.branch_context != restored.branch_context
@@ -124,7 +124,7 @@ fn validate_local(
         let mut associations = 0;
         for publication in &event.producer_publications {
             charge(context, 1)?;
-            let original = lookup(*publication).ok_or("maintenance producer history absent")?;
+            let original = lookup(*publication)?.ok_or("maintenance producer history absent")?;
             let origin = original.validate_output_membership_header()?;
             if original.branch_context != restored.branch_context {
                 return Err("maintenance producer belongs to another branch".into());
@@ -140,7 +140,7 @@ fn validate_local(
         }
     }
     for publication in &event.producer_publications {
-        let original = lookup(*publication).ok_or("maintenance producer absent")?;
+        let original = lookup(*publication)?.ok_or("maintenance producer absent")?;
         let origin = original.validate_output_membership_header()?;
         if !event
             .records
@@ -186,7 +186,7 @@ pub(super) fn record(intent: &MutationIntent, suspended: bool) -> Option<RecordR
 fn source_gap(
     source: &CanonicalCommitEnvelope,
     original: &CanonicalCommitEnvelope,
-    lookup: &mut impl FnMut(CommitId) -> Option<Arc<CanonicalCommitEnvelope>>,
+    lookup: &mut impl FnMut(CommitId) -> Result<Option<Arc<CanonicalCommitEnvelope>>, Stop>,
     maximum: usize,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), Stop> {
@@ -198,7 +198,7 @@ fn source_gap(
         if id == original.commit.commit_id {
             return Ok(());
         }
-        let envelope = lookup(id).ok_or("maintenance source ancestry absent")?;
+        let envelope = lookup(id)?.ok_or("maintenance source ancestry absent")?;
         if envelope.commit.version_id > source.commit.version_id {
             return Err("maintenance source ancestry moves forward".into());
         }
@@ -255,13 +255,13 @@ fn source_gap(
 fn source_write(
     source: &CanonicalCommitEnvelope,
     record: &RecordRef,
-    lookup: &mut impl FnMut(CommitId) -> Option<Arc<CanonicalCommitEnvelope>>,
+    lookup: &mut impl FnMut(CommitId) -> Result<Option<Arc<CanonicalCommitEnvelope>>, Stop>,
     maximum: usize,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<VersionId, Stop> {
     let mut next = Some(source.commit.commit_id);
     for _ in 0..maximum {
-        let envelope = lookup(next.ok_or("maintenance source write absent")?)
+        let envelope = lookup(next.ok_or("maintenance source write absent")?)?
             .ok_or("maintenance source write history absent")?;
         let writes = match *record {
             RecordRef::Entity(id) => super::super::membership::writes(&envelope, id, context)?,

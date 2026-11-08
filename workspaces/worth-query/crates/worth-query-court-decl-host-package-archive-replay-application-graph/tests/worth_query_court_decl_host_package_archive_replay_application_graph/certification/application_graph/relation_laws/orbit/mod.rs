@@ -4,7 +4,7 @@ pub(crate) use worth_query_testkit_certification_application_graph::facade::cert
 fn bootstrap_requires_a_complete_permutation_before_publication() {
     use super::program::GraphProgram;
     use worth_query_host::facade::{
-        application_installation::WorthQueryInMemoryApplicationDenial,
+        application_installation::WorthQueryApplicationPreparationDenial,
         declaration::{
             application_program::ApplicationProgramAuthoring, application_schema::ApplicationSchema,
         },
@@ -15,7 +15,7 @@ fn bootstrap_requires_a_complete_permutation_before_publication() {
         .validated_program()
         .unwrap();
     let refusal = match install_program(program, 1, &[], 0, &[]) {
-        Err(WorthQueryInMemoryApplicationDenial::Publication(refusal)) => refusal,
+        Err(WorthQueryApplicationPreparationDenial::Publication(refusal)) => refusal,
         Err(other) => panic!("native bootstrap publication refusal required: {other:?}"),
         Ok(world) => {
             world.close();

@@ -81,6 +81,9 @@ pub struct Handler {
     pub cancellation: Option<WorthQueryCancellationSource>,
 }
 impl OperationHandler<Schema, Binding> for Handler {
+    fn declared_durable_capabilities() -> Option<&'static [WorthQueryOperationDurableCapability]> {
+        Some(&[WorthQueryOperationDurableCapability::RelationalMutation])
+    }
     fn decide(
         &self,
         input: &Edit,

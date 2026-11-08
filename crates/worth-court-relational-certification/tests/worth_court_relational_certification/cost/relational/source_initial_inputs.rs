@@ -76,3 +76,5 @@ fn original_leaf(frame: &[u8]) -> [u8; 32] {
     assert_eq!(cursor.position() as usize, payload.len());
     found.expect("v5 original input map")
 }
+
+mod checkpoint_admission;

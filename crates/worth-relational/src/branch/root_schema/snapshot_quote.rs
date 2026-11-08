@@ -1,5 +1,5 @@
 //! Before-copy quote of the canonical schema descriptor's owned temporary leaves.
-use super::compilation_quote::{add, array, checked, size, Denial};
+use crate::execution::RelationalExecutionDenialCause as Denial;
 use crate::schema::data::*;
 
 pub(super) fn temporary(
@@ -14,7 +14,7 @@ pub(super) fn temporary(
     // A common primary id is copied once. Summing every id is a conservative
     // bound without allocating a schema-basis result just to compute the quote.
     for kind in registry.entity_kinds.values() {
-        control.checkpoint().map_err(Denial::Request)?;
+        control.checkpoint()?;
         add(&mut bytes, size(kind.kind_name.len())?)?;
         add(
             &mut bytes,
@@ -22,7 +22,7 @@ pub(super) fn temporary(
         )?;
     }
     for kind in registry.relation_kinds.values() {
-        control.checkpoint().map_err(Denial::Request)?;
+        control.checkpoint()?;
         add(&mut bytes, size(kind.kind_name.len())?)?;
         add(
             &mut bytes,
@@ -36,15 +36,10 @@ pub(super) fn temporary(
         )?,
     )?;
     for definition in registry.derived_relations.values() {
-        control.checkpoint().map_err(Denial::Request)?;
+        control.checkpoint()?;
         add(
             &mut bytes,
-            size(checked(
-                definition
-                    .parts
-                    .clone_allocation_bytes(control)
-                    .map_err(Denial::Request)?,
-            )?)?,
+            size(checked(definition.parts.clone_allocation_bytes(control)?)?)?,
         )?;
     }
     add(
@@ -54,15 +49,10 @@ pub(super) fn temporary(
         )?,
     )?;
     for domain in registry.projected_member_domains.values() {
-        control.checkpoint().map_err(Denial::Request)?;
+        control.checkpoint()?;
         add(
             &mut bytes,
-            size(
-                domain
-                    .parts
-                    .clone_allocation_bytes(control)
-                    .map_err(Denial::Request)?,
-            )?,
+            size(domain.parts.clone_allocation_bytes(control)?)?,
         )?;
     }
     add(
@@ -70,4 +60,22 @@ pub(super) fn temporary(
         registry.content_formats.snapshot().owned_bytes(),
     )?;
     Ok(bytes)
+}
+
+fn checked<T>(value: Option<T>) -> Result<T, Denial> {
+    value.ok_or(Denial::MemoryOverflow)
+}
+fn size(bytes: usize) -> Result<u64, Denial> {
+    u64::try_from(bytes).map_err(|_| Denial::MemoryOverflow)
+}
+fn add(total: &mut u64, bytes: u64) -> Result<(), Denial> {
+    *total = checked(total.checked_add(bytes))?;
+    Ok(())
+}
+fn array<T>(count: usize) -> Result<u64, Denial> {
+    size(
+        std::alloc::Layout::array::<T>(count)
+            .map_err(|_| Denial::MemoryOverflow)?
+            .size(),
+    )
 }

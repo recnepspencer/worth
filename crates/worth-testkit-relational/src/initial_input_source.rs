@@ -55,7 +55,7 @@ pub fn capture(
         .prepare(request, RelationalCheckpointArtifactPolicy::Embedded)
         .unwrap()
 }
-/// Real external placement preserves the cold restore path used by Home.
+/// Fresh external placement: this destination has no selected members yet.
 pub fn capture_external(
     runtime: &RelationalRuntime,
     medium: &Arc<TestDurableMedium>,
@@ -68,6 +68,25 @@ pub fn capture_external(
             request,
             RelationalCheckpointArtifactPolicy::ExternalMembers {
                 current_members: &[],
+                source: Some(source),
+            },
+        )
+        .unwrap()
+}
+/// Selected Home recipes supply the actual immutable membership they filed.
+pub fn capture_selected_external(
+    runtime: &RelationalRuntime,
+    medium: &Arc<TestDurableMedium>,
+    selected_members: &[RelationalDurableMemberLocator],
+    request: &ExecutionRequest<'_, '_>,
+) -> CompleteRelationalNativeCheckpoint {
+    let source: Arc<dyn RelationalDurableColdSource> = medium.clone();
+    runtime
+        .complete_checkpoint_service()
+        .prepare(
+            request,
+            RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: selected_members,
                 source: Some(source),
             },
         )
@@ -195,6 +214,7 @@ fn home_source_input(
         transitions.seal().unwrap(),
         bounds,
         source,
+        None,
         request,
     )
 }

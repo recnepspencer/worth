@@ -79,7 +79,7 @@ where
             &mut WorthQueryPrimaryGraphBootstrap<S>,
             &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<S>,
         ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
-    ) -> Result<Self, WorthQueryInMemoryApplicationDenial> {
+    ) -> Result<Self, WorthQueryApplicationPreparationDenial> {
         let program = ApplicationProgramAuthoring::<S, P>::begin()
             .with_schema(&declaration)
             .validated_program()
@@ -106,7 +106,7 @@ pub fn try_install(
     prefix: Arc<prefix_observation::Calls>,
     boxes: Arc<boxes::Calls>,
     incompatible: bool,
-) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
+) -> Result<Host, WorthQueryApplicationPreparationDenial> {
     install_configuration(Configuration {
         prefix,
         configure_prefix: |calls, setup| {
@@ -118,7 +118,7 @@ pub fn try_install(
 }
 pub(super) fn install_configuration(
     configuration: Configuration,
-) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
+) -> Result<Host, WorthQueryApplicationPreparationDenial> {
     let declaration = Catalog::declaration().unwrap();
     Host::install(declaration, (configuration,), |_, graph, installed| {
         graph.bind_principal(

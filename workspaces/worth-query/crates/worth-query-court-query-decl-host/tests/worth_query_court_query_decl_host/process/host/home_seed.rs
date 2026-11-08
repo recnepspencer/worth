@@ -4,8 +4,8 @@ use worth_query_decl::facade::application_program::ApplicationProgramAuthoring;
 use worth_query_host::facade::{
     application_contribution::with_bootstrap_advancement_from_request,
     application_installation::{
-        ApplicationBuildIdentity, WorthQueryApplicationProgramRoster,
-        WorthQueryInMemoryApplicationDenial,
+        ApplicationBuildIdentity, WorthQueryApplicationPreparationDenial,
+        WorthQueryApplicationProgramRoster,
     },
     product::WorthQueryDurableStateAdmissionDenial,
     WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeOpenRefused,
@@ -48,7 +48,7 @@ fn directory_producer_seed_refuses_before_initialization_or_owner_effect() {
         matches!(
             refused,
             WorthQueryApplicationHomeOpenRefused::Preparation(
-                WorthQueryInMemoryApplicationDenial::UnsupportedSeed(
+                WorthQueryApplicationPreparationDenial::UnsupportedSeed(
                     WorthQueryDurableStateAdmissionDenial::Unsupported {
                         family: DurableStateFamily::SignalNodeDefinitions,
                         supported_from_phase: 5,
@@ -89,7 +89,7 @@ fn directory_conditional_seed_refuses_before_initialization_or_owner_effect() {
         TemporalHostSchema::declaration().unwrap(),
         (configuration,),
         ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap(),
-        WorthQueryInMemoryApplicationLimits::new(
+        WorthQueryApplicationLimits::new(
             product_world_resources(1_024),
             runtime::WorthQueryApplicationQueryResourceProfile::default(),
             primary_graph::SignalConditionalEvaluationBudget::development(),
@@ -108,7 +108,7 @@ fn directory_conditional_seed_refuses_before_initialization_or_owner_effect() {
         matches!(
             refused,
             WorthQueryApplicationHomeOpenRefused::Preparation(
-                WorthQueryInMemoryApplicationDenial::UnsupportedSeed(
+                WorthQueryApplicationPreparationDenial::UnsupportedSeed(
                     WorthQueryDurableStateAdmissionDenial::Unsupported {
                         family: DurableStateFamily::BridgeConditionalDefinitions,
                         supported_from_phase: 5,

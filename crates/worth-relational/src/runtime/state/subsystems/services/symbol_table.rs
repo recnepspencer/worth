@@ -1,7 +1,7 @@
 mod mutation_input;
 mod selected_directory;
 mod source_retirement;
-pub(crate) use mutation_input::{MutationSymbolMeanings, OriginalSymbolMeanings};
+pub(crate) use mutation_input::MutationSymbolMeanings;
 mod cold_pages;
 mod state;
 pub(crate) use cold_pages::ColdSymbolDirectoryDenial;

@@ -56,6 +56,18 @@ impl RelationalContentFormatRegistry {
         registry.snapshot = snapshot;
         Ok(registry)
     }
+    /// Every recorded implementation is the same frozen receiving installation.
+    /// This compares actual handles; equal format descriptions are insufficient.
+    pub(crate) fn is_bound_to(&self, available: &Self) -> bool {
+        self.snapshot.formats().iter().all(|declaration| {
+            let identity = CanonicalDigestId::new(declaration.identity);
+            self.formats
+                .get(&identity)
+                .zip(available.formats.get(&identity))
+                .is_some_and(|(bound, receiving)| bound.same_installation(receiving))
+        })
+    }
+
     /// Bind recorded meaning to actual configured frozen handles before use.
     pub(crate) fn bind_recorded(&self, available: &Self) -> Result<Self, Denial> {
         let mut bound = Self::from_recorded(self.snapshot.clone())?;

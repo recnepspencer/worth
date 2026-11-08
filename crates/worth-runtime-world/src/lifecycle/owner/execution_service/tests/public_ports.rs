@@ -1,7 +1,5 @@
 use super::*;
 use crate::facade::{NoEffectCause, RuntimeWorldOwner, RuntimeWorldPublicationOutcome};
-#[path = "public_ports/released_source.rs"]
-mod released_source;
 
 pub(super) fn public_world() -> (
     RealReferenceFixture,

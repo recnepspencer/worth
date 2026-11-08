@@ -20,12 +20,13 @@ pub(crate) fn validate_codec_output_correspondence(
     meaning: &crate::mvcc::RequiredOutputPublicationMeaning,
     roles: &[crate::mvcc::RequiredOutputRoleTarget],
 ) -> Result<SelectedOutputPublication, Stop> {
+    let runtime = &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest::new(runtime, execution);
     let result = execution.in_scope(|lease| {
         ExecutionWorkCeiling::new(execution.work_ceiling()).run_with_checkpoint(
             lease,
             None,
             |context| {
-                if basis.descriptor().runtime_instance_id() != runtime.runtime_instance_id()
+                if basis.descriptor().runtime_instance_id() != runtime.runtime.runtime_instance_id()
                     || !basis.is_current()
                 {
                     return Err(
@@ -35,8 +36,7 @@ pub(crate) fn validate_codec_output_correspondence(
                 if roles.is_empty() {
                     return Err("output correspondence correspondence is empty".into());
                 }
-                let branch = runtime
-                    .read_truth()
+                let branch = runtime.runtime.read_truth()
                     .project_observation(&basis.observation())
                     .map_err(|_| {
                         Stop::from("output correspondence requires an exact native observation")
@@ -47,8 +47,8 @@ pub(crate) fn validate_codec_output_correspondence(
                 let navigation = branch
                     .exact_entity_state_read_navigation_work_bound()
                     .ok_or("output correspondence has no exact native navigation")?;
-                let bound = runtime.history.catalog_len();
-                let mut first: Option<Origin> = None;
+                let bound = runtime.runtime.history.catalog_len();
+                let mut first: Option<(std::sync::Arc<crate::history::data::CanonicalCommitEnvelope>, Origin)> = None;
                 for (index, role) in roles.iter().enumerate() {
                     let crate::transactions::data::EntityReference::Existing(id) = role.target else {
                         return Err("recovered output role requires exact existing identity".into());
@@ -64,9 +64,10 @@ pub(crate) fn validate_codec_output_correspondence(
                         );
                     }
                     context.checkpoint_cost(work, navigation).map_err(request)?;
-                    let origin = if role.posture == crate::mvcc::RequiredOutputRolePosture::Retire {
+                    let (selected, origin) = if role.posture == crate::mvcc::RequiredOutputRolePosture::Retire {
                         let selected = super::membership::latest(runtime, basis, id, context, lease)?;
-                        super::membership::validate_member(runtime, basis, &selected, id, None, context, lease)?
+                        let origin = super::membership::validate_member(runtime, basis, &selected, id, None, context, lease)?;
+                        (selected, origin)
                     } else { branch
                         .read_exact_entity_state(execution, id, |metadata, payload| {
                             // The native probe permits wildcard lookup; historical roles do not.
@@ -81,7 +82,8 @@ pub(crate) fn validate_codec_output_correspondence(
                                 }
                             }
                             let selected = super::membership::latest(runtime, basis, id, context, lease)?;
-                            super::membership::validate_member(runtime, basis, &selected, id, payload, context, lease)
+                            let origin = super::membership::validate_member(runtime, basis, &selected, id, payload, context, lease)?;
+                            Ok::<_, Stop>((selected, origin))
                         })
                         .map_err(|denial| match denial {
                             crate::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => Stop::Request(cause),
@@ -109,7 +111,7 @@ pub(crate) fn validate_codec_output_correspondence(
                                 .into(),
                         );
                     }
-                    if let Some(first) = &first {
+                    if let Some((_, first)) = &first {
                         if first.commit != origin.commit {
                             return Err(
                                 "output correspondence spans different native publications"
@@ -133,14 +135,12 @@ pub(crate) fn validate_codec_output_correspondence(
                                     .into(),
                             );
                         }
-                        first = Some(origin);
+                        first = Some((selected, origin));
                     }
                 }
-                let origin = first.ok_or("complete output association absent")?;
+                let (envelope, origin) = first.ok_or("complete output association absent")?;
                 super::relations::validate_complete_publication(runtime, &basis.inner.root, &origin, context, lease)?;
                 charge(context, bound)?;
-                let envelope = runtime.history.canonical_envelope(origin.commit.commit_id)
-                    .ok_or("complete publication history absent")?;
                 let mut ordinal = None;
                 for (index, candidate) in envelope.output_origins().enumerate() {
                     charge(context, 1)?;

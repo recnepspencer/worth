@@ -72,7 +72,8 @@ impl SchemaCompilationQuote {
         }
         add(&mut retained, array::<AspectContract>(contracts)?)?;
         add(&mut retained, copied)?;
-        let mut temporary = super::snapshot_quote::temporary(registry, control)?;
+        let mut temporary =
+            super::snapshot_quote::temporary(registry, control).map_err(Denial::Request)?;
         add(
             &mut temporary,
             tree::<ContractBasis, AspectContract>(contracts)?,

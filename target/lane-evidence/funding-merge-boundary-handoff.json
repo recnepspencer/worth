@@ -1,0 +1,886 @@
+{
+  "head": {
+    "command": [
+      "git",
+      "rev-parse",
+      "HEAD"
+    ],
+    "exit_code": 0,
+    "stdout": "25619ac5d1ae6092ab5a91bc4b7123be6042475c",
+    "stderr": ""
+  },
+  "lifecycle_ref": {
+    "command": [
+      "git",
+      "rev-parse",
+      "codex/m3-p3-lifecycle"
+    ],
+    "exit_code": 0,
+    "stdout": "313813a636ee8ad3113d737fe85f55b62ea2b7ad",
+    "stderr": ""
+  },
+  "findings": [
+    {
+      "finding": "BC7012_CONTROL_SEAL workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/affinity_tests/retained_program.rs: control `test_host_request_for_test` requires its owner or an exact caller",
+      "path": "workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/affinity_tests/retained_program.rs",
+      "owner": "Lifecycle/integration handoff required",
+      "ours_blob": {
+        "command": [
+          "git",
+          "rev-parse",
+          "25619ac5d1:workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/affinity_tests/retained_program.rs"
+        ],
+        "exit_code": 128,
+        "stdout": "25619ac5d1:workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/affinity_tests/retained_program.rs",
+        "stderr": "fatal: path 'workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/affinity_tests/retained_program.rs' exists on disk, but not in '25619ac5d1'"
+      },
+      "incoming_blob": {
+        "command": [
+          "git",
+          "rev-parse",
+          "14b16fa292:workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/affinity_tests/retained_program.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "425a9314be4674186dd37e92cc56dd36f2d4928b",
+        "stderr": ""
+      },
+      "current_blob": {
+        "command": [
+          "git",
+          "hash-object",
+          "--path=workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/affinity_tests/retained_program.rs",
+          "workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/affinity_tests/retained_program.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "425a9314be4674186dd37e92cc56dd36f2d4928b",
+        "stderr": ""
+      },
+      "lifecycle_changed_since_safe_point": {
+        "command": [
+          "git",
+          "diff",
+          "--quiet",
+          "7d0e5189bc",
+          "codex/m3-p3-lifecycle",
+          "--",
+          "workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/running/affinity_tests/retained_program.rs"
+        ],
+        "exit_code": 1,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "finding": "BC7013_CERTIFICATION_CONSTRUCTION_SEAL workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_catalog_readmission.rs: factory `world_recovery_authority` requires its owner or an exact caller",
+      "path": "workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_catalog_readmission.rs",
+      "owner": "Lifecycle/integration handoff required",
+      "ours_blob": {
+        "command": [
+          "git",
+          "rev-parse",
+          "25619ac5d1:workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_catalog_readmission.rs"
+        ],
+        "exit_code": 128,
+        "stdout": "25619ac5d1:workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_catalog_readmission.rs",
+        "stderr": "fatal: path 'workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_catalog_readmission.rs' exists on disk, but not in '25619ac5d1'"
+      },
+      "incoming_blob": {
+        "command": [
+          "git",
+          "rev-parse",
+          "14b16fa292:workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_catalog_readmission.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "50a44aac6e736ccd71000c1284ad9d71f787af40",
+        "stderr": ""
+      },
+      "current_blob": {
+        "command": [
+          "git",
+          "hash-object",
+          "--path=workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_catalog_readmission.rs",
+          "workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_catalog_readmission.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "50a44aac6e736ccd71000c1284ad9d71f787af40",
+        "stderr": ""
+      },
+      "lifecycle_changed_since_safe_point": {
+        "command": [
+          "git",
+          "diff",
+          "--quiet",
+          "7d0e5189bc",
+          "codex/m3-p3-lifecycle",
+          "--",
+          "workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_catalog_readmission.rs"
+        ],
+        "exit_code": 1,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "finding": "BC7013_CERTIFICATION_CONSTRUCTION_SEAL workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_compilation/fresh_installation.rs: factory `prepare_fresh_home_schema_installation` requires its owner or an exact caller",
+      "path": "workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_compilation/fresh_installation.rs",
+      "owner": "Lifecycle/integration handoff required",
+      "ours_blob": {
+        "command": [
+          "git",
+          "rev-parse",
+          "25619ac5d1:workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_compilation/fresh_installation.rs"
+        ],
+        "exit_code": 128,
+        "stdout": "25619ac5d1:workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_compilation/fresh_installation.rs",
+        "stderr": "fatal: path 'workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_compilation/fresh_installation.rs' exists on disk, but not in '25619ac5d1'"
+      },
+      "incoming_blob": {
+        "command": [
+          "git",
+          "rev-parse",
+          "14b16fa292:workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_compilation/fresh_installation.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "d452be721c588c45521a77ab2e63d16b9f60a174",
+        "stderr": ""
+      },
+      "current_blob": {
+        "command": [
+          "git",
+          "hash-object",
+          "--path=workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_compilation/fresh_installation.rs",
+          "workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_compilation/fresh_installation.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "d452be721c588c45521a77ab2e63d16b9f60a174",
+        "stderr": ""
+      },
+      "lifecycle_changed_since_safe_point": {
+        "command": [
+          "git",
+          "diff",
+          "--quiet",
+          "7d0e5189bc",
+          "codex/m3-p3-lifecycle",
+          "--",
+          "workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_compilation/fresh_installation.rs"
+        ],
+        "exit_code": 1,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "finding": "BC7013_CERTIFICATION_CONSTRUCTION_SEAL workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_compilation/fresh_installation.rs: factory `prepare_native_schema_for_home` requires its owner or an exact caller",
+      "path": "workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_compilation/fresh_installation.rs",
+      "owner": "Lifecycle/integration handoff required",
+      "ours_blob": {
+        "command": [
+          "git",
+          "rev-parse",
+          "25619ac5d1:workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_compilation/fresh_installation.rs"
+        ],
+        "exit_code": 128,
+        "stdout": "25619ac5d1:workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_compilation/fresh_installation.rs",
+        "stderr": "fatal: path 'workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_compilation/fresh_installation.rs' exists on disk, but not in '25619ac5d1'"
+      },
+      "incoming_blob": {
+        "command": [
+          "git",
+          "rev-parse",
+          "14b16fa292:workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_compilation/fresh_installation.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "d452be721c588c45521a77ab2e63d16b9f60a174",
+        "stderr": ""
+      },
+      "current_blob": {
+        "command": [
+          "git",
+          "hash-object",
+          "--path=workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_compilation/fresh_installation.rs",
+          "workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_compilation/fresh_installation.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "d452be721c588c45521a77ab2e63d16b9f60a174",
+        "stderr": ""
+      },
+      "lifecycle_changed_since_safe_point": {
+        "command": [
+          "git",
+          "diff",
+          "--quiet",
+          "7d0e5189bc",
+          "codex/m3-p3-lifecycle",
+          "--",
+          "workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_compilation/fresh_installation.rs"
+        ],
+        "exit_code": 1,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "finding": "BC7013_CERTIFICATION_CONSTRUCTION_SEAL workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_native_effect/native_original.rs: factory `bind_query_native_proposal` requires its owner or an exact caller",
+      "path": "workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_native_effect/native_original.rs",
+      "owner": "Lifecycle/integration handoff required",
+      "ours_blob": {
+        "command": [
+          "git",
+          "rev-parse",
+          "25619ac5d1:workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_native_effect/native_original.rs"
+        ],
+        "exit_code": 128,
+        "stdout": "25619ac5d1:workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_native_effect/native_original.rs",
+        "stderr": "fatal: path 'workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_native_effect/native_original.rs' exists on disk, but not in '25619ac5d1'"
+      },
+      "incoming_blob": {
+        "command": [
+          "git",
+          "rev-parse",
+          "14b16fa292:workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_native_effect/native_original.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "d0ab5ceb0d0aa003f114460ac25e70a80841b24a",
+        "stderr": ""
+      },
+      "current_blob": {
+        "command": [
+          "git",
+          "hash-object",
+          "--path=workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_native_effect/native_original.rs",
+          "workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_native_effect/native_original.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "d0ab5ceb0d0aa003f114460ac25e70a80841b24a",
+        "stderr": ""
+      },
+      "lifecycle_changed_since_safe_point": {
+        "command": [
+          "git",
+          "diff",
+          "--quiet",
+          "7d0e5189bc",
+          "codex/m3-p3-lifecycle",
+          "--",
+          "workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_native_effect/native_original.rs"
+        ],
+        "exit_code": 1,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "finding": "BC9002_TEST_TOPOLOGY crates/worth-relational/src/runtime/home_program_transition/body_digest/tests.rs::file: {\"source\":\"crates/worth-relational/src/runtime/home_program_transition/body_digest/tests.rs\",\"module\":\"file\",\"roots\":[\"ExecutionRequest\",\"SerialRequest\"]}",
+      "path": "crates/worth-relational/src/runtime/home_program_transition/body_digest/tests.rs",
+      "owner": "Lifecycle/integration handoff required",
+      "ours_blob": {
+        "command": [
+          "git",
+          "rev-parse",
+          "25619ac5d1:crates/worth-relational/src/runtime/home_program_transition/body_digest/tests.rs"
+        ],
+        "exit_code": 128,
+        "stdout": "25619ac5d1:crates/worth-relational/src/runtime/home_program_transition/body_digest/tests.rs",
+        "stderr": "fatal: path 'crates/worth-relational/src/runtime/home_program_transition/body_digest/tests.rs' exists on disk, but not in '25619ac5d1'"
+      },
+      "incoming_blob": {
+        "command": [
+          "git",
+          "rev-parse",
+          "14b16fa292:crates/worth-relational/src/runtime/home_program_transition/body_digest/tests.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "d255b47263e484501a65025991a590d2504e8792",
+        "stderr": ""
+      },
+      "current_blob": {
+        "command": [
+          "git",
+          "hash-object",
+          "--path=crates/worth-relational/src/runtime/home_program_transition/body_digest/tests.rs",
+          "crates/worth-relational/src/runtime/home_program_transition/body_digest/tests.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "d255b47263e484501a65025991a590d2504e8792",
+        "stderr": ""
+      },
+      "lifecycle_changed_since_safe_point": {
+        "command": [
+          "git",
+          "diff",
+          "--quiet",
+          "7d0e5189bc",
+          "codex/m3-p3-lifecycle",
+          "--",
+          "crates/worth-relational/src/runtime/home_program_transition/body_digest/tests.rs"
+        ],
+        "exit_code": 1,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "finding": "BC9002_TEST_TOPOLOGY crates/worth-relational/src/runtime/home_program_transition/catalog_digest/tests.rs::file: {\"source\":\"crates/worth-relational/src/runtime/home_program_transition/catalog_digest/tests.rs\",\"module\":\"file\",\"roots\":[\"ExecutionRequest\"]}",
+      "path": "crates/worth-relational/src/runtime/home_program_transition/catalog_digest/tests.rs",
+      "owner": "Lifecycle/integration handoff required",
+      "ours_blob": {
+        "command": [
+          "git",
+          "rev-parse",
+          "25619ac5d1:crates/worth-relational/src/runtime/home_program_transition/catalog_digest/tests.rs"
+        ],
+        "exit_code": 128,
+        "stdout": "25619ac5d1:crates/worth-relational/src/runtime/home_program_transition/catalog_digest/tests.rs",
+        "stderr": "fatal: path 'crates/worth-relational/src/runtime/home_program_transition/catalog_digest/tests.rs' exists on disk, but not in '25619ac5d1'"
+      },
+      "incoming_blob": {
+        "command": [
+          "git",
+          "rev-parse",
+          "14b16fa292:crates/worth-relational/src/runtime/home_program_transition/catalog_digest/tests.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "73f30c1cd56b2b3b3798370420465c4cd14677ce",
+        "stderr": ""
+      },
+      "current_blob": {
+        "command": [
+          "git",
+          "hash-object",
+          "--path=crates/worth-relational/src/runtime/home_program_transition/catalog_digest/tests.rs",
+          "crates/worth-relational/src/runtime/home_program_transition/catalog_digest/tests.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "73f30c1cd56b2b3b3798370420465c4cd14677ce",
+        "stderr": ""
+      },
+      "lifecycle_changed_since_safe_point": {
+        "command": [
+          "git",
+          "diff",
+          "--quiet",
+          "7d0e5189bc",
+          "codex/m3-p3-lifecycle",
+          "--",
+          "crates/worth-relational/src/runtime/home_program_transition/catalog_digest/tests.rs"
+        ],
+        "exit_code": 1,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "finding": "BC9002_TEST_TOPOLOGY crates/worth-relational/src/runtime/state/subsystems/record_identity/partition_frontier/tests.rs::file: {\"source\":\"crates/worth-relational/src/runtime/state/subsystems/record_identity/partition_frontier/tests.rs\",\"module\":\"file\",\"roots\":[\"ExecutionRequest\",\"SerialRequest\"]}",
+      "path": "crates/worth-relational/src/runtime/state/subsystems/record_identity/partition_frontier/tests.rs",
+      "owner": "P-A queued migration",
+      "ours_blob": {
+        "command": [
+          "git",
+          "rev-parse",
+          "25619ac5d1:crates/worth-relational/src/runtime/state/subsystems/record_identity/partition_frontier/tests.rs"
+        ],
+        "exit_code": 128,
+        "stdout": "25619ac5d1:crates/worth-relational/src/runtime/state/subsystems/record_identity/partition_frontier/tests.rs",
+        "stderr": "fatal: path 'crates/worth-relational/src/runtime/state/subsystems/record_identity/partition_frontier/tests.rs' exists on disk, but not in '25619ac5d1'"
+      },
+      "incoming_blob": {
+        "command": [
+          "git",
+          "rev-parse",
+          "14b16fa292:crates/worth-relational/src/runtime/state/subsystems/record_identity/partition_frontier/tests.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "456b9a79b80b052e1c147dfc172448572b79ceee",
+        "stderr": ""
+      },
+      "current_blob": {
+        "command": [
+          "git",
+          "hash-object",
+          "--path=crates/worth-relational/src/runtime/state/subsystems/record_identity/partition_frontier/tests.rs",
+          "crates/worth-relational/src/runtime/state/subsystems/record_identity/partition_frontier/tests.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "456b9a79b80b052e1c147dfc172448572b79ceee",
+        "stderr": ""
+      },
+      "lifecycle_changed_since_safe_point": {
+        "command": [
+          "git",
+          "diff",
+          "--quiet",
+          "7d0e5189bc",
+          "codex/m3-p3-lifecycle",
+          "--",
+          "crates/worth-relational/src/runtime/state/subsystems/record_identity/partition_frontier/tests.rs"
+        ],
+        "exit_code": 1,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "finding": "BC9002_TEST_TOPOLOGY crates/worth-relational/src/tests/durability/contracts/native_checkpoint/allocation/encoded_payload.rs::file: {\"source\":\"crates/worth-relational/src/tests/durability/contracts/native_checkpoint/allocation/encoded_payload.rs\",\"module\":\"file\",\"roots\":[\"ExecutionRequest\"]}",
+      "path": "crates/worth-relational/src/tests/durability/contracts/native_checkpoint/allocation/encoded_payload.rs",
+      "owner": "P-A queued migration",
+      "ours_blob": {
+        "command": [
+          "git",
+          "rev-parse",
+          "25619ac5d1:crates/worth-relational/src/tests/durability/contracts/native_checkpoint/allocation/encoded_payload.rs"
+        ],
+        "exit_code": 128,
+        "stdout": "25619ac5d1:crates/worth-relational/src/tests/durability/contracts/native_checkpoint/allocation/encoded_payload.rs",
+        "stderr": "fatal: path 'crates/worth-relational/src/tests/durability/contracts/native_checkpoint/allocation/encoded_payload.rs' exists on disk, but not in '25619ac5d1'"
+      },
+      "incoming_blob": {
+        "command": [
+          "git",
+          "rev-parse",
+          "14b16fa292:crates/worth-relational/src/tests/durability/contracts/native_checkpoint/allocation/encoded_payload.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "f9f969742036e46bf5230b30cac855678e05447d",
+        "stderr": ""
+      },
+      "current_blob": {
+        "command": [
+          "git",
+          "hash-object",
+          "--path=crates/worth-relational/src/tests/durability/contracts/native_checkpoint/allocation/encoded_payload.rs",
+          "crates/worth-relational/src/tests/durability/contracts/native_checkpoint/allocation/encoded_payload.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "f9f969742036e46bf5230b30cac855678e05447d",
+        "stderr": ""
+      },
+      "lifecycle_changed_since_safe_point": {
+        "command": [
+          "git",
+          "diff",
+          "--quiet",
+          "7d0e5189bc",
+          "codex/m3-p3-lifecycle",
+          "--",
+          "crates/worth-relational/src/tests/durability/contracts/native_checkpoint/allocation/encoded_payload.rs"
+        ],
+        "exit_code": 1,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "finding": "BC9002_TEST_TOPOLOGY crates/worth-relational/src/tests/durability/contracts/semantic_result/execution_posture.rs::file: {\"source\":\"crates/worth-relational/src/tests/durability/contracts/semantic_result/execution_posture.rs\",\"module\":\"file\",\"roots\":[\"ExecutionRequest\"]}",
+      "path": "crates/worth-relational/src/tests/durability/contracts/semantic_result/execution_posture.rs",
+      "owner": "P-A queued migration",
+      "ours_blob": {
+        "command": [
+          "git",
+          "rev-parse",
+          "25619ac5d1:crates/worth-relational/src/tests/durability/contracts/semantic_result/execution_posture.rs"
+        ],
+        "exit_code": 128,
+        "stdout": "25619ac5d1:crates/worth-relational/src/tests/durability/contracts/semantic_result/execution_posture.rs",
+        "stderr": "fatal: path 'crates/worth-relational/src/tests/durability/contracts/semantic_result/execution_posture.rs' exists on disk, but not in '25619ac5d1'"
+      },
+      "incoming_blob": {
+        "command": [
+          "git",
+          "rev-parse",
+          "14b16fa292:crates/worth-relational/src/tests/durability/contracts/semantic_result/execution_posture.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "bdc3bed2b110711b7d34114602b61472dab1ceef",
+        "stderr": ""
+      },
+      "current_blob": {
+        "command": [
+          "git",
+          "hash-object",
+          "--path=crates/worth-relational/src/tests/durability/contracts/semantic_result/execution_posture.rs",
+          "crates/worth-relational/src/tests/durability/contracts/semantic_result/execution_posture.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "bdc3bed2b110711b7d34114602b61472dab1ceef",
+        "stderr": ""
+      },
+      "lifecycle_changed_since_safe_point": {
+        "command": [
+          "git",
+          "diff",
+          "--quiet",
+          "7d0e5189bc",
+          "codex/m3-p3-lifecycle",
+          "--",
+          "crates/worth-relational/src/tests/durability/contracts/semantic_result/execution_posture.rs"
+        ],
+        "exit_code": 1,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "finding": "BC9002_TEST_TOPOLOGY crates/worth-relational/src/tests/durability/medium/cold_source.rs::file: {\"source\":\"crates/worth-relational/src/tests/durability/medium/cold_source.rs\",\"module\":\"file\",\"roots\":[\"ExecutionRequest\"]}",
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_source.rs",
+      "owner": "P-A queued migration",
+      "ours_blob": {
+        "command": [
+          "git",
+          "rev-parse",
+          "25619ac5d1:crates/worth-relational/src/tests/durability/medium/cold_source.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "0b6e9c2a47aee53a6e9c6d2a445da667cb734c2f",
+        "stderr": ""
+      },
+      "incoming_blob": {
+        "command": [
+          "git",
+          "rev-parse",
+          "14b16fa292:crates/worth-relational/src/tests/durability/medium/cold_source.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "0b6e9c2a47aee53a6e9c6d2a445da667cb734c2f",
+        "stderr": ""
+      },
+      "current_blob": {
+        "command": [
+          "git",
+          "hash-object",
+          "--path=crates/worth-relational/src/tests/durability/medium/cold_source.rs",
+          "crates/worth-relational/src/tests/durability/medium/cold_source.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "0b6e9c2a47aee53a6e9c6d2a445da667cb734c2f",
+        "stderr": ""
+      },
+      "lifecycle_changed_since_safe_point": {
+        "command": [
+          "git",
+          "diff",
+          "--quiet",
+          "7d0e5189bc",
+          "codex/m3-p3-lifecycle",
+          "--",
+          "crates/worth-relational/src/tests/durability/medium/cold_source.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "finding": "BC9002_TEST_TOPOLOGY crates/worth-relational/src/tests/durability/medium/cold_source/protected_reads.rs::file: {\"source\":\"crates/worth-relational/src/tests/durability/medium/cold_source/protected_reads.rs\",\"module\":\"file\",\"roots\":[\"ExecutionRequest\"]}",
+      "path": "crates/worth-relational/src/tests/durability/medium/cold_source/protected_reads.rs",
+      "owner": "P-A queued migration",
+      "ours_blob": {
+        "command": [
+          "git",
+          "rev-parse",
+          "25619ac5d1:crates/worth-relational/src/tests/durability/medium/cold_source/protected_reads.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "2e7502a0c97eec95f09d8dcf79fbf03c14a598dc",
+        "stderr": ""
+      },
+      "incoming_blob": {
+        "command": [
+          "git",
+          "rev-parse",
+          "14b16fa292:crates/worth-relational/src/tests/durability/medium/cold_source/protected_reads.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "2e7502a0c97eec95f09d8dcf79fbf03c14a598dc",
+        "stderr": ""
+      },
+      "current_blob": {
+        "command": [
+          "git",
+          "hash-object",
+          "--path=crates/worth-relational/src/tests/durability/medium/cold_source/protected_reads.rs",
+          "crates/worth-relational/src/tests/durability/medium/cold_source/protected_reads.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "2e7502a0c97eec95f09d8dcf79fbf03c14a598dc",
+        "stderr": ""
+      },
+      "lifecycle_changed_since_safe_point": {
+        "command": [
+          "git",
+          "diff",
+          "--quiet",
+          "7d0e5189bc",
+          "codex/m3-p3-lifecycle",
+          "--",
+          "crates/worth-relational/src/tests/durability/medium/cold_source/protected_reads.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "finding": "BC9002_TEST_TOPOLOGY crates/worth-relational/src/tests/support/durable_medium/runtime_attachment.rs::file: {\"source\":\"crates/worth-relational/src/tests/support/durable_medium/runtime_attachment.rs\",\"module\":\"file\",\"roots\":[\"ExecutionRequest\",\"RelationalRuntime\"]}",
+      "path": "crates/worth-relational/src/tests/support/durable_medium/runtime_attachment.rs",
+      "owner": "P-A queued migration",
+      "ours_blob": {
+        "command": [
+          "git",
+          "rev-parse",
+          "25619ac5d1:crates/worth-relational/src/tests/support/durable_medium/runtime_attachment.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "f2c0b3c8338322d4757cafc77d1a39a940b7f472",
+        "stderr": ""
+      },
+      "incoming_blob": {
+        "command": [
+          "git",
+          "rev-parse",
+          "14b16fa292:crates/worth-relational/src/tests/support/durable_medium/runtime_attachment.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "f2c0b3c8338322d4757cafc77d1a39a940b7f472",
+        "stderr": ""
+      },
+      "current_blob": {
+        "command": [
+          "git",
+          "hash-object",
+          "--path=crates/worth-relational/src/tests/support/durable_medium/runtime_attachment.rs",
+          "crates/worth-relational/src/tests/support/durable_medium/runtime_attachment.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "f2c0b3c8338322d4757cafc77d1a39a940b7f472",
+        "stderr": ""
+      },
+      "lifecycle_changed_since_safe_point": {
+        "command": [
+          "git",
+          "diff",
+          "--quiet",
+          "7d0e5189bc",
+          "codex/m3-p3-lifecycle",
+          "--",
+          "crates/worth-relational/src/tests/support/durable_medium/runtime_attachment.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "finding": "BC9002_TEST_TOPOLOGY crates/worth-runtime-world/src/durability/artifact/retention_tests.rs::file: {\"source\":\"crates/worth-runtime-world/src/durability/artifact/retention_tests.rs\",\"module\":\"file\",\"roots\":[\"ExecutionRequest\",\"SerialRequest\"]}",
+      "path": "crates/worth-runtime-world/src/durability/artifact/retention_tests.rs",
+      "owner": "Lifecycle/integration handoff required",
+      "ours_blob": {
+        "command": [
+          "git",
+          "rev-parse",
+          "25619ac5d1:crates/worth-runtime-world/src/durability/artifact/retention_tests.rs"
+        ],
+        "exit_code": 128,
+        "stdout": "25619ac5d1:crates/worth-runtime-world/src/durability/artifact/retention_tests.rs",
+        "stderr": "fatal: path 'crates/worth-runtime-world/src/durability/artifact/retention_tests.rs' exists on disk, but not in '25619ac5d1'"
+      },
+      "incoming_blob": {
+        "command": [
+          "git",
+          "rev-parse",
+          "14b16fa292:crates/worth-runtime-world/src/durability/artifact/retention_tests.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "9a0c7843eece9e2570b0aa591d8de3cdcf0c5ad5",
+        "stderr": ""
+      },
+      "current_blob": {
+        "command": [
+          "git",
+          "hash-object",
+          "--path=crates/worth-runtime-world/src/durability/artifact/retention_tests.rs",
+          "crates/worth-runtime-world/src/durability/artifact/retention_tests.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "9a0c7843eece9e2570b0aa591d8de3cdcf0c5ad5",
+        "stderr": ""
+      },
+      "lifecycle_changed_since_safe_point": {
+        "command": [
+          "git",
+          "diff",
+          "--quiet",
+          "7d0e5189bc",
+          "codex/m3-p3-lifecycle",
+          "--",
+          "crates/worth-runtime-world/src/durability/artifact/retention_tests.rs"
+        ],
+        "exit_code": 1,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "finding": "BC9002_TEST_TOPOLOGY crates/worth-runtime-world/src/durability/occurrence_custody/retention_tests.rs::file: {\"source\":\"crates/worth-runtime-world/src/durability/occurrence_custody/retention_tests.rs\",\"module\":\"file\",\"roots\":[\"ExecutionRequest\",\"SerialRequest\"]}",
+      "path": "crates/worth-runtime-world/src/durability/occurrence_custody/retention_tests.rs",
+      "owner": "Lifecycle/integration handoff required",
+      "ours_blob": {
+        "command": [
+          "git",
+          "rev-parse",
+          "25619ac5d1:crates/worth-runtime-world/src/durability/occurrence_custody/retention_tests.rs"
+        ],
+        "exit_code": 128,
+        "stdout": "25619ac5d1:crates/worth-runtime-world/src/durability/occurrence_custody/retention_tests.rs",
+        "stderr": "fatal: path 'crates/worth-runtime-world/src/durability/occurrence_custody/retention_tests.rs' exists on disk, but not in '25619ac5d1'"
+      },
+      "incoming_blob": {
+        "command": [
+          "git",
+          "rev-parse",
+          "14b16fa292:crates/worth-runtime-world/src/durability/occurrence_custody/retention_tests.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "523ac6924c918b6522d20ec976271a736d17df55",
+        "stderr": ""
+      },
+      "current_blob": {
+        "command": [
+          "git",
+          "hash-object",
+          "--path=crates/worth-runtime-world/src/durability/occurrence_custody/retention_tests.rs",
+          "crates/worth-runtime-world/src/durability/occurrence_custody/retention_tests.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "523ac6924c918b6522d20ec976271a736d17df55",
+        "stderr": ""
+      },
+      "lifecycle_changed_since_safe_point": {
+        "command": [
+          "git",
+          "diff",
+          "--quiet",
+          "7d0e5189bc",
+          "codex/m3-p3-lifecycle",
+          "--",
+          "crates/worth-runtime-world/src/durability/occurrence_custody/retention_tests.rs"
+        ],
+        "exit_code": 1,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "finding": "BC9002_TEST_TOPOLOGY crates/worth-runtime-world/src/lifecycle/owner/execution_service/tests/public_ports/released_source.rs::file: {\"source\":\"crates/worth-runtime-world/src/lifecycle/owner/execution_service/tests/public_ports/released_source.rs\",\"module\":\"file\",\"roots\":[\"ExecutionRequest\",\"SerialRequest\"]}",
+      "path": "crates/worth-runtime-world/src/lifecycle/owner/execution_service/tests/public_ports/released_source.rs",
+      "owner": "Lifecycle/integration handoff required",
+      "ours_blob": {
+        "command": [
+          "git",
+          "rev-parse",
+          "25619ac5d1:crates/worth-runtime-world/src/lifecycle/owner/execution_service/tests/public_ports/released_source.rs"
+        ],
+        "exit_code": 128,
+        "stdout": "25619ac5d1:crates/worth-runtime-world/src/lifecycle/owner/execution_service/tests/public_ports/released_source.rs",
+        "stderr": "fatal: path 'crates/worth-runtime-world/src/lifecycle/owner/execution_service/tests/public_ports/released_source.rs' exists on disk, but not in '25619ac5d1'"
+      },
+      "incoming_blob": {
+        "command": [
+          "git",
+          "rev-parse",
+          "14b16fa292:crates/worth-runtime-world/src/lifecycle/owner/execution_service/tests/public_ports/released_source.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "988f5c9684a2a3931c1e5c4393099f745bd304ca",
+        "stderr": ""
+      },
+      "current_blob": {
+        "command": [
+          "git",
+          "hash-object",
+          "--path=crates/worth-runtime-world/src/lifecycle/owner/execution_service/tests/public_ports/released_source.rs",
+          "crates/worth-runtime-world/src/lifecycle/owner/execution_service/tests/public_ports/released_source.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "988f5c9684a2a3931c1e5c4393099f745bd304ca",
+        "stderr": ""
+      },
+      "lifecycle_changed_since_safe_point": {
+        "command": [
+          "git",
+          "diff",
+          "--quiet",
+          "7d0e5189bc",
+          "codex/m3-p3-lifecycle",
+          "--",
+          "crates/worth-runtime-world/src/lifecycle/owner/execution_service/tests/public_ports/released_source.rs"
+        ],
+        "exit_code": 1,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "finding": "BC9002_TEST_TOPOLOGY workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/authorization_denial/instruction_tests.rs::file: {\"source\":\"workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/authorization_denial/instruction_tests.rs\",\"module\":\"file\",\"roots\":[\"ExecutionRequest\"]}",
+      "path": "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/authorization_denial/instruction_tests.rs",
+      "owner": "integration/Bank",
+      "ours_blob": {
+        "command": [
+          "git",
+          "rev-parse",
+          "25619ac5d1:workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/authorization_denial/instruction_tests.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "c0f30d40c9a27016e8e91780f99d9529ca00d615",
+        "stderr": ""
+      },
+      "incoming_blob": {
+        "command": [
+          "git",
+          "rev-parse",
+          "14b16fa292:workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/authorization_denial/instruction_tests.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "888c58dd6615c7348ab2bd2ed4b7ab654c38899f",
+        "stderr": ""
+      },
+      "current_blob": {
+        "command": [
+          "git",
+          "hash-object",
+          "--path=workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/authorization_denial/instruction_tests.rs",
+          "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/authorization_denial/instruction_tests.rs"
+        ],
+        "exit_code": 0,
+        "stdout": "888c58dd6615c7348ab2bd2ed4b7ab654c38899f",
+        "stderr": ""
+      },
+      "lifecycle_changed_since_safe_point": {
+        "command": [
+          "git",
+          "diff",
+          "--quiet",
+          "7d0e5189bc",
+          "codex/m3-p3-lifecycle",
+          "--",
+          "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/authorization_denial/instruction_tests.rs"
+        ],
+        "exit_code": 1,
+        "stdout": "",
+        "stderr": ""
+      }
+    }
+  ],
+  "constructor_caller_diff_from_incoming": {
+    "command": [
+      "git",
+      "diff",
+      "14b16fa292",
+      "--",
+      "tools/boundary-check/config/certification-construction-callers.txt"
+    ],
+    "exit_code": 0,
+    "stdout": "diff --git a/tools/boundary-check/config/certification-construction-callers.txt b/tools/boundary-check/config/certification-construction-callers.txt\nindex dc71353093..3144354f68 100644\n--- a/tools/boundary-check/config/certification-construction-callers.txt\n+++ b/tools/boundary-check/config/certification-construction-callers.txt\n@@ -185,5 +185,10 @@ native-home-original-source-copy crates/worth-court-relational-certification/tes\n native-fresh-initialization crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/required_outputs.rs\n native-durable-initial-installation crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/required_outputs.rs\n native-home-complete-checkpoint workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/native_components/checkpoint.rs\n+\n application-home-checkpoint-maintenance workspaces/worth-query/crates/worth-query-host/src/application_home/maintenance.rs\n+native-home-complete-checkpoint crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/capture_cost.rs\n+native-fresh-initialization crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/contract_work.rs\n+native-durable-initial-installation crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/contract_work.rs\n+native-home-original-source crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/cold_materialization/selected_image.rs\n installation workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/application_query/projection/retained_projection/tests/reads/mod.rs",
+    "stderr": ""
+  }
+}

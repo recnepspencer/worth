@@ -8,7 +8,7 @@ use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 
 #[derive(Debug)]
 struct Backing {
-    definitions: Vec<Arc<DerivedIndexDefinition>>,
+    definitions: Vec<crate::indexes::RetainedDerivedIndexDefinition>,
     _memory: Option<ExecutionMemoryReservation>,
 }
 #[derive(Debug, Clone, Default)]
@@ -33,7 +33,7 @@ impl CheckpointIndexDefinitions {
             .0
             .pad_to_align()
             .size();
-        let roster = Layout::array::<Arc<DerivedIndexDefinition>>(count)
+        let roster = Layout::array::<crate::indexes::RetainedDerivedIndexDefinition>(count)
             .map_err(|_| Cause::ChargedBytesOverflow)?
             .size();
         let bytes = control
@@ -62,13 +62,16 @@ impl CheckpointIndexDefinitions {
             return Self::default();
         }
         Self(Some(Arc::new(Backing {
-            definitions: definitions.into_iter().map(Arc::new).collect(),
+            definitions: definitions
+                .into_iter()
+                .map(crate::indexes::RetainedDerivedIndexDefinition::from_owned)
+                .collect(),
             _memory: None,
         })))
     }
 }
 impl std::ops::Deref for CheckpointIndexDefinitions {
-    type Target = [Arc<DerivedIndexDefinition>];
+    type Target = [crate::indexes::RetainedDerivedIndexDefinition];
     fn deref(&self) -> &Self::Target {
         self.0.as_ref().map_or(&[], |owner| &owner.definitions)
     }
@@ -85,7 +88,7 @@ impl Serialize for CheckpointIndexDefinitions {
     }
 }
 impl CheckpointIndexDefinitions {
-    fn deref_slice(&self) -> &[Arc<DerivedIndexDefinition>] {
+    fn deref_slice(&self) -> &[crate::indexes::RetainedDerivedIndexDefinition] {
         self
     }
 }
@@ -95,8 +98,8 @@ impl<'de> Deserialize<'de> for CheckpointIndexDefinitions {
     }
 }
 impl<'a> IntoIterator for &'a CheckpointIndexDefinitions {
-    type Item = &'a Arc<DerivedIndexDefinition>;
-    type IntoIter = std::slice::Iter<'a, Arc<DerivedIndexDefinition>>;
+    type Item = &'a crate::indexes::RetainedDerivedIndexDefinition;
+    type IntoIter = std::slice::Iter<'a, crate::indexes::RetainedDerivedIndexDefinition>;
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
     }

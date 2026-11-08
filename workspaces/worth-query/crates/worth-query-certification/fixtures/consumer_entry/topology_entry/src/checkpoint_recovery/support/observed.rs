@@ -11,7 +11,7 @@ pub(in super::super) fn install(
 
 pub(in super::super) fn install_with_limits(
     checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
-    limits: WorthQueryInMemoryApplicationLimits,
+    limits: WorthQueryApplicationLimits,
     contacts: &ProviderContacts,
 ) -> Application {
     installation::try_install_program_with_limits_and_domain_denial::<CheckpointProgram>(

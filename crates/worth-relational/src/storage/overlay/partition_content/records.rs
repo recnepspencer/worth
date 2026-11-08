@@ -19,6 +19,7 @@ impl RecordContentIndex {
         arena: &RecordArena<K>,
         symbols: &dyn SymbolTextLookup,
         request: super::full::Request<'_, '_, '_>,
+        frontiers: Option<&[(u64, HistoryAppendFrontier)]>,
         extra: impl Fn(
             &K::Extra,
             &dyn SymbolTextLookup,
@@ -34,16 +35,24 @@ impl RecordContentIndex {
                 .checked_add(1)
                 .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
         }
+        if frontiers.is_some_and(|rows| rows.len() != count) {
+            return Err(PartitionContentDigestError::InvalidHistoryCoverage);
+        }
         let _memory = super::full::rows_memory(count, request)?;
         let mut rows = Vec::with_capacity(count);
         let mut result = Self::default();
         let mut hashed = 0u64;
-        for slot in arena.occupied_slots_iter() {
+        for (ordinal, slot) in arena.occupied_slots_iter().enumerate() {
             super::full::poll(request)?;
             let physical = arena
                 .physical_index(slot)
                 .ok_or(PartitionContentDigestError::InvalidHistoryCoverage)?;
-            let (history, values) = super::record_history::capture_full(arena, slot, request)?;
+            let (history, values) = match frontiers {
+                Some(frontiers) => super::head_commitment::history_from_frontier(
+                    arena, slot, ordinal, frontiers, request,
+                )?,
+                None => super::record_history::capture_full(arena, slot, request)?,
+            };
             rows.push((
                 slot as u128,
                 record_digest(
@@ -132,42 +141,6 @@ impl RecordContentIndex {
                 Some((slot, history.append_frontier(last_value)?))
             })
             .collect()
-    }
-
-    pub(super) fn from_history_frontiers<K: RecordKind>(
-        frontiers: &[(u64, HistoryAppendFrontier)],
-        arena: &RecordArena<K>,
-    ) -> Option<Self>
-    where
-        K::Meta: serde::Serialize,
-    {
-        if !frontiers
-            .iter()
-            .map(|(slot, _)| *slot)
-            .eq(arena.occupied_slots_iter().map(|slot| slot as u64))
-        {
-            return None;
-        }
-        let mut result = Self::default();
-        for (slot, frontier) in frontiers {
-            let history = DigestIndex::from_append_frontier(frontier)?;
-            let metadata = arena.metadata_history_at(usize::try_from(*slot).ok()?)?;
-            if metadata.len() != usize::from(history.next_history_index()? > 0) {
-                return None;
-            }
-            let last = metadata
-                .get(0)
-                .map(|value| hash_value(b"metadata", value))
-                .transpose()
-                .ok()?;
-            history.append_frontier(last)?;
-            result.history_bytes += history.allocation_bytes();
-            if result.histories.contains_key(slot) {
-                return None;
-            }
-            result.histories.insert(*slot, history);
-        }
-        Some(result)
     }
 
     pub(super) fn update<K: RecordKind>(
@@ -317,13 +290,25 @@ fn record_digest<K: RecordKind>(
         .transpose()?
         .flatten();
     let mut resolved = Vec::with_capacity(versions.len());
+    let mut text_bytes = 0u64;
     for (symbol, version) in versions.iter() {
         super::full::poll(request)?;
         let name = symbols.resolve(*symbol).ok_or(
             PartitionContentDigestError::UnresolvedContentSymbol(*symbol),
         )?;
+        text_bytes = text_bytes
+            .checked_add(name.len() as u64)
+            .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
         resolved.push((name, *version));
     }
+    // Name bytes vary independently of numeric Symbol IDs. A machine-width
+    // comparison bound covers lexical sorting as well as serialized hashing.
+    super::full::charge(
+        request,
+        text_bytes
+            .checked_mul(2 * usize::BITS as u64)
+            .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?,
+    )?;
     resolved.sort_unstable_by(|left, right| left.0.cmp(right.0));
     hash_value(
         b"record",

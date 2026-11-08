@@ -70,7 +70,7 @@ pub fn try_install(
     prefix: Arc<prefix_observation::Calls>,
     boxes: Arc<boxes::Calls>,
     incompatible: bool,
-) -> Result<Host<Catalog, Program>, WorthQueryInMemoryApplicationDenial> {
+) -> Result<Host<Catalog, Program>, WorthQueryApplicationPreparationDenial> {
     install_configuration(Configuration {
         prefix,
         configure_prefix: |calls, setup| {
@@ -82,7 +82,7 @@ pub fn try_install(
 }
 pub(super) fn install_configuration(
     configuration: Configuration,
-) -> Result<Host<Catalog, Program>, WorthQueryInMemoryApplicationDenial> {
+) -> Result<Host<Catalog, Program>, WorthQueryApplicationPreparationDenial> {
     let declaration = Catalog::declaration().unwrap();
     Host::install(declaration, (configuration,), |_, graph, installed| {
         graph.bind_principal(

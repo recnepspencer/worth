@@ -12,7 +12,7 @@ fn related_acknowledged_successor_repairs_capture_without_reauthoring_or_old_dec
     successor::output::reset_decodes();
     let pending = worth_query_testkit_host::facade::host::checkpoint_capture::stopped(|phase| {
         callbacks = 0;
-        installation::in_memory_rostered_program_from_checkpoint_with_transition_in_advancement(
+        installation::WorthQueryInterimCheckpointRestore::rostered_program_with_transition_in_advancement(
             phase,
             successor::host::program(),
             installation::WorthQueryApplicationProgramRoster::new()

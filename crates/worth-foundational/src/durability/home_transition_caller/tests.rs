@@ -20,6 +20,8 @@ fn plan() -> HomeProgramTransitionPlanDescription {
         HomeProgramTransitionTargetMeaning::from_recorded(
             1,
             HomeProgramTransitionCatalogDigest::from_recorded([7; 32]),
+            HomeProgramTransitionSchemaDigest::from_recorded([11; 32]),
+            HomeProgramTransitionSchemaCarrierDigest::from_recorded([13; 32]),
         ),
     )
     .unwrap()

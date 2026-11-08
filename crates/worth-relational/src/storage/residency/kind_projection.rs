@@ -72,7 +72,7 @@ pub(super) fn capture_controlled(
 pub(super) mod full;
 mod reconstruction;
 pub(super) use reconstruction::rebuild;
-pub(super) use reconstruction::rebuild_head_history;
+pub(super) use reconstruction::{rebuild_for_request, rebuild_head_history_for_request};
 
 pub(super) use reconstruction::{
     canonical_history, canonical_history_controlled, rebuild_controlled,

@@ -2,6 +2,21 @@
 use super::*;
 use worth_runtime_bridge::facade::UnattachedRelationalBridgeBuilder;
 
+pub(in crate::domain_computation::primary_graph) fn prepare_home_program_mappings<
+    Schema: ApplicationSchema,
+>(
+    incumbent: &RuntimeBridge,
+    schema: &WorthQueryInstalledApplicationSchema<Schema>,
+    layout: &super::super::schema_layout::WorthQueryPrimaryGraphLayout,
+) -> Result<RuntimeBridge, WorthQueryPrimaryGraphInstallationDenial> {
+    let (routing, aspects) = application_mappings(schema, layout)?
+        .map(|mapping| (mapping.routing, mapping.aspect))
+        .unzip();
+    incumbent
+        .with_uninstalled_home_program_mappings(routing, aspects)
+        .map_err(|cause| bridge_denial(format!("Home successor mappings refused: {cause:?}")))
+}
+
 pub(in crate::domain_computation::primary_graph) fn prepare_home_bridge_definition<
     Schema: ApplicationSchema,
 >(

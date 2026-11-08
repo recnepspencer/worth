@@ -17,7 +17,7 @@ impl WorldCheckpointImage {
     ) -> Result<Self, Denial> {
         let payload = super::framing::payload(bytes, request).map_err(Denial::Medium)?;
         let mut read = Read::new(payload, binding.owner().home());
-        let capture_incarnation = read_binding(&mut read, binding)?;
+        let capture_incarnation = read_binding(&mut read, binding, request)?;
         let coverage = read_coverage(&mut read)?;
         let frontiers = read_frontiers(&mut read)?;
         let mut image = Self::empty(binding);
@@ -57,6 +57,7 @@ fn frame(cause: Frame) -> Denial {
 fn read_binding(
     read: &mut Read<'_>,
     binding: &WorldDurableHomeBinding,
+    request: &ExecutionRequest<'_, '_>,
 ) -> Result<HomeIncarnation, Denial> {
     if read.owner().map_err(frame)? != binding.owner() {
         return Err(Denial::ForeignOwner);
@@ -66,7 +67,7 @@ fn read_binding(
     if incarnation > binding.incarnation() {
         return Err(Denial::FutureIncarnation);
     }
-    if read.fixed::<32>().map_err(frame)? != binding.program_revision() {
+    if !binding.admits_checkpoint_revision(read.fixed::<32>().map_err(frame)?, request)? {
         return Err(Denial::ProgramRevisionMismatch);
     }
     Ok(incarnation)
@@ -122,21 +123,13 @@ fn read_rows(
         let row = bytes(read, super::framing::MAXIMUM)?;
         let record =
             decoded::admit(row, image.binding.owner().home(), request).map_err(Denial::Medium)?;
-        let revision = match (&record.record, branch) {
-            (
-                WorldRecord::Branch {
-                    program_revision, ..
-                },
-                true,
-            ) => program_revision,
-            (WorldRecord::OpenAttempt(open), false) => &open.program_revision,
+        match (&record.record, branch) {
+            (WorldRecord::Branch { .. }, true) => {}
+            (WorldRecord::OpenAttempt(_), false) => {}
             _ => return Err(Denial::WrongJournal),
         };
         if record.record.owner() != image.binding.owner() {
             return Err(Denial::ForeignOwner);
-        }
-        if *revision != image.binding.program_revision() {
-            return Err(Denial::ProgramRevisionMismatch);
         }
         image
             .frontiers

@@ -148,7 +148,7 @@ fn work_overflow() -> TransactionCommitError {
 /// can update or retire them. New edges were captured from real allocations.
 pub(super) fn continue_relations(
     envelope: &CanonicalCommitEnvelopeBody,
-    history: &crate::runtime::RelationalPreparationHistory,
+    history: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationHistoryRequest<'_, '_, '_>,
     prior: &super::CanonicalRequiredOutputOrigin,
     basis: &crate::branch::AdmittedRelationalBranchBasis,
     state: &crate::storage::overlay::WorkingState,
@@ -187,7 +187,7 @@ pub(super) fn continue_relations(
                 relation.after_write,
                 write,
                 &mut |commit| history.canonical_envelope(commit),
-                &mut |version| history.canonical_envelope_for_version(version),
+                &mut |version, context| history.canonical_envelope_for_version(version, context),
                 history.canonical_catalog_len(),
                 context,
             )

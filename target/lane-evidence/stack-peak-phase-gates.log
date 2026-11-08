@@ -1,0 +1,17 @@
+COMMAND: ["python", "target/lane-evidence/stack_peak_gates.py"]
+HEAD: 7eeb6fa326b46f1924c1defe9670261245cb1d92
+CLEAN: false
+START: 2026-11-07T09:56:41.111925+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+stack-peak-caps-dirty: exit=0 log=C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\stack-peak-caps-dirty.log
+stack-peak-caps-slice: exit=0 log=C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\stack-peak-caps-slice.log
+C_FREE_BYTES 353116692480
+stack-peak-boundary-driver: exit=1 log=C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\stack-peak-boundary-driver.log
+C_FREE_BYTES 352918196224
+stack-peak-context-driver: exit=0 log=C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\stack-peak-context-driver.log
+warning: in the working copy of 'workspaces/worth-ui/Cargo.lock', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'workspaces/worth-ui/Cargo.lock', LF will be replaced by CRLF the next time Git touches it
+PHASE RESULTS [('stack-peak-caps-dirty', 0), ('stack-peak-caps-slice', 0), ('stack-peak-boundary-driver', 1), ('stack-peak-context-driver', 0)]
+
+END: 2026-11-07T09:57:58.552456+00:00
+EXIT: 1

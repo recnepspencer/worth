@@ -39,6 +39,7 @@ where
             source.as_ref(),
             binding.binding(),
             execution,
+            None,
         )
         .map_err(|cause| Denial::Source(Box::new(cause)))?;
         let mut matches = image

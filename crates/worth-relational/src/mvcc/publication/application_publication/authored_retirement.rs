@@ -1,6 +1,7 @@
 //! Ordinary mutation retirement and current canonical retirement-successor custody.
 use super::*;
 use crate::authority::commit::pipeline::{consult_stage, CommitStage};
+use crate::history::data::CodecRetirementClosureStop as Stop;
 use crate::{
     branch::AdmittedRelationalBranchBasis, history::data::RequiredOutputRoutePosition,
     runtime::RelationalRuntime, transactions::data::EntityReference,
@@ -108,7 +109,11 @@ impl RelationalRuntime {
                             &removed,
                             basis.inner.root.commit_id(),
                             self.history.catalog_len(),
-                            |commit| self.history.canonical_envelope(commit),
+                            |commit| {
+                                self.history_access()
+                                    .demand_commit_envelope(execution, commit)
+                                    .map_err(Stop::Request)
+                            },
                             context,
                         )
                     })
@@ -181,8 +186,9 @@ impl RelationalRuntime {
             return Ok(None);
         };
         let envelope = self
-            .history
-            .canonical_envelope(commit)
+            .history_access()
+            .demand_commit_envelope(execution, commit)
+            .map_err(custody::execution_stop)?
             .ok_or_else(|| origin_denial("selected retirement successor history absent"))?;
         let origin = execution
             .in_scope(|lease| {

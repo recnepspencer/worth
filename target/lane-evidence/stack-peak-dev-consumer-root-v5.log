@@ -1,0 +1,38 @@
+COMMAND: ["python", "target/lane-evidence/stack_peak/measure.py", "dev", "worth-query-consumer-root"]
+HEAD: 7eeb6fa326b46f1924c1defe9670261245cb1d92
+CLEAN: true
+START: 2026-11-07T09:20:03.518243+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+EXACT ENTRY RVAS {'entry': 75866928, 'probe': 208694880} PROFILE dev SHA256 2c90ebedae72d31ab79ab8fbaee1fa992385e3b5242b9769fde73aa646ef4c6c
+DIAGNOSTIC COMMAND ["C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\target\\debug\\worth-query-consumer-root.exe"]
+EVENT 3 29112 39080
+EVENT 2 29112 25824
+EVENT 2 29112 5308
+EVENT 2 29112 25740
+BREAK 0x7ffc68e626c9 entry 0x7ff74609a330
+BREAK 0x7ff74609a330 entry 0x7ff74609a330
+ENTRY 29112 39080 original
+CREATE_REMOTE_BEGIN
+CREATE_REMOTE_END 52488
+EVENT 2 29112 52488
+BREAK 0x7ff74609a330 entry 0x7ff74609a330
+ENTRY 29112 52488 entry
+BREAK 0x7ff74609a330 entry 0x7ff74609a330
+ENTRY 29112 52488 limits
+EVENT 2 29112 26148
+Traceback (most recent call last):
+  File "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\stack_peak\measure.py", line 22, in <module>
+    first=Session(a,symbols).launch();(out/(key+'-paint.json')).write_text(json.dumps(first,indent=2))
+  File "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\stack_peak\debug_session.py", line 15, in launch
+    try:self.loop()
+        ~~~~~~~~~^^
+  File "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\stack_peak\debug_session.py", line 48, in loop
+    event=Event();checked(k.WaitForDebugEvent(c.byref(event),60000));raw=bytes(event.data);disposition=0x10002
+                  ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\stack_peak\windows_debug.py", line 38, in checked
+    if not value:raise c.WinError(c.get_last_error())
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+OSError: [WinError 121] The semaphore timeout period has expired.
+
+END: 2026-11-07T09:22:09.850394+00:00
+EXIT: 1

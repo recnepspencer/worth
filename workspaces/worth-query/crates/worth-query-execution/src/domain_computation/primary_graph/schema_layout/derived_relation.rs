@@ -30,6 +30,7 @@ pub struct DerivedRelationLayout {
 }
 
 pub(super) fn lower(
+    sources: super::source_registration::SourceRegistration<'_>,
     registry: RelationalSchemaRegistry,
     schema: &ErasedApplicationSchemaDeclaration,
     basis: (&SchemaId, SchemaVersionId),
@@ -62,8 +63,8 @@ pub(super) fn lower(
             laws: laws::lower(parts, schema, entities, relations, domains, &registry)?,
         });
     }
-    let registry = registry
-        .register_derived_relations(definitions)
+    let registry = sources
+        .derived(registry, definitions)
         .map_err(|cause| invalid_member(&format!("derived Native registration: {cause:?}")))?;
     let mut layouts = BTreeMap::new();
     for member in schema.members() {

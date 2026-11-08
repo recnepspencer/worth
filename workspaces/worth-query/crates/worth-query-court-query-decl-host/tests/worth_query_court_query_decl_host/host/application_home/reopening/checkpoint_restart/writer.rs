@@ -43,7 +43,7 @@ pub(super) fn run(case: Case, path: std::path::PathBuf) -> ! {
                 .is_none());
             original
         }
-        Case::Image | Case::ImageAndTail | Case::BoundedTail => {
+        Case::Image | Case::ImageAndTail | Case::ColdRecapture | Case::BoundedTail => {
             home.checkpoint(&execution).unwrap().generation()
         }
     };
@@ -51,7 +51,7 @@ pub(super) fn run(case: Case, path: std::path::PathBuf) -> ! {
     let additional = match case {
         Case::Image | Case::InterruptedAck => 0,
         Case::JournalOnly => 2,
-        Case::ImageAndTail => 3,
+        Case::ImageAndTail | Case::ColdRecapture => 3,
         Case::BoundedTail => 37,
     };
     for offset in 0..additional {
@@ -91,7 +91,9 @@ pub(super) fn run(case: Case, path: std::path::PathBuf) -> ! {
             assert_eq!(observed.journals[0].covered, 0);
             assert!(observed.journals[0].head > 0);
         }
-        Case::ImageAndTail => assert!(observed.journals[0].head > observed.journals[0].covered),
+        Case::ImageAndTail | Case::ColdRecapture => {
+            assert!(observed.journals[0].head > observed.journals[0].covered)
+        }
         Case::InterruptedAck => {
             let pending = observed.pending.as_ref().unwrap();
             assert_eq!(pending.selected_generation, Some(generation));
@@ -113,9 +115,11 @@ pub(super) fn run(case: Case, path: std::path::PathBuf) -> ! {
     // image nevertheless covers the actual current Native head.
     let covered = match case {
         Case::InterruptedAck => observed.journals[0].head,
-        Case::Image | Case::JournalOnly | Case::ImageAndTail | Case::BoundedTail => {
-            observed.journals[0].covered
-        }
+        Case::Image
+        | Case::JournalOnly
+        | Case::ImageAndTail
+        | Case::ColdRecapture
+        | Case::BoundedTail => observed.journals[0].covered,
     };
     let ready = path.with_extension("complete-home-ready");
     let pending = ready.with_extension("pending");

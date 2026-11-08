@@ -29,7 +29,7 @@ pub struct RelationalRuntimeBuilder {
     custom_invariants: Vec<CustomInvariantRegistration>,
     managed_sources: Vec<crate::validation::candidate_source::ManagedIndexSourceProgram>,
     commit_strategy_executors: Vec<CommitStrategyExecutionRegistration>,
-    post_commit_consumer: std::sync::Arc<dyn crate::publication::PostCommitConsumer>,
+    post_commit_consumer: Option<std::sync::Arc<dyn crate::publication::PostCommitConsumer>>,
 }
 
 impl Default for RelationalRuntimeBuilder {
@@ -40,7 +40,7 @@ impl Default for RelationalRuntimeBuilder {
             custom_invariants: Vec::new(),
             managed_sources: Vec::new(),
             commit_strategy_executors: Vec::new(),
-            post_commit_consumer: crate::publication::production_post_commit_consumer(),
+            post_commit_consumer: None,
         }
     }
 }
@@ -142,7 +142,7 @@ impl RelationalRuntimeBuilder {
         mut self,
         post_commit_consumer: std::sync::Arc<dyn crate::publication::PostCommitConsumer>,
     ) -> Self {
-        self.post_commit_consumer = post_commit_consumer;
+        self.post_commit_consumer = Some(post_commit_consumer);
         self
     }
 

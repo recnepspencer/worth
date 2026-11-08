@@ -26,6 +26,7 @@ pub enum RelationalSectionReadmissionDenial {
     RuntimeSharedBeforeReadmission,
     MalformedSection,
     PreparedHomeSourceRequired,
+    HomePreparation(worth_relational::facade::durability::RelationalHomeRecoveryPreparationDenial),
     AdmissionImage(worth_relational::facade::durability::RelationalCheckpointAdmissionRefusal),
     UnsupportedCompleteSectionVersion(
         worth_foundational::facade::BoundaryProtocolUnsupportedVersion,

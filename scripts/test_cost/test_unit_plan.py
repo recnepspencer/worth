@@ -9,6 +9,77 @@ from unit_plan import command_for, declare, verify
 
 
 class RequiredUnitPlanTests(unittest.TestCase):
+    def test_mixed_library_and_tests_attribute_single_binary_harnesses_exactly(self):
+        library = unit('owner', dependencies=[3])
+        binary = unit('observer', kind='bin', dependencies=[0])
+        binary['target']['test'] = True
+        source = graph(library, library, binary, unit('dependency'))
+        source['roots'] = [0, 1, 2]
+        before = json.dumps(source, sort_keys=True)
+        with tempfile.TemporaryDirectory() as temporary:
+            for subcommand in ('check', 'clippy'):
+                plan = declare(['cargo', subcommand, '--lib', '--tests'],
+                               temporary, {}, json.dumps(source))
+                observed = event(binary)
+                observed['profile']['test'] = True
+                self.assertTrue(attribute(observed, plan)['test_harness'])
+                observed['profile']['test'] = False
+                with self.assertRaises(CompilerUnitRefusal):
+                    attribute(observed, plan)
+        self.assertEqual(json.dumps(source, sort_keys=True), before)
+
+    def test_explicit_ordinary_binary_selection_does_not_authorize_a_single_test_stage(self):
+        binary = unit('observer', kind='bin')
+        binary['target']['test'] = True
+        with tempfile.TemporaryDirectory() as temporary:
+            for selector in (['--bins'], ['--bin', 'observer'], ['--bin=observer']):
+                plan = declare(['cargo', 'clippy', '--lib', '--tests', *selector],
+                               temporary, {}, json.dumps(graph(binary)))
+                self.assertFalse(attribute(event(binary), plan)['test_harness'])
+                observed = event(binary)
+                observed['profile']['test'] = True
+                with self.assertRaises(CompilerUnitRefusal):
+                    attribute(observed, plan)
+
+    def test_disabled_binary_harness_stays_an_ordinary_compiler_obligation(self):
+        binary = unit('observer', kind='bin')
+        binary['target']['test'] = False
+        with tempfile.TemporaryDirectory() as temporary:
+            plan = declare(['cargo', 'check', '--lib', '--tests'],
+                           temporary, {}, json.dumps(graph(binary)))
+            self.assertFalse(attribute(event(binary), plan)['test_harness'])
+            observed = event(binary)
+            observed['profile']['test'] = True
+            with self.assertRaises(CompilerUnitRefusal):
+                attribute(observed, plan)
+
+    def test_explicit_example_and_tests_preserve_ordinary_and_harness_obligations(self):
+        example = unit('observer', kind='example', dependencies=[3])
+        example['target']['test'] = True
+        other = unit('other', kind='example', dependencies=[3])
+        other['target']['test'] = True
+        source = graph(example, example, other, unit('dependency'))
+        source['roots'] = [0, 1, 2]
+        before = json.dumps(source, sort_keys=True)
+        with tempfile.TemporaryDirectory() as temporary:
+            for selector in (['--example', 'observer'], ['--example=observer']):
+                plan = declare(['cargo', 'check', '--tests', *selector],
+                               temporary, {}, json.dumps(source))
+                ordinary = attribute(event(example), plan)
+                checked = event(example)
+                checked['profile']['test'] = True
+                harness = attribute(checked, plan)
+                self.assertFalse(ordinary['test_harness'])
+                self.assertTrue(harness['test_harness'])
+                self.assertNotEqual(ordinary['identity'], harness['identity'])
+                self.assertEqual(ordinary['dependency_units'], harness['dependency_units'])
+                other_checked = event(other)
+                other_checked['profile']['test'] = True
+                self.assertTrue(attribute(other_checked, plan)['test_harness'])
+                with self.assertRaises(CompilerUnitRefusal):
+                    attribute(event(other), plan)
+        self.assertEqual(json.dumps(source, sort_keys=True), before)
+
     def test_checked_mixed_library_keeps_ordinary_and_harness_obligations_separate(self):
         library = unit('owner', dependencies=[2])
         library['target'].update(kind=['cdylib', 'rlib'], crate_types=['cdylib', 'rlib'])

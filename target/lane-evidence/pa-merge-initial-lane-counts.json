@@ -1,0 +1,301 @@
+[
+  {
+    "suite": "relational",
+    "tests": 2795,
+    "passed": 2732,
+    "ignored": 31,
+    "missing": [],
+    "ok": false,
+    "logs": [
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\lane-evidence-pa-merge-root-tier2-test-cost-root-run-relational--589f6fce9c00-202611071159335548840000-3cd09f0a4330.log",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\lane-evidence-pa-merge-root-tier2-test-cost-root-run-relational.-589f6fce9c00-202611071129346325600000-6fe408c50f45.log"
+    ],
+    "failed": 63,
+    "workspace": "root"
+  },
+  {
+    "suite": "signal",
+    "tests": 2409,
+    "passed": 2409,
+    "ignored": 18,
+    "missing": [],
+    "ok": false,
+    "logs": [
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\lane-evidence-pa-merge-root-tier2-test-cost-root-run-signal.log-589f6fce9c00-202611071159348271640000-64d0127d12d6.log"
+    ],
+    "failed": 0,
+    "workspace": "root"
+  },
+  {
+    "suite": "execution",
+    "tests": 390,
+    "passed": 390,
+    "ignored": 0,
+    "missing": [],
+    "ok": false,
+    "logs": [
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\lane-evidence-pa-merge-root-tier2-test-cost-root-run-execution.l-589f6fce9c00-202611071224540380540000-916e37c6a1b1.log"
+    ],
+    "failed": 0,
+    "workspace": "root"
+  },
+  {
+    "suite": "root-rest",
+    "tests": 2802,
+    "passed": 2802,
+    "ignored": 0,
+    "missing": [],
+    "ok": false,
+    "logs": [
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\lane-evidence-pa-merge-root-tier2-test-cost-root-run-root-rest-r-589f6fce9c00-202611071259180078760000-b84518c1e2c2.log",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\lane-evidence-pa-merge-root-tier2-test-cost-root-run-root-rest.l-589f6fce9c00-202611071228570155980000-1687f700d2df.log"
+    ],
+    "failed": 0,
+    "workspace": "root"
+  },
+  {
+    "suite": "root-process",
+    "tests": 151,
+    "passed": 150,
+    "ignored": 0,
+    "missing": [],
+    "ok": false,
+    "logs": [
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\lane-evidence-pa-merge-root-tier2-test-cost-root-run-root-proces-589f6fce9c00-202611071259194129610000-cf438602dc1a.log"
+    ],
+    "failed": 1,
+    "workspace": "root"
+  },
+  {
+    "suite": "root-cost",
+    "tests": 39,
+    "passed": 34,
+    "ignored": 6,
+    "missing": [],
+    "ok": false,
+    "logs": [
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\lane-evidence-pa-merge-root-tier2-test-cost-root-run-root-cost.l-589f6fce9c00-202611071300564594130000-3cb011a516a8.log"
+    ],
+    "failed": 5,
+    "workspace": "root"
+  },
+  {
+    "suite": "root-determinism",
+    "tests": 14,
+    "passed": 14,
+    "ignored": 0,
+    "missing": [],
+    "ok": false,
+    "logs": [
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\lane-evidence-pa-merge-root-tier2-test-cost-root-run-root-determ-589f6fce9c00-202611071301541807090000-53332a83259c.log"
+    ],
+    "failed": 0,
+    "workspace": "root"
+  },
+  {
+    "suite": "root-compile-fail",
+    "tests": 52,
+    "passed": 52,
+    "ignored": 0,
+    "missing": [],
+    "ok": false,
+    "logs": [
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\lane-evidence-pa-merge-root-tier2-test-cost-root-run-root-compil-589f6fce9c00-202611071302044607080000-532b877d42de.log"
+    ],
+    "failed": 0,
+    "workspace": "root"
+  },
+  {
+    "suite": "root-doc",
+    "tests": 139,
+    "passed": 139,
+    "ignored": 0,
+    "missing": [],
+    "ok": false,
+    "logs": [
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\lane-evidence-pa-merge-root-tier2-test-cost-root-documentation-d-589f6fce9c00-202611071302419585550000-e4580f3afb6d.log"
+    ],
+    "failed": 0,
+    "workspace": "root"
+  },
+  {
+    "suite": "query-execution",
+    "tests": 573,
+    "passed": 573,
+    "ignored": 0,
+    "missing": [],
+    "ok": false,
+    "logs": [
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\lane-evidence-pa-merge-query-tier2-test-cost-query-run-query-exe-589f6fce9c00-202611071331491248230000-2257aa6d1967.log"
+    ],
+    "failed": 0,
+    "workspace": "query"
+  },
+  {
+    "suite": "query-rest",
+    "tests": 6984,
+    "passed": 6950,
+    "ignored": 0,
+    "missing": [],
+    "ok": false,
+    "logs": [
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\lane-evidence-pa-merge-query-tier2-test-cost-query-run-query-res-589f6fce9c00-202611071338109228420000-e2d07682dd1c.log",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\lane-evidence-pa-merge-query-tier2-test-cost-query-run-query-res-589f6fce9c00-202611071513219795610000-d484954a8c9d.log",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\lane-evidence-pa-merge-query-tier2-test-cost-query-run-query-res-589f6fce9c00-202611071513238321930000-7f91bd851cc0.log",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\lane-evidence-pa-merge-query-tier2-test-cost-query-run-query-res-589f6fce9c00-202611071513481343480000-9a8c821fe6de.log",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\lane-evidence-pa-merge-query-tier2-test-cost-query-run-query-res-589f6fce9c00-202611071513530307300000-c1ea2fe1cb36.log",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\lane-evidence-pa-merge-query-tier2-test-cost-query-run-query-res-589f6fce9c00-202611071514008152030000-5b38fbd232d8.log"
+    ],
+    "failed": 34,
+    "workspace": "query"
+  },
+  {
+    "suite": "query-process",
+    "tests": 87,
+    "passed": 84,
+    "ignored": 1,
+    "missing": [],
+    "ok": false,
+    "logs": [
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\lane-evidence-pa-merge-query-tier2-test-cost-query-run-query-pro-589f6fce9c00-202611071514027935560000-21928ce70df8.log"
+    ],
+    "failed": 3,
+    "workspace": "query"
+  },
+  {
+    "suite": "query-cost",
+    "tests": 38,
+    "passed": 38,
+    "ignored": 12,
+    "missing": [],
+    "ok": false,
+    "logs": [
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\lane-evidence-pa-merge-query-tier2-test-cost-query-run-query-cos-589f6fce9c00-202611071532099540660000-b1b58cde8b15.log"
+    ],
+    "failed": 0,
+    "workspace": "query"
+  },
+  {
+    "suite": "query-determinism",
+    "tests": 28,
+    "passed": 28,
+    "ignored": 0,
+    "missing": [],
+    "ok": false,
+    "logs": [
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\lane-evidence-pa-merge-query-tier2-test-cost-query-run-query-det-589f6fce9c00-202611071533312504640000-6066fb8816f5.log"
+    ],
+    "failed": 0,
+    "workspace": "query"
+  },
+  {
+    "suite": "query-compile-fail",
+    "tests": 0,
+    "passed": 0,
+    "ignored": 0,
+    "missing": [],
+    "ok": false,
+    "logs": [],
+    "failed": 0,
+    "workspace": "query"
+  },
+  {
+    "suite": "query-doc",
+    "tests": 546,
+    "passed": 546,
+    "ignored": 0,
+    "missing": [],
+    "ok": false,
+    "logs": [
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\lane-evidence-pa-merge-query-tier2-test-cost-query-documentation-589f6fce9c00-202611071533558044100000-daaa44a880dc.log"
+    ],
+    "failed": 0,
+    "workspace": "query"
+  },
+  {
+    "suite": "bank",
+    "tests": 486,
+    "passed": 485,
+    "ignored": 0,
+    "missing": [],
+    "ok": false,
+    "logs": [
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\lane-evidence-pa-merge-bank-tier2-test-cost-bank-run-bank-inboun-589f6fce9c00-202611071559175925340000-de0b4a3a15f8.log",
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\lane-evidence-pa-merge-bank-tier2-test-cost-bank-run-bank.log-589f6fce9c00-202611071553456044810000-3df5de3791be.log"
+    ],
+    "failed": 1,
+    "workspace": "bank"
+  },
+  {
+    "suite": "bank-process",
+    "tests": 73,
+    "passed": 73,
+    "ignored": 9,
+    "missing": [],
+    "ok": false,
+    "logs": [
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\lane-evidence-pa-merge-bank-tier2-test-cost-bank-run-bank-proces-589f6fce9c00-202611071559204926300000-d4ea095debf8.log"
+    ],
+    "failed": 0,
+    "workspace": "bank"
+  },
+  {
+    "suite": "bank-cost",
+    "tests": 7,
+    "passed": 4,
+    "ignored": 1,
+    "missing": [],
+    "ok": false,
+    "logs": [
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\lane-evidence-pa-merge-bank-tier2-test-cost-bank-run-bank-cost.l-589f6fce9c00-202611071600153668940000-5806ca67c91c.log"
+    ],
+    "failed": 3,
+    "workspace": "bank"
+  },
+  {
+    "suite": "bank-determinism",
+    "tests": 0,
+    "passed": 0,
+    "ignored": 0,
+    "missing": [],
+    "ok": false,
+    "logs": [],
+    "failed": 0,
+    "workspace": "bank"
+  },
+  {
+    "suite": "bank-compile-fail",
+    "tests": 0,
+    "passed": 0,
+    "ignored": 0,
+    "missing": [],
+    "ok": false,
+    "logs": [],
+    "failed": 0,
+    "workspace": "bank"
+  },
+  {
+    "suite": "bank-doc",
+    "tests": 74,
+    "passed": 74,
+    "ignored": 7,
+    "missing": [],
+    "ok": false,
+    "logs": [
+      "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\lane-evidence-pa-merge-bank-tier2-test-cost-bank-documentation-d-589f6fce9c00-202611071600333217950000-42a2908d3fb3.log"
+    ],
+    "failed": 0,
+    "workspace": "bank"
+  },
+  {
+    "suite": "fixture",
+    "tests": 599,
+    "passed": 578,
+    "ignored": null,
+    "missing": null,
+    "ok": false,
+    "logs": null,
+    "failed": 19,
+    "workspace": "fixture"
+  }
+]

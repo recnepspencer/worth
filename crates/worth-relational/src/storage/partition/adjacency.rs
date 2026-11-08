@@ -144,11 +144,6 @@ impl AdjacencySet {
         entries.historical_kind_custody = None;
     }
 
-    #[cfg(test)]
-    pub(crate) fn reset_historical_kind_buckets(&mut self) {
-        self.reset_historical_kind_buckets_with_custody(None);
-    }
-
     pub(crate) fn reset_historical_kind_buckets_with_custody(
         &mut self,
         custody: Option<HistoricalKindCustody>,

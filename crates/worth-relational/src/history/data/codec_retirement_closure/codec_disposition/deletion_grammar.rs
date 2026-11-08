@@ -33,7 +33,7 @@ pub(super) fn entity(
 }
 
 pub(super) fn relation(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     envelope: &CanonicalCommitEnvelope,
     relation: &CanonicalRequiredOutputRelation,
     state: Option<&AuthoritativeRecordAspectState>,
@@ -42,6 +42,7 @@ pub(super) fn relation(
 ) -> Result<(), Stop> {
     let actual = metadata::require_delete(envelope, RecordRef::Relation(relation.id), context)?;
     let plan = runtime
+        .runtime
         .relation_aspect_plan(relation.kind)
         .ok_or("codec relation plan absent")?;
     let _scratch = reserve(plan, state, actual, context, lease)?;
@@ -51,7 +52,7 @@ pub(super) fn relation(
         relation.source,
         relation.target,
         state,
-        runtime,
+        runtime.runtime,
         actual.detail.clone(),
     )
     .map_err(|_| Stop::from("codec relation deletion reconstruction refused"))?;

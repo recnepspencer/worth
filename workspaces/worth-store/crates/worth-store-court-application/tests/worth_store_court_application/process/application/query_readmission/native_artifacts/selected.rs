@@ -2,25 +2,38 @@
 use super::*;
 use worth_foundational::facade::{AspectValue, InternedString};
 
+enum RecordAdmissionOwner {
+    NativeFinalization,
+    QueryAttachment,
+}
+
 #[test]
 fn selected_completion_and_activation_failures_keep_owned_home_without_initializing() {
-    for (case, expected) in [
+    for (case, expected, owner) in [
         (
             "missing-completion",
             "Home root must contain exactly one bootstrap completion record",
+            RecordAdmissionOwner::QueryAttachment,
         ),
         (
             "unsupported-format",
             "Home bootstrap completion format is unsupported",
+            RecordAdmissionOwner::NativeFinalization,
         ),
-        ("foreign-binding", "Home completion binding is foreign:"),
+        (
+            "foreign-binding",
+            "Home completion binding is foreign:",
+            RecordAdmissionOwner::NativeFinalization,
+        ),
         (
             "missing-activation",
             "recovered branch contains 0 program activation records, expected one",
+            RecordAdmissionOwner::QueryAttachment,
         ),
         (
             "foreign-activation",
             "Home root does not activate its admitted program",
+            RecordAdmissionOwner::QueryAttachment,
         ),
     ] {
         let path = tempfile::tempdir().unwrap();
@@ -102,13 +115,33 @@ fn selected_completion_and_activation_failures_keep_owned_home_without_initializ
         .unwrap();
         assert_eq!(callbacks.load(Ordering::SeqCst), 1);
         let refused = reopen_refusal(path.path(), execution);
-        match &refused {
-            WorthQueryApplicationHomeOpenRefused::ExistingQueryAttachment { query, .. } => assert!(
-                query.detail().contains(expected),
-                "{case}: {}",
-                query.detail()
-            ),
-            other => panic!("{case} must reach selected Query record admission: {other:?}"),
+        match owner {
+            RecordAdmissionOwner::NativeFinalization => {
+                let WorthQueryApplicationHomeOpenRefused::ExistingNativeFinalization {
+                    query, ..
+                } = &refused
+                else {
+                    panic!("{case} must reach Native completion admission: {refused:?}");
+                };
+                assert_eq!(query.reason().kind(), worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected);
+                assert!(
+                    query.reason().subject().contains(expected),
+                    "{case}: {:?}",
+                    query.reason()
+                );
+            }
+            RecordAdmissionOwner::QueryAttachment => {
+                let WorthQueryApplicationHomeOpenRefused::ExistingQueryAttachment { query, .. } =
+                    &refused
+                else {
+                    panic!("{case} must reach selected Query record admission: {refused:?}");
+                };
+                assert!(
+                    query.detail().contains(expected),
+                    "{case}: {}",
+                    query.detail()
+                );
+            }
         }
         refused
             .close(&execution)

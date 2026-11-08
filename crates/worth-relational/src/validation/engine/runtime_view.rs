@@ -34,16 +34,15 @@ pub(crate) struct InvariantRuntimeView<'a> {
 
 impl<'a> InvariantRuntimeView<'a> {
     pub(crate) fn from_runtime(runtime: &'a RelationalRuntime) -> Self {
+        let configuration = runtime.operation_configuration();
         Self {
-            selected_registry: crate::schema::SchemaRegistryCustody::Runtime(
-                std::sync::Arc::clone(&runtime.config),
-            ),
+            selected_registry: crate::schema::SchemaRegistryCustody::Runtime(configuration.clone()),
             prior_registry: None,
             home_target: None,
             custom_kernel_posture: worth_foundational::ExecutionPosture::Serial,
             commit_work_budget: None,
-            config: std::sync::Arc::clone(&runtime.config),
-            schema_contract_runtime: std::sync::Arc::clone(&runtime.schema_contract_runtime),
+            config: configuration.config,
+            schema_contract_runtime: configuration.schema_contract_runtime,
             instrumentation: &runtime.services.instrumentation,
             counter_sink: None,
             shared_candidate_inputs: None,

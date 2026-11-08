@@ -84,6 +84,18 @@ pub trait RelationalDurableMedium: Send + Sync + std::fmt::Debug {
     fn home_transition_authority(&self) -> Option<&worth_proof::HomeProgramTransitionAuthority> {
         None
     }
+    /// Only the actual Home medium carries its already source-bound selection.
+    fn home_world_selection(
+        &self,
+    ) -> Option<
+        std::sync::Arc<
+            worth_proof::VerifiedHomeWorldSelection<
+                std::sync::Arc<crate::durability::RelationalWorldSourceCatalog>,
+            >,
+        >,
+    > {
+        None
+    }
     fn home_transition_required(&self) -> Option<&worth_proof::HomeProgramTransitionRequired> {
         None
     }

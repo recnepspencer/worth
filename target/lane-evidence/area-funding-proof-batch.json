@@ -1,0 +1,36 @@
+[
+  [
+    "area-funding-native-selection",
+    "python",
+    "target/lane-evidence/owned_native_funding_finish_probe.py",
+    "area-funding-native-selection",
+    "test(selected_embedded_capture_refuses_before_canonical_body_demand) | test(selected_state_recapture_work_does_not_follow_discarded_covered_update_bytes) | test(complete_source_recovery_restores_original_inputs_for_another_complete_capture) | test(cold_complete_recapture_preserves_original_index_generations_and_live_tail) | test(cloned_complete_plan_retries_after_member_read_cancellation_without_directory_contamination) | test(checkpoint_image_restores_publication_bases_and_creations_without_canonical_body_reads) | test(birth_checkpoint_reopens_with_archived_empty_installation_tail_at_zero_commits) | test(complete_capture_stopped_request_precedes_proven_selected_damage) | test(head_materialization_budget_survives_edit_and_last_basis_drop) | test(full_materialization_budget_survives_mirror_edits_until_runtime_drop) | test(checkpoint_image_recovery_respects_memory_and_cancellation_and_releases_its_retained_budget) | test(selected_checkpoint_without_captured_original_base_refuses_without_body_demand)",
+    "12"
+  ],
+  [
+    "area-funding-host-selection",
+    "python",
+    "target/lane-evidence/owned_host_funding_probe.py",
+    "area-funding-host-selection",
+    "test(journal_only_killed_home_reopens_original_inputs_and_commits_without_initializing) | test(selected_complete_home_reopens_and_selects_another_complete_checkpoint) | test(killed_home_reopens_normalized_image_plus_nonempty_tail) | test(interrupted_owner_ack_resumes_original_attempt_and_reopens_unacknowledged_selection) | test(automatic_checkpoints_bound_host_reopen_journal_reads_with_headroom) | test(same_directory_reopens_reads_and_commits_without_replaying_initializer_or_old_key) | test(flushed_and_pending_multibatch_homes_readmit_their_completed_publication) | test(separate_processes_readmit_old_keys_and_restore_the_actual_outcome_frontier) | test(initializer_refusal_reopens_at_missing_world_origin_without_replaying_initializer) | test(cold_image_plus_tail_recapture_reads_only_the_uncovered_original_frames) | test(live_checkpoint_recapture_keeps_all_covered_canonical_bodies_cold) | test(automatic_capture_at_head_forty_one_preserves_ordinary_request_results) | test(close_checkpoint_uses_host_allowance_with_an_ordinary_close_caller) | test(close_checkpoint_exhaustion_reports_failure_and_preserves_journal_reopen) | test(automatic_checkpoint_exhaustion_keeps_business_results_and_explicit_capture_uses_its_own_allowance) | test(automatic_checkpoint_progresses_after_caller_cancellation_without_replacing_the_body_value)",
+    "16"
+  ],
+  [
+    "area-funding-store-selection",
+    "python",
+    "target/lane-evidence/owned_store_funding_probe.py",
+    "area-funding-store-selection",
+    "test(selected_checkpoint_survives_observer_drop_online_history_and_mutation_before_ack_recovery) | test(selected_completion_and_activation_failures_keep_owned_home_without_initializing) | test(selected_home_admission_refuses_predecessors_missing_foreign_and_damaged_images) | test(selected_home_image_preserves_original_binding_fields_and_world_publication)",
+    "4"
+  ],
+  [
+    "area-funding-cdc-recovery",
+    "python",
+    "target/lane-evidence/focused_runner.py",
+    "root",
+    "area-funding-cdc-recovery",
+    "worth-relational",
+    "lib",
+    "test(cdc_property_persisted_random_operation_matrix_recovers) | test(seeded_full_key_differential_fork_recovery_and_replay_keep_actual_names_and_lineage) | test(excess_scalar_columns_refuse_before_schema_lookup)"
+  ]
+]

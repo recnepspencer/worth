@@ -16,12 +16,13 @@ pub(crate) fn readmit_required_output_route(
     basis: &AdmittedRelationalBranchBasis,
     meaning: &RequiredOutputPublicationMeaning,
 ) -> Result<Option<RequiredOutputRoutePosition>, Stop> {
+    let runtime = &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest::new(runtime, execution);
     let result = execution.in_scope(|lease| {
         ExecutionWorkCeiling::new(execution.work_ceiling()).run_with_checkpoint(
             lease,
             None,
             |context| {
-                if basis.descriptor().runtime_instance_id() != runtime.runtime_instance_id()
+                if basis.descriptor().runtime_instance_id() != runtime.runtime.runtime_instance_id()
                     || !basis.is_current()
                 {
                     return Err(
@@ -43,19 +44,18 @@ pub(crate) fn readmit_required_output_route(
 }
 
 pub(super) fn select_at(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     mut next: Option<CommitId>,
     meaning: &RequiredOutputPublicationMeaning,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Result<Option<RequiredOutputRoutePosition>, Stop> {
-    let bound = runtime.history.catalog_len();
+    let bound = runtime.runtime.history.catalog_len();
     for _ in 0..bound {
         let Some(commit) = next else { return Ok(None) };
         charge(context, bound.saturating_add(1))?;
         let envelope = runtime
-            .history
-            .canonical_envelope(commit)
+            .commit(commit)?
             .ok_or("cold route selection lost canonical history")?;
         require_linear_history(&envelope)?;
         let mut event = None;
@@ -83,8 +83,7 @@ pub(super) fn select_at(
         if let Some(restored) = &envelope.authored_cascade_restoration {
             charge(context, bound.saturating_add(1))?;
             let retired = runtime
-                .history
-                .canonical_envelope(restored.retirement)
+                .commit(restored.retirement)?
                 .ok_or("restoration retirement absent")?;
             for origin in retired.output_origins() {
                 charge(

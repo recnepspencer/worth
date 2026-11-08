@@ -238,13 +238,14 @@ fn metadata_member_directories_preserve_dictionary_ranges_and_alias_custody() {
     let host = SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
     let request = ExecutionRequest::serial(&host);
     let dictionary = OriginalSymbolDictionary::capture(&original, &[], &request).unwrap();
-    let lineage = capture_lineage(&[], &request).unwrap();
+    let lineage = capture_lineage(&[], None, &request).unwrap();
     let original = crate::runtime::IndexingSubsystem::default()
         .checkpoint_inputs_for_request(&request)
         .unwrap()
         .resolve_for_request(&request)
         .unwrap();
-    let output = capture_metadata_members(&dictionary, &lineage, &original, &request).unwrap();
+    let output =
+        capture_metadata_members(&dictionary, &lineage, &original, None, &request).unwrap();
     drop(original);
     let mut recovered = std::collections::BTreeMap::new();
     for page in &output.symbols {

@@ -88,8 +88,6 @@ fn approval_field_text_survives_current_checkpoint_and_fresh_authority_readmissi
                     WorthQueryCheckpointCapturePolicy::SystemAllocation,
                 )
                 .unwrap()
-                .bytes()
-                .to_vec()
         })
         .unwrap();
     // Neither the old request nor its native live ref supplies the restored authority.
@@ -97,7 +95,7 @@ fn approval_field_text_survives_current_checkpoint_and_fresh_authority_readmissi
     drop(required);
     drop(proposal);
     drop(application);
-    let retained = WorthQueryApplicationCheckpoint::from_untrusted_bytes(checkpoint);
+    let retained = checkpoint;
     let intact = retained.bytes().to_vec();
     let restored = retain_workflow_for::<_, GovernedDocumentWorkflow>(
         restore_on_first_program(

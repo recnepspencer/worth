@@ -1,6 +1,6 @@
 //! Assemble the one admitted program roster and native runtime into its installed owner.
 use super::super::program_admission::WorthQueryAdmittedProgramSupport;
-use super::super::WorthQueryInMemoryApplicationDenial;
+use super::super::WorthQueryApplicationPreparationDenial;
 use super::supported_program::WorthQuerySupportedProgramRecord;
 use super::{
     WorthQueryApplicationProgramRoots, WorthQueryApplicationProgramRoster,
@@ -31,7 +31,7 @@ pub(in crate::domain_computation::primary_graph) struct ProgramAssemblyRefused<S
         WorthQueryInstalledApplicationProgram<Schema, Program>,
         Vec<WorthQuerySupportedProgramRecord>,
     )>,
-    pub(in crate::domain_computation::primary_graph) cause: WorthQueryInMemoryApplicationDenial,
+    pub(in crate::domain_computation::primary_graph) cause: WorthQueryApplicationPreparationDenial,
 }
 
 pub(in crate::domain_computation::primary_graph) fn assemble<Schema, Program>(
@@ -40,7 +40,10 @@ pub(in crate::domain_computation::primary_graph) fn assemble<Schema, Program>(
         WorthQueryInstalledApplicationProgram<Schema, Program>,
         Vec<WorthQuerySupportedProgramRecord>,
     )>,
-) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, WorthQueryInMemoryApplicationDenial>
+) -> Result<
+    WorthQueryProgramApplicationRuntime<Schema, Program>,
+    WorthQueryApplicationPreparationDenial,
+>
 where
     Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema> + 'static,
@@ -72,7 +75,7 @@ where
             return Err(ProgramAssemblyRefused {
                 runtime,
                 admitted: None,
-                cause: WorthQueryInMemoryApplicationDenial::ProgramAdmissionIncomplete,
+                cause: WorthQueryApplicationPreparationDenial::ProgramAdmissionIncomplete,
             })
         }
     };
@@ -94,7 +97,7 @@ where
         return Err(ProgramAssemblyRefused {
             runtime,
             admitted: Some((installed, supported)),
-            cause: WorthQueryInMemoryApplicationDenial::ProgramAdmissionIncomplete,
+            cause: WorthQueryApplicationPreparationDenial::ProgramAdmissionIncomplete,
         });
     }
     if let Some(support) = runtime.program_support.as_mut() {
@@ -197,7 +200,7 @@ pub(in crate::domain_computation::primary_graph) fn admit_program_roster<Schema,
         WorthQueryInstalledApplicationProgram<Schema, Program>,
         Vec<WorthQuerySupportedProgramRecord>,
     ),
-    WorthQueryInMemoryApplicationDenial,
+    WorthQueryApplicationPreparationDenial,
 >
 where
     Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,
@@ -243,7 +246,7 @@ fn require_rostered_binding_membership<Schema, Program>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     installed: &WorthQueryInstalledApplicationProgram<Schema, Program>,
     output_source_bindings: &[TypeId],
-) -> Result<(), WorthQueryInMemoryApplicationDenial>
+) -> Result<(), WorthQueryApplicationPreparationDenial>
 where
     Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,
 {
@@ -266,11 +269,11 @@ where
         runtime.installed_schema(),
         &answered,
     )
-    .map_err(WorthQueryInMemoryApplicationDenial::Program)
+    .map_err(WorthQueryApplicationPreparationDenial::Program)
 }
 
 fn program_support_denied(
     denial: worth_query_installation::facade::WorthQueryProgramSupportDenial,
-) -> WorthQueryInMemoryApplicationDenial {
-    WorthQueryInMemoryApplicationDenial::Program(denial.into())
+) -> WorthQueryApplicationPreparationDenial {
+    WorthQueryApplicationPreparationDenial::Program(denial.into())
 }

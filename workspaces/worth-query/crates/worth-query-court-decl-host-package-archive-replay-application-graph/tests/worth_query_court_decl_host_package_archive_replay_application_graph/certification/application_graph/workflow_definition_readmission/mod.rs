@@ -16,8 +16,8 @@ fn workflow_actor_contract_authentic_predecessor_refuses_before_native_restore()
     .err()
     .expect("displaced checkpoint must refuse before native restoration");
     match denial {
-        worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationDenial::Graph(cause) => {
-            assert!(matches!(cause.kind(), worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::UnsupportedCheckpointFormat { observed: 9, supported: 13 }));
+        worth_query_host::facade::application_installation::WorthQueryApplicationPreparationDenial::Graph(cause) => {
+            assert!(matches!(cause.kind(), worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::UnsupportedCheckpointFormat { observed: 9, supported: 14 }));
         }
         other => panic!("expected typed intact format refusal: {other:?}"),
     }
@@ -27,8 +27,7 @@ fn workflow_actor_contract_authentic_predecessor_refuses_before_native_restore()
 }
 
 #[test]
-fn workflow_actor_contract_reheadered_predecessor_refuses_native_frame_before_authority_readmission(
-) {
+fn workflow_actor_contract_reheadered_predecessor_refuses_without_capture_origin() {
     use sha2::{Digest, Sha256};
     let original = include_bytes!(
         "../../../../../../worth-query-testkit-certification-application-graph/src/certification/application_graph/workflow_definition_readmission/missing_input.checkpoint"
@@ -44,14 +43,17 @@ fn workflow_actor_contract_reheadered_predecessor_refuses_native_frame_before_au
     assert!(!original[66..66 + native_len].starts_with(b"WORTH-REL-CHK9\n"));
     assert!(!original[66..66 + native_len].starts_with(b"WORTH-REL-CHK12\n"));
     assert!(!original[66..66 + native_len].starts_with(b"WORTH-REL-CHK13\n"));
-    let mut body = Vec::from(13u16.to_be_bytes());
+    let mut body = Vec::from(14u16.to_be_bytes());
     body.extend_from_slice(&2u16.to_be_bytes());
     body.extend_from_slice(&4u16.to_be_bytes());
-    body.extend_from_slice(&original[42..]);
+    body.extend_from_slice(&original[42..58]);
+    body.extend_from_slice(&0u64.to_be_bytes());
+    body.extend_from_slice(&0u64.to_be_bytes());
+    body.extend_from_slice(&original[58..]);
     let mut bytes = original[..8].to_vec();
     bytes.extend_from_slice(&Sha256::digest(&body));
     bytes.extend_from_slice(&body);
-    assert_eq!(&bytes[70..70 + native_len], &original[66..66 + native_len]);
+    assert_eq!(&bytes[86..86 + native_len], &original[66..66 + native_len]);
     let checkpoint = WorthQueryApplicationCheckpoint::from_untrusted_bytes(bytes);
     let retained = checkpoint.clone();
     let intact = retained.bytes().to_vec();
@@ -63,18 +65,17 @@ fn workflow_actor_contract_reheadered_predecessor_refuses_native_frame_before_au
     .err()
     .expect("the old native frame must refuse before authority readmission");
     match denial {
-        worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationDenial::Graph(cause) => {
-            // The native frame owner refuses first; schema-authority readmission
-            // (which can report UnsupportedRecoveredNativeAuthorityLayout) is unreachable.
-            assert_eq!(cause.kind(), worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected);
-            assert!(cause.subject().contains("UnsupportedLegacySemantics"), "{cause:?}");
-            assert!(cause.subject().contains("unsupported native checkpoint frame; WORTH-REL-CHK18 required"), "{cause:?}");
+        worth_query_host::facade::application_installation::WorthQueryApplicationPreparationDenial::Graph(cause) => {
+            assert_eq!(cause.kind(), worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::InterimCheckpointCaptureOriginMissing);
         }
         other => panic!("expected native frame refusal: {other:?}"),
     }
     assert_eq!(retained.bytes(), intact);
     assert_eq!(retained.bytes().as_ptr(), backing);
-    assert_eq!(&retained.bytes()[46..], &original[42..]);
+    assert_eq!(
+        &retained.bytes()[86..86 + native_len],
+        &original[66..66 + native_len]
+    );
 }
 
 #[test]
@@ -111,14 +112,14 @@ fn current_draft_policy_drift_refuses_before_publication() {
 fn current_checkpoint_refusal_preserves_source_and_existing_application() {
     use sha2::{Digest, Sha256};
     use worth_query_host::facade::{
-        application_installation::WorthQueryInMemoryApplicationDenial,
+        application_installation::WorthQueryApplicationPreparationDenial,
         primary_graph::WorthQueryPrimaryGraphInstallationDenialKind as Kind,
     };
     let application = publish_workflow_on_first_program();
     let original = capture(&application);
     let head = application.runtime().current_world();
     for marker_mismatch in [true, false] {
-        let mut bytes = original.clone();
+        let mut bytes = original.bytes().to_vec();
         let expected = if marker_mismatch {
             bytes[42..44].copy_from_slice(&1u16.to_be_bytes());
             let checksum = Sha256::digest(&bytes[40..]);
@@ -140,12 +141,27 @@ fn current_checkpoint_refusal_preserves_source_and_existing_application() {
         .err()
         .expect("hostile current artifact must return no runtime");
         match denial {
-            WorthQueryInMemoryApplicationDenial::Graph(cause) => assert_eq!(cause.kind(), expected),
+            WorthQueryApplicationPreparationDenial::Graph(cause) => {
+                assert_eq!(cause.kind(), expected)
+            }
             other => panic!("must reach exact artifact refusal: {other:?}"),
         }
         assert_eq!(retained.bytes(), bytes);
         assert_eq!(application.runtime().current_world(), head);
-        assert_eq!(capture(&application), original);
+        let later = capture(&application);
+        application
+            .with_host_advancement(|phase| {
+                let before = application
+                    .runtime()
+                    .inspect_application_checkpoint(&phase, original.bytes())
+                    .unwrap();
+                let after = application
+                    .runtime()
+                    .inspect_application_checkpoint(&phase, later.bytes())
+                    .unwrap();
+                assert_eq!(before.model, after.model);
+            })
+            .unwrap();
     }
 }
 

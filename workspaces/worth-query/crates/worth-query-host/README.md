@@ -69,7 +69,7 @@ Declared producers, conditionals and application resource pools refuse through
 one preparation check, before contribution configuration, initialization,
 physical Home creation or World bootstrap. Match
 `WorthQueryApplicationHomeOpenRefused::Preparation` and its
-`WorthQueryInMemoryApplicationDenial::UnsupportedSeed` cause. The cause carries
+`WorthQueryApplicationPreparationDenial::UnsupportedSeed` cause. The cause carries
 `WorthQueryDurableStateAdmissionDenial::Unsupported { family, supported_from_phase }`:
 
 Inspect `next_actions()` through `facade::primary_graph::ProductUnpublishedNextAction`
@@ -208,7 +208,44 @@ The next successful open after discard initializes a new Home identity.
 
 ### Recovery after a selected checkpoint — pending (owner P-A, D12)
 
-### Development workflow with program transitions — pending (owner P-C, D16)
+### Development workflow with program transitions
+
+When a Directory Home's recorded program or schema differs, supply the actual
+successor declaration and program on the open request. Call
+`successor.with_program_transition(predecessor, resources, author)` before
+`open_in_advancement`. The predecessor is a request carrying the old declaration,
+program and configuration; its location and initializer are not executed. The
+successor request supplies the physical location and opening options. Each
+schema type must describe its own complete static declaration; supplying an
+edited declaration under the old type refuses with `SchemaMeaningChanged`.
+
+The author borrows a read-only predecessor source and a prepared target. Use
+`source.entities` or `source.relations` with a scan limit, and obtain field
+locators from `source.planned_field` or `target.planned_field`. Return a complete
+`WorthQueryHomeProgramTransitionPlan`: a nonempty `steps` vector, one `target`
+position and, when the Native schema changes, its `schema_transition`. The
+`home_program_transition` facade exposes the existing relational intent and
+schema-proposal DATA; it exposes no Native runtime or publication grant. All
+three `DerivedIndexMaintenanceBudget` limits must be finite and positive.
+
+Opening readmits the old owners before invoking the author. It records the
+complete intent, performs each positioned step once, and acknowledges the new
+binding before returning the successor Home. User bodies can change authored
+Relational records; private Query records and materialization mutations refuse
+before the intent. The framework updates the existing activation record.
+Signal/Bridge mutations remain unsupported in this lane.
+
+Fresh and already-current Homes skip the transition author. After a successful
+transition, close normally and reopen with the successor request alone. Existing
+entities and durable history remain in the same Home; neither initializer is
+replayed. A refusal owns its actual preparation and Home phase. Inspect
+`refused.phase()` for the typed outcome and retain the owner after an intent has
+been recorded.
+
+#### Interrupted transitions — cleanup track (owner P-C)
+
+Resume, plan-drift qualification, interrupted binding and process-kill courts
+remain cleanup work; the graceful workflow above does not qualify them.
 
 ### Durable branch creation — pending (owner P-C, after D12)
 
@@ -297,7 +334,7 @@ borrows the unpublished typed graph and its installed schema, seeds initial
 state, and returns a typed graph installation result. Successful program
 construction returns `WorthQueryProgramApplicationRuntime<Schema, Program>`.
 
-`WorthQueryInMemoryApplicationLimits::new` accepts World resources, an application
+`WorthQueryApplicationLimits::new` accepts World resources, an application
 query profile and a conditional evaluation budget. Installed handlers implement
 `decide` and `build_candidate`; computing handlers override `prepare_decision`
 and return the installed computation's `decision_plan`. Decision reads retain
@@ -431,7 +468,7 @@ recovery obligations; preparation classification does not turn them into denials
 
 Ordinary graph demands use `WorthQueryOutputDemandControls::default()` and inherit
 the installed host policy. Configure that policy once with
-`WorthQueryInMemoryApplicationLimits::with_output_demand_resources(...)` and
+`WorthQueryApplicationLimits::with_output_demand_resources(...)` and
 `WorthQueryOutputDemandResourceProfile`; currentness work, producer work, producer
 retained bytes, and settlement attempts are separate dimensions. Explicit caller
 controls and child artifact limits only narrow the relevant dimensions. A handle's

@@ -1,0 +1,265 @@
+--- a/crates/worth-court-relational-certification/tests/worth_court_relational_certification/process/serial/relational/managed_source_work_account/public_only.rs
++++ b/crates/worth-court-relational-certification/tests/worth_court_relational_certification/process/serial/relational/managed_source_work_account/public_only.rs
+@@ -35,7 +35,7 @@
+             Terminal::Request(RelationalExecutionDenialCause::WorkExhausted)
+         );
+         assert_eq!(stopped.reached, 1);
+-        assert!(stopped.work <= EXTRA - 1);
++        assert!(stopped.work < EXTRA);
+         assert!(stopped.work > base.work);
+     }
+     let cancelled = sample(
+--- a/crates/worth-court-relational-certification/tests/worth_court_relational_certification/process/serial/relational/managed_source_work_account.rs
++++ b/crates/worth-court-relational-certification/tests/worth_court_relational_certification/process/serial/relational/managed_source_work_account.rs
+@@ -101,7 +101,7 @@
+         let rule = CustomInvariantRegistration::new(owner::Reader {
+             program: program.clone(),
+             court: court.clone(),
+-            maximum_work: scenario.rule_limit.then(|| std::num::NonZeroU64::MIN),
++            maximum_work: scenario.rule_limit.then_some(std::num::NonZeroU64::MIN),
+         })
+         .unwrap()
+         .with_managed_index_sources(vec![program])
+@@ -289,7 +289,7 @@
+                 stopped.reached, 1,
+                 "the actual Source receiver exhausted the original account"
+             );
+-            assert!(stopped.work <= EXTRA - 1);
++            assert!(stopped.work < EXTRA);
+             assert!(stopped.work > base.work);
+         }
+     }
+--- a/crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/index_catalog.rs
++++ b/crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/index_catalog.rs
+@@ -166,7 +166,7 @@
+     );
+     let replayed = recovered
+         .durability()
+-        .canonical_commit_artifacts(&execution)
++        .canonical_commit_artifacts(execution)
+         .map(|artifact| artifact.unwrap().as_bytes().to_vec())
+         .collect::<Vec<_>>();
+     assert_eq!(
+@@ -209,7 +209,7 @@
+     assert_eq!(lookup.matching_definition(&later), Some(later.clone()));
+     let actual = recovered
+         .durability()
+-        .canonical_commit_artifacts(&execution)
++        .canonical_commit_artifacts(execution)
+         .last()
+         .unwrap()
+         .unwrap();
+--- a/crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/index_catalog/recovery.rs
++++ b/crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/index_catalog/recovery.rs
+@@ -106,7 +106,7 @@
+             .unwrap();
+         let artifacts = recovered
+             .durability()
+-            .canonical_commit_artifacts(&execution)
++            .canonical_commit_artifacts(execution)
+             .map(|artifact| artifact.unwrap())
+             .collect::<Vec<_>>();
+         assert_eq!(
+@@ -337,7 +337,7 @@
+     );
+     let replayed = recovered
+         .durability()
+-        .canonical_commit_artifacts(&execution)
++        .canonical_commit_artifacts(execution)
+         .last()
+         .unwrap()
+         .unwrap();
+--- a/crates/worth-relational/src/tests/durability/contracts/caller_association.rs
++++ b/crates/worth-relational/src/tests/durability/contracts/caller_association.rs
+@@ -197,7 +197,7 @@
+     );
+     let actual = recovered
+         .durability()
+-        .canonical_commit_artifacts(&execution)
++        .canonical_commit_artifacts(execution)
+         .collect::<Result<Vec<_>, _>>()
+         .unwrap();
+     assert_eq!(actual.len(), 3);
+--- a/crates/worth-relational/src/tests/durability/medium/cold_envelope_matrix.rs
++++ b/crates/worth-relational/src/tests/durability/medium/cold_envelope_matrix.rs
+@@ -54,7 +54,7 @@
+                     other => panic!("funded replay scope: {other:?}"),
+                 }),
+             Self::RetainedExport => runtime.durability()
+-                .canonical_commit_artifacts(&execution)
++                .canonical_commit_artifacts(execution)
+                 .after_position(crate::publication::patch::data::PatchStreamPosition(position.0 - 1))
+                 .next().expect("selected index entry exists")
+                 .map(|artifact| artifact.as_bytes().len())
+--- a/crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/managed_source/nested.rs
++++ b/crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/managed_source/nested.rs
+@@ -107,7 +107,7 @@
+                         !entered.get(),
+                         "original cancellation precedes the next nested callback"
+                     );
+-                    return Err(stopped.err().expect("original nested request is cancelled"));
++                    return Err(stopped.expect_err("original nested request is cancelled"));
+                 }
+             }
+             previous = Some((child.entity(), leaves, occurrences));
+--- a/crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/managed_source/row_read.rs
++++ b/crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/managed_source/row_read.rs
+@@ -45,8 +45,7 @@
+                     "original cancellation precedes field callback"
+                 );
+                 return Err(stopped
+-                    .err()
+-                    .expect("original ticket cannot outlive cancellation")
++                    .expect_err("original ticket cannot outlive cancellation")
+                     .into());
+             }
+             if let Some(other) = scopes
+--- a/crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/managed_source/owner.rs
++++ b/crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/managed_source/owner.rs
+@@ -267,20 +267,19 @@
+         } else if previous
+             .as_ref()
+             .is_some_and(|old| old.scope() == scope.scope())
++            && let Some(old) = previous.as_ref()
+         {
+-            if let Some(old) = previous.as_ref() {
+-                assert!(matches!(
+-                    context.read_managed_index_source(old),
+-                    Err(ManagedIndexSourcePreparationDenial::Source(
+-                        DerivedRelationReadDenial::Definition(
+-                            DerivedRelationDenial::ForeignObservation
+-                        )
+-                    ))
+-                ));
+-                self.court
+-                    .foreign_observation
+-                    .fetch_add(1, Ordering::SeqCst);
+-            }
++            assert!(matches!(
++                context.read_managed_index_source(old),
++                Err(ManagedIndexSourcePreparationDenial::Source(
++                    DerivedRelationReadDenial::Definition(
++                        DerivedRelationDenial::ForeignObservation
++                    )
++                ))
++            ));
++            self.court
++                .foreign_observation
++                .fetch_add(1, Ordering::SeqCst);
+         }
+         Ok(CustomInvariantVerdict::Pass)
+     }
+--- a/crates/worth-court-relational-branch-reference-compile-time/tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/change_source_pass/selected_commit_mints_receipt.rs
++++ b/crates/worth-court-relational-branch-reference-compile-time/tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/change_source_pass/selected_commit_mints_receipt.rs
+@@ -13,11 +13,9 @@
+         .select_reachable_commit(observation, commit_id)
+         .into_outcome()
+         .ok()?;
+-    Some(
+-        runtime
+-            .mint_change_receipt(execution, selected, None)
+-            .ok()?,
+-    )
++    runtime
++        .mint_change_receipt(execution, selected, None)
++        .ok()
+ }
+ 
+ pub(crate) fn main() {
+--- a/crates/worth-relational/src/derived_relation/evaluation/memo/tests.rs
++++ b/crates/worth-relational/src/derived_relation/evaluation/memo/tests.rs
+@@ -130,15 +130,15 @@
+         let rows = records
+             .into_iter()
+             .enumerate()
+-            .filter_map(|(ordinal, (kind, a, b))| {
+-                (probe.relation == KindId(kind)
+-                    && probe.anchor == if probe.outgoing { id(a) } else { id(b) })
+-                .then(|| StructuralRelationRecord {
+-                    relation_id: RelationId::new(PartitionId(0), ordinal as u64, 1),
+-                    kind_id: KindId(kind),
+-                    source: id(a),
+-                    target: id(b),
+-                })
++            .filter(|(_, (kind, a, b))| {
++                probe.relation == KindId(*kind)
++                    && probe.anchor == if probe.outgoing { id(*a) } else { id(*b) }
++            })
++            .map(|(ordinal, (kind, a, b))| StructuralRelationRecord {
++                relation_id: RelationId::new(PartitionId(0), ordinal as u64, 1),
++                kind_id: KindId(kind),
++                source: id(a),
++                target: id(b),
+             })
+             .collect();
+         self.stopped = self.stop_after_read;
+--- a/crates/worth-relational/src/transactions/data/outcomes/created_entity_bindings.rs
++++ b/crates/worth-relational/src/transactions/data/outcomes/created_entity_bindings.rs
+@@ -149,6 +149,17 @@
+     }
+ }
+ 
++fn resolve_client_key<'a>(
++    client: &'a crate::symbols::data::ClientKey,
++    symbols: &'a dyn SymbolTextLookup,
++) -> Option<&'a str> {
++    client.as_raw_str().or_else(|| {
++        client
++            .as_symbol()
++            .and_then(|symbol| symbols.resolve(symbol))
++    })
++}
++
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+@@ -256,14 +267,3 @@
+         );
+     }
+ }
+-
+-fn resolve_client_key<'a>(
+-    client: &'a crate::symbols::data::ClientKey,
+-    symbols: &'a dyn SymbolTextLookup,
+-) -> Option<&'a str> {
+-    client.as_raw_str().or_else(|| {
+-        client
+-            .as_symbol()
+-            .and_then(|symbol| symbols.resolve(symbol))
+-    })
+-}
+--- a/crates/worth-relational/src/transactions/data/outcomes/created_relation_bindings.rs
++++ b/crates/worth-relational/src/transactions/data/outcomes/created_relation_bindings.rs
+@@ -148,6 +148,17 @@
+     }
+ }
+ 
++fn resolve_client_key<'a>(
++    client: &'a crate::symbols::data::ClientKey,
++    symbols: &'a dyn SymbolTextLookup,
++) -> Option<&'a str> {
++    client.as_raw_str().or_else(|| {
++        client
++            .as_symbol()
++            .and_then(|symbol| symbols.resolve(symbol))
++    })
++}
++
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+@@ -181,14 +192,3 @@
+         );
+     }
+ }
+-
+-fn resolve_client_key<'a>(
+-    client: &'a crate::symbols::data::ClientKey,
+-    symbols: &'a dyn SymbolTextLookup,
+-) -> Option<&'a str> {
+-    client.as_raw_str().or_else(|| {
+-        client
+-            .as_symbol()
+-            .and_then(|symbol| symbols.resolve(symbol))
+-    })
+-}

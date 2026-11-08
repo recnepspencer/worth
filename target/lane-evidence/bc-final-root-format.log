@@ -1,0 +1,11 @@
+command: cargo fmt -p worth-relational -- --check
+HEAD: e7f2490cb1a4f874189d6104849cad09e0917ff7
+git_status_short_empty: false
+start_utc: 2026-11-07T08:26:06.976009+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+
+end_utc: 2026-11-07T08:26:14.752826+00:00
+exit_code: 0
+tests_passed: 0
+tests_failed: 0
+tests_ignored: 0

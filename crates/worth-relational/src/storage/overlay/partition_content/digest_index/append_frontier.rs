@@ -46,22 +46,34 @@ impl DigestIndex {
     pub(in crate::storage::overlay::partition_content) fn from_append_frontier(
         frontier: &HistoryAppendFrontier,
     ) -> Option<Self> {
+        Self::from_append_frontier_using(frontier, None).ok()
+    }
+    pub(in crate::storage::overlay::partition_content) fn from_append_frontier_using(
+        frontier: &HistoryAppendFrontier,
+        request: super::super::full::Request<'_, '_, '_>,
+    ) -> Result<Self, PartitionContentDigestError> {
+        super::super::full::poll(request)?;
+        let invalid = || PartitionContentDigestError::InvalidHistoryCoverage;
         let Some((key, value)) = frontier.last else {
-            return frontier.siblings.is_empty().then(Self::default);
+            return if frontier.siblings.is_empty() {
+                Ok(Self::default())
+            } else {
+                Err(invalid())
+            };
         };
         let value = *value.bytes();
-        // The cold prefix need not fit this process's address space, but its
-        // carried next position must be representable before any append.
-        key.checked_add(1)?;
-        let mut node = Arc::new(Node {
+        key.checked_add(1).ok_or_else(invalid)?;
+        let mut node = Node {
             key,
             bit: 128,
             digest: hash(1, &[&key.to_be_bytes(), &value]),
             children: None,
             nodes: 1,
             _memory: None,
-        });
+        }
+        .allocate(request)?;
         for sibling in frontier.siblings.iter().rev() {
+            super::super::full::poll(request)?;
             if sibling.parent_bit >= node.bit
                 || sibling.bit <= sibling.parent_bit
                 || sibling.bit > 128
@@ -69,21 +81,30 @@ impl DigestIndex {
                 || direction(sibling.key, sibling.parent_bit) != 0
                 || direction(node.key, sibling.parent_bit) != 1
             {
-                return None;
+                return Err(invalid());
             }
-            let left = Arc::new(Node {
+            let left = Node {
                 key: sibling.key,
                 bit: sibling.bit,
                 digest: *sibling.digest.bytes(),
                 children: None,
                 nodes: 1,
                 _memory: None,
-            });
-            node = Arc::new(Node::branch(sibling.parent_bit, [left, node]));
+            }
+            .allocate(request)?;
+            node = Node::branch(sibling.parent_bit, [left, node]).allocate(request)?;
         }
-        Some(Self {
+        let memory = request
+            .map(|request| {
+                request
+                    .reserve_retained_memory(Arc::<HistoryLastValue>::layout_bytes())
+                    .map_err(|cause| PartitionContentDigestError::Request(cause.into()))
+            })
+            .transpose()?
+            .flatten();
+        Ok(Self {
             root: Some(node),
-            history_last_value: Some(Arc::new(HistoryLastValue { key, value })),
+            history_last_value: Some(Arc::from_reserved(HistoryLastValue { key, value }, memory)),
         })
     }
     pub(in crate::storage::overlay::partition_content) fn next_history_index(

@@ -1,5 +1,6 @@
 //! Explicit region demand and raw readmission under the original cell gate.
 use super::*;
+mod readmission_count;
 impl RelationalRegionResidency {
     pub(super) fn demand(
         &self,
@@ -57,29 +58,8 @@ impl RelationalRegionResidency {
                 )),
             }
         })();
-        match loaded {
-            Ok(region) => {
-                {
-                    let update_counter = &self.leases;
-                    let mut count = update_counter.load(Ordering::Acquire);
-                    loop {
-                        let Some(updated_value) = count.checked_add(1) else {
-                            break Err(count);
-                        };
-                        match update_counter.compare_exchange_weak(
-                            count,
-                            updated_value,
-                            Ordering::AcqRel,
-                            Ordering::Acquire,
-                        ) {
-                            Ok(previous) => break Ok(previous),
-                            Err(reloaded_value) => count = reloaded_value,
-                        }
-                    }
-                }
-                .map_err(|_| self.failure(Cause::MemoryExhausted))?;
-                Ok(region)
-            }
+        match readmission_count::acquire(loaded, &self.leases, self.partition_id) {
+            Ok(region) => Ok(region),
             Err(Failure::StorageUnavailable(failure)) => {
                 if failure.cause.is_proven_damage()
                     && failure.subject == RelationalStorageSubject::Region(self.partition_id)

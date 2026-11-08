@@ -1,6 +1,6 @@
 use worth_foundational::facade::{AspectFieldLocator, AspectKey, AspectValue};
 use worth_relational::facade::identity::{EntityId, KindId, RelationId};
-use worth_relational::facade::indexes::{DerivedIndexDefinition, DerivedIndexId};
+use worth_relational::facade::indexes::DerivedIndexId;
 
 pub(crate) mod adjacency;
 mod dependency_key;
@@ -195,7 +195,7 @@ pub enum WorthQueryApplicationObservedFact {
     /// check-then-create race without exposing raw index authority.
     IndexedEntitySelection {
         index_id: DerivedIndexId,
-        definition: std::sync::Arc<DerivedIndexDefinition>,
+        definition: worth_relational::facade::indexes::RetainedDerivedIndexDefinition,
         entity_kind: KindId,
         locator: AspectFieldLocator,
         value: AspectValue,

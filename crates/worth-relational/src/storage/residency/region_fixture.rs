@@ -1,5 +1,6 @@
 //! Producer-written region members and their immutable counted archive.
 use super::super::{capture_region_members, RelationalColdRegion, RelationalRegionResidency};
+use crate::durability::medium::RelationalDurableMemberCustody;
 use crate::durability::medium::{RelationalDurableColdSource, RelationalDurableMemberLocator};
 use crate::history::data::BranchId;
 use crate::identity::data::KindId;
@@ -10,7 +11,7 @@ use crate::tests::support::*;
 use crate::transactions::data::{MutationIntent, WorkerIntentBatch};
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
 pub(super) struct CountedSource {
@@ -22,6 +23,46 @@ pub(super) struct CountedSource {
 }
 
 impl RelationalDurableColdSource for CountedSource {
+    fn retain_members_for_request(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        _members: &[RelationalDurableMemberLocator],
+        issuer: std::sync::Weak<dyn RelationalDurableColdSource>,
+    ) -> Result<
+        crate::durability::medium::RelationalDurableMemberCustody,
+        crate::durability::medium::RelationalDurableOwnedReadRefusal,
+    > {
+        // This immutable archive has no separate placement registration.
+        crate::durability::medium::RelationalDurableMemberCustody::try_new_from_source_for_request(
+            issuer,
+            request,
+            || Ok(()),
+        )
+    }
+
+    fn validate_member_custody_retirement(
+        &self,
+        original: &(dyn std::any::Any + Send + Sync),
+    ) -> Result<(), crate::durability::medium::RelationalDurableMemberRetirementRefusal> {
+        if original.is::<()>() {
+            Ok(())
+        } else {
+            Err(crate::durability::medium::RelationalDurableMemberRetirementRefusal::ForeignCustody)
+        }
+    }
+
+    fn advance_member_custody_retirement(
+        &self,
+        _request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &mut (dyn std::any::Any + Send + Sync),
+    ) -> crate::durability::medium::RelationalDurableMemberRetirementObservation {
+        use crate::durability::medium::RelationalDurableMemberRetirementObservation as Observation;
+        match self.validate_member_custody_retirement(original) {
+            Ok(()) => Observation::Complete,
+            Err(cause) => Observation::Refused(cause),
+        }
+    }
+
     fn retain_members(
         &self,
         _members: &[RelationalDurableMemberLocator],
@@ -159,4 +200,138 @@ pub(super) fn region_with_history() -> RegionFixture {
         expected_digest,
         expected_history,
     }
+}
+
+#[derive(Debug)]
+pub(super) struct CustodySource {
+    pub(super) source: Arc<CountedSource>,
+    pub(super) active: Arc<AtomicUsize>,
+    pub(super) refusal: Mutex<Option<Cause>>,
+}
+
+// The real registration is disarmed before its original funded payload is reclaimed.
+struct ControlledCustodyOwner {
+    source_issuer: std::sync::Weak<CountedSource>,
+    active: Arc<AtomicUsize>,
+    registered: bool,
+    child: crate::durability::medium::RelationalDurableMemberRetirement,
+}
+impl Drop for ControlledCustodyOwner {
+    fn drop(&mut self) {
+        if self.registered {
+            self.active.fetch_sub(1, Ordering::SeqCst);
+        }
+    }
+}
+
+struct CustodyOwner {
+    active: Arc<AtomicUsize>,
+    _source: RelationalDurableMemberCustody,
+}
+
+impl Drop for CustodyOwner {
+    fn drop(&mut self) {
+        self.active.fetch_sub(1, Ordering::SeqCst);
+    }
+}
+
+impl RelationalDurableColdSource for CustodySource {
+    fn retain_members_for_request(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        members: &[RelationalDurableMemberLocator],
+        issuer: std::sync::Weak<dyn RelationalDurableColdSource>,
+    ) -> Result<
+        RelationalDurableMemberCustody,
+        crate::durability::medium::RelationalDurableOwnedReadRefusal,
+    > {
+        use crate::durability::medium::RelationalDurableOwnedReadRefusal as Refusal;
+        RelationalDurableMemberCustody::try_new_from_source_for_request(issuer, request, || {
+            if let Some(cause) = *self.refusal.lock().unwrap() {
+                return Err(Refusal::Storage(cause));
+            }
+            let source: Arc<dyn RelationalDurableColdSource> = self.source.clone();
+            let child = RelationalDurableMemberCustody::capture(&source, request, members)?;
+            // There is no fallible step after this actual registration.
+            self.active.fetch_add(1, Ordering::SeqCst);
+            Ok(ControlledCustodyOwner {
+                source_issuer: Arc::downgrade(&self.source),
+                active: self.active.clone(),
+                registered: true,
+                child: child.into_retirement(),
+            })
+        })
+    }
+
+    fn validate_member_custody_retirement(
+        &self,
+        original: &(dyn std::any::Any + Send + Sync),
+    ) -> Result<(), crate::durability::medium::RelationalDurableMemberRetirementRefusal> {
+        use crate::durability::medium::RelationalDurableMemberRetirementRefusal as Refusal;
+        let owner = original
+            .downcast_ref::<ControlledCustodyOwner>()
+            .ok_or(Refusal::ForeignCustody)?;
+        if !Arc::ptr_eq(&owner.active, &self.active)
+            || owner.source_issuer.as_ptr() != Arc::as_ptr(&self.source)
+        {
+            return Err(Refusal::ForeignCustody);
+        }
+        Ok(())
+    }
+
+    fn advance_member_custody_retirement(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &mut (dyn std::any::Any + Send + Sync),
+    ) -> crate::durability::medium::RelationalDurableMemberRetirementObservation {
+        use crate::durability::medium::RelationalDurableMemberRetirementObservation as Observation;
+        if let Err(cause) = self.validate_member_custody_retirement(original) {
+            return Observation::Refused(cause);
+        }
+        let owner = original
+            .downcast_mut::<ControlledCustodyOwner>()
+            .expect("validated original registration");
+        // self.source is an immutable strong anchor throughout this callback.
+        let observation = owner.child.advance(request, self.source.as_ref());
+        if matches!(observation, Observation::Complete) && owner.registered {
+            owner.active.fetch_sub(1, Ordering::SeqCst);
+            owner.registered = false;
+        }
+        observation
+    }
+
+    fn retain_members(
+        &self,
+        members: &[RelationalDurableMemberLocator],
+    ) -> Result<RelationalDurableMemberCustody, Cause> {
+        if let Some(cause) = *self.refusal.lock().unwrap() {
+            return Err(cause);
+        }
+        let source = self.source.retain_members(members)?;
+        self.active.fetch_add(1, Ordering::SeqCst);
+        Ok(RelationalDurableMemberCustody::new(CustodyOwner {
+            active: self.active.clone(),
+            _source: source,
+        }))
+    }
+
+    fn read_member(
+        &self,
+        locator: RelationalDurableMemberLocator,
+        limit: u64,
+    ) -> Result<Vec<u8>, Cause> {
+        self.source.read_member(locator, limit)
+    }
+
+    fn read_commit(&self, position: PatchStreamPosition, limit: u64) -> Result<Vec<u8>, Cause> {
+        self.source.read_commit(position, limit)
+    }
+}
+
+pub(super) fn with_memory_request<R>(
+    memory: worth_execution::SerialMemoryBudget,
+    observe: impl FnOnce(worth_execution::ExecutionRequest<'_, '_>) -> R,
+) -> R {
+    let host = crate::test_execution_policy::serial_request_with_memory(memory);
+    observe(worth_execution::ExecutionRequest::serial(&host))
 }

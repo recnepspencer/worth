@@ -49,6 +49,27 @@ impl PreparedCommitPublicationExecution {
         self.admitted.value().validation_input().home_step()
     }
 
+    pub(crate) fn home_index_definitions(
+        &self,
+    ) -> Option<std::sync::Arc<crate::runtime::PreparedRelationalIndexDefinitions>> {
+        self.admitted
+            .value()
+            .validation_input()
+            .home_target()
+            .and_then(|target| target.index_definitions.clone())
+    }
+
+    pub(crate) fn covers_home_definitions(
+        &self,
+        definitions: &crate::runtime::PreparedRelationalIndexDefinitions,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<bool, worth_execution::WorkCeilingDenial> {
+        match &self.prepared_indexes {
+            Some(prepared) => prepared.covers_home_definitions(definitions, execution),
+            None => Ok(false),
+        }
+    }
+
     pub(crate) fn has_prepared_indexes(&self) -> bool {
         self.prepared_indexes.is_some()
     }

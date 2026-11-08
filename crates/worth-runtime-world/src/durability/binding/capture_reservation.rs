@@ -12,7 +12,7 @@ impl WorldDurableMediumBinding {
             .gates
             .try_lock()
             .map_err(|_| WorldDurableMediumDenial::PublicationBusy)?;
-        if gates.capture_reserved {
+        if gates.capture_reserved || gates.home_binding_reserved {
             return Err(WorldDurableMediumDenial::PublicationBusy);
         }
         for flight in [&gates.branches, &gates.custody, &gates.occurrences] {

@@ -72,12 +72,15 @@ impl<T: StoredValue> SharedColumn<T> {
         *self = retained;
     }
     pub(crate) fn with_default(len: usize, value: T::Value) -> Self {
+        Self::with_default_carrier(len, T::from_value(value))
+    }
+    pub(crate) fn with_default_carrier(len: usize, value: T) -> Self {
         let pages = len.div_ceil(PAGE_LEN).max(1);
         Self {
             root: None,
             height: pages.next_power_of_two().trailing_zeros() as usize,
             len,
-            default: Some(T::from_value(value)),
+            default: Some(value),
         }
     }
     pub(crate) fn get(&self, index: usize) -> Option<&T::Value> {

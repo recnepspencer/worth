@@ -9,28 +9,25 @@ use crate::history::data::canonical_commit_envelope::{
 use crate::history::data::CanonicalCommitEnvelope;
 use crate::publication::patch::data::RecordStructuralChange;
 use crate::transactions::data::RecordRef;
-use crate::{
-    branch::AdmittedRelationalBranchBasis, identity::data::EntityId, runtime::RelationalRuntime,
-};
+use crate::{branch::AdmittedRelationalBranchBasis, identity::data::EntityId};
 use std::sync::Arc;
 use worth_execution::{ExecutionResourceLease, MapKernelContext};
 use worth_foundational::facade::AuthoritativeRecordAspectState;
 
 pub(super) fn latest(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     id: EntityId,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Result<Arc<CanonicalCommitEnvelope>, Stop> {
     let mut next = basis.inner.root.commit_id();
-    let bound = runtime.history.catalog_len();
+    let bound = runtime.runtime.history.catalog_len();
     for _ in 0..bound {
         charge(context, bound.saturating_add(1))?;
         let commit = next.ok_or("output correspondence has no complete native publication")?;
         let envelope = runtime
-            .history
-            .canonical_envelope(commit)
+            .commit(commit)?
             .ok_or("output correspondence lost native history")?;
         require_linear_history(&envelope)?;
         for origin in envelope.output_origins() {
@@ -45,8 +42,7 @@ pub(super) fn latest(
                 super::materialization::validate_semantics(runtime, &envelope, context, lease)?;
                 for publication in &event.producer_publications {
                     let original = runtime
-                        .history
-                        .canonical_envelope(*publication)
+                        .commit(*publication)?
                         .ok_or("maintenance producer history absent")?;
                     let origin = original.validate_output_membership_header()?;
                     if origin.outputs.binary_search(&id).is_ok() {
@@ -62,7 +58,7 @@ pub(super) fn latest(
 }
 
 pub(super) fn validate_member(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     selected: &Arc<CanonicalCommitEnvelope>,
     id: EntityId,
@@ -104,9 +100,9 @@ pub(super) fn validate_member(
             selected.commit.commit_id,
             member.after_write,
             write,
-            &mut |commit| runtime.history.canonical_envelope(commit),
-            &mut |version| runtime.history.canonical_envelope_for_version(version),
-            runtime.history.catalog_len(),
+            &mut |commit| runtime.commit(commit),
+            &mut |version, context| runtime.version(version, context),
+            runtime.runtime.history.catalog_len(),
             context,
         )?
     {
@@ -137,7 +133,7 @@ pub(super) fn validate_member(
 }
 
 pub(super) fn reconstruct(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     selected: &Arc<CanonicalCommitEnvelope>,
     id: EntityId,
     plan: &crate::schema::data::LoweredAspectContractPlan,
@@ -150,7 +146,7 @@ pub(super) fn reconstruct(
 /// Canonical producer patches supply expected bytes; their maintenance gaps
 /// are validated by the enclosing semantic pass rather than recursively replayed.
 pub(super) fn reconstruct_canonical_payload(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     selected: &Arc<CanonicalCommitEnvelope>,
     id: EntityId,
     plan: &crate::schema::data::LoweredAspectContractPlan,
@@ -162,7 +158,7 @@ pub(super) fn reconstruct_canonical_payload(
 
 #[allow(clippy::too_many_arguments)]
 fn reconstruct_chain(
-    runtime: &RelationalRuntime,
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     selected: &Arc<CanonicalCommitEnvelope>,
     id: EntityId,
     plan: &crate::schema::data::LoweredAspectContractPlan,
@@ -177,7 +173,7 @@ fn reconstruct_chain(
         .iter()
         .find(|member| member.id == id)
         .ok_or("publication omits exact member")?;
-    let bound = runtime.history.catalog_len();
+    let bound = runtime.runtime.history.catalog_len();
     let _chain_memory = reserve(
         lease,
         bound
@@ -225,8 +221,7 @@ fn reconstruct_chain(
             | CanonicalOutputPublication::AuthoredRetirement { predecessor }
             | CanonicalOutputPublication::ProducerRetirement { predecessor } => {
                 let previous = runtime
-                    .history
-                    .canonical_envelope(predecessor)
+                    .commit(predecessor)?
                     .ok_or("publication predecessor history missing")?;
                 let prior = previous.output_origin_for_route(&current_origin.meaning, context)?;
                 super::publication_succession::validate_succession(

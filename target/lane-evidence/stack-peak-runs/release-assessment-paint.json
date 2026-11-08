@@ -1,0 +1,2109 @@
+[
+  {
+    "index": 0,
+    "peak_bytes": 45648,
+    "written_high_water": 45648,
+    "allocated_rsp_high_water": 27008,
+    "kind": "write",
+    "limits": {
+      "low": 1068321734656,
+      "high": 1068388843520,
+      "reserve_bytes": 67108864,
+      "entry_baseline": 1880
+    },
+    "probes": 1,
+    "watch_hits": 0,
+    "call_path": [
+      {
+        "pc": 140700792649945,
+        "sp": 1068388816512,
+        "symbol_path": "worth_query_bank_court_external_rail_server::oracle::server_owned_effects::server::parallel_history::assessment_history::assessment_history_settles_at_each_request_width",
+        "symbol_exact": true,
+        "function_rva": 1505472,
+        "rva": 1505497,
+        "static_frame": 25128,
+        "live_frame_bytes": 25136
+      },
+      {
+        "pc": 140722044525991,
+        "sp": 1068388841648,
+        "live_frame_bytes": 48
+      },
+      {
+        "pc": 140722067729996,
+        "sp": 1068388841696,
+        "external_symbol": "RtlUserThreadStart",
+        "symbol_address": 140722067729952
+      }
+    ],
+    "pid": 18572
+  },
+  {
+    "index": 1,
+    "peak_bytes": 783872,
+    "written_high_water": 783872,
+    "allocated_rsp_high_water": 783792,
+    "kind": "write",
+    "limits": {
+      "low": 30749491200,
+      "high": 30816600064,
+      "reserve_bytes": 67108864,
+      "entry_baseline": 1896
+    },
+    "probes": 87,
+    "watch_hits": 0,
+    "call_path": [
+      {
+        "pc": 140700838011721,
+        "sp": 30815816272,
+        "symbol_path": "im::nodes::btree::Node::insert",
+        "symbol_exact": true,
+        "function_rva": 46867248,
+        "rva": 46867273,
+        "static_frame": 25224,
+        "live_frame_bytes": 25232
+      },
+      {
+        "pc": 140700834677779,
+        "sp": 30815841504,
+        "function_rva": 43533072,
+        "rva": 43533331,
+        "static_frame": 20360,
+        "live_frame_bytes": 20368
+      },
+      {
+        "pc": 140700834690988,
+        "sp": 30815861872,
+        "symbol_path": "<worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::owner::SourceInvalidationOwner as worth_relational::mvcc::publication::companion::preflight::RelationalPublicationCompanion>::prepare",
+        "symbol_exact": true,
+        "function_rva": 43543296,
+        "rva": 43546540,
+        "static_frame": 16072,
+        "live_frame_bytes": 16080
+      },
+      {
+        "pc": 140700811967739,
+        "sp": 30815877952,
+        "symbol_path": "<worth_runtime_bridge::relational_source::runtime_source::canonical_subscription::CanonicalEnvelopeDelivery as worth_relational::mvcc::publication::companion::preflight::RelationalPublicationCompanion>::prepare",
+        "symbol_exact": true,
+        "function_rva": 20823168,
+        "rva": 20823291,
+        "static_frame": 120,
+        "live_frame_bytes": 128
+      },
+      {
+        "pc": 140700840005405,
+        "sp": 30815878080,
+        "function_rva": 48855632,
+        "rva": 48860957,
+        "static_frame": 7976,
+        "live_frame_bytes": 7984
+      },
+      {
+        "pc": 140700840026108,
+        "sp": 30815886064,
+        "symbol_path": "worth_relational::mvcc::publication::port::RelationalPublicationPort::with_prepared_publication",
+        "symbol_exact": true,
+        "function_rva": 48879184,
+        "rva": 48881660,
+        "static_frame": 10200,
+        "live_frame_bytes": 10208
+      },
+      {
+        "pc": 140700839987257,
+        "sp": 30815896272,
+        "symbol_path": "worth_relational::mvcc::publication::port::RelationalPublicationPort::compare_and_publish",
+        "symbol_exact": true,
+        "function_rva": 48842752,
+        "rva": 48842809,
+        "static_frame": 632,
+        "live_frame_bytes": 640
+      },
+      {
+        "pc": 140700838378136,
+        "sp": 30815896912,
+        "symbol_path": "<worth_runtime_world::lifecycle::owner::RuntimeWorldOwnerRoot as worth_runtime_world::lifecycle::ports::owner_execution::RuntimeWorldOwnerExecutionService>::execute_without_signal_with_cutover",
+        "symbol_exact": true,
+        "function_rva": 47229360,
+        "rva": 47233688,
+        "static_frame": 15160,
+        "live_frame_bytes": 15168
+      },
+      {
+        "pc": 140700834827555,
+        "sp": 30815912080,
+        "symbol_path": "worth_runtime_world::lifecycle::service_ports::publication::RuntimeWorldPublicationPort::execute_without_signal_cutover",
+        "symbol_exact": true,
+        "function_rva": 43682672,
+        "rva": 43683107,
+        "static_frame": 3400,
+        "live_frame_bytes": 3408
+      },
+      {
+        "pc": 140700807340672,
+        "sp": 30815915488,
+        "symbol_path": "worth_query_execution::domain_computation::execution_runtime::product_world::request_control::WorthQueryPreparedProductPublication::execute",
+        "symbol_exact": true,
+        "function_rva": 16196048,
+        "rva": 16196224,
+        "static_frame": 1384,
+        "live_frame_bytes": 1392
+      },
+      {
+        "pc": 140700834837770,
+        "sp": 30815916880,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::product_publication::publish",
+        "symbol_exact": true,
+        "function_rva": 43685584,
+        "rva": 43693322,
+        "static_frame": 15464,
+        "live_frame_bytes": 15472
+      },
+      {
+        "pc": 140700805446920,
+        "sp": 30815932352,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::memory::publication::publish",
+        "symbol_exact": true,
+        "function_rva": 14301376,
+        "rva": 14302472,
+        "static_frame": 42392,
+        "live_frame_bytes": 42400
+      },
+      {
+        "pc": 140700807109241,
+        "sp": 30815974752,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::memory::commit",
+        "symbol_exact": true,
+        "function_rva": 15964432,
+        "rva": 15964793,
+        "static_frame": 12408,
+        "live_frame_bytes": 12416
+      },
+      {
+        "pc": 140700805437385,
+        "sp": 30815987168,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::commit",
+        "symbol_exact": true,
+        "function_rva": 14282016,
+        "rva": 14292937,
+        "static_frame": 79560,
+        "live_frame_bytes": 79568
+      },
+      {
+        "pc": 140700807370570,
+        "sp": 30816066736,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_owner_validated",
+        "symbol_exact": true,
+        "function_rva": 16225824,
+        "rva": 16226122,
+        "static_frame": 32968,
+        "live_frame_bytes": 32976
+      },
+      {
+        "pc": 140700807946217,
+        "sp": 30816099712,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::commit_prepared_application",
+        "symbol_exact": true,
+        "function_rva": 16791808,
+        "rva": 16801769,
+        "static_frame": 32232,
+        "live_frame_bytes": 32240
+      },
+      {
+        "pc": 140700807259041,
+        "sp": 30816131952,
+        "symbol_path": "<alloc::sync::Arc as worth_query_execution::domain_computation::provider_session::graph_provider::provider_contract::WorthQueryProviderSessionLifecycle>::commit_prepared_session",
+        "symbol_exact": true,
+        "function_rva": 16114080,
+        "rva": 16114593,
+        "static_frame": 616,
+        "live_frame_bytes": 624
+      },
+      {
+        "pc": 140700809737017,
+        "sp": 30816132576,
+        "symbol_path": "worth_query_execution::domain_computation::provider_session::graph_provider::bounded_step::provider_anchor::WorthQueryGraphProviderAnchor::commit_session",
+        "symbol_exact": true,
+        "function_rva": 18592496,
+        "rva": 18592569,
+        "static_frame": 152,
+        "live_frame_bytes": 160
+      },
+      {
+        "pc": 140700806911208,
+        "sp": 30816132736,
+        "symbol_path": "worth_query_execution::domain_computation::provider_session::protocol::readmission::prepared::staged::prepare_outcome::WorthQuerySessionPrepareOutcome::commit_using",
+        "symbol_exact": true,
+        "function_rva": 15766576,
+        "rva": 15766760,
+        "static_frame": 2792,
+        "live_frame_bytes": 2800
+      },
+      {
+        "pc": 140700809627463,
+        "sp": 30816135536,
+        "symbol_path": "worth_query_execution::domain_computation::provider_session::protocol::readmission::prepared::staged::prepare_outcome::WorthQuerySessionPrepareOutcome::commit",
+        "symbol_exact": true,
+        "function_rva": 18482992,
+        "rva": 18483015,
+        "static_frame": 56,
+        "live_frame_bytes": 64
+      },
+      {
+        "pc": 140700830461999,
+        "sp": 30816135600,
+        "symbol_path": "worth_query_execution::domain_computation::provider_session::provisional_attempt::commit_progression::WorthQueryInvariantApprovedProposedState::compare_and_commit_with",
+        "symbol_exact": true,
+        "function_rva": 39315872,
+        "rva": 39317551,
+        "static_frame": 7064,
+        "live_frame_bytes": 7072
+      },
+      {
+        "pc": 140700828170635,
+        "sp": 30816142672,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::authorized::resolve_idempotency_under_authority",
+        "symbol_exact": true,
+        "function_rva": 37025136,
+        "rva": 37026187,
+        "static_frame": 9704,
+        "live_frame_bytes": 9712
+      },
+      {
+        "pc": 140700827196659,
+        "sp": 30816152384,
+        "symbol_path": "worth_query_execution::domain_computation::authorization::application_commit_authorization::WorthQueryApplicationCommitAuthorization::govern",
+        "symbol_exact": true,
+        "function_rva": 36052000,
+        "rva": 36052211,
+        "static_frame": 9368,
+        "live_frame_bytes": 9376
+      },
+      {
+        "pc": 140700828185536,
+        "sp": 30816161760,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::authorized::authorize_and_resolve_provider_commit",
+        "symbol_exact": true,
+        "function_rva": 37040784,
+        "rva": 37041088,
+        "static_frame": 11880,
+        "live_frame_bytes": 11888
+      },
+      {
+        "pc": 140700825903726,
+        "sp": 30816173648,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::registered::WorthQueryRegisteredProviderAttempt::progress",
+        "symbol_exact": true,
+        "function_rva": 34758800,
+        "rva": 34759278,
+        "static_frame": 17560,
+        "live_frame_bytes": 17568
+      },
+      {
+        "pc": 140700828701037,
+        "sp": 30816191216,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::progress_application_commit",
+        "symbol_exact": true,
+        "function_rva": 37553424,
+        "rva": 37556589,
+        "static_frame": 60344,
+        "live_frame_bytes": 60352
+      },
+      {
+        "pc": 140700803301053,
+        "sp": 30816251568,
+        "function_rva": 12155456,
+        "rva": 12156605,
+        "static_frame": 28984,
+        "live_frame_bytes": 28992
+      },
+      {
+        "pc": 140700803318252,
+        "sp": 30816280560,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::entry_custody::CurrentCommitProgram::compare_and_commit_application_for_program_action",
+        "symbol_exact": true,
+        "function_rva": 12172352,
+        "rva": 12173804,
+        "static_frame": 21096,
+        "live_frame_bytes": 21104
+      },
+      {
+        "pc": 140700822962447,
+        "sp": 30816301664,
+        "function_rva": 31816656,
+        "rva": 31817999,
+        "static_frame": 33496,
+        "live_frame_bytes": 33504
+      },
+      {
+        "pc": 140700822973192,
+        "sp": 30816335168,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime::compare_and_commit_workflow_advance",
+        "symbol_exact": true,
+        "function_rva": 31822752,
+        "rva": 31828744,
+        "static_frame": 27384,
+        "live_frame_bytes": 27392
+      },
+      {
+        "pc": 140700823858220,
+        "sp": 30816362560,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_attempt::workflow_transition_program::preparation::WorthQueryWorkflowAdvanceAdapter::compare_and_commit_assessment",
+        "symbol_exact": true,
+        "function_rva": 32713088,
+        "rva": 32713772,
+        "static_frame": 26872,
+        "live_frame_bytes": 26880
+      },
+      {
+        "pc": 140700872884068,
+        "sp": 30816389440,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution::run_advancement_with_maintenance::closure$0",
+        "symbol_exact": true,
+        "function_rva": 81738320,
+        "rva": 81739620,
+        "static_frame": 35160,
+        "live_frame_bytes": 35168
+      },
+      {
+        "pc": 140700833769964,
+        "sp": 30816424608,
+        "function_rva": 42625248,
+        "rva": 42625516,
+        "static_frame": 296,
+        "live_frame_bytes": 304
+      },
+      {
+        "pc": 140700833799654,
+        "sp": 30816424912,
+        "symbol_path": "<core::option::Option as worth_execution::backend::scope::body::ScopeKernel>::invoke",
+        "symbol_exact": true,
+        "function_rva": 42655152,
+        "rva": 42655206,
+        "static_frame": 88,
+        "live_frame_bytes": 96
+      },
+      {
+        "pc": 140700842052098,
+        "sp": 30816425008,
+        "function_rva": 50907632,
+        "rva": 50907650,
+        "static_frame": 40,
+        "live_frame_bytes": 48
+      },
+      {
+        "pc": 140700865464110,
+        "sp": 30816425056,
+        "symbol_path": "worth_execution::backend::panic_boundary::contain::closure$0",
+        "symbol_exact": true,
+        "function_rva": 74319616,
+        "rva": 74319662,
+        "static_frame": 40,
+        "live_frame_bytes": 48
+      },
+      {
+        "pc": 140700834599557,
+        "sp": 30816425104,
+        "symbol_path": "worth_execution::backend::panic_boundary::contain_erased",
+        "symbol_exact": true,
+        "function_rva": 43455088,
+        "rva": 43455109,
+        "static_frame": 88,
+        "live_frame_bytes": 96
+      },
+      {
+        "pc": 140700816261170,
+        "sp": 30816425200,
+        "symbol_path": "worth_execution::backend::scope::execution::run_concrete_scope",
+        "symbol_exact": true,
+        "function_rva": 25114256,
+        "rva": 25116722,
+        "static_frame": 1064,
+        "live_frame_bytes": 1072
+      },
+      {
+        "pc": 140700842030638,
+        "sp": 30816426272,
+        "symbol_path": "worth_execution::backend::scope::body::run_typed_scope",
+        "symbol_exact": true,
+        "function_rva": 50885936,
+        "rva": 50886190,
+        "static_frame": 344,
+        "live_frame_bytes": 352
+      },
+      {
+        "pc": 140700806333585,
+        "sp": 30816426624,
+        "symbol_path": "worth_execution::pattern::work_ceiling::ExecutionWorkCeiling::run",
+        "symbol_exact": true,
+        "function_rva": 15188880,
+        "rva": 15189137,
+        "static_frame": 408,
+        "live_frame_bytes": 416
+      },
+      {
+        "pc": 140700807211850,
+        "sp": 30816427040,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::run_advancement",
+        "symbol_exact": true,
+        "function_rva": 16065440,
+        "rva": 16067402,
+        "static_frame": 552,
+        "live_frame_bytes": 560
+      },
+      {
+        "pc": 140700872748948,
+        "sp": 30816427600,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution::run_advancement_with_maintenance",
+        "symbol_exact": true,
+        "function_rva": 81604256,
+        "rva": 81604500,
+        "static_frame": 16280,
+        "live_frame_bytes": 16288
+      },
+      {
+        "pc": 140700872708876,
+        "sp": 30816443888,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution::run_product_advancement",
+        "symbol_exact": true,
+        "function_rva": 81564176,
+        "rva": 81564428,
+        "static_frame": 232,
+        "live_frame_bytes": 240
+      },
+      {
+        "pc": 140700871753436,
+        "sp": 30816444128,
+        "symbol_path": "worth_runtime_world::lifecycle::service_ports::publication::RuntimeWorldPublicationPort::with_execution_placement",
+        "symbol_exact": true,
+        "function_rva": 80608656,
+        "rva": 80608988,
+        "static_frame": 26776,
+        "live_frame_bytes": 26784
+      },
+      {
+        "pc": 140700871784459,
+        "sp": 30816470912,
+        "symbol_path": "worth_query_execution::domain_computation::execution_runtime::product_world::runtime::WorthQueryProductRuntime::with_execution_placement",
+        "symbol_exact": true,
+        "function_rva": 80639888,
+        "rva": 80640011,
+        "static_frame": 16152,
+        "live_frame_bytes": 16160
+      },
+      {
+        "pc": 140700823013586,
+        "sp": 30816487072,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime::with_application_advancement",
+        "symbol_exact": true,
+        "function_rva": 31868960,
+        "rva": 31869138,
+        "static_frame": 16184,
+        "live_frame_bytes": 16192
+      },
+      {
+        "pc": 140700802712133,
+        "sp": 30816503264,
+        "symbol_path": "worth_query_publication::application_entry::workflow::progress::WorthQueryWorkflowAdvanceRequest::accept_assessment",
+        "symbol_exact": true,
+        "function_rva": 11567552,
+        "rva": 11567685,
+        "static_frame": 21432,
+        "live_frame_bytes": 21440
+      },
+      {
+        "pc": 140700802862501,
+        "sp": 30816524704,
+        "symbol_path": "bank_server::approved_payment_workflow::BankApprovedPaymentWorkflow::accept_assessment",
+        "symbol_exact": true,
+        "function_rva": 11717296,
+        "rva": 11718053,
+        "static_frame": 36440,
+        "live_frame_bytes": 36448
+      },
+      {
+        "pc": 140700791387844,
+        "sp": 30816561152,
+        "symbol_path": "worth_query_bank_testkit_server::facade::server_world::parallel_history::assessment_trace::Trace::phase",
+        "symbol_exact": true,
+        "function_rva": 242944,
+        "rva": 243396,
+        "static_frame": 11880,
+        "live_frame_bytes": 11888
+      },
+      {
+        "pc": 140700792652783,
+        "sp": 30816573040,
+        "symbol_path": "worth_query_bank_court_external_rail_server::oracle::server_owned_effects::server::parallel_history::assessment_history::assessment_history_settles_at_each_request_width",
+        "symbol_exact": true,
+        "function_rva": 1505472,
+        "rva": 1508335,
+        "static_frame": 25128,
+        "live_frame_bytes": 25136
+      },
+      {
+        "pc": 140722044525991,
+        "sp": 30816598176,
+        "live_frame_bytes": 48
+      },
+      {
+        "pc": 140722067729996,
+        "sp": 30816598224,
+        "external_symbol": "RtlUserThreadStart",
+        "symbol_address": 140722067729952
+      }
+    ],
+    "pid": 69440
+  },
+  {
+    "index": 2,
+    "peak_bytes": 782192,
+    "written_high_water": 782192,
+    "allocated_rsp_high_water": 782112,
+    "kind": "write",
+    "limits": {
+      "low": 1031814512640,
+      "high": 1031881621504,
+      "reserve_bytes": 67108864,
+      "entry_baseline": 216
+    },
+    "probes": 87,
+    "watch_hits": 0,
+    "call_path": [
+      {
+        "pc": 140700838011721,
+        "sp": 1031880839392,
+        "symbol_path": "im::nodes::btree::Node::insert",
+        "symbol_exact": true,
+        "function_rva": 46867248,
+        "rva": 46867273,
+        "static_frame": 25224,
+        "live_frame_bytes": 25232
+      },
+      {
+        "pc": 140700834677779,
+        "sp": 1031880864624,
+        "function_rva": 43533072,
+        "rva": 43533331,
+        "static_frame": 20360,
+        "live_frame_bytes": 20368
+      },
+      {
+        "pc": 140700834690988,
+        "sp": 1031880884992,
+        "symbol_path": "<worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::owner::SourceInvalidationOwner as worth_relational::mvcc::publication::companion::preflight::RelationalPublicationCompanion>::prepare",
+        "symbol_exact": true,
+        "function_rva": 43543296,
+        "rva": 43546540,
+        "static_frame": 16072,
+        "live_frame_bytes": 16080
+      },
+      {
+        "pc": 140700811967739,
+        "sp": 1031880901072,
+        "symbol_path": "<worth_runtime_bridge::relational_source::runtime_source::canonical_subscription::CanonicalEnvelopeDelivery as worth_relational::mvcc::publication::companion::preflight::RelationalPublicationCompanion>::prepare",
+        "symbol_exact": true,
+        "function_rva": 20823168,
+        "rva": 20823291,
+        "static_frame": 120,
+        "live_frame_bytes": 128
+      },
+      {
+        "pc": 140700840005405,
+        "sp": 1031880901200,
+        "function_rva": 48855632,
+        "rva": 48860957,
+        "static_frame": 7976,
+        "live_frame_bytes": 7984
+      },
+      {
+        "pc": 140700840026108,
+        "sp": 1031880909184,
+        "symbol_path": "worth_relational::mvcc::publication::port::RelationalPublicationPort::with_prepared_publication",
+        "symbol_exact": true,
+        "function_rva": 48879184,
+        "rva": 48881660,
+        "static_frame": 10200,
+        "live_frame_bytes": 10208
+      },
+      {
+        "pc": 140700839987257,
+        "sp": 1031880919392,
+        "symbol_path": "worth_relational::mvcc::publication::port::RelationalPublicationPort::compare_and_publish",
+        "symbol_exact": true,
+        "function_rva": 48842752,
+        "rva": 48842809,
+        "static_frame": 632,
+        "live_frame_bytes": 640
+      },
+      {
+        "pc": 140700838378136,
+        "sp": 1031880920032,
+        "symbol_path": "<worth_runtime_world::lifecycle::owner::RuntimeWorldOwnerRoot as worth_runtime_world::lifecycle::ports::owner_execution::RuntimeWorldOwnerExecutionService>::execute_without_signal_with_cutover",
+        "symbol_exact": true,
+        "function_rva": 47229360,
+        "rva": 47233688,
+        "static_frame": 15160,
+        "live_frame_bytes": 15168
+      },
+      {
+        "pc": 140700834827555,
+        "sp": 1031880935200,
+        "symbol_path": "worth_runtime_world::lifecycle::service_ports::publication::RuntimeWorldPublicationPort::execute_without_signal_cutover",
+        "symbol_exact": true,
+        "function_rva": 43682672,
+        "rva": 43683107,
+        "static_frame": 3400,
+        "live_frame_bytes": 3408
+      },
+      {
+        "pc": 140700807340672,
+        "sp": 1031880938608,
+        "symbol_path": "worth_query_execution::domain_computation::execution_runtime::product_world::request_control::WorthQueryPreparedProductPublication::execute",
+        "symbol_exact": true,
+        "function_rva": 16196048,
+        "rva": 16196224,
+        "static_frame": 1384,
+        "live_frame_bytes": 1392
+      },
+      {
+        "pc": 140700834837770,
+        "sp": 1031880940000,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::product_publication::publish",
+        "symbol_exact": true,
+        "function_rva": 43685584,
+        "rva": 43693322,
+        "static_frame": 15464,
+        "live_frame_bytes": 15472
+      },
+      {
+        "pc": 140700805446920,
+        "sp": 1031880955472,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::memory::publication::publish",
+        "symbol_exact": true,
+        "function_rva": 14301376,
+        "rva": 14302472,
+        "static_frame": 42392,
+        "live_frame_bytes": 42400
+      },
+      {
+        "pc": 140700807109241,
+        "sp": 1031880997872,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::memory::commit",
+        "symbol_exact": true,
+        "function_rva": 15964432,
+        "rva": 15964793,
+        "static_frame": 12408,
+        "live_frame_bytes": 12416
+      },
+      {
+        "pc": 140700805437385,
+        "sp": 1031881010288,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::commit",
+        "symbol_exact": true,
+        "function_rva": 14282016,
+        "rva": 14292937,
+        "static_frame": 79560,
+        "live_frame_bytes": 79568
+      },
+      {
+        "pc": 140700807370570,
+        "sp": 1031881089856,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_owner_validated",
+        "symbol_exact": true,
+        "function_rva": 16225824,
+        "rva": 16226122,
+        "static_frame": 32968,
+        "live_frame_bytes": 32976
+      },
+      {
+        "pc": 140700807946217,
+        "sp": 1031881122832,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::commit_prepared_application",
+        "symbol_exact": true,
+        "function_rva": 16791808,
+        "rva": 16801769,
+        "static_frame": 32232,
+        "live_frame_bytes": 32240
+      },
+      {
+        "pc": 140700807259041,
+        "sp": 1031881155072,
+        "symbol_path": "<alloc::sync::Arc as worth_query_execution::domain_computation::provider_session::graph_provider::provider_contract::WorthQueryProviderSessionLifecycle>::commit_prepared_session",
+        "symbol_exact": true,
+        "function_rva": 16114080,
+        "rva": 16114593,
+        "static_frame": 616,
+        "live_frame_bytes": 624
+      },
+      {
+        "pc": 140700809737017,
+        "sp": 1031881155696,
+        "symbol_path": "worth_query_execution::domain_computation::provider_session::graph_provider::bounded_step::provider_anchor::WorthQueryGraphProviderAnchor::commit_session",
+        "symbol_exact": true,
+        "function_rva": 18592496,
+        "rva": 18592569,
+        "static_frame": 152,
+        "live_frame_bytes": 160
+      },
+      {
+        "pc": 140700806911208,
+        "sp": 1031881155856,
+        "symbol_path": "worth_query_execution::domain_computation::provider_session::protocol::readmission::prepared::staged::prepare_outcome::WorthQuerySessionPrepareOutcome::commit_using",
+        "symbol_exact": true,
+        "function_rva": 15766576,
+        "rva": 15766760,
+        "static_frame": 2792,
+        "live_frame_bytes": 2800
+      },
+      {
+        "pc": 140700809627463,
+        "sp": 1031881158656,
+        "symbol_path": "worth_query_execution::domain_computation::provider_session::protocol::readmission::prepared::staged::prepare_outcome::WorthQuerySessionPrepareOutcome::commit",
+        "symbol_exact": true,
+        "function_rva": 18482992,
+        "rva": 18483015,
+        "static_frame": 56,
+        "live_frame_bytes": 64
+      },
+      {
+        "pc": 140700830461999,
+        "sp": 1031881158720,
+        "symbol_path": "worth_query_execution::domain_computation::provider_session::provisional_attempt::commit_progression::WorthQueryInvariantApprovedProposedState::compare_and_commit_with",
+        "symbol_exact": true,
+        "function_rva": 39315872,
+        "rva": 39317551,
+        "static_frame": 7064,
+        "live_frame_bytes": 7072
+      },
+      {
+        "pc": 140700828170635,
+        "sp": 1031881165792,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::authorized::resolve_idempotency_under_authority",
+        "symbol_exact": true,
+        "function_rva": 37025136,
+        "rva": 37026187,
+        "static_frame": 9704,
+        "live_frame_bytes": 9712
+      },
+      {
+        "pc": 140700827196659,
+        "sp": 1031881175504,
+        "symbol_path": "worth_query_execution::domain_computation::authorization::application_commit_authorization::WorthQueryApplicationCommitAuthorization::govern",
+        "symbol_exact": true,
+        "function_rva": 36052000,
+        "rva": 36052211,
+        "static_frame": 9368,
+        "live_frame_bytes": 9376
+      },
+      {
+        "pc": 140700828185536,
+        "sp": 1031881184880,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::authorized::authorize_and_resolve_provider_commit",
+        "symbol_exact": true,
+        "function_rva": 37040784,
+        "rva": 37041088,
+        "static_frame": 11880,
+        "live_frame_bytes": 11888
+      },
+      {
+        "pc": 140700825903726,
+        "sp": 1031881196768,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::registered::WorthQueryRegisteredProviderAttempt::progress",
+        "symbol_exact": true,
+        "function_rva": 34758800,
+        "rva": 34759278,
+        "static_frame": 17560,
+        "live_frame_bytes": 17568
+      },
+      {
+        "pc": 140700828701037,
+        "sp": 1031881214336,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::progress_application_commit",
+        "symbol_exact": true,
+        "function_rva": 37553424,
+        "rva": 37556589,
+        "static_frame": 60344,
+        "live_frame_bytes": 60352
+      },
+      {
+        "pc": 140700803301053,
+        "sp": 1031881274688,
+        "function_rva": 12155456,
+        "rva": 12156605,
+        "static_frame": 28984,
+        "live_frame_bytes": 28992
+      },
+      {
+        "pc": 140700803318252,
+        "sp": 1031881303680,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::entry_custody::CurrentCommitProgram::compare_and_commit_application_for_program_action",
+        "symbol_exact": true,
+        "function_rva": 12172352,
+        "rva": 12173804,
+        "static_frame": 21096,
+        "live_frame_bytes": 21104
+      },
+      {
+        "pc": 140700822962447,
+        "sp": 1031881324784,
+        "function_rva": 31816656,
+        "rva": 31817999,
+        "static_frame": 33496,
+        "live_frame_bytes": 33504
+      },
+      {
+        "pc": 140700822973192,
+        "sp": 1031881358288,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime::compare_and_commit_workflow_advance",
+        "symbol_exact": true,
+        "function_rva": 31822752,
+        "rva": 31828744,
+        "static_frame": 27384,
+        "live_frame_bytes": 27392
+      },
+      {
+        "pc": 140700823858220,
+        "sp": 1031881385680,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_attempt::workflow_transition_program::preparation::WorthQueryWorkflowAdvanceAdapter::compare_and_commit_assessment",
+        "symbol_exact": true,
+        "function_rva": 32713088,
+        "rva": 32713772,
+        "static_frame": 26872,
+        "live_frame_bytes": 26880
+      },
+      {
+        "pc": 140700872884068,
+        "sp": 1031881412560,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution::run_advancement_with_maintenance::closure$0",
+        "symbol_exact": true,
+        "function_rva": 81738320,
+        "rva": 81739620,
+        "static_frame": 35160,
+        "live_frame_bytes": 35168
+      },
+      {
+        "pc": 140700833769964,
+        "sp": 1031881447728,
+        "function_rva": 42625248,
+        "rva": 42625516,
+        "static_frame": 296,
+        "live_frame_bytes": 304
+      },
+      {
+        "pc": 140700833799654,
+        "sp": 1031881448032,
+        "symbol_path": "<core::option::Option as worth_execution::backend::scope::body::ScopeKernel>::invoke",
+        "symbol_exact": true,
+        "function_rva": 42655152,
+        "rva": 42655206,
+        "static_frame": 88,
+        "live_frame_bytes": 96
+      },
+      {
+        "pc": 140700842052098,
+        "sp": 1031881448128,
+        "function_rva": 50907632,
+        "rva": 50907650,
+        "static_frame": 40,
+        "live_frame_bytes": 48
+      },
+      {
+        "pc": 140700865464110,
+        "sp": 1031881448176,
+        "symbol_path": "worth_execution::backend::panic_boundary::contain::closure$0",
+        "symbol_exact": true,
+        "function_rva": 74319616,
+        "rva": 74319662,
+        "static_frame": 40,
+        "live_frame_bytes": 48
+      },
+      {
+        "pc": 140700834599557,
+        "sp": 1031881448224,
+        "symbol_path": "worth_execution::backend::panic_boundary::contain_erased",
+        "symbol_exact": true,
+        "function_rva": 43455088,
+        "rva": 43455109,
+        "static_frame": 88,
+        "live_frame_bytes": 96
+      },
+      {
+        "pc": 140700816261170,
+        "sp": 1031881448320,
+        "symbol_path": "worth_execution::backend::scope::execution::run_concrete_scope",
+        "symbol_exact": true,
+        "function_rva": 25114256,
+        "rva": 25116722,
+        "static_frame": 1064,
+        "live_frame_bytes": 1072
+      },
+      {
+        "pc": 140700842030638,
+        "sp": 1031881449392,
+        "symbol_path": "worth_execution::backend::scope::body::run_typed_scope",
+        "symbol_exact": true,
+        "function_rva": 50885936,
+        "rva": 50886190,
+        "static_frame": 344,
+        "live_frame_bytes": 352
+      },
+      {
+        "pc": 140700806333585,
+        "sp": 1031881449744,
+        "symbol_path": "worth_execution::pattern::work_ceiling::ExecutionWorkCeiling::run",
+        "symbol_exact": true,
+        "function_rva": 15188880,
+        "rva": 15189137,
+        "static_frame": 408,
+        "live_frame_bytes": 416
+      },
+      {
+        "pc": 140700807211850,
+        "sp": 1031881450160,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::run_advancement",
+        "symbol_exact": true,
+        "function_rva": 16065440,
+        "rva": 16067402,
+        "static_frame": 552,
+        "live_frame_bytes": 560
+      },
+      {
+        "pc": 140700872748948,
+        "sp": 1031881450720,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution::run_advancement_with_maintenance",
+        "symbol_exact": true,
+        "function_rva": 81604256,
+        "rva": 81604500,
+        "static_frame": 16280,
+        "live_frame_bytes": 16288
+      },
+      {
+        "pc": 140700872708876,
+        "sp": 1031881467008,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution::run_product_advancement",
+        "symbol_exact": true,
+        "function_rva": 81564176,
+        "rva": 81564428,
+        "static_frame": 232,
+        "live_frame_bytes": 240
+      },
+      {
+        "pc": 140700871753436,
+        "sp": 1031881467248,
+        "symbol_path": "worth_runtime_world::lifecycle::service_ports::publication::RuntimeWorldPublicationPort::with_execution_placement",
+        "symbol_exact": true,
+        "function_rva": 80608656,
+        "rva": 80608988,
+        "static_frame": 26776,
+        "live_frame_bytes": 26784
+      },
+      {
+        "pc": 140700871784459,
+        "sp": 1031881494032,
+        "symbol_path": "worth_query_execution::domain_computation::execution_runtime::product_world::runtime::WorthQueryProductRuntime::with_execution_placement",
+        "symbol_exact": true,
+        "function_rva": 80639888,
+        "rva": 80640011,
+        "static_frame": 16152,
+        "live_frame_bytes": 16160
+      },
+      {
+        "pc": 140700823013586,
+        "sp": 1031881510192,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime::with_application_advancement",
+        "symbol_exact": true,
+        "function_rva": 31868960,
+        "rva": 31869138,
+        "static_frame": 16184,
+        "live_frame_bytes": 16192
+      },
+      {
+        "pc": 140700802712133,
+        "sp": 1031881526384,
+        "symbol_path": "worth_query_publication::application_entry::workflow::progress::WorthQueryWorkflowAdvanceRequest::accept_assessment",
+        "symbol_exact": true,
+        "function_rva": 11567552,
+        "rva": 11567685,
+        "static_frame": 21432,
+        "live_frame_bytes": 21440
+      },
+      {
+        "pc": 140700802862501,
+        "sp": 1031881547824,
+        "symbol_path": "bank_server::approved_payment_workflow::BankApprovedPaymentWorkflow::accept_assessment",
+        "symbol_exact": true,
+        "function_rva": 11717296,
+        "rva": 11718053,
+        "static_frame": 36440,
+        "live_frame_bytes": 36448
+      },
+      {
+        "pc": 140700791387844,
+        "sp": 1031881584272,
+        "symbol_path": "worth_query_bank_testkit_server::facade::server_world::parallel_history::assessment_trace::Trace::phase",
+        "symbol_exact": true,
+        "function_rva": 242944,
+        "rva": 243396,
+        "static_frame": 11880,
+        "live_frame_bytes": 11888
+      },
+      {
+        "pc": 140700792652783,
+        "sp": 1031881596160,
+        "symbol_path": "worth_query_bank_court_external_rail_server::oracle::server_owned_effects::server::parallel_history::assessment_history::assessment_history_settles_at_each_request_width",
+        "symbol_exact": true,
+        "function_rva": 1505472,
+        "rva": 1508335,
+        "static_frame": 25128,
+        "live_frame_bytes": 25136
+      },
+      {
+        "pc": 140722044525991,
+        "sp": 1031881621296,
+        "live_frame_bytes": 48
+      },
+      {
+        "pc": 140722067729996,
+        "sp": 1031881621344,
+        "external_symbol": "RtlUserThreadStart",
+        "symbol_address": 140722067729952
+      }
+    ],
+    "pid": 67712
+  },
+  {
+    "index": 3,
+    "peak_bytes": 782528,
+    "written_high_water": 782528,
+    "allocated_rsp_high_water": 782448,
+    "kind": "write",
+    "limits": {
+      "low": 1085679861760,
+      "high": 1085746970624,
+      "reserve_bytes": 67108864,
+      "entry_baseline": 552
+    },
+    "probes": 87,
+    "watch_hits": 0,
+    "call_path": [
+      {
+        "pc": 140700838011721,
+        "sp": 1085746188176,
+        "symbol_path": "im::nodes::btree::Node::insert",
+        "symbol_exact": true,
+        "function_rva": 46867248,
+        "rva": 46867273,
+        "static_frame": 25224,
+        "live_frame_bytes": 25232
+      },
+      {
+        "pc": 140700834677779,
+        "sp": 1085746213408,
+        "function_rva": 43533072,
+        "rva": 43533331,
+        "static_frame": 20360,
+        "live_frame_bytes": 20368
+      },
+      {
+        "pc": 140700834690988,
+        "sp": 1085746233776,
+        "symbol_path": "<worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::owner::SourceInvalidationOwner as worth_relational::mvcc::publication::companion::preflight::RelationalPublicationCompanion>::prepare",
+        "symbol_exact": true,
+        "function_rva": 43543296,
+        "rva": 43546540,
+        "static_frame": 16072,
+        "live_frame_bytes": 16080
+      },
+      {
+        "pc": 140700811967739,
+        "sp": 1085746249856,
+        "symbol_path": "<worth_runtime_bridge::relational_source::runtime_source::canonical_subscription::CanonicalEnvelopeDelivery as worth_relational::mvcc::publication::companion::preflight::RelationalPublicationCompanion>::prepare",
+        "symbol_exact": true,
+        "function_rva": 20823168,
+        "rva": 20823291,
+        "static_frame": 120,
+        "live_frame_bytes": 128
+      },
+      {
+        "pc": 140700840005405,
+        "sp": 1085746249984,
+        "function_rva": 48855632,
+        "rva": 48860957,
+        "static_frame": 7976,
+        "live_frame_bytes": 7984
+      },
+      {
+        "pc": 140700840026108,
+        "sp": 1085746257968,
+        "symbol_path": "worth_relational::mvcc::publication::port::RelationalPublicationPort::with_prepared_publication",
+        "symbol_exact": true,
+        "function_rva": 48879184,
+        "rva": 48881660,
+        "static_frame": 10200,
+        "live_frame_bytes": 10208
+      },
+      {
+        "pc": 140700839987257,
+        "sp": 1085746268176,
+        "symbol_path": "worth_relational::mvcc::publication::port::RelationalPublicationPort::compare_and_publish",
+        "symbol_exact": true,
+        "function_rva": 48842752,
+        "rva": 48842809,
+        "static_frame": 632,
+        "live_frame_bytes": 640
+      },
+      {
+        "pc": 140700838378136,
+        "sp": 1085746268816,
+        "symbol_path": "<worth_runtime_world::lifecycle::owner::RuntimeWorldOwnerRoot as worth_runtime_world::lifecycle::ports::owner_execution::RuntimeWorldOwnerExecutionService>::execute_without_signal_with_cutover",
+        "symbol_exact": true,
+        "function_rva": 47229360,
+        "rva": 47233688,
+        "static_frame": 15160,
+        "live_frame_bytes": 15168
+      },
+      {
+        "pc": 140700834827555,
+        "sp": 1085746283984,
+        "symbol_path": "worth_runtime_world::lifecycle::service_ports::publication::RuntimeWorldPublicationPort::execute_without_signal_cutover",
+        "symbol_exact": true,
+        "function_rva": 43682672,
+        "rva": 43683107,
+        "static_frame": 3400,
+        "live_frame_bytes": 3408
+      },
+      {
+        "pc": 140700807340672,
+        "sp": 1085746287392,
+        "symbol_path": "worth_query_execution::domain_computation::execution_runtime::product_world::request_control::WorthQueryPreparedProductPublication::execute",
+        "symbol_exact": true,
+        "function_rva": 16196048,
+        "rva": 16196224,
+        "static_frame": 1384,
+        "live_frame_bytes": 1392
+      },
+      {
+        "pc": 140700834837770,
+        "sp": 1085746288784,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::product_publication::publish",
+        "symbol_exact": true,
+        "function_rva": 43685584,
+        "rva": 43693322,
+        "static_frame": 15464,
+        "live_frame_bytes": 15472
+      },
+      {
+        "pc": 140700805446920,
+        "sp": 1085746304256,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::memory::publication::publish",
+        "symbol_exact": true,
+        "function_rva": 14301376,
+        "rva": 14302472,
+        "static_frame": 42392,
+        "live_frame_bytes": 42400
+      },
+      {
+        "pc": 140700807109241,
+        "sp": 1085746346656,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::memory::commit",
+        "symbol_exact": true,
+        "function_rva": 15964432,
+        "rva": 15964793,
+        "static_frame": 12408,
+        "live_frame_bytes": 12416
+      },
+      {
+        "pc": 140700805437385,
+        "sp": 1085746359072,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::commit",
+        "symbol_exact": true,
+        "function_rva": 14282016,
+        "rva": 14292937,
+        "static_frame": 79560,
+        "live_frame_bytes": 79568
+      },
+      {
+        "pc": 140700807370570,
+        "sp": 1085746438640,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_owner_validated",
+        "symbol_exact": true,
+        "function_rva": 16225824,
+        "rva": 16226122,
+        "static_frame": 32968,
+        "live_frame_bytes": 32976
+      },
+      {
+        "pc": 140700807946217,
+        "sp": 1085746471616,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::commit_prepared_application",
+        "symbol_exact": true,
+        "function_rva": 16791808,
+        "rva": 16801769,
+        "static_frame": 32232,
+        "live_frame_bytes": 32240
+      },
+      {
+        "pc": 140700807259041,
+        "sp": 1085746503856,
+        "symbol_path": "<alloc::sync::Arc as worth_query_execution::domain_computation::provider_session::graph_provider::provider_contract::WorthQueryProviderSessionLifecycle>::commit_prepared_session",
+        "symbol_exact": true,
+        "function_rva": 16114080,
+        "rva": 16114593,
+        "static_frame": 616,
+        "live_frame_bytes": 624
+      },
+      {
+        "pc": 140700809737017,
+        "sp": 1085746504480,
+        "symbol_path": "worth_query_execution::domain_computation::provider_session::graph_provider::bounded_step::provider_anchor::WorthQueryGraphProviderAnchor::commit_session",
+        "symbol_exact": true,
+        "function_rva": 18592496,
+        "rva": 18592569,
+        "static_frame": 152,
+        "live_frame_bytes": 160
+      },
+      {
+        "pc": 140700806911208,
+        "sp": 1085746504640,
+        "symbol_path": "worth_query_execution::domain_computation::provider_session::protocol::readmission::prepared::staged::prepare_outcome::WorthQuerySessionPrepareOutcome::commit_using",
+        "symbol_exact": true,
+        "function_rva": 15766576,
+        "rva": 15766760,
+        "static_frame": 2792,
+        "live_frame_bytes": 2800
+      },
+      {
+        "pc": 140700809627463,
+        "sp": 1085746507440,
+        "symbol_path": "worth_query_execution::domain_computation::provider_session::protocol::readmission::prepared::staged::prepare_outcome::WorthQuerySessionPrepareOutcome::commit",
+        "symbol_exact": true,
+        "function_rva": 18482992,
+        "rva": 18483015,
+        "static_frame": 56,
+        "live_frame_bytes": 64
+      },
+      {
+        "pc": 140700830461999,
+        "sp": 1085746507504,
+        "symbol_path": "worth_query_execution::domain_computation::provider_session::provisional_attempt::commit_progression::WorthQueryInvariantApprovedProposedState::compare_and_commit_with",
+        "symbol_exact": true,
+        "function_rva": 39315872,
+        "rva": 39317551,
+        "static_frame": 7064,
+        "live_frame_bytes": 7072
+      },
+      {
+        "pc": 140700828170635,
+        "sp": 1085746514576,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::authorized::resolve_idempotency_under_authority",
+        "symbol_exact": true,
+        "function_rva": 37025136,
+        "rva": 37026187,
+        "static_frame": 9704,
+        "live_frame_bytes": 9712
+      },
+      {
+        "pc": 140700827196659,
+        "sp": 1085746524288,
+        "symbol_path": "worth_query_execution::domain_computation::authorization::application_commit_authorization::WorthQueryApplicationCommitAuthorization::govern",
+        "symbol_exact": true,
+        "function_rva": 36052000,
+        "rva": 36052211,
+        "static_frame": 9368,
+        "live_frame_bytes": 9376
+      },
+      {
+        "pc": 140700828185536,
+        "sp": 1085746533664,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::authorized::authorize_and_resolve_provider_commit",
+        "symbol_exact": true,
+        "function_rva": 37040784,
+        "rva": 37041088,
+        "static_frame": 11880,
+        "live_frame_bytes": 11888
+      },
+      {
+        "pc": 140700825903726,
+        "sp": 1085746545552,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::registered::WorthQueryRegisteredProviderAttempt::progress",
+        "symbol_exact": true,
+        "function_rva": 34758800,
+        "rva": 34759278,
+        "static_frame": 17560,
+        "live_frame_bytes": 17568
+      },
+      {
+        "pc": 140700828701037,
+        "sp": 1085746563120,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::progress_application_commit",
+        "symbol_exact": true,
+        "function_rva": 37553424,
+        "rva": 37556589,
+        "static_frame": 60344,
+        "live_frame_bytes": 60352
+      },
+      {
+        "pc": 140700803301053,
+        "sp": 1085746623472,
+        "function_rva": 12155456,
+        "rva": 12156605,
+        "static_frame": 28984,
+        "live_frame_bytes": 28992
+      },
+      {
+        "pc": 140700803318252,
+        "sp": 1085746652464,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::entry_custody::CurrentCommitProgram::compare_and_commit_application_for_program_action",
+        "symbol_exact": true,
+        "function_rva": 12172352,
+        "rva": 12173804,
+        "static_frame": 21096,
+        "live_frame_bytes": 21104
+      },
+      {
+        "pc": 140700822962447,
+        "sp": 1085746673568,
+        "function_rva": 31816656,
+        "rva": 31817999,
+        "static_frame": 33496,
+        "live_frame_bytes": 33504
+      },
+      {
+        "pc": 140700822973192,
+        "sp": 1085746707072,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime::compare_and_commit_workflow_advance",
+        "symbol_exact": true,
+        "function_rva": 31822752,
+        "rva": 31828744,
+        "static_frame": 27384,
+        "live_frame_bytes": 27392
+      },
+      {
+        "pc": 140700823858220,
+        "sp": 1085746734464,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_attempt::workflow_transition_program::preparation::WorthQueryWorkflowAdvanceAdapter::compare_and_commit_assessment",
+        "symbol_exact": true,
+        "function_rva": 32713088,
+        "rva": 32713772,
+        "static_frame": 26872,
+        "live_frame_bytes": 26880
+      },
+      {
+        "pc": 140700872884068,
+        "sp": 1085746761344,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution::run_advancement_with_maintenance::closure$0",
+        "symbol_exact": true,
+        "function_rva": 81738320,
+        "rva": 81739620,
+        "static_frame": 35160,
+        "live_frame_bytes": 35168
+      },
+      {
+        "pc": 140700833769964,
+        "sp": 1085746796512,
+        "function_rva": 42625248,
+        "rva": 42625516,
+        "static_frame": 296,
+        "live_frame_bytes": 304
+      },
+      {
+        "pc": 140700833799654,
+        "sp": 1085746796816,
+        "symbol_path": "<core::option::Option as worth_execution::backend::scope::body::ScopeKernel>::invoke",
+        "symbol_exact": true,
+        "function_rva": 42655152,
+        "rva": 42655206,
+        "static_frame": 88,
+        "live_frame_bytes": 96
+      },
+      {
+        "pc": 140700842052098,
+        "sp": 1085746796912,
+        "function_rva": 50907632,
+        "rva": 50907650,
+        "static_frame": 40,
+        "live_frame_bytes": 48
+      },
+      {
+        "pc": 140700865464110,
+        "sp": 1085746796960,
+        "symbol_path": "worth_execution::backend::panic_boundary::contain::closure$0",
+        "symbol_exact": true,
+        "function_rva": 74319616,
+        "rva": 74319662,
+        "static_frame": 40,
+        "live_frame_bytes": 48
+      },
+      {
+        "pc": 140700834599557,
+        "sp": 1085746797008,
+        "symbol_path": "worth_execution::backend::panic_boundary::contain_erased",
+        "symbol_exact": true,
+        "function_rva": 43455088,
+        "rva": 43455109,
+        "static_frame": 88,
+        "live_frame_bytes": 96
+      },
+      {
+        "pc": 140700816261170,
+        "sp": 1085746797104,
+        "symbol_path": "worth_execution::backend::scope::execution::run_concrete_scope",
+        "symbol_exact": true,
+        "function_rva": 25114256,
+        "rva": 25116722,
+        "static_frame": 1064,
+        "live_frame_bytes": 1072
+      },
+      {
+        "pc": 140700842030638,
+        "sp": 1085746798176,
+        "symbol_path": "worth_execution::backend::scope::body::run_typed_scope",
+        "symbol_exact": true,
+        "function_rva": 50885936,
+        "rva": 50886190,
+        "static_frame": 344,
+        "live_frame_bytes": 352
+      },
+      {
+        "pc": 140700806333585,
+        "sp": 1085746798528,
+        "symbol_path": "worth_execution::pattern::work_ceiling::ExecutionWorkCeiling::run",
+        "symbol_exact": true,
+        "function_rva": 15188880,
+        "rva": 15189137,
+        "static_frame": 408,
+        "live_frame_bytes": 416
+      },
+      {
+        "pc": 140700807211850,
+        "sp": 1085746798944,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::run_advancement",
+        "symbol_exact": true,
+        "function_rva": 16065440,
+        "rva": 16067402,
+        "static_frame": 552,
+        "live_frame_bytes": 560
+      },
+      {
+        "pc": 140700872748948,
+        "sp": 1085746799504,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution::run_advancement_with_maintenance",
+        "symbol_exact": true,
+        "function_rva": 81604256,
+        "rva": 81604500,
+        "static_frame": 16280,
+        "live_frame_bytes": 16288
+      },
+      {
+        "pc": 140700872708876,
+        "sp": 1085746815792,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution::run_product_advancement",
+        "symbol_exact": true,
+        "function_rva": 81564176,
+        "rva": 81564428,
+        "static_frame": 232,
+        "live_frame_bytes": 240
+      },
+      {
+        "pc": 140700871753436,
+        "sp": 1085746816032,
+        "symbol_path": "worth_runtime_world::lifecycle::service_ports::publication::RuntimeWorldPublicationPort::with_execution_placement",
+        "symbol_exact": true,
+        "function_rva": 80608656,
+        "rva": 80608988,
+        "static_frame": 26776,
+        "live_frame_bytes": 26784
+      },
+      {
+        "pc": 140700871784459,
+        "sp": 1085746842816,
+        "symbol_path": "worth_query_execution::domain_computation::execution_runtime::product_world::runtime::WorthQueryProductRuntime::with_execution_placement",
+        "symbol_exact": true,
+        "function_rva": 80639888,
+        "rva": 80640011,
+        "static_frame": 16152,
+        "live_frame_bytes": 16160
+      },
+      {
+        "pc": 140700823013586,
+        "sp": 1085746858976,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime::with_application_advancement",
+        "symbol_exact": true,
+        "function_rva": 31868960,
+        "rva": 31869138,
+        "static_frame": 16184,
+        "live_frame_bytes": 16192
+      },
+      {
+        "pc": 140700802712133,
+        "sp": 1085746875168,
+        "symbol_path": "worth_query_publication::application_entry::workflow::progress::WorthQueryWorkflowAdvanceRequest::accept_assessment",
+        "symbol_exact": true,
+        "function_rva": 11567552,
+        "rva": 11567685,
+        "static_frame": 21432,
+        "live_frame_bytes": 21440
+      },
+      {
+        "pc": 140700802862501,
+        "sp": 1085746896608,
+        "symbol_path": "bank_server::approved_payment_workflow::BankApprovedPaymentWorkflow::accept_assessment",
+        "symbol_exact": true,
+        "function_rva": 11717296,
+        "rva": 11718053,
+        "static_frame": 36440,
+        "live_frame_bytes": 36448
+      },
+      {
+        "pc": 140700791387844,
+        "sp": 1085746933056,
+        "symbol_path": "worth_query_bank_testkit_server::facade::server_world::parallel_history::assessment_trace::Trace::phase",
+        "symbol_exact": true,
+        "function_rva": 242944,
+        "rva": 243396,
+        "static_frame": 11880,
+        "live_frame_bytes": 11888
+      },
+      {
+        "pc": 140700792652783,
+        "sp": 1085746944944,
+        "symbol_path": "worth_query_bank_court_external_rail_server::oracle::server_owned_effects::server::parallel_history::assessment_history::assessment_history_settles_at_each_request_width",
+        "symbol_exact": true,
+        "function_rva": 1505472,
+        "rva": 1508335,
+        "static_frame": 25128,
+        "live_frame_bytes": 25136
+      },
+      {
+        "pc": 140722044525991,
+        "sp": 1085746970080,
+        "live_frame_bytes": 48
+      },
+      {
+        "pc": 140722067729996,
+        "sp": 1085746970128,
+        "external_symbol": "RtlUserThreadStart",
+        "symbol_address": 140722067729952
+      }
+    ],
+    "pid": 84368
+  },
+  {
+    "index": 4,
+    "peak_bytes": 782240,
+    "written_high_water": 782240,
+    "allocated_rsp_high_water": 782160,
+    "kind": "write",
+    "limits": {
+      "low": 654434107392,
+      "high": 654501216256,
+      "reserve_bytes": 67108864,
+      "entry_baseline": 264
+    },
+    "probes": 87,
+    "watch_hits": 0,
+    "call_path": [
+      {
+        "pc": 140700838011721,
+        "sp": 654500434096,
+        "symbol_path": "im::nodes::btree::Node::insert",
+        "symbol_exact": true,
+        "function_rva": 46867248,
+        "rva": 46867273,
+        "static_frame": 25224,
+        "live_frame_bytes": 25232
+      },
+      {
+        "pc": 140700834677779,
+        "sp": 654500459328,
+        "function_rva": 43533072,
+        "rva": 43533331,
+        "static_frame": 20360,
+        "live_frame_bytes": 20368
+      },
+      {
+        "pc": 140700834690988,
+        "sp": 654500479696,
+        "symbol_path": "<worth_query_execution::domain_computation::primary_graph::output_lineage::invalidation::owner::SourceInvalidationOwner as worth_relational::mvcc::publication::companion::preflight::RelationalPublicationCompanion>::prepare",
+        "symbol_exact": true,
+        "function_rva": 43543296,
+        "rva": 43546540,
+        "static_frame": 16072,
+        "live_frame_bytes": 16080
+      },
+      {
+        "pc": 140700811967739,
+        "sp": 654500495776,
+        "symbol_path": "<worth_runtime_bridge::relational_source::runtime_source::canonical_subscription::CanonicalEnvelopeDelivery as worth_relational::mvcc::publication::companion::preflight::RelationalPublicationCompanion>::prepare",
+        "symbol_exact": true,
+        "function_rva": 20823168,
+        "rva": 20823291,
+        "static_frame": 120,
+        "live_frame_bytes": 128
+      },
+      {
+        "pc": 140700840005405,
+        "sp": 654500495904,
+        "function_rva": 48855632,
+        "rva": 48860957,
+        "static_frame": 7976,
+        "live_frame_bytes": 7984
+      },
+      {
+        "pc": 140700840026108,
+        "sp": 654500503888,
+        "symbol_path": "worth_relational::mvcc::publication::port::RelationalPublicationPort::with_prepared_publication",
+        "symbol_exact": true,
+        "function_rva": 48879184,
+        "rva": 48881660,
+        "static_frame": 10200,
+        "live_frame_bytes": 10208
+      },
+      {
+        "pc": 140700839987257,
+        "sp": 654500514096,
+        "symbol_path": "worth_relational::mvcc::publication::port::RelationalPublicationPort::compare_and_publish",
+        "symbol_exact": true,
+        "function_rva": 48842752,
+        "rva": 48842809,
+        "static_frame": 632,
+        "live_frame_bytes": 640
+      },
+      {
+        "pc": 140700838378136,
+        "sp": 654500514736,
+        "symbol_path": "<worth_runtime_world::lifecycle::owner::RuntimeWorldOwnerRoot as worth_runtime_world::lifecycle::ports::owner_execution::RuntimeWorldOwnerExecutionService>::execute_without_signal_with_cutover",
+        "symbol_exact": true,
+        "function_rva": 47229360,
+        "rva": 47233688,
+        "static_frame": 15160,
+        "live_frame_bytes": 15168
+      },
+      {
+        "pc": 140700834827555,
+        "sp": 654500529904,
+        "symbol_path": "worth_runtime_world::lifecycle::service_ports::publication::RuntimeWorldPublicationPort::execute_without_signal_cutover",
+        "symbol_exact": true,
+        "function_rva": 43682672,
+        "rva": 43683107,
+        "static_frame": 3400,
+        "live_frame_bytes": 3408
+      },
+      {
+        "pc": 140700807340672,
+        "sp": 654500533312,
+        "symbol_path": "worth_query_execution::domain_computation::execution_runtime::product_world::request_control::WorthQueryPreparedProductPublication::execute",
+        "symbol_exact": true,
+        "function_rva": 16196048,
+        "rva": 16196224,
+        "static_frame": 1384,
+        "live_frame_bytes": 1392
+      },
+      {
+        "pc": 140700834837770,
+        "sp": 654500534704,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::product_publication::publish",
+        "symbol_exact": true,
+        "function_rva": 43685584,
+        "rva": 43693322,
+        "static_frame": 15464,
+        "live_frame_bytes": 15472
+      },
+      {
+        "pc": 140700805446920,
+        "sp": 654500550176,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::memory::publication::publish",
+        "symbol_exact": true,
+        "function_rva": 14301376,
+        "rva": 14302472,
+        "static_frame": 42392,
+        "live_frame_bytes": 42400
+      },
+      {
+        "pc": 140700807109241,
+        "sp": 654500592576,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::memory::commit",
+        "symbol_exact": true,
+        "function_rva": 15964432,
+        "rva": 15964793,
+        "static_frame": 12408,
+        "live_frame_bytes": 12416
+      },
+      {
+        "pc": 140700805437385,
+        "sp": 654500604992,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::commit",
+        "symbol_exact": true,
+        "function_rva": 14282016,
+        "rva": 14292937,
+        "static_frame": 79560,
+        "live_frame_bytes": 79568
+      },
+      {
+        "pc": 140700807370570,
+        "sp": 654500684560,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_owner_validated",
+        "symbol_exact": true,
+        "function_rva": 16225824,
+        "rva": 16226122,
+        "static_frame": 32968,
+        "live_frame_bytes": 32976
+      },
+      {
+        "pc": 140700807946217,
+        "sp": 654500717536,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::commit_prepared_application",
+        "symbol_exact": true,
+        "function_rva": 16791808,
+        "rva": 16801769,
+        "static_frame": 32232,
+        "live_frame_bytes": 32240
+      },
+      {
+        "pc": 140700807259041,
+        "sp": 654500749776,
+        "symbol_path": "<alloc::sync::Arc as worth_query_execution::domain_computation::provider_session::graph_provider::provider_contract::WorthQueryProviderSessionLifecycle>::commit_prepared_session",
+        "symbol_exact": true,
+        "function_rva": 16114080,
+        "rva": 16114593,
+        "static_frame": 616,
+        "live_frame_bytes": 624
+      },
+      {
+        "pc": 140700809737017,
+        "sp": 654500750400,
+        "symbol_path": "worth_query_execution::domain_computation::provider_session::graph_provider::bounded_step::provider_anchor::WorthQueryGraphProviderAnchor::commit_session",
+        "symbol_exact": true,
+        "function_rva": 18592496,
+        "rva": 18592569,
+        "static_frame": 152,
+        "live_frame_bytes": 160
+      },
+      {
+        "pc": 140700806911208,
+        "sp": 654500750560,
+        "symbol_path": "worth_query_execution::domain_computation::provider_session::protocol::readmission::prepared::staged::prepare_outcome::WorthQuerySessionPrepareOutcome::commit_using",
+        "symbol_exact": true,
+        "function_rva": 15766576,
+        "rva": 15766760,
+        "static_frame": 2792,
+        "live_frame_bytes": 2800
+      },
+      {
+        "pc": 140700809627463,
+        "sp": 654500753360,
+        "symbol_path": "worth_query_execution::domain_computation::provider_session::protocol::readmission::prepared::staged::prepare_outcome::WorthQuerySessionPrepareOutcome::commit",
+        "symbol_exact": true,
+        "function_rva": 18482992,
+        "rva": 18483015,
+        "static_frame": 56,
+        "live_frame_bytes": 64
+      },
+      {
+        "pc": 140700830461999,
+        "sp": 654500753424,
+        "symbol_path": "worth_query_execution::domain_computation::provider_session::provisional_attempt::commit_progression::WorthQueryInvariantApprovedProposedState::compare_and_commit_with",
+        "symbol_exact": true,
+        "function_rva": 39315872,
+        "rva": 39317551,
+        "static_frame": 7064,
+        "live_frame_bytes": 7072
+      },
+      {
+        "pc": 140700828170635,
+        "sp": 654500760496,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::authorized::resolve_idempotency_under_authority",
+        "symbol_exact": true,
+        "function_rva": 37025136,
+        "rva": 37026187,
+        "static_frame": 9704,
+        "live_frame_bytes": 9712
+      },
+      {
+        "pc": 140700827196659,
+        "sp": 654500770208,
+        "symbol_path": "worth_query_execution::domain_computation::authorization::application_commit_authorization::WorthQueryApplicationCommitAuthorization::govern",
+        "symbol_exact": true,
+        "function_rva": 36052000,
+        "rva": 36052211,
+        "static_frame": 9368,
+        "live_frame_bytes": 9376
+      },
+      {
+        "pc": 140700828185536,
+        "sp": 654500779584,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::authorized::authorize_and_resolve_provider_commit",
+        "symbol_exact": true,
+        "function_rva": 37040784,
+        "rva": 37041088,
+        "static_frame": 11880,
+        "live_frame_bytes": 11888
+      },
+      {
+        "pc": 140700825903726,
+        "sp": 654500791472,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::registered::WorthQueryRegisteredProviderAttempt::progress",
+        "symbol_exact": true,
+        "function_rva": 34758800,
+        "rva": 34759278,
+        "static_frame": 17560,
+        "live_frame_bytes": 17568
+      },
+      {
+        "pc": 140700828701037,
+        "sp": 654500809040,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::progress_application_commit",
+        "symbol_exact": true,
+        "function_rva": 37553424,
+        "rva": 37556589,
+        "static_frame": 60344,
+        "live_frame_bytes": 60352
+      },
+      {
+        "pc": 140700803301053,
+        "sp": 654500869392,
+        "function_rva": 12155456,
+        "rva": 12156605,
+        "static_frame": 28984,
+        "live_frame_bytes": 28992
+      },
+      {
+        "pc": 140700803318252,
+        "sp": 654500898384,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::entry_custody::CurrentCommitProgram::compare_and_commit_application_for_program_action",
+        "symbol_exact": true,
+        "function_rva": 12172352,
+        "rva": 12173804,
+        "static_frame": 21096,
+        "live_frame_bytes": 21104
+      },
+      {
+        "pc": 140700822962447,
+        "sp": 654500919488,
+        "function_rva": 31816656,
+        "rva": 31817999,
+        "static_frame": 33496,
+        "live_frame_bytes": 33504
+      },
+      {
+        "pc": 140700822973192,
+        "sp": 654500952992,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime::compare_and_commit_workflow_advance",
+        "symbol_exact": true,
+        "function_rva": 31822752,
+        "rva": 31828744,
+        "static_frame": 27384,
+        "live_frame_bytes": 27392
+      },
+      {
+        "pc": 140700823858220,
+        "sp": 654500980384,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_attempt::workflow_transition_program::preparation::WorthQueryWorkflowAdvanceAdapter::compare_and_commit_assessment",
+        "symbol_exact": true,
+        "function_rva": 32713088,
+        "rva": 32713772,
+        "static_frame": 26872,
+        "live_frame_bytes": 26880
+      },
+      {
+        "pc": 140700872884068,
+        "sp": 654501007264,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution::run_advancement_with_maintenance::closure$0",
+        "symbol_exact": true,
+        "function_rva": 81738320,
+        "rva": 81739620,
+        "static_frame": 35160,
+        "live_frame_bytes": 35168
+      },
+      {
+        "pc": 140700833769964,
+        "sp": 654501042432,
+        "function_rva": 42625248,
+        "rva": 42625516,
+        "static_frame": 296,
+        "live_frame_bytes": 304
+      },
+      {
+        "pc": 140700833799654,
+        "sp": 654501042736,
+        "symbol_path": "<core::option::Option as worth_execution::backend::scope::body::ScopeKernel>::invoke",
+        "symbol_exact": true,
+        "function_rva": 42655152,
+        "rva": 42655206,
+        "static_frame": 88,
+        "live_frame_bytes": 96
+      },
+      {
+        "pc": 140700842052098,
+        "sp": 654501042832,
+        "function_rva": 50907632,
+        "rva": 50907650,
+        "static_frame": 40,
+        "live_frame_bytes": 48
+      },
+      {
+        "pc": 140700865464110,
+        "sp": 654501042880,
+        "symbol_path": "worth_execution::backend::panic_boundary::contain::closure$0",
+        "symbol_exact": true,
+        "function_rva": 74319616,
+        "rva": 74319662,
+        "static_frame": 40,
+        "live_frame_bytes": 48
+      },
+      {
+        "pc": 140700834599557,
+        "sp": 654501042928,
+        "symbol_path": "worth_execution::backend::panic_boundary::contain_erased",
+        "symbol_exact": true,
+        "function_rva": 43455088,
+        "rva": 43455109,
+        "static_frame": 88,
+        "live_frame_bytes": 96
+      },
+      {
+        "pc": 140700816261170,
+        "sp": 654501043024,
+        "symbol_path": "worth_execution::backend::scope::execution::run_concrete_scope",
+        "symbol_exact": true,
+        "function_rva": 25114256,
+        "rva": 25116722,
+        "static_frame": 1064,
+        "live_frame_bytes": 1072
+      },
+      {
+        "pc": 140700842030638,
+        "sp": 654501044096,
+        "symbol_path": "worth_execution::backend::scope::body::run_typed_scope",
+        "symbol_exact": true,
+        "function_rva": 50885936,
+        "rva": 50886190,
+        "static_frame": 344,
+        "live_frame_bytes": 352
+      },
+      {
+        "pc": 140700806333585,
+        "sp": 654501044448,
+        "symbol_path": "worth_execution::pattern::work_ceiling::ExecutionWorkCeiling::run",
+        "symbol_exact": true,
+        "function_rva": 15188880,
+        "rva": 15189137,
+        "static_frame": 408,
+        "live_frame_bytes": 416
+      },
+      {
+        "pc": 140700807211850,
+        "sp": 654501044864,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::run_advancement",
+        "symbol_exact": true,
+        "function_rva": 16065440,
+        "rva": 16067402,
+        "static_frame": 552,
+        "live_frame_bytes": 560
+      },
+      {
+        "pc": 140700872748948,
+        "sp": 654501045424,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution::run_advancement_with_maintenance",
+        "symbol_exact": true,
+        "function_rva": 81604256,
+        "rva": 81604500,
+        "static_frame": 16280,
+        "live_frame_bytes": 16288
+      },
+      {
+        "pc": 140700872708876,
+        "sp": 654501061712,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution::run_product_advancement",
+        "symbol_exact": true,
+        "function_rva": 81564176,
+        "rva": 81564428,
+        "static_frame": 232,
+        "live_frame_bytes": 240
+      },
+      {
+        "pc": 140700871753436,
+        "sp": 654501061952,
+        "symbol_path": "worth_runtime_world::lifecycle::service_ports::publication::RuntimeWorldPublicationPort::with_execution_placement",
+        "symbol_exact": true,
+        "function_rva": 80608656,
+        "rva": 80608988,
+        "static_frame": 26776,
+        "live_frame_bytes": 26784
+      },
+      {
+        "pc": 140700871784459,
+        "sp": 654501088736,
+        "symbol_path": "worth_query_execution::domain_computation::execution_runtime::product_world::runtime::WorthQueryProductRuntime::with_execution_placement",
+        "symbol_exact": true,
+        "function_rva": 80639888,
+        "rva": 80640011,
+        "static_frame": 16152,
+        "live_frame_bytes": 16160
+      },
+      {
+        "pc": 140700823013586,
+        "sp": 654501104896,
+        "symbol_path": "worth_query_execution::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime::with_application_advancement",
+        "symbol_exact": true,
+        "function_rva": 31868960,
+        "rva": 31869138,
+        "static_frame": 16184,
+        "live_frame_bytes": 16192
+      },
+      {
+        "pc": 140700802712133,
+        "sp": 654501121088,
+        "symbol_path": "worth_query_publication::application_entry::workflow::progress::WorthQueryWorkflowAdvanceRequest::accept_assessment",
+        "symbol_exact": true,
+        "function_rva": 11567552,
+        "rva": 11567685,
+        "static_frame": 21432,
+        "live_frame_bytes": 21440
+      },
+      {
+        "pc": 140700802862501,
+        "sp": 654501142528,
+        "symbol_path": "bank_server::approved_payment_workflow::BankApprovedPaymentWorkflow::accept_assessment",
+        "symbol_exact": true,
+        "function_rva": 11717296,
+        "rva": 11718053,
+        "static_frame": 36440,
+        "live_frame_bytes": 36448
+      },
+      {
+        "pc": 140700791387844,
+        "sp": 654501178976,
+        "symbol_path": "worth_query_bank_testkit_server::facade::server_world::parallel_history::assessment_trace::Trace::phase",
+        "symbol_exact": true,
+        "function_rva": 242944,
+        "rva": 243396,
+        "static_frame": 11880,
+        "live_frame_bytes": 11888
+      },
+      {
+        "pc": 140700792652783,
+        "sp": 654501190864,
+        "symbol_path": "worth_query_bank_court_external_rail_server::oracle::server_owned_effects::server::parallel_history::assessment_history::assessment_history_settles_at_each_request_width",
+        "symbol_exact": true,
+        "function_rva": 1505472,
+        "rva": 1508335,
+        "static_frame": 25128,
+        "live_frame_bytes": 25136
+      },
+      {
+        "pc": 140722044525991,
+        "sp": 654501216000,
+        "live_frame_bytes": 48
+      },
+      {
+        "pc": 140722067729996,
+        "sp": 654501216048,
+        "external_symbol": "RtlUserThreadStart",
+        "symbol_address": 140722067729952
+      }
+    ],
+    "pid": 58540
+  }
+]

@@ -10,7 +10,7 @@ impl RecoveredCheckpointCustodyEvidence {
     /// stay live separately and still participate in the pool's aggregate cap.
     pub(in crate::physical_runtime) fn bootstrap_covered_heap_bytes(&self) -> Option<u64> {
         let funded = self
-            .backing
+            .backing()
             .charged_bytes()
             .checked_add(self.payload().selected_wal.owned_heap_bytes()?)?
             .checked_add(self.shared_checkpoint_bytes()?)?
@@ -51,7 +51,7 @@ impl RecoveredCheckpointCustodyEvidence {
                     .owned_heap_bytes()?
                     .checked_add(claim.owned_heap_bytes()?)?,
             };
-        bytes = bytes.checked_add(self.backing.owned_heap_bytes()?)?;
+        bytes = bytes.checked_add(self.backing().owned_heap_bytes()?)?;
         #[cfg(feature = "recovery-runtime-owner")]
         {
             bytes = bytes.checked_add(self.payload().selected_wal.owned_heap_bytes()?)?;

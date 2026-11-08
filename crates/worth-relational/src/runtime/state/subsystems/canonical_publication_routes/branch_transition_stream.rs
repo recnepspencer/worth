@@ -45,6 +45,13 @@ struct BranchTransitionStreamState {
     installation: Option<OriginalEmptySchemaInstallation>,
     initial_inputs:
         Option<Arc<crate::durability::source_initial_inputs::image::InitialInputsImage>>,
+    home_world_selection: Option<
+        Arc<
+            worth_proof::VerifiedHomeWorldSelection<
+                Arc<crate::durability::RelationalWorldSourceCatalog>,
+            >,
+        >,
+    >,
     _log_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
@@ -260,6 +267,7 @@ impl BranchTransitionStream {
                 birth: state.birth.clone(),
                 installation: state.installation.clone(),
                 initial_inputs: state.initial_inputs.clone(),
+                home_world_selection: state.home_world_selection.clone(),
                 // This existing ordinary detached-copy allocation is not a
                 // controlled positive. Capture separately admits its own roster.
                 _log_memory: None,

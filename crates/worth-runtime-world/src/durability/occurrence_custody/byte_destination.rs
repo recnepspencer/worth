@@ -1,10 +1,13 @@
 //! The actual pre-effect byte destination cannot be silently replaced after seal.
 use super::*;
 use crate::durability::artifact::WorldArtifactFrame;
-use worth_execution::{ExecutionByteBuffer, ExecutionMemoryReservation, ExecutionRequest};
+use worth_execution::{
+    ExecutionByteBuffer, ExecutionRequest, ExecutionRequestArrayDenial, MapKernelStop,
+    WorkCeilingDenial,
+};
 
 #[derive(Debug)]
-enum DestinationPosture {
+pub(super) enum DestinationPosture {
     Available,
     Consumed,
 }
@@ -12,32 +15,41 @@ enum DestinationPosture {
 pub(super) struct OccurrenceByteDestination {
     backing: Option<ExecutionByteBuffer>,
     posture: DestinationPosture,
-    funding: Option<ExecutionMemoryReservation>,
 }
 impl OccurrenceByteDestination {
     pub(super) fn prepare(
         bytes: usize,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, WorldDurableMediumDenial> {
-        // A leased buffer owns its grant internally. System allocation used by
-        // serial requests is explicitly uncharged, so retain its request grant
-        // alongside the same buffer and later its sealed frame instead.
-        let funding = if request.is_leased() {
-            None
-        } else {
-            let quote = u64::try_from(bytes).map_err(|_| {
-                WorldDurableMediumDenial::Frame(super::super::WorldDurableFrameDenial::SizeLimit)
-            })?;
-            request
-                .reserve_retained_memory(quote)
-                .map_err(WorldDurableMediumDenial::Request)?
-        };
-        let backing = ExecutionByteBuffer::allocate(bytes, request.allocation_policy())
-            .map_err(WorldDurableMediumDenial::Allocation)?;
+        request
+            .consult()
+            .map_err(WorldDurableMediumDenial::Request)?;
+        let mut prepared = None;
+        let outcome = request.run_native_with_checkpoint(|context| {
+            prepared = Some((|| {
+                context.poll().map_err(|cause| {
+                    ExecutionRequestArrayDenial::Request(WorkCeilingDenial::Stopped(cause))
+                })?;
+                ExecutionByteBuffer::allocate_in_stage(bytes, *request, context)
+            })());
+        });
+        let backing = match (outcome, prepared) {
+            (Ok(_), Some(backing)) => backing,
+            (Err(WorkCeilingDenial::Stopped(MapKernelStop::NestedStopped)), Some(Err(cause))) => {
+                Err(cause)
+            }
+            (Err(cause), _) => Err(ExecutionRequestArrayDenial::Request(cause)),
+            (Ok(_), None) => unreachable!("completed original destination allocation"),
+        }
+        .map_err(|cause| match cause {
+            ExecutionRequestArrayDenial::Request(cause) => WorldDurableMediumDenial::Request(cause),
+            ExecutionRequestArrayDenial::Allocation(cause) => {
+                WorldDurableMediumDenial::Allocation(cause)
+            }
+        })?;
         Ok(Self {
             backing: Some(backing),
             posture: DestinationPosture::Available,
-            funding,
         })
     }
     pub(super) fn backing(&mut self) -> Result<&mut ExecutionByteBuffer, WorldDurableMediumDenial> {
@@ -50,21 +62,26 @@ impl OccurrenceByteDestination {
         }
     }
     pub(super) fn seal(&mut self) -> Result<WorldArtifactFrame, WorldDurableMediumDenial> {
-        match self.posture {
-            DestinationPosture::Available => {}
-            DestinationPosture::Consumed => {
-                return Err(WorldDurableMediumDenial::OccurrenceReopenRequired)
-            }
-        }
-        // This state changes before take/seal, including their unwind paths.
-        self.posture = DestinationPosture::Consumed;
-        let funding = self.funding.take();
+        // Consume before take/seal, including their refusal and unwind paths.
+        self.posture.consume()?;
         let bytes = self
             .backing
             .take()
             .expect("one original destination is consumed")
             .seal()
             .map_err(WorldDurableMediumDenial::Allocation)?;
-        Ok(WorldArtifactFrame::from_streamed(bytes, funding))
+        Ok(WorldArtifactFrame::from_encoded(bytes))
+    }
+}
+
+impl DestinationPosture {
+    pub(super) fn consume(&mut self) -> Result<(), WorldDurableMediumDenial> {
+        match self {
+            Self::Available => {
+                *self = Self::Consumed;
+                Ok(())
+            }
+            Self::Consumed => Err(WorldDurableMediumDenial::OccurrenceReopenRequired),
+        }
     }
 }

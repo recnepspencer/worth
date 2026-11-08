@@ -19,7 +19,10 @@ impl<Schema: ApplicationSchemaComposition, Program: 'static> AuthorityMarker
 {
 }
 
-pub(super) fn finish_service<Schema: ApplicationSchemaComposition, Program: 'static>(
+pub(in crate::application_home) fn finish_service<
+    Schema: ApplicationSchemaComposition,
+    Program: 'static,
+>(
     phase: &WorthQueryBootstrapAdvancementPhase<'_>,
     query: ReadmittedHomeQueryService<Schema, Program>,
     home: DirectoryHome,

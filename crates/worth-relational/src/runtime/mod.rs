@@ -2,8 +2,7 @@ pub use state::CompleteRelationalCheckpointPreparation;
 pub(crate) use state::{
     MutationRecordAllocations, MutationSymbolMeanings, OriginalBranchSchemaInputs,
     OriginalBranchSchemaInputsDenial, OriginalEmptySchemaInstallation,
-    OriginalEmptySchemaObservation, OriginalRecordAllocationCursor, OriginalSymbolMeanings,
-    RetainedBranchTransition,
+    OriginalEmptySchemaObservation, RetainedBranchTransition,
 };
 pub mod builder;
 mod construction;
@@ -17,7 +16,7 @@ pub use home_program_transition::{
     home_program_transition_body_digest, PreparedRelationalHomeProgramContracts,
     RelationalHomeProgramBodyDenial, RelationalHomeProgramCatalogReadmissionSource,
     RelationalHomeProgramCatalogReceipt, RelationalHomeProgramContractDenial,
-    RelationalHomeProgramStepContracts,
+    RelationalHomeProgramPromotionRefused, RelationalHomeProgramStepContracts,
 };
 pub(crate) use home_program_transition::{
     AdmittedRelationalHomeProgramStep, AdmittedRelationalHomeProgramTarget,
@@ -129,6 +128,10 @@ pub(crate) use state::{
     PendingRelationalPublicationSettlement, PerformedRelationalSettlement,
     RelationalPendingSettlementReservation, RelationalSettlementClaim,
     RelationalSettlementReservationDenial, ReservedRelationalSettlement,
+};
+pub use state::{
+    PreparedRelationalIndexDefinitions, RelationalIndexDefinitionPreparation,
+    RelationalIndexDefinitionPreparationDenial,
 };
 pub use state::{
     PreparedRelationalSourceClose, RelationalSourceClose, RelationalSourceCloseDenial,

@@ -11,6 +11,7 @@ enum Case {
     Image,
     JournalOnly,
     ImageAndTail,
+    ColdRecapture,
     InterruptedAck,
     BoundedTail,
 }
@@ -34,6 +35,13 @@ fn killed_home_reopens_normalized_image_plus_nonempty_tail() {
     restart(
         Case::ImageAndTail,
         "killed_home_reopens_normalized_image_plus_nonempty_tail",
+    );
+}
+#[test]
+fn cold_image_plus_tail_recapture_reads_only_the_uncovered_original_frames() {
+    restart(
+        Case::ColdRecapture,
+        "cold_image_plus_tail_recapture_reads_only_the_uncovered_original_frames",
     );
 }
 #[test]
@@ -119,7 +127,9 @@ fn restart(case: Case, test: &str) {
             assert!(*covered > 0);
             assert_eq!(head, covered);
         }
-        Case::ImageAndTail => assert!(*covered > 0 && head > covered && *tail > 0),
+        Case::ImageAndTail | Case::ColdRecapture => {
+            assert!(*covered > 0 && head > covered && *tail > 0)
+        }
         Case::BoundedTail => assert!(*covered > 0 && head >= covered),
     }
     let contacts = Arc::new(AtomicUsize::new(0));
@@ -158,11 +168,24 @@ fn restart(case: Case, test: &str) {
         set(home.runtime(), &live, 0x52455354415254, *value + 1).unwrap(),
         WorthQueryApplicationMutationOutcome::Committed { .. }
     ));
+    let before_capture = matches!(case, Case::ColdRecapture).then(|| {
+        home.inspect_checkpoint(&execution)
+            .unwrap()
+            .native_canonical_body_reads
+    });
     let next = home.checkpoint(&execution).unwrap();
     assert!(next.generation() > *generation);
     assert!(next.covered().0 > *head);
     assert_eq!(contacts.load(Ordering::SeqCst), 1);
     let settled = home.inspect_checkpoint(&execution).unwrap();
+    if matches!(case, Case::ColdRecapture) {
+        assert_eq!(
+            settled.native_canonical_body_reads
+                - before_capture.expect("cold recapture counter recorded"),
+            next.covered().0 - *covered,
+            "each uncovered original Journal frame is demanded once; covered image frames stay cold"
+        );
+    }
     assert!(settled.pending.is_none());
     assert!(settled
         .journals
