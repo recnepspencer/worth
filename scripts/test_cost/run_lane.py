@@ -225,7 +225,7 @@ def execute(repository, workspace, lanes, output, profile='dev', expression=None
     baseline = original_reservations(config, nextest_profile, discovered, lambda index, query:
         json.loads((output / 'build' / f'reservation-{index}.json').read_text(encoding='utf-8')))
     retain_slots(slot_directory, observed['cpu'], read_lane(runner.logs[0])['headers']['HEAD'],
-                 str(telemetry.relative_to(repository)), baseline, known if workspace_inventory else None)
+                 str(telemetry), baseline, known if workspace_inventory else None)
     previous_path.write_text(json.dumps(load_slots(slot_directory, known=known), indent=2) + '\n', encoding='utf-8')
     logs = [(path.stem + '-' + str(index), path) for index, path in enumerate(runner.logs)]
     result = collect(manifest, repository, logs, complete, requested, source_packages=source_scope)

@@ -4,4 +4,6 @@ fn reconstruct(value: BridgePreviewSessionDeclaration) -> BridgePreviewSessionDe
     BridgePreviewSessionDeclaration { ..value }
 }
 
-fn main() {}
+fn main() {
+    let _ = reconstruct;
+}

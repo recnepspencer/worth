@@ -4,4 +4,6 @@ fn reconstruct(value: BridgeGroupedTruthViewArtifact) -> BridgeGroupedTruthViewA
     BridgeGroupedTruthViewArtifact { ..value }
 }
 
-fn main() {}
+fn main() {
+    let _ = reconstruct;
+}

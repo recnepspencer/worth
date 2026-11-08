@@ -4,4 +4,6 @@ fn reconstruct(value: RelationalChangeReceipt) -> RelationalChangeReceipt {
     RelationalChangeReceipt { ..value }
 }
 
-fn main() {}
+fn main() {
+    let _ = reconstruct;
+}

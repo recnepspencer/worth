@@ -1,7 +1,5 @@
-use worth_server::{WorthServerAdmission, WorthServerWorthNativePreparedSession};
+use worth_server::WorthServerWorthNativePreparedSession;
 
-fn construct(admission: WorthServerAdmission) {
-    let _ = WorthServerWorthNativePreparedSession::new(admission, panic!("compile-only argument"));
+fn main() {
+    let _ = WorthServerWorthNativePreparedSession::new;
 }
-
-fn main() {}

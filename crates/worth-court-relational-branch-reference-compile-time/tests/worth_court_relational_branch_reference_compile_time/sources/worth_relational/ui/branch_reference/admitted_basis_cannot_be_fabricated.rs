@@ -4,4 +4,6 @@ fn reconstruct(value: AdmittedRelationalBranchBasis) -> AdmittedRelationalBranch
     AdmittedRelationalBranchBasis { ..value }
 }
 
-fn main() {}
+fn main() {
+    let _ = reconstruct;
+}

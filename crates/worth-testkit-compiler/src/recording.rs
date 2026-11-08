@@ -42,10 +42,59 @@ pub fn review_denial_snapshot(
 pub fn record_denial_snapshot(path: impl AsRef<Path>) -> Result<(), CompilerFixtureRefusal> {
     let review = review_denial_snapshot(path)?;
     let destination = review.source.with_extension("stderr");
-    std::fs::write(&destination, format!("{}\n", review.observed)).map_err(|error| {
+    write_error_snapshot(&destination, &review.observed)
+}
+
+fn write_error_snapshot(destination: &Path, observed: &str) -> Result<(), CompilerFixtureRefusal> {
+    if observed
+        .lines()
+        .any(|line| line.starts_with("warning:") || line.starts_with("warning["))
+    {
+        return Err(CompilerFixtureRefusal::SnapshotWarning(
+            destination.to_path_buf(),
+        ));
+    }
+    std::fs::write(destination, format!("{observed}\n")).map_err(|error| {
         CompilerFixtureRefusal::Write {
-            path: destination,
+            path: destination.to_path_buf(),
             reason: error.to_string(),
         }
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn snapshot_recording_refuses_lint_warnings_before_changing_the_golden() {
+        let path =
+            std::env::temp_dir().join(format!("worth-snapshot-warning-{}", std::process::id()));
+        std::fs::write(&path, "original golden").unwrap();
+        for diagnostic in [
+            "error[E0451]: field is private\nwarning: function is never used",
+            "warning[unused]: unrelated lint\nerror[E0624]: constructor is private",
+        ] {
+            assert!(matches!(
+                write_error_snapshot(&path, diagnostic),
+                Err(CompilerFixtureRefusal::SnapshotWarning(_))
+            ));
+            assert_eq!(std::fs::read_to_string(&path).unwrap(), "original golden");
+        }
+        let denial =
+            "error[E0451]: field is private\n  | let text = \"warning: not a diagnostic\";";
+        write_error_snapshot(&path, denial).unwrap();
+        assert_eq!(
+            std::fs::read_to_string(&path).unwrap(),
+            format!("{denial}\n")
+        );
+        std::fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn missing_compiler_receipts_name_the_supported_qualification_paths() {
+        let message = CompilerFixtureRefusal::MissingPrebuild.to_string();
+        assert!(message.contains("python3 scripts/ci/query_gate.py root-landing"));
+        assert!(message.contains("query-landing"));
+    }
 }

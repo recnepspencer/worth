@@ -5,4 +5,6 @@ fn reconstruct(value: ContractValidatedAspectValue) -> ContractValidatedAspectVa
     ContractValidatedAspectValue { ..value }
 }
 
-fn main() {}
+fn main() {
+    let _ = reconstruct;
+}

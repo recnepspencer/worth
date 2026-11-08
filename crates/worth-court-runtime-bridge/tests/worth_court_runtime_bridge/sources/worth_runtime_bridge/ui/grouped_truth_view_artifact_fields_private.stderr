@@ -1,11 +1,3 @@
-warning: function `reconstruct` is never used
- --> tests/ui/grouped_truth_view_artifact_fields_private.rs:3:4
-  |
-3 | fn reconstruct(value: BridgeGroupedTruthViewArtifact) -> BridgeGroupedTruthViewArtifact {
-  |    ^^^^^^^^^^^
-  |
-  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
-
 error[E0451]: fields `truth_view_digest`, `basis_snapshot_identity`, `contract`, `members` and `digest` of struct `BridgeGroupedTruthViewArtifact` are private
  --> tests/ui/grouped_truth_view_artifact_fields_private.rs:4:40
   |

@@ -4,4 +4,6 @@ fn reconstruct(value: WorthServerQueryHandoff) -> WorthServerQueryHandoff {
     WorthServerQueryHandoff { ..value }
 }
 
-fn main() {}
+fn main() {
+    let _ = reconstruct;
+}

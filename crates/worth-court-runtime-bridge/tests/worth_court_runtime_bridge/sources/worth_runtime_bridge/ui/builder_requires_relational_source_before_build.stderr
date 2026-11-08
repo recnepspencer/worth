@@ -1,8 +1,8 @@
-error[E0599]: no method named `build` found for struct `RuntimeBridgeBuilder<worth_runtime_bridge::builder::states::MissingCommittedPatchSource, worth_runtime_bridge::builder::states::MissingSnapshotReadSource, worth_runtime_bridge::builder::states::MissingSignalSink, worth_runtime_bridge::builder::states::MissingTruthBranchHeadSource, worth_runtime_bridge::builder::states::PresentMappingRegistrations>` in the current scope
-  --> tests/ui/builder_requires_relational_source_before_build.rs:26:21
+error[E0599]: no method named `build` found for struct `RuntimeBridgeBuilder<worth_runtime_bridge::builder::states::MissingCommittedPatchSource, worth_runtime_bridge::builder::states::MissingSnapshotReadSource, worth_runtime_bridge::builder::states::PresentSignalSink, worth_runtime_bridge::builder::states::MissingTruthBranchHeadSource, worth_runtime_bridge::builder::states::PresentMappingRegistrations>` in the current scope
+  --> tests/ui/builder_requires_relational_source_before_build.rs:42:21
    |
-26 |     let _ = builder.build();
-   |                     ^^^^^ method not found in `RuntimeBridgeBuilder<worth_runtime_bridge::builder::states::MissingCommittedPatchSource, worth_runtime_bridge::builder::states::MissingSnapshotReadSource, worth_runtime_bridge::builder::states::MissingSignalSink, worth_runtime_bridge::builder::states::MissingTruthBranchHeadSource, worth_runtime_bridge::builder::states::PresentMappingRegistrations>`
+42 |     let _ = builder.build();
+   |                     ^^^^^ method not found in `RuntimeBridgeBuilder<worth_runtime_bridge::builder::states::MissingCommittedPatchSource, worth_runtime_bridge::builder::states::MissingSnapshotReadSource, worth_runtime_bridge::builder::states::PresentSignalSink, worth_runtime_bridge::builder::states::MissingTruthBranchHeadSource, worth_runtime_bridge::builder::states::PresentMappingRegistrations>`
    |
    = note: the method was found for
            - `RuntimeBridgeBuilder<worth_runtime_bridge::builder::states::PresentCommittedPatchSource, worth_runtime_bridge::builder::states::PresentSnapshotReadSource, worth_runtime_bridge::builder::states::PresentSignalSink, worth_runtime_bridge::builder::states::MissingTruthBranchHeadSource, worth_runtime_bridge::builder::states::PresentMappingRegistrations>`

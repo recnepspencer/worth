@@ -4,4 +4,6 @@ fn reconstruct(value: StructAspectValue) -> StructAspectValue {
     StructAspectValue { ..value }
 }
 
-fn main() {}
+fn main() {
+    let _ = reconstruct;
+}

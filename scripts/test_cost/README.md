@@ -87,7 +87,8 @@ cargo run -p worth-testkit-compiler --example record_denials -- --write path/to/
 The default is a JSON comparison only. `--sources-from PATH` accepts an explicit
 JSON list. Recording uses the court's attribution, environment validation and
 existing complete-diagnostic masks; it refuses a compiled or unobserved source.
-Before writing, establish that the current denial reaches the protected action.
+The writer refuses warning-bearing output: remove incidental lint causes from
+the fixture before recording. Before writing, establish that the current denial reaches the protected action.
 A stale import or argument error is not evidence of the intended private field,
 phase or ownership boundary. Repair that fixture and demonstrate a killing
 mutation before accepting its new snapshot.
@@ -273,3 +274,5 @@ that note to its immediately preceding error group, requires the exact fixture
 span for every group, and still compares all rendered diagnostics. An unrelated
 note, a note preceding an error, or a foreign callsite cannot supply attribution.
 Check-stage outcomes cannot use this codegen-specific route.
+
+Lane evidence may live outside the checkout with `--out` (or run_lane `--output`). Telemetry retention keeps its resolved locator; the history owner stores repository-relative names for internal captures and absolute names for external captures. The build ratchet still runs before qualification succeeds.

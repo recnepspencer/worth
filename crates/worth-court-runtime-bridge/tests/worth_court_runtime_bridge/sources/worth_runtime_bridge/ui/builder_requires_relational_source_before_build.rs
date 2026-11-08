@@ -1,6 +1,8 @@
 use worth_runtime_bridge::facade::{
-    BridgeMappingId, BridgeMappingRegistration, CoarseRoutingMode, MappingSelector, RuntimeBridge,
-    SignalInvalidationScope, SnapshotReadContract, TruthPatchScope,
+    BridgeDeliveryReceipt, BridgeMappingId, BridgeMappingRegistration,
+    BridgeSignalInvalidationDelivery, CoarseRoutingMode, InvalidationSink, MappingSelector,
+    RuntimeBridge, SignalBridgeSinkError, SignalInvalidationScope, SnapshotReadContract,
+    TruthPatchScope,
 };
 
 fn registration() -> BridgeMappingRegistration {
@@ -21,7 +23,21 @@ fn registration() -> BridgeMappingRegistration {
     )
 }
 
+struct Sink;
+
+impl InvalidationSink for Sink {
+    fn deliver_invalidation(
+        &self,
+        _: BridgeSignalInvalidationDelivery,
+        _: worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<BridgeDeliveryReceipt, SignalBridgeSinkError> {
+        unreachable!("compile-only sink is never executed")
+    }
+}
+
 fn main() {
-    let builder = RuntimeBridge::builder().register_mapping(registration());
+    let builder = RuntimeBridge::builder()
+        .with_signal_sink(Sink)
+        .register_mapping(registration());
     let _ = builder.build();
 }
