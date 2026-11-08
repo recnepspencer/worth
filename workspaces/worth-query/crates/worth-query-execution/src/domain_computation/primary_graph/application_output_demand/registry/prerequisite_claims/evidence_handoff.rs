@@ -5,6 +5,11 @@ use crate::domain_computation::primary_graph::{
 };
 
 impl PreparedPrerequisiteClaims {
+    /// Shares the original issued coordinate; it grants no Ready or currentness.
+    pub(in crate::domain_computation::primary_graph) fn original_ready_key(&self) -> std::sync::Arc<crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey>{
+        std::sync::Arc::clone(self.context.key_arc())
+    }
+
     pub(in crate::domain_computation::primary_graph) fn selected_read_predecessor(
         &self,
     ) -> Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication> {

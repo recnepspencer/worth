@@ -693,3 +693,34 @@ agent-context, formatting, dirty line caps and whitespace checks pass. The cold
 metadata role walk checks the original request before each lookup. New Native
 runtime courts live in the relational court crate, not product src. Full root
 and Query test/baseline comparison remains mandatory at final P5/S6 closeout.
+
+## Original ordinary Ready coordinate (after4991ebcca1)
+
+A public accounted/worker court first reproduced two unnecessary contacts on an
+unrelated edit after ordinary output settlement. The source query and outputs
+were unchanged, but only the coupled-completion and checkpoint entrances were
+available at the applied-parent owner.
+
+Share the actual registry-issued immutable demand key from the managed
+prerequisite context through the prepared lineage slot, recovery and performed
+record. A stable alias carries its performed origin's coordinate. Checkpoint
+and historical-selection records create none. The registry remains the only
+Ready owner: it checks the original key, scope, occurrence, correspondence and
+idempotency identity. This is a rejoin of the real result, never a new source
+epoch, permission or settlement for D. Native custody, build and exact D fact
+verification still apply; final candidate support still applies.
+
+The first two ordinary Ready courts now pass with zero contacts, original IDs,
+exact values, one edit commit and read-only readiness. Further courts exercise
+a changed extra decision fact and the real owner's delayed-readiness boundary.
+An ordinary advance completes publication/readiness together in this fixture;
+the negative case therefore uses the existing receiver-owned readiness delay
+control, rather than assuming a phase boundary that is not externally exposed.
+
+Ordinary Ready integration evidence:gold3 has46 passing graph courts; the full
+restored public carrier has604 passes/2 ignored. Three worker mutants are killed
+and SHA-restored:drop the original key,admit a publication without Ready,let
+Ready exempt D data checks. Query all-target check and all repository guards
+pass. Legacy coupled regression has35 passes before the coherent checkpoint.
+Consumer guide and capability index now describe verified automatic parents;
+discovered roots,independent routes and the authored-stage/seal envelope remain.

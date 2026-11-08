@@ -11,6 +11,8 @@ use crate::domain_computation::primary_graph::{
 };
 
 pub struct RecordedOutput {
+    /// The actual managed registry key of the original standalone publication.
+    pub(super) original_ready_key: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey>>,
     pub(super) coupled_completion: Option<super::CoupledOutputCompletion>,
     pub(super) producing_implementation:
         Option<worth_relational::facade::mvcc::RequiredOutputProducingImplementation>,

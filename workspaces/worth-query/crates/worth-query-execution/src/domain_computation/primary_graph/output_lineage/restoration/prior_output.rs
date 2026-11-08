@@ -76,6 +76,7 @@ impl WorthQueryApplicationOutputLineage {
             .or_default();
         let slot = records.len();
         let recorded = RecordedOutput {
+            original_ready_key: None,
             coupled_completion: None,
             producing_implementation,
             required_publication,

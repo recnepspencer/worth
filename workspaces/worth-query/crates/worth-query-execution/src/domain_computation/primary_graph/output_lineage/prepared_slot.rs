@@ -30,6 +30,8 @@ use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphCo
 /// sealed output source match this reservation. Drop removes only its vacancy.
 #[must_use = "a prepared output slot must be filled or released"]
 pub struct PreparedOutputLineageSlot {
+    /// The actual managed registry key of the original standalone publication.
+    pub(super) original_ready_key: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey>>,
     pub(super) coupled_completion: Option<super::CoupledOutputCompletion>,
     pub(in crate::domain_computation::primary_graph) required_publication:
         Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
@@ -116,6 +118,14 @@ pub(in crate::domain_computation::primary_graph) struct RecordedLineageSlot {
 }
 
 impl PreparedOutputLineageSlot {
+    pub(in crate::domain_computation::primary_graph) fn retain_original_ready_key(
+        &mut self,
+        key: std::sync::Arc<crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey>,
+    ) {
+        assert!(self.original_ready_key.is_none());
+        self.original_ready_key = Some(key);
+    }
+
     pub(in crate::domain_computation::primary_graph) fn retain_completed_handler_facts(
         &mut self,
         boundary: crate::domain_computation::primary_graph::application_attempt::CompletedHandlerFactBoundary,

@@ -4310,9 +4310,20 @@ sources or partitions never alias. Explicit duplicate `coupled_outputs`
 declarations retain their typed refusal. Required-output readiness consumes the
 actual group receipts without another producer contact or Native commit.
 
+Automatic fixed-tree demands verify an existing family against the edited
+candidate before opening its producer. Healthy roots and children retain their
+identities without another producer contact; discovery still runs. Reuse needs
+recorded source/output evidence and a supported reuse or completed-result
+contract, including an original committed Ready. Ready never exempts the family
+from checking its inputs, output facts and current build. A published output
+whose owner has not issued Ready cannot grant this completed-result reuse.
+Changed inputs take the real producer path. Final qualification also checks this
+verified parent support, so a later child changing one of its inputs refuses the
+whole edit before publication.
+
 [P5/S6 synchronous edit publication](../plans/WORTH-query/synchronous-edit-publication.md)
 is still in progress: discovered roots,
-independent routes, healthy-root reuse within an edit and the explicit
+independent routes and the explicit
 document-seal envelope remain in that plan. Demand-only output graphs retain
 their explicit lazy delivery meaning. Declared predecessor observations also
 work inside coupled handlers, with independently admitted current-C read

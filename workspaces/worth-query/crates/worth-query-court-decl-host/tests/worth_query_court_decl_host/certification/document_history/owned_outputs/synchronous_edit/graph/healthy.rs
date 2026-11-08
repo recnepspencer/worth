@@ -133,3 +133,5 @@ fn a_checkpoint_parent_discovers_its_stale_child_in_the_edit() {
 fn worker_only_a_checkpoint_parent_discovers_its_stale_child_in_the_edit() {
     exercise::<true>(true, true)
 }
+
+mod standalone;

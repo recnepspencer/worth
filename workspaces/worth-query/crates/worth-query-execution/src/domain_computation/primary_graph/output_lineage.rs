@@ -295,6 +295,7 @@ impl WorthQueryApplicationOutputLineage {
             };
         let computation_source = ComputationSourceEvidence::from_completed(application);
         let recorded = RecordedOutput {
+            original_ready_key: prepared.and_then(|slot| slot.original_ready_key.clone()),
             coupled_completion: prepared.and_then(|slot| slot.coupled_completion.clone()),
             required_publication: prepared.and_then(|slot| slot.required_publication.clone()),
             native_prior_checkpoint,

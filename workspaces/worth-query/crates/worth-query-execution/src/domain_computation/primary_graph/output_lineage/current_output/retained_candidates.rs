@@ -7,6 +7,7 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 /// The latest output one binding recorded for a source, with everything
 /// selection compares before it reuses that output.
 pub struct WorthQueryRetainedOutputCandidate {
+    pub(in crate::domain_computation::primary_graph) original_ready_key: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey>>,
     pub(in crate::domain_computation::primary_graph::output_lineage) coupled_completion: Option<super::super::CoupledOutputCompletion>,
     pub(in crate::domain_computation::primary_graph) recovered_checkpoint: Option<crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity>,
     pub(in crate::domain_computation::primary_graph) required_publication: Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
@@ -87,6 +88,13 @@ impl WorthQueryApplicationOutputLineage {
                     });
                 if let Some(recorded) = recorded {
                     candidates.push(WorthQueryRetainedOutputCandidate {
+                        original_ready_key: recorded
+                            .performed_origin
+                            .as_ref()
+                            .and_then(|origin| origin.get())
+                            .unwrap_or(recorded)
+                            .original_ready_key
+                            .clone(),
                         coupled_completion: recorded.coupled_completion.clone(),
                         producing_implementation: recorded.producing_implementation,
                         required_publication: recorded.required_publication.clone(),

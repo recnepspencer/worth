@@ -121,7 +121,19 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
             let (_, installed) = self
                 .installed_producers
                 .select_exact::<F>(candidate.binding)?;
-            if !exact_source_contract(&candidate, installed)
+            let original_ready = candidate.original_ready_key.as_ref().is_some_and(|key| {
+                key.family_identity() == F::IDENTITY
+                    && key.producer_identity() == installed.declaration.identity
+                    && self.runtime.output_demands.has_committed_ready(
+                        key,
+                        scope,
+                        observation.lifecycle_incarnation(),
+                        candidate.correspondence.as_ref(),
+                        &candidate.idempotency_key_identity,
+                    )
+            });
+            if !original_ready
+                && !exact_source_contract(&candidate, installed)
                 && candidate
                     .completed_coupled_receipt(
                         source.runtime_source_identity(),
