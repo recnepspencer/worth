@@ -65,3 +65,10 @@ impl InstalledCompositeSignalPublicationAuthority {
         Ok(())
     }
 }
+
+impl AdmittedCompositeSignalPublication {
+    /// Descriptive correlation; these bytes never grant the installed affinity.
+    pub fn commitment(&self) -> [u8; 32] {
+        self.commitment
+    }
+}

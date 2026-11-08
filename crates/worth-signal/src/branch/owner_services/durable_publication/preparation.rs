@@ -189,7 +189,7 @@ where
                 branch,
                 resource: Some(LinearResource::mint(original, &state.authority)),
                 phase: TaskPhase::Preparing,
-                _composite_grant: composite_grant,
+                composite_grant: composite_grant,
                 _memory,
             }));
             table.branches.insert(branch, original);

@@ -143,3 +143,39 @@ where
         )
     }
 }
+
+impl<D, I, E, Ctx, T> SignalDurableBranchMutationPort<D, I, E, Ctx, T>
+where
+    D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
+    I: Copy + Ord + Send + Sync + 'static,
+    T: Copy + Ord + Send + Sync + 'static,
+{
+    /// Resume the exact retained task; never allocate an original or rerun its body.
+    pub fn resume_composite_original(
+        &self,
+        original: SignalBranchAdvanceIdentity,
+        grant: AdmittedCompositeSignalPublication,
+    ) -> Result<SignalDurableAdvanceTask, SignalDurableAdvanceDenial> {
+        use SignalDurableAdvanceDenial as Dn;
+        let state = self.state.upgrade().ok_or(Dn::OwnerUnavailable)?;
+        let authority = state
+            .composite
+            .lock()
+            .map_err(|_| Dn::PublicationStatePoisoned)?
+            .clone()
+            .ok_or(Dn::CompositeOwnerNotAttached)?;
+        let task = state.task(original)?;
+        let slot = task.try_lock().map_err(|denial| match denial {
+            std::sync::TryLockError::WouldBlock => Dn::TaskDriving { original },
+            std::sync::TryLockError::Poisoned(_) => Dn::PublicationStatePoisoned,
+        })?;
+        let retained = slot
+            .composite_grant
+            .as_ref()
+            .ok_or(Dn::CompositePublicationRequired)?;
+        authority
+            .admit(&grant, &retained.commitment())
+            .map_err(Dn::CompositeAdmission)?;
+        Ok(state.handle(original))
+    }
+}

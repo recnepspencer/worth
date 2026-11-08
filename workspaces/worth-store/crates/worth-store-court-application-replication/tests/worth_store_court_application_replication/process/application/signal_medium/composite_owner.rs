@@ -177,3 +177,149 @@ fn composite_attachment_names_every_pending_original_and_preserves_standalone_co
     drop(owner);
     media::close(serving, medium, &execution);
 }
+
+struct ResumptionPause(worth_store::physical_runtime::production::PhysicalMutationPauseGate);
+impl Drop for ResumptionPause {
+    fn drop(&mut self) {
+        self.0.release();
+    }
+}
+
+#[test]
+fn disposed_composite_handles_resume_the_exact_original_before_drive_and_during_physical_pending() {
+    use worth_proof::CompositeSignalPublicationAdmissionDenial as Admission;
+    for after_pending in [false, true] {
+        let directory = tempfile::tempdir().unwrap();
+        let funding = media::serial_request();
+        let execution = ExecutionRequest::serial(&funding);
+        let (serving, medium) = media::open(directory.path(), true, &execution);
+        let reference = fixture::seed(medium.as_ref(), &execution);
+        let owner = fixture::readmit(medium.clone(), &execution);
+        let issuer = InstalledCompositeSignalPublicationOwner::fresh();
+        let composite = owner
+            .bind_composite_owner(issuer.authority(), &execution)
+            .unwrap();
+        let writer = composite.mutation_port();
+        let before = owner
+            .source_port()
+            .readmit_descriptor(reference.heads.values().next().unwrap())
+            .unwrap();
+        let binding = writer
+            .prepare_composite_binding(&execution, before.basis(), association(31))
+            .unwrap();
+        let commitment = binding.commitment();
+        let calls = Cell::new(0);
+        let task = writer
+            .begin_composite_advance(
+                execution,
+                binding,
+                issuer.admit_original(commitment),
+                &mut (),
+                |_| {
+                    calls.set(calls.get() + 1);
+                    Ok(())
+                },
+            )
+            .unwrap();
+        let original = task.original();
+        let pause = after_pending.then(|| {
+            ResumptionPause(serving.pause_physical_mutation_at(
+            worth_store::physical_runtime::production::PhysicalMutationCheckpoint::BeforeWalAppend,
+        ))
+        });
+        let task = if let Some(pause) = &pause {
+            let SignalDurableAdvanceProgress::Pending(task) = task
+                .drive(&execution)
+                .unwrap_or_else(|cause| panic!("{:?}", cause.denial()))
+            else {
+                panic!("the actual physical gate precedes terminal publication");
+            };
+            assert!(pause.0.await_arrival());
+            task
+        } else {
+            task
+        };
+        drop(task);
+        assert!(matches!(
+            writer.resume_original(original),
+            Err(SignalDurableAdvanceDenial::CompositePublicationRequired)
+        ));
+        let foreign = InstalledCompositeSignalPublicationOwner::fresh();
+        assert!(matches!(
+            writer.resume_composite_original(original, foreign.admit_original(commitment)),
+            Err(SignalDurableAdvanceDenial::CompositeAdmission(
+                Admission::ForeignOwner
+            ))
+        ));
+        let changed = writer
+            .prepare_composite_binding(&execution, before.basis(), association(32))
+            .unwrap();
+        assert!(matches!(
+            writer.resume_composite_original(original, issuer.admit_original(changed.commitment())),
+            Err(SignalDurableAdvanceDenial::CompositeAdmission(
+                Admission::BindingMismatch
+            ))
+        ));
+        let other_before = owner
+            .source_port()
+            .readmit_descriptor(reference.heads.values().nth(1).unwrap())
+            .unwrap();
+        let other_binding = writer
+            .prepare_composite_binding(&execution, other_before.basis(), association(33))
+            .unwrap();
+        let other_grant = issuer.admit_original(other_binding.commitment());
+        let other = writer
+            .begin_composite_advance(execution, other_binding, other_grant, &mut (), |_| Ok(()))
+            .unwrap();
+        let other = if after_pending {
+            let SignalDurableAdvanceProgress::Pending(task) = other
+                .drive(&execution)
+                .unwrap_or_else(|cause| panic!("{:?}", cause.denial()))
+            else {
+                panic!("the first actual publication retains the physical turn");
+            };
+            task
+        } else {
+            other
+        };
+        let resumed = writer
+            .resume_composite_original(original, issuer.admit_original(commitment))
+            .unwrap();
+        assert_eq!(resumed.original(), original);
+        drop(pause);
+        let output = fixture::finish(resumed, &execution);
+        assert_eq!(calls.get(), 1);
+        assert_eq!(output.artifact().identity(), original);
+        assert_eq!(output.artifact().association(), Some(&association(31)));
+        assert_eq!(
+            output.branch().descriptor().generation().ordinal(),
+            before.descriptor().generation().ordinal() + 1
+        );
+        assert_eq!(
+            owner
+                .read_original_advance(original, &execution)
+                .unwrap()
+                .digest(),
+            output.artifact().digest()
+        );
+        assert!(
+            matches!(writer.resume_composite_original(original, issuer.admit_original(commitment)),
+            Err(SignalDurableAdvanceDenial::UnknownTask { original: missing }) if missing == original)
+        );
+        // Finishing a different branch proves the original physical turn released.
+        drop(fixture::finish(other, &execution));
+        // A new original on the same branch proves its branch reservation released.
+        let next_binding = writer
+            .prepare_composite_binding(&execution, output.branch().basis(), association(34))
+            .unwrap();
+        let next_grant = issuer.admit_original(next_binding.commitment());
+        drop(fixture::finish(
+            writer
+                .begin_composite_advance(execution, next_binding, next_grant, &mut (), |_| Ok(()))
+                .unwrap(),
+            &execution,
+        ));
+        drop((output, before, other_before, writer, composite, owner));
+        media::close(serving, medium, &execution);
+    }
+}

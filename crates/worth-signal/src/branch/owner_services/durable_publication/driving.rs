@@ -63,7 +63,7 @@ where
                 branch: slot.branch,
                 resource: None,
                 phase: TaskPhase::Delivered,
-                _composite_grant: None,
+                composite_grant: None,
                 _memory: None,
             },
         );

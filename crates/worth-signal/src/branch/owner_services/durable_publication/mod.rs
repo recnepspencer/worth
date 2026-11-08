@@ -128,7 +128,7 @@ where
         >,
     >,
     phase: TaskPhase<D, I, T>,
-    _composite_grant: Option<worth_proof::AdmittedCompositeSignalPublication>,
+    composite_grant: Option<worth_proof::AdmittedCompositeSignalPublication>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 struct TaskTable<D, I, T>
