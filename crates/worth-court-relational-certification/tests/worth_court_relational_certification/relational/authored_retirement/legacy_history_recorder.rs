@@ -3,7 +3,7 @@ use super::*;
 /// Run from the pre-change checkout; the compatibility court only reads these assets.
 #[test]
 #[ignore = "fixture recorder: run explicitly in the pre-HistoricalSelection checkout"]
-fn record_pre_historical_selection_chk18_store() {
+fn record_pre_historical_selection_chk20_store() {
     let host = SerialRequest::from_memory(
         SerialMemoryBudget::new(None),
         CancellationToken::new(),
@@ -67,8 +67,8 @@ fn record_pre_historical_selection_chk18_store() {
         .native_checkpoint(execution, execution.allocation_policy())
         .unwrap();
     let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../worth-testkit-relational/assets/fixtures/history_pre_historical_selection");
-    std::fs::write(base.with_extension("chk18"), checkpoint.bytes()).unwrap();
+        .join("../worth-testkit-relational/assets/fixtures/history_pre_historical_selection_chk20");
+    std::fs::write(base.with_extension("chk20"), checkpoint.bytes()).unwrap();
     let metadata = serde_json::json!({"source":source,"output":output,"meaning":meaning});
     std::fs::write(
         base.with_extension("json"),

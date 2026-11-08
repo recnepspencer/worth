@@ -1,7 +1,7 @@
 //! Open the actual old writer's store through current Native storage admission.
 use super::*;
 #[test]
-fn chk18_store_written_before_historical_selection_still_opens() {
+fn chk20_store_written_before_historical_selection_still_opens() {
     let host = SerialRequest::from_memory(
         SerialMemoryBudget::new(None),
         CancellationToken::new(),
@@ -10,12 +10,12 @@ fn chk18_store_written_before_historical_selection_still_opens() {
     let execution = &ExecutionRequest::serial(&host);
     let bytes = include_bytes!(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/../worth-testkit-relational/assets/fixtures/history_pre_historical_selection.chk18"
+        "/../worth-testkit-relational/assets/fixtures/history_pre_historical_selection_chk20.chk20"
     ));
-    assert!(bytes.starts_with(b"WORTH-REL-CHK18\n"));
+    assert!(bytes.starts_with(b"WORTH-REL-CHK20\n"));
     let recorded: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/../worth-testkit-relational/assets/fixtures/history_pre_historical_selection.json"
+        "/../worth-testkit-relational/assets/fixtures/history_pre_historical_selection_chk20.json"
     )))
     .unwrap();
     let source: EntityId = serde_json::from_value(recorded["source"].clone()).unwrap();
