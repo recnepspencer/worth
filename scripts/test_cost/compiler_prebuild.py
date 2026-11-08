@@ -138,6 +138,12 @@ def prepare(repository, workspace, output, cargo_runner, scope=CompilerScope.ALL
                              'audience_identity': result['audience_identity'],
                              'proof_stage': observed['proof_stage'],
                              'fate': result['fate'], 'messages': result['messages']}
+    if workspace == 'query' and scope in (CompilerScope.ALL, CompilerScope.FIXTURES):
+        from query_compiler_inputs import prepare as query_inputs
+        consumer = query_inputs(repository, output / 'consumer', cargo_runner)
+        if outcomes.keys() & consumer.keys():
+            raise ValueError('consumer compiler source belongs to two environments')
+        outcomes.update(consumer)
     path = output / 'compiler-outcomes.json'
     path.write_text(json.dumps({'schema': 1, 'fixtures': outcomes}, indent=2) + '\n', encoding='utf-8')
     environment['WORTH_PREBUILT_COMPILER_OUTCOMES'] = str(path)

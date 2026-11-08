@@ -154,5 +154,6 @@ def failed_unit(event, declaration):
     if len(candidates) != 1:
         raise CompilerUnitRefusal('failed target does not identify exactly one predeclared compiler unit: '
                                   + encoded({'package': event['package_id'], 'target': target,
-                                             'matches': sorted(candidates)}))
+                                             'matches': sorted(candidates)}) + '\nCompiler diagnostic:\n'
+                                  + (event['message'].get('rendered') or event['message'].get('message', '<unrendered error>')))
     return observed_unit(next(iter(candidates.values())), declaration)

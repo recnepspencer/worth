@@ -48,6 +48,25 @@ workspace subdirectory of PATH. Filtered runs prove only their selected subset. 
 not evidence that those tests executed: `executed-coverage.json` separately
 compares terminal observations with the requested identities.
 
+## Complete root qualification
+
+Run `python3 scripts/ci/query_gate.py root-landing` (equivalently
+`python3 scripts/ci/root_gate.py`) from the repository checkout. This supported
+entry selects every nonignored root category and doctest, builds compiler and
+proof prerequisites once outside court processes, and supplies
+`WORTH_PREBUILT_COMPILER_OUTCOMES` and `WORTH_PREBUILT_PROOF` before executing
+selected compiler/proof courts. Query uses `query-landing` with the same owner.
+
+Raw `cargo test`/`cargo nextest run` without the outer prebuild is not full
+qualification: compiler/proof courts deliberately refuse missing receipts.
+Do not interpret those refusals as product failures, skip those courts or run
+Cargo inside a court. Use the supported entry above. Focused run_lane selection
+also derives the required prerequisites from the actual selected test identities.
+
+The foreign-schema consumer court uses its real consumer workspace check
+session, including all three successful counterparts, prepared by the outer
+runner; the court itself only reads attributed receipts.
+
 ## Ownership and enforcement
 
 * `source_scan.py` and `ratchet.source_violations` refuse Cargo, cargo_metadata

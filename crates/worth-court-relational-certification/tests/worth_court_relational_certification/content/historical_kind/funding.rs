@@ -31,13 +31,32 @@ fn seeded() -> World {
 }
 
 #[test]
-fn historical_kind_reconstruction_preserves_literal_original_stops_and_releases_scratch() {
+fn kind_publication_preserves_original_stops_and_releases_scratch() {
     use worth_relational::facade::transactions::{
         CommitExecutionDenialKind, RelationalExecutionDenialCause, TransactionCommitError,
     };
-    // SDK totals are independent of Native's proposal work account. These are
-    // frozen invoices for this real two-record/one-relation transaction.
-    for ceiling in [943, 1024] {
+    // Measure the same real SDK operation with ample room. The original work
+    // ceiling is tested against that observation, never a frozen invoice.
+    let measured = request(8_000_000);
+    let execution = ExecutionRequest::serial(&measured);
+    let world = seeded();
+    let (result, report) = execution
+        .run(worth_execution::ExecutionWorkCeiling::new(None), |_| {
+            world.commit(&execution, world.relation_intent(0, 1, 7, "edge"))
+        })
+        .unwrap();
+    let committed = result.unwrap();
+    let required = report.charged_work();
+    assert!(required > 0);
+    world.release(&committed);
+    drop(committed);
+    drop(world);
+    assert_eq!(measured.memory().unwrap().charged_memory_bytes(), 0);
+
+    // A fresh identical state must refuse an insufficient original budget,
+    // publish nothing and release all proposal scratch. A sufficient budget
+    // must produce identical work, independent of its unused headroom.
+    for (ceiling, succeeds) in [(required / 2, false), (required * 2, true)] {
         let world = seeded();
         let request = request(ceiling);
         let execution = ExecutionRequest::serial(&request);
@@ -51,11 +70,21 @@ fn historical_kind_reconstruction_preserves_literal_original_stops_and_releases_
                 world.commit(&execution, world.relation_intent(0, 1, 7, "edge"))
             })
             .unwrap();
-        if ceiling == 943 {
+        if succeeds {
+            let committed = result.unwrap();
+            assert_eq!(
+                report.charged_work(),
+                required,
+                "headroom cannot change the original work bill"
+            );
+            world.release(&committed);
+            drop(committed);
+            drop(world);
+        } else {
             assert!(
                 matches!(result, Err(TransactionCommitError::Execution { denial, .. })
                 if denial.kind == CommitExecutionDenialKind::Cause(RelationalExecutionDenialCause::WorkExhausted)),
-                "943 original Work must refuse: {result:?}"
+                "the original work ceiling must refuse: {result:?}"
             );
             assert_eq!(
                 world
@@ -65,12 +94,7 @@ fn historical_kind_reconstruction_preserves_literal_original_stops_and_releases_
                     .0,
                 before
             );
-            assert_eq!(request.memory().unwrap().charged_memory_bytes(), 0);
-        } else {
-            let committed = result.unwrap();
-            assert_eq!(report.charged_work(), 944);
-            assert_eq!(request.memory().unwrap().charged_memory_bytes(), 11_696);
-            world.release(&committed);
         }
+        assert_eq!(request.memory().unwrap().charged_memory_bytes(), 0);
     }
 }

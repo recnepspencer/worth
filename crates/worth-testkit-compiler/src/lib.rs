@@ -5,6 +5,7 @@
 //! Semantic checks bind a declared code or explicit uncoded cause and API symbols
 //! to one attributed error.
 
+mod admission;
 mod denial;
 mod diagnostic_layout;
 mod diagnostic_lists;
@@ -35,6 +36,13 @@ mod codegen_tests;
 #[cfg(test)]
 mod semantic_denial_tests;
 
+pub use admission::compiled;
 pub use denial::{denied, production_denial};
 pub use refusal::CompilerFixtureRefusal;
-pub use semantic_denial::{certification_semantic_denial, certification_uncoded_semantic_denial};
+pub use semantic_denial::{
+    certification_semantic_denial, certification_uncoded_semantic_denial,
+    production_semantic_denial,
+};
+
+#[cfg(test)]
+mod production_semantic_denial_tests;
