@@ -38,6 +38,9 @@ impl SignalCompositeAdvanceBinding {
     pub fn commitment(&self) -> [u8; 32] {
         self.commitment
     }
+    pub fn source(&self) -> &SignalDurableBranchHandle {
+        &self.expected
+    }
 
     pub(crate) fn into_parts(
         self,

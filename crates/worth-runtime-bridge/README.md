@@ -342,9 +342,18 @@ Conditional execution and managed services retain their later phase boundaries.
 prepares the successor through Signal's original durable task. It preserves
 registration, allocation and performed-claim sections, reserves the new lowering
 before effects, and activates it after Signal commits. Only the acting branch
-changes. `authored_branch` exposes a serving projection guard; preparation,
+changes. `with_authored_branch` lends a serving projection to its inspection;
+preparation,
 pending publication and a committed projection requiring readmission have typed
 refusals. Resume the retained original rather than submitting another definition.
+
+`begin_composite_conditional_definition_publication` consumes the actual Signal
+binding and composing issuer's grant. It shares the same projection preparation,
+Signal callback and committed-only activation as the standalone entry. The
+original retains its grant across a disposed request observation; resume it with
+`resume_composite_original`. The Signal advance records the attempt association.
+A foreign grant refuses before the callback, and callback refusal restores the
+predecessor projection. The standalone entry refuses after composite attachment.
 
 Writeback execution records and replay-comparison records are process-local
 diagnostics. Current enumeration returns retained entries; historical reads take

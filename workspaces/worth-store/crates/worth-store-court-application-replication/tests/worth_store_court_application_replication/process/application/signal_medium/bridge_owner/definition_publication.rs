@@ -3,7 +3,7 @@ use super::*;
 use worth_foundational::facade::*;
 use worth_runtime_bridge::facade::*;
 
-fn successor(
+pub(super) fn successor(
     predecessor: &BridgeInstalledConditionalLowering,
 ) -> BridgeOwnedConditionalInstallationRequest {
     BridgeOwnedConditionalInstallationRequest {

@@ -1,6 +1,7 @@
 //! Per-branch original tasks share only short metadata locks and physical publication order.
 mod checkpoint_capture;
 mod composite;
+mod composite_definition;
 mod cutover;
 mod driving;
 mod effect;

@@ -8,6 +8,7 @@ use worth_execution::ExecutionRequest;
 use worth_runtime_bridge::facade::BridgeReadmittedAuthoredAssembly;
 use worth_signal::facade::durability::*;
 use worth_signal::facade::*;
+mod composite_definition_publication;
 mod definition_publication;
 mod derived_reference;
 mod fork_publication;

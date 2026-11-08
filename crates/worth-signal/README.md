@@ -334,6 +334,11 @@ occurrence and the owner's Bridge section; ordinary advances still refuse
 conditional-definition changes. A committed projection callback that unwinds
 leaves the committed completion available for exact delivery, with a typed
 projection outcome, without executing the publication again.
+`begin_composite_definition_publication` uses that same preparation and driver
+with the installed composing issuer's concrete grant. Its one callback runs
+before publication; the original task retains the result, definition and grant
+until delivery. `resume_composite_original` resumes that original without
+executing its callback again.
 
 ## One Continuous Story
 

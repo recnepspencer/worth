@@ -78,6 +78,9 @@ impl Drop for Reservation {
         };
     }
 }
+mod preparation;
+use preparation::PreparedDefinition;
+
 impl BridgeReadmittedAuthoredAssembly {
     pub fn begin_conditional_definition_publication(
         &self,
@@ -86,99 +89,16 @@ impl BridgeReadmittedAuthoredAssembly {
         predecessor: &Arc<BridgeInstalledConditionalLowering>,
         request: BridgeOwnedConditionalInstallationRequest,
     ) -> Result<SignalDurableAdvanceTask, D> {
-        let branch = expected.descriptor().branch();
-        let projection = self.branches.projection(branch).map_err(D::Branch)?;
-        let mut serving = projection.serving(branch).map_err(D::Branch)?;
-        if !serving
-            .lowerings
-            .get(&predecessor.registry_key)
-            .is_some_and(|installed| Arc::ptr_eq(installed, predecessor))
-        {
-            return Err(D::NotCurrent {
-                branch,
-                node: predecessor.signal_node(),
-            });
-        }
-        conditional::owned_installation::validate_dependency_shape(&request)
-            .map_err(|cause| D::Conditional(Box::new(cause)))?;
-        if request.contract.identity() != predecessor.contract().identity()
-            || request.location != *predecessor.location()
-            || request.dependencies.len() != predecessor.correspondence_count()
-            || !request
-                .dependencies
-                .iter()
-                .zip(predecessor.semantic_dependencies())
-                .all(|(a, b)| a == b)
-        {
-            return Err(D::IdentityOrCorrespondenceChanged);
-        }
-        let bytes = conditional::retention::definition_candidate_retained_bytes(
-            predecessor.registry_key.branch(),
-            &request.contract,
-            &request.location,
-            &request.providers,
-            predecessor.projection().label().len(),
-            predecessor.correspondence_count(),
-            None,
-        )
-        .map_err(|cause| {
-            D::Conditional(Box::new(
-                conditional::observation_retention::retention_denial(cause),
-            ))
-        })?;
-        // Preparation and retained source have separate, original-request grants.
-        let preparation = execution
-            .reserve_retained_memory(
-                bytes
-                    .checked_add(std::mem::size_of::<pending::Pending>() as u64)
-                    .ok_or(D::Section(Box::new(BridgeAuthoredSectionDenial::SizeLimit)))?,
-            )
-            .map_err(|cause| D::Section(Box::new(BridgeAuthoredSectionDenial::Request(cause))))?;
-        let program = Arc::clone(&serving._program);
-        let retention = Arc::clone(&serving.retention);
-        serving.posture = BranchPosture::Preparing {
-            node: predecessor.signal_node(),
-        };
-        let reservation = Reservation {
-            projection: Arc::clone(&projection),
-            phase: ReservationPhase::Preparing,
-            predecessor_lease: Arc::clone(&predecessor.lease),
-            slot: None,
-        };
-        drop(serving);
-        let backing = Backing::new(execution).map_err(|cause| D::Readmission(Box::new(cause)))?;
-        backing
-            .grow(execution, bytes)
-            .map_err(|cause| D::Readmission(Box::new(cause)))?;
-        let admission = conditional::provider_admission::admit_provider_set(
-            Arc::new(request.contract),
-            &request.providers,
-        )
-        .map_err(|cause| D::Conditional(Box::new(cause)))?;
-        let plan = conditional::semantic_observation_plan::compile_semantic_observation_plan_from_dependencies(
-            admission.contract(), request.dependencies.iter(),
-        ).map_err(|cause| D::Conditional(Box::new(cause)))?;
-        let definition = conditional::lowering::lower_signal_contract(
-            admission.contract(),
-            predecessor.signal_dependency_aspects(),
-            predecessor
-                .signal_condition_aspects(admission.contract().condition_dependency_ordinals()),
-        )
-        .map_err(|cause| D::Conditional(Box::new(cause)))?;
-        let refusal = Arc::new(Mutex::new(None));
-        let pending = Box::new(pending::Pending::new(
-            reservation,
-            program,
-            Arc::clone(predecessor),
-            request.location,
-            request.providers,
-            admission,
-            plan,
-            retention,
-            backing,
-            preparation,
-            Arc::clone(&refusal),
-        ));
+        let PreparedDefinition {
+            pending,
+            definition,
+            refusal,
+        } = self.prepare_definition_publication(
+            execution,
+            expected.descriptor().branch(),
+            predecessor,
+            request,
+        )?;
         let result = self.signal.mutation_port().begin_definition_publication(
             *execution,
             expected,
@@ -188,13 +108,59 @@ impl BridgeReadmittedAuthoredAssembly {
             definition,
             pending,
         );
-        match result {
-            Ok(task) => Ok(task),
-            Err(cause) => Err(refusal
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .take()
-                .unwrap_or(D::Signal(Box::new(cause)))),
-        }
+        definition_result(result, refusal)
+    }
+    pub fn begin_composite_conditional_definition_publication<F>(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        binding: worth_signal::facade::durability::SignalCompositeAdvanceBinding,
+        grant: worth_proof::AdmittedCompositeSignalPublication,
+        predecessor: &Arc<BridgeInstalledConditionalLowering>,
+        request: BridgeOwnedConditionalInstallationRequest,
+        apply: F,
+    ) -> Result<SignalDurableAdvanceTask, D>
+    where
+        F: FnOnce(
+            &mut worth_signal::facade::SignalTransaction<'_, (), (), (), (), ()>,
+        ) -> Result<(), worth_signal::facade::SignalError>,
+    {
+        let PreparedDefinition {
+            pending,
+            definition,
+            refusal,
+        } = self.prepare_definition_publication(
+            execution,
+            binding.source().descriptor().branch(),
+            predecessor,
+            request,
+        )?;
+        let result = self
+            .signal
+            .mutation_port()
+            .begin_composite_definition_publication(
+                *execution,
+                binding,
+                grant,
+                &mut (),
+                pending.claimant(),
+                predecessor.signal_contract().clone(),
+                definition,
+                pending,
+                apply,
+            );
+        definition_result(result, refusal)
+    }
+}
+fn definition_result(
+    result: Result<SignalDurableAdvanceTask, SignalDurableAdvanceDenial>,
+    refusal: Arc<Mutex<Option<D>>>,
+) -> Result<SignalDurableAdvanceTask, D> {
+    match result {
+        Ok(task) => Ok(task),
+        Err(cause) => Err(refusal
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .take()
+            .unwrap_or(D::Signal(Box::new(cause)))),
     }
 }
