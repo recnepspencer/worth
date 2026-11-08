@@ -18,6 +18,8 @@ pub use home_query_obligations::{
     AdmittedHomeQueryObligations, CommittedHomeQueryObligation, HomeQueryObligationSubject,
     HomeQueryObligationsAuthority, HomeQueryObligationsOwner, NoEffectHomeQueryObligation,
 };
+mod workflow_ending_actor;
+pub use workflow_ending_actor::AdmittedWorkflowEndingActor;
 mod home_incarnation;
 pub use home_incarnation::{HomeIncarnationDenial, HomeIncarnationFence};
 mod home_program_transition;

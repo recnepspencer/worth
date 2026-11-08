@@ -10,6 +10,7 @@ mod coverage;
 mod inventory;
 mod legality;
 mod occurrence;
+mod preparation;
 mod staging;
 mod truth;
 
@@ -25,8 +26,10 @@ pub(in crate::domain_computation::primary_graph) use occurrence::{
     WorthQueryWorkflowDefinitionOccurrence, WorthQueryWorkflowIncompatibility,
     WorthQueryWorkflowInstanceCustody, WorthQueryWorkflowInstanceOccurrence,
 };
+pub(in crate::domain_computation::primary_graph) use preparation::{
+    prepare_workflow_dispositions, WorkflowDispositionPreparationDenial,
+};
 pub use request::WorthQueryWorkflowDispositions;
-pub(in crate::domain_computation::primary_graph) use staging::stage_workflow_dispositions;
 pub(in crate::domain_computation::primary_graph) use truth::{
     WorkflowAdoptionEntity, WorkflowAdoptionReadDenial, WorkflowAdoptionTruth,
 };

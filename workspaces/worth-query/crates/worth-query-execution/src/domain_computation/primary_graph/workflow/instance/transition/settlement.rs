@@ -219,7 +219,7 @@ fn visit_transition_facts_from_basis<Error>(
         layout
             .instance
             .ending_actor
-            .append(admitted.advancer.ending_provenance(), &mut instance_fields);
+            .append(admitted.advancer.ending_actor(), &mut instance_fields);
     }
     emit(WorthQueryApplicationRealizedEffect::UpdateEntity {
         entity: "workflow-instance".to_owned(),

@@ -25,6 +25,15 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn deny_en
         kind,
         &layout.instance.state,
     )?;
+    match ended_state_denial(&state) {
+        Some(cause) => Err(cause),
+        None => Ok(()),
+    }
+}
+
+pub(super) fn ended_state_denial(
+    state: &Option<AspectValue>,
+) -> Option<WorthQueryApplicationAttemptDenial> {
     for (ended, denial_kind, subject) in [
         (
             WorkflowInstanceState::Terminated,
@@ -42,14 +51,14 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn deny_en
             "workflow instance was migrated to a successor",
         ),
     ] {
-        if state == Some(AspectValue::UInt64(ended.persisted_tag())) {
-            return Err(WorthQueryApplicationAttemptDenial::new(
+        if state == &Some(AspectValue::UInt64(ended.persisted_tag())) {
+            return Some(WorthQueryApplicationAttemptDenial::new(
                 denial_kind,
                 subject,
             ));
         }
     }
-    Ok(())
+    None
 }
 
 /// The transition whose external operation last committed into its owner's

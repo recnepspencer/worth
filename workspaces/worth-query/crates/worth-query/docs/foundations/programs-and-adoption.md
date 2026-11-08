@@ -473,6 +473,13 @@ for the fresh safety check, not a cached read or a disclosure grant. Incompatibl
 facts and outstanding custody still refuse. Individual choices may narrow the
 result, and total legality is always checked again by the native owner.
 
+To retire every current definition and cancel every unperformed live instance,
+use `WorthQueryWorkflowDispositions::retire_and_cancel_unperformed()`. The
+private fresh inventory decides the complete population. Performed instances,
+outstanding approvals and operations still in owner custody refuse the whole
+preparation. The recorded cancellation actor is the principal admitted for the
+adoption request. This policy grants no business-operation authority.
+
 ## Workflow disposition legality
 
 The host computes legality. You cannot widen it.

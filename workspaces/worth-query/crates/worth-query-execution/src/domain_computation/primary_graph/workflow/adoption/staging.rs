@@ -35,7 +35,9 @@ pub(in crate::domain_computation::primary_graph) fn stage_workflow_dispositions(
     inventory: &WorthQueryWorkflowAdoptionInventory,
     choices: &AdmittedWorkflowDispositions,
     target: &ApplicationProgramRevision,
-    advancer: crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor,
+    advancer: worth_proof::AdmittedWorkflowEndingActor<
+        crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor,
+    >,
 ) -> Vec<MutationIntent> {
     let revision = program_revision_rendering(target);
     let mut intents = Vec::new();
@@ -73,7 +75,7 @@ pub(in crate::domain_computation::primary_graph) fn stage_workflow_dispositions(
                 layout
                     .instance
                     .ending_actor
-                    .append(advancer.ending_provenance(), &mut actor_fields);
+                    .append(advancer, &mut actor_fields);
                 intents.push(MutationIntent::Entity(EntityMutationIntent::UpdateFields(
                     UpdateEntityFieldsIntent {
                         entity_id: occurrence.entity_id(),

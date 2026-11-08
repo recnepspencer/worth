@@ -24,12 +24,12 @@ impl WorkflowEndingActorFields {
 
     pub(in crate::domain_computation::primary_graph) fn append(
         &self,
-        actor: WorkflowEndingActorProvenance,
+        actor: worth_proof::AdmittedWorkflowEndingActor<super::record::WorkflowAdmittedActor>,
         fields: &mut BTreeMap<AspectFieldLocator, AspectValue>,
     ) {
         fields.insert(
             self.payload.clone(),
-            AspectValue::InlineBytes(actor.recorded_bytes()),
+            AspectValue::InlineBytes(actor.actor().ending_provenance().recorded_bytes()),
         );
     }
 

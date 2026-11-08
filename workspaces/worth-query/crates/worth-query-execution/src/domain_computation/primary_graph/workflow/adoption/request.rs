@@ -47,7 +47,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
 /// ```
 #[derive(Clone, Debug, Default)]
 pub struct WorthQueryWorkflowDispositions {
-    carry_compatible: bool,
+    policy: Option<WorkflowDispositionPolicy>,
     definitions: Vec<(
         PublishedWorkflowDefinitionRef,
         WorthQueryWorkflowDefinitionDisposition,
@@ -56,6 +56,11 @@ pub struct WorthQueryWorkflowDispositions {
         PublishedWorkflowInstanceRef,
         WorthQueryWorkflowInstanceDisposition,
     )>,
+}
+#[derive(Clone, Debug)]
+enum WorkflowDispositionPolicy {
+    CarryCompatible,
+    RetireAndCancelUnperformed,
 }
 impl WorthQueryWorkflowDispositions {
     /// Begin explicit choices. An omitted live fact refuses preparation.
@@ -66,7 +71,17 @@ impl WorthQueryWorkflowDispositions {
     /// legally carry. This performs no read and reveals no population.
     pub fn carry_compatible() -> Self {
         Self {
-            carry_compatible: true,
+            policy: Some(WorkflowDispositionPolicy::CarryCompatible),
+            ..Self::default()
+        }
+    }
+    /// Explicitly retire every current definition and cancel every live
+    /// unperformed instance found by the private fresh safety inventory.
+    /// Any instance with performed effects, outstanding approval or owner
+    /// custody refuses the whole preparation before publication.
+    pub fn retire_and_cancel_unperformed() -> Self {
+        Self {
+            policy: Some(WorkflowDispositionPolicy::RetireAndCancelUnperformed),
             ..Self::default()
         }
     }
@@ -95,10 +110,25 @@ impl WorthQueryWorkflowDispositions {
         inventory: &WorthQueryWorkflowAdoptionInventory,
         branch: WorthQueryProductBranch,
     ) -> Result<AdmittedWorkflowDispositions, ()> {
-        let mut choices = if self.carry_compatible {
-            inventory.carry_compatible().map_err(|_| ())?
-        } else {
-            inventory.dispositions()
+        let mut choices = match &self.policy {
+            Some(WorkflowDispositionPolicy::CarryCompatible) => {
+                inventory.carry_compatible().map_err(|_| ())?
+            }
+            Some(WorkflowDispositionPolicy::RetireAndCancelUnperformed) => {
+                let mut choices = inventory.dispositions();
+                for definition in inventory.definitions() {
+                    choices = choices
+                        .definition(definition, WorthQueryWorkflowDefinitionDisposition::Retire)
+                        .map_err(|_| ())?;
+                }
+                for instance in inventory.instances() {
+                    choices = choices
+                        .instance(instance, WorthQueryWorkflowInstanceDisposition::Cancel)
+                        .map_err(|_| ())?;
+                }
+                choices
+            }
+            None => inventory.dispositions(),
         };
         let mut definitions = std::collections::BTreeSet::new();
         let mut instances = std::collections::BTreeSet::new();
