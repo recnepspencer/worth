@@ -120,6 +120,18 @@ where
     pub fn mutation_port(&self) -> SignalDurableBranchMutationPort<D, I, E, Ctx, T> {
         SignalDurableBranchMutationPort::from_owner(&self.publication)
     }
+    pub fn readmit_source_point(
+        &self,
+        point: &super::SignalRecordedSourcePoint,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<super::SignalReadmittedSourcePoint, super::SignalSourcePointReadmissionDenial> {
+        let (original, definition) = self
+            .publication
+            .read_source_point(point, execution)
+            .map_err(super::SignalSourcePointReadmissionDenial::Original)?;
+        self.port
+            .readmit_original_point(point, original, definition, execution)
+    }
 
     /// Bind the actual composing issuer before exposing any composite services.
     /// Previously issued standalone writer ports observe this same attachment.

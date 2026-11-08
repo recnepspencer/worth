@@ -61,3 +61,23 @@ impl SignalDefinitionTransitionReference {
 }
 impl identity_seal::Sealed for SignalDefinitionTransitionReference {}
 impl DurableIdentity for SignalDefinitionTransitionReference {}
+
+/// Content-addressed reference to one exact Signal branch publication.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct SignalBranchAdvanceReference {
+    identity: SignalBranchAdvanceIdentity,
+    digest: [u8; 32],
+}
+impl SignalBranchAdvanceReference {
+    pub const fn from_recorded(identity: SignalBranchAdvanceIdentity, digest: [u8; 32]) -> Self {
+        Self { identity, digest }
+    }
+    pub const fn identity(self) -> SignalBranchAdvanceIdentity {
+        self.identity
+    }
+    pub const fn digest(self) -> [u8; 32] {
+        self.digest
+    }
+}
+impl identity_seal::Sealed for SignalBranchAdvanceReference {}
+impl DurableIdentity for SignalBranchAdvanceReference {}

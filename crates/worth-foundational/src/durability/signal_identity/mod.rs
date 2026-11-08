@@ -14,7 +14,7 @@ pub use branch::{
     DurableSignalBranchIdentity, DurableSignalCellIncarnation, DurableSignalGeneration,
 };
 pub use definition::{
-    SignalBranchAdvanceIdentity, SignalDefinitionTransitionIdentity,
+    SignalBranchAdvanceIdentity, SignalBranchAdvanceReference, SignalDefinitionTransitionIdentity,
     SignalDefinitionTransitionReference,
 };
 pub use journal::SignalDurableJournal;

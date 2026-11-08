@@ -14,6 +14,9 @@ impl SignalCommittedAdvanceEvidence {
     pub fn position(&self) -> u64 {
         self.original.position().get()
     }
+    pub fn source_point(&self) -> super::SignalRecordedSourcePoint {
+        super::SignalRecordedSourcePoint::original(self.artifact(), self.original.position())
+    }
 }
 impl std::fmt::Debug for SignalCommittedAdvanceEvidence {
     fn fmt(&self, out: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

@@ -33,6 +33,7 @@ pub enum SignalOwnerReadmissionDenial {
     DuplicateDefinition(SignalDefinitionTransitionIdentity),
     DuplicateAdvance(SignalBranchAdvanceIdentity),
     MissingAdvance(SignalBranchAdvanceIdentity),
+    SourcePointMismatch(worth_foundational::facade::SignalBranchAdvanceReference),
     MissingBranch(DurableSignalBranchIdentity),
     DuplicateBranch(DurableSignalBranchIdentity),
     DuplicateBranchName(String),

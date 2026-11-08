@@ -77,8 +77,7 @@ where
     retention: SignalBranchRetentionRegistry,
     selected_branch_id: SignalBranchId,
     cells: Vec<SignalOwnerCellSeed<D, I, T>>,
-    readmitted_coordinates:
-        BTreeMap<SignalBranchId, crate::durability::SignalDurableBranchDescriptor>,
+    readmitted_coordinates: BTreeMap<SignalBranchId, crate::durability::SignalRecordedSourcePoint>,
     durable_admission: Option<crate::durability::SignalDurableOwnerAdmission>,
 }
 

@@ -46,4 +46,37 @@ where
             .advance_record(identity)?;
         original.read(self.medium.as_ref(), execution)
     }
+    pub(crate) fn read_source_point(
+        &self,
+        point: &crate::durability::SignalRecordedSourcePoint,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<
+        (
+            SignalBranchAdvanceArtifact,
+            SignalDefinitionTransitionArtifact,
+        ),
+        Dn,
+    > {
+        if point.descriptor().owner() != self.binding().owner() {
+            return Err(Dn::ForeignOwner);
+        }
+        let (advance, definition) = {
+            let source = self
+                .source
+                .lock()
+                .map_err(|_| Dn::PublicationStatePoisoned)?;
+            let advance = source.advance_record(point.reference().identity())?;
+            if !advance.matches_point(point) {
+                return Err(Dn::SourcePointMismatch(point.reference()));
+            }
+            (advance, source.definition_record(point.descriptor())?)
+        };
+        let artifact = advance.read(self.medium.as_ref(), execution)?;
+        if artifact.reference() != point.reference() || artifact.descriptor() != point.descriptor()
+        {
+            return Err(Dn::SourcePointMismatch(point.reference()));
+        }
+        let definition = definition.read(self.medium.as_ref(), execution)?;
+        Ok((artifact, definition))
+    }
 }

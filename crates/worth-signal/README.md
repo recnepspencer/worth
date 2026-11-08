@@ -284,6 +284,15 @@ Foreign owners, unknown frame versions and stale live handles have typed refusal
 `take_installation_contracts` transfers freshly installed conditional contracts
 paired with their durable occurrences for Bridge installation.
 
+Each durable handle also retains a `SignalRecordedSourcePoint`: its exact
+original advance reference, physical journal position and branch descriptor.
+Its checksummed byte codec grants no admission. `readmit_source_point` verifies
+both original source members and replays the authored definition through the
+consuming owner's installation bindings before issuing a historical lease.
+The returned `SignalReadmittedSourcePoint` retains the original artifact and
+admitted observation without a derived transaction result. The branch and cell
+must still exist; the descriptor door continues to require the current head.
+
 Each medium exposes one stable, funded `SignalDurableOwnerAdmissionRegistry`.
 Readmission acquires its exclusive claim before journal replay and transfers the
 non-cloneable custody into the actual canonical owner allocation. A competing
@@ -304,8 +313,10 @@ Committed, proven-no-effect and indeterminate outcomes remain distinct.
 Store-backed courts cover three branches, runtime-published keyed definitions,
 conditional source, graceful reopen and quiescent process termination. Values
 recompute on first demand after both same-build and changed-build readmission.
-This entry does not yet enable authored Home bootstrap, durable fork or mixed
-World publication. Bridge's authored section now has its own cold readmission
+Durable forks inherit authored state through the actual reserved source and
+publish their original Created record before installing the sibling. Authored
+Home bootstrap and mixed World publication remain separate integration work.
+Bridge's authored section now has its own cold readmission
 entry. `begin_definition_publication` prepares a conditional successor with the
 actual lowering owner and installed contract, then retains it in the original
 definition/branch journal task. Its transition carries the fresh conditional

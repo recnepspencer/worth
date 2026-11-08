@@ -22,6 +22,12 @@ pub use definition_publication::{
     SignalOnlyDefinitionPublication,
 };
 mod descriptor;
+mod source_point;
+pub use source_point::SignalRecordedSourcePoint;
+mod readmitted_source_point;
+pub use readmitted_source_point::{
+    SignalReadmittedSourcePoint, SignalSourcePointReadmissionDenial,
+};
 mod frame;
 mod medium;
 mod owner;

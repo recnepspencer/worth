@@ -20,6 +20,9 @@ pub(crate) struct SignalGraphInstallationBindings {
 }
 impl SignalGraphInstallationBindings {
     pub(crate) fn consume(graph: Box<SignalGraph>) -> Self {
+        Self::capture(&graph)
+    }
+    pub(crate) fn capture(graph: &SignalGraph) -> Self {
         Self {
             instance_id: graph.instance_id,
             lifecycle_token: Arc::clone(&graph.lifecycle_token),

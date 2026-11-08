@@ -75,6 +75,8 @@ fn durable_fork_resumes_the_same_original_and_reopens_inherited_authored_state_c
         if name == "durable-child" && recorded == parent)
     );
     let descriptor = output.branch().descriptor().clone();
+    let original_point = output.evidence().source_point();
+    assert_eq!(output.branch().source_point(), &original_point);
     let branches = port.branches().unwrap();
     assert_eq!(
         branches
@@ -95,6 +97,7 @@ fn durable_fork_resumes_the_same_original_and_reopens_inherited_authored_state_c
     let owner = fixture::readmit(medium.clone(), &execution);
     assert_eq!(owner.source_port().observe(target).unwrap(), descriptor);
     let actual = owner.source_port().readmit_descriptor(&descriptor).unwrap();
+    assert_eq!(actual.source_point(), &original_point);
     let expected_handle = reference
         .memory
         .branch_handle(expected.created_branch().id)

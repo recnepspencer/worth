@@ -420,10 +420,11 @@ pub use crate::durability::{
     MemoryProductBranchReference, NativeCheckpointBranchObservation,
     NativeCheckpointBranchReference, NativeCheckpointBranchTarget,
     RecordedCompositePublicationAttemptIdentity, RecordedProductBranchReference, RetentionClass,
-    SignalBranchAdvanceIdentity, SignalConditionalDefinitionOwnerMismatch,
-    SignalDefinitionProjectionOutcome, SignalDefinitionTransitionIdentity,
-    SignalDefinitionTransitionReference, SignalDurableJournal, SignalOwnerSlotIdentity,
-    UnsupportedDurableOwnerTag, WorldDurableJournal, WorldOwnerCoordinate, WorldOwnerSlotIdentity,
+    SignalBranchAdvanceIdentity, SignalBranchAdvanceReference,
+    SignalConditionalDefinitionOwnerMismatch, SignalDefinitionProjectionOutcome,
+    SignalDefinitionTransitionIdentity, SignalDefinitionTransitionReference, SignalDurableJournal,
+    SignalOwnerSlotIdentity, UnsupportedDurableOwnerTag, WorldDurableJournal, WorldOwnerCoordinate,
+    WorldOwnerSlotIdentity,
 };
 pub use crate::durable_publication::DurablePublicationFate;
 pub use crate::execution::{

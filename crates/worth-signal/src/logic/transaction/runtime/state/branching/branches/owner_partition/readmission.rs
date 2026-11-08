@@ -1,6 +1,6 @@
 //! Consume cold source seeds without synchronizing or extending their node arenas.
 use super::*;
-use crate::durability::{SignalDurableBranchDescriptor, SignalOwnerReadmissionDenial as Denial};
+use crate::durability::{SignalOwnerReadmissionDenial as Denial, SignalRecordedSourcePoint};
 
 pub(crate) struct SignalReadmittedCellSeed<D, I, T>
 where
@@ -10,7 +10,7 @@ where
 {
     pub(crate) handle: SignalBranchHandle,
     pub(crate) state: Box<BranchState<D, I, T>>,
-    pub(crate) descriptor: SignalDurableBranchDescriptor,
+    pub(crate) point: SignalRecordedSourcePoint,
     pub(crate) restored: bool,
 }
 impl<D, I, T> SignalOwnerPartition<D, I, T>
@@ -48,12 +48,12 @@ where
             if let Some(parent) = seed.handle.parent_branch_id {
                 children.entry(parent).or_default().insert(seed.handle.id);
             }
-            let generation = seed.descriptor.generation().ordinal();
+            let generation = seed.point.descriptor().generation().ordinal();
             let restored = seed
                 .restored
                 .then_some(seed.handle.head_snapshot_id)
                 .flatten();
-            coordinates.insert(seed.handle.id, seed.descriptor);
+            coordinates.insert(seed.handle.id, seed.point);
             cells.push((seed.handle, *seed.state, generation, restored));
         }
         let mut partition = Self::new(
@@ -85,7 +85,7 @@ where
     }
     pub(crate) fn take_readmitted_coordinates(
         &mut self,
-    ) -> BTreeMap<SignalBranchId, SignalDurableBranchDescriptor> {
+    ) -> BTreeMap<SignalBranchId, SignalRecordedSourcePoint> {
         std::mem::take(&mut self.readmitted_coordinates)
     }
 }

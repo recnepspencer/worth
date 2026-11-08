@@ -4,7 +4,7 @@ use super::{SignalBranchCellAdmissionDenial, SignalBranchExecutionCell};
 use crate::branch::owner_services::durable_source_port::SignalDurableSourceDenial as D;
 use crate::branch::{AdmittedSignalBranchBasis, SignalBranchObservation};
 use crate::durability::{
-    SignalAuthoredImage, SignalDurableBranchDescriptor, SignalDurableTierVocabulary,
+    SignalAuthoredImage, SignalDurableTierVocabulary, SignalRecordedSourcePoint,
     SignalRuntimeAuthoredImage,
 };
 use worth_execution::ExecutionRequest;
@@ -39,10 +39,10 @@ where
     pub(in crate::branch::owner_services) fn observe_durable_source(
         &self,
         admission: &SignalOwnerOperationAdmission<'_>,
-    ) -> Result<(SignalDurableBranchDescriptor, SignalBranchObservation), D> {
+    ) -> Result<(SignalRecordedSourcePoint, SignalBranchObservation), D> {
         self.inspect_durable_source(admission, |state| {
             let descriptor = state
-                .durable_descriptor()
+                .durable_source_point()
                 .map_err(D::Frame)?
                 .ok_or(D::SourceNotInstalled)?;
             let observation = state.observation().map_err(|error| {
@@ -95,6 +95,28 @@ where
                     .capture_authored_image(graph, vocabulary, branch, execution)
                     .map_err(D::Image)?,
             ))
+        })
+    }
+    pub(in crate::branch::owner_services) fn recorded_source_bindings(
+        &self,
+        admission: &SignalOwnerOperationAdmission<'_>,
+        descriptor: &crate::durability::SignalDurableBranchDescriptor,
+        restored: bool,
+    ) -> Result<
+        (
+            crate::data::graph::SignalGraphInstallationBindings,
+            SignalBranchObservation,
+        ),
+        D,
+    > {
+        self.inspect_durable_source(admission, |state| {
+            let actual = state.durable_descriptor().map_err(D::Frame)?.ok_or(D::SourceNotInstalled)?;
+            if actual.cell() != descriptor.cell() {
+                return Err(D::DescriptorMismatch);
+            }
+            let observation = state.recorded_source_observation(descriptor, restored)
+                .map_err(|error| D::Observation(crate::branch::SignalBranchBasisObservationDenial::InvalidOwnerObservation { error }))?;
+            Ok((crate::data::graph::SignalGraphInstallationBindings::capture(state.state().graph()), observation))
         })
     }
 }

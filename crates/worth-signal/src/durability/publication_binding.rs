@@ -15,6 +15,9 @@ impl SignalCommittedAdvanceRecord {
     pub(crate) fn artifact(&self) -> &super::SignalBranchAdvanceArtifact {
         &self.artifact
     }
+    pub(crate) fn source_point(&self) -> super::SignalRecordedSourcePoint {
+        super::SignalRecordedSourcePoint::original(self.artifact(), self.position)
+    }
     pub(crate) fn position(&self) -> NonZeroU64 {
         self.position
     }

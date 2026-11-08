@@ -137,6 +137,14 @@ impl SignalRecoveredSourceLocations {
     }
 }
 impl SignalAdvanceSourceRecord {
+    pub(crate) fn matches_point(
+        &self,
+        point: &crate::durability::SignalRecordedSourcePoint,
+    ) -> bool {
+        self.original == point.reference().identity()
+            && self.location.position == point.position()
+            && self.location.digest == point.reference().digest()
+    }
     pub(crate) fn read(
         &self,
         medium: &dyn SignalDurableMedium,

@@ -12,6 +12,7 @@ mod owner_installation;
 mod owner_node_issuance;
 mod owner_quiescent_kill;
 mod owner_readmission;
+mod owner_source_points;
 mod physical_open;
 use sha2::{Digest, Sha256};
 use std::time::{Duration, Instant};

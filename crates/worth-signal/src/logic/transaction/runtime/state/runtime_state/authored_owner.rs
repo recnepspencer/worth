@@ -81,6 +81,7 @@ where
                             .map(|parent| SignalBranchId(parent.branch().ordinal())),
                         head_snapshot_id: branch
                             .head
+                            .descriptor()
                             .snapshot()
                             .map(|id| SignalSnapshotId(id.ordinal())),
                     },
@@ -90,7 +91,7 @@ where
         let mut seeds = Vec::with_capacity(branches.len());
         let mut contracts = BTreeMap::new();
         for (identity, branch) in branches {
-            let artifact = source.read_definition(&branch.head, execution)?;
+            let artifact = source.read_definition(branch.head.descriptor(), execution)?;
             let (mut graph, installed) = bindings
                 .readmit(execution, &artifact.authored_image())
                 .map_err(D::Image)?
@@ -127,7 +128,7 @@ where
                 .readmit_branch(
                     crate::durability::SignalAuthoredBranchInstallation::new(
                         &graph,
-                        branch.head.branch(),
+                        branch.head.descriptor().branch(),
                         &restored_contracts,
                         artifact.bridge_bytes(),
                     ),
@@ -148,7 +149,7 @@ where
             seeds.push(SignalReadmittedCellSeed {
                 handle,
                 state,
-                descriptor: branch.head,
+                point: branch.head,
                 restored: branch.restored,
             });
         }

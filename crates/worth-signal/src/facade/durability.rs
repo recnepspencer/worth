@@ -33,3 +33,5 @@ pub use crate::durability::{
 };
 
 pub use crate::durability::SignalCommittedAdvanceEvidence;
+pub use crate::durability::SignalRecordedSourcePoint;
+pub use crate::durability::{SignalReadmittedSourcePoint, SignalSourcePointReadmissionDenial};

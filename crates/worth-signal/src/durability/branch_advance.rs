@@ -74,6 +74,12 @@ impl SignalBranchAdvanceArtifact {
     pub fn identity(&self) -> SignalBranchAdvanceIdentity {
         self.original.identity
     }
+    pub fn reference(&self) -> worth_foundational::facade::SignalBranchAdvanceReference {
+        worth_foundational::facade::SignalBranchAdvanceReference::from_recorded(
+            self.identity(),
+            self.digest(),
+        )
+    }
     pub fn descriptor(&self) -> &SignalDurableBranchDescriptor {
         &self.original.descriptor
     }

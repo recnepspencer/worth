@@ -65,7 +65,7 @@ where
                     );
                     prepared
                         .state_mut()
-                        .install_durable_coordinates(record.artifact().descriptor().clone());
+                        .install_durable_coordinates(record.source_point());
                     let installed = prepared.install(owner, admission).expect(
                         "original admission and destination reservation remain held through ACK",
                     );
@@ -94,7 +94,7 @@ where
             .record_committed_advance(record, location);
         let branch = SignalDurableBranchHandle::from_owner(
             basis,
-            evidence.artifact().descriptor().clone(),
+            evidence.source_point(),
             self.medium.binding().incarnation().fence(),
         );
         CommittedSignalCutover {

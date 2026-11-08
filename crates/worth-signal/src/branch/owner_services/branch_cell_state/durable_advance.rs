@@ -165,7 +165,7 @@ where
             self.head_generation = prepared.generation;
             self.restore_snapshot_id = prepared.restore_snapshot;
             self.conditional_execution_basis = None;
-            self.install_durable_coordinates(artifact.descriptor().clone());
+            self.install_durable_coordinates(record.source_point());
             (
                 prepared.state,
                 prepared.transaction,

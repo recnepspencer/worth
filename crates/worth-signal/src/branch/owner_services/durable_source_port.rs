@@ -1,4 +1,5 @@
 //! Weak access to authored source under the real sealed owner and branch cells.
+mod recorded_point;
 use super::{SignalDurableBranchHandle, SignalOwner, SignalOwnerUnavailable};
 use crate::branch::{
     SignalBranchBasisObservationDenial, SignalBranchBasisReadmissionDenial,
@@ -146,7 +147,7 @@ where
             .map_err(|denial| super::owner::basis::map_basis_registry_denial(denial, id))
             .map_err(D::Observation)?;
         cell.observe_durable_source(&admission)
-            .map(|(descriptor, _)| descriptor)
+            .map(|(point, _)| point.descriptor().clone())
     }
     pub fn readmit_descriptor(
         &self,
@@ -167,7 +168,7 @@ where
             .map_err(|denial| super::owner::basis::map_basis_registry_denial(denial, id))
             .map_err(D::Observation)?;
         let (actual, observation) = cell.observe_durable_source(&admission)?;
-        if &actual != descriptor {
+        if actual.descriptor() != descriptor {
             return Err(D::DescriptorMismatch);
         }
         let basis = owner
