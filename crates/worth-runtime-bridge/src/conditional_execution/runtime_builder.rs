@@ -8,12 +8,14 @@ use super::{
     BridgeOwnedSignalRuntime,
 };
 use crate::facade::RuntimeBridge;
+mod authored_capture;
+mod authored_readmission;
 
 /// The only public construction posture for a Bridge-owned conditional runtime.
 /// Sealing consumes the builder, so installation authority cannot accompany the
 /// operational runtime.
 pub struct BridgeConditionalRuntimeBuilder {
-    runtime: BridgeOwnedSignalRuntime,
+    runtime: Box<BridgeOwnedSignalRuntime>,
     managed_clocks:
         std::collections::BTreeMap<Arc<str>, super::managed_time::BridgeManagedClockDeclaration>,
 }
@@ -98,7 +100,7 @@ impl BridgeConditionalRuntimeBuilder {
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
                 .insert(identity, Arc::new(std::sync::Mutex::new(lane)));
         }
-        super::BridgeSealedRuntimeAssembly::from_sealed_runtime(self.runtime)
+        super::BridgeSealedRuntimeAssembly::from_sealed_runtime(*self.runtime)
     }
 
     pub fn baseline_semantic_dependency_count(&self) -> usize {
@@ -116,7 +118,7 @@ impl BridgeConditionalRuntimeBuilder {
 
     pub(super) fn from_runtime(runtime: BridgeOwnedSignalRuntime) -> Self {
         Self {
-            runtime,
+            runtime: Box::new(runtime),
             managed_clocks: Default::default(),
         }
     }
@@ -133,7 +135,7 @@ fn collect_owned_inline_type_sizes(census: &mut crate::inline_type_sizes::Census
             "BridgeConditionalRuntimeBuilder",
             128 * 1024,
         );
-        owner.field::<BridgeOwnedSignalRuntime>("runtime");
+        owner.field::<Box<BridgeOwnedSignalRuntime>>("runtime");
         owner.field::<std::collections::BTreeMap<
             Arc<str>,
             super::managed_time::BridgeManagedClockDeclaration,

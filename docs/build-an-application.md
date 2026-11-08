@@ -7387,7 +7387,13 @@ branch generations from its own journals. Values, versions, pending causes,
 telemetry and resource/temporal runtime state start cold and recompute on demand;
 a different build never inherits the previous owner's derived cache. The
 [owner contract](../crates/worth-signal/README.md#standalone-authored-owner-readmission)
-has Store-backed graceful-reopen and quiescent-kill evidence. Home's ordered
+has Store-backed graceful-reopen and quiescent-kill evidence. Bridge's standalone
+conditional-program entry now reads its authored section through Signal and
+rebuilds providers, branch-local correspondence indexes, lowering registry and
+retention ledger from fresh installation. Values and runtime keys never become
+recovered definitions. See the
+[Bridge owner contract](../crates/worth-runtime-bridge/README.md#authored-conditional-definition-recovery).
+Home's ordered
 Signal admission and Bridge/mixed publication integration are still pending, so
 Directory applications retain the InitialEmpty restrictions above. Applications
 continue to enter through the Query declaration and Host facades.

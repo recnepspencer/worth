@@ -44,6 +44,12 @@ pub struct SignalDeltaThresholdContract {
 }
 
 impl SignalDeltaThresholdContract {
+    /// Backing storage retained by this authored threshold, excluding its inline value.
+    pub fn owned_allocation_capacity_bytes(&self) -> Option<usize> {
+        self.threshold
+            .owned_allocation_capacity_bytes()
+            .checked_add(self.unit_identity.capacity())
+    }
     pub fn new(
         threshold: worth_foundational::facade::AspectValue,
         unit_identity: impl Into<String>,

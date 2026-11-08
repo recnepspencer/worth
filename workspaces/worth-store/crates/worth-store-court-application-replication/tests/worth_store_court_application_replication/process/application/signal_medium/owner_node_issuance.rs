@@ -38,7 +38,13 @@ fn readmit_with_nodes(
     }
     fixture::program()
         .0
-        .readmit_authored_owner(medium, contribution, fixture::vocabulary(), execution)
+        .readmit_authored_owner(
+            medium,
+            contribution,
+            fixture::vocabulary(),
+            &mut worth_signal::facade::durability::SignalOnlyOwnerInstallation,
+            execution,
+        )
         .unwrap()
 }
 

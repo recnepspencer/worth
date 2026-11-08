@@ -1544,9 +1544,15 @@ before retrying. Independent Native reads retain their own close obligations.
 Signal's [standalone authored owner readmission](../crates/worth-signal/README.md#standalone-authored-owner-readmission)
 now restores several branches through its Store-backed port and leaves derived
 values cold, including under a changed build. This platform owner entry is not
-yet wired into Directory Home admission. Authored bootstrap, durable forks,
-Bridge section readmission and mixed World publication remain pending; the
-InitialEmpty Directory restriction above still applies.
+yet wired into Directory Home admission. Platform composition can also capture
+and readmit Bridge conditional program definitions through Signal transitions
+using `BridgeConditionalRuntimeBuilder` and fresh `BridgeAuthoredInstallationBindings`.
+The [Bridge owner entry](../crates/worth-runtime-bridge/README.md#authored-conditional-definition-recovery)
+rebuilds per-branch indexes, exact slots, lowering registry and retention ledger.
+Authored Home bootstrap, durable forks, durable conditional-definition publication
+and mixed World publication remain pending; the InitialEmpty Directory
+restriction above still applies. Applications continue through Query's declaration
+and Host facades.
 
 World's durable open retains its original identities and one Native preparation,
 and its prepared wrapper executes through `execute_durable_without_signal`.

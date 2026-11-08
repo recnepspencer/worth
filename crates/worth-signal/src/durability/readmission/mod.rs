@@ -20,6 +20,7 @@ pub enum SignalOwnerReadmissionDenial {
     Frame(super::SignalDurableFrameDenial),
     Image(super::SignalAuthoredImageDenial),
     ForeignOwner,
+    InstallationRefused(DurableSignalBranchIdentity),
     ProgramAlreadyServing,
     PublicationStatePoisoned,
     OrderedStorage(worth_execution::ExecutionOrderedMapDenial),

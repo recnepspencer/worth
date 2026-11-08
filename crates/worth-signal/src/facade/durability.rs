@@ -9,15 +9,16 @@ pub use crate::branch::owner_services::{
 };
 pub use crate::data::graph::SignalAuthoredGraphReadmission;
 pub use crate::durability::{
-    SignalAuthoredBranchChange, SignalAuthoredImage, SignalAuthoredImageDenial,
+    SignalAuthoredBranchChange, SignalAuthoredBranchInstallation, SignalAuthoredImage,
+    SignalAuthoredImageDenial, SignalAuthoredInstallationRefused, SignalAuthoredOwnerInstallation,
     SignalBranchAdvanceArtifact, SignalBridgeAuthoredSection, SignalDefinitionTransitionArtifact,
     SignalDurableBranchDescriptor, SignalDurableFrameDenial, SignalDurableHomeBinding,
     SignalDurableMedium, SignalDurableMediumDenial, SignalDurableOwner,
     SignalDurableOwnerAdmissionRegistry, SignalDurableReadSource, SignalDurableTierVocabulary,
-    SignalDurableTierVocabularyDenial, SignalLiveOwnerIdentity, SignalOwnerReadmissionDenial,
-    SignalPublicationCompletion, SignalPublicationObservation, SignalPublicationTaskPosture,
-    SignalReadmittedConditionalContract, SignalRecordedIdentityContribution,
-    SignalRuntimeAuthoredImage, SIGNAL_AUTHORED_IMAGE_PROTOCOL, SIGNAL_AUTHORED_IMAGE_VERSION,
-    SIGNAL_OWNER_FRAME_MAXIMUM_BYTES, SIGNAL_OWNER_FRAME_PROTOCOL, SIGNAL_OWNER_FRAME_VERSION,
-    SIGNAL_RUNTIME_AUTHORED_IMAGE_PROTOCOL,
+    SignalDurableTierVocabularyDenial, SignalLiveOwnerIdentity, SignalOnlyOwnerInstallation,
+    SignalOwnerReadmissionDenial, SignalPublicationCompletion, SignalPublicationObservation,
+    SignalPublicationTaskPosture, SignalReadmittedConditionalContract,
+    SignalRecordedIdentityContribution, SignalRuntimeAuthoredImage, SIGNAL_AUTHORED_IMAGE_PROTOCOL,
+    SIGNAL_AUTHORED_IMAGE_VERSION, SIGNAL_OWNER_FRAME_MAXIMUM_BYTES, SIGNAL_OWNER_FRAME_PROTOCOL,
+    SIGNAL_OWNER_FRAME_VERSION, SIGNAL_RUNTIME_AUTHORED_IMAGE_PROTOCOL,
 };

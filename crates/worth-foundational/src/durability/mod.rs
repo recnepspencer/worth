@@ -1,4 +1,6 @@
 //! Immutable vocabulary exchanged by durable owner ports.
+mod bridge_claim;
+pub use bridge_claim::BridgeSemanticClaimReference;
 
 mod checkpoint_admission;
 mod native_checkpoint_reference;

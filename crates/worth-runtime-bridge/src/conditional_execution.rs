@@ -1,4 +1,11 @@
+mod authored_section;
 mod authoritative_delivery;
+pub use authored_section::{
+    BridgeAuthoredDependencyDescription, BridgeAuthoredInstallationBindings,
+    BridgeAuthoredReadmissionDenial, BridgeAuthoredSection, BridgeAuthoredSectionDenial,
+    BridgeReadmittedAuthoredAssembly, BRIDGE_AUTHORED_SECTION_PROTOCOL,
+    BRIDGE_AUTHORED_SECTION_VERSION,
+};
 mod causal_observation;
 mod compatibility;
 mod contract;

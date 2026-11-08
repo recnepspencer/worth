@@ -311,6 +311,29 @@ descriptions remain correlation data. Store's private Home composition supplies
 the same actual Native owner and registered source; a matching caller-supplied
 profile cannot construct the concrete Home stage.
 
+## Authored conditional definition recovery
+
+For platform composition, `BridgeConditionalRuntimeBuilder::capture_authored_definition`
+captures the actual program's Signal images and Bridge's versioned, checksummed
+section. That section retains conditional identities and locations, full
+portable dependency meaning, declared slots and exact performed lowering claims.
+Source runtime identities, providers, values and scheduling state stay outside
+these bytes. The landed `RecordedRuntimeWorldBaseline` format is unchanged.
+
+`Box<BridgeConditionalRuntimeBuilder>::readmit_authored_owner` consumes the fresh
+program and `BridgeAuthoredInstallationBindings`. Signal supplies each actual
+cold branch; Bridge readmits its mapping and graph capabilities, restores the
+recorded slots, and rebuilds branch-local dependency indexes, lowering registry
+and retention ledger. Branches share the consumed program rather than cloning
+its runtime. Definition bytes retain their charges; publication candidate slots
+start empty. Fresh source and provider objects come from installation.
+
+The privately constructed `BridgeReadmittedAuthoredAssembly` owns the durable
+Signal owner and exposes authored definition inspection. Cold multi-branch and
+changed-build courts cover this intrinsic entry. Home admission, mixed
+publication and durable conditional-definition publication remain pending.
+Conditional execution and managed services retain their later phase boundaries.
+
 ## Retire Home-owned Bridge custody
 
 The concrete Native adapter's `try_retire_alias_for_request` consumes its

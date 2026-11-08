@@ -9,6 +9,7 @@ use worth_signal::facade::{
     Aspect, NodeEvaluationResult, SignalConditionalArtifactReuse, SignalConditionalDecisionClass,
     SignalConditionalVersionComparator,
 };
+mod authored_section;
 mod causal_retention;
 mod exact_pair;
 mod history;

@@ -27,6 +27,7 @@ where
         medium: Arc<dyn SignalDurableMedium>,
         contribution: SignalRecordedIdentityContribution,
         vocabulary: SignalDurableTierVocabulary<T>,
+        installation: &mut dyn crate::durability::SignalAuthoredOwnerInstallation,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<SignalDurableOwner<Dm, I, E, Ctx, T>, D> {
         if self.owner_services.is_sealed() {
@@ -122,6 +123,17 @@ where
             if let Some((node, _)) = occurrences.first_key_value() {
                 return Err(D::ConditionalOccurrenceMismatch(*node));
             }
+            installation
+                .readmit_branch(
+                    crate::durability::SignalAuthoredBranchInstallation::new(
+                        &graph,
+                        &branch.head,
+                        &restored_contracts,
+                        artifact.bridge_bytes(),
+                    ),
+                    execution,
+                )
+                .map_err(|_| D::InstallationRefused(identity))?;
             contracts.insert(identity, restored_contracts);
             let handle = catalog
                 .get(&SignalBranchId(identity.ordinal()))

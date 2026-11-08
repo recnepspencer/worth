@@ -1,3 +1,4 @@
+use super::BridgeSemanticClaimOrigin;
 use std::collections::BTreeSet;
 use worth_signal::facade::{InstalledSignalGraphCapability, SignalGraph};
 
@@ -14,7 +15,7 @@ pub(super) struct ResolvedCorrespondence {
     pub(super) recipe: super::installed_witness::CorrespondenceResolvedRecipe,
     pub(super) declarations: Vec<BridgeSignalAspectTargetDeclaration>,
     pub(super) signal_graph: InstalledSignalGraphCapability,
-    pub(super) owner: String,
+    pub(super) owner: BridgeSemanticClaimOrigin,
     pub(super) counters: CorrespondenceAdmissionCounters,
 }
 
@@ -23,6 +24,9 @@ pub(super) fn resolve(
     dependency: BridgeSemanticDependencyCandidate,
     graph: &SignalGraph,
 ) -> Result<ResolvedCorrespondence, CorrespondenceAdmissionOutcome> {
+    let owner = runtime
+        .semantic_dependency_registry
+        .claim_origin(&dependency);
     let unresolved = BridgeInstalledSemanticCorrespondence::begin(dependency);
     let counters = CorrespondenceAdmissionCounters {
         semantic_dependency_lookups: 1,
@@ -37,7 +41,7 @@ pub(super) fn resolve(
             counters,
         ));
     };
-    resolve_declarations(runtime, unresolved, declarations, graph, counters)
+    resolve_declarations(runtime, unresolved, declarations, graph, counters, owner)
 }
 
 pub(super) fn resolve_registration(
@@ -45,6 +49,14 @@ pub(super) fn resolve_registration(
     registration: &super::BridgeSemanticCorrespondenceRegistration,
     graph: &SignalGraph,
 ) -> Result<ResolvedCorrespondence, CorrespondenceAdmissionOutcome> {
+    let owner = registration
+        .recorded_claim
+        .map(BridgeSemanticClaimOrigin::Recorded)
+        .unwrap_or_else(|| {
+            runtime
+                .semantic_dependency_registry
+                .claim_origin(&registration.dependency)
+        });
     let unresolved = BridgeInstalledSemanticCorrespondence::begin(registration.dependency.clone());
     let counters = CorrespondenceAdmissionCounters {
         provided_registration_reads: 1,
@@ -56,6 +68,7 @@ pub(super) fn resolve_registration(
         registration.targets.clone(),
         graph,
         counters,
+        owner,
     )
 }
 
@@ -65,6 +78,7 @@ fn resolve_declarations(
     declarations: Vec<BridgeSignalAspectTargetDeclaration>,
     graph: &SignalGraph,
     mut counters: CorrespondenceAdmissionCounters,
+    owner: BridgeSemanticClaimOrigin,
 ) -> Result<ResolvedCorrespondence, CorrespondenceAdmissionOutcome> {
     counters.registered_targets_materialized = declarations.len();
     let signal_graph = graph.installed_graph_capability();
@@ -104,7 +118,6 @@ fn resolve_declarations(
             .collect(),
     };
     let recipe = BridgeInstalledSemanticCorrespondence::resolve(unresolved, basis);
-    let owner = recipe.payload().canonical_registration_key();
     Ok(ResolvedCorrespondence {
         recipe,
         declarations,

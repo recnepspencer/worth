@@ -14,8 +14,8 @@ impl BridgeInstalledConditionalLowering {
         Provider: BridgeConditionalWakeProvider + BridgeConditionalProviderSemantics,
     {
         BridgeOwnedConditionalInstallationRequest {
-            contract: self.contract.clone(),
-            location: self.location.clone(),
+            contract: self.contract.as_ref().clone(),
+            location: self.location.as_ref().clone(),
             dependencies: self.semantic_dependencies().cloned().collect(),
             providers: self.providers.clone().wake(provider),
         }

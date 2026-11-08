@@ -94,6 +94,7 @@ fn runtime_published_keyed_definitions_reopen_without_reissuing_unused_body_inca
             medium.clone(),
             contribution,
             fixture::vocabulary(),
+            &mut worth_signal::facade::durability::SignalOnlyOwnerInstallation,
             &execution,
         )
         .unwrap();

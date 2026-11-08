@@ -73,6 +73,7 @@ pub(super) fn readmit(
             medium,
             SignalRecordedIdentityContribution::empty(medium_fixture::owner()),
             vocabulary(),
+            &mut worth_signal::facade::durability::SignalOnlyOwnerInstallation,
             execution,
         )
         .unwrap()

@@ -13,6 +13,8 @@ pub(in crate::conditional_execution) fn retained_bytes(
 ) -> Result<u64, Denial> {
     sum(&[
         arc_charge::<super::super::BridgeInstalledConditionalLowering>()?,
+        arc_charge::<super::super::BridgeConditionalContract>()?,
+        arc_charge::<super::super::BridgeConditionalLocation>()?,
         arc_charge::<super::super::liveness::BridgeConditionalLoweringLease>()?,
         arc_charge::<super::BridgeRetentionReservation>()?,
         arc_charge::<worth_signal::facade::branch::SignalBranchIdentity>()?,

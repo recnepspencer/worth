@@ -93,7 +93,7 @@ fn baseline_values(
     runtime: &RuntimeBridge,
 ) -> Result<(&crate::facade::BridgeAuthoritativeSourceProfile, &str), RuntimeWorldBaselineRefusal> {
     use RuntimeWorldBaselineRefusal as Refusal;
-    if runtime.semantic_dependency_registry.authoritative_count() != 0 {
+    if runtime.semantic_dependency_registry.admitted_count() != 0 {
         return Err(Refusal::UninstalledBaselineRequired);
     }
     let profile = runtime

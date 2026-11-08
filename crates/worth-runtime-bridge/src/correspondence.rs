@@ -1,8 +1,17 @@
 pub(crate) mod admission;
 mod admission_identity;
 mod admission_outcome;
+mod authored_readmission;
+pub(crate) use authored_readmission::readmit_performed_correspondence;
+mod authored_storage;
+pub(crate) use authored_storage::{
+    authored_binding_key_storage_bytes, authored_performed_storage_bytes,
+    authored_registration_storage_bytes,
+};
 mod admitted_truth_identity;
 mod batch_admission;
+mod claim_origin;
+pub(crate) use claim_origin::BridgeSemanticClaimOrigin;
 mod delivery;
 mod delivery_counters;
 mod delivery_outcome;
@@ -35,7 +44,10 @@ pub(crate) use mapping_admission::unique_mapping_id_for_dependency;
 pub(crate) use semantic_dependency_registry::{
     AdmittedSemanticDependencyExtension, AdmittedSemanticDependencyRegistry,
 };
-pub(crate) use slot_allocation::SharedCorrespondenceAllocationRegistry;
+pub(crate) use slot_allocation::AllocationSlotIdentity;
+pub(crate) use slot_allocation::{
+    CorrespondenceAllocationRegistry, SharedCorrespondenceAllocationRegistry,
+};
 
 pub use admission::CorrespondenceAdmissionOutcome;
 pub use admission_identity::BridgeCorrespondenceAdmissionIdentity;

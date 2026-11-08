@@ -4,6 +4,7 @@ mod owner_admission;
 mod owner_candidate_refusal;
 mod owner_definition_publication;
 mod owner_fixture;
+mod owner_installation;
 mod owner_node_issuance;
 mod owner_quiescent_kill;
 mod owner_readmission;

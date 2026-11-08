@@ -11,6 +11,8 @@ pub use crate::adapter::{
 pub use crate::builder::{RuntimeBridgeBuilder, UnattachedRelationalBridgeBuilder};
 pub use crate::conditional_execution::{
     BridgeAppliedConditionalInstallationExtension, BridgeAsyncEffectsIndeterminateObservation,
+    BridgeAuthoredDependencyDescription, BridgeAuthoredInstallationBindings,
+    BridgeAuthoredReadmissionDenial, BridgeAuthoredSection, BridgeAuthoredSectionDenial,
     BridgeConditionalCausalObservation, BridgeConditionalComparatorProvider,
     BridgeConditionalComparisonWork, BridgeConditionalComputeProvider, BridgeConditionalCondition,
     BridgeConditionalConditionProvider, BridgeConditionalContinuityDenial,
@@ -51,8 +53,9 @@ pub use crate::conditional_execution::{
     BridgeOwnedAsyncRetrySchedule, BridgeOwnedAsyncRevalidationAdmission,
     BridgeOwnedAsyncSupersessionAdmission, BridgeOwnedAsyncTimeoutAdmission,
     BridgeOwnedConditionalInstallationRequest, BridgeOwnedSignalRuntime,
-    BridgePreparedConditionalInstallationExtension, BridgeRetainedConditionalDecisionSeed,
-    BridgeSealedRuntimeAssembly, BridgeSignalDenial,
+    BridgePreparedConditionalInstallationExtension, BridgeReadmittedAuthoredAssembly,
+    BridgeRetainedConditionalDecisionSeed, BridgeSealedRuntimeAssembly, BridgeSignalDenial,
+    BRIDGE_AUTHORED_SECTION_PROTOCOL, BRIDGE_AUTHORED_SECTION_VERSION,
 };
 pub use crate::continuity::{
     BridgeContinuityArtifact, BridgeContinuityAuthorityBasis, BridgeContinuityAuthorityKind,

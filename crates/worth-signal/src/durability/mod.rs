@@ -6,6 +6,11 @@ mod descriptor;
 mod frame;
 mod medium;
 mod owner;
+mod owner_installation;
+pub use owner_installation::{
+    SignalAuthoredBranchInstallation, SignalAuthoredInstallationRefused,
+    SignalAuthoredOwnerInstallation, SignalOnlyOwnerInstallation,
+};
 mod owner_admission;
 pub(crate) use owner_admission::SignalDurableOwnerAdmission;
 pub use owner_admission::{SignalDurableOwnerAdmissionRegistry, SignalLiveOwnerIdentity};

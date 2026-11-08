@@ -15,6 +15,7 @@ fn second_admission(
         medium,
         SignalRecordedIdentityContribution::empty(media::owner()),
         fixture::vocabulary(),
+        &mut worth_signal::facade::durability::SignalOnlyOwnerInstallation,
         execution,
     ) {
         Err(SignalOwnerReadmissionDenial::Medium(
@@ -88,6 +89,7 @@ fn failed_readmission_releases_its_original_exclusive_claim_before_retry() {
         medium.clone(),
         SignalRecordedIdentityContribution::empty(foreign),
         fixture::vocabulary(),
+        &mut worth_signal::facade::durability::SignalOnlyOwnerInstallation,
         &execution,
     );
     assert!(matches!(
@@ -151,6 +153,7 @@ fn alternate_adapters_require_released_unshared_serving_and_attachment_refusals_
         medium.clone(),
         SignalRecordedIdentityContribution::empty(media::owner()),
         fixture::vocabulary(),
+        &mut worth_signal::facade::durability::SignalOnlyOwnerInstallation,
         &execution,
     );
     assert!(matches!(

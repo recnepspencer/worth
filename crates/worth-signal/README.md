@@ -263,13 +263,20 @@ serving recovered branches.
 ### Standalone authored owner readmission
 
 `Box<SignalRuntime>::readmit_authored_owner` consumes the fresh program runtime,
-the `SignalDurableMedium`, stable tier vocabulary and recorded identity bounds.
+the `SignalDurableMedium`, stable tier vocabulary, recorded identity bounds and
+a `SignalAuthoredOwnerInstallation`.
 It reads the protected journal cut, validates ordered source references, restores
 live branches and snapshots, and installs one cold canonical owner partition.
 Every definition body contributes node-incarnation bounds, including unselected
 bodies and vacant or retired slots. Home composition must also supply bounds
 from its original World opens and intents; standalone owners supply an explicit
 empty contribution.
+
+Installation observes each actual immutable recovered branch, its conditional
+contracts and its opaque Bridge section before Signal admits service.
+`SignalOnlyOwnerInstallation` accepts only an empty Bridge section. Bridge's
+own readmission factory installs its section and returns the concrete assembled
+owner. A refused branch installation releases the original exclusive claim.
 
 The returned `SignalDurableOwner` retains the runtime. Its weak source port
 readmits descriptors against actual branch cells and the current Home incarnation.
@@ -298,9 +305,9 @@ Store-backed courts cover three branches, runtime-published keyed definitions,
 conditional source, graceful reopen and quiescent process termination. Values
 recompute on first demand after both same-build and changed-build readmission.
 This entry does not yet enable authored Home bootstrap, durable fork or mixed
-World publication. Dedicated conditional-definition publication and Bridge's
-section interpretation remain subsequent work; ordinary advances refuse changes
-to conditional definitions.
+World publication. Bridge's authored section now has its own cold readmission
+entry. Dedicated durable conditional-definition publication remains subsequent
+work; ordinary advances refuse changes to conditional definitions.
 
 ## One Continuous Story
 
