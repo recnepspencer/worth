@@ -80,6 +80,20 @@ pub(crate) struct RelationalSettlementExecution<'record> {
 }
 
 impl PendingRelationalPublicationSettlement {
+    pub(super) fn publish_prepared_indexes(&self) {
+        let mut state = self.state();
+        match &mut *state {
+            PendingRelationalSettlementState::Reserved(reserved) => {
+                reserved.completion.publish_prepared_indexes();
+            }
+            PendingRelationalSettlementState::Performed(_)
+            | PendingRelationalSettlementState::Executing
+            | PendingRelationalSettlementState::Settled(_) => {
+                unreachable!("only the linear pre-effect reservation installs its admitted indexes")
+            }
+        }
+    }
+
     pub(crate) fn reserved(
         commit_id: CommitId,
         runtime_instance_id: u64,

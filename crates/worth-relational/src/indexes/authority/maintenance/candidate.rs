@@ -20,6 +20,7 @@ use super::super::{prepared_generation, IndexAuthority};
 pub(crate) struct PreparedCandidateIndexPublication {
     prepared: CandidateIndexPreparation,
     funding: worth_execution::ExecutionMemoryReservation,
+    metadata: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 struct CandidateIndexPreparation {
@@ -52,9 +53,76 @@ impl PreparedCandidateIndexPublication {
             .covers_home_definitions(definitions, execution)
     }
 
-    pub(crate) fn publish(self, _runtime: &crate::runtime::RelationalRuntime) {
-        let funding = self.funding;
-        self.prepared.publication.publish();
+    pub(crate) fn admit_catalog(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        expires_at: std::time::Instant,
+        maximum_lifetime_millis: u64,
+    ) -> Result<(), crate::mvcc::RelationalPublicationOutcome> {
+        use crate::indexes::data::SelectedIndexGenerationAdmissionStop as Stop;
+        use crate::mvcc::{RelationalPublicationDeferred, RelationalPublicationOutcome as Outcome};
+        let mut metadata = execution
+            .reserve_retained_memory(0)
+            .map_err(Outcome::RequestStopped)?;
+        let mut total = 0u64;
+        let admission = self
+            .prepared
+            .publication
+            .admit_actual_geometry(|units, bytes| {
+                execution.consult().map_err(Outcome::RequestStopped)?;
+                if std::time::Instant::now() >= expires_at {
+                    return Err(Outcome::deferred(
+                        RelationalPublicationDeferred::CandidateLifetimeExpired {
+                            maximum_lifetime_millis,
+                        },
+                    ));
+                }
+                pay_catalog_work(execution, units).map_err(Outcome::RequestStopped)?;
+                total = total.checked_add(bytes).ok_or(Outcome::RequestStopped(
+                    worth_execution::WorkCeilingDenial::Admission(
+                        worth_execution::LeaseDenial::ChargedBytesOverflow,
+                    ),
+                ))?;
+                if let Some(memory) = metadata.as_mut() {
+                    memory.resize(total).map_err(|denial| {
+                        Outcome::RequestStopped(worth_execution::WorkCeilingDenial::Admission(
+                            worth_execution::LeaseDenial::MemoryExhausted(denial),
+                        ))
+                    })?;
+                }
+                Ok(())
+            });
+        match admission {
+            Ok(()) => {
+                self.metadata = metadata;
+                Ok(())
+            }
+            Err(Stop::Admission(outcome)) => Err(outcome),
+            Err(Stop::AccountingOverflow) => Err(Outcome::RequestStopped(
+                worth_execution::WorkCeilingDenial::Admission(
+                    worth_execution::LeaseDenial::ChargedBytesOverflow,
+                ),
+            )),
+        }
+    }
+
+    pub(crate) fn publish_admitted(&mut self) {
+        self.prepared.publication.publish_admitted();
+    }
+
+    pub(crate) fn retire(self) {
+        let Self {
+            prepared,
+            funding,
+            metadata,
+        } = self;
+        assert!(
+            prepared.publication.is_published(),
+            "settlement retires the publication already installed by its cutover"
+        );
+        // Payload, empty Vec backing and lookup keys all die before their loans.
+        drop(prepared);
+        drop(metadata);
         drop(funding);
     }
 }
@@ -62,7 +130,7 @@ impl PreparedCandidateIndexPublication {
 impl IndexAuthority<'_> {
     /// Budget and derive exact native index deltas from a prepared candidate
     /// before World can perform its publication. No generation is made visible
-    /// until the candidate's performed-commit finalizer consumes this payload.
+    /// until its admitted Native cutover installs them. Settlement retires the payload.
     pub fn prepare_for_candidate(
         &self,
         candidate: &mut PreparedRelationalCommitCandidate,
@@ -75,7 +143,11 @@ impl IndexAuthority<'_> {
             self.prepare_candidate_indexes(candidate, index_ids, before, work, execution)
         })?;
         let (prepared, funding) = prepared.into_funded_parts();
-        let publication = PreparedCandidateIndexPublication { prepared, funding };
+        let publication = PreparedCandidateIndexPublication {
+            prepared,
+            funding,
+            metadata: None,
+        };
         candidate
             .attach_prepared_indexes(publication)
             .map(|()| counts)
@@ -98,7 +170,11 @@ impl IndexAuthority<'_> {
             self.prepare_candidate_indexes(candidate, index_ids, Some(before), work, execution)
         })?;
         let (prepared, funding) = prepared.into_funded_parts();
-        let publication = PreparedCandidateIndexPublication { prepared, funding };
+        let publication = PreparedCandidateIndexPublication {
+            prepared,
+            funding,
+            metadata: None,
+        };
         candidate
             .attach_prepared_indexes(publication)
             .map(|()| counts)
@@ -241,4 +317,22 @@ fn validate_expected_root(
         }
     }
     Ok(())
+}
+
+// This native metadata preparation shares the original request and preserves
+// its actual first stop instead of replacing it with a nested-stop wrapper.
+fn pay_catalog_work(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    units: u64,
+) -> Result<(), worth_execution::WorkCeilingDenial> {
+    let mut answer = None;
+    let scope = execution.run_native_with_checkpoint(|context| {
+        answer = Some(crate::execution::request_stage::checkpoint(context, units));
+    });
+    match (scope, answer) {
+        (_, Some(Err(stop))) => Err(worth_execution::WorkCeilingDenial::Stopped(stop)),
+        (Err(stop), _) => Err(stop),
+        (Ok(_), Some(Ok(()))) => Ok(()),
+        (Ok(_), None) => unreachable!("completed metadata admission executes its checkpoint"),
+    }
 }

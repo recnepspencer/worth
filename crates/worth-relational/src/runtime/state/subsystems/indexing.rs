@@ -18,9 +18,11 @@ pub use definition_preparation::{
 };
 mod admitted_selection;
 mod cold_checkpoint;
+mod generation_publication_gate;
 #[cfg(test)]
 mod identity_exhaustion_tests;
 mod prepared_publication;
+use generation_publication_gate::GenerationPublicationGate;
 pub(crate) use prepared_publication::PreparedGenerationBatch;
 mod discard;
 mod generation_catalog;
@@ -127,6 +129,7 @@ impl Default for IndexingState {
 pub(crate) struct IndexingSubsystem {
     state: RuntimeOwnedState<IndexingState>,
     definition_publication: RuntimeOwnedState<()>,
+    generation_publication: Arc<GenerationPublicationGate>,
 }
 
 /// Read-only handle to installed definitions used while sealing commit changes.
@@ -134,6 +137,7 @@ pub(crate) struct IndexingSubsystem {
 pub(crate) struct IndexDefinitionReadBinding {
     state: RuntimeOwnedState<IndexingState>,
     definition_publication: RuntimeOwnedState<()>,
+    generation_publication: Arc<GenerationPublicationGate>,
 }
 
 impl Clone for IndexDefinitionReadBinding {
@@ -141,6 +145,7 @@ impl Clone for IndexDefinitionReadBinding {
         Self {
             state: self.state.share(),
             definition_publication: self.definition_publication.share(),
+            generation_publication: Arc::clone(&self.generation_publication),
         }
     }
 }
@@ -171,6 +176,7 @@ impl IndexingSubsystem {
         IndexDefinitionReadBinding {
             state: self.state.share(),
             definition_publication: self.definition_publication.share(),
+            generation_publication: Arc::clone(&self.generation_publication),
         }
     }
     pub(crate) fn reclaim_except_versions(
@@ -193,6 +199,7 @@ impl IndexingSubsystem {
     /// Replace the whole subsystem, for checkpoint restore.
     pub(crate) fn install(&self, mut state: IndexingState) {
         let _definitions = self.definition_publication.write();
+        let _generations = self.generation_publication.enter_uncontrolled();
         Arc::make_mut(&mut state.catalog).renew_incarnation();
         *self.state.write() = state;
     }
@@ -301,12 +308,14 @@ impl IndexingSubsystem {
     }
 
     pub(crate) fn publish_generation(&self, generation: DerivedIndexGeneration) {
+        let _generations = self.generation_publication.enter_uncontrolled();
         self.state.write().generations.publish(generation);
     }
 
     /// Install a generation carried by a canonical envelope, replacing any
     /// earlier copy of the same generation identity.
     pub(crate) fn restore_generation(&self, generation: DerivedIndexGeneration) {
+        let _generations = self.generation_publication.enter_uncontrolled();
         self.state.write().restore_generation(generation);
     }
 
@@ -349,6 +358,7 @@ impl IndexingSubsystem {
         index_id: DerivedIndexId,
         corrupt: impl FnOnce(&mut DerivedIndexGeneration),
     ) {
+        let _generations = self.generation_publication.enter_uncontrolled();
         let mut state = self.state.write();
         let mut generation = state
             .generations
@@ -370,6 +380,7 @@ impl RuntimeSubsystem for IndexingSubsystem {
         Self {
             state: RuntimeOwnedState::new(IndexingState::empty()),
             definition_publication: RuntimeOwnedState::default(),
+            generation_publication: Arc::default(),
         }
     }
 
@@ -377,6 +388,7 @@ impl RuntimeSubsystem for IndexingSubsystem {
         Self {
             state: RuntimeOwnedState::new(self.snapshot()),
             definition_publication: RuntimeOwnedState::default(),
+            generation_publication: Arc::default(),
         }
     }
 }

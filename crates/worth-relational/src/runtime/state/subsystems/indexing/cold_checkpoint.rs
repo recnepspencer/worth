@@ -194,18 +194,22 @@ impl IndexDefinitionReadBinding {
         if self.state.read().catalog.definitions.is_empty() {
             return Ok(());
         }
-        demand(&self.state, execution)
+        demand(&self.state, &self.generation_publication, execution)
     }
 }
 
 fn demand(
     owner: &RuntimeOwnedState<IndexingState>,
+    gate: &Arc<super::GenerationPublicationGate>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<(), Failure> {
     let Some(image) = owner.read().cold_checkpoint.clone() else {
         return Ok(());
     };
     let admitted = image.readmit(execution)?;
+    // Physical readmission above never waits while excluding catalog writers.
+    let _generations =
+        gate.enter(|| crate::execution::check_request(execution).map_err(Failure::Request))?;
     let mut state = owner.write();
     if state
         .cold_checkpoint

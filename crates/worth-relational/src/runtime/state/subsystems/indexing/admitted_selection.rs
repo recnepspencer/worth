@@ -10,6 +10,10 @@ impl IndexingSubsystem {
         generations: &[crate::indexes::data::DerivedIndexGeneration],
         mut prepare: impl FnMut(u64, u64) -> Result<(), Stop>,
     ) -> Result<(), SelectedIndexGenerationAdmissionStop<Stop>> {
+        let _generations = self
+            .generation_publication
+            .enter(|| prepare(0, 0))
+            .map_err(SelectedIndexGenerationAdmissionStop::Admission)?;
         self.state
             .write()
             .generations

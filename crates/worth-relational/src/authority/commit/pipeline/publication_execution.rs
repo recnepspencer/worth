@@ -194,7 +194,7 @@ pub(crate) fn publish_commit_execution(
     let (positioned_commit, changed_records) = finalized.into_parts();
     drop(source_interpretation);
     if let Some(prepared_indexes) = prepared_indexes {
-        prepared_indexes.publish(runtime);
+        prepared_indexes.retire();
     }
     let patch_position = positioned_commit.position();
     let canonical_commit_envelope = std::sync::Arc::clone(positioned_commit.canonical_arc());
@@ -292,3 +292,23 @@ impl PublishedCommitExecution {
 #[cfg(test)]
 #[path = "publication_execution_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
+
+impl PreparedCommitPublicationCompletion {
+    pub(crate) fn admit_prepared_indexes(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        expires_at: std::time::Instant,
+        maximum_lifetime_millis: u64,
+    ) -> Result<(), crate::mvcc::RelationalPublicationOutcome> {
+        if let Some(indexes) = &mut self.prepared_indexes {
+            indexes.admit_catalog(execution, expires_at, maximum_lifetime_millis)?;
+        }
+        Ok(())
+    }
+
+    pub(crate) fn publish_prepared_indexes(&mut self) {
+        if let Some(indexes) = &mut self.prepared_indexes {
+            indexes.publish_admitted();
+        }
+    }
+}
