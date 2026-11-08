@@ -14,6 +14,7 @@ from native_features import load as load_native_features, validate as validate_n
 
 
 REQUESTS = [
+    {'package': 'worth-store', 'binary': 'physical_media_os_observer', 'features': []},
     {'package': 'worth-store-offline-integrity-observer',
      'binary': 'physical_store_integrity_observer', 'features': []},
     {'package': 'worth-store-offline-verifier',
