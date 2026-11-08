@@ -158,7 +158,6 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         let graph = &self.application.runtime.primary_provider.graph;
         let publisher = graph.application_publication.as_deref();
         let (prepared, custody) = graph.with_runtime(&execution, |native| {
-
             let transaction = native
                 .begin_branch_transaction(
                     current.product().relational_basis(),
