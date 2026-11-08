@@ -153,7 +153,7 @@ pub(crate) fn install_primary_graph_indexes(
     })?;
     let read_indexes = super::super::application_discovery::WorkflowReadIndexes::install(
         layout.workflow(),
-        |definition| install(definition),
+        &mut install,
     )?;
     layout.set_workflow_reads(read_indexes);
     Ok(())

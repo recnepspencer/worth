@@ -73,8 +73,7 @@ fn equivalent_receiver_replacement_refuses_retained_proposals_and_candidates_bef
         assert_eq!(current.admission_identity(), basis.admission_identity());
         let error = native
             .prepare_validated_proposal(&execution, proposal)
-            .err()
-            .expect("old proposal refuses");
+            .expect_err("old proposal refuses");
         let TransactionCommitError::Conflict { error, .. } = error else {
             panic!("exact stale validation refusal");
         };
