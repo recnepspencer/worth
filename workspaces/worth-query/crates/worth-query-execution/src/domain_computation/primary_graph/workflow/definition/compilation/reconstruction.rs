@@ -239,26 +239,6 @@ fn adjacency(
     Ok(adjacent)
 }
 
-fn exact_text(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    entity: EntityId,
-    kind: KindId,
-    locator: &AspectFieldLocator,
-    expected: &str,
-    facts: &mut Vec<WorthQueryApplicationObservedFact>,
-) -> Result<(), WorthQueryApplicationAttemptDenial> {
-    let value = observed_text(execution, runtime, snapshot, entity, kind, locator, facts)?;
-    if value == expected {
-        Ok(())
-    } else {
-        Err(denial(
-            "workflow definition field does not match installed support",
-        ))
-    }
-}
-
 fn exact_u64(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
