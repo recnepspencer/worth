@@ -141,6 +141,10 @@ pub use retained_decision::{
 };
 pub use retention::BridgeConditionalRetentionObservation;
 pub use runtime_builder::BridgeConditionalRuntimeBuilder;
+pub use runtime_builder::{
+    BridgeInitialSourceDenial, BridgeInitialSourcePreparationRefusal,
+    BridgeInitialSourcePublication, BridgePublishedInitialSource,
+};
 pub use sealed_runtime_assembly::BridgeSealedRuntimeAssembly;
 pub use semantic_contract::{
     BridgeConditionalCondition, BridgeConditionalContract, BridgeConditionalContractParts,

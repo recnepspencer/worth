@@ -78,6 +78,16 @@ where
         }
     }
 
+    pub(crate) fn initial_authored_source_is_pristine(&self) -> bool {
+        let root = SignalBranchId(0);
+        self.snapshot_reconstruction_runtime_is_pristine(root)
+            && self.next_branch_id == 1
+            && self.retirement_receipts.is_empty()
+            && self.active_merge_participants.is_empty()
+            && self.branch_head_generation(root) == 0
+            && self.branch_head_snapshot_id(root).is_none()
+    }
+
     pub fn with_live_catalog(
         live_branch_catalog: BTreeMap<SignalBranchId, SignalBranchHandle>,
         owner_runtime_instance_id: u64,

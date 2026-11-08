@@ -328,6 +328,17 @@ and retention ledger. Branches share the consumed program rather than cloning
 its runtime. Definition bytes retain their charges; publication candidate slots
 start empty. Fresh source and provider objects come from installation.
 
+For an empty Signal source, the same boxed builder offers
+`prepare_initial_authored_source`. It captures its actual installed conditional
+definitions through the same Bridge codec and retains its original program with
+Signal's pending publication. `BridgeInitialSourcePublication::advance` drives
+the original definition and branch frames; `try_into_published` returns pending
+custody unchanged until the real branch ACK. The published handoff then consumes
+fresh `BridgeAuthoredInstallationBindings` through the same cold installation
+kernel. Preparation refusal returns the builder with its original Signal runtime
+restored. Store-backed courts cover a refused branch step after definition ACK,
+same-original retry, populated-source refusal and changed-build recomputation.
+
 The privately constructed `BridgeReadmittedAuthoredAssembly` owns the durable
 Signal owner and exposes authored definition inspection. Cold multi-branch and
 changed-build courts cover this intrinsic entry. Store-backed owner courts also

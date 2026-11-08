@@ -16,12 +16,34 @@ use worth_signal::facade::durability::{
     SignalDurableMedium, SignalDurableTierVocabulary, SignalRecordedIdentityContribution,
 };
 
+pub(super) enum AuthoredSignalSource {
+    Recovered {
+        program: Box<worth_signal::facade::SignalRuntime<(), (), (), (), ()>>,
+        medium: Arc<dyn SignalDurableMedium>,
+        contribution: SignalRecordedIdentityContribution,
+    },
+    Initial(worth_signal::facade::durability::SignalPublishedInitialSource<(), (), (), (), ()>),
+}
+
 impl BridgeConditionalRuntimeBuilder {
     /// Rebuild all recovered branches before exposing the durable owner assembly.
     pub fn readmit_authored_owner(
         mut self: Box<Self>,
         medium: Arc<dyn SignalDurableMedium>,
         contribution: SignalRecordedIdentityContribution,
+        bindings: &mut dyn BridgeAuthoredInstallationBindings,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<Box<BridgeReadmittedAuthoredAssembly>, D> {
+        let source = AuthoredSignalSource::Recovered {
+            program: self.take_signal(),
+            medium,
+            contribution,
+        };
+        self.readmit_source(source, bindings, execution)
+    }
+    pub(super) fn readmit_source(
+        mut self: Box<Self>,
+        source: AuthoredSignalSource,
         bindings: &mut dyn BridgeAuthoredInstallationBindings,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<Box<BridgeReadmittedAuthoredAssembly>, D> {
@@ -52,15 +74,26 @@ impl BridgeConditionalRuntimeBuilder {
             branches: BTreeMap::new(),
             refusal: None,
         });
-        let vocabulary = SignalDurableTierVocabulary::declare([((), "bridge")])
-            .map_err(|_| D::ConditionalDefinitionMismatch)?;
-        let signal = self.take_signal().readmit_authored_owner(
-            medium,
-            contribution,
-            vocabulary,
-            &mut *installation,
-            execution,
-        );
+        let signal = match source {
+            AuthoredSignalSource::Recovered {
+                program,
+                medium,
+                contribution,
+            } => {
+                let vocabulary = SignalDurableTierVocabulary::declare([((), "bridge")])
+                    .map_err(|_| D::ConditionalDefinitionMismatch)?;
+                program.readmit_authored_owner(
+                    medium,
+                    contribution,
+                    vocabulary,
+                    &mut *installation,
+                    execution,
+                )
+            }
+            AuthoredSignalSource::Initial(source) => {
+                source.readmit_authored_owner(&mut *installation, execution)
+            }
+        };
         let signal = match signal {
             Ok(signal) => signal,
             Err(cause) => return Err(installation.refusal.take().unwrap_or(D::signal(cause))),
@@ -116,7 +149,9 @@ impl BridgeConditionalRuntimeBuilder {
             _memory: memory,
         }))
     }
-    fn take_signal(&mut self) -> Box<worth_signal::facade::SignalRuntime<(), (), (), (), ()>> {
+    pub(super) fn take_signal(
+        &mut self,
+    ) -> Box<worth_signal::facade::SignalRuntime<(), (), (), (), ()>> {
         Box::new(
             self.runtime
                 .signal_runtime

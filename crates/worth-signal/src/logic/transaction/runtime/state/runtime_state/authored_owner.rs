@@ -23,7 +23,7 @@ where
     T: Copy + Ord + Send + Sync + 'static,
 {
     pub fn readmit_authored_owner(
-        mut self: Box<Self>,
+        self: Box<Self>,
         medium: Arc<dyn SignalDurableMedium>,
         contribution: SignalRecordedIdentityContribution,
         vocabulary: SignalDurableTierVocabulary<T>,
@@ -42,6 +42,24 @@ where
             .owner_admission_registry()
             .admit(medium.binding(), self.branches.owner_runtime_instance_id())
             .map_err(D::Medium)?;
+        self.readmit_authored_owner_with_admission(
+            medium,
+            contribution,
+            vocabulary,
+            installation,
+            execution,
+            durable_admission,
+        )
+    }
+    pub(crate) fn readmit_authored_owner_with_admission(
+        mut self: Box<Self>,
+        medium: Arc<dyn SignalDurableMedium>,
+        contribution: SignalRecordedIdentityContribution,
+        vocabulary: SignalDurableTierVocabulary<T>,
+        installation: &mut dyn crate::durability::SignalAuthoredOwnerInstallation,
+        execution: &ExecutionRequest<'_, '_>,
+        durable_admission: crate::durability::SignalDurableOwnerAdmission,
+    ) -> Result<SignalDurableOwner<Dm, I, E, Ctx, T>, D> {
         let mut source =
             SignalOwnerSourceReadmission::capture(medium.as_ref(), contribution, execution)?;
         let conditional = self

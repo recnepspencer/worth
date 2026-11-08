@@ -23,6 +23,51 @@ impl BridgeConditionalRuntimeBuilder {
         occurrences: &[DurableSignalConditionalDefinitionOccurrence],
     ) -> Result<SignalDefinitionTransitionArtifact, D> {
         let runtime = self.runtime.lock_signal_runtime();
+        let section =
+            self.capture_section(runtime.graph(), execution, identity, branch, occurrences)?;
+        let image = runtime
+            .graph()
+            .capture_authored_image(execution, branch)
+            .map_err(D::SignalImage)?;
+        let vocabulary =
+            SignalDurableTierVocabulary::declare([((), "bridge")]).map_err(|_| D::Malformed)?;
+        let config = runtime
+            .config()
+            .capture_authored_image(runtime.graph(), &vocabulary, branch, execution)
+            .map_err(D::SignalImage)?;
+        SignalDefinitionTransitionArtifact::capture(
+            execution,
+            identity,
+            branch,
+            None,
+            &image,
+            &config,
+            occurrences,
+            &section,
+        )
+        .map_err(D::SignalCarrier)
+    }
+    pub(super) fn capture_initial_section(
+        &self,
+        context: worth_signal::facade::durability::SignalInitialDefinitionContext<'_>,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<worth_signal::facade::durability::SignalBridgeAuthoredSection, D> {
+        self.capture_section(
+            context.graph(),
+            execution,
+            context.identity(),
+            context.branch(),
+            context.conditional_occurrences(),
+        )
+    }
+    fn capture_section(
+        &self,
+        graph: &worth_signal::facade::SignalGraph,
+        execution: &ExecutionRequest<'_, '_>,
+        identity: SignalDefinitionTransitionIdentity,
+        branch: DurableSignalBranchIdentity,
+        occurrences: &[DurableSignalConditionalDefinitionOccurrence],
+    ) -> Result<worth_signal::facade::durability::SignalBridgeAuthoredSection, D> {
         let lowerings = self
             .runtime
             .conditional_lowerings
@@ -49,32 +94,12 @@ impl BridgeConditionalRuntimeBuilder {
         }
         let section = Capture {
             bridge: &self.runtime.bridge,
-            graph: runtime.graph(),
+            graph,
             branch,
             transition: identity,
             occurrences,
         }
         .capture(execution, &definitions)?;
-        let image = runtime
-            .graph()
-            .capture_authored_image(execution, branch)
-            .map_err(D::SignalImage)?;
-        let vocabulary =
-            SignalDurableTierVocabulary::declare([((), "bridge")]).map_err(|_| D::Malformed)?;
-        let config = runtime
-            .config()
-            .capture_authored_image(runtime.graph(), &vocabulary, branch, execution)
-            .map_err(D::SignalImage)?;
-        SignalDefinitionTransitionArtifact::capture(
-            execution,
-            identity,
-            branch,
-            None,
-            &image,
-            &config,
-            occurrences,
-            section.as_signal_section(),
-        )
-        .map_err(D::SignalCarrier)
+        Ok(section.into_signal_section())
     }
 }

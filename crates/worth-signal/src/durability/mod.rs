@@ -30,7 +30,13 @@ pub use readmitted_source_point::{
 };
 mod frame;
 mod home_image;
+pub(crate) mod initial_source;
 pub use home_image::{SignalAuthoredHomeImage, SIGNAL_HOME_IMAGE_MAXIMUM_BYTES};
+pub use initial_source::{
+    SignalInitialDefinitionContext, SignalInitialSourceDenial,
+    SignalInitialSourcePreparationRefusal, SignalInitialSourceProgress,
+    SignalInitialSourcePublication, SignalInitialSourceStepRefusal, SignalPublishedInitialSource,
+};
 mod medium;
 mod owner;
 mod owner_installation;

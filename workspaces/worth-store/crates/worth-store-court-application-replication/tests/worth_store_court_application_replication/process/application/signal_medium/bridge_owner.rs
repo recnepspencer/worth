@@ -12,6 +12,7 @@ mod composite_definition_publication;
 mod definition_publication;
 mod derived_reference;
 mod fork_publication;
+mod initial_source;
 mod program;
 mod quiescent_kill;
 mod source;

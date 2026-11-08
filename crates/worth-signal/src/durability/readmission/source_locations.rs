@@ -33,6 +33,22 @@ pub(crate) struct SignalAdvanceSourceRecord {
     location: RecordedAdvanceLocation,
 }
 impl SignalDefinitionSourceRecord {
+    pub(crate) fn from_committed(
+        proof: DurablyCommitted<SignalCommittedDefinition>,
+        _custody: SignalDefinitionLocationReservation,
+    ) -> Arc<Self> {
+        proof.consume(|subject| {
+            let (artifact, position) = subject.into_original();
+            Arc::new(Self {
+                location: RecordedDefinitionLocation::original(
+                    position.get(),
+                    artifact.reference(),
+                    artifact.branch(),
+                ),
+                _custody,
+            })
+        })
+    }
     pub(crate) fn reference(&self) -> SignalDefinitionTransitionReference {
         self.location.reference
     }
@@ -105,21 +121,10 @@ impl SignalRecoveredSourceLocations {
         proof: DurablyCommitted<SignalCommittedDefinition>,
         _custody: SignalDefinitionLocationReservation,
     ) -> Arc<SignalDefinitionSourceRecord> {
-        proof.consume(|subject| {
-            let (artifact, position) = subject.into_original();
-            let reference = artifact.reference();
-            let record = Arc::new(SignalDefinitionSourceRecord {
-                location: RecordedDefinitionLocation::original(
-                    position.get(),
-                    reference,
-                    artifact.branch(),
-                ),
-                _custody,
-            });
-            self.definitions
-                .insert(artifact.identity(), Arc::clone(&record));
-            record
-        })
+        let record = SignalDefinitionSourceRecord::from_committed(proof, _custody);
+        self.definitions
+            .insert(record.reference().identity(), Arc::clone(&record));
+        record
     }
     pub(crate) fn definition_record(
         &self,

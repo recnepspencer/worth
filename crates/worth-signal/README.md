@@ -340,6 +340,20 @@ before publication; the original task retains the result, definition and grant
 until delivery. `resume_composite_original` resumes that original without
 executing its callback again.
 
+For a genuinely empty source, `Box<SignalRuntime>::prepare_initial_authored_source`
+consumes the actual unsealed program. Signal issues the initial identities and
+conditional occurrences and captures that program's graph and configuration;
+the supplied section callback captures only Bridge's authored declarations.
+Preparation refuses memory branch or snapshot history and populated journals,
+returning the actual program before publication. The retained
+`SignalInitialSourcePublication` owns both original frames and the exclusive
+owner claim across pending or refused observations. A refusal names the journal
+step, so a refused branch step never erases its already committed definition.
+Only `SignalPublishedInitialSource`, obtained after the original branch ACK,
+can transfer that same claim into cold owner readmission. No initialization
+effect is executed by readmission. Home must retain this original before driving
+it; these owner-level entries do not themselves enable Home or Host admission.
+
 ## One Continuous Story
 
 The flagship story looks like this:

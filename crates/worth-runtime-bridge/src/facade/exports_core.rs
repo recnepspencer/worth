@@ -37,7 +37,8 @@ pub use crate::conditional_execution::{
     BridgeConditionalRuntimeReconstitutionReport, BridgeConditionalSemanticObservation,
     BridgeConditionalSignalBasisBinding, BridgeConditionalTriggerProvider,
     BridgeConditionalWakeProvider, BridgeDurableDefinitionPublicationDenial,
-    BridgeDurableForkPublicationDenial, BridgeExactOutputComparison,
+    BridgeDurableForkPublicationDenial, BridgeExactOutputComparison, BridgeInitialSourceDenial,
+    BridgeInitialSourcePreparationRefusal, BridgeInitialSourcePublication,
     BridgeInstalledConditionalLowering, BridgeInstalledConditionalLoweringCounters,
     BridgeLiveConditionalLowering, BridgeManagedClockAcceptedObservation,
     BridgeManagedClockBinding, BridgeManagedClockClosure, BridgeManagedClockInstallationParts,
@@ -56,9 +57,10 @@ pub use crate::conditional_execution::{
     BridgeOwnedAsyncRetrySchedule, BridgeOwnedAsyncRevalidationAdmission,
     BridgeOwnedAsyncSupersessionAdmission, BridgeOwnedAsyncTimeoutAdmission,
     BridgeOwnedConditionalInstallationRequest, BridgeOwnedSignalRuntime,
-    BridgePreparedConditionalInstallationExtension, BridgeReadmittedAuthoredAssembly,
-    BridgeRetainedConditionalDecisionSeed, BridgeSealedRuntimeAssembly, BridgeSignalDenial,
-    BRIDGE_AUTHORED_SECTION_PROTOCOL, BRIDGE_AUTHORED_SECTION_VERSION,
+    BridgePreparedConditionalInstallationExtension, BridgePublishedInitialSource,
+    BridgeReadmittedAuthoredAssembly, BridgeRetainedConditionalDecisionSeed,
+    BridgeSealedRuntimeAssembly, BridgeSignalDenial, BRIDGE_AUTHORED_SECTION_PROTOCOL,
+    BRIDGE_AUTHORED_SECTION_VERSION,
 };
 pub use crate::continuity::{
     BridgeContinuityArtifact, BridgeContinuityAuthorityBasis, BridgeContinuityAuthorityKind,
