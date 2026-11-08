@@ -1084,3 +1084,30 @@ This includes calls entered through a cloned ProductRuntime. Close refuses
 before World sealing while such a call remains active; resume retains the same
 Home service. Releasing the call permits owning close. This admission fence
 alone does not establish bounded destruction of arbitrary installed payloads.
+
+## Workflow configuration and Home custody
+
+After open, compile the workflow Spec from the Home's actual installed schema
+and program. Before cloning runtime handles, call
+`home.retain_workflow_spec(installed_spec, signing_owner)`. The returned
+`WorthQueryWorkflowApplicationHome` owns the original Home and its installed
+configuration. This uses the same atomic signing/coverage installation as the
+Memory workflow runtime. Refusal returns the original Home, Spec and signing
+owner; none is reconstructed from identifiers.
+
+Use `vocabulary()` for a request and `support_workflow_spec` for another genuinely
+rostered program. The shared configuration binds the actual Query authority and
+World owner/incarnation. A supplied foreign receiver refuses `ForeignRuntime`;
+a different incarnation of the same Home refuses `StaleIncarnation` before
+projection or registration. These identities retain no runtime backing.
+
+`close` preserves configuration through the original Home's close protocol.
+A refusal retains it through `resume` and `try_close`. A closed workflow Home
+reclaims it with the original closed Home at `reclaim`, outside budgeted close.
+A vocabulary borrows the Home and cannot remain usable after it is consumed.
+Memory Homes still have their existing close-lifecycle refusal; resume returns
+the same configured owner. This is not a filesystem-close claim.
+
+Workflow-bearing Directory execution and reopen qualification remain pending
+H5's cutoff and structural workflow readmission. Configuration after open does
+not supply a transition's target executable vocabulary retroactively.

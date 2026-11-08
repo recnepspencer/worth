@@ -40,7 +40,7 @@ pub use program::{
     WorthQuerySigningOwnerInstallationDenial, WorthQuerySupportedProgramHandle,
     WorthQueryUnpublishedProgramOutputSource, WorthQueryWorkflowApplicationRuntime,
     WorthQueryWorkflowRuntimeBindingDenial, WorthQueryWorkflowRuntimeBindingRefusal,
-    WorthQueryWorkflowVocabulary,
+    WorthQueryWorkflowRuntimeConfiguration, WorthQueryWorkflowVocabulary,
 };
 use program_admission::WorthQueryProgramAdmissionStep;
 
