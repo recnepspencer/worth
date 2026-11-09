@@ -101,6 +101,10 @@ Input fingerprints follow Cargo's unit scope: trailing `cargo rustc` arguments b
 
 The snapshot warning court scans every tracked `.stderr`. `snapshot_warning_residuals.json` names the four unchanged UI residuals filed as #117. Unlisted warnings fail; a listed file that disappears or becomes warning-free also fails, requiring its residual entry to be removed. The manifest does not filter discovery or compiler diagnostics.
 
+`snapshot_warning_policy.json` pins the reviewed residual set and names its open filed issues without a network dependency. A new tag or path cannot acquire admission by being added only to the live manifest. Fixing debt requires removing its stale live entry and updating the reviewed policy; closing the final residual also removes that issue from the open list.
+
+Lint-allowance qualification is a separate refusal probe. Adding `-A unreachable_code -A unused_imports` only to compiler prebuilds changes shared compiler inputs: receipt courts must still pass, but the raw gate is expected to exit 1 for `unplanned-compiler-input-drift` (and `duplicate-graph` if the changed unit compiles again). Record those categories and the raw exit explicitly, SHA-restore the prebuilder, then run the ordinary supported gate with unchanged flags. A passing receipt court alone is not a green qualification, and this probe never widens the #112 ratchet.
+
 * `source_scan.py` and `ratchet.source_violations` refuse Cargo, cargo_metadata
   and trybuild calls in tests, courts and testkits. This check belongs here
   pending the coordinator's replacement boundary checker; this task does not

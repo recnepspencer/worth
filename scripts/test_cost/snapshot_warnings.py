@@ -33,3 +33,18 @@ def snapshot_warning_violations(repository, residuals):
             continue
         violations.append({'kind': kind, 'snapshot': snapshot, 'issue': issue})
     return violations
+
+
+def snapshot_warning_policy_violations(residuals, policy):
+    """Live debt must match the reviewed set and its open, filed issue list."""
+    expected = set(policy['pinned_snapshots'])
+    observed = set(residuals)
+    violations = [dict(kind='unapproved-snapshot-warning-residual', snapshot=path)
+                  for path in sorted(observed - expected)]
+    violations += [dict(kind='missing-approved-snapshot-warning-residual', snapshot=path)
+                   for path in sorted(expected - observed)]
+    for path, issue in residuals.items():
+        if issue not in policy['open_filed_issues']:
+            violations.append(dict(kind='unfiled-snapshot-warning-issue',
+                                   snapshot=path, issue=issue))
+    return violations

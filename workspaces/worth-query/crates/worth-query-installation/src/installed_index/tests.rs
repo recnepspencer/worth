@@ -1,4 +1,19 @@
 use super::*;
+
+impl WorthQueryInstalledPackageIndex {
+    pub(crate) fn assert_admitted_declaration_budgets(&self) -> std::collections::BTreeSet<String> {
+        let mut families = std::collections::BTreeSet::new();
+        for record in self.application_schemas.values() {
+            families.extend(
+                crate::declaration_budget_tests::assert_declaration_allowance(
+                    record.declaration(),
+                    record.identity_budget(),
+                ),
+            );
+        }
+        families
+    }
+}
 use crate::admission::{
     WorthQueryInstallationAdmissionProfile, WorthQueryInstallationSupportStatus,
 };

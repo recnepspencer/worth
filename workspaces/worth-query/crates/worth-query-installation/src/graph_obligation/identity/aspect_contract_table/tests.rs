@@ -33,7 +33,7 @@ fn contract(revision: u64) -> CanonicalBasisReadyArtifact {
 fn basis() -> InstallationCanonicalIdentityBasis {
     InstallationCanonicalIdentityBasis::new(
         "worth-query.installed-graph-obligations",
-        "worth-query-installed-graph-obligations-v2",
+        super::super::RULE_VERSION,
         CanonicalDigestWorkBudget::new(4096, 1024 * 1024).unwrap(),
     )
 }

@@ -30,7 +30,7 @@ use worth_query_declaration::facade::{
 use super::canonical_basis::prepare_capability_basis;
 
 mod axis;
-mod budgets;
+pub(crate) mod budgets;
 mod field_references;
 mod portable_markers;
 mod residue;

@@ -39,6 +39,8 @@ fn typed_inspection_installs_its_actual_independent_metadata_obligation() {
         )
         .unwrap();
         let schema = index.bind_application_schema(declaration(inspect)).unwrap();
+        let families = crate::declaration_budget_tests::assert_complete_source_budget(&schema);
+        assert_eq!(families.contains("application-query-inspection"), inspect);
         let binding = schema
             .installed_query_binding::<PrincipalQueryBinding>()
             .unwrap();

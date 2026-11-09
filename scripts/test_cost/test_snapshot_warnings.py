@@ -4,15 +4,31 @@ import subprocess
 import tempfile
 import unittest
 
-from snapshot_warnings import committed_warnings, snapshot_warning_violations, warning_lines
+from snapshot_warnings import (committed_warnings, snapshot_warning_policy_violations,
+                               snapshot_warning_violations, warning_lines)
 
 
 class CommittedSnapshotWarningTests(unittest.TestCase):
     def test_committed_compiler_snapshots_contain_only_the_protected_refusals(self):
         repository = Path(__file__).resolve().parents[2]
         residuals = json.loads(Path(__file__).with_name('snapshot_warning_residuals.json').read_text())
+        policy = json.loads(Path(__file__).with_name('snapshot_warning_policy.json').read_text())
+        self.assertEqual(snapshot_warning_policy_violations(residuals, policy), [],
+                         'Residual changes require a reviewed set and an open filed issue')
         self.assertEqual(snapshot_warning_violations(repository, residuals), [],
                          'Re-record unfiled lint diagnostics; remove stale or missing residuals')
+
+    def test_residual_policy_requires_exact_paths_and_open_filed_issue_tags(self):
+        policy = {'pinned_snapshots': ['known.stderr'], 'open_filed_issues': ['#117']}
+        self.assertEqual(snapshot_warning_policy_violations({'known.stderr': '#117'}, policy), [])
+        cases = [({'known.stderr': '#999'}, 'unfiled-snapshot-warning-issue'),
+                 ({'known.stderr': '#117', 'extra.stderr': '#117'},
+                  'unapproved-snapshot-warning-residual'),
+                 ({}, 'missing-approved-snapshot-warning-residual')]
+        for residuals, kind in cases:
+            with self.subTest(residuals=residuals):
+                self.assertEqual([v['kind'] for v in
+                                  snapshot_warning_policy_violations(residuals, policy)], [kind])
 
     def test_diagnostic_lines_are_distinct_from_a_quoted_source_literal(self):
         self.assertEqual(warning_lines('warning: unused import\nwarning[lint]: other\n'), [1, 2])

@@ -40,6 +40,20 @@ mod read_only_operations;
 mod schema_affinity;
 mod value_bindings;
 
+#[test]
+fn admitted_operation_budget_counts_every_declared_family() {
+    let schema = installed_index()
+        .bind_application_schema(TestSchema::declaration().unwrap())
+        .unwrap();
+    let families = crate::declaration_budget_tests::assert_complete_source_budget(&schema);
+    for family in ["field", "ability-policy", "operation-program"] {
+        assert!(
+            families.contains(family),
+            "the real fixture must exercise {family}"
+        );
+    }
+}
+
 use effect_fixture::{TestEffect, TestPayload, TestPayloadBinding};
 use field_references::*;
 use principal_binding::test_principal_binding;

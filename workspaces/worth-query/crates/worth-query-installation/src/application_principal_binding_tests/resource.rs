@@ -121,6 +121,8 @@ fn installed_resource_resolves_actual_access_and_codec_not_copied_names() {
     let schema = installed_index()
         .bind_application_schema(IdentitySchema::declaration().unwrap())
         .unwrap();
+    let families = crate::declaration_budget_tests::assert_complete_source_budget(&schema);
+    assert!(families.contains("application-resource"));
     let resource = schema
         .installed_resource::<Assessment<AssessmentResultBinding>>()
         .unwrap();

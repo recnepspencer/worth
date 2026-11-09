@@ -33,6 +33,40 @@ impl ApplicationManagedIndexBinding<IdentitySchema> for Index {
 }
 
 #[test]
+fn admitted_managed_index_budget_counts_every_declared_family() {
+    let declaration = crate::application_principal_binding_tests::schema_members::declare()
+        .managed_index(
+            worth_query_declaration::facade::application_query::ApplicationManagedIndexDefinition::<
+                IdentitySchema,
+                Index,
+            >::new(),
+        )
+        .build()
+        .unwrap();
+    let package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
+        IdentitySchema::OWNER,
+        1,
+        0,
+    ))
+    .application_schema(declaration.clone())
+    .validate()
+    .unwrap();
+    let admitted = WorthQueryInstallationAdmissionProfile::new("support", "configuration")
+        .admit(package)
+        .unwrap();
+    let index = WorthQueryInstalledPackageIndex::build(
+        WorthQueryInstallationRuntimeIdentity::fresh(),
+        WorthQueryInstallationGeneration::initial(),
+        [admitted],
+    )
+    .unwrap();
+    // The allowance belongs to the admitted schema record. This extra index
+    // is not claimed as IdentitySchema's separate static typed-binding roster.
+    let families = index.assert_admitted_declaration_budgets();
+    assert!(families.contains("managed-index"));
+}
+
+#[test]
 fn managed_index_checks_actual_binding_and_probe_before_installation() {
     let declaration = IdentitySchema::declaration().unwrap();
     let package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
