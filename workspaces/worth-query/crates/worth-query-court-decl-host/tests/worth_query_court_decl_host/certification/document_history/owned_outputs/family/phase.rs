@@ -10,6 +10,8 @@ macro_rules! producer_operation {
     (OrdinaryInputPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read OrdinaryInputPreserve, $entity, $key, $value, $of); };
     (DecisionInputInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read DecisionInputInitial, $entity, $key, $value, $of); };
     (DecisionInputPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read DecisionInputPreserve, $entity, $key, $value, $of); };
+    (ParityInputInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read ParityInputInitial, $entity, $key, $value, $of); };
+    (ParityInputPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read ParityInputPreserve, $entity, $key, $value, $of); };
     (DecisionWriteInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_write DecisionWriteInitial, $entity, $key, $value, $of); };
     (DecisionWritePreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_write DecisionWritePreserve, $entity, $key, $value, $of); };
     (@member_write $operation:ident, $entity:ident, $key:ident, $value:ident, $of:ident) => {
@@ -40,6 +42,8 @@ macro_rules! producer_decision_dependency {
     (OrdinaryInputPreserve, $reader:ident) => { producer_decision_dependency!(@member_read $reader) };
     (DecisionInputInitial, $reader:ident) => { producer_decision_dependency!(@member_read $reader) };
     (DecisionInputPreserve, $reader:ident) => { producer_decision_dependency!(@member_read $reader) };
+    (ParityInputInitial, $reader:ident) => { producer_decision_dependency!(@member_read $reader) };
+    (ParityInputPreserve, $reader:ident) => { producer_decision_dependency!(@member_read $reader) };
     (@member_read $reader:ident) => {{
         let member = $reader.resolve_entity(MemberKey::at("MemberKey"), "m".to_owned())?;
         $reader.field(&member, MemberValue::at("MemberValue"))?.expect("seeded decision member has its required value")

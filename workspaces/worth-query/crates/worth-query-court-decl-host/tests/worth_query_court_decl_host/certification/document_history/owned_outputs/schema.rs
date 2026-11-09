@@ -107,6 +107,7 @@ fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
     let schema = family::convergent::declare(schema);
+    let schema = family::parity_input::declare(schema);
     let schema = synchronous_edit::reconciliation::declare(schema);
     let schema = family::ordinary_input::declare(family::decision_write::declare(
         family::decision_input::declare(schema),

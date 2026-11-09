@@ -11,6 +11,7 @@ mod failure;
 mod healthy;
 mod independent;
 mod late_parent;
+mod middle_input;
 mod partition;
 mod permission;
 mod program;

@@ -396,3 +396,4 @@ pub mod decision_write;
 pub mod ordinary_input;
 
 pub mod convergent;
+pub mod parity_input;
