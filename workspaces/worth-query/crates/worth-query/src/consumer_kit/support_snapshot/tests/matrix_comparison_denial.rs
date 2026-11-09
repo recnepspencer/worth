@@ -8,7 +8,7 @@ use super::{live_support_matrix, scaffold_support_matrix};
 fn support_snapshot_compare_denies_different_real_matrix_with_typed_digest_context() {
     let primary_matrix = live_support_matrix();
     let scaffold_matrix = scaffold_support_matrix();
-    let snapshot = project_support_snapshot(&primary_matrix);
+    let snapshot = project_support_snapshot(&primary_matrix).expect("fixture digest must fit");
 
     let error = snapshot
         .assert_equivalent_to_live_matrix(&scaffold_matrix)
@@ -32,7 +32,7 @@ fn support_snapshot_compare_denies_different_real_matrix_with_typed_digest_conte
 #[test]
 fn support_snapshot_compare_denies_row_count_mismatch() {
     let matrix = live_support_matrix();
-    let snapshot = project_support_snapshot(&matrix);
+    let snapshot = project_support_snapshot(&matrix).expect("fixture digest must fit");
     let mut rows = snapshot.rows().to_vec();
     rows.pop();
     let truncated_snapshot = WorthQuerySupportSnapshot::from_validated_parts(
@@ -57,8 +57,9 @@ fn support_snapshot_compare_denies_row_count_mismatch() {
 #[test]
 fn support_snapshot_compare_reports_row_field_mismatch_with_structured_context() {
     let matrix = live_support_matrix();
-    let snapshot = project_support_snapshot(&matrix);
-    let scaffold_snapshot = project_support_snapshot(&scaffold_support_matrix());
+    let snapshot = project_support_snapshot(&matrix).expect("fixture digest must fit");
+    let scaffold_snapshot =
+        project_support_snapshot(&scaffold_support_matrix()).expect("fixture digest must fit");
     let mismatched_snapshot = WorthQuerySupportSnapshot::from_validated_parts(
         snapshot.schema_version(),
         snapshot.schema_identity().to_string(),

@@ -112,7 +112,9 @@ fn historical_query_context_identity_requests_fail_as_source_mismatch() {
     )
     .expect("historical query-context declaration should be valid");
 
-    match evaluate_projection_consumption_eligibility(&declaration) {
+    match evaluate_projection_consumption_eligibility(&declaration)
+        .expect("fixture digest must fit")
+    {
         ProjectionConsumptionEligibility::SourceMismatch(mismatch) => {
             assert_eq!(
                 mismatch.requested_fact_kind(),
@@ -148,7 +150,9 @@ fn non_preview_query_context_display_fields_warn_as_row_bound_not_preview_derive
     )
     .expect("historical query-context display declaration should be valid");
 
-    match evaluate_projection_consumption_eligibility(&declaration) {
+    match evaluate_projection_consumption_eligibility(&declaration)
+        .expect("fixture digest must fit")
+    {
         ProjectionConsumptionEligibility::AdmittedWithWarnings(_, warnings) => {
             assert_eq!(
                 warnings.warning_kinds(),
@@ -169,7 +173,8 @@ fn query_context_source_reference_requires_bound_source_reference_evidence() {
     .expect("query-context source-reference declaration should be valid");
 
     assert!(matches!(
-        evaluate_projection_consumption_eligibility(&admitted_declaration),
+        evaluate_projection_consumption_eligibility(&admitted_declaration)
+            .expect("fixture digest must fit"),
         ProjectionConsumptionEligibility::AdmittedWithWarnings(_, _)
     ));
 
@@ -186,7 +191,8 @@ fn query_context_source_reference_requires_bound_source_reference_evidence() {
     .expect("query-context declaration should be valid");
 
     assert!(matches!(
-        evaluate_projection_consumption_eligibility(&denied_declaration),
+        evaluate_projection_consumption_eligibility(&denied_declaration)
+            .expect("fixture digest must fit"),
         ProjectionConsumptionEligibility::SourceMismatch(_)
     ));
 }
@@ -251,7 +257,8 @@ fn support_discovery_and_eligibility_stay_in_sync_for_first_slice_source_instanc
     ];
 
     for source in sources {
-        let report = discover_projection_consumption_support(&source);
+        let report =
+            discover_projection_consumption_support(&source).expect("fixture digest must fit");
         for fact_kind in ProjectionFactKind::all().iter().copied() {
             let row = report
                 .rows()
@@ -264,7 +271,8 @@ fn support_discovery_and_eligibility_stay_in_sync_for_first_slice_source_instanc
                 request_for_kind(fact_kind),
             )
             .expect("declaration should be valid");
-            let eligibility = evaluate_projection_consumption_eligibility(&declaration);
+            let eligibility = evaluate_projection_consumption_eligibility(&declaration)
+                .expect("fixture digest must fit");
 
             match (row.posture(), eligibility) {
                 (

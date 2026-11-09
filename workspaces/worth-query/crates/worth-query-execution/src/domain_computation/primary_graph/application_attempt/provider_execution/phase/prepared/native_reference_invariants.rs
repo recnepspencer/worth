@@ -4,7 +4,6 @@ use crate::domain_computation::primary_graph::{
     schema_layout::WorthQueryPrimaryGraphLayout,
 };
 use std::collections::{BTreeMap, BTreeSet};
-use worth_foundational::facade::{AspectValue, InternedString};
 use worth_query_declaration::facade::application_schema::ApplicationInvariantScopeTarget;
 use worth_query_installation::facade::{
     WorthQueryInstalledApplicationInvariantCatalog, WorthQueryInvariantExecutionContract,
@@ -73,14 +72,16 @@ pub fn referenced_entities<'a>(
             .as_raw_str()
             .and_then(|key| entries.get(key))
             .ok_or("native output reference has no output entry")?;
-        let Some(AspectValue::String(InternedString::Raw(entity))) = fields.get(&output.entity)
+        let Some(entity) = (fields.get(&output.entity))
+            .as_ref()
+            .and_then(|value| value.raw_text())
         else {
             return Err("native output reference has no declared entity kind");
         };
         if layout.entity_kind(entity).is_none() {
             return Err("native output reference names an uninstalled entity kind");
         }
-        entities.insert(entity.as_str());
+        entities.insert(entity);
     }
     Ok(entities)
 }

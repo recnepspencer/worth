@@ -31,7 +31,8 @@ fn success_envelope_preserves_rows_and_metadata_together() {
         1,
         1,
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let capability = HistoricalCapabilityDescriptor::new_for_test(
         "basis:a",
         Some(crate::historical::AdmittedHistoricalPathClass::AdmittedRetainedSnapshotPath),
@@ -40,7 +41,8 @@ fn success_envelope_preserves_rows_and_metadata_together() {
         true,
         false,
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let admission =
         admit_historical_evaluation_path(request, capability).expect("admission should succeed");
     let resolved = resolve_historical_materialization_path(
@@ -48,7 +50,8 @@ fn success_envelope_preserves_rows_and_metadata_together() {
         HistoricalMaterializationDescriptor::new_for_test(
             "basis:a",
             ResolvedHistoricalPathClass::ResolvedRetainedSnapshotPath,
-        ),
+        )
+        .expect("fixture digest must fit"),
     )
     .expect("resolution should succeed");
 
@@ -85,7 +88,8 @@ fn ambiguity_envelope_still_requires_metadata_preserving_view() {
         4,
         8,
         HistoricalPathReuseDescriptor::with_replay_tail_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let capability = HistoricalCapabilityDescriptor::new_for_test(
         "basis:replay",
         Some(crate::historical::AdmittedHistoricalPathClass::AdmittedDeltaReplayPath),
@@ -94,7 +98,8 @@ fn ambiguity_envelope_still_requires_metadata_preserving_view() {
         false,
         true,
         HistoricalPathReuseDescriptor::with_replay_tail_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let admission =
         admit_historical_evaluation_path(request, capability).expect("admission should succeed");
     let resolved = resolve_historical_materialization_path(
@@ -102,7 +107,8 @@ fn ambiguity_envelope_still_requires_metadata_preserving_view() {
         HistoricalMaterializationDescriptor::new_for_test(
             "basis:replay",
             ResolvedHistoricalPathClass::ResolvedDeltaReplayPath,
-        ),
+        )
+        .expect("fixture digest must fit"),
     )
     .expect("resolution should succeed");
 
@@ -134,7 +140,8 @@ fn path_denied_envelope_carries_typed_denial_without_payload() {
         2,
         2,
         HistoricalPathReuseDescriptor::no_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let capability = HistoricalCapabilityDescriptor::new_for_test(
         "basis:replay",
         None,
@@ -143,7 +150,8 @@ fn path_denied_envelope_carries_typed_denial_without_payload() {
         true,
         false,
         HistoricalPathReuseDescriptor::no_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let error = admit_historical_evaluation_path(denied_request.clone(), capability)
         .expect_err("admission should fail for denied replay");
     let envelope =

@@ -3,6 +3,13 @@ pub use super::*;
 #[derive(Clone, Debug)]
 pub struct Payload;
 impl LawPolicy for Payload {
+    type Model = PayloadRecords;
+    fn schema_declaration(
+    ) -> Result<ApplicationSchemaDeclaration<GraphSchema<Self>>, ApplicationSchemaDeclarationDenial>
+    {
+        fragment::declare(GraphSchema::<Self>(PhantomData))
+    }
+
     const INTEGRITY: ApplicationRelationIntegrity =
         ApplicationRelationIntegrity::same_context_unbounded_retain_dangling();
     const RELATION_PAYLOAD: bool = true;
@@ -12,22 +19,20 @@ impl LawPolicy for Payload {
         super::super::history::declare(schema)
     }
 }
-worth_query_aspect!(pub EdgeFacts for S: GraphSchemaBinding, Precedes;
-    identity = AspectIdentity(0x91811001), revision = AspectContractRevision(1));
-pub struct EdgeWeight;
-impl DeclaredApplicationFieldValue for EdgeWeight {
-    type Value = u64;
-    type Binding = U64ApplicationValueBinding;
-    const PRESENCE: ApplicationFieldPresence = ApplicationFieldPresence::Required;
+pub struct EdgeFacts;
+impl Aspect for EdgeFacts {
+    const NAME: &'static str = "EdgeFacts";
+    type Row = EdgeRow;
 }
-impl RequiredApplicationFieldValue for EdgeWeight {}
-impl<S: GraphSchemaBinding> ApplicationFieldMarkerIdentity<S, Precedes, EdgeFacts> for EdgeWeight {
-    const IDENTIFIER: &'static str = "EdgeWeight";
-}
-impl EdgeWeight {
-    pub const fn reference<S: GraphSchemaBinding>(
-    ) -> ApplicationRelationFieldRef<S, Precedes, Node, Node, EdgeFacts, Self, ReadWrite> {
-        ApplicationRelationFieldRef::from_relation(Precedes::reference())
+pub struct EdgeRow(u64);
+impl fragment::Record<EdgeRow> for GraphBindings {
+    fn record() -> impl Shape<EdgeRow, Self> {
+        field("EdgeWeight", |row: &EdgeRow| row.0)
+            .equality_queryable(true)
+            .build(|value, _: &mut ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(EdgeRow(value))
+            })
     }
 }
-impl OperationWrites<super::super::operation::EditEdges> for EdgeWeight {}
+pub type EdgeWeight =
+    RelationFieldSelection<PayloadRecords, PayloadNode, PayloadPrecedes, EdgeFacts, u64>;

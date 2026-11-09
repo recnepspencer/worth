@@ -14,12 +14,49 @@ pub(crate) struct SchemaContinuityAuthorityInput {
     target_schema_registry: Option<crate::branch::RetainedRelationalSchemaRegistry>,
     target_schema_version: SchemaVersionId,
     target_schema_authority: SchemaAuthoritySnapshot,
-    target_schema_basis: Option<(SchemaId, SchemaVersionId)>,
     descriptor_semantics_version: DescriptorSemanticsVersion,
     descriptor_canonical_basis_version: DescriptorCanonicalBasisVersion,
 }
 
 impl SchemaContinuityAuthorityInput {
+    pub(crate) fn from_carried_registry(
+        registry: crate::branch::RetainedRelationalSchemaRegistry,
+        authority: SchemaAuthoritySnapshot,
+        descriptor_semantics_version: DescriptorSemanticsVersion,
+        descriptor_canonical_basis_version: DescriptorCanonicalBasisVersion,
+    ) -> Self {
+        let version = authority
+            .primary_schema_version_id
+            .unwrap_or(SchemaVersionId(0));
+        let mut input = Self::new(
+            version,
+            authority,
+            descriptor_semantics_version,
+            descriptor_canonical_basis_version,
+        );
+        input.target_schema_registry = Some(registry);
+        input
+    }
+
+    pub(crate) fn copy_registry_for_request(
+        registry: &crate::schema::data::RelationalSchemaRegistry,
+        descriptor_semantics_version: DescriptorSemanticsVersion,
+        descriptor_canonical_basis_version: DescriptorCanonicalBasisVersion,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, crate::branch::RelationalBranchRootCaptureDenial> {
+        let registry =
+            crate::branch::RetainedRelationalSchemaRegistry::copy_for_request(registry, request)?;
+        let authority = registry
+            .snapshot_for_compilation(crate::schema::SchemaCompilationControl::Request(*request))
+            .map_err(crate::branch::RelationalBranchRootCaptureDenial::Request)?;
+        Ok(Self::from_carried_registry(
+            registry,
+            authority,
+            descriptor_semantics_version,
+            descriptor_canonical_basis_version,
+        ))
+    }
+
     pub(crate) fn from_registry(
         target_schema_registry: crate::schema::data::RelationalSchemaRegistry,
         descriptor_semantics_version: DescriptorSemanticsVersion,
@@ -59,15 +96,10 @@ impl SchemaContinuityAuthorityInput {
         descriptor_semantics_version: DescriptorSemanticsVersion,
         descriptor_canonical_basis_version: DescriptorCanonicalBasisVersion,
     ) -> Self {
-        let target_schema_basis = target_schema_authority
-            .primary_schema_id
-            .clone()
-            .zip(target_schema_authority.primary_schema_version_id);
         Self {
             target_schema_registry: None,
             target_schema_version,
             target_schema_authority,
-            target_schema_basis,
             descriptor_semantics_version,
             descriptor_canonical_basis_version,
         }
@@ -88,7 +120,10 @@ impl SchemaContinuityAuthorityInput {
     }
 
     pub(crate) fn target_schema_basis(&self) -> Option<(SchemaId, SchemaVersionId)> {
-        self.target_schema_basis.clone()
+        self.target_schema_authority
+            .primary_schema_id
+            .clone()
+            .zip(self.target_schema_authority.primary_schema_version_id)
     }
 
     pub(crate) const fn descriptor_semantics_version(&self) -> DescriptorSemanticsVersion {

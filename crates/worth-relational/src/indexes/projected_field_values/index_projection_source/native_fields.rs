@@ -1,6 +1,5 @@
 //! Exact field indexes borrow native values; historical projections keep their read backing.
 use super::*;
-use crate::storage::overlay::PartitionAccess;
 use crate::visibility::materialization::read_records::read_stop::ReadStop;
 use crate::visibility::materialization::read_records::{
     authoritative_state_query_locus_value, entity_query_locus_value, relation_query_locus_value,
@@ -25,20 +24,33 @@ impl IndexProjectionSource<'_> {
         let Some(root) = self.projection.selected_root() else {
             return Ok(());
         };
-        root.try_for_each_partition_id(|partition_id| {
-            let Some(partition) = root.get_partition(partition_id) else {
-                return Ok(());
+        for partition_id in root.entity_regions_of_kind(kind) {
+            let reconstructed = self
+                .reconstruction
+                .map(|lane| root.reconstruct_region_head(lane, execution, partition_id))
+                .transpose()
+                .map_err(|failure| ReadStop::Request(failure.into()))?
+                .flatten();
+            let serving;
+            let partition = if let Some(head) = &reconstructed {
+                head.view()
+            } else {
+                self.projection
+                    .demand_regions_head(execution, [partition_id])
+                    .map_err(ReadStop::Request)?;
+                serving = self.projection.admitted_head_region(partition_id).ok_or_else(|| {
+                    ReadStop::Request(crate::execution::RelationalExecutionDenialCause::ResultCapacityExceeded)
+                })?;
+                serving
             };
             let mut navigation_bytes = 0;
-            let slots =
-                partition
-                    .entity_arena
-                    .live_bitset
-                    .try_set_slots(|_navigation, bytes| {
-                        before(0, bytes).map_err(ReadStop::Admission)?;
-                        navigation_bytes = bytes;
-                        Ok(())
-                    })?;
+            let slots = partition
+                .entity_arena()
+                .try_live_slots(|_navigation, bytes| {
+                    before(0, bytes).map_err(ReadStop::Admission)?;
+                    navigation_bytes = bytes;
+                    Ok(())
+                })?;
             for slot in slots {
                 // Preserve each candidate's checkpoint. The pinned native value
                 // needs no read-record allocation, including unrelated kinds.
@@ -48,7 +60,7 @@ impl IndexProjectionSource<'_> {
                     navigation_bytes,
                 )
                 .map_err(ReadStop::Admission)?;
-                let Some(record) = partition.entity_arena.get_slot(slot) else {
+                let Some(record) = partition.entity_arena().get_slot(slot) else {
                     continue;
                 };
                 if record.kind_id() != Some(kind) {
@@ -65,8 +77,8 @@ impl IndexProjectionSource<'_> {
             }
             // The slot iterator has dropped; release only its temporary backing.
             before(0, 0).map_err(ReadStop::Admission)?;
-            Ok(())
-        })
+        }
+        Ok(())
     }
 
     pub(in crate::indexes) fn try_for_each_relation_field<E>(
@@ -89,20 +101,33 @@ impl IndexProjectionSource<'_> {
         let Some(root) = self.projection.selected_root() else {
             return Ok(());
         };
-        root.try_for_each_partition_id(|partition_id| {
-            let Some(partition) = root.get_partition(partition_id) else {
-                return Ok(());
+        for partition_id in root.relation_regions_of_kind(kind) {
+            let reconstructed = self
+                .reconstruction
+                .map(|lane| root.reconstruct_region_head(lane, execution, partition_id))
+                .transpose()
+                .map_err(|failure| ReadStop::Request(failure.into()))?
+                .flatten();
+            let serving;
+            let partition = if let Some(head) = &reconstructed {
+                head.view()
+            } else {
+                self.projection
+                    .demand_regions_head(execution, [partition_id])
+                    .map_err(ReadStop::Request)?;
+                serving = self.projection.admitted_head_region(partition_id).ok_or_else(|| {
+                    ReadStop::Request(crate::execution::RelationalExecutionDenialCause::ResultCapacityExceeded)
+                })?;
+                serving
             };
             let mut navigation_bytes = 0;
-            let slots =
-                partition
-                    .relation_arena
-                    .live_bitset
-                    .try_set_slots(|_navigation, bytes| {
-                        before(0, bytes).map_err(ReadStop::Admission)?;
-                        navigation_bytes = bytes;
-                        Ok(())
-                    })?;
+            let slots = partition
+                .relation_arena()
+                .try_live_slots(|_navigation, bytes| {
+                    before(0, bytes).map_err(ReadStop::Admission)?;
+                    navigation_bytes = bytes;
+                    Ok(())
+                })?;
             for slot in slots {
                 crate::execution::check_request(execution).map_err(ReadStop::Request)?;
                 before(
@@ -110,7 +135,7 @@ impl IndexProjectionSource<'_> {
                     navigation_bytes,
                 )
                 .map_err(ReadStop::Admission)?;
-                let Some(record) = partition.relation_arena.get_slot(slot) else {
+                let Some(record) = partition.relation_arena().get_slot(slot) else {
                     continue;
                 };
                 if record.kind_id() != Some(kind) {
@@ -127,8 +152,8 @@ impl IndexProjectionSource<'_> {
             }
             // The slot iterator has dropped; release only its temporary backing.
             before(0, 0).map_err(ReadStop::Admission)?;
-            Ok(())
-        })
+        }
+        Ok(())
     }
 }
 

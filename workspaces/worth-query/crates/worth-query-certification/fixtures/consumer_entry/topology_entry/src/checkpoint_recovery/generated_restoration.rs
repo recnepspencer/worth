@@ -141,16 +141,16 @@ fn reconstruct_ring(
                 .map(|closing| closing.expect("the suspended output bound its closing vertex")),
         });
         reconstruction
-            .field(&entity, BodyKey::reference(), key.clone())
+            .field(&entity, BodyKey::at("BodyKey"), key.clone())
             .unwrap();
         reconstruction
-            .field(&entity, PositionX::reference(), *x)
+            .field(&entity, PositionX::at("PositionX"), *x)
             .unwrap();
         reconstruction
-            .field(&entity, PositionY::reference(), *y)
+            .field(&entity, PositionY::at("PositionY"), *y)
             .unwrap();
         reconstruction
-            .field(&entity, Length::reference(), *length)
+            .field(&entity, Length::at("Length"), *length)
             .unwrap();
         entities.push(entity);
     }

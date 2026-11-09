@@ -19,6 +19,7 @@ use crate::transactions::data::{
 };
 
 pub(super) struct ArtifactAssemblyInput<'a> {
+    pub(super) defer_lineage: bool,
     pub(super) working_state: &'a mut crate::storage::overlay::WorkingState,
     pub(super) selected_branch_state: &'a crate::branch::SelectedRelationalBranchState,
     pub(super) effect: MutationEffect,
@@ -64,6 +65,7 @@ pub(super) fn assemble_authoritative_publication_phase(
     let publication = prepare_publication_artifacts(
         runtime,
         PublicationPreparationInput {
+            defer_lineage: input.defer_lineage,
             working_state: input.working_state,
             selected_branch_state: input.selected_branch_state,
             patch,

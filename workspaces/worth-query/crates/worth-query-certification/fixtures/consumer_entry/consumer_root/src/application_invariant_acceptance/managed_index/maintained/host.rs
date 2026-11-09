@@ -159,7 +159,9 @@ fn try_install_root_with_sources(
     limits: WorthQueryApplicationLimits,
     clock: WorthQueryAdmissionClock,
 ) -> Result<Host, WorthQueryApplicationPreparationDenial> {
-    let declaration = Catalog::declaration().unwrap();
+    let declaration =
+        <Catalog as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration()
+            .unwrap();
     in_memory_program_with_authorization_time_source(
         ApplicationProgramAuthoring::<Catalog, Program>::begin()
             .with_schema(&declaration)
@@ -185,8 +187,11 @@ fn try_install_root_with_sources(
                     Directory::reference(),
                     WorthQueryApplicationEntityKey::new("catalog").unwrap(),
                 )
-                .field(DirectoryIdentity::reference(), "catalog".to_owned())
-                .field(DirectoryNote::reference(), String::new()),
+                .field(
+                    DirectoryIdentity::at("DirectoryIdentity"),
+                    "catalog".to_owned(),
+                )
+                .field(DirectoryNote::at("DirectoryNote"), String::new()),
             )?;
             protected::populate(graph)?;
             Ok(())
@@ -223,14 +228,16 @@ pub(super) fn install_nested(
         composition::{Configuration as NestedConfiguration, Program as NestedProgram},
         schema::*,
     };
-    let declaration = Catalog::declaration().unwrap();
+    let declaration =
+        <Catalog as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration()
+            .unwrap();
     in_memory_program(ApplicationProgramAuthoring::<Catalog,NestedProgram>::begin().with_schema(&declaration).validated_program().unwrap(),declaration,(NestedConfiguration {provider,records},),
         ApplicationBuildIdentity::parse("19191919-1919-4919-8919-191919191926").unwrap(),
         super::super::super::resources::application_limits_with_observations(super::super::super::resources::EXECUTION_POLICY,320),
         |_,graph,installed| {
             graph.bind_principal(&installed.principal_binding(CatalogPrincipal::reference()).unwrap(),WorthQueryApplicationPrincipalKey::new("nested-reader").unwrap(),1u64,
                 super::super::super::authentication::external_identity(),worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatus::Enabled)?;
-            graph.bind_entity(WorthQueryApplicationEntitySeed::new(Directory::reference(),WorthQueryApplicationEntityKey::new("catalog").unwrap()).field(DirectoryIdentity::reference(),"catalog".to_owned()))?;
+            graph.bind_entity(WorthQueryApplicationEntitySeed::new(Directory::reference(),WorthQueryApplicationEntityKey::new("catalog").unwrap()).field(DirectoryIdentity::at("DirectoryIdentity"),"catalog".to_owned()))?;
             Ok(())
         }).expect("the declared nested capability installs through the ordinary host")
 }
@@ -248,14 +255,16 @@ pub(super) fn install_events(
         composition::{Configuration as EventConfiguration, Program as EventProgram},
         schema::*,
     };
-    let declaration = Catalog::declaration().unwrap();
+    let declaration =
+        <Catalog as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration()
+            .unwrap();
     in_memory_program(ApplicationProgramAuthoring::<Catalog,EventProgram>::begin().with_schema(&declaration).validated_program().unwrap(),declaration,(EventConfiguration {provider,records},),
         ApplicationBuildIdentity::parse("19191919-1919-4919-8919-191919191927").unwrap(),
         super::super::super::resources::application_limits_with_observations(super::super::super::resources::EXECUTION_POLICY,320),
         |_,graph,installed| {
             graph.bind_principal(&installed.principal_binding(CatalogPrincipal::reference()).unwrap(),WorthQueryApplicationPrincipalKey::new("event-reader").unwrap(),1u64,
                 super::super::super::authentication::external_identity(),worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatus::Enabled)?;
-            graph.bind_entity(WorthQueryApplicationEntitySeed::new(Directory::reference(),WorthQueryApplicationEntityKey::new("catalog").unwrap()).field(DirectoryIdentity::reference(),"catalog".to_owned()))?;
+            graph.bind_entity(WorthQueryApplicationEntitySeed::new(Directory::reference(),WorthQueryApplicationEntityKey::new("catalog").unwrap()).field(DirectoryIdentity::at("DirectoryIdentity"),"catalog".to_owned()))?;
             Ok(())
         }).expect("the declared event capability installs through the ordinary host")
 }

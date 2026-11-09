@@ -56,7 +56,8 @@ pub(super) fn validate(members: &[Member]) -> Result<(), Denial> {
                 matches!(member,
                 Member::ApplicationMutation { description }
                 if description.binding_identity().as_str() == operation.binding
-                    && description.scope().entity == access.scope_entity)
+                    && crate::application_history::history_ownership_reaches(
+                        &parts.ownership, &access.scope_entity, &description.scope().entity))
             }) {
                 return Err(Denial::MissingApplicationDocumentHistoryDependency);
             }

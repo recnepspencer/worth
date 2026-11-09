@@ -1,8 +1,8 @@
 use super::{
-    ApplicationAspectMarkerIdentity, ApplicationEffectMarkerIdentity,
-    ApplicationEntityMarkerIdentity, ApplicationExternalEffectBinding,
-    ApplicationExternalEffectProtocol, ApplicationOperationMarkerIdentity, ApplicationSchema,
-    ApplicationStructuredValueBinding, ApplicationValueValidationDenial,
+    ApplicationEffectMarkerIdentity, ApplicationEntityMarkerIdentity,
+    ApplicationExternalEffectBinding, ApplicationExternalEffectProtocol,
+    ApplicationOperationMarkerIdentity, ApplicationSchema, ApplicationStructuredValueBinding,
+    ApplicationValueValidationDenial,
 };
 use crate::application_query::ApplicationQueryMarkerIdentity;
 use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
@@ -11,25 +11,74 @@ trait TopologySchemaBinding {}
 trait WorkSchemaBinding {}
 trait ModularSchemaBinding: ApplicationSchema {}
 
-crate::worth_query_entity!(Body for Schema: TopologySchemaBinding);
-crate::worth_query_aspect!(
-    BodyTopology for Schema: TopologySchemaBinding, Body;
-    identity = AspectIdentity(81),
-    revision = AspectContractRevision(3),
-);
-
-crate::worth_query_entity!(Component for Schema: ModularSchemaBinding);
-crate::worth_query_application_contribution! {
-    contribution ComponentContribution for Schema: ModularSchemaBinding {
-        identity: "worth.query.test.component-contribution.v1",
-        members: |schema| { schema.entity(Component::reference::<Schema>()) }
+use super::fragment::{self, *};
+struct TopologyModel;
+impl Fragment for TopologyModel {
+    const NAME: &'static str = "topology_model";
+    type Bindings = NoBindings;
+    type Members = (Body,);
+}
+struct Body;
+impl Entity for Body {
+    const NAME: &'static str = "Body";
+    type Aspects = (BodyTopology,);
+    type Relations = ();
+}
+impl Body {
+    fn reference<S: TopologySchemaBinding>() -> super::ApplicationEntityRef<S, Self> {
+        fragment::entity(TopologyModel, Self)
     }
 }
-crate::worth_query_application! {
-    ComposedSchema {
-        owner: "worth.query.test.composed",
-        version: (1, 0),
-        contributions: [ComponentContribution],
+struct BodyTopology;
+impl Aspect for BodyTopology {
+    const NAME: &'static str = "BodyTopology";
+    type Row = ();
+}
+impl BodyTopology {
+    fn reference() -> AspectSelection<TopologyModel, Body, Self> {
+        aspect(TopologyModel, Body, Self)
+    }
+}
+struct ComponentModel;
+impl Fragment for ComponentModel {
+    const NAME: &'static str = "component_model";
+    type Bindings = NoBindings;
+    type Members = (Component,);
+}
+struct Component;
+impl Entity for Component {
+    const NAME: &'static str = "Component";
+    type Aspects = ();
+    type Relations = ();
+}
+struct ComponentContribution;
+impl<S: ModularSchemaBinding> super::ApplicationSchemaContribution<S> for ComponentContribution {
+    const IDENTITY: super::ApplicationSchemaContributionIdentity =
+        super::ApplicationSchemaContributionIdentity::new(
+            "worth.query.test.component-contribution.v1",
+        );
+    type Members = (ComponentModel,);
+}
+impl ComponentContribution {
+    fn reference<S: ModularSchemaBinding>() -> super::ApplicationSchemaContributionRef<S, Self> {
+        super::ApplicationSchemaContributionRef::from_contribution()
+    }
+}
+struct ComposedSchema;
+impl Fragment for ComposedSchema {
+    const NAME: &'static str = "ComposedSchema";
+    type Bindings = NoBindings;
+    type Members = (ComponentContribution,);
+}
+impl ApplicationSchema for ComposedSchema {
+    const OWNER: &'static str = "worth.query.test.composed";
+    const NAME: &'static str = <Self as Fragment>::NAME;
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration(
+    ) -> Result<super::ApplicationSchemaDeclaration<Self>, super::ApplicationSchemaDeclarationDenial>
+    {
+        fragment::declare(Self)
     }
 }
 impl ModularSchemaBinding for ComposedSchema {}
@@ -105,7 +154,6 @@ fn assert_topology_marker_affinity<Schema>()
 where
     Schema: TopologySchemaBinding,
     Body: ApplicationEntityMarkerIdentity<Schema>,
-    BodyTopology: ApplicationAspectMarkerIdentity<Schema, Body>,
 {
 }
 
@@ -116,13 +164,12 @@ fn entry_owned_binding_admits_the_same_markers_into_independent_root_schemas() {
 
     let house_body = Body::reference::<HouseSchema>();
     let bank_body = Body::reference::<BankSchema>();
-    let house_topology = BodyTopology::reference::<HouseSchema>();
-    let bank_topology = BodyTopology::reference::<BankSchema>();
+    let house_topology = BodyTopology::reference();
+    let bank_topology = BodyTopology::reference();
 
     assert_eq!(house_body.name(), "Body");
     assert_eq!(bank_body.name(), "Body");
-    assert_eq!(house_topology.name(), "BodyTopology");
-    assert_eq!(bank_topology.name(), "BodyTopology");
+    assert_eq!(house_topology.name(), bank_topology.name());
 }
 
 #[test]

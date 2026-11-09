@@ -2,9 +2,8 @@ use crate::domain_computation::primary_graph::application_attempt::check_request
 use std::marker::PhantomData;
 
 use worth_query_installation::facade::{
-    ApplicationEntityRef, ApplicationFieldRef, ApplicationFieldUnit,
-    ApplicationOperationDecisionReadTarget, ApplicationReadableScalarValueBinding,
-    ApplicationRelationRef, DeclaredApplicationFieldValue, OperationReads, WritePosture,
+    ApplicationEntityRef, ApplicationOperationDecisionReadTarget, ApplicationRelationRef,
+    OperationReads,
 };
 
 use super::super::fact::{WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact};
@@ -54,18 +53,18 @@ impl<Schema, Operation, Input, Scope, Phase>
         Ok(())
     }
 
-    pub fn observe_field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn observe_field<Entity, Field>(
         &mut self,
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
         identity: &WorthQueryApplicationEntityIdentity<Schema, Entity>,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
-    ) -> Result<Value, WorthQueryApplicationAttemptDenial>
+        field: Field,
+    ) -> Result<Field::Value, WorthQueryApplicationAttemptDenial>
     where
-        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Field::Binding: ApplicationReadableScalarValueBinding,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+        >,
     {
+        self.layout.record_selection(field)?;
         self.check_value_decode()?;
         let execution = &self.execution;
         let target = ApplicationOperationDecisionReadTarget::Field {

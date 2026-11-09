@@ -1,5 +1,9 @@
 use worth_foundational::StructAspectValue;
 
+fn reconstruct(value: StructAspectValue) -> StructAspectValue {
+    StructAspectValue { ..value }
+}
+
 fn main() {
-    let _ = StructAspectValue { fields: Default::default() };
+    let _ = reconstruct;
 }

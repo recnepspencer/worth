@@ -37,7 +37,8 @@ pub(super) fn artifact_with_lower_runtime_slot_evidence(
     let flow = admit_causal_inspection(request_for(
         reference_set,
         CausalInspectionRichness::ReferenceOnly,
-    ));
+    ))
+    .expect("fixture digest must fit");
     let CausalInspectionProofFlow::Admitted(admitted) = flow else {
         panic!("slot evidence fixture should admit");
     };

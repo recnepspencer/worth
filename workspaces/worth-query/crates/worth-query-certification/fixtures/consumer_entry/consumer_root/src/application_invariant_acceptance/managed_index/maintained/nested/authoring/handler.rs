@@ -23,14 +23,18 @@ impl OperationHandler<Catalog, Binding> for Handler {
                     Decision::Pair(item(reader, from)?, item(reader, to)?)
                 }
                 Edit::Unlink { from, to } => {
-                    let source = reader.resolve_entity(ItemIdentity::reference(), from.clone())?;
+                    let source =
+                        reader.resolve_entity(ItemIdentity::at("ItemIdentity"), from.clone())?;
                     let endpoints = reader
                         .relations_from(Children::reference(), &source)
                         .map_err(HandlerExecutionDenial::new)?;
                     let mut target = None;
                     for edge in endpoints {
                         let endpoint = edge.into_to();
-                        if reader.field(&endpoint, ItemIdentity::reference())?.as_ref() == Some(to)
+                        if reader
+                            .field(&endpoint, ItemIdentity::at("ItemIdentity"))?
+                            .as_ref()
+                            == Some(to)
                         {
                             target = Some(reader.mutation_target(&endpoint)?);
                         }
@@ -62,7 +66,8 @@ fn directory(
     reader: &mut Reader<'_, '_, '_>,
     key: &str,
 ) -> Result<Target<Directory>, HandlerExecutionDenial> {
-    let entity = reader.resolve_entity(DirectoryIdentity::reference(), key.to_owned())?;
+    let entity =
+        reader.resolve_entity(DirectoryIdentity::at("DirectoryIdentity"), key.to_owned())?;
     reader
         .reader()
         .require_decision_entity(&entity, Directory::reference())
@@ -73,13 +78,13 @@ fn item(
     reader: &mut Reader<'_, '_, '_>,
     key: &str,
 ) -> Result<Target<Item>, HandlerExecutionDenial> {
-    let entity = reader.resolve_entity(ItemIdentity::reference(), key.to_owned())?;
+    let entity = reader.resolve_entity(ItemIdentity::at("ItemIdentity"), key.to_owned())?;
     reader
         .reader()
         .require_decision_entity(&entity, Item::reference())
         .map_err(HandlerExecutionDenial::new)?;
-    reader.field(&entity, ItemName::reference())?;
-    reader.field(&entity, ItemEnabled::reference())?;
+    reader.field(&entity, ItemName::at("ItemName"))?;
+    reader.field(&entity, ItemEnabled::at("ItemEnabled"))?;
     reader.mutation_target(&entity)
 }
 fn apply(
@@ -101,7 +106,11 @@ fn apply(
                 )
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .initialize_field(&created, DirectoryIdentity::reference(), identity.clone())
+                .initialize_field(
+                    &created,
+                    DirectoryIdentity::at("DirectoryIdentity"),
+                    identity.clone(),
+                )
                 .map_err(HandlerExecutionDenial::new)?;
         }
         (
@@ -126,13 +135,13 @@ fn apply(
                 )
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .initialize_field(&created, ItemIdentity::reference(), identity.clone())
+                .initialize_field(&created, ItemIdentity::at("ItemIdentity"), identity.clone())
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .initialize_field(&created, ItemName::reference(), name.clone())
+                .initialize_field(&created, ItemName::at("ItemName"), name.clone().into())
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .initialize_field(&created, ItemEnabled::reference(), true)
+                .initialize_field(&created, ItemEnabled::at("ItemEnabled"), true)
                 .map_err(HandlerExecutionDenial::new)?;
             if *root {
                 writer
@@ -150,7 +159,7 @@ fn apply(
                 .projected_entity(&target)
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .write_field(&target, ItemName::reference(), value.clone())
+                .write_field(&target, ItemName::at("ItemName"), value.clone().into())
                 .map_err(HandlerExecutionDenial::new)?;
         }
         (Edit::Enabled { value, .. }, Decision::Item(target)) => {
@@ -158,7 +167,7 @@ fn apply(
                 .projected_entity(&target)
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .write_field(&target, ItemEnabled::reference(), *value)
+                .write_field(&target, ItemEnabled::at("ItemEnabled"), *value)
                 .map_err(HandlerExecutionDenial::new)?;
         }
         (Edit::Retire { .. }, Decision::Item(target)) => {

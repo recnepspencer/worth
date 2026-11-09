@@ -5,6 +5,7 @@ pub use worth_query::facade::domain::{
 };
 pub use worth_query_execution::facade::primary_graph::WorthQueryGranularInvalidationCoverage;
 pub use worth_query_host::facade::primary_graph;
+use worth_query_testkit_host::facade::host::temporal_conditional_operation::schema::IntentFacts as StoredIntentFacts;
 
 pub use crate::facade::certification::query_runtime_world::build_primary_query_world;
 pub use worth_query_testkit_host::facade::host::schema::{IntentGateField, UnrelatedValueField};
@@ -35,7 +36,7 @@ pub fn assert_retained_observation_delivers_exact_live_projection(
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &host_phase,
-                    UnrelatedValueField::reference(),
+                    UnrelatedValueField::at("UnrelatedValueField"),
                     0,
                     &request_scope(),
                     primary_graph::WorthQueryPrincipalResolutionMode::Certification,
@@ -49,7 +50,7 @@ pub fn assert_retained_observation_delivers_exact_live_projection(
         .publish_native_field_write_for_test(
             branch,
             world.intent_record_identity(),
-            IntentGateField::reference(),
+            IntentGateField::at("IntentGateField"),
             "ready".to_string(),
             &request_scope(),
         )
@@ -60,7 +61,7 @@ pub fn assert_retained_observation_delivers_exact_live_projection(
             .publish_native_field_write_for_test(
                 branch,
                 unrelated,
-                UnrelatedValueField::reference(),
+                UnrelatedValueField::at("UnrelatedValueField"),
                 value,
                 &request_scope(),
             )
@@ -103,7 +104,7 @@ pub fn assert_retained_observation_delivers_exact_live_projection(
                     path.fields()
                         .iter()
                         .map(FieldKey::as_str)
-                        .eq(["IntentFacts", "IntentGateField"])
+                        .eq([StoredIntentFacts::reference().name(), "IntentGateField"])
                 })
         })
         .expect("the updated projection must carry the gate field");

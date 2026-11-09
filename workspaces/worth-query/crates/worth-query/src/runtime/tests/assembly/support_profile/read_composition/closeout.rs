@@ -9,7 +9,9 @@ fn runtime_public_read_composition_closeout_answers_kernel_gate() {
         .workspace("task.read-composition-closeout")
         .expect("task runtime should open a named workspace");
     let support = workspace.public_read_composition_support_report();
-    let closeout = workspace.public_read_composition_phase_one_closeout();
+    let closeout = workspace
+        .public_read_composition_phase_one_closeout()
+        .expect("fixture digest must fit");
 
     assert_eq!(
         closeout.backend_posture(),
@@ -18,7 +20,11 @@ fn runtime_public_read_composition_closeout_answers_kernel_gate() {
     assert_eq!(closeout.read_support_digest(), support.support_digest());
     assert_eq!(
         closeout.support_matrix_digest(),
-        workspace.public_support_matrix().matrix_digest().as_str()
+        workspace
+            .public_support_matrix()
+            .expect("fixture digest must fit")
+            .matrix_digest()
+            .as_str()
     );
     assert!(closeout
         .safe_to_build_now()

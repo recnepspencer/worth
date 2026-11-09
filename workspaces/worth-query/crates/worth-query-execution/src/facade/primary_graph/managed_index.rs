@@ -16,3 +16,8 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryManagedIndexWatch, WorthQueryManagedIndexWatchOutcome,
     WorthQueryManagedIndexWatchUpdate, WorthQueryManagedIndexWorkDenial,
 };
+
+/// Original Native Source preparation and walk refusals; these grant no authority.
+pub use worth_relational::facade::runtime::{
+    DerivedRelationReadDenial, ManagedIndexSourcePreparationDenial, StructuralReadError,
+};

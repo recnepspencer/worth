@@ -27,13 +27,13 @@ fn indexed_reobservation_preserves_native_request_and_lookup_denials() {
     let graph = (*world.application.runtime_for_test())
         .primary_graph_for_test()
         .unwrap();
-    let field = AccountNote::reference();
+    let field = AccountNote::at("AccountNote");
     let locator = (*graph.layout_for_test())
         .field_locator_for_test(field.entity(), field.aspect(), field.field())
         .unwrap()
         .clone();
     let kind = (*graph.layout_for_test())
-        .entity_kind_for_test(AccountIdentity::reference().entity())
+        .entity_kind_for_test(AccountIdentity::at("AccountIdentity").entity())
         .unwrap();
     let value = StringApplicationValueBinding::encode(&"reviewed".to_owned()).unwrap();
     world

@@ -43,15 +43,7 @@ impl<const MODE: u64> ApplicationMutationBinding<DocumentRetentionSchema<MODE>>
     type Denial = WorthQueryOperationBodyDenial;
     type DenialBinding = BodyDenialBinding;
     type Output = super::super::output::CreatedOutputs<MODE>;
-    type ScopeBinding = ApplicationMutationFieldScope<
-        DocumentRetentionSchema<MODE>,
-        Tenant,
-        TenantFacts,
-        TenantIdentity,
-        u64,
-        ReadOnly,
-        NoApplicationUnit,
-    >;
+    type ScopeBinding = ApplicationMutationFieldScope<TenantIdentity>;
     type PrincipalBinding = DocumentPrincipalBinding;
     type Mapping = ExternalMapping;
     type Principal = Principal;
@@ -63,17 +55,8 @@ impl<const MODE: u64> ApplicationMutationBinding<DocumentRetentionSchema<MODE>>
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.body-court.create-command.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
 
-    fn scope_field() -> ApplicationFieldRef<
-        DocumentRetentionSchema<MODE>,
-        Tenant,
-        TenantFacts,
-        TenantIdentity,
-        u64,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        TenantIdentity::reference()
+    fn scope_field() -> TenantIdentity {
+        TenantIdentity::at("TenantIdentity")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         DocumentRetentionSchema<MODE>,
@@ -97,6 +80,6 @@ impl<const MODE: u64> ApplicationMutationIntent<DocumentRetentionSchema<MODE>> f
         &self,
     ) -> <Self::Binding as ApplicationMutationBinding<DocumentRetentionSchema<MODE>>>::ScopeBinding
     {
-        ApplicationMutationFieldScope::new(TenantIdentity::reference(), self.0.tenant)
+        ApplicationMutationFieldScope::new(TenantIdentity::at("TenantIdentity"), self.0.tenant)
     }
 }

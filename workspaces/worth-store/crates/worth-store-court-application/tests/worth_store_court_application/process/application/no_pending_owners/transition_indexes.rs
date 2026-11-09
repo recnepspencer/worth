@@ -9,6 +9,7 @@ enum Journey {
     Abandon,
     ChangedCatalog,
     IncompleteGenerations,
+    MaintenanceBudgetDenied,
 }
 #[test]
 fn home_target_indexes_publish_the_prepared_catalog_and_exact_generations() {
@@ -26,6 +27,11 @@ fn home_target_refuses_a_changed_index_catalog_before_native_effect() {
 #[test]
 fn home_target_refuses_an_incomplete_generation_batch_before_native_effect() {
     run(Journey::IncompleteGenerations);
+}
+
+#[test]
+fn home_target_honors_a_zero_index_work_budget_before_native_or_world_effect() {
+    run(Journey::MaintenanceBudgetDenied);
 }
 
 fn run(journey: Journey) {

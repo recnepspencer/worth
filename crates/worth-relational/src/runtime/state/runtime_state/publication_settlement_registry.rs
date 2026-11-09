@@ -153,8 +153,8 @@ impl RelationalPublicationSettlementRegistry {
 }
 
 impl RelationalPendingSettlementReservation {
-    pub(crate) fn publish_prepared_indexes(&mut self) {
-        self.record.publish_prepared_indexes();
+    pub(crate) fn install_prepared_indexes(&mut self) {
+        self.record.install_prepared_indexes();
     }
 
     /// Successful movement authorizes the already-installed record against its

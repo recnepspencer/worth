@@ -65,7 +65,7 @@ fn matching_forged_claim_still_fails_fresh_query_identity_derivation() {
     world.replace_signing_payload(&payload);
     let envelope = world.output_path("forged-claim.worth-query");
     let report = world.output_path("forged-claim.json");
-    let forged_identity = "0052098143f06caf6cc143c0af20bc10778339ae6d1e250ad7fb9b3bce14a9b8";
+    let forged_identity = "005923afa113ac168ab43d923a50b5e0cdee3002ea50888f4bd1453fc084bffd";
     let result = world.run(
         &[("--expected-package-identity", forged_identity)],
         &envelope,

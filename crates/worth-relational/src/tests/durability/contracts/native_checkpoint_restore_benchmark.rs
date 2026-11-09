@@ -63,7 +63,13 @@ fn synthetic_native_restore_and_image_digest_benchmark() {
     let streamed_started = Instant::now();
     let streamed = (0..DIGEST_SAMPLES)
         .map(|_| {
-            black_box(crate::durability::data::branch_root_partition_image_digest(roots).unwrap())
+            black_box(
+                crate::durability::data::branch_root_partition_image_digest(
+                    &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+                    roots,
+                )
+                .unwrap(),
+            )
         })
         .next_back()
         .unwrap();

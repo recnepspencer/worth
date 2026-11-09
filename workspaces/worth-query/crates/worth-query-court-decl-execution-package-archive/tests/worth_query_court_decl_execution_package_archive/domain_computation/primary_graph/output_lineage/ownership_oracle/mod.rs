@@ -11,7 +11,6 @@ use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::planar_read::PlanarReadBinding;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::planar_read::PlanarReadResult;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::planar_topology::planar_turn_invariant;
-use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::planar_topology::PlanarDiscoverySource;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::planar_topology::PlanarSuccessor;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::planar_topology::PositivePlanarTurn;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::planar_topology::UndeclaredPlanarRelation;
@@ -26,10 +25,7 @@ use worth_query_decl::facade::application_operation::WorthQueryApplicationOutput
 use worth_query_decl::facade::application_operation::WorthQueryExactlyOneOutput;
 use worth_query_decl::facade::application_operation::WorthQueryPreserveOutput;
 use worth_query_decl::facade::application_schema::ApplicationInvariantExecutionPoint;
-use worth_query_decl::facade::application_schema::ApplicationRelationIntegrity;
 use worth_query_decl::facade::application_schema::ApplicationRelationRef;
-use worth_query_decl::facade::application_schema::NoApplicationUnit;
-use worth_query_decl::facade::application_schema::ReadOnly;
 
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph;
 use worth_query_execution::facade as runtime_api;
@@ -91,26 +87,29 @@ use worth_query_execution::facade::application_contribution::WorthQueryUndeclare
 use worth_query_installation::facade as runtime_domain;
 use worth_query_installation::worth_query_conditional_node as conditional_node;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::base_model::*;
-use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::principal::*;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::output_contract::*;
-use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::planar_topology::*;
+use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::planar_islands::*;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::region_output::*;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::output_producer::*;
+#[path = "model.rs"]
+mod storage_model;
 include!("../../../../../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/producer/resources.rs");
-pub fn with_genuine_native_observation<T>(
+
+/// Reuse the real installed MODE2 producer when another owner needs its evidence.
+pub(in crate::domain_computation::primary_graph) fn with_genuine_native_observation<T>(
     inspect: impl FnOnce(
         &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
         &worth_runtime_bridge::facade::BridgeConditionalCausalObservation,
     ) -> T,
 ) -> T {
-    let runtime = crate::domain_computation::primary_graph::output_lineage::ownership_oracle::installation::install();
-    let settled = crate::domain_computation::primary_graph::output_lineage::ownership_oracle::journey::complete(&runtime);
+    let runtime = installation::install();
+    let settled = journey::complete(&runtime);
     let observation = settled
         .readiness_delivery()
         .unwrap()
         .causal_observation_for_test()
         .unwrap();
-    let owner = (*(*runtime.runtime_for_test()).bridge_for_test()).conditional();
+    let owner = runtime.runtime_for_test().bridge_for_test().conditional();
     inspect(&owner, observation)
 }
 

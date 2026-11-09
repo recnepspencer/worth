@@ -1,7 +1,9 @@
 use super::WorthQueryWorkflowRunCounters;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowStartDenialKind {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     ExecutionRequest(
         worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
     ),

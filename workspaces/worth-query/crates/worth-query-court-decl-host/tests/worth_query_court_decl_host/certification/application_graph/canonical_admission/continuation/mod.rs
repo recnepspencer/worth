@@ -4,9 +4,26 @@ pub(crate) use worth_query_testkit_certification_canonical::facade::certificatio
 fn continuation_nested_decode_refusal_never_returns_a_page_or_successor() {
     let host = host::install_page(super::FUNDED_WORK);
     assert_funded_pages(&host);
+    for name in ["root", "child"] {
+        assert_eq!(host::read(&host, name).value, super::value());
+    }
+    query::reset(None, false);
+    opaque::reset();
+    drop(first_page(&host, &request_scope()).expect("the funded first page reaches both seeds"));
+    let work = host
+        .second_decode_work
+        .get()
+        .expect("funded page reached its second seed");
     drop(host);
 
-    let host = host::install_page(super::ONE_VALUE_WORK);
+    let mut host = host::install_page(super::FUNDED_WORK);
+    for name in ["root", "child"] {
+        assert_eq!(host::read(&host, name).value, super::value());
+    }
+    host.request_work = work;
+    for name in ["root", "child"] {
+        assert_eq!(host::read(&host, name).value, super::value());
+    }
     query::reset(None, false);
     opaque::reset();
     let denial = match first_page(&host, &request_scope()) {

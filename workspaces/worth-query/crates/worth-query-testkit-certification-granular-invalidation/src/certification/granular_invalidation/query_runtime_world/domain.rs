@@ -1,4 +1,5 @@
 pub use std::sync::Arc;
+use worth_query_testkit_host::facade::host::temporal_conditional_operation::schema::IntentFacts as StoredIntentFacts;
 
 pub use worth_query::facade::{domain, read};
 pub use worth_query_host::facade::domain::{
@@ -92,9 +93,11 @@ pub fn consumer_operation_definition(
             .unwrap();
     }
     if profile == ConsumerProfile::OrderedPortfolio {
-        let field =
-            domain::WorthQueryOperationCollectionField::from_dotted("IntentFacts.IntentGateField")
-                .unwrap();
+        let field = domain::WorthQueryOperationCollectionField::from_dotted(&format!(
+            "{}.IntentGateField",
+            StoredIntentFacts::reference().name()
+        ))
+        .unwrap();
         semantics.canonical_query = ordered_portfolio_query();
         semantics.collection = domain::WorthQueryOperationCollectionContract::Collection {
             row_identity_field: field.clone(),

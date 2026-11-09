@@ -4,7 +4,7 @@ use super::*;
 #[worth_value(crate = "worth_query_decl::facade::application_schema")]
 pub struct Observe;
 worth_query_structured_value_binding!(pub Input for Observe {identity:"content-source.observer-input.v1"});
-worth_query_operation!(pub ReadSource for Schema,input Input;access{read_fields:[Key];});
+worth_query_operation!(pub ReadSource for Schema,input Input;access{read_fields:[Key::at("Key")];});
 pub struct Binding;
 impl ApplicationMutationAdmissionBinding<Schema> for Binding {
     type Admission = ApplicationConventionalAdmission;
@@ -20,15 +20,7 @@ impl ApplicationMutationBinding<Schema> for Binding {
     type Denial = operation::Denial;
     type DenialBinding = operation::DenialBinding;
     type Output = NoApplicationMutationOutputs;
-    type ScopeBinding = ApplicationMutationFieldScope<
-        Schema,
-        Record,
-        Identity,
-        Key,
-        String,
-        ReadOnly,
-        NoApplicationUnit,
-    >;
+    type ScopeBinding = ApplicationMutationFieldScope<Key>;
     type PrincipalBinding = Actor;
     type Mapping = Mapping;
     type Principal = Principal;
@@ -42,17 +34,8 @@ impl ApplicationMutationBinding<Schema> for Binding {
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
     }
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Record,
-        Identity,
-        Key,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        Key::reference()
+    fn scope_field() -> Key {
+        Key::at("Key")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         Schema,
@@ -79,7 +62,7 @@ impl ApplicationMutationIntent<Schema> for Observe {
         self
     }
     fn scope_binding(&self) -> <Binding as ApplicationMutationBinding<Schema>>::ScopeBinding {
-        ApplicationMutationFieldScope::new(Key::reference(), "record".to_owned())
+        ApplicationMutationFieldScope::new(Key::at("Key"), "record".to_owned())
     }
 }
 pub struct Handler;

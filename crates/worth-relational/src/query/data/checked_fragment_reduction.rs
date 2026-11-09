@@ -4,8 +4,8 @@ use crate::identity::data::{EntityId, RelationId};
 use crate::storage::data::{EntityReadRecord, RelationReadRecord};
 
 use super::canonical_digest::{
-    entity_record_bytes, entity_record_digest_checked, query_result_reduction_digest_checked,
-    relation_record_bytes, relation_record_digest_checked,
+    entity_record_digest_checked, query_result_reduction_digest_checked,
+    relation_record_digest_checked,
 };
 use super::{
     CanonicalQueryResult, DeterministicQueryFragmentKey, QueryExecutionShape,
@@ -14,6 +14,29 @@ use super::{
 
 type EntityVisits = BTreeMap<(TraversalEntityVisitKey, String, usize), EntityReadRecord>;
 type RelationVisits = BTreeMap<(TraversalRelationVisitKey, String, usize), RelationReadRecord>;
+
+/// Reduction moves shared records, but digest encoding still needs payload scratch.
+/// Read cached extents once per returned record; never traverse aspect backing.
+pub(crate) fn query_reduction_scratch_bound(fragments: &[QueryWorkerFragment]) -> u64 {
+    use super::canonical_digest::{entity_record_bytes, relation_record_bytes};
+    let bytes = fragments.iter().fold(0_u64, |bytes, fragment| {
+        fragment
+            .entities
+            .iter()
+            .fold(bytes, |sum, record| {
+                sum.saturating_add(entity_record_bytes(record))
+            })
+            .saturating_add(fragment.relations.iter().fold(0_u64, |sum, record| {
+                sum.saturating_add(relation_record_bytes(record))
+            }))
+            .saturating_add(std::mem::size_of::<QueryWorkerFragment>() as u64)
+    });
+    bytes.saturating_mul(8).saturating_add(4096)
+}
+
+fn clone_bytes<T: worth_execution::ChargedBytes>(record: &T) -> u64 {
+    (std::mem::size_of::<T>() as u64).saturating_add(record.additional_charged_bytes())
+}
 
 /// A fallible, ordered reduction for leased reads. Its callback admits each
 /// intermediate before growth and checkpoints every record and digest chunk.
@@ -84,7 +107,7 @@ fn reduce_ordered_both<E>(
         for record in fragment.entities {
             claim(
                 intermediate_bytes,
-                entity_record_bytes(&record).saturating_add(256),
+                clone_bytes(&record).saturating_add(256),
                 check,
             )?;
             entities.entry(record.entity_id).or_default().push(record);
@@ -92,7 +115,7 @@ fn reduce_ordered_both<E>(
         for record in fragment.relations {
             claim(
                 intermediate_bytes,
-                relation_record_bytes(&record).saturating_add(256),
+                clone_bytes(&record).saturating_add(256),
                 check,
             )?;
             relations
@@ -130,7 +153,7 @@ fn reduce_ordered_entities<E>(
         for record in fragment.entities {
             claim(
                 intermediate_bytes,
-                entity_record_bytes(&record).saturating_add(256),
+                clone_bytes(&record).saturating_add(256),
                 check,
             )?;
             by_id.entry(record.entity_id).or_default().push(record);
@@ -157,7 +180,7 @@ fn reduce_ordered_relations<E>(
         for record in fragment.relations {
             claim(
                 intermediate_bytes,
-                relation_record_bytes(&record).saturating_add(256),
+                clone_bytes(&record).saturating_add(256),
                 check,
             )?;
             by_id.entry(record.relation_id).or_default().push(record);
@@ -192,7 +215,7 @@ fn reduce_traversal<E>(
                 })?;
                 claim(
                     intermediate_bytes,
-                    entity_record_bytes(&record).saturating_add(256),
+                    clone_bytes(&record).saturating_add(256),
                     check,
                 )?;
                 keyed_entities.insert((key, digest, ordinal), record);
@@ -208,7 +231,7 @@ fn reduce_traversal<E>(
                 })?;
                 claim(
                     intermediate_bytes,
-                    relation_record_bytes(&record).saturating_add(256),
+                    clone_bytes(&record).saturating_add(256),
                     check,
                 )?;
                 keyed_relations.insert((key, digest, ordinal), record);
@@ -218,7 +241,7 @@ fn reduce_traversal<E>(
             for record in fragment.entities {
                 claim(
                     intermediate_bytes,
-                    entity_record_bytes(&record).saturating_mul(2),
+                    clone_bytes(&record).saturating_mul(2),
                     check,
                 )?;
                 unkeyed_entities.push(record);
@@ -226,7 +249,7 @@ fn reduce_traversal<E>(
             for record in fragment.relations {
                 claim(
                     intermediate_bytes,
-                    relation_record_bytes(&record).saturating_mul(2),
+                    clone_bytes(&record).saturating_mul(2),
                     check,
                 )?;
                 unkeyed_relations.push(record);

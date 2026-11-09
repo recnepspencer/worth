@@ -15,6 +15,7 @@ pub enum ExecutionRequestArrayDenial {
 pub struct ExecutionRequestArrayBuilder<'request, 'authority, T> {
     request: ExecutionRequest<'request, 'authority>,
     building: BuildingFixedBacking<T>,
+    writes: super::super::fixed_backing::WriteCadence,
 }
 
 impl<'request, 'authority, T> ExecutionRequestArrayBuilder<'request, 'authority, T> {
@@ -51,7 +52,11 @@ impl<'request, 'authority, T> ExecutionRequestArrayBuilder<'request, 'authority,
             (Err(cause), _) => Err(Denial::Request(cause)),
             (Ok(_), None) => unreachable!("completed allocation callback"),
         }?;
-        Ok(Self { request, building })
+        Ok(Self {
+            request,
+            building,
+            writes: super::super::fixed_backing::WriteCadence::new::<T>(),
+        })
     }
 
     pub fn len(&self) -> usize {
@@ -67,16 +72,14 @@ impl<'request, 'authority, T> ExecutionRequestArrayBuilder<'request, 'authority,
         self.building.elements()
     }
 
+    /// Cancellation is immediate; deadline/work consultation uses bounded
+    /// append chunks (<=32 writes, with a 64 KiB granule or one indivisible
+    /// value). Allocation, errors, replacements and seal check immediately.
+    /// A stopped prefix can remain initialized but cannot publish an array.
     pub fn push(&mut self, value: T) -> Result<(), ExecutionRequestArrayDenial> {
-        self.request
-            .consult()
-            .map_err(ExecutionRequestArrayDenial::Request)?;
-        self.building
-            .push(value)
-            .map_err(ExecutionRequestArrayDenial::Allocation)?;
-        self.request
-            .consult()
-            .map_err(ExecutionRequestArrayDenial::Request)
+        self.before_write()?;
+        let written = self.building.push(value);
+        self.finish_write(written)
     }
 
     /// Move a replacement into an initialized cell without growth or allocation.
@@ -90,16 +93,46 @@ impl<'request, 'authority, T> ExecutionRequestArrayBuilder<'request, 'authority,
         self.request
             .consult()
             .map_err(ExecutionRequestArrayDenial::Request)?;
-        self.building
-            .replace_initialized(index, value)
-            .map_err(ExecutionRequestArrayDenial::Allocation)?;
+        let written = self.building.replace_initialized(index, value);
         self.request
             .consult()
-            .map_err(ExecutionRequestArrayDenial::Request)
+            .map_err(ExecutionRequestArrayDenial::Request)?;
+        written.map_err(ExecutionRequestArrayDenial::Allocation)
+    }
+
+    fn before_write(&self) -> Result<(), ExecutionRequestArrayDenial> {
+        self.request
+            .consult_append_cancellation()
+            .map_err(ExecutionRequestArrayDenial::Request)?;
+        if self.writes.before() {
+            self.request
+                .consult()
+                .map_err(ExecutionRequestArrayDenial::Request)?;
+        }
+        Ok(())
+    }
+    fn finish_write(
+        &mut self,
+        written: Result<(), super::super::fixed_backing::ExecutionAllocationDenial>,
+    ) -> Result<(), ExecutionRequestArrayDenial> {
+        if written.is_err() || self.writes.completed() {
+            self.request
+                .consult()
+                .map_err(ExecutionRequestArrayDenial::Request)?;
+        } else {
+            self.request
+                .consult_append_cancellation()
+                .map_err(ExecutionRequestArrayDenial::Request)?;
+        }
+        written.map_err(ExecutionRequestArrayDenial::Allocation)
     }
 
     pub fn seal(self) -> Result<ExecutionArray<T>, ExecutionRequestArrayDenial> {
-        let Self { request, building } = self;
+        let Self {
+            request,
+            building,
+            writes: _,
+        } = self;
         let (array, _) = request
             .run_native(|_| building.seal().map(ExecutionArray::from_owned))
             .map_err(ExecutionRequestArrayDenial::Request)?;
@@ -124,7 +157,11 @@ impl ExecutionRequestArrayBuilder<'_, '_, u8> {
         self,
     ) -> Result<crate::ExecutionImmutableBytes, ExecutionRequestArrayDenial> {
         use ExecutionRequestArrayDenial as Denial;
-        let Self { request, building } = self;
+        let Self {
+            request,
+            building,
+            writes: _,
+        } = self;
         request.consult().map_err(Denial::Request)?;
         // Sealing only moves the already admitted exact backing. Its new Arc
         // is admitted by the byte owner; wrapping this in another native scope

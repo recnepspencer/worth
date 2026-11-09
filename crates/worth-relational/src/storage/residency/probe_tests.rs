@@ -10,10 +10,14 @@ fn related_sources_do_not_confuse_equal_partition_ids() {
         fixtures[1].entity.partition_id
     );
     let editions = fixtures.each_ref().map(|fixture| {
-        crate::runtime::PartitionEdition::new(BTreeMap::from([(
-            fixture.entity.partition_id,
-            RelationalRegionRetention::new(fixture.cell.clone(), None),
-        )]))
+        crate::runtime::PartitionEdition::new(
+            [(
+                fixture.entity.partition_id,
+                RelationalRegionRetention::new(fixture.cell.clone(), None),
+            )]
+            .into_iter()
+            .collect(),
+        )
     });
     let symbols = crate::runtime::RuntimeSymbolTable::default();
     let host = crate::test_execution_policy::serial_request();
@@ -51,10 +55,14 @@ fn a_resident_overlay_does_not_hide_its_cold_before_image() {
         base.entity.partition_id,
         resident.full_view().partition().clone(),
     )]);
-    let edition = crate::runtime::PartitionEdition::new(BTreeMap::from([(
-        base.entity.partition_id,
-        RelationalRegionRetention::new(base.cell.clone(), None),
-    )]));
+    let edition = crate::runtime::PartitionEdition::new(
+        [(
+            base.entity.partition_id,
+            RelationalRegionRetention::new(base.cell.clone(), None),
+        )]
+        .into_iter()
+        .collect(),
+    );
     let symbols = crate::runtime::RuntimeSymbolTable::default();
     let source = edition.with_symbol_admission(&symbols);
     let overlay = FullCompositeSource {
@@ -86,10 +94,14 @@ fn a_resident_overlay_does_not_hide_its_cold_before_image() {
 #[test]
 fn a_cold_round_discards_absence_before_accepting_the_resident_answer() {
     let fixture = region_with_history();
-    let edition = crate::runtime::PartitionEdition::new(BTreeMap::from([(
-        fixture.entity.partition_id,
-        RelationalRegionRetention::new(fixture.cell.clone(), None),
-    )]));
+    let edition = crate::runtime::PartitionEdition::new(
+        [(
+            fixture.entity.partition_id,
+            RelationalRegionRetention::new(fixture.cell.clone(), None),
+        )]
+        .into_iter()
+        .collect(),
+    );
     let symbols = crate::runtime::RuntimeSymbolTable::default();
     let host = crate::test_execution_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
@@ -126,10 +138,14 @@ fn a_cold_round_discards_absence_before_accepting_the_resident_answer() {
 fn a_provisional_denial_cannot_mask_sticky_storage_damage() {
     let fixture = region_with_history();
     fixture.source.corrupt.store(true, Ordering::SeqCst);
-    let edition = crate::runtime::PartitionEdition::new(BTreeMap::from([(
-        fixture.entity.partition_id,
-        RelationalRegionRetention::new(fixture.cell.clone(), None),
-    )]));
+    let edition = crate::runtime::PartitionEdition::new(
+        [(
+            fixture.entity.partition_id,
+            RelationalRegionRetention::new(fixture.cell.clone(), None),
+        )]
+        .into_iter()
+        .collect(),
+    );
     let symbols = crate::runtime::RuntimeSymbolTable::default();
     let host = crate::test_execution_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
@@ -257,7 +273,7 @@ impl Drop for DiscoveryAnswer {
 }
 
 #[test]
-fn deep_or_wide_discovery_escalates_and_drops_the_round_before_loading() {
+fn deep_or_wide_discovery_loads_only_observed_misses_after_dropping_the_round() {
     let fixture = region_with_history();
     let full = full_demand(&fixture.cell, 1 << 24).unwrap();
     let host = crate::test_execution_policy::serial_request();
@@ -268,11 +284,9 @@ fn deep_or_wide_discovery_escalates_and_drops_the_round_before_loading() {
             admitted: (0..128).map(|_| AtomicBool::new(false)).collect(),
             abandoned: Arc::new(AtomicBool::new(false)),
         };
-        let mut rounds = 0;
         let answer = probe_full(&execution, &source, |view| {
-            rounds += 1;
             let mut complete = true;
-            for id in view.partition_ids_iter() {
+            for id in (0..64).map(PartitionId) {
                 if view.get_partition(id).is_none() {
                     complete = false;
                     if stop_on_first_miss {
@@ -287,14 +301,11 @@ fn deep_or_wide_discovery_escalates_and_drops_the_round_before_loading() {
         })
         .unwrap();
         assert!(answer.complete);
-        assert!(
-            rounds > 1 && rounds < 32,
-            "a long chain must not cause one round per region"
-        );
         assert!(source
             .admitted
             .iter()
-            .all(|flag| flag.load(Ordering::SeqCst)));
+            .enumerate()
+            .all(|(id, flag)| flag.load(Ordering::SeqCst) == (id < 64)));
     }
 }
 

@@ -14,9 +14,13 @@ type Group<'r> = WorthQueryGroupedHistoryDocument<
     'r,
     ConsumerSchema,
     History,
-    Original,
     FixedProgram,
-    FixedAction,
+    worth_query_host::facade::application_entry::WorthQueryHistoryTypedMembers<
+        ConsumerSchema,
+        Original,
+        FixedProgram,
+        FixedAction,
+    >,
     OrdinaryHistoryPayload,
     Outputs,
 >;

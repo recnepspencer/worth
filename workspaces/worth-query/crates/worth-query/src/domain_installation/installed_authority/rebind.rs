@@ -122,7 +122,7 @@ impl WorthQueryDomainRebindDenial {
                 current_package_identity.evidence_identity(),
             );
         }
-        let denial_identity = denial_identity.seal();
+        let denial_identity = denial_identity.seal().expect("fixed rebind grammar: enum labels, three counters and at most two sealed package identities");
         Self {
             kind,
             next_action,
@@ -185,7 +185,7 @@ impl WorthQueryDomainRebindReceipt {
                     WorthQueryEvidenceTag::new("package"),
                     package_identity.evidence_identity(),
                 )
-                .seal();
+                .seal().expect("fixed rebind grammar: enum labels, three counters and at most two sealed package identities");
         let receipt_identity =
             worth_query_evidence_identity(WorthQueryEvidenceScope::InstalledDomainRebind)
                 .field_shape(WorthQueryEvidenceTag::new("outcome"), "rebound")
@@ -201,7 +201,7 @@ impl WorthQueryDomainRebindReceipt {
                     WorthQueryEvidenceTag::new("semantic_equivalence"),
                     &semantic_equivalence_identity,
                 )
-                .seal();
+                .seal().expect("fixed rebind grammar: enum labels, three counters and at most two sealed package identities");
         Self {
             prior_authority: prior.authority_arc(),
             current_authority: current.authority_arc(),

@@ -45,8 +45,8 @@ pub(super) fn prepare(
                         let runtime = round.with_candidate_symbols(&symbols);
                         let intents =
                             transaction.normalized_intents_for_merge(&runtime, execution)?;
-                        let plan =
-                            transaction.build_merged_plan_for_state(&runtime, &read, intents)?;
+                        let plan = transaction
+                            .build_merged_plan_for_state(&runtime, &read, intents, execution)?;
                         Ok(PreparedPlanRound {
                             plan,
                             symbols,

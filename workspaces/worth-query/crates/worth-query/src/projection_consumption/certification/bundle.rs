@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::projection_consumption::identity::{
     compose_certification_bundle_digest, compose_certification_row_digest,
 };
@@ -130,17 +131,18 @@ impl ProjectionConsumptionCertificationBundle {
     }
 }
 
-pub fn certify_projection_consumption_closeout_core() -> ProjectionConsumptionCertificationBundle {
-    let lifecycle = control_row_set_lifecycle(2);
-    let family_inventory = projection_consumption_family_inventory();
-    let support_matrix = projection_consumption_support_matrix();
-    let public_boundary_audit = projection_consumption_public_boundary_audit();
-    let proof_shape_audit = projection_consumption_proof_shape_audit();
-    let forbidden_fallback_audit = projection_consumption_forbidden_fallback_audit();
-    let oracle_report = projection_consumption_oracle_report();
-    let seeded_report = projection_consumption_seeded_certification_report();
-    let slope_report = projection_consumption_slope_report();
-    let consumed_authority_certification = certify_consumed_projection_authority();
+pub fn certify_projection_consumption_closeout_core(
+) -> Result<ProjectionConsumptionCertificationBundle, IdentityDerivationDenial> {
+    let lifecycle = control_row_set_lifecycle(2)?;
+    let family_inventory = projection_consumption_family_inventory()?;
+    let support_matrix = projection_consumption_support_matrix()?;
+    let public_boundary_audit = projection_consumption_public_boundary_audit()?;
+    let proof_shape_audit = projection_consumption_proof_shape_audit()?;
+    let forbidden_fallback_audit = projection_consumption_forbidden_fallback_audit()?;
+    let oracle_report = projection_consumption_oracle_report()?;
+    let seeded_report = projection_consumption_seeded_certification_report()?;
+    let slope_report = projection_consumption_slope_report()?;
+    let consumed_authority_certification = certify_consumed_projection_authority()?;
     let mut assembled = assemble_closeout_bundle_outputs(
         &lifecycle,
         &family_inventory,
@@ -151,7 +153,7 @@ pub fn certify_projection_consumption_closeout_core() -> ProjectionConsumptionCe
         &oracle_report,
         &seeded_report,
         &slope_report,
-    );
+    )?;
     let authority_detail = consumed_authority_certification.bundle_digest().to_string();
     assembled.rows.push(ProjectionConsumptionCertificationRow {
         lane: ProjectionConsumptionCertificationLane::DownstreamAuthoritySurface,
@@ -159,7 +161,7 @@ pub fn certify_projection_consumption_closeout_core() -> ProjectionConsumptionCe
         row_digest: compose_certification_row_digest(
             "projection_consumption_downstream_authority_closeout_row_v1",
             &[("authority_bundle", authority_detail.as_str())],
-        ),
+        )?,
     });
     assembled.outputs.push((
         "consumed_projection_authority_certification_bundle",
@@ -171,8 +173,8 @@ pub fn certify_projection_consumption_closeout_core() -> ProjectionConsumptionCe
             .outputs
             .iter()
             .map(|(name, value)| (*name, value.as_str())),
-    );
-    ProjectionConsumptionCertificationBundle {
+    )?;
+    Ok(ProjectionConsumptionCertificationBundle {
         family_inventory,
         support_matrix,
         public_boundary_audit,
@@ -185,5 +187,5 @@ pub fn certify_projection_consumption_closeout_core() -> ProjectionConsumptionCe
         rows: assembled.rows,
         outputs: assembled.outputs,
         certification_bundle_digest,
-    }
+    })
 }

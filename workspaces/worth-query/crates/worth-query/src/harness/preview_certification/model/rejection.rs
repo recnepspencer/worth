@@ -1,5 +1,8 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum PreviewFailureClass {
+    EvidenceIdentityDerivationDenied(
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+    ),
     UnsupportedPreviewFamily,
     InvalidPreviewBasis,
     StoreBackedRouteForbidden,
@@ -14,6 +17,7 @@ pub enum PreviewFailureClass {
 impl PreviewFailureClass {
     pub fn as_str(&self) -> &'static str {
         match self {
+            Self::EvidenceIdentityDerivationDenied(_) => "evidence-identity-derivation-denied",
             Self::UnsupportedPreviewFamily => "unsupported-preview-family",
             Self::InvalidPreviewBasis => "invalid-preview-basis",
             Self::StoreBackedRouteForbidden => "store-backed-route-forbidden",

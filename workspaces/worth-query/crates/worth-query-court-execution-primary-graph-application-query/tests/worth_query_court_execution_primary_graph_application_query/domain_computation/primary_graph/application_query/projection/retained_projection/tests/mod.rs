@@ -27,7 +27,7 @@ fn original_projection_moves_disclosed_rows_and_shares_original_funding_until_fi
         .installed_query_binding::<TestAccountSourceBinding>()
         .unwrap()
         .into_query();
-    let label_field = AccountLabel::reference();
+    let label_field = AccountLabel::at("AccountLabel");
     let label = query
         .read_graph()
         .projections()

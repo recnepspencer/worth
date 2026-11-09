@@ -1,12 +1,37 @@
 //! Value validation and actual backing policy for the one canonical reducer.
-use std::{alloc::Layout, mem::size_of};
+use std::{alloc::Layout, mem::size_of, sync::Arc};
 
 use super::{memory::node_bytes, Link, Node, ReductionDenial, ReductionRunStop};
 use crate::{CanonicalBits, ChargedBytes, ExecutionMemoryReservation, ExecutionResourceLease};
 
+/// Only the canonical storage owner constructs a canonical proof. Native slots
+/// use their separate immutable receipt/summary owner, never a fake encoding.
+#[derive(Clone)]
+pub(super) struct Admitted<T> {
+    pub(super) value: T,
+    pub(super) canonical: Option<Arc<CanonicalBytes>>,
+}
+impl<T> std::ops::Deref for Admitted<T> {
+    type Target = T;
+    fn deref(&self) -> &T {
+        &self.value
+    }
+}
 pub(super) struct CanonicalBytes {
     bytes: Vec<u8>,
     _memory: Option<ExecutionMemoryReservation>,
+}
+impl CanonicalBytes {
+    pub(super) fn object_layout() -> Layout {
+        Layout::new::<[usize; 2]>()
+            .extend(Layout::new::<Self>())
+            .expect("canonical proof object layout is representable")
+            .0
+            .pad_to_align()
+    }
+    pub(super) fn retained_bytes(&self) -> u64 {
+        self.bytes.capacity() as u64 + Self::object_layout().size() as u64
+    }
 }
 impl PartialEq for CanonicalBytes {
     fn eq(&self, other: &Self) -> bool {
@@ -41,6 +66,14 @@ pub(super) trait ValueStorage<T>: Copy {
         self.canonical(value).map(|_| ())
     }
     fn canonical<E>(&self, value: &T) -> Result<CanonicalBytes, ReductionRunStop<E>>;
+    fn check_proof<E>(
+        &self,
+        _: &T,
+        _: &CanonicalBytes,
+        _: bool,
+    ) -> Result<(), ReductionRunStop<E>> {
+        Ok(())
+    }
     fn node<E>(
         &self,
         value: &T,
@@ -53,17 +86,13 @@ pub(super) trait ValueStorage<T>: Copy {
 #[derive(Clone, Copy)]
 pub(super) struct BoundedValues(pub(super) u64);
 impl<T: CanonicalBits + ChargedBytes> ValueStorage<T> for BoundedValues {
-    fn validate<E>(&self, value: &T) -> Result<(), ReductionRunStop<E>> {
-        let bytes = u64::try_from(size_of::<T>())
-            .ok()
-            .and_then(|inline| inline.checked_add(value.additional_charged_bytes()))
+    fn canonical<E>(&self, value: &T) -> Result<CanonicalBytes, ReductionRunStop<E>> {
+        let payload_bytes = (size_of::<T>() as u64)
+            .checked_add(value.additional_charged_bytes())
             .ok_or(ReductionRunStop::ResultCapacityExceeded)?;
-        if bytes > self.0 {
+        if payload_bytes > self.0 {
             return Err(ReductionRunStop::ResultCapacityExceeded);
         }
-        self.canonical(value).map(|_| ())
-    }
-    fn canonical<E>(&self, value: &T) -> Result<CanonicalBytes, ReductionRunStop<E>> {
         let length = length(value)?;
         if u64::try_from(length)
             .ok()
@@ -80,6 +109,22 @@ impl<T: CanonicalBits + ChargedBytes> ValueStorage<T> for BoundedValues {
             bytes,
             _memory: None,
         })
+    }
+    fn check_proof<E>(
+        &self,
+        value: &T,
+        proof: &CanonicalBytes,
+        payload: bool,
+    ) -> Result<(), ReductionRunStop<E>> {
+        if proof.bytes.len() as u64 > self.0
+            || (payload
+                && (size_of::<T>() as u64)
+                    .checked_add(value.additional_charged_bytes())
+                    .is_none_or(|bytes| bytes > self.0))
+        {
+            return Err(ReductionRunStop::ResultCapacityExceeded);
+        }
+        Ok(())
     }
     fn node<E>(
         &self,
@@ -120,7 +165,14 @@ impl<T: CanonicalBits> ValueStorage<T> for NativeValues<'_, '_> {
     fn canonical<E>(&self, value: &T) -> Result<CanonicalBytes, ReductionRunStop<E>> {
         let length = length(value)?;
         let layout = Layout::array::<u8>(length)
-            .map_err(|_| physical(crate::ExecutionPhysicalAllocationDenialKind::Layout))?;
+            .ok()
+            .and_then(|buffer| {
+                CanonicalBytes::object_layout()
+                    .extend(buffer)
+                    .ok()
+                    .map(|v| v.0)
+            })
+            .ok_or_else(|| physical(crate::ExecutionPhysicalAllocationDenialKind::Layout))?;
         let memory = <Self as ValueStorage<T>>::backing(self, layout)?;
         let mut bytes = Vec::new();
         bytes

@@ -22,6 +22,7 @@ use crate::application::support::{WorthQueryCapabilityFamily, WorthQueryCapabili
 use crate::application::support::{
     WorthQueryCapabilityRegistry, WorthQuerySupportMatrix, WorthQuerySupportReport,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::hash_parts;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -34,8 +35,13 @@ pub struct WorthQueryApplicationFacade {
 impl WorthQueryApplicationFacade {
     pub fn new(config: WorthQueryConfig) -> Result<Self, ConfigurationAdmissionError> {
         let config = config.validate()?;
-        let registry = WorthQueryCapabilityRegistry::from_validated_config(&config);
-        let support_matrix = WorthQuerySupportMatrix::new(registry);
+        let registry =
+            WorthQueryCapabilityRegistry::from_validated_config(&config).map_err(|cause| {
+                ConfigurationAdmissionError::identity_denied(cause, config.counters().clone())
+            })?;
+        let support_matrix = WorthQuerySupportMatrix::new(registry).map_err(|cause| {
+            ConfigurationAdmissionError::identity_denied(cause, config.counters().clone())
+        })?;
         let facade_digest = hash_parts(&[
             format!("config:{}", config.validated_digest()),
             format!(
@@ -64,11 +70,11 @@ impl WorthQueryApplicationFacade {
         self.support_matrix.clone()
     }
 
-    pub fn support_report(&self) -> WorthQuerySupportReport {
-        WorthQuerySupportReport::from_validated_config_and_matrix(
+    pub fn support_report(&self) -> Result<WorthQuerySupportReport, IdentityDerivationDenial> {
+        Ok(WorthQuerySupportReport::from_validated_config_and_matrix(
             &self.config,
             self.support_matrix.clone(),
-        )
+        )?)
     }
 
     #[cfg(test)]

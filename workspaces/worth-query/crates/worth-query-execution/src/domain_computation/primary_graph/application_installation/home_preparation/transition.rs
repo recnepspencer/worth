@@ -10,7 +10,6 @@ mod workflow_dispositions;
 pub use workflow_dispositions::QueryHomeWorkflowDispositionDenial;
 mod authored_body;
 mod bridge;
-mod indexes;
 mod promotion;
 pub use authored_body::WorthQueryHomeProgramTransitionBodyDenial;
 mod author_source;
@@ -27,8 +26,6 @@ use worth_relational::facade::{
 pub struct PreparedHomeProgramTransitionTarget<Schema: ApplicationSchemaComposition, Program> {
     _pending: HomeTransitionTargetCustody<Schema, Program>,
     pub(super) contracts: PreparedRelationalHomeProgramContracts,
-    before_indexes: std::sync::Arc<[worth_relational::facade::indexes::DerivedIndexId]>,
-    target_indexes: std::sync::Arc<[worth_relational::facade::indexes::DerivedIndexId]>,
 }
 struct HomeTransitionTargetCustody<Schema: ApplicationSchemaComposition, Program> {
     _state: HomeApplicationState<Schema, Program>,
@@ -98,9 +95,6 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeApplication<Sche
                 ),
             });
         }
-        let before_indexes = super::super::super::root::index_installation::primary_index_inventory(
-            predecessor_layout,
-        );
         let CompiledNativeSchemaMeaning {
             layout,
             additions,
@@ -194,18 +188,10 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeApplication<Sche
                 .map_err(QueryHomeTransitionPreparationDenial::Native)
         })();
         match compiled {
-            Ok(contracts) => {
-                let target_indexes =
-                    super::super::super::root::index_installation::primary_index_inventory(
-                        &pending._layout,
-                    );
-                Ok(PreparedHomeProgramTransitionTarget {
-                    _pending: pending,
-                    contracts,
-                    before_indexes,
-                    target_indexes,
-                })
-            }
+            Ok(contracts) => Ok(PreparedHomeProgramTransitionTarget {
+                _pending: pending,
+                contracts,
+            }),
             Err(cause) => Err(QueryHomeTransitionPreparationRefused {
                 _custody: TransitionPreparationCustody::Compiled { _pending: pending },
                 cause,

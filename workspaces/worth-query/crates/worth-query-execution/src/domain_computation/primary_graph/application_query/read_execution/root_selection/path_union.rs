@@ -93,6 +93,7 @@ pub(super) fn select_root_path_union(
         &RootPathReadBasis {
             execution,
             runtime,
+            origin: crate::domain_computation::primary_graph::projection_read_origin::ProjectionReadOriginRef::Committed(runtime.snapshot()),
             graph,
             projection,
         },
@@ -178,9 +179,9 @@ fn finish_source(
 }
 
 #[allow(clippy::too_many_arguments)]
-pub(super) fn read_governed_root_guard(
+pub(super) fn read_governed_root_guard<ReadIdentity>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
+    runtime: &worth_relational::facade::runtime::RelationalPinnedRead<ReadIdentity>,
     _projection: crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationInternalProjectionAdmission<'_>,
     frontier: &BTreeSet<EntityId>,
     entity_kind: worth_relational::facade::identity::KindId,
@@ -190,7 +191,7 @@ pub(super) fn read_governed_root_guard(
     worth_relational::facade::runtime::BoundedFrontierFieldEqualityTruthRead,
     worth_relational::facade::runtime::BoundedFrontierReadStop<
         worth_relational::facade::runtime::FrontierFieldEqualityTruthReadLimitExceeded,
-        worth_execution::WorkCeilingDenial,
+        worth_relational::facade::transactions::RelationalExecutionDenialCause,
     >,
 > {
     runtime.bounded_entity_field_equals_for_frontier(
@@ -220,7 +221,7 @@ fn work_limit_denial(subject: &str) -> WorthQueryApplicationReadExecutionDenial 
 pub(super) fn frontier_denial<L>(
     stop: worth_relational::facade::runtime::BoundedFrontierReadStop<
         L,
-        worth_execution::WorkCeilingDenial,
+        worth_relational::facade::transactions::RelationalExecutionDenialCause,
     >,
     subject: &str,
 ) -> WorthQueryApplicationReadExecutionDenial {

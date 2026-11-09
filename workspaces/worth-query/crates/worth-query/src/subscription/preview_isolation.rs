@@ -1,4 +1,6 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+#[cfg(test)]
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity_authority::{QueryProjectionIdentity, QuerySubscriptionIdentityKind};
 
 use super::active_counters::ActiveSubscriptionCounters;
@@ -63,8 +65,8 @@ impl PreviewSubscriptionIsolationArtifact {
         attachment: &SubscriptionConsumerAttachment,
         preview_epoch: impl Into<String>,
         preview_residue_budget_width: PreviewResidueWidth,
-    ) -> Self {
-        let preview_epoch_identity = preview_epoch_identity(&preview_epoch.into());
+    ) -> Result<Self, IdentityDerivationDenial> {
+        let preview_epoch_identity = preview_epoch_identity(&preview_epoch.into())?;
         let mut counters = ActiveSubscriptionCounters::default();
         counters.preview_active_lane_count = 1;
         counters.preview_residue_width = preview_residue_budget_width.get();
@@ -78,8 +80,8 @@ impl PreviewSubscriptionIsolationArtifact {
             PreviewSubscriptionLifecycleState::PreviewActive.as_str(),
             preview_residue_budget_width.get(),
             &counters.evidence_identity(),
-        );
-        Self {
+        )?;
+        Ok(Self {
             active_lane_digest: attachment.lane_digest().clone(),
             attachment_digest: attachment.attachment_digest().clone(),
             future_selection: attachment.future_selection().clone(),
@@ -90,7 +92,7 @@ impl PreviewSubscriptionIsolationArtifact {
             preview_residue_budget_width,
             counters,
             isolation_identity,
-        }
+        })
     }
 
     pub(crate) fn active_lane_digest(&self) -> &ActiveSubscriptionLaneDigest {
@@ -164,11 +166,18 @@ pub fn admit_preview_subscription_isolation(
     preview_epoch: impl Into<String>,
     preview_residue_budget_width: PreviewResidueWidth,
 ) -> Result<PreviewSubscriptionIsolationArtifact, PreviewSubscriptionIsolationError> {
-    Ok(PreviewSubscriptionIsolationArtifact::new(
+    PreviewSubscriptionIsolationArtifact::new(
         attachment,
         preview_epoch,
         preview_residue_budget_width,
-    ))
+    )
+    .map_err(|cause| {
+        PreviewSubscriptionIsolationError::identity_refused(
+            cause,
+            attachment.attachment_digest().evidence_identity().clone(),
+            ActiveSubscriptionCounters::default(),
+        )
+    })
 }
 
 pub fn deny_preview_authoritative_sharing(

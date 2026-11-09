@@ -58,12 +58,7 @@ fn authored_retirement_readmission_checkpoints_keep_original_cancellation_and_he
     )
     .unwrap();
     let publication = retired.required_output_publication(&installed).unwrap();
-    let meaning = &publication
-        .envelope
-        .required_output_origin
-        .as_ref()
-        .unwrap()
-        .meaning;
+    let meaning = &publication.origin.as_ref().meaning;
     release_test_commit_snapshot(&runtime, &retired);
     let basis = test_owner_main_basis(&runtime).unwrap();
     let cancellation = worth_execution::CancellationSource::new();
@@ -81,7 +76,7 @@ fn authored_retirement_readmission_checkpoints_keep_original_cancellation_and_he
             }
         }),
         || {
-            runtime.readmit_authored_output_retirement_successor(
+            runtime.readmit_native_output_transition_successor(
                 original_execution,
                 &installed,
                 &basis,
@@ -96,10 +91,10 @@ fn authored_retirement_readmission_checkpoints_keep_original_cancellation_and_he
         basis.descriptor()
     );
     let successor = runtime
-        .readmit_authored_output_retirement_successor(execution, &installed, &basis, meaning)
+        .readmit_native_output_transition_successor(execution, &installed, &basis, meaning)
         .unwrap()
         .unwrap();
-    assert_eq!(successor.envelope.commit, publication.envelope.commit);
+    assert_eq!(successor.origin.commit, publication.origin.commit);
     assert_eq!(
         test_owner_main_basis(&runtime).unwrap().descriptor(),
         basis.descriptor()
@@ -129,7 +124,19 @@ fn cascade_refuses_tampered_carried_origin_and_membership_records() {
     for change_origin in [true, false] {
         let request = crate::test_execution_policy::serial_request();
         let execution = &ExecutionRequest::serial(&request);
-        let mut runtime = runtime_with_test_schema();
+        let original = runtime_with_test_schema();
+        let registry = original.config().schema.registry.clone();
+        let (schema, version) = registry.authoritative_schema_basis().unwrap().unwrap();
+        let registry =
+            crate::schema::current_publication_ownership::register_current_publication_storage(
+                registry, &schema, version,
+            )
+            .unwrap();
+        let mut runtime = crate::presentation::api::RelationalRuntimeApi::builder()
+            .profile(crate::config::data::RelationalRuntimeProfile::CertificationCore)
+            .schema_registry(registry)
+            .build()
+            .unwrap();
         let receipt = runtime
             .prepare_initial_schema_installation()
             .unwrap()

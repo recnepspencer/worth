@@ -1,10 +1,13 @@
 use std::sync::Arc;
 
+mod authored_coupling;
 mod authored_restoration;
+mod candidate_admission;
 mod material;
 mod receipt_closure;
 mod relational_validation;
 mod validation_control;
+pub(in crate::domain_computation::primary_graph) use authored_coupling::CoupledProducerAssembly;
 use material::{ApplicationInvariantCandidateMaterial, ApplicationInvariantSemanticMaterial};
 
 use super::invariant_execution_failure::{
@@ -36,7 +39,7 @@ impl WorthQueryInvariantExecutionProvider for Arc<WorthQueryPrimaryGraphProvider
             .attempts
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        if !attempts.has_invariant_approved_candidate(session) {
+        if attempts.approved_invariant_evidence(session).is_none() {
             return Err(missing_candidate_failure());
         }
         let staged = attempts
@@ -75,11 +78,11 @@ impl WorthQueryInvariantExecutionProvider for Arc<WorthQueryPrimaryGraphProvider
             .attempts
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        let candidate = attempts
-            .approved_candidate(session)
+        let evidence = attempts
+            .approved_invariant_evidence(session)
             .ok_or_else(missing_candidate_failure)?;
         let semantic_work = receipt_closure::requirement_work(
-            candidate.invariant_evidence(),
+            evidence,
             execution.requirement(),
             load_evidence.loaded_fact_locators().len(),
         )?;
@@ -104,7 +107,27 @@ impl WorthQueryPrimaryGraphProvider {
             return Err(owner_failure());
         }
         let material = self.invariant_candidate_material(session)?;
-        self.validate_and_retain_candidate(execution, session, material, allocation_policy)
+        self.validate_and_retain_candidate(execution, session, material, None, allocation_policy)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn admit_primary_candidate_coupled(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        session: WorthQueryProviderSessionView<'_>,
+        assembly: &dyn CoupledProducerAssembly,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<(), WorthQueryInvariantExecutionFailure> {
+        if self.take_skipped_invariant_owner_execution() {
+            return Err(owner_failure());
+        }
+        let material = self.invariant_candidate_material(session)?;
+        self.validate_and_retain_candidate(
+            execution,
+            session,
+            material,
+            Some(assembly),
+            allocation_policy,
+        )
     }
 
     fn invariant_candidate_material(
@@ -150,42 +173,28 @@ impl WorthQueryPrimaryGraphProvider {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         session: WorthQueryProviderSessionView<'_>,
         material: ApplicationInvariantCandidateMaterial,
+        assembly: Option<&dyn CoupledProducerAssembly>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<(), WorthQueryInvariantExecutionFailure> {
-        let material = self.prepare_authored_restoration(execution, material)?;
-        let semantic_work = u64::try_from(material.semantic.expected.len()).map_err(|_| {
-            closure_failure("candidate semantic cardinality exceeds work representation")
-        })?;
+        let mut material = self.prepare_authored_restoration(execution, material)?;
+        let native_assembly = assembly.map(|assembly| assembly as &dyn worth_relational::facade::mvcc::RelationalAuthoredCoupledProducerAssembly);
+        let coupling =
+            self.native_authored_coupling(execution, session, &mut material, native_assembly)?;
+        self.bind_independent_restoration(&mut material)?;
         let (candidate, predicate) = self.validate_relational_candidate(
             execution,
-            material.batch,
+            material.batch.clone(),
             &material.content_attachments,
             &material.branch,
             &material.product,
             &material.request,
             &material.application_touches,
             material.aftermath_causality.as_ref(),
-            material.restoration_publication,
+            material.restoration_publication.take(),
+            coupling,
             allocation_policy,
         )?;
-        let owner_work = receipt_closure::validate_receipt_closure(
-            candidate.invariant_evidence(),
-            &material.requirements,
-            semantic_work,
-        )?;
-        super::super::product_operation::admit_required_invariants(
-            candidate
-                .invariant_evidence()
-                .custom_invariant_execution_receipts(),
-            material.producer_required_invariants,
-        )
-        .map_err(|denial| {
-            WorthQueryInvariantExecutionFailure::new(
-                WorthQueryInvariantExecutionDenialKind::ProducerRequirementNotAdmitted(denial),
-                "producer-required invariant did not admit the publication",
-            )
-        })?;
-        let touch_admission =
+        let work = self.admit_candidate_material(&candidate, &material, || {
             super::application_touch_admission::admit_validated_application_touches(
                 execution,
                 &candidate,
@@ -196,20 +205,14 @@ impl WorthQueryPrimaryGraphProvider {
             )
             .map_err(
                 super::application_touch_admission::TouchAdmissionFailure::into_invariant_failure,
-            )?;
-        let summary = candidate.invariant_evidence().summary();
-        let work = super::mutation_work::WorthQueryPrimaryMutationWorkCounters::new(
-            WorthQueryInvariantWorkMint { _private: () },
-            material.decision_facts,
-            material.semantic.expected.len(),
-            material.semantic.expected.len(),
-            owner_work,
-            summary.execution_count,
-            summary.result_count,
-            material.expected_step_preparation_work,
-            touch_admission,
-        );
-        self.retain_validated_candidate(session, candidate, work, predicate)
+            )
+        })?;
+        if let Some(assembly) = assembly {
+            assembly.admit_validated(execution, self, &candidate)?;
+        }
+        let members = assembly.map_or_else(Vec::new, CoupledProducerAssembly::prepared_members);
+        super::coupled_members::require_complete(execution, &candidate, &members)?;
+        self.retain_validated_candidate(session, candidate, work, predicate, members)
     }
 
     fn retain_validated_candidate(
@@ -218,9 +221,11 @@ impl WorthQueryPrimaryGraphProvider {
         candidate: worth_relational::facade::mvcc::ValidatedRelationalProposal,
         work: super::mutation_work::WorthQueryPrimaryMutationWorkCounters,
         predicate: Option<crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationOwner>,
+        members: Vec<super::CoupledApplicationMember>,
     ) -> Result<(), WorthQueryInvariantExecutionFailure> {
         let mut incoming = Some(
             super::application_attempt_state::WorthQueryApprovedApplicationCandidate {
+                members,
                 native: candidate,
                 work,
                 predicate,
@@ -246,8 +251,7 @@ fn validate_owner_evidence(
         ));
     }
     let summary = evidence.summary();
-    (summary.execution_count == 3
-        && summary.commit_boundary_seen
+    (summary.commit_boundary_seen
         && summary.mutation_sensitive_seen
         && summary.snapshot_publication_seen)
         .then_some(())

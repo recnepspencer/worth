@@ -33,19 +33,8 @@ pub struct BoundsSlot;
 pub struct ProbeParameter;
 pub struct EnabledParameter;
 worth_query_portable_type!(BoundsSlot => "managed-catalog.box.bounds-slot.v1");
-pub fn bounds<Q>() -> ApplicationQueryResultFieldRef<
-    Q,
-    BoundsSlot,
-    Catalog,
-    Item,
-    ItemFacts,
-    ItemBounds,
-    Coordinates,
-    ReadOnly,
-    EqualityPredicate,
-    DeclaredApplicationUnit<FixtureLength, ()>,
-> {
-    ApplicationQueryResultFieldRef::new("bounds", ItemBounds::reference())
+pub fn bounds<Q>() -> ApplicationQueryResultFieldRef<Q, BoundsSlot, Catalog, ItemBounds> {
+    ApplicationQueryResultFieldRef::new("bounds", ItemBounds::at("ItemBounds"))
 }
 fn shape<Q: ApplicationQueryMarkerIdentity<Catalog>>(
 ) -> TypedApplicationQueryResultShape<Catalog, Q, Item, Row, ResultBinding> {
@@ -69,7 +58,7 @@ fn base<Q: ApplicationQueryMarkerIdentity<Catalog, ResultBinding = ResultBinding
         .lanes(ApplicationQueryLaneEligibility::one_shot())
 }
 pub fn source_definition(
-) -> ApplicationQueryDefinition<Catalog, SourceQuery, Parameters, Row, Directory> {
+) -> ApplicationQueryDefinitionBuilder<Catalog, SourceQuery, Parameters, Row, Directory> {
     base(
         SourceQuery::reference(),
         ApplicationQueryDisclosureContract::public(),
@@ -79,8 +68,6 @@ pub fn source_definition(
         ApplicationQueryRootPath::from(Directory::reference()).forward(Contains::reference()),
     )
     .order_by(identity(), ApplicationQueryOrderingDirection::Descending)
-    .build()
-    .unwrap()
 }
 fn probe<Q>() -> ApplicationQueryParameterRef<Q, ProbeParameter, CoordinatesBinding> {
     ApplicationQueryParameterRef::from_query_identifier("probe")
@@ -90,7 +77,7 @@ fn enabled_parameter<Q>(
     ApplicationQueryParameterRef::from_query_identifier("enabled")
 }
 pub fn public_definition(
-) -> ApplicationQueryDefinition<Catalog, BoxQuery, Parameters, Row, Directory> {
+) -> ApplicationQueryDefinitionBuilder<Catalog, BoxQuery, Parameters, Row, Directory> {
     base(
         BoxQuery::reference(),
         ApplicationQueryDisclosureContract::public(),
@@ -98,28 +85,28 @@ pub fn public_definition(
     .public()
     .managed_index(BoxIndex::reference(), probe())
     .parameter(enabled_parameter())
-    .where_equal(ItemEnabled::reference(), enabled_parameter())
+    .where_equal(ItemEnabled::at("ItemEnabled"), enabled_parameter())
     .order_by(identity(), ApplicationQueryOrderingDirection::Ascending)
-    .build()
-    .unwrap()
 }
 pub fn governed_definition(
-) -> ApplicationQueryDefinition<Catalog, GovernedQuery, Parameters, Row, Directory> {
+) -> ApplicationQueryDefinitionBuilder<Catalog, GovernedQuery, Parameters, Row, Directory> {
     let influence = ApplicationQueryInfluenceContract::permit_all();
     let disclosure = ApplicationQueryDisclosureContract::governed_by(
         "catalog-box-query",
         access::ReadBoxes::reference(),
     )
     .use_field_by(
-        ItemIdentity::reference(),
+        ItemIdentity::at("ItemIdentity"),
         access::encoded(),
         influence.clone(),
     )
+    .expect("record field contract")
     .use_field_by(
-        ItemEnabled::reference(),
+        ItemEnabled::at("ItemEnabled"),
         access::encoded(),
         influence.clone(),
     )
+    .expect("record field contract")
     .disclose_field_by(
         identity::<GovernedQuery>(),
         access::encoded(),
@@ -135,10 +122,8 @@ pub fn governed_definition(
         .requires_ability(access::ReadBoxRows::reference())
         .managed_index(BoxIndex::reference(), probe())
         .parameter(enabled_parameter())
-        .where_equal(ItemEnabled::reference(), enabled_parameter())
+        .where_equal(ItemEnabled::at("ItemEnabled"), enabled_parameter())
         .order_by(identity(), ApplicationQueryOrderingDirection::Ascending)
-        .build()
-        .unwrap()
 }
 impl<Q: ApplicationQueryMarkerIdentity<Catalog>> WorthQueryApplicationProjection<Catalog, Q>
     for Row
@@ -188,12 +173,12 @@ fn governed_scope(input: FindGovernedBoxes) -> String {
 worth_query_query_binding!(pub SourceBinding for ReadSource, schema Catalog, identity "managed-catalog.box.source-binding.v1", input SourceInputBinding,
     query SourceQuery, parameters ParametersBinding => |_| ApplicationQueryParameterSet::new(), result ResultBinding,
     principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit, field DirectoryIdentity::reference(), value source_scope, limits results 16);
+    scope DirectoryIdentity, field DirectoryIdentity::at("DirectoryIdentity"), value source_scope, limits results 16);
 worth_query_query_binding!(pub PublicBinding for FindBoxes, schema Catalog, identity "managed-catalog.box.public-binding.v1", input PublicInputBinding,
     query BoxQuery, parameters ParametersBinding => |input:&FindBoxes| ApplicationQueryParameterSet::new().bind(probe(),input.probe).unwrap().bind(enabled_parameter(),true).unwrap(), result ResultBinding,
     principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit, field DirectoryIdentity::reference(), value public_scope, limits results 16);
+    scope DirectoryIdentity, field DirectoryIdentity::at("DirectoryIdentity"), value public_scope, limits results 16);
 worth_query_query_binding!(pub GovernedBinding for FindGovernedBoxes, schema Catalog, identity "managed-catalog.box.governed-binding.v1", input GovernedInputBinding,
     query GovernedQuery, parameters ParametersBinding => |input:&FindGovernedBoxes| ApplicationQueryParameterSet::new().bind(probe(),input.probe).unwrap().bind(enabled_parameter(),true).unwrap(), result ResultBinding,
     principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit, field DirectoryIdentity::reference(), value governed_scope, limits results 16);
+    scope DirectoryIdentity, field DirectoryIdentity::at("DirectoryIdentity"), value governed_scope, limits results 16);

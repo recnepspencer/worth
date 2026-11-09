@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod digest;
 
 use crate::evidence_identity::{
@@ -52,7 +53,7 @@ impl WorthQueryWriteReceiptInspection {
     pub(in crate::runtime) fn new(
         receipt: &WorthQueryWriteReceipt,
         runtime_evidence: WorthQueryRuntimeInspectionEvidence,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let canonical_artifact = WorthQueryInspectedArtifact::new(
             "canonical",
             receipt.commit_evidence_identity().clone(),
@@ -83,7 +84,7 @@ impl WorthQueryWriteReceiptInspection {
                 )
                 .seal()
             })
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, _>>()?;
         let declared_aspect_operations = receipt.declared_aspect_operations().to_vec();
         let declared_aspect_value_digest = receipt.declared_aspect_value_identity().cloned();
         let mutation_metadata = receipt.mutation_metadata().clone();
@@ -112,8 +113,8 @@ impl WorthQueryWriteReceiptInspection {
             declared_aspect_value_digest.as_ref(),
             &mutation_metadata,
             &live_patch_artifacts,
-        );
-        Self {
+        )?;
+        Ok(Self {
             mutation_family: receipt.mutation_family().as_str().to_string(),
             authority_lane: receipt.authority_lane(),
             basis_lane: receipt.basis_lane(),
@@ -144,7 +145,7 @@ impl WorthQueryWriteReceiptInspection {
             declared_aspect_value_digest,
             mutation_metadata,
             inspection_identity,
-        }
+        })
     }
 
     pub fn authority_lane(&self) -> WorthQueryAuthorityLane {

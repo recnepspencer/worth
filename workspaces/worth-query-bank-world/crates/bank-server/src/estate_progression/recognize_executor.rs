@@ -67,17 +67,25 @@ pub(crate) fn project_recognition(
     estate: &WorthQueryInvariantEntityIdentity<BankSchema, EstateCase>,
     command: RecognitionCommand,
 ) -> Result<(), BankExecutorRecognitionProjectionDenial> {
-    let authority =
-        reader.resolve_entity(LegalAuthorityIdentityField::reference(), command.authority)?;
+    let authority = reader.resolve_entity(
+        LegalAuthorityIdentityField::at("LegalAuthorityIdentityField"),
+        command.authority,
+    )?;
     let recognized = reader
-        .decision_field(&authority, LegalAuthorityRecognizedField::reference())?
+        .decision_field(
+            &authority,
+            LegalAuthorityRecognizedField::at("LegalAuthorityRecognizedField"),
+        )?
         .unwrap_or(false);
     if !recognized {
         return Err(BankExecutorRecognitionProjectionDenial::AuthorityNotRecognized);
     }
     require_authority_estate(reader, &authority, command.estate)?;
     require_authority_holder(reader, &authority, command.executor)?;
-    let executor = reader.resolve_entity(PrincipalIdentityField::reference(), command.executor)?;
+    let executor = reader.resolve_entity(
+        PrincipalIdentityField::at("PrincipalIdentityField"),
+        command.executor,
+    )?;
     let existing = reader.decision_relations_from(EstateExecutor::reference(), &executor)?;
     if existing.iter().any(|relation| relation.to() == estate) {
         return Err(BankExecutorRecognitionProjectionDenial::AlreadyRecognizedExecutor);
@@ -104,7 +112,10 @@ fn require_authority_estate(
         );
     };
     let observed = reader
-        .decision_field(relation.to(), EstateCaseIdentityField::reference())?
+        .decision_field(
+            relation.to(),
+            EstateCaseIdentityField::at("EstateCaseIdentityField"),
+        )?
         .ok_or(BankExecutorRecognitionProjectionDenial::MissingEstateIdentity)?;
     if observed != expected {
         return Err(BankExecutorRecognitionProjectionDenial::AuthorityEstateMismatch);
@@ -131,7 +142,10 @@ fn require_authority_holder(
         );
     };
     let observed = reader
-        .decision_field(relation.to(), PrincipalIdentityField::reference())?
+        .decision_field(
+            relation.to(),
+            PrincipalIdentityField::at("PrincipalIdentityField"),
+        )?
         .ok_or(BankExecutorRecognitionProjectionDenial::MissingHolderIdentity)?;
     if observed != expected {
         return Err(BankExecutorRecognitionProjectionDenial::AuthorityHolderMismatch);

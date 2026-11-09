@@ -45,17 +45,25 @@ type Group = WorthQueryGroupedHistoryDocument<
     'static,
     ConsumerSchema,
     PlanarDocumentHistory<ConsumerSchema>,
-    PlanarInitialAdjustment,
     HistoryProgram,
-    HistoryAction,
+    WorthQueryHistoryTypedMembers<
+        ConsumerSchema,
+        PlanarInitialAdjustment,
+        HistoryProgram,
+        HistoryAction,
+    >,
 >;
 type Execution = WorthQueryHistoryGroupExecution<
     'static,
     ConsumerSchema,
     PlanarDocumentHistory<ConsumerSchema>,
-    PlanarInitialAdjustment,
     HistoryProgram,
-    HistoryAction,
+    WorthQueryHistoryTypedMembers<
+        ConsumerSchema,
+        PlanarInitialAdjustment,
+        HistoryProgram,
+        HistoryAction,
+    >,
 >;
 type FixedOutcome = WorthQueryFixedHistoryEditOutcome<
     ConsumerSchema,

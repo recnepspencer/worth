@@ -5,6 +5,7 @@ use crate::correspondence::{
 use crate::correspondence_history::{
     compose_historical_admission_denied_envelope, compose_historical_path_denied_envelope,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::facade::foundation::{
     admit_historical_evaluation_path, build_correspondence_historical_parity_bundle,
     resolve_historical_materialization_path, HistoricalCapabilityDescriptor,
@@ -18,7 +19,7 @@ use crate::harness::correspondence_history_certification::model::{
 };
 
 pub(crate) fn unsupported_historical_materialization_rejection(
-) -> CorrespondenceHistoryCertificationRejection {
+) -> Result<CorrespondenceHistoryCertificationRejection, IdentityDerivationDenial> {
     let preflight = detail_preflight_bundle();
     let correspondence =
         resolve_correspondence_evidence(CorrespondenceEvaluationRequest::lineage_only(
@@ -33,7 +34,7 @@ pub(crate) fn unsupported_historical_materialization_rejection(
         1,
         1,
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )?;
     let capability = HistoricalCapabilityDescriptor::new_for_test(
         "basis:a",
         Some(crate::historical::AdmittedHistoricalPathClass::AdmittedRetainedSnapshotPath),
@@ -42,7 +43,7 @@ pub(crate) fn unsupported_historical_materialization_rejection(
         true,
         false,
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )?;
     let admission =
         admit_historical_evaluation_path(request, capability).expect("admission should succeed");
     let error = HistoricalEvaluationError::UnsupportedBridgeMaterializationPath {
@@ -58,7 +59,7 @@ pub(crate) fn unsupported_historical_materialization_rejection(
     )
     .expect("unsupported historical path bundle should build");
 
-    CorrespondenceHistoryCertificationRejection {
+    Ok(CorrespondenceHistoryCertificationRejection {
         failure_class: CorrespondenceHistoryFailureClass::HistoricalPathDenied,
         failure_digest: parity_bundle
             .failure_digest()
@@ -66,11 +67,11 @@ pub(crate) fn unsupported_historical_materialization_rejection(
             .as_str()
             .to_string(),
         counter_snapshot_digest: Some(parity_bundle.counter_snapshot_digest().as_str().to_string()),
-    }
+    })
 }
 
 pub(crate) fn hidden_materialization_substitution_rejection(
-) -> CorrespondenceHistoryCertificationRejection {
+) -> Result<CorrespondenceHistoryCertificationRejection, IdentityDerivationDenial> {
     let preflight = detail_preflight_bundle();
     let correspondence =
         resolve_correspondence_evidence(CorrespondenceEvaluationRequest::lineage_only(
@@ -85,7 +86,7 @@ pub(crate) fn hidden_materialization_substitution_rejection(
         4,
         8,
         HistoricalPathReuseDescriptor::with_replay_tail_reuse(),
-    );
+    )?;
     let capability = HistoricalCapabilityDescriptor::new_for_test(
         "basis:replay",
         Some(crate::historical::AdmittedHistoricalPathClass::AdmittedDeltaReplayPath),
@@ -94,7 +95,7 @@ pub(crate) fn hidden_materialization_substitution_rejection(
         false,
         true,
         HistoricalPathReuseDescriptor::with_replay_tail_reuse(),
-    );
+    )?;
     let admission =
         admit_historical_evaluation_path(request, capability).expect("admission should succeed");
     let error = resolve_historical_materialization_path(
@@ -102,7 +103,7 @@ pub(crate) fn hidden_materialization_substitution_rejection(
         HistoricalMaterializationDescriptor::new_for_test(
             "basis:replay",
             ResolvedHistoricalPathClass::ResolvedRetainedSnapshotPath,
-        ),
+        )?,
     )
     .expect_err("path mutation should fail");
     let envelope = compose_historical_path_denied_envelope(correspondence, admission, error);
@@ -113,7 +114,7 @@ pub(crate) fn hidden_materialization_substitution_rejection(
     )
     .expect("substitution denied bundle should build");
 
-    CorrespondenceHistoryCertificationRejection {
+    Ok(CorrespondenceHistoryCertificationRejection {
         failure_class: CorrespondenceHistoryFailureClass::HistoricalPathDenied,
         failure_digest: parity_bundle
             .failure_digest()
@@ -121,10 +122,11 @@ pub(crate) fn hidden_materialization_substitution_rejection(
             .as_str()
             .to_string(),
         counter_snapshot_digest: Some(parity_bundle.counter_snapshot_digest().as_str().to_string()),
-    }
+    })
 }
 
-pub(crate) fn executor_path_mutation_rejection() -> CorrespondenceHistoryCertificationRejection {
+pub(crate) fn executor_path_mutation_rejection(
+) -> Result<CorrespondenceHistoryCertificationRejection, IdentityDerivationDenial> {
     let preflight = detail_preflight_bundle();
     let correspondence =
         resolve_correspondence_evidence(CorrespondenceEvaluationRequest::lineage_only(
@@ -139,7 +141,7 @@ pub(crate) fn executor_path_mutation_rejection() -> CorrespondenceHistoryCertifi
         1,
         1,
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )?;
     let capability = HistoricalCapabilityDescriptor::new_for_test(
         "basis:executor",
         Some(crate::historical::AdmittedHistoricalPathClass::AdmittedRetainedSnapshotPath),
@@ -148,7 +150,7 @@ pub(crate) fn executor_path_mutation_rejection() -> CorrespondenceHistoryCertifi
         true,
         false,
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )?;
     let admission =
         admit_historical_evaluation_path(request, capability).expect("admission should succeed");
     let error = resolve_historical_materialization_path(
@@ -156,7 +158,7 @@ pub(crate) fn executor_path_mutation_rejection() -> CorrespondenceHistoryCertifi
         HistoricalMaterializationDescriptor::new_for_test(
             "basis:executor",
             ResolvedHistoricalPathClass::ResolvedFullReconstructionPath,
-        ),
+        )?,
     )
     .expect_err("executor mutation should fail");
     let envelope = compose_historical_path_denied_envelope(correspondence, admission, error);
@@ -167,7 +169,7 @@ pub(crate) fn executor_path_mutation_rejection() -> CorrespondenceHistoryCertifi
     )
     .expect("executor mutation denial bundle should build");
 
-    CorrespondenceHistoryCertificationRejection {
+    Ok(CorrespondenceHistoryCertificationRejection {
         failure_class: CorrespondenceHistoryFailureClass::HistoricalPathDenied,
         failure_digest: parity_bundle
             .failure_digest()
@@ -175,11 +177,11 @@ pub(crate) fn executor_path_mutation_rejection() -> CorrespondenceHistoryCertifi
             .as_str()
             .to_string(),
         counter_snapshot_digest: Some(parity_bundle.counter_snapshot_digest().as_str().to_string()),
-    }
+    })
 }
 
-pub(crate) fn host_cache_history_authority_rejection() -> CorrespondenceHistoryCertificationRejection
-{
+pub(crate) fn host_cache_history_authority_rejection(
+) -> Result<CorrespondenceHistoryCertificationRejection, IdentityDerivationDenial> {
     let preflight = detail_preflight_bundle();
     let correspondence =
         resolve_correspondence_evidence(CorrespondenceEvaluationRequest::lineage_only(
@@ -194,7 +196,7 @@ pub(crate) fn host_cache_history_authority_rejection() -> CorrespondenceHistoryC
         1,
         1,
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )?;
     let error = HistoricalEvaluationError::UnsupportedHistoricalPathRequest {
         requested_path_class: RequestedHistoricalPathClass::RequestedRetainedSnapshotPath,
         reason: "historical evaluation authority may not be satisfied from host cache state",
@@ -207,7 +209,7 @@ pub(crate) fn host_cache_history_authority_rejection() -> CorrespondenceHistoryC
     )
     .expect("host cache authority denial bundle should build");
 
-    CorrespondenceHistoryCertificationRejection {
+    Ok(CorrespondenceHistoryCertificationRejection {
         failure_class: CorrespondenceHistoryFailureClass::HistoricalPathDenied,
         failure_digest: parity_bundle
             .failure_digest()
@@ -215,5 +217,5 @@ pub(crate) fn host_cache_history_authority_rejection() -> CorrespondenceHistoryC
             .as_str()
             .to_string(),
         counter_snapshot_digest: Some(parity_bundle.counter_snapshot_digest().as_str().to_string()),
-    }
+    })
 }

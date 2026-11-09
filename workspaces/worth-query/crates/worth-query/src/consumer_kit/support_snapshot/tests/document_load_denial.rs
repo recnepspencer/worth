@@ -47,7 +47,7 @@ fn support_snapshot_load_denies_row_digest_drift_with_typed_error() {
 #[test]
 fn support_snapshot_load_denies_unknown_status_before_digest_acceptance() {
     let matrix = live_support_matrix();
-    let snapshot = project_support_snapshot(&matrix);
+    let snapshot = project_support_snapshot(&matrix).expect("fixture digest must fit");
     let terminal_json_document =
         terminal_support_snapshot_json_document_from_snapshot_with_mutation(&snapshot, |value| {
             value.replace_first_row_string("status", "maybe-supported");

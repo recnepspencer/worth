@@ -2,9 +2,11 @@ use super::{
     WorthQueryBoundGraphExecutionReceipt, WorthQueryWorkflowEffectEvidence,
     WorthQueryWorkflowRunCounters, WorthQueryWorkflowStageReceipt,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowAdvanceDenialKind {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     ExecutionRequest(
         worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
     ),

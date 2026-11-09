@@ -8,21 +8,24 @@ pub fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<NumericSchema>) {
     graph
         .bind_entity(
             WorthQueryApplicationEntitySeed::new(Grant::reference(), key("adoption-grant"))
-                .field(GrantIdentity::reference(), "adoption-grant".to_owned())
-                .field(GrantAction::reference(), "adopt-program".to_owned())
                 .field(
-                    GrantPurpose::reference(),
+                    GrantIdentity::at("GrantIdentity"),
+                    "adoption-grant".to_owned(),
+                )
+                .field(GrantAction::at("GrantAction"), "adopt-program".to_owned())
+                .field(
+                    GrantPurpose::at("GrantPurpose"),
                     "numeric-administration".to_owned(),
                 )
                 .field(
-                    super::super::causal_inspection::capability::Disclosure::reference(),
+                    super::super::causal_inspection::capability::Disclosure::at("Disclosure"),
                     "numeric-administration".to_owned(),
                 )
-                .field(GrantStatus::reference(), "active".to_owned())
-                .field(GrantScopeKey::reference(), "numeric".to_owned())
-                .field(GrantNotBefore::reference(), 0_u64)
-                .field(GrantNotAfter::reference(), u64::MAX)
-                .field(GrantDepth::reference(), 0_u64),
+                .field(GrantStatus::at("GrantStatus"), "active".to_owned())
+                .field(GrantScopeKey::at("GrantScopeKey"), "numeric".to_owned())
+                .field(GrantNotBefore::at("GrantNotBefore"), 0_u64)
+                .field(GrantNotAfter::at("GrantNotAfter"), u64::MAX)
+                .field(GrantDepth::at("GrantDepth"), 0_u64),
         )
         .unwrap();
     graph

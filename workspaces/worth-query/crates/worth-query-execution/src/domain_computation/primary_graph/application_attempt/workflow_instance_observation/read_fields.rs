@@ -67,26 +67,34 @@ impl<'a, 'e, 'r> ReadFields<'a, 'e, 'r> {
             kind,
             field,
             |v| {
-                let text = match v {
-                    None => return Ok(None),
-                    Some(AspectValue::String(InternedString::Raw(v))) => v.as_str(),
-                    Some(AspectValue::String(InternedString::Symbol(v))) => self
-                        .pin
-                        .symbols()
-                        .resolve(worth_relational::facade::symbols::Symbol(v.0))
-                        .ok_or(Denial::Corrupt)?,
-                    _ => return Err(Denial::Corrupt),
-                };
-                // The existing native read quotes comparison/read work before this projection.
-                let mut bytes = worth_execution::ExecutionByteBuffer::allocate(
-                    text.len(),
-                    self.execution.allocation_policy(),
-                )
-                .map_err(Denial::Allocation)?;
-                bytes
-                    .extend_from_slice(text.as_bytes())
+                let encode = |text: &str| {
+                    // The existing native read quotes comparison/read work before this projection.
+                    let mut bytes = worth_execution::ExecutionByteBuffer::allocate(
+                        text.len(),
+                        self.execution.allocation_policy(),
+                    )
                     .map_err(Denial::Allocation)?;
-                bytes.seal().map(Some).map_err(Denial::Allocation)
+                    bytes
+                        .extend_from_slice(text.as_bytes())
+                        .map_err(Denial::Allocation)?;
+                    bytes.seal().map(Some).map_err(Denial::Allocation)
+                };
+                match v {
+                    None => Ok(None),
+                    Some(AspectValue::String(InternedString::Stored(text))) => {
+                        encode(text.as_str())
+                    }
+                    Some(AspectValue::String(InternedString::Raw(text))) => encode(text.as_str()),
+                    Some(AspectValue::String(InternedString::Symbol(symbol))) => self
+                        .pin
+                        .with_symbol_text(
+                            self.execution,
+                            worth_relational::facade::symbols::Symbol(symbol.0),
+                            |text| encode(text.ok_or(Denial::Corrupt)?.as_str()),
+                        )
+                        .map_err(Denial::Relational)?,
+                    _ => Err(Denial::Corrupt),
+                }
             },
         )
         .map_err(Denial::Relational)?

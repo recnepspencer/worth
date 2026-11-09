@@ -61,8 +61,6 @@ pub mod query;
 pub mod readiness;
 #[path = "successor/schema.rs"]
 pub mod schema;
-#[path = "successor/unchanged_revision.rs"]
-pub mod unchanged_revision;
 
 pub use installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 pub use worth_query_host::facade::{
@@ -169,3 +167,12 @@ pub fn predecessor_checkpoint() -> installation::WorthQueryApplicationCheckpoint
     assert_eq!(sections.accepted_output_count(), 1);
     checkpoint
 }
+
+pub use super::OWNERSHIP;
+
+#[path = "retire_source.rs"]
+#[expect(
+    clippy::duplicate_mod,
+    reason = "the successor declares source retirement against its own schema"
+)]
+pub mod retire_source;

@@ -135,6 +135,10 @@ impl ApplicationReadableScalarValueBinding for StringApplicationValueBinding {
     }
     fn decode(value: &AspectValue) -> Result<Self::Value, ApplicationValueDecodeDenial> {
         match value {
+            AspectValue::String(InternedString::Stored(value)) => {
+                let value = value.as_string();
+                Ok(value.clone())
+            }
             AspectValue::String(InternedString::Raw(value)) => Ok(value.clone()),
             AspectValue::String(_) => Err(ApplicationValueDecodeDenial::CodecRejected {
                 binding_identity: Self::IDENTITY,

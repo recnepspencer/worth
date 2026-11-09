@@ -17,9 +17,11 @@ macro_rules! graph_query {
     ($module:ident, $entity:ident, $facts:ident, $key:ident, $value:ident, $relation:ident, $semantic:literal, $query_id:literal, $binding_id:literal) => {
         pub mod $module {
             use super::*;
-            use super::super::schema::{$entity as Entity, $facts as Facts, $key as Key, $value as Value, $relation as Relation};
+            use super::super::schema::{$entity as Entity,$key as Key,$value as Value,$relation as Relation};
             worth_query_application_query!(pub Query for Schema, identity $query_id, parameters ParametersBinding, result RowBinding, scope Entity => $semantic, name $semantic);
             const BINDING_ID: &str = $binding_id;
+            fn key_field() -> Key { $key::at(stringify!($key)) }
+            fn value_field() -> Value { $value::at(stringify!($value)) }
             include!("graph_query.rs");
         }
     };

@@ -11,12 +11,6 @@ use super::authorization_path_artifact::prepare_authorization_path_identity;
 use crate::canonical_digest_derivation::InstallationCanonicalIdentityBasis;
 use crate::canonical_work::WorthQueryCanonicalWorkEvidence;
 
-const AUTHORIZATION_POLICY_BUDGET: CanonicalDigestWorkBudget =
-    match CanonicalDigestWorkBudget::new(4_096, 1024 * 1024) {
-        Some(budget) => budget,
-        None => panic!("fixed authorization-policy canonical-work budget is valid"),
-    };
-
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct WorthQueryInstalledAuthorizationPath {
     path: ApplicationAuthorizationPath,
@@ -54,11 +48,12 @@ impl WorthQueryInstalledAbilityRequirement {
         scope_entity: String,
         policy: String,
         policy_paths: Vec<ApplicationAuthorizationPath>,
+        budget: CanonicalDigestWorkBudget,
     ) -> Result<Self, CanonicalDigestDerivationDenial> {
         let mut installed_paths = Vec::with_capacity(policy_paths.len());
         let mut canonical_work = WorthQueryCanonicalWorkEvidence::zero();
         for path in policy_paths {
-            let prepared = prepare_authorization_path_identity(&path)?;
+            let prepared = prepare_authorization_path_identity(&path, budget)?;
             canonical_work = canonical_work.combine(prepared.work);
             installed_paths.push(WorthQueryInstalledAuthorizationPath {
                 path,
@@ -69,7 +64,7 @@ impl WorthQueryInstalledAbilityRequirement {
         let mut basis = InstallationCanonicalIdentityBasis::new(
             "worth-query.application-authorization-policy",
             "worth-query-application-authorization-policy-v1",
-            AUTHORIZATION_POLICY_BUDGET,
+            budget,
         );
         basis.text("ability", &ability)?;
         basis.text("scope-entity", &scope_entity)?;
@@ -119,6 +114,7 @@ pub(crate) type ApplicationAuthorizationPolicyRegistry =
 
 pub(crate) fn compile_authorization_policy_registry(
     members: &[ApplicationSchemaMember],
+    budget: CanonicalDigestWorkBudget,
 ) -> Result<ApplicationAuthorizationPolicyRegistry, CanonicalDigestDerivationDenial> {
     let mut registry = ApplicationAuthorizationPolicyRegistry::new();
     for member in members {
@@ -134,6 +130,7 @@ pub(crate) fn compile_authorization_policy_registry(
                 scope_entity.clone(),
                 policy.clone(),
                 paths.clone(),
+                budget,
             )?;
             registry
                 .entry(ability.clone())

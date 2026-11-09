@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod digest;
 mod validation;
 
@@ -28,7 +29,7 @@ impl CausalInspectionProofShapeCertification {
         changed_artifact: &QueryCausalInspectionArtifact,
         representative_matrix: &CausalInspectionRepresentativeMatrix,
         boundary_audit: &CausalInspectionBoundaryAudit,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let inspected_artifact_digest = changed_artifact.artifact_identity().as_str().to_string();
         let representative_matrix_digest = representative_matrix.matrix_digest().to_string();
         let boundary_audit_digest = boundary_audit.audit_digest().to_string();
@@ -36,20 +37,20 @@ impl CausalInspectionProofShapeCertification {
             &inspected_artifact_digest,
             &representative_matrix_digest,
             &boundary_audit_digest,
-        );
+        )?;
         let witness_authority_digest = derive_witness_authority_digest(
             &inspected_artifact_digest,
             &representative_matrix_digest,
             &boundary_audit_digest,
-        );
+        )?;
         let proof_shape_digest = canonical_proof_shape_digest(
             &inspected_artifact_digest,
             &representative_matrix_digest,
             &boundary_audit_digest,
             &phase_progression_digest,
             &witness_authority_digest,
-        );
-        Self {
+        )?;
+        Ok(Self {
             phase_skipping_rejected: true,
             raw_collection_substitution_rejected: true,
             stale_proof_reuse_rejected: true,
@@ -60,7 +61,7 @@ impl CausalInspectionProofShapeCertification {
             phase_progression_digest,
             witness_authority_digest,
             proof_shape_digest,
-        }
+        })
     }
 
     #[cfg(test)]
@@ -68,12 +69,12 @@ impl CausalInspectionProofShapeCertification {
         changed_artifact: &QueryCausalInspectionArtifact,
         representative_matrix: &CausalInspectionRepresentativeMatrix,
         boundary_audit: &CausalInspectionBoundaryAudit,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let mut proof =
-            Self::from_runtime_path(changed_artifact, representative_matrix, boundary_audit);
+            Self::from_runtime_path(changed_artifact, representative_matrix, boundary_audit)?;
         proof.proof_shape_digest =
-            digest::stale_test_proof_shape_digest(&proof.inspected_artifact_digest);
-        proof
+            digest::stale_test_proof_shape_digest(&proof.inspected_artifact_digest)?;
+        Ok(proof)
     }
 
     #[cfg(test)]
@@ -81,12 +82,12 @@ impl CausalInspectionProofShapeCertification {
         changed_artifact: &QueryCausalInspectionArtifact,
         representative_matrix: &CausalInspectionRepresentativeMatrix,
         boundary_audit: &CausalInspectionBoundaryAudit,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let mut proof =
-            Self::from_runtime_path(changed_artifact, representative_matrix, boundary_audit);
+            Self::from_runtime_path(changed_artifact, representative_matrix, boundary_audit)?;
         proof.worthd_authority_witness_rejected = false;
-        proof.proof_shape_digest = digest::worthd_test_proof_shape_digest(&proof);
-        proof
+        proof.proof_shape_digest = digest::worthd_test_proof_shape_digest(&proof)?;
+        Ok(proof)
     }
 
     pub fn phase_skipping_rejected(&self) -> bool {

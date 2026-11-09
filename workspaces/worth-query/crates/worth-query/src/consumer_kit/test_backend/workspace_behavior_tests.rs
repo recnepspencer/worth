@@ -177,7 +177,7 @@ fn in_memory_test_runtime_stages_sandboxed_preview_writes_without_authoritative_
                 .set_aspect(touch("title.value"), authored_text("Preview only"))
         })
         .expect("sandboxed preview write should stage");
-    let outcome = preview.discard();
+    let outcome = preview.discard().expect("fixture digest must fit");
 
     assert!(outcome.discarded());
     assert_eq!(outcome.closeout_evidence().preview_write_staging_count(), 1);
@@ -223,7 +223,7 @@ fn in_memory_test_runtime_denies_wrong_collection_preview_before_residue() {
         })
         .expect_err("preview write should honor backend schema before staging");
     assert_workspace_error_kind(error, WorthQueryWorkspaceErrorKind::UnsupportedCollection);
-    let outcome = preview.discard();
+    let outcome = preview.discard().expect("fixture digest must fit");
     assert_eq!(outcome.closeout_evidence().preview_write_staging_count(), 0);
     assert_eq!(outcome.write_count(), 0);
     assert_eq!(outcome.authoritative_residue_count(), 0);

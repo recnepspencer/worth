@@ -2,12 +2,14 @@ use super::{
     projection_consumption_forbidden_fallback_audit, projection_consumption_public_boundary_audit,
     projection_consumption_support_matrix, ProjectionConsumptionCertifiedSourceSurface,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::projection_consumption::ProjectionConsumptionSupportPosture;
 use crate::projection_consumption::ProjectionFactKind;
 
 #[test]
-fn query_context_lane_rows_keep_lane_local_traceability_and_structural_proofs() {
-    let matrix = projection_consumption_support_matrix();
+fn query_context_lane_rows_keep_lane_local_traceability_and_structural_proofs(
+) -> Result<(), IdentityDerivationDenial> {
+    let matrix = projection_consumption_support_matrix()?;
     let query_context_rows = matrix
         .rows()
         .iter()
@@ -28,12 +30,15 @@ fn query_context_lane_rows_keep_lane_local_traceability_and_structural_proofs() 
     assert!(query_context_rows
         .iter()
         .all(|row| !row.structural_proof().as_str().is_empty()));
+
+    Ok(())
 }
 
 #[test]
-fn hostile_projection_audits_stay_narrow_and_zero_fallback() {
-    let boundary = projection_consumption_public_boundary_audit();
-    let fallback = projection_consumption_forbidden_fallback_audit();
+fn hostile_projection_audits_stay_narrow_and_zero_fallback() -> Result<(), IdentityDerivationDenial>
+{
+    let boundary = projection_consumption_public_boundary_audit()?;
+    let fallback = projection_consumption_forbidden_fallback_audit()?;
 
     assert!(boundary.rows().iter().all(|row| {
         !row.blocked_entrypoint().is_empty()
@@ -45,11 +50,14 @@ fn hostile_projection_audits_stay_narrow_and_zero_fallback() {
         .rows()
         .iter()
         .all(|row| row.occurrence_count() == 0));
+
+    Ok(())
 }
 
 #[test]
-fn query_context_lane_keeps_historical_identity_denial_distinct_from_current_and_preview() {
-    let matrix = projection_consumption_support_matrix();
+fn query_context_lane_keeps_historical_identity_denial_distinct_from_current_and_preview(
+) -> Result<(), IdentityDerivationDenial> {
+    let matrix = projection_consumption_support_matrix()?;
     let historical_identity_row = matrix
         .rows()
         .iter()
@@ -146,4 +154,6 @@ fn query_context_lane_keeps_historical_identity_denial_distinct_from_current_and
         preview_source_reference_row.support_digest(),
         "preview-derived query-context warnings must not collapse into current-row warnings"
     );
+
+    Ok(())
 }

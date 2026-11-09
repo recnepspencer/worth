@@ -8,7 +8,9 @@ fn runtime_public_support_gate_keeps_support_gated_rows_fail_closed_for_ordinary
     let workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("task.support-gated-invariant")
         .expect("task runtime should open a named workspace");
-    let matrix = workspace.public_support_matrix();
+    let matrix = workspace
+        .public_support_matrix()
+        .expect("fixture digest must fit");
 
     for family in [
         WorthQueryRuntimeFacadeFamily::Temporal,
@@ -59,7 +61,9 @@ fn runtime_public_mutation_surface_report_lists_only_live_lower_level_command_su
     let workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("task.mutation-surface")
         .expect("task runtime should open a named workspace");
-    let report = workspace.public_mutation_surface_report();
+    let report = workspace
+        .public_mutation_surface_report()
+        .expect("fixture digest must fit");
 
     assert_eq!(report.lower_level_stable_count(), 4);
     assert_eq!(report.support_gated_count(), 2);

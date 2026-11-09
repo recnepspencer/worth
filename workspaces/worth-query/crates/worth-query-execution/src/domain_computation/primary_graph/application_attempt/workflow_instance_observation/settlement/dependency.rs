@@ -1,5 +1,5 @@
 use crate::domain_computation::primary_graph::application_attempt::check_request_live;
-use worth_foundational::facade::{AspectFieldLocator, AspectKey, AspectValue, InternedString};
+use worth_foundational::facade::{AspectFieldLocator, AspectKey, AspectValue};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_relational::facade::identity::{EntityId, KindId, PartitionId, VersionId};
 
@@ -284,10 +284,10 @@ fn optional_text(
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<Option<String>, WorthQueryApplicationAttemptDenial> {
     match optional_value(execution, runtime, snapshot, entity, kind, locator, facts)? {
-        Some(AspectValue::String(InternedString::Raw(value))) => Ok(Some(value)),
-        Some(_) => Err(denial(
-            "workflow evidence dependency field has the wrong type",
-        )),
+        Some(value) => value
+            .raw_text()
+            .map(|text| Some(text.to_owned()))
+            .ok_or_else(|| denial("workflow evidence dependency field has the wrong type")),
         None => Ok(None),
     }
 }

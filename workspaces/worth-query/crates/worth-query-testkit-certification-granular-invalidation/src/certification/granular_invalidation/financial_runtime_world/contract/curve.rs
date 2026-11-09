@@ -6,24 +6,15 @@ pub use worth_query_host::facade::domain::{
 pub fn curve_node() -> domain::WorthQueryPortableConditionalNodeDeclaration {
     let mut dependencies = curve_localities()
         .into_iter()
-        .map(|locality| {
-            dependency(
-                super::curve_contract(),
-                "CurveFacts",
-                "CurveZeroRateField",
-                locality,
-            )
-        })
+        .map(|locality| dependency(super::curve_contract(), "CurveZeroRateField", locality))
         .collect::<Vec<_>>();
     dependencies.push(dependency(
         super::volatility_contract(),
-        "VolatilityFacts",
         "VolatilitySurfaceField",
         domain::WorthQuerySemanticLocality::SourceRecord,
     ));
     dependencies.push(dependency(
         super::audit_contract(),
-        "AuditFacts",
         "AuditLabelField",
         domain::WorthQuerySemanticLocality::SourceRecord,
     ));
@@ -35,7 +26,6 @@ pub fn curve_record_node() -> domain::WorthQueryPortableConditionalNodeDeclarati
         "curve-record-risk",
         vec![dependency(
             super::curve_contract(),
-            "CurveFacts",
             "CurveZeroRateField",
             domain::WorthQuerySemanticLocality::SourceRecord,
         )],
@@ -92,16 +82,15 @@ pub fn curve_localities() -> [domain::WorthQuerySemanticLocality; 3] {
 
 pub fn dependency(
     contract: domain::AspectContract,
-    aspect: &'static str,
     field: &'static str,
     locality: domain::WorthQuerySemanticLocality,
 ) -> domain::WorthQuerySemanticTruthDependency {
     domain::WorthQuerySemanticTruthDependency::new(
         domain::WorthQueryConditionalGraphReadRole::new("primary").unwrap(),
-        contract,
+        contract.clone(),
         super::field_mask(field),
         AspectBinding::EntityField {
-            field: FieldKey::new(aspect).unwrap(),
+            field: FieldKey::new(contract.key().as_str()).unwrap(),
         },
         locality,
         [AuthoritativeAspectChangeKind::FieldSet],

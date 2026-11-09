@@ -7,6 +7,13 @@ import path from "node:path";
 
 const execFileAsync = promisify(execFile);
 
+// Published declarations must compile for consumers on the current compiler and
+// on the last JavaScript-based line, whatever npm's `latest` happens to be.
+export const consumerTypeScriptPackages = Object.freeze([
+  Object.freeze({ installSpec: "typescript@7.0.2", packageDir: "typescript" }),
+  Object.freeze({ installSpec: "typescript-5@npm:typescript@5.9.3", packageDir: "typescript-5" }),
+]);
+
 export async function runNpm(args, options) {
   if (process.platform === "win32") {
     const command = `npm ${args.join(" ")}`;
@@ -46,7 +53,7 @@ export async function installSmokeDependencies(tempDir, tarballPath) {
       path.basename(localTarballPath),
       "react@18.3.1",
       "@types/react@18.3.31",
-      "typescript",
+      ...consumerTypeScriptPackages.map(({ installSpec }) => installSpec),
     ],
     { cwd: tempDir },
   );

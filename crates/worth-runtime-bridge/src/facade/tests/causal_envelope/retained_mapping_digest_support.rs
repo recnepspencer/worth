@@ -62,6 +62,7 @@ pub(super) fn expected_retained_causal_digest(
         .map(|(index, part)| expected_part_kind(artifact, index, part))
         .collect::<Vec<_>>();
     compose_retained_causal_mapping_evidence_identity(artifact.into(), &typed_parts)
+        .expect("bounded digest fixture")
         .as_str()
         .to_string()
 }

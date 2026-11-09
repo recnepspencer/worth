@@ -22,6 +22,7 @@ mod authority_cryptography;
 mod canonical_digest_derivation;
 mod canonical_hash_encoding;
 mod canonical_work;
+mod derived_identity_budget;
 mod domain_computation;
 mod domain_operation;
 mod generation;
@@ -118,15 +119,15 @@ pub mod facade {
         ApplicationAuthorizationPath, ApplicationAuthorizationPathEffect,
         ApplicationAuthorizationPredicate, ApplicationAuthorizationTraversal,
         ApplicationAuthorizationTraversalDirection, ApplicationEntityRef,
-        ApplicationFieldBindingOwnerKind, ApplicationFieldPresence, ApplicationFieldRef,
-        ApplicationFieldUnit, ApplicationIdentityScalarValueBinding,
-        ApplicationOperationDecisionReadTarget, ApplicationOperationProgramTarget,
-        ApplicationReadableScalarValueBinding, ApplicationRelationCardinality,
-        ApplicationRelationCrossContextPolicy, ApplicationRelationDeletionPolicy,
-        ApplicationRelationEndpoints, ApplicationRelationFieldRef, ApplicationRelationIntegrity,
-        ApplicationRelationIntegrityRecord, ApplicationRelationMinimumReachabilityRecord,
-        ApplicationRelationRef, ApplicationRelationUniquenessScope, ApplicationScalarValueBinding,
-        ApplicationSchema, ApplicationSchemaBindingIdentity, ApplicationSchemaMember,
+        ApplicationFieldBindingOwnerKind, ApplicationFieldPresence, ApplicationFieldUnit,
+        ApplicationIdentityScalarValueBinding, ApplicationOperationDecisionReadTarget,
+        ApplicationOperationProgramTarget, ApplicationReadableScalarValueBinding,
+        ApplicationRelationCardinality, ApplicationRelationCrossContextPolicy,
+        ApplicationRelationDeletionPolicy, ApplicationRelationEndpoints,
+        ApplicationRelationIntegrity, ApplicationRelationIntegrityRecord,
+        ApplicationRelationMinimumReachabilityRecord, ApplicationRelationRef,
+        ApplicationRelationUniquenessScope, ApplicationScalarValueBinding, ApplicationSchema,
+        ApplicationSchemaBindingIdentity, ApplicationSchemaMember,
         ApplicationSignedAggregateValueBinding, ApplicationStructuredValueBinding,
         ApplicationValueDecodeDenial, ApplicationValueEncodeDenial,
         ApplicationValueValidationDenial, DeclaredApplicationFieldValue, EqualityPosture,
@@ -157,12 +158,13 @@ pub mod facade {
         InstalledCorrectionAuthority, InstalledCorrectionBinding, InstalledCorrectionMechanism,
         InstalledExternalEffectContract, InstalledExternalEffectPosture,
         InstalledLoweringCorrespondence, InstalledLoweringCorrespondenceRef,
-        InstalledPreImageDemand, InstalledPreImageLocus, InstalledRecordedInverse,
-        IrreversibleNextActionContract, PublishedAftermathPosture, ReconcilableNextActionContract,
-        ReconcileNextAction, ReversibleNextActionContract, UndoViaRecordedInverse,
-        WorthQueryAftermathCanonicalArtifact, WorthQueryAftermathInstallationDenial,
-        WorthQueryAftermathInstallationDenialKind, WorthQueryInstalledAftermathContract,
-        WorthQueryInstalledAftermathIdentity, WorthQueryInstalledReconciliationProcedure,
+        InstalledPreImageDemand, InstalledPreImageLocus, InstalledPreImageRelationLocus,
+        InstalledRecordedInverse, IrreversibleNextActionContract, PublishedAftermathPosture,
+        ReconcilableNextActionContract, ReconcileNextAction, ReversibleNextActionContract,
+        UndoViaRecordedInverse, WorthQueryAftermathCanonicalArtifact,
+        WorthQueryAftermathInstallationDenial, WorthQueryAftermathInstallationDenialKind,
+        WorthQueryInstalledAftermathContract, WorthQueryInstalledAftermathIdentity,
+        WorthQueryInstalledReconciliationProcedure,
     };
     pub use crate::application_capability::{
         derive_capability_revocation_proposal_identity, derive_delegation_proposal_identity,

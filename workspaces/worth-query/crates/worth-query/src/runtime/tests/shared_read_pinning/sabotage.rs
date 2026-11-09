@@ -73,7 +73,9 @@ fn shared_read_closure_sabotage_reopens_boundary_posture() {
             matrix.clone(),
             portability.clone(),
             stale_denial.clone(),
-            counters.with_unretired_pin_for_sabotage(),
+            counters
+                .with_unretired_pin_for_sabotage()
+                .expect("fixture digest must fit"),
         ),
         WorthQuerySharedReadPinningCertification::from_evidence(
             inventory.clone(),
@@ -98,7 +100,10 @@ fn shared_read_closure_sabotage_reopens_boundary_posture() {
         ),
     ] {
         assert_ne!(
-            certification.closure().posture(),
+            certification
+                .expect("fixture digest must fit")
+                .closure()
+                .posture(),
             WorthQuerySharedReadPinningBoundaryPosture::Closed,
             "any sabotaged Phase 13 evidence must reopen pinning boundary closure"
         );

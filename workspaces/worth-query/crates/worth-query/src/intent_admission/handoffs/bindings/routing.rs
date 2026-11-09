@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::runtime::WorthQueryExistingTruthProbeRequest;
 
 use super::handoff_execution_binding_identity;
@@ -13,15 +14,17 @@ pub struct WorthQueryExistingTruthProbeExecutionBinding {
 }
 
 impl WorthQueryExistingTruthProbeExecutionBinding {
-    pub(crate) fn from_handoff(handoff: WorthQueryExistingTruthProbeExecutionHandoff) -> Self {
+    pub(crate) fn from_handoff(
+        handoff: WorthQueryExistingTruthProbeExecutionHandoff,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let binding_digest = handoff_execution_binding_identity(
             "existing-truth-probe-execution",
             handoff.handoff_digest(),
-        );
-        Self {
+        )?;
+        Ok(Self {
             handoff,
             binding_digest,
-        }
+        })
     }
 
     pub fn family(&self) -> WorthQueryIntentAdmissionFamily {

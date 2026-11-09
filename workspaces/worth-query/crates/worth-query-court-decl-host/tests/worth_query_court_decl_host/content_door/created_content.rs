@@ -9,8 +9,7 @@ pub struct Issue {
 }
 worth_query_structured_value_binding!(pub Input for Issue {identity:"created-content.input.v1"});
 worth_query_operation!(pub Create for Schema,input Input);
-worth_query_operation_reads!(Create=>[Key]);
-worth_query_operation_writes!(Create=>[Key,Values]);
+
 worth_query_operation_creates!(Create=>[Record]);
 worth_query_operation_links!(Create=>[ContainsSamples]);
 impl ApplicationDeclaredOperation<Schema> for Create {
@@ -18,9 +17,9 @@ impl ApplicationDeclaredOperation<Schema> for Create {
         schema: ApplicationSchemaDeclarationBuilder<Schema>,
     ) -> ApplicationSchemaDeclarationBuilder<Schema> {
         schema
-            .operation_read_field(Self::reference(), Key::reference())
-            .operation_write(Self::reference(), Key::reference())
-            .operation_write(Self::reference(), Values::reference())
+            .operation_read_field(Self::reference(), Key::at("Key"))
+            .operation_write(Self::reference(), Key::at("Key"))
+            .operation_write(Self::reference(), Values::at("Values"))
             .operation_create(Self::reference(), Record::reference())
             .operation_link(Self::reference(), ContainsSamples::reference())
     }
@@ -46,7 +45,7 @@ worth_query_mutation_binding!(pub Binding for Issue,schema Schema,
  idempotency String,identity "created-content.key.v1",decision WorthQueryInvariantMutationTarget<Schema,Record>,denial operation::DenialBinding,
  handler identity "created-content.handler.v1",program required,outputs Outputs,
  principal Actor,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
- scope Record,Identity,Key,String,ReadOnly,NoApplicationUnit,field Key::reference(),value scope,
+ scope Key, field Key::at("Key"),value scope,
 );
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
@@ -61,7 +60,7 @@ impl OperationHandler<Schema, Binding> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<Schema, Record>, operation::Denial> {
         let result = reader
-            .resolve_entity(Key::reference(), "record".to_owned())
+            .resolve_entity(Key::at("Key"), "record".to_owned())
             .and_then(|root| reader.mutation_target(&root));
         match result {
             Ok(target) => HandlerResult::Completed(target),
@@ -86,7 +85,7 @@ impl OperationHandler<Schema, Binding> for Handler {
                 )
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .initialize_field(&child, Key::reference(), input.key.clone())
+                .initialize_field(&child, Key::at("Key"), input.key.clone())
                 .map_err(HandlerExecutionDenial::new)?;
             let grid = codec::Grid {
                 rows: 1,
@@ -118,11 +117,11 @@ impl OperationHandler<Schema, Binding> for Handler {
         }
     }
 }
-pub struct Capture;
+pub struct Capture<const DAMAGE: u8 = 0>;
 fn output() -> ApplicationCorrectionOutputField<Schema> {
     ApplicationCorrectionOutput::<Binding, Actual>::content_field(samples())
 }
-impl ApplicationCorrectionBinding<Schema> for Capture {
+impl<const DAMAGE: u8> ApplicationCorrectionBinding<Schema> for Capture<DAMAGE> {
     const IDENTITY: &'static str = "created-content.capture.v1";
     type Source = Binding;
     type InverseIntent = revision::Revise;
@@ -145,10 +144,25 @@ impl ApplicationCorrectionBinding<Schema> for Capture {
                 identity: "original-content-restored-through-declared-output".into(),
             },
         )
-        .unwrap()
     }
     fn source_output_fields() -> Vec<ApplicationCorrectionOutputField<Schema>> {
-        vec![output()]
+        if DAMAGE == 1 {
+            vec![
+                ApplicationCorrectionOutput::<Binding, Actual>::content_field(content_field(
+                    Values::at("MissingValues"),
+                    codec::GridFormat,
+                )),
+            ]
+        } else if DAMAGE == 2 {
+            vec![
+                ApplicationCorrectionOutput::<Binding, Actual>::content_field(content_field(
+                    Values::at("Values"),
+                    codec::Impostor,
+                )),
+            ]
+        } else {
+            vec![output()]
+        }
     }
     fn derive_correction(
         _: &Issue,
@@ -176,4 +190,39 @@ impl ApplicationCorrectionBinding<Schema> for Capture {
     ) -> V::Output {
         dispatch.conventional()
     }
+}
+
+fn refused_content_selection<const DAMAGE: u8>(path: &'static str) {
+    let expression = Capture::<DAMAGE>::source_output_fields();
+    let field = expression[0].binding_recipe().locus().clone();
+    assert_eq!(field.field(), path);
+    let denial = ApplicationSchemaDeclarationBuilder::<Schema>::from_fragment(ContentModel)
+        .unwrap()
+        .correction::<Capture<DAMAGE>>()
+        .build()
+        .unwrap_err();
+    assert_eq!(
+        denial,
+        ApplicationSchemaDeclarationDenial::InvalidCorrectionField {
+            correction: "created-content.capture.v1".into(),
+            field: field.clone(),
+        }
+    );
+    let message = denial.to_string();
+    for part in [
+        "created-content.capture.v1",
+        field.entity(),
+        field.aspect(),
+        field.field(),
+    ] {
+        assert!(message.contains(part), "{message}");
+    }
+}
+#[test]
+fn a_misspelled_content_output_is_refused_at_composition() {
+    refused_content_selection::<1>("MissingValues");
+}
+#[test]
+fn a_content_output_codec_mismatch_is_refused_at_composition() {
+    refused_content_selection::<2>("Values");
 }

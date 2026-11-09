@@ -11,7 +11,7 @@ use crate::storage::data::{EntityReadRecord, RelationReadRecord};
 impl ChargedBytes for EntityReadRecord {
     fn additional_charged_bytes(&self) -> u64 {
         let aspect_bytes = self.authoritative_aspect_state.as_ref().map_or(0, |state| {
-            u64::try_from(state.owned_allocation_capacity_bytes()).unwrap_or(u64::MAX)
+            u64::try_from(state.clone_allocation_capacity_bytes()).unwrap_or(u64::MAX)
         });
         self.kind
             .kind_name
@@ -24,7 +24,7 @@ impl ChargedBytes for EntityReadRecord {
 impl ChargedBytes for RelationReadRecord {
     fn additional_charged_bytes(&self) -> u64 {
         let aspect_bytes = self.authoritative_aspect_state.as_ref().map_or(0, |state| {
-            u64::try_from(state.owned_allocation_capacity_bytes()).unwrap_or(u64::MAX)
+            u64::try_from(state.clone_allocation_capacity_bytes()).unwrap_or(u64::MAX)
         });
         self.kind
             .kind_name

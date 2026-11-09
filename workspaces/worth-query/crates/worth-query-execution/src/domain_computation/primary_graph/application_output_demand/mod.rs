@@ -5,8 +5,11 @@ pub(in crate::domain_computation::primary_graph) use registry::RunningSelectedEx
 mod completed_outputs;
 mod completed_read;
 mod completed_set;
-mod original_endpoint;
+pub(in crate::domain_computation::primary_graph) mod original_endpoint;
 mod original_outputs;
+pub(in crate::domain_computation::primary_graph) use original_outputs::{
+    qualify_output_collection, OriginalOutputTree,
+};
 pub use original_outputs::{
     WorthQueryCompletedOriginalReadOutputs, WorthQueryOriginalReadOutputDenial,
 };
@@ -16,6 +19,7 @@ pub use source_replay::WorthQueryOutputSourceReplay;
 mod publication;
 pub use completed_outputs::WorthQueryCompletedRequiredOutputs;
 pub use completed_read::WorthQueryCompletedReadOutputs;
+pub(in crate::domain_computation::primary_graph) use currentness::CurrentOwnedRouteDenial;
 pub use publication::WorthQueryRecoveredProducerPublication;
 pub(in crate::domain_computation::primary_graph) use publication::{
     OutputPublicationView, RecoveredProducerOutputFacts,
@@ -53,6 +57,7 @@ pub(in crate::domain_computation) use registry::RequiredOutputExecution;
 pub(in crate::domain_computation::primary_graph) use registry::RequiredRefreshRejection;
 pub(in crate::domain_computation::primary_graph) use registry::RequiredWorkClaim;
 pub(in crate::domain_computation::primary_graph) use registry::RequiredWorkMembership;
+pub use registry::RestoredOutputOrigin;
 pub(in crate::domain_computation::primary_graph) use registry::RetainedOutputReadmissionSource;
 pub(in crate::domain_computation::primary_graph) use registry::SelectedOutputAdmission;
 pub(in crate::domain_computation::primary_graph) use registry::SelectedReadyReadmission;

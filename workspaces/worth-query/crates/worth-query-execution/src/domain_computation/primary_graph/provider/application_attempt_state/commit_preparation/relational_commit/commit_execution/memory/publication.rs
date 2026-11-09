@@ -11,6 +11,10 @@ pub(super) fn publish(
 > {
     let durable_custody::QueryPreparingApplicationCommit {
         mut attempt,
+        mut members,
+        prepared_group_publications,
+        group_evidence,
+        group_emissions,
         predicate,
         native,
         work,
@@ -39,6 +43,7 @@ pub(super) fn publish(
         &mut attempt,
         candidate,
         &mut required_prerequisites,
+        &mut members,
         history,
     )?;
     let performed = match performed {
@@ -52,13 +57,17 @@ pub(super) fn publish(
             reservation,
         } => {
             let retained = ManagedUnpublishedAttempt {
-                _completion: None,
+                _completion,
                 publication_mode: if unpublished.retains_conditional_definition() {
                     managed_unpublished::ManagedUnpublishedPublicationMode::ConditionalDefinition
                 } else {
                     managed_unpublished::ManagedUnpublishedPublicationMode::Ordinary
                 },
                 attempt,
+                members,
+                prepared_group_publications,
+                group_evidence,
+                group_emissions,
                 predicate,
                 work,
                 index_maintenance_work,
@@ -98,6 +107,12 @@ pub(super) fn publish(
         .expect("World performed a prepared Relational application candidate");
     Ok(WorthQueryCommittedApplicationSession {
         attempt,
+        members,
+        prepared_group_publications,
+        group_evidence,
+        group_emissions,
+        own_publication: None,
+        own_records: None,
         predicate,
         work,
         index_maintenance_work,

@@ -18,10 +18,14 @@ pub(super) fn bind(
     provider: &WorthQueryPrimaryGraphProvider,
     attempt: &WorthQueryPrimaryGraphApplicationAttempt,
     required: Option<&PreparedPrerequisiteClaims>,
+    owned_history: bool,
 ) -> Result<
     ValidatedRelationalProposal,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
 > {
+    if proposal.has_coupled_authored_publication() {
+        return Ok(proposal);
+    }
     let Some(required) = required else {
         return authored_retirement::bind(proposal, execution, before, provider, attempt);
     };
@@ -72,27 +76,12 @@ pub(super) fn bind(
         )
         .map_err(native_output_witness_stop)?;
     let (producer, source_epoch) = required.native_prior_checkpoint_input();
-    let mut roles = Vec::with_capacity(targets.len());
-    let mut all_created = true;
-    for (role, posture, name, target) in targets {
-        let kind = provider
-            .graph
-            .layout
-            .entity_kind(name)
-            .ok_or_else(overflow)?;
-        all_created &= posture == Posture::Create;
-        roles.push(RequiredOutputRoleTarget {
-            role: role.to_owned(),
-            entity_name: name.to_owned(),
-            kind,
-            posture: match posture {
-                Posture::Create => RequiredOutputRolePosture::Create,
-                Posture::Preserve => RequiredOutputRolePosture::Preserve,
-                Posture::Retire => RequiredOutputRolePosture::Retire,
-            },
-            target: target.clone(),
-        });
-    }
+    let (roles, all_created) =
+        crate::domain_computation::primary_graph::provider::native_publication_roles::collect(
+            &provider.graph.layout,
+            targets,
+        )
+        .ok_or_else(overflow)?;
     let source_scope = scope.scope();
     let meaning = RequiredOutputPublicationMeaning {
         implementation: attempt
@@ -111,7 +100,7 @@ pub(super) fn bind(
     let retired = provider
         .graph
         .with_runtime(execution, |runtime| {
-            runtime.readmit_authored_output_retirement_successor(
+            runtime.readmit_native_output_transition_successor(
                 execution,
                 &publisher.native,
                 native_basis,
@@ -119,8 +108,31 @@ pub(super) fn bind(
             )
         })
         .map_err(transaction_commit_stop)?;
-    let warm = retired.or_else(|| head.as_ref().and_then(|head| head.warm_publication()));
-    let absence = if warm.is_some() {
+    let warm = required
+        .selected_read_predecessor()
+        .or(retired)
+        .or_else(|| head.as_ref().and_then(|head| head.warm_publication()));
+    // A cold Query memo may predate a later Native-owned publication. Native's
+    // current roster owns succession; old checkpoint correspondence does not.
+    let warm = match warm {
+        Some(publication) => Some(publication),
+        None => provider
+            .graph
+            .with_runtime(execution, |runtime| {
+                runtime.readmit_current_owned_output_successor(
+                    execution,
+                    &publisher.native,
+                    native_basis,
+                    producer,
+                    &meaning,
+                )
+            })
+            .map_err(transaction_commit_stop)?,
+    };
+    // An owned selection can explicitly remove this route while Query still
+    // retains the future's warm lineage. Only Native's exact absence custody
+    // can authorize Birth at this image; that warm row cannot select succession.
+    let absence = if warm.is_some() && !owned_history {
         None
     } else {
         provider
@@ -135,6 +147,7 @@ pub(super) fn bind(
             })
             .map_err(transaction_commit_stop)?
     };
+    let warm = if absence.is_some() { None } else { warm };
     if absence.is_some() && !all_created {
         // An ordinary producer may preserve an authored carrier without ever
         // owning its birth. Native has established that this route has no

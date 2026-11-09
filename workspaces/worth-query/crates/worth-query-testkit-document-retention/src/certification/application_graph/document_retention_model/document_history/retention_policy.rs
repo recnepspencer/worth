@@ -5,15 +5,14 @@ use super::super::{
 };
 use worth_query_decl::facade::{
     application_history::*, application_schema::ApplicationSchemaDeclarationBuilder,
-    worth_query_capability, worth_query_operation, worth_query_operation_reads,
+    worth_query_capability, worth_query_operation,
 };
 
 worth_query_capability!(pub WindowCapability in DocumentRetentionSchema);
 worth_query_capability!(pub BookmarkCapability in DocumentRetentionSchema);
 worth_query_operation!(pub ChangeWindow for DocumentRetentionSchema, input capability::InputBinding);
 worth_query_operation!(pub ChangeBookmark for DocumentRetentionSchema, input capability::InputBinding);
-worth_query_operation_reads!(ChangeWindow => [DocumentIdentityField]);
-worth_query_operation_reads!(ChangeBookmark => [DocumentIdentityField]);
+
 impl capability::Role for WindowCapability {
     const ACTION: &'static str = "change-document-history-window";
 }
@@ -76,7 +75,7 @@ pub fn declare(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_read_field(window, DocumentIdentityField::reference())
+        .operation_read_field(window, DocumentIdentityField::at("DocumentIdentityField"))
         .capability(capability::contract(WindowCapability::reference(), window))
         .operation(
             bookmark
@@ -85,7 +84,7 @@ pub fn declare(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_read_field(bookmark, DocumentIdentityField::reference())
+        .operation_read_field(bookmark, DocumentIdentityField::at("DocumentIdentityField"))
         .capability(capability::contract(
             BookmarkCapability::reference(),
             bookmark,

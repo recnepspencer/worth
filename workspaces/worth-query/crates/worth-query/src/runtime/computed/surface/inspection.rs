@@ -4,6 +4,7 @@ use super::inspection_identity::{
     computed_produced_aspect_inspection_identity, derived_patch_inspection_identity,
 };
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryComputedInspectionEvidence {
@@ -27,7 +28,9 @@ pub struct WorthQueryComputedInspectionEvidence {
 }
 
 impl WorthQueryComputedInspectionEvidence {
-    pub(in crate::runtime) fn from_runtime(view: &WorthQueryDerivedViewRuntime) -> Self {
+    pub(in crate::runtime) fn from_runtime(
+        view: &WorthQueryDerivedViewRuntime,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let upstream_live_views = view.declaration.upstream_live_views().to_vec();
         let upstream_derived_views = view.declaration.upstream_derived_views().to_vec();
         let dependency_aspects = view.declaration.dependency_aspect_touches().to_vec();
@@ -52,38 +55,38 @@ impl WorthQueryComputedInspectionEvidence {
             &upstream_derived_views,
             &dependency_aspects,
             &produced_aspects,
-        );
+        )?;
         let declaration_digest = declaration_identity.reporting_projection().to_string();
         let dependency_identity = computed_dependency_inspection_identity(
             view.declaration.name(),
             &upstream_live_views,
             &upstream_derived_views,
             &dependency_aspects,
-        );
+        )?;
         let dependency_digest = dependency_identity.reporting_projection().to_string();
         let produced_aspect_identity = computed_produced_aspect_inspection_identity(
             view.declaration.name(),
             &produced_aspects,
-        );
+        )?;
         let produced_aspect_digest = produced_aspect_identity.reporting_projection().to_string();
         let materialization_identity = computed_materialization_inspection_identity(
             view.declaration.name(),
             materialized_row_count,
             view.materialization.retained_rows(),
-        );
+        )?;
         let materialization_digest = materialization_identity.reporting_projection().to_string();
         let patch_identities: Vec<WorthQueryEvidenceIdentity> = view
             .patches
             .iter()
             .map(|patch| derived_patch_inspection_identity(view.declaration.name(), patch))
-            .collect();
+            .collect::<Result<Vec<_>, _>>()?;
         let pending_patch_identity = computed_pending_patch_inspection_identity(
             view.declaration.name(),
             pending_patch_count,
             pending_incremental_patch_count,
             pending_refresh_fallback_count,
             &patch_identities,
-        );
+        )?;
         let pending_patch_digest = pending_patch_identity.reporting_projection().to_string();
         let inspection_identity =
             worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
@@ -111,9 +114,9 @@ impl WorthQueryComputedInspectionEvidence {
                     WorthQueryEvidenceTag::new("pending_patches"),
                     &pending_patch_identity,
                 )
-                .seal();
+                .seal()?;
         let inspection_digest = inspection_identity.reporting_projection().to_string();
-        Self {
+        Ok(Self {
             name: view.declaration.name().to_string(),
             authority_lane: WorthQueryAuthorityLane::DerivedRuntimeState,
             upstream_live_views,
@@ -131,7 +134,7 @@ impl WorthQueryComputedInspectionEvidence {
             materialization_digest,
             pending_patch_digest,
             inspection_digest,
-        }
+        })
     }
 
     pub fn name(&self) -> &str {
@@ -186,28 +189,32 @@ impl WorthQueryComputedInspectionEvidence {
         &self.dependency_digest
     }
 
-    pub fn dependency_identity(&self) -> WorthQueryEvidenceIdentity {
-        worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "worth_query_computed_dependency_inspection_v1",
-            )
-            .field_shape(WorthQueryEvidenceTag::new("name"), &self.name)
-            .field_value_sequence(
-                WorthQueryEvidenceTag::new("live"),
-                self.upstream_live_views.iter().map(String::as_str),
-            )
-            .field_value_sequence(
-                WorthQueryEvidenceTag::new("derived"),
-                self.upstream_derived_views.iter().map(String::as_str),
-            )
-            .field_value_sequence(
-                WorthQueryEvidenceTag::new("dependencies"),
-                self.dependency_aspects
-                    .iter()
-                    .map(|touch| touch.admitted_touch_digest_part()),
-            )
-            .seal()
+    pub fn dependency_identity(
+        &self,
+    ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(
+            worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+                .field_shape(
+                    WorthQueryEvidenceTag::new("identity_family"),
+                    "worth_query_computed_dependency_inspection_v1",
+                )
+                .field_shape(WorthQueryEvidenceTag::new("name"), &self.name)
+                .field_value_sequence(
+                    WorthQueryEvidenceTag::new("live"),
+                    self.upstream_live_views.iter().map(String::as_str),
+                )
+                .field_value_sequence(
+                    WorthQueryEvidenceTag::new("derived"),
+                    self.upstream_derived_views.iter().map(String::as_str),
+                )
+                .field_value_sequence(
+                    WorthQueryEvidenceTag::new("dependencies"),
+                    self.dependency_aspects
+                        .iter()
+                        .map(|touch| touch.admitted_touch_digest_part()),
+                )
+                .seal()?,
+        )
     }
 
     pub fn produced_aspect_digest(&self) -> &str {
@@ -218,30 +225,34 @@ impl WorthQueryComputedInspectionEvidence {
         &self.materialization_digest
     }
 
-    pub fn materialization_identity(&self) -> WorthQueryEvidenceIdentity {
-        worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "worth_query_computed_materialization_inspection_v1",
-            )
-            .field_shape(WorthQueryEvidenceTag::new("name"), &self.name)
-            .field_usize(
-                WorthQueryEvidenceTag::new("rows"),
-                self.materialized_row_count,
-            )
-            .field_usize(
-                WorthQueryEvidenceTag::new("pending_patches"),
-                self.pending_patch_count,
-            )
-            .field_usize(
-                WorthQueryEvidenceTag::new("pending_incremental_patches"),
-                self.pending_incremental_patch_count,
-            )
-            .field_usize(
-                WorthQueryEvidenceTag::new("pending_refresh_fallbacks"),
-                self.pending_refresh_fallback_count,
-            )
-            .seal()
+    pub fn materialization_identity(
+        &self,
+    ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(
+            worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+                .field_shape(
+                    WorthQueryEvidenceTag::new("identity_family"),
+                    "worth_query_computed_materialization_inspection_v1",
+                )
+                .field_shape(WorthQueryEvidenceTag::new("name"), &self.name)
+                .field_usize(
+                    WorthQueryEvidenceTag::new("rows"),
+                    self.materialized_row_count,
+                )
+                .field_usize(
+                    WorthQueryEvidenceTag::new("pending_patches"),
+                    self.pending_patch_count,
+                )
+                .field_usize(
+                    WorthQueryEvidenceTag::new("pending_incremental_patches"),
+                    self.pending_incremental_patch_count,
+                )
+                .field_usize(
+                    WorthQueryEvidenceTag::new("pending_refresh_fallbacks"),
+                    self.pending_refresh_fallback_count,
+                )
+                .seal()?,
+        )
     }
 
     pub fn pending_patch_digest(&self) -> &str {

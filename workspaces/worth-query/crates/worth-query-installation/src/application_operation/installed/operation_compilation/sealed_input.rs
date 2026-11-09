@@ -22,6 +22,7 @@ impl WorthQuerySealedOperationContractCompilation {
         usize,
         super::super::super::contracts::SigningLifecycleClosure,
         Vec<WorthQueryInstalledApplicationInvariantDescriptor>,
+        bool,
     ){
         (
             self.managed_index_reads,
@@ -41,6 +42,7 @@ impl WorthQuerySealedOperationContractCompilation {
             self.graph_mutation_count,
             self.signing_lifecycle,
             self.invariant_invocations,
+            self.model_ownership,
         )
     }
 }

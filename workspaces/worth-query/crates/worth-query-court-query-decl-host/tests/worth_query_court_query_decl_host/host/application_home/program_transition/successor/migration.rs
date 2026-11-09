@@ -1,4 +1,6 @@
 //! Native transition DATA from the actual A/B schema observations.
+use super::schema::{LaterIdentity, LaterRecord, LaterRecords};
+use worth_query_decl::facade::application_schema::fragment::FieldSelection;
 pub(in crate::host::application_home::program_transition) fn schema_change(
     source: &WorthQueryHomeProgramTransitionReadSource<'_, '_>,
     target: &WorthQueryHomeProgramTransitionTarget<'_>,
@@ -60,7 +62,14 @@ pub(in crate::host::application_home::program_transition) fn body(
             client_key: ClientKey::raw("home-successor-row"),
             fields: AspectFieldPatch::from_locator(
                 target
-                    .planned_field("LaterRecord", "LaterIdentity", "Label")
+                    .planned_field(
+                        "LaterRecord",
+                        FieldSelection::<LaterRecords, LaterRecord, LaterIdentity, String>::at(
+                            "Label",
+                        )
+                        .aspect(),
+                        "Label",
+                    )
                     .unwrap(),
                 AspectValue::String("created-by-target".into()),
             ),

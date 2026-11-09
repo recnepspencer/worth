@@ -8,7 +8,7 @@ pub(super) fn with_candidate(
     registry: &RelationalSchemaRegistry,
     contract: &AggregateIdentityContractDeclaration,
 ) -> BTreeSet<KindId> {
-    let mut private = registry.aggregate_private_kinds.clone();
+    let mut private = registry.native_private_kinds.clone();
     private.extend([
         contract.storage.aggregate_kind,
         contract.storage.lineage_kind,
@@ -24,9 +24,9 @@ pub(crate) fn metadata_dependent(
     definition.leaves.iter().any(|(relation, from, to)| {
         [relation, from, to]
             .into_iter()
-            .any(|kind| registry.aggregate_private_kinds.contains(kind))
+            .any(|kind| registry.native_private_kinds.contains(kind))
     }) || definition
         .carriers
         .iter()
-        .any(|kind| registry.aggregate_private_kinds.contains(kind))
+        .any(|kind| registry.native_private_kinds.contains(kind))
 }

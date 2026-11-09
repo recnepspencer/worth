@@ -8,7 +8,7 @@ pub use worth_query_host::facade::application_entry::{
 };
 pub use worth_relational::facade::identity::RelationId;
 
-pub fn payloads(world: &World<Payload>) -> Vec<(u64, u64, RelationId, u64)> {
+pub fn payloads<L: LawPolicy>(world: &World<L>) -> Vec<(u64, u64, RelationId, u64)> {
     let completed = world
         .application
         .runtime()
@@ -20,15 +20,22 @@ pub fn payloads(world: &World<Payload>) -> Vec<(u64, u64, RelationId, u64)> {
                     |reader| {
                         let mut values = Vec::new();
                         for source in 0..world.nodes {
-                            let source_identity =
-                                reader.resolve_entity(NodeKey::reference(), source).unwrap();
+                            let source_identity = reader
+                                .resolve_entity(node_key::<GraphSchema<L>>(), source)
+                                .unwrap();
                             for edge in reader
-                                .relations_from(Precedes::reference(), &source_identity)
+                                .relations_from(precedes::<GraphSchema<L>>(), &source_identity)
                                 .unwrap()
                             {
-                                let target = reader.field(edge.to(), NodeKey::reference()).unwrap();
+                                let target = reader
+                                    .field(edge.to(), node_key::<GraphSchema<L>>())
+                                    .unwrap();
                                 let weight = reader
-                                    .relation_field(&edge, EdgeWeight::reference())
+                                    .relation_field(
+                                        &edge,
+                                        edge_weight::<GraphSchema<L>>()
+                                            .expect("payload record field"),
+                                    )
                                     .expect("actual native initialized payload");
                                 values.push((source, target, edge.relation_id(), weight));
                             }

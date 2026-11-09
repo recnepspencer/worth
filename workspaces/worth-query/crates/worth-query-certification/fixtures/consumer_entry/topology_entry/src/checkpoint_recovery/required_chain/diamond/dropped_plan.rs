@@ -11,10 +11,10 @@ fn tail_seed(graph: &mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>) {
                     Body::reference::<CheckpointSchema>(),
                     entity_key(key),
                 )
-                .field(BodyKey::reference::<CheckpointSchema>(), key.to_owned())
-                .field(Length::reference::<CheckpointSchema>(), length(151 + y))
-                .field(PositionX::reference::<CheckpointSchema>(), length(150 + x))
-                .field(PositionY::reference::<CheckpointSchema>(), length(150 + y)),
+                .field(BodyKey::at("BodyKey"), key.to_owned())
+                .field(Length::at("Length"), length(151 + y))
+                .field(PositionX::at("PositionX"), length(150 + x))
+                .field(PositionY::at("PositionY"), length(150 + y)),
             )
             .unwrap();
     }

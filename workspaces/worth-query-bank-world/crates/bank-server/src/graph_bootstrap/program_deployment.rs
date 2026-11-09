@@ -13,7 +13,7 @@ pub(crate) fn bind_program_deployment_scopes(
                 entity_key(scope_key(revision)),
             )
             .field(
-                ProgramDeploymentSourceRevision::reference(),
+                ProgramDeploymentSourceRevision::at("ProgramDeploymentSourceRevision"),
                 revision.to_string(),
             ),
         )?;
@@ -31,31 +31,37 @@ pub(crate) fn bind_program_deployment_grants(
                 entity_key(grant.key.as_str().to_owned()),
             )
             .field(
-                ProgramDeploymentGrantIdentity::reference(),
+                ProgramDeploymentGrantIdentity::at("ProgramDeploymentGrantIdentity"),
                 grant.key.as_str().to_owned(),
             )
             .field(
-                ProgramDeploymentGrantSourceRevision::reference(),
+                ProgramDeploymentGrantSourceRevision::at("ProgramDeploymentGrantSourceRevision"),
                 grant.source.to_string(),
             )
             .field(
-                ProgramDeploymentGrantAction::reference(),
+                ProgramDeploymentGrantAction::at("ProgramDeploymentGrantAction"),
                 "deploy-bank-program".to_owned(),
             )
             .field(
-                ProgramDeploymentGrantPurpose::reference(),
+                ProgramDeploymentGrantPurpose::at("ProgramDeploymentGrantPurpose"),
                 "program-deployment".to_owned(),
             )
             .field(
-                ProgramDeploymentGrantStatus::reference(),
+                ProgramDeploymentGrantStatus::at("ProgramDeploymentGrantStatus"),
                 "active".to_owned(),
             )
             .field(
-                ProgramDeploymentGrantNotBefore::reference(),
+                ProgramDeploymentGrantNotBefore::at("ProgramDeploymentGrantNotBefore"),
                 grant.not_before,
             )
-            .field(ProgramDeploymentGrantNotAfter::reference(), grant.not_after)
-            .field(ProgramDeploymentGrantDepth::reference(), 0),
+            .field(
+                ProgramDeploymentGrantNotAfter::at("ProgramDeploymentGrantNotAfter"),
+                grant.not_after,
+            )
+            .field(
+                ProgramDeploymentGrantDepth::at("ProgramDeploymentGrantDepth"),
+                0,
+            ),
         )?;
         graph.bind_relation(WorthQueryApplicationRelationSeed::new(
             ProgramDeploymentGrantResource::reference(),

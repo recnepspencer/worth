@@ -22,7 +22,7 @@ fn workflow_executor_consumes_execution_bound_separate_graph_projection() {
         )
         .unwrap()
         .start_workflow(&mut workspace)
-        .unwrap()
+        .unwrap().unwrap()
         .advance(
             "start",
             domain::WorthQueryWorkflowValue::NotRequired,

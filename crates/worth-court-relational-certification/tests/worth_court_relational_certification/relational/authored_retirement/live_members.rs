@@ -56,10 +56,7 @@ fn cascade_retires_and_restores_only_the_complete_live_membership() {
         None,
     );
     let execution = &ExecutionRequest::serial(&request);
-    let mut runtime = AspectSchemaFixture::with_default_declared_aspects(
-        worth_relational::facade::config::CascadeDeletePolicy::RetainDanglingForAudit,
-    )
-    .build_runtime();
+    let mut runtime = registration::runtime();
     let receipt = runtime
         .prepare_initial_schema_installation()
         .unwrap()
@@ -211,6 +208,7 @@ fn cascade_retires_and_restores_only_the_complete_live_membership() {
                 DeleteEntityIntent { entity_id },
             )))
         });
+    let before_retirement = basis(&runtime);
     let retired = publish_rows(
         &runtime,
         execution,
@@ -221,7 +219,13 @@ fn cascade_retires_and_restores_only_the_complete_live_membership() {
             predecessor: closure,
         },
     );
-    assert_eq!(retired.changed_records.len(), 3);
+    let retired_application = super::application_delta::application_changes(
+        execution,
+        &runtime,
+        &before_retirement,
+        &retired,
+    );
+    assert_eq!(retired_application, live.map(RecordRef::Entity));
     release_test_commit_snapshot(&runtime, &retired);
     let target = super::targets(&["restored-source"])[0].clone();
     let plan = runtime
@@ -251,6 +255,7 @@ fn cascade_retires_and_restores_only_the_complete_live_membership() {
             )),
         )
         .unwrap();
+    let before_restoration = basis(&runtime);
     let restored = publish_rows(
         &runtime,
         execution,
@@ -261,7 +266,13 @@ fn cascade_retires_and_restores_only_the_complete_live_membership() {
             restoration: plan,
         },
     );
-    assert_eq!(restored.changed_records.len(), 3);
+    let restored_application = super::application_delta::application_changes(
+        execution,
+        &runtime,
+        &before_restoration,
+        &restored,
+    );
+    assert_eq!(restored_application.len(), 3);
     assert_ne!(restored.created_entity(&target), Some(anchor));
     let pinned = runtime
         .read_truth()
@@ -269,18 +280,15 @@ fn cascade_retires_and_restores_only_the_complete_live_membership() {
         .unwrap();
     release_test_commit_snapshot(&runtime, &restored);
     let selected = basis(&runtime);
-    let view = runtime
-        .read_truth()
-        .project_observation(&selected.observation())
-        .unwrap();
+    let view = pinned.project_read();
     let mut names = std::collections::BTreeMap::new();
-    for record in &restored.changed_records {
+    for record in &restored_application {
         let RecordRef::Entity(id) = record else {
             panic!("row-only fixture")
         };
         let name = view
             .read_exact_entity_state(execution, *id, |_, state| {
-                super::restoration::text(state.unwrap(), "name", pinned.symbols())
+                super::restoration::text(state.unwrap(), "name", &pinned.symbols())
             })
             .unwrap()
             .unwrap();

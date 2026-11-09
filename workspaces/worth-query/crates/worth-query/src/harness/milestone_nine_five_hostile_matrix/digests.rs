@@ -1,6 +1,7 @@
 use crate::application::{
     WorthQueryApplicationFacade, WorthQueryConfigSectionFamily, WorthQuerySupportReport,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::hash_parts;
 use crate::projection_consumption::{
     certify_projection_consumption_closeout_core, ProjectionConsumptionCertificationBundle,
@@ -12,7 +13,9 @@ use crate::runtime::{
 };
 
 pub fn application_support_report() -> WorthQuerySupportReport {
-    WorthQueryApplicationFacade::runtime_backed_default().support_report()
+    WorthQueryApplicationFacade::runtime_backed_default()
+        .support_report()
+        .expect("fixture digest must fit")
 }
 
 pub fn application_default_bootstrap_digest(report: &WorthQuerySupportReport) -> String {
@@ -61,8 +64,9 @@ pub fn public_bridge_bootstrap_contract_digest() -> String {
     ])
 }
 
-pub fn projection_bundle() -> ProjectionConsumptionCertificationBundle {
-    certify_projection_consumption_closeout_core()
+pub fn projection_bundle(
+) -> Result<ProjectionConsumptionCertificationBundle, IdentityDerivationDenial> {
+    Ok(certify_projection_consumption_closeout_core()?)
 }
 
 pub fn projection_surface_digest(

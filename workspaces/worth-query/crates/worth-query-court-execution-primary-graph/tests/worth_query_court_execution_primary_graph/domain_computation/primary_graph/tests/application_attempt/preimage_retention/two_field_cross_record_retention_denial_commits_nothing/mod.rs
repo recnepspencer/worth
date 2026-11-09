@@ -71,16 +71,19 @@ fn two_field_cross_record_retention_denial_commits_nothing() {
                     &admission,
                     |reader, _| {
                         let open = reader
-                            .resolve_entity(AccountStatus::reference(), "open".to_owned())
+                            .resolve_entity(AccountStatus::at("AccountStatus"), "open".to_owned())
                             .unwrap();
                         let unrelated = reader
-                            .resolve_entity(AccountStatus::reference(), "unrelated".to_owned())
+                            .resolve_entity(
+                                AccountStatus::at("AccountStatus"),
+                                "unrelated".to_owned(),
+                            )
                             .unwrap();
                         reader
-                            .require_decision_field(&open, AccountStatus::reference())
+                            .require_decision_field(&open, AccountStatus::at("AccountStatus"))
                             .unwrap();
                         reader
-                            .require_decision_field(&unrelated, AccountLabel::reference())
+                            .require_decision_field(&unrelated, AccountLabel::at("AccountLabel"))
                             .unwrap();
                     },
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -112,12 +115,16 @@ fn two_field_cross_record_retention_denial_commits_nothing() {
     let open = effects.existing_entity(&account).unwrap();
     let unrelated = effects.existing_entity(&unrelated).unwrap();
     effects
-        .write_field(&open, AccountStatus::reference(), "frozen".to_owned())
+        .write_field(
+            &open,
+            AccountStatus::at("AccountStatus"),
+            "frozen".to_owned(),
+        )
         .unwrap();
     effects
         .write_field(
             &unrelated,
-            AccountLabel::reference(),
+            AccountLabel::at("AccountLabel"),
             "must-not-land".to_owned(),
         )
         .unwrap();

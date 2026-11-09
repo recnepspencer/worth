@@ -13,12 +13,14 @@ fn expected_preview_declaration_digest_identity(
     binding_tuple: &crate::preview::PreviewSessionBindingTuple,
 ) -> WorthQueryEvidenceIdentity {
     workflow_context_identity::compose_preview_declaration_digest_workflow_identity(binding_tuple)
+        .expect("fixture digest must fit")
 }
 
 fn expected_preview_binding_tuple_identity(
     binding_tuple: &crate::preview::PreviewSessionBindingTuple,
 ) -> WorthQueryEvidenceIdentity {
     workflow_context_identity::compose_preview_binding_tuple_workflow_identity(binding_tuple)
+        .expect("fixture digest must fit")
 }
 
 #[test]

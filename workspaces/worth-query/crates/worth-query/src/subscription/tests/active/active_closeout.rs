@@ -25,14 +25,16 @@ fn closing_one_of_multiple_consumers_keeps_shared_lane_alive() {
     let first_attachment = attach_subscription_consumer(
         &mut runtime,
         &first_handle,
-        SubscriptionConsumerAttachmentRequest::admitted("consumer-a", "cursor-a"),
+        SubscriptionConsumerAttachmentRequest::admitted("consumer-a", "cursor-a")
+            .expect("fixture digest must fit"),
         attachment_budget(2, DeliveryBackpressurePolicy::RetainWithinWindow),
     )
     .unwrap();
     let second_attachment = attach_subscription_consumer(
         &mut runtime,
         &second_handle,
-        SubscriptionConsumerAttachmentRequest::admitted("consumer-b", "cursor-b"),
+        SubscriptionConsumerAttachmentRequest::admitted("consumer-b", "cursor-b")
+            .expect("fixture digest must fit"),
         attachment_budget(2, DeliveryBackpressurePolicy::RetainWithinWindow),
     )
     .unwrap();

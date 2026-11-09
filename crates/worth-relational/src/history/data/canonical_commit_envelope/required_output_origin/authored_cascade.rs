@@ -15,23 +15,36 @@ use worth_execution::{ExecutionResourceLease, MapKernelContext};
 pub(crate) struct CanonicalAuthoredRetirement {
     pub(crate) anchor: EntityId,
     pub(crate) birth: CommitId,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) co_anchors: Vec<(EntityId, CommitId)>,
     pub(crate) publications: Vec<Arc<CanonicalRequiredOutputOrigin>>,
     #[serde(skip)]
     pub(crate) _decoded_memory: Option<std::sync::Arc<worth_execution::ExecutionMemoryReservation>>,
 }
 
+impl CanonicalAuthoredRetirement {
+    pub(crate) fn anchors(&self) -> impl Iterator<Item = EntityId> + '_ {
+        std::iter::once(self.anchor).chain(self.co_anchors.iter().map(|(id, _)| *id))
+    }
+    pub(crate) fn contains_anchor(&self, id: EntityId) -> bool {
+        self.anchors().any(|anchor| anchor == id)
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 pub(super) fn install(
     envelope: &mut CanonicalCommitEnvelopeBody,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     created: &CommitCreatedEntityBindings,
     created_relations: &CommitCreatedRelationBindings,
     state: &WorkingState,
     installed: crate::mvcc::RelationalInstalledApplicationPublicationAuthority,
-    admission: worth_proof::AdmittedAuthoredOutputRetirement,
+    admission: &worth_proof::AdmittedAuthoredOutputRetirement,
     mut predecessor: RelationalAuthoredRetirement,
     lease: Option<&ExecutionResourceLease<'_>>,
+    validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<RequiredOutputPublicationPositions, TransactionCommitError> {
     use crate::{
@@ -68,6 +81,26 @@ pub(super) fn install(
     {
         return Err(refuse());
     }
+    for &(id, _) in &predecessor.co_anchors {
+        context
+            .checkpoint(envelope.patch.authoritative_record_patches.len() as u64 + 1)
+            .map_err(origin_request)?;
+        if !envelope
+            .patch
+            .authoritative_record_patches
+            .iter()
+            .any(|patch| {
+                patch.target == RecordRef::Entity(id) && patch.structural_change == Change::Deleted
+            })
+        {
+            return Err(TransactionCommitError::publication(
+                crate::publication::data::PublicationError::authored_retirement(
+                    crate::publication::data::AuthoredRetirementRefusal::MissingMember,
+                    RecordRef::Entity(id),
+                ),
+            ));
+        }
+    }
     use crate::publication::data::{AuthoredRetirementRefusal as Cause, PublicationError};
     for patch in &envelope.patch.authoritative_record_patches {
         context
@@ -90,6 +123,7 @@ pub(super) fn install(
         _decoded_memory: None,
         anchor: predecessor.anchor,
         birth: predecessor.birth,
+        co_anchors: predecessor.co_anchors.clone(),
         publications: Vec::new(),
     }));
     let mut positions = basis.inner.root.output_publication_positions.clone();
@@ -138,6 +172,7 @@ pub(super) fn install(
             .ok_or_else(refuse)?;
         envelope
             .install_completion(
+                execution,
                 runtime,
                 basis,
                 created,
@@ -151,7 +186,9 @@ pub(super) fn install(
                         roles: members,
                     },
                 },
+                None,
                 lease,
+                validated_history,
                 context,
             )
             .map_err(|failure| match failure {
@@ -187,6 +224,7 @@ pub(super) fn install(
         _decoded_memory: None,
         anchor: predecessor.anchor,
         birth: predecessor.birth,
+        co_anchors: predecessor.co_anchors,
         publications,
     }));
     Ok(positions)
@@ -196,6 +234,7 @@ impl PartialEq for CanonicalAuthoredRetirement {
     fn eq(&self, other: &Self) -> bool {
         self.anchor == other.anchor
             && self.birth == other.birth
+            && self.co_anchors == other.co_anchors
             && self.publications == other.publications
     }
 }

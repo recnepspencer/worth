@@ -159,9 +159,10 @@ pub struct DurableBranchRootImage {
 }
 
 impl DurableBranchRootImage {
-    // Version 4 binds native field-revision provenance into each arena image.
-    // Earlier descriptors cannot be readmitted under the new commitment grammar.
-    pub(crate) const CURRENT_FORMAT_VERSION: u16 = 4;
+    // Version 6 binds the complete Original v4 payload projection together with
+    // both parents' current schema, index and field-revision provenance.
+    // Earlier descriptors are refused before readmission, never reinterpreted.
+    pub(crate) const CURRENT_FORMAT_VERSION: u16 = 6;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -212,6 +213,7 @@ pub(crate) struct DurablePendingRecordReservation {
 pub(crate) use super::record_identity_image::DurableRecordIdentityState;
 
 pub(crate) fn branch_root_partition_image_digest(
+    _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     partition_images: &[PartitionCheckpointImage],
 ) -> Result<[u8; 32], rmp_serde::encode::Error> {
     use sha2::{Digest, Sha256};
@@ -239,6 +241,7 @@ impl std::io::Write for Sha256Writer<'_> {
 }
 
 pub(crate) fn branch_root_image_digest(
+    _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     format_version: u16,
     commit_id: CommitId,
     partition_image_digest: [u8; 32],
@@ -317,6 +320,7 @@ mod tests {
 
     #[test]
     fn streamed_branch_root_image_digest_matches_buffered_wire_for_divergent_roots() {
+        let lane = crate::storage::substrate::maintenance::ReconstructionLane::oracle();
         let host_request = crate::test_execution_policy::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -334,19 +338,19 @@ mod tests {
 
         for root in &checkpoint.branch_roots {
             assert_eq!(
-                branch_root_partition_image_digest(&root.partition_images).unwrap(),
+                branch_root_partition_image_digest(&lane, &root.partition_images).unwrap(),
                 buffered_digest(&root.partition_images)
             );
         }
         let mut altered = checkpoint.branch_roots[0].partition_images.clone();
-        let original = branch_root_partition_image_digest(&altered).unwrap();
+        let original = branch_root_partition_image_digest(&lane, &altered).unwrap();
         altered[0].entity_arena.generations[0] ^= 1;
         assert_eq!(
-            branch_root_partition_image_digest(&altered).unwrap(),
+            branch_root_partition_image_digest(&lane, &altered).unwrap(),
             buffered_digest(&altered)
         );
         assert_ne!(
-            branch_root_partition_image_digest(&altered).unwrap(),
+            branch_root_partition_image_digest(&lane, &altered).unwrap(),
             original
         );
     }

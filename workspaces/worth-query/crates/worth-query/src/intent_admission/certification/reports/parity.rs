@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::hash_parts;
 
 use super::super::fixtures::{
@@ -87,8 +88,8 @@ impl WorthQueryIntentAdmissionLegacyParityReport {
 
 pub fn worth_query_intent_admission_legacy_parity_report(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> WorthQueryIntentAdmissionLegacyParityReport {
-    let fixture = legacy_delegation_parity_fixture(execution);
+) -> Result<WorthQueryIntentAdmissionLegacyParityReport, IdentityDerivationDenial> {
+    let fixture = legacy_delegation_parity_fixture(execution)?;
     let routing_fixture = routing_delegation_parity_fixture(execution);
     let rows = vec![
         authoritative_execution_row(&fixture),
@@ -99,10 +100,10 @@ pub fn worth_query_intent_admission_legacy_parity_report(
         routing_execution_workspace_row(&routing_fixture),
     ];
     let legacy_delegation_parity_digest = hash_row_digests(&rows);
-    WorthQueryIntentAdmissionLegacyParityReport {
+    Ok(WorthQueryIntentAdmissionLegacyParityReport {
         rows,
         legacy_delegation_parity_digest,
-    }
+    })
 }
 
 fn authoritative_execution_row(

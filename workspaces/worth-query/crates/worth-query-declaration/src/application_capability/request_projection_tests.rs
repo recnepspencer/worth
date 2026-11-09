@@ -1,8 +1,6 @@
 use worth_foundational::facade::AspectValue;
 
-use crate::application_schema::{
-    ApplicationFieldRef, ApplicationRelationRef, EqualityPredicate, NoApplicationUnit, ReadOnly,
-};
+use crate::application_schema::ApplicationRelationRef;
 
 use super::{
     ApplicationCapabilityContextEntitySlotRef, ApplicationCapabilityContextRef,
@@ -18,33 +16,7 @@ struct Account;
 struct Context;
 struct AccountSlot;
 struct IdentityAspect;
-struct ScopeIdentity;
-struct AccountIdentity;
 struct GrantAccount;
-
-macro_rules! declare_u64_field {
-    ($($field:ty),+ $(,)?) => {$ (
-        impl crate::application_schema::DeclaredApplicationFieldValue for $field {
-            type Value = u64;
-            type Binding = crate::application_schema::U64ApplicationValueBinding;
-            const PRESENCE: crate::application_schema::ApplicationFieldPresence =
-                crate::application_schema::ApplicationFieldPresence::Required;
-        }
-    )+};
-}
-
-declare_u64_field!(ScopeIdentity, AccountIdentity);
-
-type QueryableField<Entity, Field> = ApplicationFieldRef<
-    Schema,
-    Entity,
-    IdentityAspect,
-    Field,
-    u64,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
->;
 
 #[derive(Clone, Copy, serde::Serialize)]
 enum Input {
@@ -82,7 +54,8 @@ impl ApplicationCapabilityRequest<Schema, Capability> for Input {
                 crate::application_schema::U64ApplicationValueBinding,
             >::try_new(*account)
             .unwrap(),
-        );
+        )
+        .unwrap();
         Ok(ApplicationCapabilityRequestProjection::new(
             ApplicationCapabilityEntitySelector::new(
                 scope_identity(),
@@ -90,7 +63,8 @@ impl ApplicationCapabilityRequest<Schema, Capability> for Input {
                     crate::application_schema::U64ApplicationValueBinding,
                 >::try_new(*scope)
                 .unwrap(),
-            ),
+            )
+            .unwrap(),
             crate::application_schema::ApplicationEncodedScalarValue::<
                 crate::application_schema::U64ApplicationValueBinding,
             >::try_new(7_u64)
@@ -156,12 +130,12 @@ fn operation_variant_mismatch_is_explicit_input_projection_denial() {
     assert_eq!(denial.subject(), "wrong input variant");
 }
 
-fn scope_identity() -> QueryableField<Scope, ScopeIdentity> {
-    ApplicationFieldRef::from_schema_identifiers("Scope", "Identity", "id")
+fn scope_identity() -> ScopeIdentity {
+    ScopeIdentity::at("id")
 }
 
-fn account_identity() -> QueryableField<Account, AccountIdentity> {
-    ApplicationFieldRef::from_schema_identifiers("Account", "Identity", "id")
+fn account_identity() -> AccountIdentity {
+    AccountIdentity::at("id")
 }
 
 fn context() -> ApplicationCapabilityContextRef<Schema, Context> {
@@ -178,8 +152,60 @@ fn account_slot() -> ApplicationCapabilityContextEntitySlotRef<Schema, Context, 
 }
 
 fn grant_account() -> ApplicationRelationRef<Schema, GrantAccount, Scope, Account> {
-    ApplicationRelationRef::from_schema_identifiers(
-        "GrantAccount", "Scope", "Account",
-        crate::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
-    )
+    fragment::relation(QueryModel, Scope, GrantAccount)
+}
+
+use crate::application_schema::fragment;
+struct QueryModel;
+impl fragment::Fragment for QueryModel {
+    const NAME: &'static str = "query_model";
+    type Bindings = QueryBindings;
+    type Members = (Scope, Account);
+}
+struct QueryBindings;
+impl fragment::BindingSet for QueryBindings {
+    type Work<'a> = crate::application_schema::ValueDecodeAdmission<'a>;
+    fn with_admission<T>(
+        work: &mut Self::Work<'_>,
+        run: impl FnOnce(&mut crate::application_schema::ValueDecodeAdmission<'_>) -> T,
+    ) -> T {
+        run(work)
+    }
+}
+impl fragment::Scalar<u64> for QueryBindings {
+    type Binding = crate::application_schema::U64ApplicationValueBinding;
+    const WRITABLE: bool = false;
+}
+impl fragment::Entity for Scope {
+    const NAME: &'static str = "Scope";
+    type Aspects = (IdentityAspect,);
+    type Relations = (GrantAccount,);
+}
+impl fragment::Entity for Account {
+    const NAME: &'static str = "Account";
+    type Aspects = (IdentityAspect,);
+    type Relations = ();
+}
+impl fragment::Aspect for IdentityAspect {
+    const NAME: &'static str = "Identity";
+    type Row = QueryRow0;
+}
+struct QueryRow0(u64);
+impl fragment::Record<QueryRow0> for QueryBindings {
+    fn record() -> impl fragment::Shape<QueryRow0, Self> {
+        fragment::field("id", |row: &QueryRow0| row.0)
+            .equality_queryable(true)
+            .build(
+                |value, _: &mut crate::application_schema::ValueDecodeAdmission<'_>| {
+                    Ok::<_, std::convert::Infallible>(QueryRow0(value))
+                },
+            )
+    }
+}
+type ScopeIdentity = fragment::FieldSelection<QueryModel, Scope, IdentityAspect, u64>;
+type AccountIdentity = fragment::FieldSelection<QueryModel, Account, IdentityAspect, u64>;
+
+impl fragment::Relation for GrantAccount {
+    const NAME: &'static str = "GrantAccount";
+    type To = Account;
 }

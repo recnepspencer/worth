@@ -40,7 +40,9 @@ fn direct_single_mutation_returns_provenance_bearing_result_boundary() {
         .single_inspection()
         .expect("single mutation should expose a write inspection");
     assert_eq!(
-        result.result_digest(),
+        result
+            .result_digest()
+            .expect("admitted mutation result identity"),
         receipt
             .commit_evidence_identity()
             .terminal_projection_for_reporting()
@@ -56,6 +58,7 @@ fn direct_single_mutation_returns_provenance_bearing_result_boundary() {
     assert_eq!(inspection.snapshot_identity(), receipt.snapshot_identity());
     assert!(mutation
         .canonical_digest()
+        .expect("admitted direct mutation identity")
         .contains(mutation.handoff_digest()));
 }
 
@@ -82,7 +85,12 @@ fn direct_batch_mutation_preserves_batch_receipt_and_inspection_digests() {
         .expect("batch mutation should expose a batch inspection");
     assert_eq!(receipt.write_count(), 2);
     assert_eq!(inspection.write_receipt_count(), 2);
-    assert_eq!(result.result_digest(), receipt.batch_digest());
+    assert_eq!(
+        result
+            .result_digest()
+            .expect("admitted mutation result identity"),
+        receipt.batch_digest().expect("admitted batch identity")
+    );
     assert_eq!(result.inspection_digest(), inspection.inspection_digest());
     assert_eq!(
         result.execution_provenance_digest(),

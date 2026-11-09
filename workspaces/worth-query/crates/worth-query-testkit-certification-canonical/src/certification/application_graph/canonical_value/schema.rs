@@ -1,44 +1,102 @@
 //! One independently installed source field using the generated canonical binding.
+#[path = "schema/records.rs"]
+mod storage_model;
 pub use super::{binding::NestedBinding, model::*, query};
 pub use declaration::{application_schema::*, authentication::*};
+pub use storage_model::*;
 pub use worth_query_host::facade::{declaration, *};
 
-worth_query_application! {
-    pub CanonicalSchema {
-        owner: "canonical_nested_value", version: (1, 0),
-        contributions: [CanonicalContribution],
+use worth_query_decl::facade::application_schema::{
+    fragment::{self, *},
+    *,
+};
+#[derive(Clone, Copy)]
+pub struct CanonicalSchema;
+impl Fragment for CanonicalSchema {
+    const NAME: &'static str = "CanonicalSchema";
+    type Bindings = NoBindings;
+    type Members = (CanonicalContribution,);
+}
+impl ApplicationSchema for CanonicalSchema {
+    const OWNER: &'static str = "canonical_nested_value";
+    const NAME: &'static str = <Self as Fragment>::NAME;
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        fragment::declare(Self)
+    }
+    fn visit_correction<
+        V: worth_query_decl::facade::application_aftermath::ApplicationCorrectionVisitor<Self>,
+    >(
+        source: std::any::TypeId,
+        visitor: V,
+    ) -> V::Output {
+        fragment::visit_correction(Self, source, visitor)
     }
 }
-worth_query_application_contribution! {
-    pub contribution CanonicalContribution in CanonicalSchema {
-        identity: "canonical-nested.application.v1",
-        members: |schema| {
-            schema.entity(ExternalMapping::reference()).entity(Principal::reference()).entity(Document::reference())
-                .aspect(ExternalMapping::reference(), ExternalIdentity::reference())
-                .aspect(Principal::reference(), PrincipalFacts::reference()).aspect(Document::reference(), DocumentFacts::reference())
-                .field(ExternalMapping::reference(), ExternalIdentityField::reference()).field(ExternalMapping::reference(), MappingStatusField::reference())
-                .field(Principal::reference(), PrincipalIdentityField::reference())
-                .field(Document::reference(), DocumentIdentityField::reference()).field(Document::reference(), DocumentValueField::reference())
-                .relation(MappingTarget::reference(), ExternalMapping::reference(), Principal::reference())
-                .principal_binding(DocumentPrincipalBinding::reference())
-                .application_query_binding::<query::ReadBinding>()
-                .application_query(query::definition())
-        }
+impl CanonicalSchema {
+    pub fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        <Self as ApplicationSchema>::declaration()
     }
 }
-worth_query_entity!(pub ExternalMapping for CanonicalSchema);
-worth_query_entity!(pub Principal for CanonicalSchema);
-worth_query_entity!(pub Document for CanonicalSchema);
-worth_query_aspect!(pub ExternalIdentity for CanonicalSchema, ExternalMapping; identity = AspectIdentity(0x91768001), revision = AspectContractRevision(1));
-worth_query_aspect!(pub PrincipalFacts for CanonicalSchema, Principal; identity = AspectIdentity(0x91768002), revision = AspectContractRevision(1));
-worth_query_aspect!(pub DocumentFacts for CanonicalSchema, Document; identity = AspectIdentity(0x91768003), revision = AspectContractRevision(1));
-worth_query_field!(pub ExternalIdentityField for CanonicalSchema, ExternalMapping, ExternalIdentity: WorthQueryExternalPrincipalIdentity => WorthQueryExternalPrincipalIdentityBinding, read_only, equality);
-worth_query_field!(pub MappingStatusField for CanonicalSchema, ExternalMapping, ExternalIdentity: WorthQueryPrincipalMappingStatus => WorthQueryPrincipalMappingStatusBinding, read_write, equality);
-worth_query_field!(pub PrincipalIdentityField for CanonicalSchema, Principal, PrincipalFacts: u64 => U64ApplicationValueBinding, read_only, equality);
-worth_query_field!(pub DocumentIdentityField for CanonicalSchema, Document, DocumentFacts: String => StringApplicationValueBinding, read_only, equality);
-worth_query_field!(pub DocumentValueField for CanonicalSchema, Document, DocumentFacts: NestedValue => NestedBinding, read_write, equality);
-worth_query_relation!(pub MappingTarget in CanonicalSchema, ExternalMapping => Principal; integrity = same_context_unbounded_retain_dangling);
-worth_query_principal_binding!(pub DocumentPrincipalBinding in CanonicalSchema, mapping ExternalMapping {
-    identity: ExternalIdentityField, status: MappingStatusField,
-    target: MappingTarget => Principal, principal_identity: PrincipalIdentityField
-});
+impl ApplicationSchemaComposition for CanonicalSchema {
+    type Contributions = <Self as Fragment>::Members;
+}
+
+pub struct CanonicalContribution;
+impl ApplicationSchemaContribution<CanonicalSchema> for CanonicalContribution {
+    const IDENTITY: ApplicationSchemaContributionIdentity =
+        ApplicationSchemaContributionIdentity::new("canonical-nested.application.v1");
+    type Members = (StorageModel, Contracts);
+}
+impl CanonicalContribution {
+    pub const fn reference() -> ApplicationSchemaContributionRef<CanonicalSchema, Self> {
+        ApplicationSchemaContributionRef::from_contribution()
+    }
+}
+pub struct Contracts;
+impl Registration<CanonicalSchema> for Contracts {
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<CanonicalSchema>,
+    ) -> Result<
+        ApplicationSchemaDeclarationBuilder<CanonicalSchema>,
+        ApplicationSchemaDeclarationDenial,
+    > {
+        Ok(schema
+            .principal_binding(DocumentPrincipalBinding::reference())
+            .application_query_binding::<query::ReadBinding>()
+            .application_query(query::definition()))
+    }
+}
+
+pub struct DocumentPrincipalBinding;
+impl DocumentPrincipalBinding {
+    pub fn reference() -> ApplicationPrincipalBindingRef<
+        CanonicalSchema,
+        Self,
+        ExternalMapping,
+        Principal,
+        <PrincipalIdentityField as RecordSelection>::Value,
+        <PrincipalIdentityField as RecordSelection>::Binding,
+    > {
+        ApplicationPrincipalBindingRef::from_requirements(
+            "DocumentPrincipalBinding",
+            ApplicationPrincipalBindingRequirements {
+                mapping_identity: ApplicationPrincipalMappingIdentityRequirement::from_field(
+                    ExternalIdentityField::at("ExternalIdentityField"),
+                ),
+                mapping_status: ApplicationPrincipalMappingStatusRequirement::from_field(
+                    MappingStatusField::at("MappingStatusField"),
+                ),
+                target: ApplicationPrincipalTargetRequirement::from_relation(
+                    MappingTarget::reference(),
+                ),
+                principal_identity: ApplicationPrincipalIdentityRequirement::from_field(
+                    PrincipalIdentityField::at("PrincipalIdentityField"),
+                ),
+            },
+        )
+    }
+}

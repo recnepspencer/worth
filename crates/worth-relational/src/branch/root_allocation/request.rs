@@ -7,6 +7,7 @@ use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 impl Clone for super::super::RelationalBranchRoot {
     fn clone(&self) -> Self {
         Self {
+            publication_bases: Default::default(),
             id: self.id,
             regions: self.regions.clone(),
             content: self.content.clone(),

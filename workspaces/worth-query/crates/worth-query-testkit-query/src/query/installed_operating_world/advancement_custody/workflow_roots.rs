@@ -16,6 +16,7 @@ pub fn run_setup(
         .admit_workflow_resources(execution_resource_request(), &workspace)
         .unwrap()
         .start_workflow(&mut workspace)
+        .unwrap()
         .unwrap();
     (workspace, run)
 }

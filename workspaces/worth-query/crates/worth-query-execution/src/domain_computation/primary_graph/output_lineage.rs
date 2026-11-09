@@ -8,6 +8,9 @@ pub(in crate::domain_computation::primary_graph) use source_facts::RetainedSourc
 pub(in crate::domain_computation::primary_graph) use source_publication::CoveredSourcePublication;
 pub(in crate::domain_computation::primary_graph) use source_publication::SourcePublication;
 pub(crate) mod computation_source;
+mod handler_preparation;
+mod historical_reads;
+pub(in crate::domain_computation) use handler_preparation::ProducerHandlerPreparation;
 mod implementation_build;
 pub(in crate::domain_computation::primary_graph) use computation_source::ComputationSourceEvidence;
 pub(in crate::domain_computation::primary_graph) use computation_source::CurrentComputation;
@@ -26,9 +29,13 @@ pub(crate) mod native_prior_checkpoint;
 
 pub(crate) mod partition_index;
 pub(crate) mod prepared_slot;
+
+pub(in crate::domain_computation::primary_graph) use input_cutoff::RetainedInputCutoffCandidate;
+pub(crate) mod coupled_completion;
 mod qualification;
 pub(crate) mod recorded_output;
 pub(crate) mod recorded_source_identity;
+pub(in crate::domain_computation::primary_graph) use coupled_completion::CoupledOutputCompletion;
 pub(crate) mod required_publication;
 pub(crate) mod required_settlement;
 pub(in crate::domain_computation::primary_graph) use required_settlement::AcceptedCurrentCandidate;
@@ -39,9 +46,17 @@ pub(in crate::domain_computation::primary_graph) use required_settlement::Requir
 pub(crate) mod resolution;
 mod resources;
 pub(crate) mod restoration;
+pub(in crate::domain_computation::primary_graph) use restoration::PriorOutputOrigin;
 pub(crate) mod retained_computation;
 pub(in crate::domain_computation::primary_graph) use retained_computation::PriorComputationRecord;
 mod fork_origin;
+mod historical_transport;
+pub use historical_transport::{
+    HistoricalAcceptedOrigin, WorthQueryHistoryPublicationCorrespondenceMismatch,
+};
+pub(in crate::domain_computation::primary_graph) use historical_transport::{
+    HistoricalSelectionCoordinate, HistoricalTransportDenial, PreparedHistoricalTransport,
+};
 mod retention;
 pub(crate) mod settlement_identity;
 
@@ -282,10 +297,12 @@ impl WorthQueryApplicationOutputLineage {
             };
         let computation_source = ComputationSourceEvidence::from_completed(application);
         let recorded = RecordedOutput {
+            coupled_completion: prepared.and_then(|slot| slot.coupled_completion.clone()),
             required_publication: prepared.and_then(|slot| slot.required_publication.clone()),
             native_prior_checkpoint,
             computation_source,
             performed_origin: None,
+            historical_selection: None,
             consumed_outputs,
             completed_handler_facts,
             completed_decision_reuse,

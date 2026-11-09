@@ -162,6 +162,13 @@ impl RelationalPublicationPort {
                 RelationalPublicationDenial::ScopedCutoverDurabilityUnsupported,
             ));
         }
+        if self.medium.is_some()
+            && let Some(model) = candidate.owned_graph_selection_model()
+        {
+            return Err(RelationalPublicationOutcome::denied(
+                RelationalPublicationDenial::OwnedGraphSelectionDurabilityUnsupported { model },
+            ));
+        }
         if self.medium.is_some() && candidate.requires_retained_selection_profile() {
             return Err(RelationalPublicationOutcome::denied(
                 RelationalPublicationDenial::RetainedEntitySelectionDurabilityUnsupported,
@@ -246,7 +253,10 @@ impl RelationalPublicationPort {
             ));
         }
         let definition_publication = definitions
-            .map(|definitions| self.index_definitions.prepare_publication(definitions))
+            .map(|definitions| {
+                self.index_definitions
+                    .prepare_definition_publication(definitions)
+            })
             .transpose()
             .map_err(RelationalPublicationOutcome::denied)?;
         let parts = candidate

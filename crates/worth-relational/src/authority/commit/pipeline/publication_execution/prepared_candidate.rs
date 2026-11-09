@@ -1,8 +1,17 @@
 //! Read and consume the same funded, prepared publication candidate.
 use super::{PreparedCommitPublicationCompletion, PreparedCommitPublicationExecution};
 impl PreparedCommitPublicationExecution {
-    pub(crate) fn candidate_symbols(&self) -> crate::runtime::RuntimeSymbolTable {
-        self.publication.value().candidate_symbols.clone()
+    pub(crate) fn canonical_envelope(
+        &self,
+    ) -> &std::sync::Arc<crate::history::data::CanonicalCommitEnvelope> {
+        self.publication.value().canonical_envelope()
+    }
+    pub(crate) fn owned_graph_selection_model(&self) -> Option<crate::identity::data::EntityId> {
+        self.admitted
+            .value()
+            .semantic_plan()
+            .graph_selection()
+            .map(|graph| graph.model())
     }
 
     pub(crate) fn caller_association(&self) -> Option<crate::mvcc::RelationalCallerAssociation> {

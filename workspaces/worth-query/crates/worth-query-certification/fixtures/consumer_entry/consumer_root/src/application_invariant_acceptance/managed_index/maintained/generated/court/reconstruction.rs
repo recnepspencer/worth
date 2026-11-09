@@ -33,18 +33,18 @@ pub(super) fn with_bounds(
     reconstruction
         .field(
             &item,
-            ItemIdentity::reference(),
+            ItemIdentity::at("ItemIdentity"),
             "generated-item".to_owned(),
         )
         .unwrap();
     reconstruction
-        .field(&item, ItemName::reference(), name.to_owned())
+        .field(&item, ItemName::at("ItemName"), name.to_owned().into())
         .unwrap();
     reconstruction
-        .field(&item, ItemEnabled::reference(), true)
+        .field(&item, ItemEnabled::at("ItemEnabled"), true)
         .unwrap();
     reconstruction
-        .field(&item, bounds::ItemBounds::reference(), coordinates)
+        .field(&item, bounds::ItemBounds::at("ItemBounds"), coordinates)
         .unwrap();
     let directories = reconstruction
         .retained_relation_sources(Contains::reference(), Directory::reference(), &item)

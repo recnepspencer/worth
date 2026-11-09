@@ -37,7 +37,7 @@ fn source_only_pinned_row_retired_child_is_terminal() {
 
 fn journey(result_set: bool, movement: u8) {
     let program = ApplicationProgramAuthoring::<ConsumerSchema, PinnedSourceProgram>::begin()
-        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
+        .with_schema(&<ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let world = installation::install_selected_program(

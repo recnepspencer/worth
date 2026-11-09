@@ -1,5 +1,7 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WorthQueryWorkspaceErrorKind {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     Unclassified,
     ForeignPhase(
         worth_query_execution::facade::application_contribution::WorthQueryForeignAdvancementPhase,

@@ -42,6 +42,9 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
                 &layout,
                 self.binding_identity.clone(),
                 self.authority_identity,
+                self.native
+                    .candidate_identity()
+                    .map(|id| id.qualification()),
             ))
         });
         match result {

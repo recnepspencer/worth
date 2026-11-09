@@ -41,3 +41,4 @@ pub(in crate::domain_computation) use cleanup_receipt::RetainedOriginalCleanupCo
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
+pub(in crate::domain_computation::primary_graph) use commit_receipt::recording;

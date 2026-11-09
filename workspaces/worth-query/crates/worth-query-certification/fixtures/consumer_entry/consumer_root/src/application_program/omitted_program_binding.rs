@@ -42,7 +42,7 @@ impl ApplicationProgramDefinition<ConsumerSchema> for OmittedProgramBinding {
 pub(crate) fn validated_omitted_program_binding(
 ) -> ValidatedApplicationProgram<ConsumerSchema, OmittedProgramBinding> {
     ApplicationProgramAuthoring::<ConsumerSchema, OmittedProgramBinding>::begin()
-        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
+        .with_schema(&<ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the completed schema is valid"))
         .validated_program()
         .expect("the omitted-binding program is declaration-valid")
 }

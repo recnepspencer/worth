@@ -13,6 +13,7 @@ impl HistorySubsystem {
     /// retaining each artifact's original source and residency cell.
     pub(super) fn rebuild_checkpoint_catalog(
         &self,
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         checkpoints: &[RelationalBranchCellCheckpoint],
     ) -> Result<(), String> {
         let mut descriptors = BTreeMap::new();
@@ -82,7 +83,7 @@ impl HistorySubsystem {
                 )
                 .map_err(|denial| format!("recovered catalog root linkage denied: {denial:?}"))?;
             catalog
-                .append_preencoded_recovery(artifact)
+                .append_preencoded_recovery(Arc::new(artifact))
                 .map_err(|denial| format!("recovered catalog root linkage denied: {denial:?}"))?;
         }
         self.install_commit_catalog(catalog);

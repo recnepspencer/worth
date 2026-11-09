@@ -36,7 +36,7 @@ fn pre_kernel_cancellation_keeps_its_real_execution_cause() {
             selected
                 .resolve_entity(
                     &phase,
-                    IntentIdentityField::reference(),
+                    IntentIdentityField::at("IntentIdentityField"),
                     "intent-1".to_owned(),
                     &request,
                     primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,

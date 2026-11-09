@@ -243,7 +243,10 @@ impl LineageState {
             .collect()
     }
 
-    pub(crate) fn rebuild_derived_indexes(&mut self) {
+    pub(crate) fn rebuild_derived_indexes(
+        &mut self,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+    ) {
         self.published_event_positions = self
             .published_events
             .iter()
@@ -255,10 +258,14 @@ impl LineageState {
             .published_events
             .iter()
             .map(|published| published.event.as_ref());
-        self.resolution_indexes.rebuild(nodes, events);
+        self.resolution_indexes.rebuild(lane, nodes, events);
     }
 
-    pub(crate) fn replace_events(&mut self, events: Vec<(LineageEventRecord, CommitId)>) {
+    pub(crate) fn replace_events(
+        &mut self,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        events: Vec<(LineageEventRecord, CommitId)>,
+    ) {
         self.published_events = events
             .into_iter()
             .map(|(event, publication_commit_id)| PublishedLineageEvent {
@@ -266,7 +273,7 @@ impl LineageState {
                 publication_commit_id,
             })
             .collect();
-        self.rebuild_derived_indexes();
+        self.rebuild_derived_indexes(lane);
     }
 
     pub(crate) fn drain_events(

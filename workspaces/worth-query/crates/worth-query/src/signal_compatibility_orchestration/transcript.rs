@@ -11,6 +11,7 @@ use crate::binding_pipeline::{
 use crate::continuation_pipeline::{
     prepare_continuation_from_signal_checked_on_handle, WorthQueryPreparedContinuationOutcome,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::lower::{
     checked_and_linked_from_subject, handle_alignment_outcome, linked_from_orchestration_subject,
@@ -96,7 +97,7 @@ pub(crate) fn orchestrate_signal_compatibility_on_handle<
 >(
     handle: &WorthQueryInstalledDomainDeclarationContext<D, C>,
     input: WorthQuerySignalCompatibilityOrchestrationInput<D, I>,
-) -> WorthQuerySignalCompatibilityOrchestrationTranscript<D, I> {
+) -> Result<WorthQuerySignalCompatibilityOrchestrationTranscript<D, I>, IdentityDerivationDenial> {
     let (subject, required_contract, bridge_request) = input.into_parts();
     let request = WorthQueryBindingRequestDescriptor::new(
         I::Family::semantic_family_key(),
@@ -106,7 +107,7 @@ pub(crate) fn orchestrate_signal_compatibility_on_handle<
     if let Some(outcome) = handle_alignment_outcome(handle, &subject) {
         let linked = linked_from_orchestration_subject(&subject);
         let digest = orchestration_digest("misaligned", &linked, "misaligned");
-        return WorthQuerySignalCompatibilityOrchestrationTranscript::new(
+        return Ok(WorthQuerySignalCompatibilityOrchestrationTranscript::new(
             request,
             outcome,
             vec![WorthQueryBindingWitnessCheck::failed(
@@ -116,21 +117,21 @@ pub(crate) fn orchestrate_signal_compatibility_on_handle<
             Vec::new(),
             digest,
             linked,
-        );
+        ));
     }
 
     let (checked, linked) = checked_and_linked_from_subject(handle, subject);
     let (outcome, witness_checks, narrowing, outcome_token) =
-        outcome_from_signal_checked(handle, required_contract, bridge_request, checked);
+        outcome_from_signal_checked(handle, required_contract, bridge_request, checked)?;
     let digest = orchestration_digest("signal_orchestration", &linked, &outcome_token);
-    WorthQuerySignalCompatibilityOrchestrationTranscript::new(
+    Ok(WorthQuerySignalCompatibilityOrchestrationTranscript::new(
         request,
         outcome,
         witness_checks,
         narrowing,
         digest,
         linked,
-    )
+    ))
 }
 
 #[cfg(test)]
@@ -143,8 +144,8 @@ pub(crate) fn orchestrated_outcome_from_signal_checked_on_handle<
     required_contract: crate::application::WorthQueryDeclarationAspectContract,
     bridge_request: Option<WorthQueryDeclarationBridgeContinuationRequest>,
     checked: WorthQueryDeclarationSignalCompatibilityChecked<D, I>,
-) -> WorthQuerySignalCompatibilityOrchestrationOutcome<D, I> {
-    outcome_from_signal_checked(handle, required_contract, bridge_request, checked).0
+) -> Result<WorthQuerySignalCompatibilityOrchestrationOutcome<D, I>, IdentityDerivationDenial> {
+    Ok(outcome_from_signal_checked(handle, required_contract, bridge_request, checked)?.0)
 }
 
 fn outcome_from_signal_checked<
@@ -156,13 +157,16 @@ fn outcome_from_signal_checked<
     required_contract: crate::application::WorthQueryDeclarationAspectContract,
     bridge_request: Option<WorthQueryDeclarationBridgeContinuationRequest>,
     checked: WorthQueryDeclarationSignalCompatibilityChecked<D, I>,
-) -> (
-    WorthQuerySignalCompatibilityOrchestrationOutcome<D, I>,
-    Vec<WorthQueryBindingWitnessCheck>,
-    Vec<WorthQueryBindingNarrowingDecision>,
-    String,
-) {
-    match checked {
+) -> Result<
+    (
+        WorthQuerySignalCompatibilityOrchestrationOutcome<D, I>,
+        Vec<WorthQueryBindingWitnessCheck>,
+        Vec<WorthQueryBindingNarrowingDecision>,
+        String,
+    ),
+    IdentityDerivationDenial,
+> {
+    Ok(match checked {
         WorthQueryDeclarationSignalCompatibilityChecked::Compatible(compatibility) => {
             let mut witness_checks = vec![WorthQueryBindingWitnessCheck::passed(
                 "signal_compatibility",
@@ -173,17 +177,17 @@ fn outcome_from_signal_checked<
                     WorthQueryDeclarationSignalCompatibilityChecked::Compatible(compatibility),
                     bridge_request,
                     required_contract,
-                );
+                )?;
                 witness_checks.extend(proof.witness_checks().iter().cloned());
                 let narrowing = proof.narrowing_decisions().to_vec();
                 let checked = proof.into_checked();
                 let digest = checked.prepared_digest().to_string();
-                return (
+                return Ok((
                     map_continuation_outcome(checked.into_outcome()),
                     witness_checks,
                     narrowing,
                     digest,
-                );
+                ));
             }
             let digest = compatibility.signal_compatibility_digest().to_string();
             (
@@ -226,7 +230,7 @@ fn outcome_from_signal_checked<
             Vec::new(),
             "failed".to_string(),
         ),
-    }
+    })
 }
 
 fn map_signal_denial<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>(

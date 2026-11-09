@@ -1,16 +1,16 @@
 //! Successor-owned balance query for the additive B application.
 use super::schema::{
-    Account, AccountIdentity, AccountNumber, ExternalMapping, IdentityBinding, Principal,
+    Account, AccountIdentity, ExternalMapping, HomeRecords, IdentityBinding, Principal,
     SuccessorSchema,
 };
 use worth_query_decl::facade::{
     application_query::{
-        ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
+        ApplicationQueryBasisSupport, ApplicationQueryCardinality,
         ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
         ApplicationQueryLaneEligibility, ApplicationQueryParameterSet,
         ApplicationQueryResultFieldRef, ApplicationQueryResultShapeBuilder,
     },
-    application_schema::{EqualityPredicate, NoApplicationUnit, ReadOnly, ReadWrite},
+    application_schema::fragment::{self, FieldSelection},
     worth_query_application_query, worth_query_portable_type, worth_query_query_binding,
     worth_query_structured_value_binding,
 };
@@ -19,7 +19,6 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationProjectionRow,
 };
 
-use super::native_mutation::Balance;
 pub struct AccountParameters;
 worth_query_structured_value_binding!(pub AccountParametersBinding for AccountParameters {
     identity: "worth.query.host.home.balance.parameters.v1"
@@ -42,39 +41,35 @@ pub(super) fn number_result<Q>() -> ApplicationQueryResultFieldRef<
     Q,
     NumberSlot,
     SuccessorSchema,
-    Account,
-    AccountIdentity,
-    Balance,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
+    FieldSelection<HomeRecords, Account, AccountIdentity, u64>,
 > {
-    ApplicationQueryResultFieldRef::new("balance", Balance::reference())
+    ApplicationQueryResultFieldRef::new(
+        "balance",
+        FieldSelection::<HomeRecords, Account, AccountIdentity, u64>::at("Balance"),
+    )
 }
 
 pub(super) fn definition(
-) -> ApplicationQueryDefinition<SuccessorSchema, AccountQuery, AccountParameters, u64, Account> {
+) -> ApplicationQueryDefinitionBuilder<SuccessorSchema, AccountQuery, AccountParameters, u64, Account>
+{
     let shape = ApplicationQueryResultShapeBuilder::<
         SuccessorSchema,
         AccountQuery,
         Account,
         u64,
         AccountResultBinding,
-    >::new(Account::reference())
+    >::new(fragment::entity(HomeRecords, Account))
     .field(number_result())
     .build();
     ApplicationQueryDefinitionBuilder::declare(AccountQuery::reference())
-        .root(Account::reference())
-        .scope(Account::reference())
+        .root(fragment::entity(HomeRecords, Account))
+        .scope(fragment::entity(HomeRecords, Account))
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 
 impl WorthQueryApplicationProjection<SuccessorSchema, AccountQuery> for u64 {
@@ -104,8 +99,8 @@ worth_query_query_binding!(
     result AccountResultBinding,
     principal IdentityBinding, mapping ExternalMapping, principal_entity Principal,
         principal_identity u64, identity_binding worth_query_decl::facade::application_schema::U64ApplicationValueBinding,
-    scope Account, AccountIdentity, AccountNumber, String, ReadOnly, NoApplicationUnit,
-    field AccountNumber::reference(),
+    scope FieldSelection<HomeRecords, Account, AccountIdentity, String>,
+    field FieldSelection::<HomeRecords, Account, AccountIdentity, String>::at("AccountNumber"),
     value AccountRead::into_number,
     limits results 1
 );

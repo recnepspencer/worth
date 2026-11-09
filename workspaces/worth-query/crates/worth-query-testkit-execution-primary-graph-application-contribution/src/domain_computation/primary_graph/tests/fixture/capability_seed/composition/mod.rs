@@ -129,7 +129,7 @@ pub fn bind_action_records(
                     WorthQueryApplicationEntityKey::new(record).unwrap(),
                 )
                 .field(
-                    CapabilityActionRecordIdentity::reference(),
+                    CapabilityActionRecordIdentity::at("CapabilityActionRecordIdentity"),
                     record.to_owned(),
                 ),
             )

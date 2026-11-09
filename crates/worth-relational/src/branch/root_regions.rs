@@ -16,6 +16,9 @@ use insertion::insert_leaf;
 mod request_construction;
 pub(in crate::branch) use request_construction::PreparedRelationalRegionSet;
 mod allocation_visitation;
+mod commitment;
+mod publication;
+use commitment::{empty_commitment, node_commitment};
 mod partition_visitation;
 pub(crate) use partition_visitation::RelationalPartitionVisit;
 
@@ -28,6 +31,8 @@ pub(crate) struct RelationalPersistentRegionSet {
     set_id: u64,
     index_root: Option<Arc<RelationalPersistentRegionNode>>,
     count: usize,
+    live_counts: crate::storage::residency::LiveRecordCounts,
+    pub(super) kinds: crate::storage::residency::KindRegionDirectory,
     materialization_unavailable_records: usize,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
@@ -57,97 +62,6 @@ struct RelationalRemovedPartition {
 }
 
 impl RelationalPersistentRegionSet {
-    pub(crate) fn initial(
-        set_id: u64,
-        regions: BTreeMap<PartitionId, Arc<RelationalRootRegion>>,
-        issuer: &RelationalBranchRootIdentityIssuer,
-    ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
-        let count = regions.len();
-        let materialization_unavailable_records = regions
-            .values()
-            .map(|region| region.materialization_unavailable_records())
-            .sum();
-        let mut index_root = None;
-        for (partition_id, region) in regions {
-            index_root = Some(insert_leaf(
-                index_root.as_ref(),
-                partition_id,
-                RelationalPersistentRegionLeaf::Present(Box::new(RelationalRootRegionReference {
-                    region,
-                    _memory: None,
-                })),
-                0,
-                issuer,
-                None,
-            )?);
-        }
-        Ok(Arc::new(Self {
-            set_id,
-            index_root,
-            count,
-            materialization_unavailable_records,
-            _memory: None,
-        }))
-    }
-
-    pub(crate) fn replace(
-        set_id: u64,
-        parent: &Arc<Self>,
-        replacements: BTreeMap<PartitionId, Arc<RelationalRootRegion>>,
-        removed: BTreeSet<PartitionId>,
-        issuer: &RelationalBranchRootIdentityIssuer,
-    ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
-        let mut index_root = parent.index_root.clone();
-        let mut count = parent.count;
-        let mut materialization_unavailable_records = parent.materialization_unavailable_records;
-        for (partition_id, region) in replacements {
-            if let Some(previous) = get_region(index_root.as_ref(), partition_id) {
-                materialization_unavailable_records = materialization_unavailable_records
-                    .saturating_sub(previous.materialization_unavailable_records());
-            } else {
-                count = count.saturating_add(1);
-            }
-            materialization_unavailable_records = materialization_unavailable_records
-                .saturating_add(region.materialization_unavailable_records());
-            index_root = Some(insert_leaf(
-                index_root.as_ref(),
-                partition_id,
-                RelationalPersistentRegionLeaf::Present(Box::new(RelationalRootRegionReference {
-                    region,
-                    _memory: None,
-                })),
-                0,
-                issuer,
-                None,
-            )?);
-        }
-        for partition_id in removed {
-            if let Some(previous) = get_region(index_root.as_ref(), partition_id) {
-                count = count.saturating_sub(1);
-                materialization_unavailable_records = materialization_unavailable_records
-                    .saturating_sub(previous.materialization_unavailable_records());
-            }
-            index_root = Some(insert_leaf(
-                index_root.as_ref(),
-                partition_id,
-                RelationalPersistentRegionLeaf::Removed(Box::new(RelationalRemovedPartition {
-                    partition_id,
-                    _memory: None,
-                })),
-                0,
-                issuer,
-                None,
-            )?);
-        }
-        Ok(Arc::new(Self {
-            set_id,
-            index_root,
-            count,
-            materialization_unavailable_records,
-            _memory: None,
-        }))
-    }
-
     pub(crate) fn materialize(&self) -> BTreeMap<PartitionId, Arc<RelationalRootRegion>> {
         let mut regions = BTreeMap::new();
         materialize_node(self.index_root.as_ref(), 0, 0, &mut regions);
@@ -161,6 +75,9 @@ impl RelationalPersistentRegionSet {
         get_region(self.index_root.as_ref(), partition_id)
     }
 
+    pub(crate) fn live_counts(&self) -> crate::storage::residency::LiveRecordCounts {
+        self.live_counts
+    }
     pub(crate) fn len(&self) -> usize {
         self.count
     }
@@ -231,40 +148,6 @@ fn observe_new_node_cost(
         path_nodes,
         authoritative_bytes,
     );
-}
-
-fn empty_commitment() -> [u8; 32] {
-    use sha2::{Digest, Sha256};
-    Sha256::digest(b"worth.relational.branch-region.empty.v3\0").into()
-}
-
-fn node_commitment(
-    depth: u32,
-    zero: Option<&Arc<RelationalPersistentRegionNode>>,
-    one: Option<&Arc<RelationalPersistentRegionNode>>,
-    leaf: Option<&RelationalPersistentRegionLeaf>,
-) -> [u8; 32] {
-    use sha2::{Digest, Sha256};
-    let mut digest = Sha256::new();
-    digest.update(b"worth.relational.branch-region.node.v3\0");
-    digest.update(depth.to_be_bytes());
-    digest.update(zero.map_or_else(empty_commitment, |node| node.commitment));
-    digest.update(one.map_or_else(empty_commitment, |node| node.commitment));
-    match leaf {
-        Some(RelationalPersistentRegionLeaf::Present(region)) => {
-            digest.update([1]);
-            digest.update(region.region.partition_id.0.to_be_bytes());
-            digest.update(region.region.content_digest);
-            digest.update(region.region.kind_commitment.head.bytes());
-            digest.update(region.region.kind_commitment.history.bytes());
-        }
-        Some(RelationalPersistentRegionLeaf::Removed(partition_id)) => {
-            digest.update([2]);
-            digest.update(partition_id.partition_id.0.to_be_bytes());
-        }
-        None => digest.update([0]),
-    }
-    digest.finalize().into()
 }
 
 fn get_region(

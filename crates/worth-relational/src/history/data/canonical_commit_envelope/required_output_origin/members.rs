@@ -94,6 +94,7 @@ pub(super) fn capture(
                                 history.canonical_envelope_for_version(version, context)
                             },
                             history.canonical_catalog_len(),
+                            &history.execution(),
                             context,
                         )
                         .map_err(super::installation::relation_stop)?)

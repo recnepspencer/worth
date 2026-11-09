@@ -93,7 +93,7 @@ impl<'a> WorthQueryAdmittedRuntimeWriteBatchIntent<'a> {
     ) -> Result<WorthQueryBatchWriteReceipt, WorthQueryRuntimeError> {
         let binding = self
             .runtime
-            .prepare_authoritative_mutation_batch_execution_binding(self.handoff);
+            .prepare_authoritative_mutation_batch_execution_binding(self.handoff)?;
         self.runtime
             .execute_authoritative_mutation_batch_execution_binding(execution, binding)
     }

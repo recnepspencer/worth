@@ -17,18 +17,21 @@ impl BridgeConditionalCausalEnvelopeRequest {
     pub fn new(
         summary: BridgeCausalInspectionAdmissionSummary,
         observation: BridgeConditionalCausalObservation,
-    ) -> Result<Self, BridgeCausalEnvelopeDenial> {
+    ) -> Result<Self, crate::diagnostics::causal_envelope::BridgeCausalEnvelopeConstructionStop>
+    {
         if summary.requires_application_inspection_admission() {
-            return Err(denial(
+            return Err((denial(
                 &summary,
                 BridgeCausalEnvelopeDenialKind::ApplicationInspectionAdmissionRequired,
-            ));
+            )?)
+            .into());
         }
         if summary.expected_query_observation_identity().is_none() {
-            return Err(denial(
+            return Err((denial(
                 &summary,
                 BridgeCausalEnvelopeDenialKind::QueryObservationAssociationMismatch,
-            ));
+            )?)
+            .into());
         }
         Ok(Self {
             summary,
@@ -40,12 +43,16 @@ impl BridgeConditionalCausalEnvelopeRequest {
 pub(crate) fn assemble_native(
     owner: &BridgeOwnedSignalRuntime,
     request: BridgeConditionalCausalEnvelopeRequest,
-) -> Result<BridgeCausalExplanationEnvelope, BridgeCausalEnvelopeDenial> {
+) -> Result<
+    BridgeCausalExplanationEnvelope,
+    crate::diagnostics::causal_envelope::BridgeCausalEnvelopeConstructionStop,
+> {
     if !request.observation.belongs_to(owner) {
-        return Err(denial(
+        return Err((denial(
             &request.summary,
             BridgeCausalEnvelopeDenialKind::ForeignNativeObservation,
-        ));
+        )?)
+        .into());
     }
     // No Native projection, receipt access or reference derivation precedes affinity.
     let evidence = super::native_evidence::NativeEvidence::from_verified(&request.observation)?;
@@ -64,13 +71,16 @@ pub(crate) fn assemble_native(
 fn denial(
     summary: &BridgeCausalInspectionAdmissionSummary,
     kind: BridgeCausalEnvelopeDenialKind,
-) -> BridgeCausalEnvelopeDenial {
-    BridgeCausalEnvelopeDenial::new(
+) -> Result<
+    BridgeCausalEnvelopeDenial,
+    crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal,
+> {
+    Ok(BridgeCausalEnvelopeDenial::new(
         kind,
         BridgeCausalEvidenceFamily::BridgeConditionalObservation,
         BridgeCausalEvidenceOwner::RuntimeBridge,
         BridgeCausalEvidenceOwner::RuntimeBridge,
         summary.summary_evidence_identity().clone(),
-        BridgeCausalEnvelopeCounters::empty(),
-    )
+        BridgeCausalEnvelopeCounters::empty()?,
+    )?)
 }

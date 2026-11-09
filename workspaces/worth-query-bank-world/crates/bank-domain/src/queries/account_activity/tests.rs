@@ -42,7 +42,7 @@ fn continuation_ordering_must_be_a_direct_child_field() {
     .field(account_identity())
     .relation(account_postings(), posting)
     .build();
-    let denied = ApplicationQueryDefinitionBuilder::declare(AccountActivityQuery::reference())
+    let expression = ApplicationQueryDefinitionBuilder::declare(AccountActivityQuery::reference())
         .root(Account::reference())
         .scope(Account::reference())
         .result_shape(shape)
@@ -56,14 +56,20 @@ fn continuation_ordering_must_be_a_direct_child_field() {
             ApplicationQueryOrderingDirection::Ascending,
         )
         .continue_by(account_postings())
-        .live_by::<Posting, AccountActivityLiveCause, _, _, _, _, _, _, _, _>(
-            account_identity(),
-            posting_identity(),
-        )
+        .live_by::<Posting, AccountActivityLiveCause>(account_identity(), posting_identity());
+    let denied =
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationBuilder::<
+            BankSchema,
+        >::for_schema()
+        .application_query(expression)
         .build()
         .unwrap_err();
     assert_eq!(
         denied,
-        ApplicationQueryDefinitionDenial::ContinuationOrderingOutsideTarget
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationDenial::InvalidQueryDefinition {
+            owner: <BankSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::NAME.into(),
+            query: AccountActivityQuery::reference().name().into(),
+            cause: ApplicationQueryDefinitionDenial::ContinuationOrderingOutsideTarget,
+        }
     );
 }

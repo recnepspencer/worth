@@ -43,7 +43,8 @@ fn retained_snapshot_request_admits_and_resolves_retained_path() {
         1,
         1,
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let capability = lower_policy_resolution(
         &declaration,
         &runtime.resolve_truth_view_policy(&declaration),
@@ -139,7 +140,8 @@ fn replay_request_admits_and_resolves_replay_path() {
         4,
         8,
         HistoricalPathReuseDescriptor::with_replay_tail_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let capability = lower_policy_resolution(
         &declaration,
         &runtime.resolve_truth_view_policy(&declaration),
@@ -203,7 +205,8 @@ fn reconstruction_request_admits_full_reconstruction_path() {
         3,
         10,
         HistoricalPathReuseDescriptor::no_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let capability = lower_policy_resolution(
         &declaration,
         &runtime.resolve_truth_view_policy(&declaration),
@@ -245,7 +248,8 @@ fn replay_request_is_denied_when_replay_mode_is_not_admitted() {
         2,
         2,
         HistoricalPathReuseDescriptor::no_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let capability = lower_policy_resolution(
         &declaration,
         &runtime.resolve_truth_view_policy(&declaration),
@@ -270,7 +274,8 @@ fn admitted_path_class_must_match_requested_lane_proof() {
         2,
         2,
         HistoricalPathReuseDescriptor::no_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
     let capability = super::super::request::HistoricalCapabilityDescriptor::new_for_test(
         "basis:mismatch",
         Some(AdmittedHistoricalPathClass::AdmittedRetainedSnapshotPath),
@@ -279,7 +284,8 @@ fn admitted_path_class_must_match_requested_lane_proof() {
         true,
         false,
         HistoricalPathReuseDescriptor::no_reuse(),
-    );
+    )
+    .expect("fixture digest must fit");
 
     let error = admit_historical_evaluation_path(request, capability)
         .expect_err("mismatched admitted proof should fail");

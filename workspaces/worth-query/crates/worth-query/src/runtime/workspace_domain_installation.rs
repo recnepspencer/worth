@@ -1,4 +1,5 @@
 use super::WorthQueryWorkspace;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 impl WorthQueryWorkspace {
     pub(crate) fn advancement_owner(
@@ -150,8 +151,11 @@ impl WorthQueryWorkspace {
 
     pub fn verify_domain_execution_index_rebuild(
         &self,
-    ) -> crate::domain_installation::WorthQueryDomainExecutionIndexRebuildReport {
-        self.runtime.verify_domain_execution_index_rebuild()
+    ) -> Result<
+        crate::domain_installation::WorthQueryDomainExecutionIndexRebuildReport,
+        IdentityDerivationDenial,
+    > {
+        Ok(self.runtime.verify_domain_execution_index_rebuild()?)
     }
 
     pub fn rebuild_conditional_execution_index(

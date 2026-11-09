@@ -23,7 +23,7 @@ fn admit<T>(
 > {
     let overflow = || crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow;
     let bounds = patch
-        .application_allocation_bounds(current)
+        .application_retained_storage_bounds(current)
         .ok_or_else(overflow)?;
     let bytes = u64::try_from(bounds.retained_bytes)
         .ok()

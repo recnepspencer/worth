@@ -4,6 +4,8 @@ use super::*;
 #[derive(Debug, Clone, Default)]
 pub(super) struct RuntimeSymbolState {
     pub(super) interner: StringInterner,
+    pub(super) admissions:
+        im::OrdMap<crate::storage::residency::RelationalRegionSymbolAdmissionIdentity, ()>,
     pub(super) configuration: im::OrdMap<SymbolTextLookupKey, Symbol>,
 }
 impl RuntimeSymbolTable {

@@ -8,8 +8,7 @@ use worth_query_host::facade::application_installation::ApplicationBuildIdentity
 use worth_query_decl::facade::application_schema::{
     ApplicationInvariantExecutionPoint, ApplicationInvariantMarkerIdentity, ApplicationSchema,
     ApplicationSchemaComposition, ApplicationSchemaContribution,
-    ApplicationSchemaContributionAuthoring, ApplicationSchemaContributionIdentity,
-    ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
+    ApplicationSchemaContributionIdentity, ApplicationSchemaDeclaration,
     ApplicationSchemaDeclarationDenial,
 };
 use worth_query_host::facade::{
@@ -41,39 +40,73 @@ pub(super) fn run() {
     unbounded_denial_value::unbounded_denial_value_is_denied_before_initial_state();
 }
 
-macro_rules! producer_schema {
-    ($Schema:ident, $Contribution:ty) => {
-        struct $Schema;
-        impl TopologySchemaBinding for $Schema {}
-        impl ParameterSchemaBinding for $Schema {}
-        impl ApplicationSchema for $Schema {
-            const OWNER: &'static str = "worth.query.certification.producer-denials";
-            const NAME: &'static str = stringify!($Schema);
-            const MAJOR: u32 = 1;
-            const MINOR: u32 = 0;
-
-            fn declaration(
-            ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial>
-            {
-                ApplicationSchemaContributionAuthoring::contributions(
-                    ApplicationSchemaDeclarationBuilder::<Self>::for_schema(),
-                )
-                .register::<$Contribution>()?
-                .register::<ParameterContribution>()?
-                .build()
-            }
-        }
-        impl ApplicationSchemaComposition for $Schema {
-            type Contributions = ($Contribution, ParameterContribution);
-        }
-    };
-}
-
 mod unbounded_denial_value;
 
-producer_schema!(MissingProducerSchema, ProducerOmissionContribution);
-producer_schema!(DuplicateProducerSchema, DuplicateProducerContribution);
-producer_schema!(AmbiguousProducerSchema, AmbiguousProducerContribution);
+struct MissingProducerSchema;
+impl TopologySchemaBinding for MissingProducerSchema {
+    type PrincipalFragment = worth_query_topology_entry::PrincipalRecords;
+}
+impl ParameterSchemaBinding for MissingProducerSchema {}
+impl worth_query_decl::facade::application_schema::fragment::Fragment for MissingProducerSchema {
+    const NAME: &'static str = "MissingProducerSchema";
+    type Bindings = worth_query_decl::facade::application_schema::fragment::NoBindings;
+    type Members = (ProducerOmissionContribution, ParameterContribution);
+}
+impl ApplicationSchema for MissingProducerSchema {
+    const OWNER: &'static str = "worth.query.certification.producer-denials";
+    const NAME: &'static str = "MissingProducerSchema";
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        worth_query_decl::facade::application_schema::fragment::declare(Self)
+    }
+}
+impl ApplicationSchemaComposition for MissingProducerSchema {
+    type Contributions = (ProducerOmissionContribution, ParameterContribution);
+}
+
+struct DuplicateProducerSchema;
+impl TopologySchemaBinding for DuplicateProducerSchema {
+    type PrincipalFragment = worth_query_topology_entry::PrincipalRecords;
+}
+impl ParameterSchemaBinding for DuplicateProducerSchema {}
+impl worth_query_decl::facade::application_schema::fragment::Fragment for DuplicateProducerSchema {
+    const NAME: &'static str = "DuplicateProducerSchema";
+    type Bindings = worth_query_decl::facade::application_schema::fragment::NoBindings;
+    type Members = (DuplicateProducerContribution, ParameterContribution);
+}
+impl ApplicationSchema for DuplicateProducerSchema {
+    const OWNER: &'static str = "worth.query.certification.producer-denials";
+    const NAME: &'static str = "DuplicateProducerSchema";
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        worth_query_decl::facade::application_schema::fragment::declare(Self)
+    }
+}
+impl ApplicationSchemaComposition for DuplicateProducerSchema {
+    type Contributions = (DuplicateProducerContribution, ParameterContribution);
+}
+
+struct AmbiguousProducerSchema;
+impl TopologySchemaBinding for AmbiguousProducerSchema {
+    type PrincipalFragment = worth_query_topology_entry::PrincipalRecords;
+}
+impl ParameterSchemaBinding for AmbiguousProducerSchema {}
+impl worth_query_decl::facade::application_schema::fragment::Fragment for AmbiguousProducerSchema {
+    const NAME: &'static str = "AmbiguousProducerSchema";
+    type Bindings = worth_query_decl::facade::application_schema::fragment::NoBindings;
+    type Members = (AmbiguousProducerContribution, ParameterContribution);
+}
+impl ApplicationSchema for AmbiguousProducerSchema {
+    const OWNER: &'static str = "worth.query.certification.producer-denials";
+    const NAME: &'static str = "AmbiguousProducerSchema";
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        worth_query_decl::facade::application_schema::fragment::declare(Self)
+    }
+}
+impl ApplicationSchemaComposition for AmbiguousProducerSchema {
+    type Contributions = (AmbiguousProducerContribution, ParameterContribution);
+}
 
 fn missing_provider_precedes_initializer() {
     let setup_calls = Arc::new(AtomicUsize::new(0));
@@ -139,11 +172,7 @@ impl<Schema: TopologySchemaBinding> ApplicationSchemaContribution<Schema>
     const IDENTITY: ApplicationSchemaContributionIdentity =
         <TopologyContribution as ApplicationSchemaContribution<Schema>>::IDENTITY;
 
-    fn register_members(
-        builder: ApplicationSchemaDeclarationBuilder<Schema>,
-    ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-        <TopologyContribution as ApplicationSchemaContribution<Schema>>::register_members(builder)
-    }
+    type Members = <TopologyContribution as ApplicationSchemaContribution<Schema>>::Members;
 }
 
 impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
@@ -175,11 +204,7 @@ impl<Schema: TopologySchemaBinding> ApplicationSchemaContribution<Schema>
     const IDENTITY: ApplicationSchemaContributionIdentity =
         <TopologyContribution as ApplicationSchemaContribution<Schema>>::IDENTITY;
 
-    fn register_members(
-        builder: ApplicationSchemaDeclarationBuilder<Schema>,
-    ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-        <TopologyContribution as ApplicationSchemaContribution<Schema>>::register_members(builder)
-    }
+    type Members = <TopologyContribution as ApplicationSchemaContribution<Schema>>::Members;
 }
 
 impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
@@ -262,11 +287,7 @@ impl<Schema: TopologySchemaBinding> ApplicationSchemaContribution<Schema>
     const IDENTITY: ApplicationSchemaContributionIdentity =
         <TopologyContribution as ApplicationSchemaContribution<Schema>>::IDENTITY;
 
-    fn register_members(
-        builder: ApplicationSchemaDeclarationBuilder<Schema>,
-    ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-        <TopologyContribution as ApplicationSchemaContribution<Schema>>::register_members(builder)
-    }
+    type Members = <TopologyContribution as ApplicationSchemaContribution<Schema>>::Members;
 }
 
 impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>

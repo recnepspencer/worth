@@ -145,7 +145,7 @@ pub fn write_gate(world: &CourtroomWorld, gate: String) {
         .publish_native_field_write_for_test(
             world.application.current_world(),
             world.intent_record_identity(),
-            IntentGateField::reference(),
+            IntentGateField::at("IntentGateField"),
             gate,
             &request_scope(),
         )

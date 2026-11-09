@@ -1,11 +1,11 @@
 use crate::application_capability::{
     ApplicationCapabilityMarkerIdentity, ApplicationCapabilityRequest,
 };
+use crate::application_schema::fragment::RecordSelection;
 use crate::application_schema::{
-    ApplicationAspectMarkerIdentity, ApplicationEntityMarkerIdentity,
-    ApplicationFieldMarkerIdentity, ApplicationFieldRef, ApplicationIdentityScalarValueBinding,
+    ApplicationEntityMarkerIdentity, ApplicationIdentityScalarValueBinding,
     ApplicationOperationMarkerIdentity, ApplicationOperationRef, ApplicationPrincipalBindingRef,
-    ApplicationSchema, ApplicationStructuredValueBinding, EqualityPredicate, WritePosture,
+    ApplicationSchema, ApplicationStructuredValueBinding,
 };
 
 use super::ApplicationMutationSourceExpectation;
@@ -15,16 +15,8 @@ use super::{
     ApplicationMutationScopeContract,
 };
 
-type MutationScopeFieldRef<Schema, Binding> = ApplicationFieldRef<
-    Schema,
-    <Binding as ApplicationMutationScopeBinding<Schema>>::Scope,
-    <Binding as ApplicationMutationScopeBinding<Schema>>::Aspect,
-    <Binding as ApplicationMutationScopeBinding<Schema>>::Field,
-    <Binding as ApplicationMutationScopeBinding<Schema>>::Value,
-    <Binding as ApplicationMutationScopeBinding<Schema>>::Write,
-    EqualityPredicate,
-    <Binding as ApplicationMutationScopeBinding<Schema>>::Unit,
->;
+type MutationScopeFieldRef<Schema, Binding> =
+    <Binding as ApplicationMutationScopeBinding<Schema>>::Field;
 
 /// Complete declaration-time meaning of one application mutation binding.
 pub trait ApplicationMutationBinding<Schema>: Sized + 'static
@@ -32,18 +24,6 @@ where
     Schema: ApplicationSchema,
     <Self::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope:
         ApplicationEntityMarkerIdentity<Schema>,
-    <Self::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Aspect:
-        ApplicationAspectMarkerIdentity<
-            Schema,
-            <Self::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
-        >,
-    <Self::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Field:
-        ApplicationFieldMarkerIdentity<
-            Schema,
-            <Self::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
-            <Self::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Aspect,
-            Value = <Self::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Value,
-        >,
 {
     /// Everything the input serializes takes part in the canonical input
     /// identity; a field serde skips does not, so none may be skipped.
@@ -80,6 +60,14 @@ where
     /// authorizes and records itself. No handler serves it: installing one is
     /// refused, and the ordinary mutation lane refuses the binding.
     const WORKFLOW_CONTROL: bool = false;
+
+    /// Declares the finite installed owner demands for an authored source change.
+    fn visit_coupled_outputs<
+        Visitor: crate::application_program::ApplicationCoupledOutputVisitor<Schema, Self>,
+    >(
+        _visitor: &mut Visitor,
+    ) {
+    }
 
     /// Explicit inspection meaning for this source's original retained input.
     /// Execute and correction permission do not supply inspection disclosure.
@@ -145,8 +133,7 @@ where
             field.entity(),
             ApplicationMutationScopeContract::new(
                 Self::ScopeBinding::RESOLUTION_MODE,
-                field.binding_recipe(),
-                <Self::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Write::WRITABLE,
+                field.expected_recipe(),
             ),
             ApplicationMutationPrincipalBindingContract::from_reference(Self::principal_binding()),
             Self::REQUIRES_APPLICATION_PROGRAM,
@@ -157,6 +144,11 @@ where
                 super::super::source_disclosure::DescribeSourceDisclosure::<Schema, Self>::new(),
             ),
         )
+        .with_coupled_outputs({
+            let mut visitor = crate::application_program::DescribeCoupledOutputs::new();
+            Self::visit_coupled_outputs(&mut visitor);
+            visitor.finish()
+        })
     }
 }
 

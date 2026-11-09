@@ -18,8 +18,9 @@ pub(in crate::domain_computation::primary_graph) struct DerivedSourceQuery<'a> {
     pub control: Option<&'a dyn Fn() -> Result<(), Cause>>,
 }
 impl DerivedSourceObservation {
-    pub(in crate::domain_computation::primary_graph) fn read(
-        pin: &RelationalPinnedRead,
+    pub(in crate::domain_computation::primary_graph) fn read_projected<Phase>(
+        pin: &RelationalPinnedRead<Phase>,
+        origin: super::super::projection_read_origin::ProjectionReadOriginRef<'_>,
         execution: &ExecutionRequest<'_, '_>,
         query: DerivedSourceQuery<'_>,
         context: &mut MapKernelContext<'_, '_>,
@@ -37,7 +38,7 @@ impl DerivedSourceObservation {
         let native = pin.read_derived_source(execution, scope)?;
         let reads = native.data().reads();
         let work = native.work_units();
-        Self::retain(native, pin.snapshot(), execution, query, context).map_err(|cause| {
+        Self::retain(native, origin, execution, query, context).map_err(|cause| {
             PinnedDerivedRelationDenial {
                 kind: DerivedRelationReadDenial::Request(cause),
                 reads,
@@ -47,7 +48,7 @@ impl DerivedSourceObservation {
     }
     fn retain(
         native: PinnedDerivedRelationRead,
-        snapshot: &SnapshotHandle,
+        origin: super::super::projection_read_origin::ProjectionReadOriginRef<'_>,
         execution: &ExecutionRequest<'_, '_>,
         query: DerivedSourceQuery<'_>,
         context: &mut MapKernelContext<'_, '_>,
@@ -92,7 +93,13 @@ impl DerivedSourceObservation {
         }));
         let header = size_of::<Self>()
             .checked_add(2 * size_of::<usize>())
-            .and_then(|n| n.checked_add(snapshot.branch_id().0.len()))
+            .and_then(|n| {
+                n.checked_add(
+                    origin
+                        .committed_snapshot()
+                        .map_or(0, |snapshot| snapshot.branch_id().0.len()),
+                )
+            })
             .and_then(|n| u64::try_from(n).ok())
             .ok_or(Cause::ChargedBytesOverflow)?;
         let memory = memory::reserve(execution, context.has_accounting(), header)?;
@@ -106,7 +113,7 @@ impl DerivedSourceObservation {
             definition: query.definition.clone(),
             native,
             commitment,
-            snapshot: snapshot.clone(),
+            snapshot: origin.retained(),
             _memory: memory,
         }))
     }

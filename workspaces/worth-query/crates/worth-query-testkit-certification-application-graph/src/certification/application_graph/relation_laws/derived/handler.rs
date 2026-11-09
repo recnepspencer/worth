@@ -42,15 +42,19 @@ where
         input: &Input,
         reader: &mut DecisionReader<'_, '_, '_, GraphSchema<L>, CountBinding<L>>,
     ) -> WorthQueryDecisionPlan<u64, GraphDenial> {
-        let root = match reader.resolve_entity(NodeKey::reference(), input.root) {
+        let root = match reader.resolve_entity(node_key::<GraphSchema<L>>(), input.root) {
             Ok(root) => root,
             Err(cause) => {
                 return WorthQueryDecisionPlan::immediate(HandlerResult::ExecutionDenied(cause))
             }
         };
         if input.bad_reference {
-            let hostile=ApplicationDerivedRelationRef::<GraphSchema<L>,TwoSteps,Node,Node>::from_schema_identifiers(
-                "TwoSteps","Leaf","Node");
+            let hostile = ApplicationDerivedRelationRef::<
+                GraphSchema<L>,
+                TwoSteps,
+                GraphNode<GraphSchema<L>>,
+                GraphNode<GraphSchema<L>>,
+            >::from_schema_identifiers("TwoSteps", "Leaf", "Node");
             assert!(reader.derived_relations_from(hostile, &root).is_err());
             // Deliberately swallow the actual failed source; seal must still veto it.
             return WorthQueryDecisionPlan::immediate(HandlerResult::Completed(0));

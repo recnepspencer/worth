@@ -281,6 +281,7 @@ fn related_ordering_rebuilds_retained_historical_child_values_after_update() {
     let historical = create_relation_outcome(execution, &runtime, parent, child, "owns-historical");
     let index = register_related_name_index(&runtime);
 
+    reconstruct_installed_at_head(execution, &runtime);
     update_entity(execution, &runtime, child, "current");
     let build = runtime.index_authority().build_for_commit(
         execution,

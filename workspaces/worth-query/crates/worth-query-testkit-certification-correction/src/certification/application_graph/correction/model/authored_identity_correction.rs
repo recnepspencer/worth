@@ -9,7 +9,7 @@ impl ApplicationAuthoredCorrectionFamily<NumericSchema> for Family {
     const IDENTITY: &'static str = "numeric.authored-number.v1";
     type Entity = Number;
     fn logical_key() -> ApplicationAuthoredLogicalKey<NumericSchema, Number> {
-        ApplicationAuthoredLogicalKey::from_field(Key::reference())
+        ApplicationAuthoredLogicalKey::from_field(Key::at("Key"))
     }
 }
 pub struct UndoCreate;
@@ -44,7 +44,7 @@ impl ApplicationCorrectionBinding<NumericSchema> for UndoCreate {
         DeclaredCorrectionMechanism::recorded_create_inverse_binding::<Self>()
     }
     fn source_output_fields() -> Vec<ApplicationCorrectionOutputField<NumericSchema>> {
-        vec![ApplicationCorrectionOutput::<CreateBinding, Created>::field(Key::reference())]
+        vec![ApplicationCorrectionOutput::<CreateBinding, Created>::field(Key::at("Key"))]
     }
     fn derive_correction(
         original: &Create,
@@ -57,7 +57,7 @@ impl ApplicationCorrectionBinding<NumericSchema> for UndoCreate {
         let key = StringApplicationValueBinding::decode(
             fields
                 .field(
-                    &ApplicationCorrectionOutput::<CreateBinding, Created>::field(Key::reference()),
+                    &ApplicationCorrectionOutput::<CreateBinding, Created>::field(Key::at("Key")),
                 )
                 .map_err(|_| UnsupportedSourceMeaning)?,
         )
@@ -109,20 +109,17 @@ impl ApplicationCorrectionBinding<NumericSchema> for UndoRetire {
         >())
     }
     fn mechanism() -> DeclaredCorrectionMechanism<NumericSchema> {
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
-            DeclaredPreImageDemand::new(
-                [
-                    DeclaredPreImageLocus::from_field(Key::reference()),
-                    DeclaredPreImageLocus::from_field(Primary::reference()),
-                    DeclaredPreImageLocus::from_field(Secondary::reference()),
-                    DeclaredPreImageLocus::from_field(ReadEnabled::reference()),
-                    DeclaredPreImageLocus::from_field(Ceiling::reference()),
-                    DeclaredPreImageLocus::from_field(Calculated::reference()),
-                ],
-                usize::MAX,
-            )
-            .unwrap(),
-        )
+        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
+            [
+                DeclaredPreImageLocus::from_field(Key::at("Key")),
+                DeclaredPreImageLocus::from_field(Primary::at("Primary")),
+                DeclaredPreImageLocus::from_field(Secondary::at("Secondary")),
+                DeclaredPreImageLocus::from_field(ReadEnabled::at("ReadEnabled")),
+                DeclaredPreImageLocus::from_field(Ceiling::at("Ceiling")),
+                DeclaredPreImageLocus::from_field(Calculated::at("Calculated")),
+            ],
+            usize::MAX,
+        ))
     }
     fn derive_correction(
         original: &Retire,
@@ -138,7 +135,9 @@ impl ApplicationCorrectionBinding<NumericSchema> for UndoRetire {
             ($Field:ty, $Codec:ty) => {
                 <$Codec>::decode(
                     preimage
-                        .field(&DeclaredPreImageLocus::from_field(<$Field>::reference()))
+                        .field(&DeclaredPreImageLocus::from_field(<$Field>::at(
+                            stringify!($Field),
+                        )))
                         .ok_or(MissingPreImage)?,
                 )
                 .map_err(|_| InvalidPreImage)?
@@ -152,7 +151,7 @@ impl ApplicationCorrectionBinding<NumericSchema> for UndoRetire {
         Ok(Restore {
             key: original.key.clone(),
             name,
-            primary: field!(Primary, InlineCounterBinding),
+            primary: field!(Primary, InlineCounterBinding).0,
             secondary: field!(Secondary, U64ApplicationValueBinding),
             read_enabled: field!(ReadEnabled, BoolApplicationValueBinding),
             ceiling: field!(Ceiling, U64ApplicationValueBinding),

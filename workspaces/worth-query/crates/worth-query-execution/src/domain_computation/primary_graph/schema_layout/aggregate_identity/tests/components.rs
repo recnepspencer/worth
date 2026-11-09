@@ -6,8 +6,43 @@ struct CouplingA;
 struct CouplingB;
 struct Shells;
 struct OnlyA;
-impl<const R: bool, const S: bool> ApplicationEntityMarkerIdentity<ComponentSchema<R, S>> for Node {
-    const IDENTIFIER: &'static str = "Node";
+struct Node;
+struct Next;
+struct ComponentRecords;
+impl fragment::Fragment for ComponentRecords {
+    const NAME: &'static str = "component_records";
+    type Bindings = fragment::NoBindings;
+    type Members = (Node,);
+}
+impl fragment::Entity for Node {
+    const NAME: &'static str = "Node";
+    type Aspects = ();
+    type Relations = (CouplingA, CouplingB, Next);
+}
+impl fragment::Relation for CouplingA {
+    const NAME: &'static str = "CouplingA";
+    type To = Node;
+}
+impl fragment::Relation for CouplingB {
+    const NAME: &'static str = "CouplingB";
+    type To = Node;
+}
+impl fragment::Relation for Next {
+    const NAME: &'static str = "Next";
+    type To = Node;
+    const ORBIT: bool = true;
+}
+struct EmptyRecords;
+struct EmptyNode;
+impl fragment::Fragment for EmptyRecords {
+    const NAME: &'static str = "component_records";
+    type Bindings = fragment::NoBindings;
+    type Members = (EmptyNode,);
+}
+impl fragment::Entity for EmptyNode {
+    const NAME: &'static str = <Node as fragment::Entity>::NAME;
+    type Aspects = ();
+    type Relations = ();
 }
 impl<const R: bool, const S: bool> ApplicationSchema for ComponentSchema<R, S> {
     const OWNER: &'static str = "worth.tests.components";
@@ -39,20 +74,7 @@ impl<const R: bool, const S: bool> ApplicationSchema for ComponentSchema<R, S> {
         } else {
             definition.coupled_by(a).coupled_by(b)
         };
-        ApplicationSchemaDeclarationBuilder::<Self>::for_schema()
-            .entity(node)
-            .relation(a, node, node)
-            .relation(b, node, node)
-            .relation(
-                ApplicationRelationRef::<Self, Next, Node, Node>::from_schema_identifiers(
-                    "Next",
-                    "Node",
-                    "Node",
-                    base.orbit(),
-                ),
-                node,
-                node,
-            )
+        ApplicationSchemaDeclarationBuilder::<Self>::from_fragment(ComponentRecords)?
             .components(definition)
             .components(
                 ApplicationComponentSetDefinition::new(ApplicationComponentSetRef::<
@@ -166,10 +188,9 @@ fn authored_empty_set_is_refused_before_native_installation() {
     let set = ApplicationComponentSetRef::<Schema<false>, Shells, Node>::from_schema_identifiers(
         "Shells", "Node",
     );
-    let node = ApplicationEntityRef::<Schema<false>, Node>::from_schema_identifier("Node");
     assert_eq!(
-        ApplicationSchemaDeclarationBuilder::<Schema<false>>::for_schema()
-            .entity(node)
+        ApplicationSchemaDeclarationBuilder::<Schema<false>>::from_fragment(EmptyRecords)
+            .unwrap()
             .components(ApplicationComponentSetDefinition::new(set))
             .build()
             .unwrap_err(),

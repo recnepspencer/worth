@@ -10,16 +10,24 @@ mod caller_association;
 mod canonical_commit_allocation;
 mod canonical_commit_envelope;
 pub use caller_association::{RelationalCallerAssociation, RelationalCallerAssociationRefusal};
-pub(crate) use canonical_commit_envelope::validate_authored_restoration_candidate;
+pub(crate) use canonical_commit_envelope::{
+    validate_authored_restoration_candidate, OutputOriginHistory,
+};
 mod codec_retirement_closure;
+pub(crate) use codec_retirement_closure::{historical_producer_antecedent, source_scope_closure};
 mod codec_retirement_preservation;
+pub(crate) use canonical_commit_envelope::{
+    CanonicalCoupledAuthoredPublication, CanonicalCoupledAuthoredSources,
+    CanonicalHistoricalOutputSelection,
+};
 pub(crate) use codec_retirement_closure::select_owned_scope_dependent;
+pub(crate) use codec_retirement_closure::OwnedScopeDependentSelection;
 pub(crate) use codec_retirement_closure::{
     capture_materialization_producers, derive_codec_retirement_closure,
     output_materialization_write_matches, prepare_materialization_continuity,
     readmit_required_output_route, select_authored_retirement, select_authored_source_retirement,
-    validate_codec_output_correspondence, CodecRetirementClosureStop, OwnedCodecRetirementClosure,
-    SelectedOutputPublication,
+    validate_codec_output_correspondence, AuthoredRetirementSelection, CodecRetirementClosureStop,
+    OwnedCodecRetirementClosure, SelectedAuthoredRetirement, SelectedOutputPublication,
 };
 pub(crate) use codec_retirement_preservation::validate_retired_codec_closure;
 mod canonical_record_allocation;
@@ -30,6 +38,7 @@ mod merge_branch_basis_foundational;
 mod positioned_canonical_commit;
 mod publication_relations;
 mod required_output_positions;
+pub(crate) use required_output_positions::presence as current_route_presence;
 pub(crate) use required_output_positions::{
     RequiredOutputPublicationPositions, RequiredOutputRoutePosition,
 };
@@ -59,8 +68,8 @@ pub(crate) use canonical_commit_envelope::{
     CanonicalRequiredOutputOrigin, CanonicalRequiredOutputRelation,
 };
 pub use canonical_commit_envelope::{
-    CanonicalCommitAuthorityKind, CanonicalCommitEnvelope, CanonicalRetainedEntitySelection,
-    RelationalDescriptiveTouch, RelationalDescriptiveTouchGraph,
+    CanonicalCommitAuthorityKind, CanonicalCommitEnvelope, CanonicalOwnedGraphSelection,
+    CanonicalRetainedEntitySelection, RelationalDescriptiveTouch, RelationalDescriptiveTouchGraph,
     RelationalDescriptiveTouchPrecision, RelationalReplayRecord, RelationalTouchAdjacencyDirection,
     ReplaySchemaVersion, SharedCanonicalCommitEnvelope,
 };

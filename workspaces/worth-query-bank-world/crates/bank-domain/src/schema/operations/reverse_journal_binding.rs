@@ -1,7 +1,6 @@
 use worth_query_decl::facade::{
-    application_operation::NoApplicationMutationOutputs,
-    application_schema::{NoApplicationUnit, ReadOnly},
-    worth_query_mutation_binding, worth_query_structured_value_binding,
+    application_operation::NoApplicationMutationOutputs, worth_query_mutation_binding,
+    worth_query_structured_value_binding,
 };
 
 use crate::model::{BankPrincipalId, InstitutionId};
@@ -10,8 +9,7 @@ use crate::proposals::{BankIdempotencyKey, BankInvariantApprovedProposal, BankPr
 use super::{ReverseJournal, ReverseJournalInputBinding};
 use crate::schema::{
     BankPrincipalBinding, BankPrincipalIdBinding, BankSchema, ExternalPrincipalMapping,
-    Institution, InstitutionIdentity, InstitutionIdentityField, MoneyMovementResultBinding,
-    Principal, ReverseJournalOperation,
+    InstitutionIdentityField, MoneyMovementResultBinding, Principal, ReverseJournalOperation,
 };
 
 worth_query_structured_value_binding!(
@@ -42,12 +40,7 @@ worth_query_mutation_binding!(
         principal_entity Principal,
         principal_identity BankPrincipalId,
         identity_binding BankPrincipalIdBinding,
-    scope Institution,
-        InstitutionIdentity,
-        InstitutionIdentityField,
-        InstitutionId,
-        ReadOnly,
-        NoApplicationUnit,
-    field InstitutionIdentityField::reference(),
+    scope InstitutionIdentityField,
+    field InstitutionIdentityField::at("InstitutionIdentityField"),
     value reversal_scope,
 );

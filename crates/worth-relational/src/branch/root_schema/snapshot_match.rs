@@ -37,7 +37,8 @@ pub(super) fn matches(
     } else {
         None
     };
-    if expected.primary_schema_id.as_ref() != basis.map(|(id, _)| id)
+    if registry.content_formats.snapshot() != expected.content_formats
+        || expected.primary_schema_id.as_ref() != basis.map(|(id, _)| id)
         || expected.primary_schema_version_id != basis.map(|(_, version)| version)
         || registry.entity_kinds.len() != expected.entity_kinds.len()
         || registry.relation_kinds.len() != expected.relation_kinds.len()

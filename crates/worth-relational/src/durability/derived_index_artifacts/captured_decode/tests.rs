@@ -66,16 +66,24 @@ fn full_and_delta_index_tuples_preserve_all_entry_families() {
     expected.push(repeated);
     expected.sort_by_key(|generation| (generation.index_id, generation.generation_id));
     let full = DerivedIndexArtifacts::new(expected.clone());
-    let delta =
-        DerivedIndexCheckpointArtifacts::capture(expected.iter().cloned().map(Arc::new).collect())
-            .unwrap();
+    let delta = DerivedIndexCheckpointArtifacts::capture(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        expected.iter().cloned().map(Arc::new).collect(),
+        Vec::new(),
+    )
+    .unwrap();
     assert_eq!(
         serde_json::to_value(&delta).unwrap()["generations"][1]["base_generation_id"],
         1
     );
     let payloads = [
         rmp_serde::to_vec_named(&(&full, None::<DerivedIndexCheckpointArtifacts>, 0_u16)).unwrap(),
-        rmp_serde::to_vec_named(&(DerivedIndexArtifacts::default(), Some(delta), 2_u16)).unwrap(),
+        rmp_serde::to_vec_named(&(
+            DerivedIndexArtifacts::default(),
+            Some(delta),
+            DerivedIndexCheckpointArtifacts::FORMAT_VERSION,
+        ))
+        .unwrap(),
     ];
     for payload in payloads {
         let (full, delta, format): (
@@ -90,7 +98,9 @@ fn full_and_delta_index_tuples_preserve_all_entry_families() {
         let generations = match delta {
             Some(delta) => {
                 assert!(full.is_empty());
-                delta.readmit().unwrap()
+                delta
+                    .readmit(&crate::storage::substrate::maintenance::ReconstructionLane::oracle())
+                    .unwrap()
             }
             None => full.into_generations(),
         };

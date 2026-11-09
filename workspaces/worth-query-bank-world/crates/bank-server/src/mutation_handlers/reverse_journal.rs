@@ -68,7 +68,8 @@ impl OperationHandler<BankSchema, ReverseJournalMutationBinding> for ReverseJour
                 InvalidReverseJournalCandidate,
             ));
         }
-        let original = match candidate.resolve_entity(JournalIdentityField::reference(), *original)
+        let original = match candidate
+            .resolve_entity(JournalIdentityField::at("JournalIdentityField"), *original)
         {
             Ok(original) => original,
             Err(error) => {

@@ -30,7 +30,8 @@ impl WorthQueryDerivedViewMaintainer for CertificationTitleListMaintainer {
             .expect("certification title row should admit native scalar values");
         WorthQueryDerivedPatch::incremental(
             view.name(),
-            crate::memory_workspace::admit_external_commit_label("aspect-api-cert-derived-commit"),
+            crate::memory_workspace::admit_external_commit_label("aspect-api-cert-derived-commit")
+                .expect("fixture digest must fit"),
             delta.entity_identity.clone(),
             if view.produced_aspect_touches().is_empty() {
                 delta.admitted_touched_aspects().to_vec()

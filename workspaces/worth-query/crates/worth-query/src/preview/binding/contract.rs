@@ -1,4 +1,5 @@
 use crate::basis::ExecutionPreflightBundle;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::{
     CanonicalQueryDigest, CanonicalResultShapeDigest, ValidatedQueryDigest,
     ValidatedResultShapeDigest,
@@ -77,7 +78,7 @@ impl PreviewSessionBindingTuple {
     pub(super) fn from_admitted(
         preflight: &ExecutionPreflightBundle,
         query_context: &PreviewSessionQueryContext,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let source = query_context.source.snapshot();
         let mut binding = Self {
             digest: String::new(),
@@ -104,8 +105,8 @@ impl PreviewSessionBindingTuple {
             promotion_proof_digest: None,
         };
         binding.digest =
-            workflow_context_identity::compose_preview_session_binding_tuple_digest(&binding);
-        binding
+            workflow_context_identity::compose_preview_session_binding_tuple_digest(&binding)?;
+        Ok(binding)
     }
 
     pub fn digest(&self) -> &str {

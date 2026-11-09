@@ -1,8 +1,8 @@
 //! Guard positions always refer to the original authored path, in either direction.
 use super::*;
 use worth_query_installation::facade::WorthQueryInstalledRootPathGuard;
-pub(super) fn apply<E>(
-    basis: &RootPathReadBasis<'_, '_, '_>,
+pub(super) fn apply<E, Phase>(
+    basis: &RootPathReadBasis<'_, '_, '_, Phase>,
     path: &WorthQueryInstalledRootPath,
     after_step: usize,
     frontier: &mut Frontier,
@@ -57,8 +57,8 @@ pub(super) fn apply<E>(
     }
     Ok(())
 }
-fn prepare_sources<E>(
-    basis: &RootPathReadBasis<'_, '_, '_>,
+fn prepare_sources<E, Phase>(
+    basis: &RootPathReadBasis<'_, '_, '_, Phase>,
     guard: &WorthQueryInstalledRootPathGuard,
     frontier: &mut Frontier,
     set_source: &mut Option<SourceFactsBuilder>,

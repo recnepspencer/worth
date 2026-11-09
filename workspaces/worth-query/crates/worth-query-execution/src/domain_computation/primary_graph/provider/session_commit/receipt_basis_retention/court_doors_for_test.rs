@@ -3,12 +3,12 @@ use super::*;
 
 impl WorthQueryReceiptBasisRetentionStore {
     #[doc(hidden)]
-    pub fn retain_for_test(
+    pub fn retain_group_for_test(
         &mut self,
         commit: CommitId,
         lease: RelationalBranchRetentionLease,
-        mandatory: bool,
+        dispatch_claims: usize,
     ) {
-        Self::retain(self, commit, lease, mandatory)
+        Self::retain_group(self, commit, lease, dispatch_claims)
     }
 }

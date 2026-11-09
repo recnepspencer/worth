@@ -4,6 +4,7 @@ use crate::application::{
     WorthQueryDomainOperatingContext, WorthQueryInstalledDomainDeclarationContext,
 };
 use crate::basis_lifecycle::LowerRuntimeEvidenceAuthority;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -60,16 +61,16 @@ pub(crate) fn prepared_execution_readmission_from_routing<
     bridge_request: &WorthQueryDeclarationBridgeContinuationRequest,
     routing: &WorthQueryDeclarationBridgeRouting<D, I>,
     required_capability_families: Vec<crate::application::WorthQueryCapabilityFamily>,
-) -> WorthQueryPreparedContinuationExecutionReadmission {
-    let basis_witness = basis_witness_from_binding(bridge_request, routing.binding());
+) -> Result<WorthQueryPreparedContinuationExecutionReadmission, IdentityDerivationDenial> {
+    let basis_witness = basis_witness_from_binding(bridge_request, routing.binding())?;
     let authority_witness = authority_witness_from_binding(routing.binding());
-    WorthQueryPreparedContinuationExecutionReadmission::new(
+    Ok(WorthQueryPreparedContinuationExecutionReadmission::new(
         basis_witness,
         authority_witness,
         WorthQueryPreparedContinuationFreshnessPosture::Stable,
         None,
         required_capability_families,
-    )
+    ))
 }
 
 pub(crate) fn current_readmission_evidence_from_handle<
@@ -79,47 +80,49 @@ pub(crate) fn current_readmission_evidence_from_handle<
 >(
     handle: &WorthQueryInstalledDomainDeclarationContext<D, C>,
     prepared: &WorthQueryPreparedContinuation<D, I>,
-) -> WorthQueryPreparedContinuationCurrentReadmissionEvidence {
+) -> Result<WorthQueryPreparedContinuationCurrentReadmissionEvidence, IdentityDerivationDenial> {
     let retained = prepared.execution_readmission();
     let observation = handle
         .operating_context()
         .continuation_execution_readmission_observation(retained, handle.support_snapshot());
-    WorthQueryPreparedContinuationCurrentReadmissionEvidence::new(
-        observation.authority(),
-        observation.basis_identity().clone(),
-        observation.lower_runtime_binding_identity().cloned(),
-        observation.freshness_posture(),
-        observation.drift_kind(),
-        worth_query_evidence_identity(
-            WorthQueryEvidenceScope::ContinuationExecutionReadmissionEvidence,
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("handle"),
-            handle.handle_identity_digest(),
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("support_snapshot"),
-            handle.support_snapshot().snapshot_digest(),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("basis"),
-            observation.basis_identity(),
-        )
-        .optional_evidence_identity(
-            WorthQueryEvidenceTag::new("lower_runtime_binding"),
-            observation.lower_runtime_binding_identity(),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("freshness"),
-            observation.freshness_posture().as_str(),
-        )
-        .optional_shape(
-            WorthQueryEvidenceTag::new("drift"),
-            observation.drift_kind().map(|kind| kind.as_str()),
-        )
-        .seal()
-        .as_str()
-        .to_string(),
+    Ok(
+        WorthQueryPreparedContinuationCurrentReadmissionEvidence::new(
+            observation.authority(),
+            observation.basis_identity().clone(),
+            observation.lower_runtime_binding_identity().cloned(),
+            observation.freshness_posture(),
+            observation.drift_kind(),
+            worth_query_evidence_identity(
+                WorthQueryEvidenceScope::ContinuationExecutionReadmissionEvidence,
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("handle"),
+                handle.handle_identity_digest(),
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("support_snapshot"),
+                handle.support_snapshot().snapshot_digest(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("basis"),
+                observation.basis_identity(),
+            )
+            .optional_evidence_identity(
+                WorthQueryEvidenceTag::new("lower_runtime_binding"),
+                observation.lower_runtime_binding_identity(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("freshness"),
+                observation.freshness_posture().as_str(),
+            )
+            .optional_shape(
+                WorthQueryEvidenceTag::new("drift"),
+                observation.drift_kind().map(|kind| kind.as_str()),
+            )
+            .seal()?
+            .as_str()
+            .to_string(),
+        ),
     )
 }
 
@@ -220,8 +223,8 @@ pub(crate) fn validate_execution_readmission<
 fn basis_witness_from_binding(
     bridge_request: &WorthQueryDeclarationBridgeContinuationRequest,
     binding: &WorthQueryDeclarationBridgeBinding,
-) -> WorthQueryPreparedContinuationBasisWitness {
-    match binding {
+) -> Result<WorthQueryPreparedContinuationBasisWitness, IdentityDerivationDenial> {
+    Ok(match binding {
         WorthQueryDeclarationBridgeBinding::RuntimeRoute(request) => {
             let commit_identity = bridge_commit_evidence_identity(request.commit_identity());
             WorthQueryPreparedContinuationBasisWitness::new(
@@ -244,13 +247,13 @@ fn basis_witness_from_binding(
                 }
             };
             let selector_identity =
-                continuation_readmission_basis_identity(kind, request.selector().digest());
+                continuation_readmission_basis_identity(kind, request.selector().digest())?;
             WorthQueryPreparedContinuationBasisWitness::new(
                 kind,
                 selector_identity.clone(),
                 Some(continuation_readmission_lower_runtime_binding_identity(
                     request.selector().digest(),
-                )),
+                )?),
                 request
                     .selector()
                     .snapshot_identity()
@@ -270,13 +273,13 @@ fn basis_witness_from_binding(
                 continuation_readmission_basis_identity(
                     WorthQueryPreparedContinuationBasisKind::PreviewDerived,
                     declaration.digest(),
-                ),
+                )?,
                 Some(continuation_readmission_lower_runtime_binding_identity(
                     declaration.truth_view_basis_digest(),
-                )),
+                )?),
                 Some(continuation_readmission_source_basis_identity(
                     declaration.truth_view_basis_digest(),
-                )),
+                )?),
             )
         }
         WorthQueryDeclarationBridgeBinding::PreviewPromotion(binding) => {
@@ -285,43 +288,44 @@ fn basis_witness_from_binding(
                 continuation_readmission_basis_identity(
                     WorthQueryPreparedContinuationBasisKind::PreviewDerived,
                     binding.promotion_continuation_digest(),
-                ),
+                )?,
                 Some(continuation_readmission_lower_runtime_binding_identity(
                     binding.preview_basis_digest(),
-                )),
+                )?),
                 Some(continuation_readmission_source_basis_identity(
                     binding.declaration_digest(),
-                )),
+                )?),
             )
         }
         WorthQueryDeclarationBridgeBinding::SubscriptionPreparation(request) => {
             let basis_kind = basis_kind_for_truth_context(bridge_request.truth_context());
             WorthQueryPreparedContinuationBasisWitness::new(
                 basis_kind,
-                continuation_readmission_basis_identity(basis_kind, request.authority_digest()),
+                continuation_readmission_basis_identity(basis_kind, request.authority_digest())?,
                 Some(continuation_readmission_lower_runtime_binding_identity(
                     request.authority_digest(),
-                )),
+                )?),
                 request
                     .child_basis_digests()
                     .first()
-                    .map(|digest| continuation_readmission_source_basis_identity(digest.as_ref())),
+                    .map(|digest| continuation_readmission_source_basis_identity(digest.as_ref()))
+                    .transpose()?,
             )
         }
         WorthQueryDeclarationBridgeBinding::WritebackPreparation(request) => {
             let basis_kind = basis_kind_for_truth_context(bridge_request.truth_context());
             WorthQueryPreparedContinuationBasisWitness::new(
                 basis_kind,
-                continuation_readmission_basis_identity(basis_kind, request.causality().digest()),
+                continuation_readmission_basis_identity(basis_kind, request.causality().digest())?,
                 Some(continuation_readmission_lower_runtime_binding_identity(
                     request.declaration().strategy_descriptor_digest(),
-                )),
+                )?),
                 Some(continuation_readmission_source_basis_identity(
                     request.effect_intent().digest(),
-                )),
+                )?),
             )
         }
-    }
+    })
 }
 
 fn bridge_commit_evidence_identity(

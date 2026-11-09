@@ -1,120 +1,56 @@
-use crate::application_schema::{
-    ApplicationFieldRef, ApplicationFieldUnit, DeclaredApplicationFieldValue, EqualityPredicate,
-    WritePosture,
-};
-
+//! Scope strategies carry a record selection; storage facts stay on its binding.
 use super::ApplicationQueryScopeResolutionMode;
+use crate::application_schema::fragment::RecordSelection;
 
-/// Declaration-only description of how an intent locates its application scope.
 pub trait ApplicationQueryScopeBinding<Schema> {
     type Scope;
-    type Aspect;
-    type Field: DeclaredApplicationFieldValue<Value = Self::Value>;
-    type Value;
-    type Write: WritePosture;
-    type Unit: ApplicationFieldUnit;
-
+    type Value: 'static;
+    type Field: RecordSelection<Entity = Self::Scope, Value = Self::Value>;
     const RESOLUTION_MODE: ApplicationQueryScopeResolutionMode;
 }
 
-pub struct ApplicationQueryFieldScope<Schema, Scope, Aspect, Field, Value, Write, Unit>
-where
-    Field: DeclaredApplicationFieldValue<Value = Value>,
-    Write: WritePosture,
-    Unit: ApplicationFieldUnit,
-{
-    pub(super) field:
-        ApplicationFieldRef<Schema, Scope, Aspect, Field, Value, Write, EqualityPredicate, Unit>,
-    pub(super) value: Value,
+pub struct ApplicationQueryFieldScope<Field: RecordSelection> {
+    pub(super) field: Field,
+    pub(super) value: Field::Value,
 }
-
-impl<Schema, Scope, Aspect, Field, Value, Write, Unit>
-    ApplicationQueryFieldScope<Schema, Scope, Aspect, Field, Value, Write, Unit>
-where
-    Field: DeclaredApplicationFieldValue<Value = Value>,
-    Write: WritePosture,
-    Unit: ApplicationFieldUnit,
-{
-    pub const fn new(
-        field: ApplicationFieldRef<
-            Schema,
-            Scope,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
-            Unit,
-        >,
-        value: Value,
-    ) -> Self {
+impl<Field: RecordSelection> ApplicationQueryFieldScope<Field> {
+    pub const fn new(field: Field, value: Field::Value) -> Self {
         Self { field, value }
     }
+    pub fn into_field_parts<Principal>(self, _: &Principal) -> (Field, Field::Value) {
+        (self.field, self.value)
+    }
 }
-
-impl<Schema, Scope, Aspect, Field, Value, Write, Unit> ApplicationQueryScopeBinding<Schema>
-    for ApplicationQueryFieldScope<Schema, Scope, Aspect, Field, Value, Write, Unit>
-where
-    Field: DeclaredApplicationFieldValue<Value = Value>,
-    Write: WritePosture,
-    Unit: ApplicationFieldUnit,
+impl<Schema, Field: RecordSelection> ApplicationQueryScopeBinding<Schema>
+    for ApplicationQueryFieldScope<Field>
 {
-    type Scope = Scope;
-    type Aspect = Aspect;
+    type Scope = Field::Entity;
+    type Value = Field::Value;
     type Field = Field;
-    type Value = Value;
-    type Write = Write;
-    type Unit = Unit;
     const RESOLUTION_MODE: ApplicationQueryScopeResolutionMode =
         ApplicationQueryScopeResolutionMode::InputField;
 }
 
-pub struct ApplicationQueryPrincipalScope<Schema, Scope, Aspect, Field, Value, Write, Unit>
-where
-    Field: DeclaredApplicationFieldValue<Value = Value>,
-    Write: WritePosture,
-    Unit: ApplicationFieldUnit,
-{
-    pub(super) field:
-        ApplicationFieldRef<Schema, Scope, Aspect, Field, Value, Write, EqualityPredicate, Unit>,
+pub struct ApplicationQueryPrincipalScope<Field: RecordSelection> {
+    pub(super) field: Field,
 }
-
-impl<Schema, Scope, Aspect, Field, Value, Write, Unit>
-    ApplicationQueryPrincipalScope<Schema, Scope, Aspect, Field, Value, Write, Unit>
-where
-    Field: DeclaredApplicationFieldValue<Value = Value>,
-    Write: WritePosture,
-    Unit: ApplicationFieldUnit,
-{
-    pub const fn new(
-        field: ApplicationFieldRef<
-            Schema,
-            Scope,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
-            Unit,
-        >,
-    ) -> Self {
+impl<Field: RecordSelection> ApplicationQueryPrincipalScope<Field> {
+    pub const fn new(field: Field) -> Self {
         Self { field }
     }
+    pub fn into_field_parts(self, principal: &Field::Value) -> (Field, Field::Value)
+    where
+        Field::Value: Clone,
+    {
+        (self.field, principal.clone())
+    }
 }
-
-impl<Schema, Scope, Aspect, Field, Value, Write, Unit> ApplicationQueryScopeBinding<Schema>
-    for ApplicationQueryPrincipalScope<Schema, Scope, Aspect, Field, Value, Write, Unit>
-where
-    Field: DeclaredApplicationFieldValue<Value = Value>,
-    Write: WritePosture,
-    Unit: ApplicationFieldUnit,
+impl<Schema, Field: RecordSelection> ApplicationQueryScopeBinding<Schema>
+    for ApplicationQueryPrincipalScope<Field>
 {
-    type Scope = Scope;
-    type Aspect = Aspect;
+    type Scope = Field::Entity;
+    type Value = Field::Value;
     type Field = Field;
-    type Value = Value;
-    type Write = Write;
-    type Unit = Unit;
     const RESOLUTION_MODE: ApplicationQueryScopeResolutionMode =
         ApplicationQueryScopeResolutionMode::PrincipalIdentity;
 }

@@ -3,7 +3,7 @@ use super::*;
 #[test]
 fn runtime_backed_default_bootstraps_all_lane_local_sections_as_enabled() {
     let facade = WorthQueryApplicationFacade::runtime_backed_default();
-    let report = facade.support_report();
+    let report = facade.support_report().expect("fixture digest must fit");
 
     let enabled_sections = report
         .section_postures()
@@ -30,7 +30,7 @@ fn preview_section_disable_does_not_rewrite_query_context_bootstrap_posture() {
             .with_runtime_bridge(WorthQueryRuntimeBridgeConfig::disabled()),
     )
     .expect("runtime bridge disable should preserve bootstrap of the remaining sections");
-    let report = facade.support_report();
+    let report = facade.support_report().expect("fixture digest must fit");
 
     let query_context = report
         .query_context_support_profile()

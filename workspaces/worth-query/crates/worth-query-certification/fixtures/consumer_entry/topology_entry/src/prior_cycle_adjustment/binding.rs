@@ -25,7 +25,7 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     type Denial = PriorCycleAdjustmentDenial;
     type DenialBinding = PriorCycleAdjustmentDenialBinding;
     type Output = NoApplicationMutationOutputs;
-    type ScopeBinding = PlanarMutationScope<Schema>;
+    type ScopeBinding = PlanarMutationScope;
     type PrincipalBinding = ConsumerPrincipalBinding;
     type Mapping = ExternalPrincipalMapping;
     type Principal = Principal;
@@ -39,17 +39,8 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.prior-cycle-adjustment-command.v1";
 
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Body,
-        crate::PlanarPosition,
-        BodyKey,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        BodyKey::reference()
+    fn scope_field() -> BodyKey {
+        BodyKey::at("BodyKey")
     }
 
     fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -71,7 +62,7 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationIntent<Schema> for PriorC
         self
     }
 
-    fn scope_binding(&self) -> PlanarMutationScope<Schema> {
-        PlanarMutationScope::new(BodyKey::reference(), self.scope_key.clone())
+    fn scope_binding(&self) -> PlanarMutationScope {
+        PlanarMutationScope::new(BodyKey::at("BodyKey"), self.scope_key.clone())
     }
 }

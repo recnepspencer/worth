@@ -144,9 +144,9 @@ impl ApplicationSchemaCanonicalBasis {
     ) {
         for entry in source.payload().entries() {
             let name = match entry.locus() {
-                CanonicalBasisLocus::Named(worth_foundational::facade::InternedString::Raw(
-                    name,
-                )) => name,
+                CanonicalBasisLocus::Named(name) => name
+                    .raw_text()
+                    .expect("application schema embeds named text loci"),
                 _ => unreachable!("application schema embeds named raw canonical loci"),
             };
             let locus = format!("{locus_prefix}.{name}");
@@ -238,6 +238,9 @@ fn interned_string_bytes(value: &worth_foundational::facade::InternedString) -> 
     match value {
         worth_foundational::facade::InternedString::Raw(value) => {
             u64::try_from(value.len()).unwrap_or(u64::MAX)
+        }
+        worth_foundational::facade::InternedString::Stored(value) => {
+            u64::try_from(value.as_str().len()).unwrap_or(u64::MAX)
         }
         worth_foundational::facade::InternedString::Symbol(_) => 8,
     }

@@ -16,8 +16,7 @@ pub struct OtherEdit {
 }
 worth_query_structured_value_binding!(pub OtherInputBinding for OtherEdit { identity: "numeric-correction.other-input.v1" });
 worth_query_operation!(pub EditOther for NumericSchema, input OtherInputBinding);
-worth_query_operation_reads!(EditOther => [Key, Primary, Secondary, ReadEnabled, Ceiling]);
-worth_query_operation_writes!(EditOther => [Primary, Secondary, ReadEnabled, Ceiling]);
+
 pub fn key(input: &OtherEdit) -> String {
     input.key.clone()
 }
@@ -32,8 +31,8 @@ worth_query_mutation_binding!(
     outputs NoApplicationMutationOutputs,
     principal ActorBinding, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Number, NumberFacts, Key, String, ReadOnly, NoApplicationUnit,
-    field Key::reference(), value key,
+    scope Key,
+    field Key::at("Key"), value key,
 );
 pub struct Handler;
 pub static DECISIONS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
@@ -51,30 +50,30 @@ impl OperationHandler<NumericSchema, OtherBinding> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, NumericSchema, OtherBinding>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<NumericSchema, Number>, MissingValue> {
         DECISIONS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let root = match reader.resolve_entity(Key::reference(), input.key.clone()) {
+        let root = match reader.resolve_entity(Key::at("Key"), input.key.clone()) {
             Ok(root) => root,
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };
         let present = match input.value {
             Value::AdjacentPrimary(_) => return HandlerResult::DomainDenied(MissingValue),
             Value::Primary(value) => {
-                match reader.field(&root, Ceiling::reference()) {
+                match reader.field(&root, Ceiling::at("Ceiling")) {
                     Ok(Some(ceiling)) if value <= ceiling => {}
                     Ok(_) => return HandlerResult::DomainDenied(MissingValue),
                     Err(cause) => return HandlerResult::ExecutionDenied(cause),
                 }
                 reader
-                    .field(&root, Primary::reference())
+                    .field(&root, Primary::at("Primary"))
                     .map(|value| value.is_some())
             }
             Value::Ceiling(_) => reader
-                .field(&root, Ceiling::reference())
+                .field(&root, Ceiling::at("Ceiling"))
                 .map(|value| value.is_some()),
             Value::Secondary(_) => reader
-                .field(&root, Secondary::reference())
+                .field(&root, Secondary::at("Secondary"))
                 .map(|value| value.is_some()),
             Value::ReadEnabled(_) => reader
-                .field(&root, ReadEnabled::reference())
+                .field(&root, ReadEnabled::at("ReadEnabled"))
                 .map(|value| value.is_some()),
         };
         match present {
@@ -102,11 +101,15 @@ impl OperationHandler<NumericSchema, OtherBinding> for Handler {
         };
         let written = match input.value {
             Value::AdjacentPrimary(_) => return HandlerResult::DomainDenied(MissingValue),
-            Value::Primary(value) => writer.write_field(&target, Primary::reference(), value),
-            Value::Ceiling(value) => writer.write_field(&target, Ceiling::reference(), value),
-            Value::Secondary(value) => writer.write_field(&target, Secondary::reference(), value),
+            Value::Primary(value) => {
+                writer.write_field(&target, Primary::at("Primary"), Counter(value))
+            }
+            Value::Ceiling(value) => writer.write_field(&target, Ceiling::at("Ceiling"), value),
+            Value::Secondary(value) => {
+                writer.write_field(&target, Secondary::at("Secondary"), value)
+            }
             Value::ReadEnabled(value) => {
-                writer.write_field(&target, ReadEnabled::reference(), value)
+                writer.write_field(&target, ReadEnabled::at("ReadEnabled"), value)
             }
         };
         match written {

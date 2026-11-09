@@ -6,11 +6,7 @@ use super::{
     ApplicationOperationBodyCreationLinkDirection as Direction,
     ApplicationOperationBodyCreationLinkPosture as Posture,
 };
-use crate::application_schema::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationRelationRef,
-    DeclaredApplicationFieldValue, OperationCreates, OperationLinks, OperationWrites,
-    OptionalApplicationFieldValue,
-};
+use crate::application_schema::{ApplicationRelationRef, OperationCreates, OperationLinks};
 use std::marker::PhantomData;
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ApplicationOperationBodyChildCreation {
@@ -80,52 +76,40 @@ impl<S, O, I, E> ApplicationOperationBodyChildCreationBuilder<S, O, I, E> {
         });
         Ok(self)
     }
-    pub fn initialize<A, F, V, W, Q, U>(
+    pub fn initialize<
+        Selection: crate::application_schema::fragment::RecordSelection<Entity = E>,
+    >(
         mut self,
-        field: ApplicationFieldRef<S, E, A, F, V, W, Q, U>,
-        value: V,
-    ) -> Result<Self, Denial>
-    where
-        F: OperationWrites<O> + DeclaredApplicationFieldValue<Value = V>,
-        U: ApplicationFieldUnit,
-    {
+        field: Selection,
+        value: Selection::Value,
+    ) -> Result<Self, Denial> {
         self.creation
             .fields
-            .push(super::initialization::literal::<S, O, E, A, F, V, W, Q, U>(
-                field, value,
-            )?);
+            .push(super::initialization::literal(field, value)?);
         Ok(self)
     }
-    pub fn initialize_input<A, F, V, W, Q, U>(
+    pub fn initialize_input<
+        Selection: crate::application_schema::fragment::RecordSelection<Entity = E>,
+    >(
         mut self,
-        field: ApplicationFieldRef<S, E, A, F, V, W, Q, U>,
+        field: Selection,
         member: &str,
-    ) -> Result<Self, Denial>
-    where
-        F: OperationWrites<O> + DeclaredApplicationFieldValue<Value = V>,
-        U: ApplicationFieldUnit,
-    {
+    ) -> Result<Self, Denial> {
         self.creation
             .fields
-            .push(super::initialization::input::<S, O, E, A, F, V, W, Q, U>(
-                field, member, false,
-            )?);
+            .push(super::initialization::input(field, member, false)?);
         Ok(self)
     }
-    pub fn initialize_optional_input<A, F, V, W, Q, U>(
+    pub fn initialize_optional_input<
+        Selection: crate::application_schema::fragment::RecordSelection<Entity = E>,
+    >(
         mut self,
-        field: ApplicationFieldRef<S, E, A, F, V, W, Q, U>,
+        field: Selection,
         member: &str,
-    ) -> Result<Self, Denial>
-    where
-        F: OperationWrites<O> + OptionalApplicationFieldValue<Value = V>,
-        U: ApplicationFieldUnit,
-    {
+    ) -> Result<Self, Denial> {
         self.creation
             .fields
-            .push(super::initialization::input::<S, O, E, A, F, V, W, Q, U>(
-                field, member, true,
-            )?);
+            .push(super::initialization::input(field, member, true)?);
         Ok(self)
     }
     pub fn with_child<R, Child, F>(

@@ -11,6 +11,7 @@ impl PartitionState {
     /// are not storage; every symbol referenced by retained storage is visited.
     pub(crate) fn visit_retained_symbols<E>(
         &self,
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         visit: &mut impl FnMut(Symbol) -> Result<(), E>,
     ) -> Result<(), E> {
         visit_columns(&self.entity_arena, visit)?;

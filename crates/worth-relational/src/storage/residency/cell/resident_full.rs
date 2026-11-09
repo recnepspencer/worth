@@ -16,6 +16,8 @@ impl RelationalRegionResidency {
     pub(in crate::storage::residency) fn resident_for_request(
         partition: PartitionState,
         commitment: PartitionContentCommitment,
+        kind_indexes: Arc<super::super::kind_incremental::RegionKindIndexes>,
+        requirements: Option<super::super::required_symbols::CapturedSymbolRequirements>,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<RelationalResidencyLease<Full>, RegionContentFailure> {
         let overflow = || {
@@ -35,6 +37,11 @@ impl RelationalRegionResidency {
             .map_err(|cause| RegionContentFailure::Execution(cause.into()))?;
         let control_memory = control_memory.map(Arc::new);
         let region = Arc::new(ResidentRegion {
+            symbol_requirements: requirements
+                .map(|value| OnceLock::from(Arc::new(value)))
+                .unwrap_or_default(),
+            history_presence: super::super::history_presence::HistoryPresence::complete(),
+            kind_indexes: Some(kind_indexes),
             partition,
             commitment: Some(commitment),
             _history_custody: None,
@@ -49,6 +56,8 @@ impl RelationalRegionResidency {
             raw_full: Mutex::new(None),
             state: Mutex::new(RegionState::new(ResidencyState::Full(region.clone()), None)),
             damage: OnceLock::new(),
+            symbol_aliases: OnceLock::new(),
+            symbol_inheritance: OnceLock::new(),
             leases: AtomicUsize::new(1),
             _control_memory: control_memory,
         });

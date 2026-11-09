@@ -4,8 +4,9 @@ use crate::identity::data::{EntityId, KindId, PartitionId, RelationId, VersionId
 use crate::storage::substrate::{
     EntityArena, EntityExtra, RelationArena, RelationEndpoints, RelationExtra, SlotInit,
 };
-use sha2::{Digest, Sha256};
-use worth_execution::{CancellationSource, SerialMemoryBudget, SerialRequest};
+#[path = "tests/kind_oracle.rs"]
+mod kind_oracle;
+use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
 
 fn partition() -> (PartitionState, StringInterner) {
     let mut partition = PartitionState {
@@ -98,32 +99,55 @@ fn partition() -> (PartitionState, StringInterner) {
 }
 
 #[test]
-fn controlled_full_region_matches_prior_projection_preimages_and_legacy_truth() {
+fn controlled_full_region_matches_current_kind_preimages_and_truth() {
     let (input, symbols) = partition();
-    let legacy = PreparedResidentRegion::initial(input.clone(), &symbols).unwrap();
+    let original = input.clone();
+    let expected_digest = original.authoritative_content_digest(&symbols).unwrap();
+    let expected_hashed = original.entity_arena.slot_count()
+        + original.relation_arena.slot_count()
+        + original
+            .entity_arena
+            .metadata_history
+            .iter()
+            .map(|row| row.len())
+            .sum::<usize>()
+        + original
+            .relation_arena
+            .metadata_history
+            .iter()
+            .map(|row| row.len())
+            .sum::<usize>()
+        + original.entity_arena.live_bitset.stored_word_count()
+        + original.entity_arena.reclaimable_bitset.stored_word_count()
+        + original.relation_arena.live_bitset.stored_word_count()
+        + original
+            .relation_arena
+            .reclaimable_bitset
+            .stored_word_count()
+        + original
+            .adjacency
+            .iter()
+            .chain(original.reverse_adjacency.iter())
+            .map(|(_, set)| set.current_ids().len())
+            .sum::<usize>();
     let budget = SerialMemoryBudget::new(Some(8 * 1024 * 1024));
     let host = SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
-    let prepared = PreparedResidentRegion::initial_for_request(
+    let prepared = PreparedResidentRegion::initial(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
         &ExecutionRequest::serial(&host),
         input,
         &symbols,
     )
     .unwrap();
-    assert_eq!(prepared.content_digest, legacy.content_digest);
-    assert_eq!(prepared.kind_commitment, legacy.kind_commitment);
-    assert_eq!(prepared.content_values_hashed, legacy.content_values_hashed);
+    assert_eq!(prepared.content_digest, expected_digest);
+    assert_eq!(prepared.content_values_hashed, expected_hashed as u64);
     let actual = &prepared
         .retention
         .capture_region()
         .unwrap()
         .unwrap()
         .partition;
-    let old = &legacy
-        .retention
-        .capture_region()
-        .unwrap()
-        .unwrap()
-        .partition;
+    let old = &original;
     for (basis, expected) in [
         (
             crate::storage::partition::AdjacencyKindBasis::Current,
@@ -134,14 +158,25 @@ fn controlled_full_region_matches_prior_projection_preimages_and_legacy_truth() 
             prepared.kind_commitment.history,
         ),
     ] {
-        let projection = crate::storage::residency::kind_projection::capture(old, basis).unwrap();
-        // Prior implementation's actual BTreeMap/BTreeSet projection and
-        // buffered compact MessagePack preimage, independent of the new views.
-        let bytes = rmp_serde::to_vec(&projection).unwrap();
-        let mut hash = Sha256::new();
-        hash.update(b"worth.relational.region-kind-authority.v2\0");
-        hash.update(bytes);
-        assert_eq!(<[u8; 32]>::from(hash.finalize()), *expected.bytes());
+        let projection = match basis {
+            crate::storage::partition::AdjacencyKindBasis::Historical => {
+                crate::storage::residency::kind_projection::canonical_history(
+                    &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+                    old,
+                )
+                .unwrap()
+            }
+            crate::storage::partition::AdjacencyKindBasis::Current => {
+                crate::storage::residency::kind_projection::capture(
+                    &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+                    old,
+                    basis,
+                )
+                .unwrap()
+            }
+        };
+        // Independent canonical v3 byte grammar; no production digest/index helper.
+        assert_eq!(kind_oracle::digest(&projection), *expected.bytes());
     }
     let local = RelationId::new(actual.partition_id, 2, 1);
     assert!(actual
@@ -172,7 +207,8 @@ fn controlled_full_commitment_clone_retains_only_its_actual_node_backing() {
     let unchanged_input = input.clone();
     let budget = SerialMemoryBudget::new(Some(8 * 1024 * 1024));
     let host = SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
-    let prepared = PreparedResidentRegion::initial_for_request(
+    let prepared = PreparedResidentRegion::initial(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
         &ExecutionRequest::serial(&host),
         input,
         &symbols,

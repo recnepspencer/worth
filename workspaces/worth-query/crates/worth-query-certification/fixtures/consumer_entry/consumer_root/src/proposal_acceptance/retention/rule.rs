@@ -33,7 +33,7 @@ pub fn resolve(
     resolver: &WorthQueryApplicationInvariantSchemaResolver<'_, Schema>,
 ) -> Result<Rule, String> {
     resolver
-        .typed_field(Retention::reference())
+        .typed_field(Retention::at("Retention"))
         .map(|field| Rule { field })
         .ok_or_else(|| "the declared target retention field is not installed".to_owned())
 }
@@ -48,7 +48,7 @@ impl WorthQueryApplicationInvariantRule<Schema> for Rule {
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, Schema>,
         budget: &dyn CustomInvariantLeaseBudget,
-    ) -> Option<Result<Targets, WorthQueryApplicationInvariantPreparationError>> {
+    ) -> Option<Result<Targets, WorthQueryApplicationInvariantError>> {
         Some(self.prepare(planner, Some(budget)))
     }
     fn evaluate_checked(
@@ -57,27 +57,22 @@ impl WorthQueryApplicationInvariantRule<Schema> for Rule {
         scope: &Targets,
         budget: &dyn CustomInvariantLeaseBudget,
     ) -> Option<
-        Result<
-            WorthQueryApplicationInvariantVerdict<()>,
-            WorthQueryApplicationInvariantExecutionError,
-        >,
+        Result<WorthQueryApplicationInvariantVerdict<()>, WorthQueryApplicationInvariantError>,
     > {
         Some(self.evaluate_values(context, scope, Some(budget)))
     }
     fn prepare_scope(
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, Schema>,
-    ) -> Result<Targets, WorthQueryApplicationInvariantPreparationError> {
+    ) -> Result<Targets, WorthQueryApplicationInvariantError> {
         self.prepare(planner, None)
     }
     fn evaluate(
         &self,
         context: &WorthQueryApplicationInvariantContext<'_, '_, Schema>,
         scope: &Targets,
-    ) -> Result<
-        WorthQueryApplicationInvariantVerdict<()>,
-        WorthQueryApplicationInvariantExecutionError,
-    > {
+    ) -> Result<WorthQueryApplicationInvariantVerdict<()>, WorthQueryApplicationInvariantError>
+    {
         self.evaluate_values(context, scope, None)
     }
 }
@@ -86,16 +81,15 @@ impl Rule {
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, Schema>,
         budget: Option<&dyn CustomInvariantLeaseBudget>,
-    ) -> Result<Targets, WorthQueryApplicationInvariantPreparationError> {
-        let stop =
-            || WorthQueryApplicationInvariantPreparationError::new("invariant preparation stopped");
+    ) -> Result<Targets, WorthQueryApplicationInvariantError> {
+        let stop = || WorthQueryApplicationInvariantError::Stopped;
         if budget.is_some_and(|budget| !budget.checkpoint(0)) {
             return Err(stop());
         }
         let proposed = planner.proposed();
-        let targets = proposed.touched_entities(&self.field).map_err(|cause| {
-            WorthQueryApplicationInvariantPreparationError::new(cause.to_string())
-        })?;
+        let targets = proposed
+            .touched_entities(&self.field)
+            .map_err(WorthQueryApplicationInvariantError::from)?;
         let bytes = targets
             .capacity()
             .checked_mul(std::mem::size_of::<
@@ -110,9 +104,9 @@ impl Rule {
             if budget.is_some_and(|budget| !budget.checkpoint(1)) {
                 return Err(stop());
             }
-            proposed.field(&self.field, target).map_err(|cause| {
-                WorthQueryApplicationInvariantPreparationError::new(cause.to_string())
-            })?;
+            proposed
+                .field(&self.field, target)
+                .map_err(WorthQueryApplicationInvariantError::from)?;
         }
         Ok(targets)
     }
@@ -121,12 +115,9 @@ impl Rule {
         context: &WorthQueryApplicationInvariantContext<'_, '_, Schema>,
         scope: &Targets,
         budget: Option<&dyn CustomInvariantLeaseBudget>,
-    ) -> Result<
-        WorthQueryApplicationInvariantVerdict<()>,
-        WorthQueryApplicationInvariantExecutionError,
-    > {
-        let stop =
-            || WorthQueryApplicationInvariantExecutionError::new("invariant evaluation stopped");
+    ) -> Result<WorthQueryApplicationInvariantVerdict<()>, WorthQueryApplicationInvariantError>
+    {
+        let stop = || WorthQueryApplicationInvariantError::Stopped;
         if budget.is_some_and(|budget| !budget.checkpoint(0)) {
             return Err(stop());
         }
@@ -137,9 +128,7 @@ impl Rule {
             let value = context
                 .proposed()
                 .field(&self.field, target)
-                .map_err(|cause| {
-                    WorthQueryApplicationInvariantExecutionError::new(cause.to_string())
-                })?;
+                .map_err(WorthQueryApplicationInvariantError::from)?;
             if !value.is_some_and(|days| days <= 10) {
                 return Ok(WorthQueryApplicationInvariantVerdict::Violation(()));
             }

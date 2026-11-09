@@ -16,7 +16,7 @@ fn workflow_owning_assessment_retains_failed_producer_until_fresh_owner_close() 
                 .unwrap()
                 .resolve_entity(
                     &phase,
-                    DocumentIdentityField::reference(),
+                    DocumentIdentityField::at("DocumentIdentityField"),
                     DOCUMENT_IDENTITY.to_owned(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Certification,
@@ -41,7 +41,7 @@ fn workflow_owning_assessment_retains_failed_producer_until_fresh_owner_close() 
                 .publish_native_field_write_for_test(
                     instance.branch(),
                     record,
-                    DocumentRetentionField::reference(),
+                    DocumentRetentionField::at("DocumentRetentionField"),
                     9_u64,
                     scope,
                 )

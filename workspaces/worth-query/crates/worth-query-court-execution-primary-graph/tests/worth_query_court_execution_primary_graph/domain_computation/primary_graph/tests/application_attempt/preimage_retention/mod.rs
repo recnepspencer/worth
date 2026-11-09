@@ -95,10 +95,10 @@ fn right_record_wrong_field_retention_denial_commits_nothing() {
                     &admission,
                     |reader, projected| {
                         reader
-                            .require_decision_field(projected, AccountStatus::reference())
+                            .require_decision_field(projected, AccountStatus::at("AccountStatus"))
                             .unwrap();
                         reader
-                            .require_decision_field(projected, AccountLabel::reference())
+                            .require_decision_field(projected, AccountLabel::at("AccountLabel"))
                             .unwrap();
                     },
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -131,7 +131,7 @@ fn right_record_wrong_field_retention_denial_commits_nothing() {
     effects
         .write_field(
             &account,
-            AccountLabel::reference(),
+            AccountLabel::at("AccountLabel"),
             "must-not-land".to_owned(),
         )
         .unwrap();
@@ -204,10 +204,10 @@ fn two_field_same_record_retains_one_exact_prior_truth() {
                     &admission,
                     |reader, projected| {
                         reader
-                            .require_decision_field(projected, AccountStatus::reference())
+                            .require_decision_field(projected, AccountStatus::at("AccountStatus"))
                             .unwrap();
                         reader
-                            .require_decision_field(projected, AccountLabel::reference())
+                            .require_decision_field(projected, AccountLabel::at("AccountLabel"))
                             .unwrap();
                     },
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -238,10 +238,18 @@ fn two_field_same_record_retains_one_exact_prior_truth() {
         .expect("the fixture read owns its installed host call");
     let account = effects.existing_entity(&account).unwrap();
     effects
-        .write_field(&account, AccountStatus::reference(), "frozen".to_owned())
+        .write_field(
+            &account,
+            AccountStatus::at("AccountStatus"),
+            "frozen".to_owned(),
+        )
         .unwrap();
     effects
-        .write_field(&account, AccountLabel::reference(), "renamed".to_owned())
+        .write_field(
+            &account,
+            AccountLabel::at("AccountLabel"),
+            "renamed".to_owned(),
+        )
         .unwrap();
     let outcome = world.application.compare_and_commit_application(
         effects.finish().unwrap(),
@@ -258,7 +266,7 @@ fn two_field_same_record_retains_one_exact_prior_truth() {
     assert_eq!(retained.fields().len(), 2);
     assert_eq!(
         retained
-            .field_for(AccountStatus::reference())
+            .field_for(AccountStatus::at("AccountStatus"))
             .unwrap()
             .value(),
         &worth_foundational::facade::AspectValue::String(
@@ -267,7 +275,7 @@ fn two_field_same_record_retains_one_exact_prior_truth() {
     );
     assert_eq!(
         retained
-            .field_for(AccountLabel::reference())
+            .field_for(AccountLabel::at("AccountLabel"))
             .unwrap()
             .value(),
         &worth_foundational::facade::AspectValue::String(

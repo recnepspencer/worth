@@ -106,16 +106,29 @@ where
                     "exact retained output has no output binding",
                 )
             })?;
-            self.readmit_checkpoint_output(
-                execution,
-                &selected.identity,
-                output_binding,
-                expected_key,
-                &observed_source,
-                source_epoch,
-                source_scope,
-                retained_program_basis.is_some(),
-            )?
+            if selected.retained_read_posture
+                == super::super::super::RetainedOutputReadPosture::HistoricalSelection
+            {
+                self.readmit_historical_output::<Family>(
+                    execution,
+                    &selected.identity,
+                    output_binding,
+                    expected_key,
+                    &observed_source,
+                    retained_program_basis.is_some(),
+                )?
+            } else {
+                self.readmit_checkpoint_output(
+                    execution,
+                    &selected.identity,
+                    output_binding,
+                    expected_key,
+                    &observed_source,
+                    source_epoch,
+                    source_scope,
+                    retained_program_basis.is_some(),
+                )?
+            }
         } else {
             None
         };

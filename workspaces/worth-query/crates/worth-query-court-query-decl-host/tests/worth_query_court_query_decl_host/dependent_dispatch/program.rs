@@ -7,11 +7,7 @@ pub struct Configuration {
 impl ApplicationSchemaContribution<Schema> for Contribution {
     const IDENTITY: ApplicationSchemaContributionIdentity =
         ApplicationSchemaContributionIdentity::new("dispatch.contribution");
-    fn register_members(
-        schema: ApplicationSchemaDeclarationBuilder<Schema>,
-    ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-        schema::declare(schema)
-    }
+    type Members = (schema::DispatchModel, Contracts);
 }
 impl WorthQueryApplicationContribution<Schema> for Contribution {
     type Configuration = Configuration;
@@ -232,5 +228,15 @@ impl ApplicationProgramDefinition<Schema> for Program {
         ];
         features.extend(split_program::features());
         features
+    }
+}
+
+pub struct Contracts;
+impl worth_query_decl::facade::application_schema::fragment::Registration<Schema> for Contracts {
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<Schema>,
+    ) -> Result<ApplicationSchemaDeclarationBuilder<Schema>, ApplicationSchemaDeclarationDenial>
+    {
+        Ok(schema::declare(schema))
     }
 }

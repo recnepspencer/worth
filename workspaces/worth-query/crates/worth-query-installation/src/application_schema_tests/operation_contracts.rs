@@ -8,80 +8,21 @@ use worth_query_declaration::facade::application_aftermath::{
     DeclaredPreImageDemand, DeclaredPreImageLocus, DeclaredRecordedInverse,
 };
 use worth_query_declaration::facade::application_schema::{
-    ApplicationAspectMarkerIdentity, ApplicationEntityMarkerIdentity,
-    ApplicationFieldMarkerIdentity, ApplicationFieldPresence,
-    ApplicationOperationDecisionReadTarget, ApplicationSchemaMember, DeclaredApplicationFieldValue,
-    OperationDeletes, OperationLinks, OperationUnlinks, OperationWrites,
-    U64ApplicationValueBinding,
+    ApplicationOperationDecisionReadTarget, ApplicationSchemaMember, OperationDeletes,
+    OperationLinks, OperationUnlinks,
 };
 
-struct OtherEntity;
-struct OtherEntityAspect;
-struct OtherEntityField;
-struct OtherAspect;
-struct OtherAspectField;
-struct OtherField;
-
-impl ApplicationEntityMarkerIdentity<TestSchema> for OtherEntity {
-    const IDENTIFIER: &'static str = "OtherEntity";
-}
-
-impl ApplicationAspectMarkerIdentity<TestSchema, OtherEntity> for OtherEntityAspect {
-    const IDENTIFIER: &'static str = "IdentityAspect";
-    const ASPECT_IDENTITY: worth_query_declaration::facade::application_schema::AspectIdentity =
-        worth_query_declaration::facade::application_schema::AspectIdentity(0x9161200d);
-    const CONTRACT_REVISION:
-        worth_query_declaration::facade::application_schema::AspectContractRevision =
-        worth_query_declaration::facade::application_schema::AspectContractRevision(1);
-}
-
-impl ApplicationFieldMarkerIdentity<TestSchema, OtherEntity, OtherEntityAspect>
-    for OtherEntityField
-{
-    const IDENTIFIER: &'static str = "PrincipalIdentityField";
-}
-impl DeclaredApplicationFieldValue for OtherEntityField {
-    type Value = u64;
-    type Binding = U64ApplicationValueBinding;
-    const PRESENCE: ApplicationFieldPresence = ApplicationFieldPresence::Required;
-}
-
-impl ApplicationAspectMarkerIdentity<TestSchema, TestEntity> for OtherAspect {
-    const IDENTIFIER: &'static str = "OtherAspect";
-    const ASPECT_IDENTITY: worth_query_declaration::facade::application_schema::AspectIdentity =
-        worth_query_declaration::facade::application_schema::AspectIdentity(0x9161200e);
-    const CONTRACT_REVISION:
-        worth_query_declaration::facade::application_schema::AspectContractRevision =
-        worth_query_declaration::facade::application_schema::AspectContractRevision(1);
-}
-
-impl ApplicationFieldMarkerIdentity<TestSchema, TestEntity, OtherAspect> for OtherAspectField {
-    const IDENTIFIER: &'static str = "PrincipalIdentityField";
-}
-impl DeclaredApplicationFieldValue for OtherAspectField {
-    type Value = u64;
-    type Binding = U64ApplicationValueBinding;
-    const PRESENCE: ApplicationFieldPresence = ApplicationFieldPresence::Required;
-}
-
-impl ApplicationFieldMarkerIdentity<TestSchema, TestEntity, FixtureIdentityAspect<TestSchema>>
-    for OtherField
-{
-    const IDENTIFIER: &'static str = "OtherField";
-}
-impl DeclaredApplicationFieldValue for OtherField {
-    type Value = u64;
-    type Binding = U64ApplicationValueBinding;
-    const PRESENCE: ApplicationFieldPresence = ApplicationFieldPresence::Required;
-}
-
-impl OperationReads<TestOperation<TestSchema>> for FixtureExternalIdentityField<TestSchema> {}
-impl OperationReads<TestOperation<TestSchema>> for FixtureEntity<TestSchema> {}
+impl OperationReads<TestOperation<TestSchema>> for FixtureEntity {}
+impl OperationReads<TestOperation<AllTouchesSchema>> for FixtureEntity {}
 impl OperationReads<TestOperation<TestSchema>> for MappingTarget {}
-impl OperationDeletes<TestOperation<TestSchema>> for FixtureEntity<TestSchema> {}
-impl OperationWrites<TestOperation<TestSchema>> for FixtureMappingStatusField<TestSchema> {}
+impl OperationReads<TestOperation<AllTouchesSchema>> for MappingTarget {}
+impl OperationDeletes<TestOperation<TestSchema>> for FixtureEntity {}
+impl OperationDeletes<TestOperation<AllTouchesSchema>> for FixtureEntity {}
+
 impl OperationLinks<TestOperation<TestSchema>> for MappingTarget {}
+impl OperationLinks<TestOperation<AllTouchesSchema>> for MappingTarget {}
 impl OperationUnlinks<TestOperation<TestSchema>> for MappingTarget {}
+impl OperationUnlinks<TestOperation<AllTouchesSchema>> for MappingTarget {}
 
 #[test]
 fn installed_application_operation_compiles_existing_authority_contract_families() {
@@ -131,8 +72,30 @@ fn installed_application_operation_compiles_existing_authority_contract_families
     };
     assert_eq!(projection.schema(), operation.binding_identity());
     assert_eq!(projection.entity().semantic_key(), "TestEntity");
-    assert_eq!(projection.aspect().as_str(), "IdentityAspect");
-    assert_eq!(projection.projection().contract().identity().0, 0x9161200c);
+    assert_eq!(
+        projection.aspect().as_str(),
+        worth_query_declaration::facade::application_schema::fragment::RecordSelection::aspect(
+            FixturePrincipalIdentityField::at("PrincipalIdentityField")
+        )
+    );
+    let declaration = TestSchema::declaration().unwrap();
+    let expected = declaration
+        .erased()
+        .members()
+        .iter()
+        .find_map(|member| match member {
+            ApplicationSchemaMember::Aspect {
+                entity,
+                aspect,
+                identity,
+                ..
+            } if entity == "TestEntity" && aspect == projection.aspect().as_str() => {
+                Some(*identity)
+            }
+            _ => None,
+        })
+        .unwrap();
+    assert_eq!(projection.projection().contract().identity(), expected);
     assert!(!projection.projection().mask().is_whole_aspect());
     assert_eq!(
         projection.projection().mask().paths(),
@@ -172,55 +135,67 @@ fn installed_application_operation_compiles_existing_authority_contract_families
     );
 }
 
-#[test]
-fn installed_contracts_group_exact_reads_and_retain_every_typed_graph_touch() {
-    let entity =
-        ApplicationEntityRef::<TestSchema, TestEntity>::from_schema_identifier("TestEntity");
-    let operation = ApplicationOperationRef::<
-        TestSchema,
-        TestOperation<TestSchema>,
-        TestInput,
-    >::from_declaration();
-    let relation = ApplicationRelationRef::<
-        TestSchema,
+struct AllTouchesSchema;
+impl ApplicationSchema for AllTouchesSchema {
+    const OWNER: &'static str = TestSchema::OWNER;
+    const NAME: &'static str = "AllTouchesSchema";
+    fn declaration() -> Result<
+        ApplicationSchemaDeclaration<Self>,
+        worth_query_declaration::facade::application_schema::ApplicationSchemaDeclarationDenial,
+    > {
+        let entity = worth_query_declaration::facade::application_schema::fragment::entity(
+            InstallationFields,
+            FixtureEntity,
+        );
+        let operation = ApplicationOperationRef::<
+            AllTouchesSchema,
+            TestOperation<AllTouchesSchema>,
+            TestInput,
+        >::from_declaration();
+        let relation = ApplicationRelationRef::<
+        AllTouchesSchema,
         MappingTarget,
         TestEntity,
         TestEntity,
     >::from_schema_identifiers("MappingTarget", "TestEntity", "TestEntity",
                 worth_query_declaration::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
             );
-    let declaration = test_schema_members::<TestSchema>(None)
-        .operation_read_field(
-            operation,
-            ApplicationFieldRef::<
-                TestSchema,
-                TestEntity,
-                FixtureIdentityAspect<TestSchema>,
-                FixtureExternalIdentityField<TestSchema>,
-                WorthQueryExternalPrincipalIdentity,
-                ReadOnly,
-                EqualityPredicate,
-            >::from_schema_types(),
-        )
-        .operation_read_entity(operation, entity)
-        .operation_read_relation(operation, relation)
-        .operation_delete(operation, entity)
-        .operation_write(
-            operation,
-            ApplicationFieldRef::<
-                TestSchema,
-                TestEntity,
-                FixtureIdentityAspect<TestSchema>,
-                FixtureMappingStatusField<TestSchema>,
-                WorthQueryPrincipalMappingStatus,
-                ReadWrite,
-                NoEqualityPredicate,
-            >::from_schema_types(),
-        )
-        .operation_link(operation, relation)
-        .operation_unlink(operation, relation)
-        .build()
-        .unwrap();
+        test_schema_members::<AllTouchesSchema>(None)
+            .operation_read_field(
+                operation,
+                worth_query_declaration::facade::application_schema::fragment::FieldSelection::<
+                    InstallationFields,
+                    TestEntity,
+                    FixtureIdentityAspect,
+                    WorthQueryExternalPrincipalIdentity,
+                >::at("ExternalIdentityField"),
+            )
+            .operation_read_entity(operation, entity)
+            .operation_read_relation(operation, relation)
+            .operation_delete(operation, entity)
+            .operation_write(
+                operation,
+                worth_query_declaration::facade::application_schema::fragment::FieldSelection::<
+                    InstallationFields,
+                    TestEntity,
+                    FixtureIdentityAspect,
+                    WorthQueryPrincipalMappingStatus,
+                >::at("MappingStatusField"),
+            )
+            .operation_link(operation, relation)
+            .operation_unlink(operation, relation)
+            .build()
+    }
+}
+
+#[test]
+fn installed_contracts_group_exact_reads_and_retain_every_typed_graph_touch() {
+    let declaration = AllTouchesSchema::declaration().unwrap();
+    let operation = ApplicationOperationRef::<
+        AllTouchesSchema,
+        TestOperation<AllTouchesSchema>,
+        TestInput,
+    >::from_declaration();
     let index = installed_index_for(declaration.clone());
     let schema = index.bind_application_schema(declaration).unwrap();
     let installed = schema.installed_operation(operation).unwrap();
@@ -272,13 +247,9 @@ fn installed_contracts_group_exact_reads_and_retain_every_typed_graph_touch() {
 
 #[test]
 fn reinstallation_rejects_each_coherent_preimage_axis_and_bound_drift() {
-    let declaration = test_schema_members::<TestSchema>(Some(recorded_inverse_at::<
-        TestEntity,
-        FixtureIdentityAspect<TestSchema>,
-        FixturePrincipalIdentityField<TestSchema>,
-    >(64)))
-    .build()
-    .unwrap();
+    let declaration = test_schema_members::<TestSchema>(Some(recorded_inverse_at(64)))
+        .build()
+        .unwrap();
     let index = installed_index_for(declaration.clone());
     let schema = index.bind_application_schema(declaration.clone()).unwrap();
     let operation = schema
@@ -291,14 +262,10 @@ fn reinstallation_rejects_each_coherent_preimage_axis_and_bound_drift() {
 
     assert!(operation.meaning_matches(declaration.erased().members()));
     for changed in [
-        coherent_candidate::<OtherEntity, OtherEntityAspect, OtherEntityField>(64),
-        coherent_candidate::<TestEntity, OtherAspect, OtherAspectField>(64),
-        coherent_candidate::<TestEntity, FixtureIdentityAspect<TestSchema>, OtherField>(64),
-        coherent_candidate::<
-            TestEntity,
-            FixtureIdentityAspect<TestSchema>,
-            FixturePrincipalIdentityField<TestSchema>,
-        >(65),
+        coherent_candidate("entity", 64),
+        coherent_candidate("aspect", 64),
+        coherent_candidate("field", 64),
+        coherent_candidate("bound", 65),
     ] {
         assert!(
             !operation.meaning_matches(&changed),
@@ -329,18 +296,29 @@ fn installed_index_for<Schema: ApplicationSchema>(
     .unwrap()
 }
 
-fn coherent_candidate<Entity, Aspect, Field>(
-    maximum_encoded_bytes: usize,
-) -> Vec<ApplicationSchemaMember>
-where
-    Entity: ApplicationEntityMarkerIdentity<TestSchema>,
-    Aspect: ApplicationAspectMarkerIdentity<TestSchema, Entity>,
-    Field: ApplicationFieldMarkerIdentity<TestSchema, Entity, Aspect, Value = u64>,
-{
-    let declaration =
-        test_schema_members::<TestSchema>(Some(recorded_inverse_at::<Entity, Aspect, Field>(
-            maximum_encoded_bytes,
-        )))
+fn coherent_candidate(axis: &str, maximum_encoded_bytes: usize) -> Vec<ApplicationSchemaMember> {
+    use worth_query_declaration::facade::application_aftermath::{
+        PortableApplicationAftermathContract, PortableCorrectionMechanism, PortablePreImageDemand,
+        PortablePreImageLocus, PortableRecordedInverse,
+    };
+
+    let field = FixturePrincipalIdentityField::at("PrincipalIdentityField");
+    let entity = if axis == "entity" {
+        "OtherEntity"
+    } else {
+        field.entity()
+    };
+    let aspect = if axis == "aspect" {
+        "OtherAspect"
+    } else {
+        field.aspect()
+    };
+    let name = if axis == "field" {
+        "OtherField"
+    } else {
+        field.field()
+    };
+    let declaration = test_schema_members::<TestSchema>(Some(recorded_inverse_at(64)))
         .build()
         .unwrap();
     declaration
@@ -355,10 +333,41 @@ where
                 ApplicationSchemaMember::OperationDecisionRead {
                     operation,
                     target: ApplicationOperationDecisionReadTarget::Field {
-                        entity: Entity::IDENTIFIER.to_owned(),
-                        aspect: Aspect::IDENTIFIER.to_owned(),
-                        field: Field::IDENTIFIER.to_owned(),
+                        entity: entity.into(),
+                        aspect: aspect.into(),
+                        field: name.into(),
                     },
+                }
+            }
+            ApplicationSchemaMember::OperationAftermath {
+                operation,
+                contract,
+            } if operation == "TestOperation" => {
+                let Some(PortableCorrectionMechanism::RecordedInverse(inverse)) =
+                    contract.mechanism()
+                else {
+                    panic!("recorded inverse fixture")
+                };
+                let changed = PortableRecordedInverse::from_untrusted_fields(
+                    inverse.inverse_operation_slot().into(),
+                    inverse.lowering_correspondence().clone(),
+                    inverse.postcondition().clone(),
+                    PortablePreImageDemand::from_untrusted_fields(
+                        vec![PortablePreImageLocus::from_untrusted_fields(
+                            entity.into(),
+                            aspect.into(),
+                            name.into(),
+                        )],
+                        maximum_encoded_bytes,
+                    ),
+                );
+                ApplicationSchemaMember::OperationAftermath {
+                    operation,
+                    contract: PortableApplicationAftermathContract::from_untrusted_fields(
+                        contract.authority(),
+                        Some(PortableCorrectionMechanism::RecordedInverse(changed)),
+                        contract.reconciliation().cloned(),
+                    ),
                 }
             }
             member => member,
@@ -366,26 +375,19 @@ where
         .collect()
 }
 
-fn recorded_inverse_at<Entity, Aspect, Field>(
+fn recorded_inverse_at(
     maximum_encoded_bytes: usize,
-) -> DeclaredApplicationAftermathContract<TestSchema>
-where
-    Entity: ApplicationEntityMarkerIdentity<TestSchema>,
-    Aspect: ApplicationAspectMarkerIdentity<TestSchema, Entity>,
-    Field: ApplicationFieldMarkerIdentity<TestSchema, Entity, Aspect, Value = u64>,
-{
-    let field = ApplicationFieldRef::<TestSchema, Entity, Aspect, Field, u64>::from_schema_types();
+) -> DeclaredApplicationAftermathContract<TestSchema> {
+    let field = FixturePrincipalIdentityField::at("PrincipalIdentityField");
     let inverse = DeclaredRecordedInverse::new(
         "restore-test-operation",
-        DeclaredLoweringCorrespondenceRef::new("test-operation-inverse").unwrap(),
+        DeclaredLoweringCorrespondenceRef::new("test-operation-inverse"),
         DeclaredAftermathPostcondition::ExactPriorTruth,
         DeclaredPreImageDemand::new(
             [DeclaredPreImageLocus::from_field(field)],
             maximum_encoded_bytes,
-        )
-        .unwrap(),
-    )
-    .unwrap();
+        ),
+    );
     DeclaredApplicationAftermathContract::runtime_alone(
         DeclaredCorrectionMechanism::RecordedInverse(inverse),
     )

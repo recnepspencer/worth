@@ -45,7 +45,7 @@ where
 
     let operation = current.operation();
 
-    validate_static_authority_prefix(runtime, principal, scope, operation)
+    validate_static_authority_prefix(runtime, principal, scope, operation.installed_view())
         .map_err(Stop::Authorization)?;
     if !current.belongs_to(
         runtime.runtime.installed_packages(),

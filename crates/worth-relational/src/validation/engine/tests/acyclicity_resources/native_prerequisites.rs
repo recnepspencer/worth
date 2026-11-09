@@ -261,24 +261,32 @@ fn a_native_cycle_refuses_before_custom_preparation_and_its_one_edge_twin_commit
             .iter()
             .filter(|result| {
                 result.metadata().execution_point()
-                    == crate::validation::data::InvariantExecutionPoint::CommitBoundary
+                    == crate::validation::data::InvariantExecutionPoint::ProposedState
             })
             .collect::<Vec<_>>();
         assert_eq!(boundary.len(), 1, "both stages retain one boundary result");
         let result = boundary[0];
-        assert_eq!(result.results().len(), 2);
+        let results = result
+            .results()
+            .iter()
+            .filter(|r| {
+                r.execution_point
+                    == crate::validation::data::InvariantExecutionPoint::CommitBoundary
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(results.len(), 2);
         assert!(matches!(
-            &result.results()[0].rule,
+            &results[0].rule,
             InvariantReportedRule::Native(InvariantRule::AcyclicityContract(_))
         ));
         assert!(
-            matches!(&result.results()[1].rule, InvariantReportedRule::Custom(identity)
+            matches!(&results[1].rule, InvariantReportedRule::Custom(identity)
             if identity.rule_id.as_str() == "test.native-prerequisite.scope")
         );
-        assert_eq!(result.decision_log().len(), 2);
+        assert_eq!(result.decision_log().len(), result.results().len());
         assert_eq!(
             result.metadata().proof_boundary().unwrap().packet_count(),
-            2
+            result.results().len()
         );
         assert_eq!(
             result

@@ -68,6 +68,9 @@ impl WorthServerQueryHandoffDenial {
 
     pub fn family(&self) -> WorthServerQueryHandoffDenialFamily {
         match self.code {
+            WorthServerQueryHandoffDenialCode::EvidenceIdentityDerivationDenied(_) => {
+                WorthServerQueryHandoffDenialFamily::Support
+            }
             WorthServerQueryHandoffDenialCode::AuthorityDenied
             | WorthServerQueryHandoffDenialCode::AuthorizationDenied
             | WorthServerQueryHandoffDenialCode::OperationFamilyNotRegistered
@@ -199,6 +202,9 @@ impl WorthServerQueryHandoffDenialFacts {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthServerQueryHandoffDenialCode {
+    EvidenceIdentityDerivationDenied(
+        worth_query::facade::runtime::WorthQueryEvidenceIdentityDerivationDenial,
+    ),
     AuthorityDenied,
     AuthorizationDenied,
     OperationFamilyNotRegistered,

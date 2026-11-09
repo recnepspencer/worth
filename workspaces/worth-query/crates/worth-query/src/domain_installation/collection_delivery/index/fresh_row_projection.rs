@@ -1,3 +1,5 @@
+#[cfg(test)]
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::{
@@ -53,13 +55,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn fresh_path_replacement_normalizes_present_then_absent_support_truth() {
+    fn fresh_path_replacement_normalizes_present_then_absent_support_truth(
+    ) -> Result<(), IdentityDerivationDenial> {
         let aspect = AspectKey::new("PortfolioFacts").unwrap();
         let rank = FieldKey::new("PortfolioRankField").unwrap();
         let path =
             CanonicalFieldPath::new([FieldKey::new("PortfolioFacts").unwrap(), rank.clone()])
                 .unwrap();
-        let identity = crate::memory_workspace::admit_authored_entity_label("support-row");
+        let identity = crate::memory_workspace::admit_authored_entity_label("support-row")?;
         let prior = row(identity.clone(), &aspect, &rank, &path, Some(1));
         let fresh = row(identity.clone(), &aspect, &rank, &path, Some(2));
         let target = WorthQueryCollectionMaintenanceTarget::new(
@@ -83,10 +86,13 @@ mod tests {
         assert_eq!(cleared.struct_aspect_value(&aspect), None);
         assert_eq!(cleared.aspect_value(&aspect), None);
         assert_eq!(cleared.scalar_value_at(&path), None);
+
+        Ok(())
     }
 
     #[test]
-    fn namespaced_aspect_replacement_updates_exact_native_owner() {
+    fn namespaced_aspect_replacement_updates_exact_native_owner(
+    ) -> Result<(), IdentityDerivationDenial> {
         let aspect = AspectKey::new("Portfolio.Facts").unwrap();
         let rank = FieldKey::new("PortfolioRankField").unwrap();
         let path = CanonicalFieldPath::new([
@@ -95,7 +101,7 @@ mod tests {
             rank.clone(),
         ])
         .unwrap();
-        let identity = crate::memory_workspace::admit_authored_entity_label("namespaced-row");
+        let identity = crate::memory_workspace::admit_authored_entity_label("namespaced-row")?;
         let prior = row(identity.clone(), &aspect, &rank, &path, Some(1));
         let fresh = row(identity, &aspect, &rank, &path, Some(9));
         let target = WorthQueryCollectionMaintenanceTarget::new(
@@ -117,6 +123,8 @@ mod tests {
             updated.struct_aspect_value(&AspectKey::new("Portfolio").unwrap()),
             None
         );
+
+        Ok(())
     }
 
     fn row(

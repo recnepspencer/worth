@@ -50,7 +50,7 @@ pub fn observe(prepared: WorthQueryPreparedApplicationProviderAttempt) -> Loweri
         .collect();
     let intents = effects.batch_for_test().intents.clone();
     let emissions = effects.into_emissions_for_test();
-    let emissions = emissions.into_emissions();
+    let (emissions, _memory) = emissions.into_live_emissions_for_test();
     LoweringObservation {
         steps,
         intents,

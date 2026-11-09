@@ -33,7 +33,7 @@ fn unavailable_predicate_snapshot_keeps_masters_kind_and_query_subject() {
             let root = selected
                 .resolve_entity(
                     &phase,
-                    AccountIdentity::reference(),
+                    AccountIdentity::at("AccountIdentity"),
                     "account-1".into(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -112,7 +112,7 @@ fn unavailable_root_path_snapshot_keeps_masters_kind_and_query_subject() {
             let root = selected
                 .resolve_entity(
                     &phase,
-                    AccountIdentity::reference(),
+                    AccountIdentity::at("AccountIdentity"),
                     "account-1".into(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,

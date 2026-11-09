@@ -41,8 +41,9 @@ pub(super) fn field<'a>(
         let aspect = locator.aspect().aspect_key();
         // The first probe discovers struct width; the sole value decoder below
         // repeats that probe. Both descents are admitted before either read.
-        let probe = (state.aspects().len() as u64)
-            .checked_add(1)
+        let probe = u64::from(usize::BITS - state.aspects().len().leading_zeros())
+            .checked_mul(11)
+            .and_then(|units| units.checked_add(1))
             .and_then(|n| n.checked_mul((aspect.as_str().len() as u64).checked_add(1)?))
             .and_then(|n| n.checked_mul(2))
             .ok_or_else(overflow)?;
@@ -51,8 +52,9 @@ pub(super) fn field<'a>(
             && let ContractValidatedAspectValueView::Struct(value) = value.view()
         {
             let field = &locator.field_path().fields()[0];
-            let probe = (value.len() as u64)
-                .checked_add(1)
+            let probe = u64::from(usize::BITS - value.len().leading_zeros())
+                .checked_mul(11)
+                .and_then(|units| units.checked_add(1))
                 .and_then(|n| n.checked_mul((field.as_str().len() as u64).checked_add(1)?))
                 .ok_or_else(overflow)?;
             work(context, probe)?;

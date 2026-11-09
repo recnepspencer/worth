@@ -101,10 +101,16 @@ impl WorthQueryPromotionEligiblePreviewRequest {
             },
         };
         match request.run(execution, workspace) {
-            WorthQueryWorkflowOutcome::Completed(completion) => {
+            Err(cause) => {
+                WorthQueryPreviewJourneyOutcome::Stopped(WorthQueryWorkflowStop::runtime(
+                    cause.into(),
+                    WorthQueryWorkflowCounters::context_checked(),
+                ))
+            }
+            Ok(WorthQueryWorkflowOutcome::Completed(completion)) => {
                 WorthQueryPreviewJourneyOutcome::PromotionCompleted(completion)
             }
-            WorthQueryWorkflowOutcome::Stopped(stop) => {
+            Ok(WorthQueryWorkflowOutcome::Stopped(stop)) => {
                 WorthQueryPreviewJourneyOutcome::Stopped(stop)
             }
         }

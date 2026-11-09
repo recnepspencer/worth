@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::WorthQueryEntityIdentity;
 use crate::projection_consumption::identity::{
     certification_scope_encoder, compose_certification_sequence_digest,
@@ -13,12 +14,14 @@ use super::value_terms::{
     raw_string_snapshot_value,
 };
 
-pub(super) fn row_set_control_expected_digest(row_count: usize) -> String {
+pub(super) fn row_set_control_expected_digest(
+    row_count: usize,
+) -> Result<String, IdentityDerivationDenial> {
     let row_set = certification_row_set(row_count);
     let entries = row_set
         .rows()
         .iter()
-        .flat_map(|row| {
+        .map(|row| {
             let entity_identity = row
                 .projected_aspect_values()
                 .iter()
@@ -36,27 +39,32 @@ pub(super) fn row_set_control_expected_digest(row_count: usize) -> String {
                         .then(|| canonical_snapshot_read_value(value))
                 })
                 .expect("display name should exist");
-            [
+            Ok::<_, IdentityDerivationDenial>([
                 compose_oracle_entity_identity_entry(
                     row.row_identity().as_str(),
-                    &crate::memory_workspace::admit_authored_entity_label(entity_identity),
+                    &crate::memory_workspace::admit_authored_entity_label(entity_identity)?,
                 ),
                 compose_oracle_display_field_entry(
                     row.row_identity().as_str(),
                     "profile.display_name",
                     &display_name,
                 ),
-            ]
+            ])
         })
-        .collect::<Vec<_>>();
-    compose_certification_sequence_digest(
+        .collect::<Result<Vec<_>, _>>()?
+        .into_iter()
+        .flatten()
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(compose_certification_sequence_digest(
         "projection_consumption_oracle_row_set_control_expected_v1",
         "entry",
         entries,
-    )
+    )?)
 }
 
-pub(super) fn row_set_control_actual_digest(facts: &ConsumedProjectionFactSet) -> String {
+pub(super) fn row_set_control_actual_digest(
+    facts: &ConsumedProjectionFactSet,
+) -> Result<String, IdentityDerivationDenial> {
     let entries = facts
         .entity_identities()
         .iter()
@@ -70,15 +78,17 @@ pub(super) fn row_set_control_actual_digest(facts: &ConsumedProjectionFactSet) -
                 &canonical_consumed_native_value(fact.native_value()),
             )
         }))
-        .collect::<Vec<_>>();
-    compose_certification_sequence_digest(
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(compose_certification_sequence_digest(
         "projection_consumption_oracle_row_set_control_actual_v1",
         "entry",
         entries,
-    )
+    )?)
 }
 
-pub(super) fn grouped_worth_expected_digest(row_count: usize) -> String {
+pub(super) fn grouped_worth_expected_digest(
+    row_count: usize,
+) -> Result<String, IdentityDerivationDenial> {
     let grouped = certification_grouped_projection(row_count);
     let entries = grouped
         .members()
@@ -101,15 +111,17 @@ pub(super) fn grouped_worth_expected_digest(row_count: usize) -> String {
                 ),
             ]
         })
-        .collect::<Vec<_>>();
-    compose_certification_sequence_digest(
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(compose_certification_sequence_digest(
         "projection_consumption_oracle_grouped_worth_expected_v1",
         "entry",
         entries,
-    )
+    )?)
 }
 
-pub(super) fn grouped_worth_actual_digest(facts: &ConsumedProjectionFactSet) -> String {
+pub(super) fn grouped_worth_actual_digest(
+    facts: &ConsumedProjectionFactSet,
+) -> Result<String, IdentityDerivationDenial> {
     let entries = facts
         .memberships()
         .iter()
@@ -137,46 +149,50 @@ pub(super) fn grouped_worth_actual_digest(facts: &ConsumedProjectionFactSet) -> 
                 fact.view_local_identity(),
             )
         }))
-        .collect::<Vec<_>>();
-    compose_certification_sequence_digest(
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(compose_certification_sequence_digest(
         "projection_consumption_oracle_grouped_worth_actual_v1",
         "entry",
         entries,
-    )
+    )?)
 }
 
 fn compose_oracle_entity_identity_entry(
     source_row: &str,
     entity_identity: &WorthQueryEntityIdentity,
-) -> String {
+) -> Result<String, IdentityDerivationDenial> {
     let evidence_identity = entity_identity.evidence_identity();
-    seal(
+    Ok(seal(
         certification_scope_encoder("projection_consumption_oracle_entity_identity_entry_v1")
             .field_shape(WorthQueryEvidenceTag::new("source_row"), source_row)
             .field_evidence_identity(
                 WorthQueryEvidenceTag::new("entity_identity"),
                 &evidence_identity,
             ),
-    )
+    )?)
 }
 
-fn compose_oracle_display_field_entry(source_row: &str, field_key: &str, value: &str) -> String {
-    compose_labeled_entry_digest(
+fn compose_oracle_display_field_entry(
+    source_row: &str,
+    field_key: &str,
+    value: &str,
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(compose_labeled_entry_digest(
         "projection_consumption_oracle_display_field_entry_v1",
         &[
             ("source_row", source_row),
             ("field_key", field_key),
             ("value", value),
         ],
-    )
+    )?)
 }
 
 fn compose_oracle_membership_entry(
     source_row: &str,
     grouping_aspect: &AspectKey,
     grouping_value: &str,
-) -> String {
-    compose_labeled_entry_digest(
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(compose_labeled_entry_digest(
         "projection_consumption_oracle_membership_entry_v1",
         &[
             ("source_row", source_row),
@@ -186,15 +202,15 @@ fn compose_oracle_membership_entry(
             ),
             ("grouping_value", grouping_value),
         ],
-    )
+    )?)
 }
 
 fn compose_oracle_relation_endpoint_entry(
     source_row: &str,
     grouping_aspect: Option<&AspectKey>,
     grouping_value: &str,
-) -> String {
-    compose_labeled_entry_digest(
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(compose_labeled_entry_digest(
         "projection_consumption_oracle_relation_endpoint_entry_v1",
         &[
             ("source_row", source_row),
@@ -206,19 +222,22 @@ fn compose_oracle_relation_endpoint_entry(
             ),
             ("grouping_value", grouping_value),
         ],
-    )
+    )?)
 }
 
 fn terminal_grouping_aspect_digest_part(grouping_aspect: &AspectKey) -> &str {
     grouping_aspect.as_str()
 }
 
-fn compose_oracle_view_local_identity_entry(source_row: &str, view_local_identity: &str) -> String {
-    compose_labeled_entry_digest(
+fn compose_oracle_view_local_identity_entry(
+    source_row: &str,
+    view_local_identity: &str,
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(compose_labeled_entry_digest(
         "projection_consumption_oracle_view_local_identity_entry_v1",
         &[
             ("source_row", source_row),
             ("view_local_identity", view_local_identity),
         ],
-    )
+    )?)
 }

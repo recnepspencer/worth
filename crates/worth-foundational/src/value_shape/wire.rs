@@ -10,6 +10,11 @@ use std::io::Write;
 /// Derive `WorthValue` for ordinary structs/enums. Opaque domain owners implement
 /// this contract only with their own bounded seed and admitted constructor.
 /// No `DeserializeOwned` fallback participates in this contract.
+///
+/// Grammar, parsing, validation and serialization are deterministic in the
+/// static codec, input and bounds; they may not depend on ambient mutable state.
+/// Immutable stored text carries canonicality only for that exact codec and
+/// policy. Serialization drops the process-local seal.
 pub trait CanonicalValue: Serialize + Sized + 'static {
     /// This owner's seed, independently of its children's support. The complete
     /// static closure is checked by installation and admitted decoding.

@@ -1,3 +1,6 @@
+#[path = "support/records.rs"]
+mod storage_model;
+pub use storage_model::*;
 use worth_query_declaration::facade::{
     application_query::{
         ApplicationQueryBasisSupport, ApplicationQueryCardinality,
@@ -12,10 +15,7 @@ use worth_query_declaration::facade::{
         RelationName, TraversalSelector,
     },
 };
-use worth_query_declaration::{
-    worth_query_application_query, worth_query_application_schema, worth_query_aspect,
-    worth_query_entity, worth_query_field, worth_query_relation,
-};
+use worth_query_declaration::worth_query_application_query;
 use worth_query_installation::facade::{
     WorthQueryInstallationAdmissionProfile, WorthQueryInstallationGeneration,
     WorthQueryInstallationRuntimeIdentity, WorthQueryInstalledApplicationQuery,
@@ -29,49 +29,44 @@ use crate::runtime::{
 
 use super::super::super::support::public_bridge_runtime::workspace;
 
-worth_query_application_schema! {
-    pub schema EquivalenceSchema {
-        owner: application_query_equivalence,
-        version: (1, 0),
-        members: |schema| {
-            schema
-                .entity(Account::reference())
-                .entity(Activity::reference())
-                .aspect(Account::reference(), AccountFacts::reference())
-                .aspect(Account::reference(), Identity::reference())
-                .aspect(Activity::reference(), ActivityFacts::reference())
-                .field(Account::reference(), AccountId::reference())
-                .field(Account::reference(), Id::reference())
-                .field(Activity::reference(), ActivitySequence::reference())
-                .relation(
-                    AccountActivity::reference(),
-                    Account::reference(),
-                    Activity::reference(),
-                )
-                .application_query(query_definition())
-        }
+use worth_query_declaration::facade::application_schema::{
+    fragment::{self, *},
+    *,
+};
+#[derive(Clone, Copy)]
+pub struct EquivalenceSchema;
+impl Fragment for EquivalenceSchema {
+    const NAME: &'static str = "EquivalenceSchema";
+    type Bindings = NoBindings;
+    type Members = (QueryRecords, Contracts);
+}
+impl ApplicationSchema for EquivalenceSchema {
+    const OWNER: &'static str = "application_query_equivalence";
+    const NAME: &'static str = <Self as Fragment>::NAME;
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        fragment::declare(Self)
     }
 }
-
-worth_query_entity!(pub Account for EquivalenceSchema);
-worth_query_entity!(pub Activity for EquivalenceSchema);
-worth_query_aspect!(pub AccountFacts for EquivalenceSchema, Account; identity = AspectIdentity(0x91611051), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub Identity for EquivalenceSchema, Account; identity = AspectIdentity(0x91611052), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub ActivityFacts for EquivalenceSchema, Activity; identity = AspectIdentity(0x91611053), revision = AspectContractRevision(1),);
-worth_query_field!(
-    pub AccountId for EquivalenceSchema, Account, AccountFacts:
-    u64 => worth_query_declaration::facade::application_schema::U64ApplicationValueBinding, read_only, equality
-);
-worth_query_field!(
-    pub Id for EquivalenceSchema, Account, Identity:
-    String => worth_query_declaration::facade::application_schema::StringApplicationValueBinding, read_only, equality
-);
-worth_query_field!(
-    pub ActivitySequence for EquivalenceSchema, Activity, ActivityFacts:
-    u64 => worth_query_declaration::facade::application_schema::U64ApplicationValueBinding, read_only, equality
-);
-worth_query_relation!(
-    pub AccountActivity in EquivalenceSchema, Account => Activity; integrity = same_context_unbounded_retain_dangling);
+impl EquivalenceSchema {
+    pub fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        <Self as ApplicationSchema>::declaration()
+    }
+}
+pub struct Contracts;
+impl Registration<EquivalenceSchema> for Contracts {
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<EquivalenceSchema>,
+    ) -> Result<
+        ApplicationSchemaDeclarationBuilder<EquivalenceSchema>,
+        ApplicationSchemaDeclarationDenial,
+    > {
+        Ok(schema.application_query(query_definition()))
+    }
+}
 
 pub(super) struct ActivityParameters;
 pub(super) struct ActivityResult;
@@ -159,20 +154,27 @@ pub(super) fn mature_family(
                             TraversalSelector::bounded("AccountActivity", 1)
                                 .expect("one direct relation should admit"),
                         )
-                        .project(field("AccountFacts", "AccountId"))
-                        .project(field("Identity", "Id"))
-                        .project(field("ActivityFacts", "ActivitySequence"))
+                        .project(field(AccountId::at("AccountId").aspect(), "AccountId"))
+                        .project(field(Id::at("Id").aspect(), "Id"))
+                        .project(field(
+                            ActivitySequence::at("ActivitySequence").aspect(),
+                            "ActivitySequence",
+                        ))
                         .order_by(
-                            OrderingSelector::ascending("Identity", "Id")
+                            OrderingSelector::ascending(Id::at("Id").aspect(), "Id")
                                 .expect("typed identity ordering should admit"),
                         )
                 },
                 |shape| {
                     shape
-                        .field(result_field("AccountFacts", "AccountId", "account_id"))
-                        .field(result_field("Identity", "Id", "id"))
                         .field(result_field(
-                            "ActivityFacts",
+                            AccountId::at("AccountId").aspect(),
+                            "AccountId",
+                            "account_id",
+                        ))
+                        .field(result_field(Id::at("Id").aspect(), "Id", "id"))
+                        .field(result_field(
+                            ActivitySequence::at("ActivitySequence").aspect(),
                             "ActivitySequence",
                             "activity_sequence",
                         ))
@@ -192,17 +194,21 @@ pub(super) fn mature_flat_family(
                 mature_schema(),
                 |query| {
                     query
-                        .project(field("AccountFacts", "AccountId"))
-                        .project(field("Identity", "Id"))
+                        .project(field(AccountId::at("AccountId").aspect(), "AccountId"))
+                        .project(field(Id::at("Id").aspect(), "Id"))
                         .order_by(
-                            OrderingSelector::ascending("Identity", "Id")
+                            OrderingSelector::ascending(Id::at("Id").aspect(), "Id")
                                 .expect("typed identity ordering should admit"),
                         )
                 },
                 |shape| {
                     shape
-                        .field(result_field("AccountFacts", "AccountId", "account_id"))
-                        .field(result_field("Identity", "Id", "id"))
+                        .field(result_field(
+                            AccountId::at("AccountId").aspect(),
+                            "AccountId",
+                            "account_id",
+                        ))
+                        .field(result_field(Id::at("Id").aspect(), "Id", "id"))
                 },
             )
         })
@@ -220,61 +226,32 @@ fn query_reference() -> ApplicationQueryReference<
 }
 
 fn query_definition(
-) -> worth_query_declaration::facade::application_query::ApplicationQueryDefinition<
+) -> worth_query_declaration::facade::application_query::ApplicationQueryDefinitionBuilder<
     EquivalenceSchema,
     ActivityQuery,
     ActivityParameters,
     ActivityResult,
     Account,
 > {
-    let account_id = ApplicationQueryResultFieldRef::<
-        ActivityQuery,
-        AccountIdSlot,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-    >::new("account_id", AccountId::reference());
-    let activity_sequence = ApplicationQueryResultFieldRef::<
-        ActivityQuery,
-        ActivitySequenceSlot,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-    >::new("activity_sequence", ActivitySequence::reference());
-    let identity_projection = ApplicationQueryResultFieldRef::<
-        ActivityQuery,
-        IdentityIdSlot,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-    >::new("id", Id::reference());
-    let identity_ordering = ApplicationQueryResultFieldRef::<
-        ActivityQuery,
-        IdentityIdSlot,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-    >::new("id", Id::reference());
+    let account_id = ApplicationQueryResultFieldRef::<ActivityQuery, AccountIdSlot, _, _>::new(
+        "account_id",
+        AccountId::at("AccountId"),
+    );
+    let activity_sequence =
+        ApplicationQueryResultFieldRef::<ActivityQuery, ActivitySequenceSlot, _, _>::new(
+            "activity_sequence",
+            ActivitySequence::at("ActivitySequence"),
+        );
+    let identity_projection =
+        ApplicationQueryResultFieldRef::<ActivityQuery, IdentityIdSlot, _, _>::new(
+            "id",
+            Id::at("Id"),
+        );
+    let identity_ordering =
+        ApplicationQueryResultFieldRef::<ActivityQuery, IdentityIdSlot, _, _>::new(
+            "id",
+            Id::at("Id"),
+        );
     let nested = ApplicationQueryResultShapeBuilder::<
         EquivalenceSchema,
         ActivityQuery,
@@ -319,8 +296,6 @@ fn query_definition(
             identity_ordering,
             ApplicationQueryOrderingDirection::Ascending,
         )
-        .build()
-        .unwrap()
 }
 
 fn mature_schema() -> QuerySchemaView {
@@ -328,17 +303,17 @@ fn mature_schema() -> QuerySchemaView {
         "application-query-equivalence",
         [
             SchemaFieldView::new(
-                AspectName::new("AccountFacts").unwrap(),
+                AspectName::new(AccountId::at("AccountId").aspect()).unwrap(),
                 FieldName::new("AccountId").unwrap(),
                 ScalarAspectType::UInt64,
             ),
             SchemaFieldView::new(
-                AspectName::new("Identity").unwrap(),
+                AspectName::new(Id::at("Id").aspect()).unwrap(),
                 FieldName::new("Id").unwrap(),
                 ScalarAspectType::String,
             ),
             SchemaFieldView::new(
-                AspectName::new("ActivityFacts").unwrap(),
+                AspectName::new(ActivitySequence::at("ActivitySequence").aspect()).unwrap(),
                 FieldName::new("ActivitySequence").unwrap(),
                 ScalarAspectType::UInt64,
             ),

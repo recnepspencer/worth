@@ -20,4 +20,4 @@ mod revalidate_relation;
 mod update_entity_fields;
 mod update_relation_endpoints;
 
-pub(crate) use dispatch::{dispatch_intent, dispatch_original_intent};
+pub(crate) use dispatch::dispatch_intent;

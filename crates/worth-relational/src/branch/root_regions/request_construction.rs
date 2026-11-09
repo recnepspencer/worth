@@ -16,6 +16,8 @@ impl PreparedRelationalRegionSet {
                 set_id,
                 index_root: None,
                 count: 0,
+                live_counts: Default::default(),
+                kinds: Default::default(),
                 materialization_unavailable_records: 0,
                 _memory: memory,
             },
@@ -44,6 +46,15 @@ impl PreparedRelationalRegionSet {
             .materialization_unavailable_records
             .checked_add(region.materialization_unavailable_records())
             .ok_or(RelationalBranchRootCaptureDenial::SlotCountOverflow)?;
+        let live_counts = self
+            .set
+            .live_counts
+            .checked_add(region.live_counts)
+            .ok_or(RelationalBranchRootCaptureDenial::SlotCountOverflow)?;
+        self.set
+            .kinds
+            .replaced_for_request(partition_id, None, Some(&region.directory), request)
+            .map_err(RelationalBranchRootCaptureDenial::Request)?;
         let memory =
             super::super::root::reserve_box_memory::<RelationalRootRegionReference>(Some(request))?;
         let leaf =
@@ -60,6 +71,7 @@ impl PreparedRelationalRegionSet {
             Some(request),
         )?);
         self.set.count = count;
+        self.set.live_counts = live_counts;
         self.set.materialization_unavailable_records = unavailable;
         Ok(())
     }
@@ -77,6 +89,8 @@ impl Clone for RelationalPersistentRegionSet {
             set_id: self.set_id,
             index_root: self.index_root.clone(),
             count: self.count,
+            live_counts: self.live_counts,
+            kinds: self.kinds.clone(),
             materialization_unavailable_records: self.materialization_unavailable_records,
             _memory: None,
         }

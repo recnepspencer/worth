@@ -45,8 +45,7 @@ pub(crate) fn validate(
         .unwrap_or(RecordRef::Entity(
             restoration
                 .retirement
-                .authored_cascade_retirement
-                .as_ref()
+                .authored_source_retirement()
                 .expect("Native restoration has its retirement")
                 .anchor,
         ));

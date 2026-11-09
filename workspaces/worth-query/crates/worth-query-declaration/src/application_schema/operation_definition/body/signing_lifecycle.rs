@@ -3,9 +3,8 @@ use super::{
     ApplicationOperationBodyAuthoringDenial as Denial, ApplicationOperationBodyCreationBuilder,
 };
 use crate::application_schema::{
-    ApplicationFieldBindingLocus as Locus, ApplicationFieldPresence, ApplicationFieldRef,
-    ApplicationRelationRef, ApplicationSigningSupersession, ApplicationSigningSupersessionBinding,
-    DeclaredApplicationFieldValue, NoApplicationUnit, OperationLinks, ReadOnly,
+    ApplicationFieldBindingLocus as Locus, ApplicationFieldPresence, ApplicationRelationRef,
+    ApplicationSigningSupersession, ApplicationSigningSupersessionBinding, OperationLinks,
 };
 pub(super) mod validation;
 pub(super) use validation::validate;
@@ -54,44 +53,28 @@ impl<Schema, Operation, Input, Entity>
         Ok(self)
     }
     /// The native owner, not each source mutator, publishes the declared consequences.
-    pub fn supersede_on_subject_change<
-        History,
-        Current,
-        Scope,
-        Consequences,
-        Record,
-        Aspect,
-        Field,
-        Equality,
-    >(
+    pub fn supersede_on_subject_change<History, Current, Scope, Consequences, Record, Field>(
         self,
         history: ApplicationRelationRef<Schema, History, Scope, Entity>,
         current: ApplicationRelationRef<Schema, Current, Scope, Entity>,
         consequences: ApplicationRelationRef<Schema, Consequences, Entity, Record>,
-        field: ApplicationFieldRef<
-            Schema,
-            Record,
-            Aspect,
-            Field,
-            ApplicationSigningSupersession,
-            ReadOnly,
-            Equality,
-            NoApplicationUnit,
-        >,
+        field: Field,
         maximum_evidence: std::num::NonZeroUsize,
     ) -> Result<Self, Denial>
     where
         History: OperationLinks<Operation>,
         Current: OperationLinks<Operation>,
-        Field: DeclaredApplicationFieldValue<
+        Field: crate::application_schema::fragment::RecordSelection<
+            Entity = Record,
             Value = ApplicationSigningSupersession,
             Binding = ApplicationSigningSupersessionBinding,
         >,
     {
+        let field = super::record_authoring::resolve(field)?;
         if self.signing_lifecycle.is_some() || self.signing.is_none() {
             return Err(Denial::InvalidSigningLifecycle);
         }
-        if Field::PRESENCE != ApplicationFieldPresence::Required {
+        if field.writable() || field.presence() != ApplicationFieldPresence::Required {
             return Err(Denial::InvalidSigningLifecycle);
         }
         let spec = ApplicationOperationBodySigningLifecycleSpec {
@@ -99,7 +82,7 @@ impl<Schema, Operation, Input, Entity>
             current_relation: current.name().to_owned(),
             source_entity: history.from().to_owned(),
             consequence_relation: consequences.name().to_owned(),
-            consequence_field: Locus::new(field.entity(), field.aspect(), field.field()),
+            consequence_field: field.locus().clone(),
             maximum_evidence: maximum_evidence.get(),
         };
         let mut creation = self.link_from_scope(history, "signing-history")?;

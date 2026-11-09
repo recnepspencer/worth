@@ -36,11 +36,9 @@ fn disposal_returns_original_handle_on_refusal_then_native_receipt() {
         .into_parts();
     assert!(matches!(
         cause,
-        BankEstateProgressionDenial::ApplicationEntry(
+        BankEstateProgressionDenial::ApplicationEntry(entry) if matches!(*entry,
             WorthQueryApplicationRequestMutationDenial::ExecutionRequest(
-                WorthQueryAdvancementDenial::Interrupted(
-                    WorthQueryManagedComputationInterruption::Cancelled
-                )
+                WorthQueryAdvancementDenial::Interrupted(WorthQueryManagedComputationInterruption::Cancelled)
             )
         )
     ));

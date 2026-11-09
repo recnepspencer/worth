@@ -150,4 +150,5 @@ fn read_descriptors_use_read_vocabulary_without_mutation_lifecycle_overclaim() {
 
 fn target_collection(value: &str) -> WorthQueryMutationTargetCollectionIdentity {
     WorthQueryMutationTargetCollectionIdentity::new("graph-touch-descriptor-test", value)
+        .expect("fixture digest must fit")
 }

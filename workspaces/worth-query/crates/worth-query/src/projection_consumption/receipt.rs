@@ -7,6 +7,7 @@ use super::identity::{compose_receipt_digest, compose_receipt_integrity_digest};
 use super::receipt_transitions::ProjectionConsumptionDeferredNeighborFamily;
 use super::receipt_transitions::ProjectionConsumptionTransitionRules;
 use super::source::ProjectionSourceFamily;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ProjectionConsumptionReceipt {
@@ -27,9 +28,11 @@ pub struct ProjectionConsumptionReceipt {
 }
 
 impl ProjectionConsumptionReceipt {
-    pub(crate) fn from_fact_set(fact_set: &ConsumedProjectionFactSet) -> Self {
-        let counter_snapshot_digest = fact_set.counters().digest();
-        let transition_rules = ProjectionConsumptionTransitionRules::current_phase_five_surface();
+    pub(crate) fn from_fact_set(
+        fact_set: &ConsumedProjectionFactSet,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        let counter_snapshot_digest = fact_set.counters().digest()?;
+        let transition_rules = ProjectionConsumptionTransitionRules::current_phase_five_surface()?;
         let deferred_neighbors = transition_rules
             .rules()
             .iter()
@@ -43,7 +46,7 @@ impl ProjectionConsumptionReceipt {
             &counter_snapshot_digest,
             fact_set.source_identity(),
             materialized_fact_posture_digest,
-        );
+        )?;
         let receipt_digest = compose_receipt_digest(
             fact_set.declaration_digest(),
             fact_set.contract_digest(),
@@ -54,8 +57,8 @@ impl ProjectionConsumptionReceipt {
             materialized_fact_posture_digest,
             fact_set.support_posture().warning_kinds(),
             &deferred_neighbors,
-        );
-        Self {
+        )?;
+        Ok(Self {
             declaration_digest: fact_set.declaration_digest().to_string(),
             contract_digest: fact_set.contract_digest().to_string(),
             fact_set_digest: fact_set.fact_set_digest().to_string(),
@@ -70,7 +73,7 @@ impl ProjectionConsumptionReceipt {
             counter_snapshot_digest,
             integrity_digest,
             receipt_digest,
-        }
+        })
     }
 
     pub fn declaration_digest(&self) -> &str {
@@ -133,11 +136,17 @@ impl ProjectionConsumptionReceipt {
         &self.receipt_digest
     }
 
-    pub fn transition_rules(&self) -> ProjectionConsumptionTransitionRules {
-        ProjectionConsumptionTransitionRules::current_phase_five_surface()
+    pub fn transition_rules(
+        &self,
+    ) -> Result<ProjectionConsumptionTransitionRules, IdentityDerivationDenial> {
+        Ok(ProjectionConsumptionTransitionRules::current_phase_five_surface()?)
     }
 
-    pub fn projection_consumption_envelope(&self) -> SelfDescribingProjectionConsumptionEnvelope {
-        SelfDescribingProjectionConsumptionEnvelope::from_receipt(self)
+    pub fn projection_consumption_envelope(
+        &self,
+    ) -> Result<SelfDescribingProjectionConsumptionEnvelope, IdentityDerivationDenial> {
+        Ok(SelfDescribingProjectionConsumptionEnvelope::from_receipt(
+            self,
+        )?)
     }
 }

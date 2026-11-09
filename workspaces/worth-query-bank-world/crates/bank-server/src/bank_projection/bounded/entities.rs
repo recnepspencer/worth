@@ -15,19 +15,12 @@ impl BoundedProjectionState {
         id: AccountId,
     ) -> Result<AccountEntity, BankProjectionDenial>
     where
-        AccountIdentity: OperationReads<Operation>,
-        AccountingRevision: OperationReads<Operation>,
         InstitutionAccount: OperationReads<Operation>,
-        InstitutionIdentityField: OperationReads<Operation>,
-        Kind: OperationReads<Operation>,
+
         PersonalOwner: OperationReads<Operation>,
         BusinessAccount: OperationReads<Operation>,
-        PrincipalIdentityField: OperationReads<Operation>,
-        BusinessIdentityField: OperationReads<Operation>,
-        Status: OperationReads<Operation>,
-        AccountDisplayName: OperationReads<Operation>,
     {
-        let account = reader.resolve_entity(AccountIdentity::reference(), id)?;
+        let account = reader.resolve_entity(AccountIdentity::at("AccountIdentity"), id)?;
         self.project_account(reader, &account)?;
         Ok(account)
     }
@@ -37,12 +30,14 @@ impl BoundedProjectionState {
         reader: &mut ProjectionReader<'_, '_, Operation>,
         id: BankPrincipalId,
     ) -> Result<PrincipalEntity, BankProjectionDenial>
-    where
-        PrincipalIdentityField: OperationReads<Operation>,
-    {
-        let principal = reader.resolve_entity(PrincipalIdentityField::reference(), id)?;
+where {
+        let principal =
+            reader.resolve_entity(PrincipalIdentityField::at("PrincipalIdentityField"), id)?;
         validate_identity_field(
-            reader.decision_field(&principal, PrincipalIdentityField::reference())?,
+            reader.decision_field(
+                &principal,
+                PrincipalIdentityField::at("PrincipalIdentityField"),
+            )?,
             id,
             "PrincipalIdentityField",
         )?;
@@ -55,12 +50,14 @@ impl BoundedProjectionState {
         reader: &mut ProjectionReader<'_, '_, Operation>,
         id: BusinessId,
     ) -> Result<BusinessEntity, BankProjectionDenial>
-    where
-        BusinessIdentityField: OperationReads<Operation>,
-    {
-        let business = reader.resolve_entity(BusinessIdentityField::reference(), id)?;
+where {
+        let business =
+            reader.resolve_entity(BusinessIdentityField::at("BusinessIdentityField"), id)?;
         validate_identity_field(
-            reader.decision_field(&business, BusinessIdentityField::reference())?,
+            reader.decision_field(
+                &business,
+                BusinessIdentityField::at("BusinessIdentityField"),
+            )?,
             id,
             "BusinessIdentityField",
         )?;
@@ -74,11 +71,9 @@ impl BoundedProjectionState {
         business: &BusinessEntity,
         expected: BusinessId,
     ) -> Result<(), BankProjectionDenial>
-    where
-        BusinessIdentityField: OperationReads<Operation>,
-    {
+where {
         validate_identity_field(
-            reader.decision_field(business, BusinessIdentityField::reference())?,
+            reader.decision_field(business, BusinessIdentityField::at("BusinessIdentityField"))?,
             expected,
             "BusinessIdentityField",
         )?;
@@ -92,11 +87,12 @@ impl BoundedProjectionState {
         institution: &InstitutionEntity,
         expected: InstitutionId,
     ) -> Result<(), BankProjectionDenial>
-    where
-        InstitutionIdentityField: OperationReads<Operation>,
-    {
+where {
         validate_identity_field(
-            reader.decision_field(institution, InstitutionIdentityField::reference())?,
+            reader.decision_field(
+                institution,
+                InstitutionIdentityField::at("InstitutionIdentityField"),
+            )?,
             expected,
             "InstitutionIdentityField",
         )?;
@@ -111,16 +107,10 @@ impl BoundedProjectionState {
     ) -> Result<Option<AccountEntity>, BankProjectionDenial>
     where
         PersonalOwner: OperationReads<Operation>,
-        AccountIdentity: OperationReads<Operation>,
-        AccountingRevision: OperationReads<Operation>,
+
         InstitutionAccount: OperationReads<Operation>,
-        InstitutionIdentityField: OperationReads<Operation>,
-        Kind: OperationReads<Operation>,
+
         BusinessAccount: OperationReads<Operation>,
-        PrincipalIdentityField: OperationReads<Operation>,
-        BusinessIdentityField: OperationReads<Operation>,
-        Status: OperationReads<Operation>,
-        AccountDisplayName: OperationReads<Operation>,
     {
         let relations = reader.decision_relations_from(PersonalOwner::reference(), principal)?;
         self.project_optional_related_account(reader, relations, "PersonalOwner")
@@ -133,16 +123,10 @@ impl BoundedProjectionState {
     ) -> Result<Option<AccountEntity>, BankProjectionDenial>
     where
         BusinessAccount: OperationReads<Operation>,
-        AccountIdentity: OperationReads<Operation>,
-        AccountingRevision: OperationReads<Operation>,
+
         InstitutionAccount: OperationReads<Operation>,
-        InstitutionIdentityField: OperationReads<Operation>,
-        Kind: OperationReads<Operation>,
+
         PersonalOwner: OperationReads<Operation>,
-        PrincipalIdentityField: OperationReads<Operation>,
-        BusinessIdentityField: OperationReads<Operation>,
-        Status: OperationReads<Operation>,
-        AccountDisplayName: OperationReads<Operation>,
     {
         let relations = reader.decision_relations_from(BusinessAccount::reference(), business)?;
         self.project_optional_related_account(reader, relations, "BusinessAccount")
@@ -155,17 +139,11 @@ impl BoundedProjectionState {
     ) -> Result<AccountEntity, BankProjectionDenial>
     where
         InstitutionCashAccount: OperationReads<Operation>,
-        AccountIdentity: OperationReads<Operation>,
-        AccountingRevision: OperationReads<Operation>,
+
         InstitutionAccount: OperationReads<Operation>,
-        InstitutionIdentityField: OperationReads<Operation>,
-        Kind: OperationReads<Operation>,
+
         PersonalOwner: OperationReads<Operation>,
         BusinessAccount: OperationReads<Operation>,
-        PrincipalIdentityField: OperationReads<Operation>,
-        BusinessIdentityField: OperationReads<Operation>,
-        Status: OperationReads<Operation>,
-        AccountDisplayName: OperationReads<Operation>,
     {
         let relations =
             reader.decision_relations_from(InstitutionCashAccount::reference(), institution)?;
@@ -195,17 +173,10 @@ impl BoundedProjectionState {
         relation: &'static str,
     ) -> Result<Option<AccountEntity>, BankProjectionDenial>
     where
-        AccountIdentity: OperationReads<Operation>,
-        AccountingRevision: OperationReads<Operation>,
         InstitutionAccount: OperationReads<Operation>,
-        InstitutionIdentityField: OperationReads<Operation>,
-        Kind: OperationReads<Operation>,
+
         PersonalOwner: OperationReads<Operation>,
         BusinessAccount: OperationReads<Operation>,
-        PrincipalIdentityField: OperationReads<Operation>,
-        BusinessIdentityField: OperationReads<Operation>,
-        Status: OperationReads<Operation>,
-        AccountDisplayName: OperationReads<Operation>,
     {
         let account = match relations.as_slice() {
             [] => return Ok(None),

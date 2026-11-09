@@ -370,6 +370,14 @@ fn assert_entity_name(
     match value.view() {
         worth_foundational::facade::ContractValidatedAspectValueView::Scalar(
             worth_foundational::facade::AspectValue::String(
+                worth_foundational::facade::InternedString::Stored(actual),
+            ),
+        ) => {
+            let actual = actual.as_string();
+            assert_eq!(actual, expected_name)
+        }
+        worth_foundational::facade::ContractValidatedAspectValueView::Scalar(
+            worth_foundational::facade::AspectValue::String(
                 worth_foundational::facade::InternedString::Raw(actual),
             ),
         ) => assert_eq!(actual, expected_name),

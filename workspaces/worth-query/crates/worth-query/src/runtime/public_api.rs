@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -32,7 +33,9 @@ pub struct WorthQueryRuntimePublicApiFamilyContract {
 }
 
 impl WorthQueryRuntimePublicApiFamilyContract {
-    fn from_support_row(row: &super::WorthQueryRuntimeFamilySupport) -> Self {
+    fn from_support_row(
+        row: &super::WorthQueryRuntimeFamilySupport,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let family = row.family();
         let status = row.status();
         let teaching_posture = row.teaching_posture();
@@ -76,8 +79,8 @@ impl WorthQueryRuntimePublicApiFamilyContract {
                     evidence.iter().map(String::as_str),
                 )
                 .optional_value(WorthQueryEvidenceTag::new("reason"), reason.as_deref())
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             family,
             status,
             teaching_posture,
@@ -89,7 +92,7 @@ impl WorthQueryRuntimePublicApiFamilyContract {
             parallel_api_forbidden,
             admission_fail_closed,
             contract_identity,
-        }
+        })
     }
 
     pub fn family(&self) -> WorthQueryRuntimeFacadeFamily {
@@ -156,11 +159,13 @@ pub struct WorthQueryRuntimePublicApiContract {
 }
 
 impl WorthQueryRuntimePublicApiContract {
-    pub fn from_support_profile(profile: &WorthQueryRuntimeSupportProfile) -> Self {
+    pub fn from_support_profile(
+        profile: &WorthQueryRuntimeSupportProfile,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let families: Vec<_> = profile
             .rows()
             .map(WorthQueryRuntimePublicApiFamilyContract::from_support_row)
-            .collect();
+            .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?;
         let stable_family_count = families
             .iter()
             .filter(|family| family.status() == WorthQueryRuntimeFamilySupportStatus::Supported)
@@ -197,15 +202,15 @@ impl WorthQueryRuntimePublicApiContract {
                     WorthQueryEvidenceTag::new("unsupported_family_count"),
                     unsupported_family_count,
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             backend_posture: profile.posture(),
             families,
             stable_family_count,
             deferred_family_count,
             unsupported_family_count,
             contract_identity,
-        }
+        })
     }
 
     pub fn backend_posture(&self) -> WorthQueryRuntimeBackendPosture {

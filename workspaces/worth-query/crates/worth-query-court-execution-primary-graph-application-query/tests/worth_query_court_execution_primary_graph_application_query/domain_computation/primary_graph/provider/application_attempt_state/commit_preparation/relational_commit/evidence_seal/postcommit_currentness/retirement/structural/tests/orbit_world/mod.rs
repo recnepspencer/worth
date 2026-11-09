@@ -11,7 +11,7 @@ pub fn capture(world: &World, key: u64, execution: &ExecutionRequest<'_, '_>) ->
                     &phase,
                     |reader| {
                         reader
-                            .resolve_entity(NodeKey::reference(), key)
+                            .resolve_entity(NodeKey::at("NodeKey"), key)
                             .unwrap()
                             .entity_id()
                     },
@@ -36,7 +36,7 @@ pub fn capture(world: &World, key: u64, execution: &ExecutionRequest<'_, '_>) ->
         .primary_graph_for_test()
         .unwrap();
     let kind = (*graph.layout_for_test())
-        .entity_kind_for_test(NodeKey::reference::<OrbitSchema<true>>().entity())
+        .entity_kind_for_test(NodeKey::at("NodeKey").entity())
         .unwrap();
     let relation = *(*graph.layout_for_test())
         .relation(Next::reference::<OrbitSchema<true>>().name())

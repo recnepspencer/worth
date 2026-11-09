@@ -13,17 +13,10 @@ impl BoundedProjectionState {
         entity: &AccountEntity,
     ) -> Result<AccountJournalRevision, BankProjectionDenial>
     where
-        AccountIdentity: OperationReads<Operation>,
-        AccountingRevision: OperationReads<Operation>,
         InstitutionAccount: OperationReads<Operation>,
-        InstitutionIdentityField: OperationReads<Operation>,
-        Kind: OperationReads<Operation>,
+
         PersonalOwner: OperationReads<Operation>,
         BusinessAccount: OperationReads<Operation>,
-        PrincipalIdentityField: OperationReads<Operation>,
-        BusinessIdentityField: OperationReads<Operation>,
-        Status: OperationReads<Operation>,
-        AccountDisplayName: OperationReads<Operation>,
     {
         self.project_account_with_identity(reader, entity, None)
     }
@@ -35,17 +28,10 @@ impl BoundedProjectionState {
         expected: bank_domain::model::AccountId,
     ) -> Result<AccountJournalRevision, BankProjectionDenial>
     where
-        AccountIdentity: OperationReads<Operation>,
-        AccountingRevision: OperationReads<Operation>,
         InstitutionAccount: OperationReads<Operation>,
-        InstitutionIdentityField: OperationReads<Operation>,
-        Kind: OperationReads<Operation>,
+
         PersonalOwner: OperationReads<Operation>,
         BusinessAccount: OperationReads<Operation>,
-        PrincipalIdentityField: OperationReads<Operation>,
-        BusinessIdentityField: OperationReads<Operation>,
-        Status: OperationReads<Operation>,
-        AccountDisplayName: OperationReads<Operation>,
     {
         self.project_account_with_identity(reader, entity, Some(expected))
     }
@@ -57,27 +43,20 @@ impl BoundedProjectionState {
         admitted_identity: Option<bank_domain::model::AccountId>,
     ) -> Result<AccountJournalRevision, BankProjectionDenial>
     where
-        AccountIdentity: OperationReads<Operation>,
-        AccountingRevision: OperationReads<Operation>,
         InstitutionAccount: OperationReads<Operation>,
-        InstitutionIdentityField: OperationReads<Operation>,
-        Kind: OperationReads<Operation>,
+
         PersonalOwner: OperationReads<Operation>,
         BusinessAccount: OperationReads<Operation>,
-        PrincipalIdentityField: OperationReads<Operation>,
-        BusinessIdentityField: OperationReads<Operation>,
-        Status: OperationReads<Operation>,
-        AccountDisplayName: OperationReads<Operation>,
     {
         let id = required_field(
-            self.projected_field(reader, entity, AccountIdentity::reference())?,
+            self.projected_field(reader, entity, AccountIdentity::at("AccountIdentity"))?,
             "AccountIdentity",
         )?;
         if admitted_identity.is_some_and(|expected| expected != id) {
             return Err(BankProjectionDenial::AmbiguousRelation("AccountIdentity"));
         }
         let revision = required_field(
-            self.projected_field(reader, entity, AccountingRevision::reference())?,
+            self.projected_field(reader, entity, AccountingRevision::at("AccountingRevision"))?,
             "AccountingRevision",
         )?;
         if let Some(projected) = self.accounts.get(&id) {
@@ -87,14 +66,14 @@ impl BoundedProjectionState {
             return Ok(revision);
         }
         if admitted_identity.is_none() {
-            let canonical = reader.resolve_entity(AccountIdentity::reference(), id)?;
+            let canonical = reader.resolve_entity(AccountIdentity::at("AccountIdentity"), id)?;
             if &canonical != entity {
                 return Err(BankProjectionDenial::AmbiguousRelation("AccountIdentity"));
             }
         }
         let institution_id = self.project_account_institution(reader, entity)?;
         let kind = required_field(
-            self.projected_field(reader, entity, Kind::reference())?,
+            self.projected_field(reader, entity, Kind::at("Kind"))?,
             "Kind",
         )?;
         let (personal_owner, business_owner) =
@@ -104,11 +83,11 @@ impl BoundedProjectionState {
             institution: institution_id,
             kind,
             status: required_field(
-                self.projected_field(reader, entity, Status::reference())?,
+                self.projected_field(reader, entity, Status::at("Status"))?,
                 "Status",
             )?,
             display_name: required_field(
-                self.projected_field(reader, entity, AccountDisplayName::reference())?,
+                self.projected_field(reader, entity, AccountDisplayName::at("AccountDisplayName"))?,
                 "AccountDisplayName",
             )?,
             personal_owner,
@@ -132,16 +111,20 @@ impl BoundedProjectionState {
     ) -> Result<bank_domain::model::InstitutionId, BankProjectionDenial>
     where
         InstitutionAccount: OperationReads<Operation>,
-        InstitutionIdentityField: OperationReads<Operation>,
     {
         let relations =
             self.projected_relations_to(reader, InstitutionAccount::reference(), entity)?;
         let institution = exactly_one(&relations, "InstitutionAccount")?.from();
         let id = required_field(
-            self.projected_field(reader, institution, InstitutionIdentityField::reference())?,
+            self.projected_field(
+                reader,
+                institution,
+                InstitutionIdentityField::at("InstitutionIdentityField"),
+            )?,
             "InstitutionIdentityField",
         )?;
-        let canonical = reader.resolve_entity(InstitutionIdentityField::reference(), id)?;
+        let canonical =
+            reader.resolve_entity(InstitutionIdentityField::at("InstitutionIdentityField"), id)?;
         if &canonical != institution {
             return Err(BankProjectionDenial::AmbiguousRelation(
                 "InstitutionIdentityField",
@@ -165,8 +148,6 @@ impl BoundedProjectionState {
     where
         PersonalOwner: OperationReads<Operation>,
         BusinessAccount: OperationReads<Operation>,
-        PrincipalIdentityField: OperationReads<Operation>,
-        BusinessIdentityField: OperationReads<Operation>,
     {
         let personal = self.projected_relations_to(reader, PersonalOwner::reference(), entity)?;
         let business = self.projected_relations_to(reader, BusinessAccount::reference(), entity)?;
@@ -177,11 +158,17 @@ impl BoundedProjectionState {
                     return Err(BankProjectionDenial::AmbiguousRelation("account ownership"));
                 }
                 let owner_id = required_field(
-                    self.projected_field(reader, owner, PrincipalIdentityField::reference())?,
+                    self.projected_field(
+                        reader,
+                        owner,
+                        PrincipalIdentityField::at("PrincipalIdentityField"),
+                    )?,
                     "PrincipalIdentityField",
                 )?;
-                let canonical_owner =
-                    reader.resolve_entity(PrincipalIdentityField::reference(), owner_id)?;
+                let canonical_owner = reader.resolve_entity(
+                    PrincipalIdentityField::at("PrincipalIdentityField"),
+                    owner_id,
+                )?;
                 if &canonical_owner != owner {
                     return Err(BankProjectionDenial::AmbiguousRelation(
                         "PrincipalIdentityField",
@@ -196,11 +183,15 @@ impl BoundedProjectionState {
                     return Err(BankProjectionDenial::AmbiguousRelation("account ownership"));
                 }
                 let owner_id = required_field(
-                    self.projected_field(reader, owner, BusinessIdentityField::reference())?,
+                    self.projected_field(
+                        reader,
+                        owner,
+                        BusinessIdentityField::at("BusinessIdentityField"),
+                    )?,
                     "BusinessIdentityField",
                 )?;
-                let canonical_owner =
-                    reader.resolve_entity(BusinessIdentityField::reference(), owner_id)?;
+                let canonical_owner = reader
+                    .resolve_entity(BusinessIdentityField::at("BusinessIdentityField"), owner_id)?;
                 if &canonical_owner != owner {
                     return Err(BankProjectionDenial::AmbiguousRelation(
                         "BusinessIdentityField",

@@ -11,20 +11,7 @@ use worth_query_host::facade::{
 pub mod contract;
 pub mod seed;
 pub use seed::seed;
-worth_query_entity!(pub Grant for NumericSchema);
-worth_query_aspect!(pub GrantFacts for NumericSchema, Grant; identity = AspectIdentity(0x91800104), revision = AspectContractRevision(1));
-worth_query_field!(pub GrantIdentity for NumericSchema, Grant, GrantFacts: String => StringApplicationValueBinding, read_only, equality);
-worth_query_field!(pub GrantAction for NumericSchema, Grant, GrantFacts: String => StringApplicationValueBinding, read_only, equality);
-worth_query_field!(pub GrantPurpose for NumericSchema, Grant, GrantFacts: String => StringApplicationValueBinding, read_only, equality);
-worth_query_field!(pub GrantStatus for NumericSchema, Grant, GrantFacts: String => StringApplicationValueBinding, read_write, equality);
-worth_query_field!(pub GrantScopeKey for NumericSchema, Grant, GrantFacts: String => StringApplicationValueBinding, read_only, equality);
-worth_query_field!(pub GrantNotBefore for NumericSchema, Grant, GrantFacts: u64 => U64ApplicationValueBinding, read_only, equality);
-worth_query_field!(pub GrantNotAfter for NumericSchema, Grant, GrantFacts: u64 => U64ApplicationValueBinding, read_only, equality);
-worth_query_field!(pub GrantDepth for NumericSchema, Grant, GrantFacts: u64 => U64ApplicationValueBinding, read_only, equality);
-worth_query_relation!(pub GrantResource in NumericSchema, Grant => Number; integrity = same_context_unbounded_retain_dangling);
-worth_query_relation!(pub GrantGrantee in NumericSchema, Principal => Grant; integrity = same_context_unbounded_retain_dangling);
-worth_query_relation!(pub GrantGrantor in NumericSchema, Principal => Grant; integrity = same_context_unbounded_retain_dangling);
-worth_query_relation!(pub GrantParent in NumericSchema, Grant => Grant; integrity = same_context_unbounded_retain_dangling);
+
 worth_query_capability!(pub AdoptCapability in NumericSchema);
 worth_query_capability_context!(pub AdoptContext in NumericSchema);
 worth_query_capability_provenance!(pub AdoptProvenance in NumericSchema);
@@ -36,7 +23,6 @@ pub struct AdoptInput {
 worth_query_portable_type!(AdoptInput => "numeric-correction.adopt-input.v1");
 worth_query_structured_value_binding!(pub AdoptInputBinding for AdoptInput { identity: "numeric-correction.adopt-input.v1" });
 worth_query_operation!(pub AdoptOperation for NumericSchema, input AdoptInputBinding);
-worth_query_operation_reads!(AdoptOperation => [Key]);
 
 pub struct AdoptBinding;
 impl ApplicationProgramAdoptionBinding<NumericSchema> for AdoptBinding {
@@ -77,7 +63,7 @@ impl ApplicationCapabilityRequest<NumericSchema, AdoptCapability> for AdoptInput
         ApplicationCapabilityRequestProjectionDenial,
     > {
         Ok(ApplicationCapabilityRequestProjection::new(
-            ApplicationCapabilityEntitySelector::new(Key::reference(), encoded("numeric")),
+            ApplicationCapabilityEntitySelector::new(Key::at("Key"), encoded("numeric")).unwrap(),
             encoded("adopt-program"),
             encoded("numeric-administration"),
             ApplicationCapabilityRequestContext::new(AdoptContext::reference()),
@@ -91,36 +77,6 @@ pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<NumericSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<NumericSchema> {
     schema
-        .entity(Grant::reference())
-        .aspect(Grant::reference(), GrantFacts::reference())
-        .field(Grant::reference(), GrantIdentity::reference())
-        .field(Grant::reference(), GrantAction::reference())
-        .field(Grant::reference(), GrantPurpose::reference())
-        .field(Grant::reference(), GrantStatus::reference())
-        .field(Grant::reference(), GrantScopeKey::reference())
-        .field(Grant::reference(), GrantNotBefore::reference())
-        .field(Grant::reference(), GrantNotAfter::reference())
-        .field(Grant::reference(), GrantDepth::reference())
-        .relation(
-            GrantResource::reference(),
-            Grant::reference(),
-            Number::reference(),
-        )
-        .relation(
-            GrantGrantee::reference(),
-            Principal::reference(),
-            Grant::reference(),
-        )
-        .relation(
-            GrantGrantor::reference(),
-            Principal::reference(),
-            Grant::reference(),
-        )
-        .relation(
-            GrantParent::reference(),
-            Grant::reference(),
-            Grant::reference(),
-        )
         .capability_context(AdoptContext::reference())
         .capability_provenance(AdoptProvenance::reference())
         .operation(
@@ -131,6 +87,8 @@ pub fn declare(
                 .finish(),
         )
         .operation_projection_work_budget(AdoptOperation::reference(), 512)
-        .operation_read_field(AdoptOperation::reference(), Key::reference())
+        .operation_read_field(AdoptOperation::reference(), Key::at("Key"))
         .capability(contract::contract())
 }
+
+pub use crate::facade::certification::application_graph::correction::model::schema::storage_model::{Grant, GrantFacts, GrantIdentity, GrantAction, GrantPurpose, GrantStatus, GrantScopeKey, GrantNotBefore, GrantNotAfter, GrantDepth, GrantResource, GrantGrantee, GrantGrantor, GrantParent};

@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::evidence_identities::delivery_cause_identity;
 
@@ -61,22 +62,22 @@ impl QuerySubscriptionDeliveryCause {
     pub fn time_only(
         kind: QuerySubscriptionDeliveryCauseKind,
         evidence_label: impl AsRef<str>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         assert!(
             !kind.has_relational_patch(),
             "time-only delivery causes cannot reuse the relational patch kind"
         );
-        Self::new(
+        Ok(Self::new(
             kind,
-            &delivery_cause_evidence_label_identity(evidence_label.as_ref()),
-        )
+            &delivery_cause_evidence_label_identity(evidence_label.as_ref())?,
+        ))
     }
     #[cfg(test)]
     pub(crate) fn classified(
         kind: QuerySubscriptionDeliveryCauseKind,
         evidence_identity: &WorthQueryEvidenceIdentity,
-    ) -> Self {
-        Self::new(kind, evidence_identity)
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(kind, evidence_identity))
     }
 
     fn new(
@@ -109,6 +110,8 @@ impl QuerySubscriptionDeliveryCause {
     }
 }
 
-pub(crate) fn delivery_cause_evidence_label_identity(label: &str) -> WorthQueryEvidenceIdentity {
-    super::evidence_identities::delivery_cause_evidence_label_identity(label)
+pub(crate) fn delivery_cause_evidence_label_identity(
+    label: &str,
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(super::evidence_identities::delivery_cause_evidence_label_identity(label)?)
 }

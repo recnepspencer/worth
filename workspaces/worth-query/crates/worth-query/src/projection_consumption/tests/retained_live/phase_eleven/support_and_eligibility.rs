@@ -10,7 +10,9 @@ use super::super::support::{
 };
 
 fn assert_support_and_eligibility_sync_for_retained_binding() {
-    let support = retained_binding().discover_projection_fact_consumption_support();
+    let support = retained_binding()
+        .discover_projection_fact_consumption_support()
+        .expect("fixture digest must fit");
 
     for fact_kind in ProjectionFactKind::all().iter().copied() {
         let support_row = support
@@ -29,7 +31,8 @@ fn assert_support_and_eligibility_sync_for_retained_binding() {
                 request_for_kind(fact_kind),
             )
             .expect("retained declaration should remain structurally valid");
-        let eligibility = evaluate_projection_consumption_eligibility(&declaration);
+        let eligibility = evaluate_projection_consumption_eligibility(&declaration)
+            .expect("fixture digest must fit");
 
         match (support_row.posture(), eligibility) {
             (
@@ -56,7 +59,9 @@ fn assert_support_and_eligibility_sync_for_retained_binding() {
 }
 
 fn assert_support_and_eligibility_sync_for_live_binding() {
-    let support = live_binding().discover_projection_fact_consumption_support();
+    let support = live_binding()
+        .discover_projection_fact_consumption_support()
+        .expect("fixture digest must fit");
 
     for fact_kind in ProjectionFactKind::all().iter().copied() {
         let support_row = support
@@ -75,7 +80,8 @@ fn assert_support_and_eligibility_sync_for_live_binding() {
                 request_for_kind(fact_kind),
             )
             .expect("live declaration should remain structurally valid");
-        let eligibility = evaluate_projection_consumption_eligibility(&declaration);
+        let eligibility = evaluate_projection_consumption_eligibility(&declaration)
+            .expect("fixture digest must fit");
 
         match (support_row.posture(), eligibility) {
             (
@@ -103,8 +109,12 @@ fn assert_support_and_eligibility_sync_for_live_binding() {
 
 #[test]
 fn retained_and_live_support_reports_match_family_boundaries() {
-    let retained = retained_binding().discover_projection_fact_consumption_support();
-    let live = live_binding().discover_projection_fact_consumption_support();
+    let retained = retained_binding()
+        .discover_projection_fact_consumption_support()
+        .expect("fixture digest must fit");
+    let live = live_binding()
+        .discover_projection_fact_consumption_support()
+        .expect("fixture digest must fit");
 
     assert!(matches!(
         retained

@@ -10,19 +10,26 @@ pub use aspect_presence_support::RelationalAspectPresenceSupportDenial;
 mod basis_reads;
 mod borrowed_adjacency;
 mod borrowed_records;
+mod checkpoint_context;
 mod contracts;
 mod creation;
+pub(crate) use checkpoint_context::CheckpointProjectionContext;
 mod current_adjacency;
 mod entity_adjacency;
 mod entity_projection;
 mod entity_retirement;
-mod exact_basis_reads;
+pub(in crate::visibility::materialization::read_records) mod exact_basis_reads;
 mod exact_observation;
 mod field_revisions;
 mod field_support;
 pub use field_support::RelationalFieldSupportComparisonDenial;
 mod frontier_adjacency;
 mod historical_basis_reads;
+mod historical_selection;
+pub use historical_selection::{
+    RelationalHistoricalSelectionRead, RelationalHistoricalSelectionReadDenial,
+    RelationalHistoricalSourcePresence, RelationalHistoricalSourceReadDenial,
+};
 mod kind_scans;
 mod pinned;
 mod projection_records;

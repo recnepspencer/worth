@@ -14,6 +14,10 @@ impl WorthQueryStagedApplicationAttempt<'_> {
             worth_relational::facade::history::CommitId,
             worth_relational::facade::identity::EntityId,
             worth_relational::facade::transactions::CreatedEntityRef,
+            Vec<(
+                worth_relational::facade::identity::EntityId,
+                worth_relational::facade::transactions::CreatedEntityRef,
+            )>,
         )>,
         crate::domain_computation::WorthQueryInvariantExecutionFailure,
     > {
@@ -28,7 +32,14 @@ impl WorthQueryStagedApplicationAttempt<'_> {
                 self.validation_request(),
             )
             .map_err(|_| super::super::invariant_execution::touch_failure())?;
-        Ok(selected.map(|(old, new)| (prepared.source_commit().commit_id, old, new)))
+        Ok(selected.map(|(old, new)| {
+            (
+                prepared.source_commit().commit_id,
+                old,
+                new,
+                prepared.authored_restoration_co_anchors(self.attempt.native_publication_roles()),
+            )
+        }))
     }
 
     pub(in crate::domain_computation::primary_graph::provider) fn validation_request(

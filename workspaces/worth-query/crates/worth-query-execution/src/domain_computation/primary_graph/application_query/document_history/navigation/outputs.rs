@@ -4,7 +4,6 @@ use crate::domain_computation::primary_graph::{
     application_query::{
         execution_validation::validate_execution_lifetimes, HistoryOutputControlPlan,
     },
-    product_operation::document_history::{HistoryOutputLookup, HistoryOutputLookupPhase},
     WorthQueryCompletedHistoryOutputs, WorthQueryHistoryOutputNavigationAdvance as Step,
     WorthQueryHistoryOutputNavigationDenial as Denial, WorthQueryHistoryOutputProfile,
     WorthQueryHistoryOutputReadDenial,
@@ -58,7 +57,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         key: u128,
         profile: WorthQueryHistoryOutputProfile,
         source_binding: &WorthQueryInstalledApplicationQueryBinding<S, B>,
-        source: HistoryOutputControlPlan<'_, S, B>,
+        source: Option<HistoryOutputControlPlan<'_, S, B>>,
     ) -> Result<WorthQueryDocumentHistoryNavigation<'runtime, S>, Denial>
     where
         H: ApplicationHistoryBinding<S>,
@@ -70,16 +69,24 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         let (read, admission) = read
             .admit_navigation::<N>(self, phase, access, document, N::input(history_access))
             .map_err(Denial::Navigation)?;
-        self.validate_navigation_source::<H, N, B>(
-            phase,
-            document,
-            &read,
-            &admission,
-            &profile,
-            source_binding,
-            &source,
-        )
-        .map_err(Denial::Source)?;
+        if let Some(source) = &source {
+            self.validate_navigation_source::<H, N, B>(
+                phase,
+                document,
+                &read,
+                &admission,
+                &profile,
+                source_binding,
+                source,
+            )
+            .map_err(Denial::Source)?;
+        } else if !profile.uses_owned_model_graph()
+            || !profile
+                .source_intent()
+                .matches_binding(&document.model, source_binding)
+        {
+            return Err(Denial::Navigation(NavigationDenial::IntentDrift));
+        }
         document
             .prepare_navigation::<N>(
                 phase,
@@ -107,7 +114,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         key: u128,
         profile: &WorthQueryHistoryOutputProfile,
         source_binding: &WorthQueryInstalledApplicationQueryBinding<S, B>,
-        source: HistoryOutputControlPlan<'_, S, B>,
+        source: Option<HistoryOutputControlPlan<'_, S, B>>,
         callback: impl for<'authority> FnOnce(
             [u8; 32],
             Step<'authority, 'scope>,
@@ -124,71 +131,38 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         let (read, admission) = read
             .admit_navigation::<N>(self, phase, access, document, N::input(history_access))
             .map_err(Denial::Navigation)?;
-        self.validate_navigation_source::<H, N, B>(
-            phase,
-            document,
-            &read,
-            &admission,
-            profile,
-            source_binding,
-            &source,
-        )
-        .map_err(Denial::Source)?;
-        let lookup = document
-            .inspect_output_navigation::<N>(
-                phase, &read, installed, &admission, navigation, key, profile,
-            )
-            .map_err(Denial::Navigation)?;
-        let outputs = match lookup {
-            HistoryOutputLookup::Pending { key } => callback(key, Step::Pending),
-            HistoryOutputLookup::Selected { key, completed } => {
-                callback(key, Step::Selected(completed))
-            }
-            HistoryOutputLookup::Source {
-                key,
-                phase: state,
-                branch,
-                source,
+        if let Some(source) = &source {
+            self.validate_navigation_source::<H, N, B>(
+                phase,
+                document,
+                &read,
+                &admission,
                 profile,
-            } => {
-                let original = std::sync::Arc::clone(&source);
-                document
-                    .with_output_authority::<N, _>(
-                        phase,
-                        &read,
-                        installed,
-                        &admission,
-                        &profile,
-                        &original,
-                        |authority| {
-                            callback(
-                                key,
-                                match state {
-                                    HistoryOutputLookupPhase::AwaitingOutputs => Step::Outputs {
-                                        branch,
-                                        source,
-                                        authority,
-                                    },
-                                    HistoryOutputLookupPhase::Selecting => Step::Selecting {
-                                        branch,
-                                        source,
-                                        authority,
-                                    },
-                                },
-                            )
-                        },
-                    )
-                    .map_err(Denial::Navigation)?
-            }
-        };
+                source_binding,
+                source,
+            )
+            .map_err(Denial::Source)?;
+        } else if !profile.uses_owned_model_graph()
+            || !profile
+                .source_intent()
+                .matches_binding(&document.model, source_binding)
+        {
+            return Err(Denial::Navigation(NavigationDenial::IntentDrift));
+        }
+        let outputs = self.call_history_output_driver::<H, N, E>(
+            phase, document, &read, installed, &admission, navigation, key, profile, callback,
+        )?;
         let outputs = match outputs {
             Ok(outputs) => outputs,
             Err(error) => return Ok(Err(error)),
         };
         // A stopped callback leaves its SDK owners in the document registry.
         // The actual Native transition remains authoritative if its delivery lapses.
-        validate_execution_lifetimes(self, &source.controls, source.principal)
-            .map_err(|cause| Denial::Source(super::super::output_read::control_denial(cause)))?;
+        if let Some(source) = &source {
+            validate_execution_lifetimes(self, &source.controls, source.principal).map_err(
+                |cause| Denial::Source(super::super::output_read::control_denial(cause)),
+            )?;
+        }
         read.confirm(document, ())
             .map_err(|cause| Denial::Navigation(NavigationDenial::Document(cause)))?;
         document

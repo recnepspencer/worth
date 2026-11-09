@@ -32,7 +32,7 @@ fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
             selected
                 .resolve_entity(
                     &host_phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     &live_scope(),
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -51,8 +51,8 @@ fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
         .unwrap();
     let handle = graph.integration_handle_for_test();
     let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
-    let status_ref = AccountStatus::reference();
-    let label_ref = AccountLabel::reference();
+    let status_ref = AccountStatus::at("AccountStatus");
+    let label_ref = AccountLabel::at("AccountLabel");
     let status = graph
         .layout_for_test()
         .field_locator_for_test(status_ref.entity(), status_ref.aspect(), status_ref.field())
@@ -171,7 +171,7 @@ fn unchanged_own_evidence_waits_for_a_pending_equal_successor() {
             selected
                 .resolve_entity(
                     &host_phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     &live_scope(),
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -190,8 +190,8 @@ fn unchanged_own_evidence_waits_for_a_pending_equal_successor() {
         .unwrap();
     let handle = graph.integration_handle_for_test();
     let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
-    let status_ref = AccountStatus::reference();
-    let label_ref = AccountLabel::reference();
+    let status_ref = AccountStatus::at("AccountStatus");
+    let label_ref = AccountLabel::at("AccountLabel");
     let status = graph
         .layout_for_test()
         .field_locator_for_test(status_ref.entity(), status_ref.aspect(), status_ref.field())

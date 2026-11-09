@@ -38,7 +38,7 @@ fn host_facade_publishes_a_narrow_primary_graph_application_runtime() {
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &phase,
-                    AccountNumber::reference(),
+                    AccountNumber::at("AccountNumber"),
                     "account-001".to_string(),
                     &request_scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,

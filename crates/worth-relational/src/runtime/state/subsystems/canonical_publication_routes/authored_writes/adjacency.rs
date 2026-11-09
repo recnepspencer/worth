@@ -160,6 +160,14 @@ fn uncovered_kind(
             return Ok(Some(*kind));
         }
     }
+    for patch in &envelope.patch.authoritative_record_patches {
+        crate::history::visit_authored_write(context)?;
+        if patch.target == RecordRef::Relation(relation)
+            && let Some(birth) = patch.relation_birth
+        {
+            return Ok(Some(birth.kind));
+        }
+    }
     for intent in &envelope.merged_plan.merged_intents {
         crate::history::visit_authored_write(context)?;
         if let MutationIntent::Relation(RelationMutationIntent::UpdateEndpoints(value)) = intent

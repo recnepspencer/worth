@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_foundational::facade::{
     BoundaryArtifactId, BoundaryArtifactLocator, CanonicalEquivalenceBasis,
     FoundationalBoundaryEvidenceComparisonBasis, FoundationalBoundaryEvidenceFreshnessPosture,
@@ -26,7 +27,7 @@ pub(super) fn provenance(
 
 pub(super) fn descriptive_boundary_id(
     delta: &super::WorthQueryConsumerInvalidationDelta,
-) -> BoundaryArtifactId {
-    let semantic = delta.semantic_projection();
-    crate::domain_installation::foundational_boundary_artifact_id(semantic.identity())
+) -> Result<BoundaryArtifactId, IdentityDerivationDenial> {
+    let semantic = delta.semantic_projection()?;
+    Ok(crate::domain_installation::foundational_boundary_artifact_id(semantic.identity()))
 }

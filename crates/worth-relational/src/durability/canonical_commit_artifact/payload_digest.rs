@@ -1,6 +1,6 @@
 use sha2::{Digest as _, Sha256};
 
-const DIGEST_DOMAIN: &[u8] = b"worth.relational.canonical.v5\0";
+const DIGEST_DOMAIN: &[u8] = b"worth.relational.canonical.v8\0";
 
 /// SHA-256 of one artifact payload. It identifies the commit bytes a medium
 /// holds at a position; it is not a digest of the header.

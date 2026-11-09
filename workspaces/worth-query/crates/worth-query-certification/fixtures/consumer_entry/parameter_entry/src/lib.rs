@@ -4,11 +4,7 @@ mod parameter_invariant;
 pub use parameter_invariant::{parameter_count_invariant, PositiveParameterCount};
 
 use worth_query_consumer_values::PositiveCount;
-use worth_query_decl::facade::{
-    application_schema::ApplicationSchema, worth_query_application_contribution,
-    worth_query_aspect, worth_query_entity, worth_query_field, worth_query_unit,
-    worth_query_value_binding,
-};
+use worth_query_decl::facade::{application_schema::ApplicationSchema, worth_query_value_binding};
 
 pub trait ParameterSchemaBinding: ApplicationSchema {}
 
@@ -31,31 +27,80 @@ worth_query_value_binding! {
     }
 }
 
-worth_query_entity!(pub Parameter for Schema: ParameterSchemaBinding);
-worth_query_unit!(pub CountUnit(()) for Schema: ParameterSchemaBinding);
-worth_query_aspect!(
-    pub ParameterValue for Schema: ParameterSchemaBinding, Parameter;
-    identity = AspectIdentity(0x9174_1002),
-    revision = AspectContractRevision(1),
-);
-worth_query_field!(
-    pub Count for Schema: ParameterSchemaBinding, Parameter, ParameterValue:
-    PositiveCount => ParameterCountBinding, unit CountUnit, read_write, equality
-);
-
-worth_query_application_contribution! {
-    pub contribution ParameterContribution for Schema: ParameterSchemaBinding {
-        identity: "worth.query.certification.parameter.v1",
-        members: |schema| {
-            schema
-                .entity(Parameter::reference::<Schema>())
-                .unit(CountUnit::reference::<Schema>())
-                .aspect(
-                    Parameter::reference::<Schema>(),
-                    ParameterValue::reference::<Schema>(),
-                )
-                .field(Parameter::reference::<Schema>(), Count::reference::<Schema>())
-                .invariant(parameter_count_invariant::<Schema>())
-        }
+use worth_query_decl::facade::application_schema::{
+    fragment::{self, *},
+    *,
+};
+pub struct ParameterModel;
+impl Fragment for ParameterModel {
+    const NAME: &'static str = "parameter";
+    type Bindings = ParameterBindings;
+    type Members = (Parameter,);
+}
+pub struct ParameterBindings;
+impl BindingSet for ParameterBindings {
+    type Work<'a> = ValueDecodeAdmission<'a>;
+    fn with_admission<T>(
+        work: &mut Self::Work<'_>,
+        run: impl FnOnce(&mut ValueDecodeAdmission<'_>) -> T,
+    ) -> T {
+        run(work)
+    }
+}
+impl Scalar<PositiveCount> for ParameterBindings {
+    type Binding = ParameterCountBinding;
+}
+pub struct Parameter;
+impl Entity for Parameter {
+    const NAME: &'static str = "Parameter";
+    type Aspects = (ParameterValue,);
+    type Relations = ();
+}
+impl Parameter {
+    pub fn reference<S: ParameterSchemaBinding>() -> ApplicationEntityRef<S, Self> {
+        fragment::entity(ParameterModel, Self)
+    }
+}
+pub struct ParameterValue;
+impl Aspect for ParameterValue {
+    const NAME: &'static str = "ParameterValue";
+    type Row = ParameterValueRow;
+}
+pub struct ParameterValueRow {
+    pub value: PositiveCount,
+}
+impl Record<ParameterValueRow> for ParameterBindings {
+    fn record() -> impl Shape<ParameterValueRow, Self> {
+        field("value", |row: &ParameterValueRow| row.value)
+            .equality_queryable(true)
+            .build(|value, _: &mut ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(ParameterValueRow { value })
+            })
+    }
+}
+impl ParameterValue {
+    pub fn reference<S: ParameterSchemaBinding>() -> AspectSelection<ParameterModel, Parameter, Self>
+    {
+        fragment::aspect(ParameterModel, Parameter, Self)
+    }
+}
+pub type Count = FieldSelection<ParameterModel, Parameter, ParameterValue, PositiveCount>;
+pub struct ParameterContribution;
+impl<S: ParameterSchemaBinding> ApplicationSchemaContribution<S> for ParameterContribution {
+    const IDENTITY: ApplicationSchemaContributionIdentity =
+        ApplicationSchemaContributionIdentity::new("worth.query.certification.parameter.v1");
+    type Members = (ParameterModel, ParameterContracts);
+}
+impl ParameterContribution {
+    pub fn reference<S: ParameterSchemaBinding>() -> ApplicationSchemaContributionRef<S, Self> {
+        ApplicationSchemaContributionRef::from_contribution()
+    }
+}
+pub struct ParameterContracts;
+impl<S: ParameterSchemaBinding> Registration<S> for ParameterContracts {
+    fn register(
+        builder: ApplicationSchemaDeclarationBuilder<S>,
+    ) -> Result<ApplicationSchemaDeclarationBuilder<S>, ApplicationSchemaDeclarationDenial> {
+        Ok(builder.invariant(parameter_count_invariant::<S>()))
     }
 }

@@ -3,13 +3,14 @@
 //!
 //! The retired definition and its generation stay in the native checkpoint.
 //! Readmission binds Query's own indexes by name, kind and scope, so the extra
-//! definition binds to nothing; publications refresh only Query's installed
-//! index set, so nothing maintains or requires the retired one.
+//! definition binds to nothing. Native carries its unchanged selection by identity;
+//! an unrelated publication must neither rebuild nor require its retired meaning.
 
 use std::collections::BTreeMap;
 use std::time::Duration;
 use worth_execution::ExecutionAllocationPolicy as CapturePolicy;
 
+use std::sync::Arc;
 use worth_query_declaration::facade::application_schema::ApplicationScalarValueBinding;
 use worth_query_declaration::facade::application_schema::U64ApplicationValueBinding;
 use worth_query_declaration::facade::authentication::WorthQueryPrincipalMappingStatus;
@@ -17,8 +18,8 @@ use worth_relational::facade::history::RelationalCommitReceipt;
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::indexes::DerivedIndexBuildRequest;
 use worth_relational::facade::indexes::DerivedIndexDefinition;
-use worth_relational::facade::indexes::DerivedIndexId;
 use worth_relational::facade::indexes::DerivedIndexKind;
+use worth_relational::facade::indexes::{DerivedIndexGeneration, DerivedIndexId};
 use worth_relational::facade::runtime::RelationalRuntime;
 use worth_relational::facade::transactions::AspectFieldPatch;
 use worth_relational::facade::transactions::EntityMutationIntent;
@@ -80,7 +81,7 @@ fn a_store_holding_the_retired_correlation_index_opens_and_runs() {
 
     let restored = restored_world(checkpoint)
         .expect("a store holding the retired index opens under the current code");
-    assert_retired_index_is_inert(request_execution, &restored, retired);
+    assert_retired_index_is_inert(request_execution, &restored, &retired);
     let principal = restored
         .application
         .with_host_advancement(|phase| {
@@ -103,14 +104,13 @@ fn a_store_holding_the_retired_correlation_index_opens_and_runs() {
         .expect("the fixture read owns its installed host call");
     let head = with_runtime(request_execution, &restored, main_head);
     with_runtime(request_execution, &restored, |runtime| {
-        assert!(
-            runtime
-                .index_access()
-                .read_published_generation_for_commit(request_execution, retired, &head)
-                .unwrap()
-                .is_none(),
-            "nothing maintains the retired index"
-        );
+        let selected = runtime
+            .index_access()
+            .read_published_generation_for_commit(request_execution, retired.index_id, &head)
+            .unwrap()
+            .expect("the unrelated commit carries the retained selection");
+        assert_eq!(selected.as_ref(), retired.as_ref(),
+            "generation identity, affinity and every row remain unchanged; no retired-index rebuild");
     });
     restored
         .application
@@ -132,7 +132,7 @@ fn a_store_holding_the_retired_correlation_index_opens_and_runs() {
         .expect("a store with a lagging retired index captures");
     drop(restored);
     let reopened = restored_world(checkpoint).expect("the lagging retired index still reopens");
-    assert_retired_index_is_inert(request_execution, &reopened, retired);
+    assert_retired_index_is_inert(request_execution, &reopened, &retired);
     reopened
         .application
         .with_host_advancement(|phase| {
@@ -147,7 +147,7 @@ fn a_store_holding_the_retired_correlation_index_opens_and_runs() {
 pub fn persist_as_the_retired_code_did(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &IdentityWorld,
-) -> DerivedIndexId {
+) -> Arc<DerivedIndexGeneration> {
     let graph = (*world.application.runtime_for_test())
         .primary_graph_for_test()
         .unwrap();
@@ -179,20 +179,24 @@ pub fn persist_as_the_retired_code_did(
                 },
             );
             assert_eq!(built.generations.len(), 1, "{built:?}");
-            retired.index_id
+            runtime
+                .index_access()
+                .read_published_generation_for_commit(execution, retired.index_id, &head)
+                .unwrap()
+                .expect("explicit setup publishes its genuine retired generation")
         })
 }
 
 pub fn assert_retired_index_is_inert(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &IdentityWorld,
-    retired: DerivedIndexId,
+    retired: &DerivedIndexGeneration,
 ) {
     let graph = (*world.application.runtime_for_test())
         .primary_graph_for_test()
         .unwrap();
     let handle = graph.integration_handle_for_test();
-    assert!(!(*handle.primary_index_ids_for_test()).contains(&retired));
+    assert!(!(*handle.primary_index_ids_for_test()).contains(&retired.index_id));
     handle.with_runtime(request_execution, |runtime| {
         let lookup = runtime.index_access().definition_lookup_snapshot();
         assert_eq!(

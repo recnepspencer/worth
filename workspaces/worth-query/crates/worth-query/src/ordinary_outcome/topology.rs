@@ -75,6 +75,9 @@ pub enum WorthQueryOrdinaryContributionComposedCheckedTopologyKind {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 enum WorthQueryOrdinaryCheckedTopologyRepr {
+    EvidenceIdentityDerivationDenied(
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+    ),
     Orchestration {
         stop_stage: WorthQueryDeclarationEntryOrchestrationStage,
         retained_digest: Option<String>,
@@ -105,6 +108,24 @@ pub struct WorthQueryOrdinaryCheckedTopology {
 }
 
 impl WorthQueryOrdinaryCheckedTopology {
+    pub fn identity_refused(
+        cause: crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+    ) -> Self {
+        Self {
+            repr: WorthQueryOrdinaryCheckedTopologyRepr::EvidenceIdentityDerivationDenied(cause),
+        }
+    }
+    pub fn identity_derivation_denial(
+        &self,
+    ) -> Option<&crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+        match &self.repr {
+            WorthQueryOrdinaryCheckedTopologyRepr::EvidenceIdentityDerivationDenied(cause) => {
+                Some(cause)
+            }
+            _ => None,
+        }
+    }
+
     pub fn orchestration(
         stop_stage: WorthQueryDeclarationEntryOrchestrationStage,
         retained_digest: Option<String>,
@@ -171,6 +192,7 @@ impl WorthQueryOrdinaryCheckedTopology {
 
     pub fn orchestration_stop_stage(&self) -> Option<WorthQueryDeclarationEntryOrchestrationStage> {
         match &self.repr {
+            WorthQueryOrdinaryCheckedTopologyRepr::EvidenceIdentityDerivationDenied(_) => None,
             WorthQueryOrdinaryCheckedTopologyRepr::Orchestration { stop_stage, .. } => {
                 Some(*stop_stage)
             }
@@ -183,6 +205,7 @@ impl WorthQueryOrdinaryCheckedTopology {
 
     pub fn orchestration_retained_digest(&self) -> Option<&str> {
         match &self.repr {
+            WorthQueryOrdinaryCheckedTopologyRepr::EvidenceIdentityDerivationDenied(_) => None,
             WorthQueryOrdinaryCheckedTopologyRepr::Orchestration {
                 retained_digest, ..
             } => retained_digest.as_deref(),
@@ -197,6 +220,7 @@ impl WorthQueryOrdinaryCheckedTopology {
         &self,
     ) -> Option<WorthQueryDeclarationEntryOrchestrationRefusalClass> {
         match &self.repr {
+            WorthQueryOrdinaryCheckedTopologyRepr::EvidenceIdentityDerivationDenied(_) => None,
             WorthQueryOrdinaryCheckedTopologyRepr::Orchestration { refusal_class, .. } => {
                 *refusal_class
             }
@@ -209,6 +233,7 @@ impl WorthQueryOrdinaryCheckedTopology {
 
     pub fn binding_kind(&self) -> Option<WorthQueryOrdinaryBindingCheckedTopologyKind> {
         match &self.repr {
+            WorthQueryOrdinaryCheckedTopologyRepr::EvidenceIdentityDerivationDenied(_) => None,
             WorthQueryOrdinaryCheckedTopologyRepr::Binding { kind, .. } => Some(*kind),
             WorthQueryOrdinaryCheckedTopologyRepr::Orchestration { .. }
             | WorthQueryOrdinaryCheckedTopologyRepr::Continuation { .. }
@@ -219,6 +244,7 @@ impl WorthQueryOrdinaryCheckedTopology {
 
     pub fn binding_linked_artifacts(&self) -> Option<&WorthQueryBindingLinkedArtifacts> {
         match &self.repr {
+            WorthQueryOrdinaryCheckedTopologyRepr::EvidenceIdentityDerivationDenied(_) => None,
             WorthQueryOrdinaryCheckedTopologyRepr::Binding {
                 linked_artifacts, ..
             } => Some(linked_artifacts),
@@ -231,6 +257,7 @@ impl WorthQueryOrdinaryCheckedTopology {
 
     pub fn continuation_kind(&self) -> Option<WorthQueryOrdinaryContinuationCheckedTopologyKind> {
         match &self.repr {
+            WorthQueryOrdinaryCheckedTopologyRepr::EvidenceIdentityDerivationDenied(_) => None,
             WorthQueryOrdinaryCheckedTopologyRepr::Continuation { kind, .. } => Some(*kind),
             WorthQueryOrdinaryCheckedTopologyRepr::Orchestration { .. }
             | WorthQueryOrdinaryCheckedTopologyRepr::Binding { .. }
@@ -241,6 +268,7 @@ impl WorthQueryOrdinaryCheckedTopology {
 
     pub fn continuation_linked_artifacts(&self) -> Option<&WorthQueryBindingLinkedArtifacts> {
         match &self.repr {
+            WorthQueryOrdinaryCheckedTopologyRepr::EvidenceIdentityDerivationDenied(_) => None,
             WorthQueryOrdinaryCheckedTopologyRepr::Continuation {
                 linked_artifacts, ..
             } => Some(linked_artifacts),
@@ -255,6 +283,7 @@ impl WorthQueryOrdinaryCheckedTopology {
         &self,
     ) -> Option<WorthQueryOrdinarySignalCompatibilityOrchestrationCheckedTopologyKind> {
         match &self.repr {
+            WorthQueryOrdinaryCheckedTopologyRepr::EvidenceIdentityDerivationDenied(_) => None,
             WorthQueryOrdinaryCheckedTopologyRepr::SignalCompatibilityOrchestration {
                 kind,
                 ..
@@ -270,6 +299,7 @@ impl WorthQueryOrdinaryCheckedTopology {
         &self,
     ) -> Option<&WorthQueryBindingLinkedArtifacts> {
         match &self.repr {
+            WorthQueryOrdinaryCheckedTopologyRepr::EvidenceIdentityDerivationDenied(_) => None,
             WorthQueryOrdinaryCheckedTopologyRepr::SignalCompatibilityOrchestration {
                 linked_artifacts,
                 ..
@@ -285,6 +315,7 @@ impl WorthQueryOrdinaryCheckedTopology {
         &self,
     ) -> Option<WorthQueryOrdinaryContributionComposedCheckedTopologyKind> {
         match &self.repr {
+            WorthQueryOrdinaryCheckedTopologyRepr::EvidenceIdentityDerivationDenied(_) => None,
             WorthQueryOrdinaryCheckedTopologyRepr::ContributionComposed { kind, .. } => Some(*kind),
             WorthQueryOrdinaryCheckedTopologyRepr::Orchestration { .. }
             | WorthQueryOrdinaryCheckedTopologyRepr::Binding { .. }
@@ -299,6 +330,7 @@ impl WorthQueryOrdinaryCheckedTopology {
         &self,
     ) -> Option<&WorthQueryBindingLinkedArtifacts> {
         match &self.repr {
+            WorthQueryOrdinaryCheckedTopologyRepr::EvidenceIdentityDerivationDenied(_) => None,
             WorthQueryOrdinaryCheckedTopologyRepr::ContributionComposed {
                 linked_artifacts,
                 ..
@@ -314,6 +346,7 @@ impl WorthQueryOrdinaryCheckedTopology {
 
     pub fn contribution_composed_digest(&self) -> Option<&str> {
         match &self.repr {
+            WorthQueryOrdinaryCheckedTopologyRepr::EvidenceIdentityDerivationDenied(_) => None,
             WorthQueryOrdinaryCheckedTopologyRepr::ContributionComposed {
                 contribution_digest,
                 ..

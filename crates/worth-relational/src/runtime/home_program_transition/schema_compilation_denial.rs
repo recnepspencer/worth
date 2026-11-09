@@ -5,6 +5,14 @@ use crate::branch::RelationalBranchRootCaptureDenial as Cause;
 pub(super) fn translate(cause: Cause) -> Denial {
     match cause {
         Cause::Request(cause) | Cause::Execution(cause) => Denial::Execution(cause),
+        Cause::CanonicalPayloadBacking(cause) => match cause.classify() {
+            worth_execution::ExecutionAllocationDenialClass::Request(cause) => {
+                Denial::Execution(cause.into())
+            }
+            worth_execution::ExecutionAllocationDenialClass::Physical(_) => Denial::Execution(
+                crate::execution::RelationalExecutionDenialCause::AllocationFailed,
+            ),
+        },
         Cause::AllocationLayoutOverflow
         | Cause::AllocationAccountingOverflow(_)
         | Cause::SlotCountOverflow => Denial::CapacityOverflow,

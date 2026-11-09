@@ -28,10 +28,14 @@ pub(super) fn run(fanout: usize, unrelated: usize) -> Sample {
         .advanced()
         .mutate(Original(input("focus-a")))
         .expect_source(source)
-        .preconditions(TypedMutationPreconditions::new().expect_fact(
-            BodyKey::reference::<Schema>(),
-            ApplicationEncodedScalarValue::try_new("focus-a".to_owned()).unwrap(),
-        ))
+        .preconditions(
+            TypedMutationPreconditions::new()
+                .expect_fact(
+                    BodyKey::at("BodyKey"),
+                    ApplicationEncodedScalarValue::try_new("focus-a".to_owned()).unwrap(),
+                )
+                .expect("record field contract"),
+        )
         .idempotency(&221_001)
         .execute_performed_discovered::<Program, FanoutRoot>(
             &runtime,

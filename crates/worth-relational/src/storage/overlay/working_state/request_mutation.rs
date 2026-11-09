@@ -29,30 +29,6 @@ impl WorkingState {
             .retained_extra(slot)
     }
 
-    /// The original root's immutable numeric map is shared in O(1). Every
-    /// controlled write detaches its actual selected path under the request.
-    pub(crate) fn from_original_root_partitions(
-        partitions: &crate::storage::substrate::SharedMap<PartitionId, PartitionState>,
-        adjacency_policy: AdjacencyPolicy,
-    ) -> Self {
-        Self {
-            adjacency_policy,
-            clone_mode: crate::storage::overlay::PartitionCloneMode::Full,
-            entity_working_set_layout:
-                crate::storage::overlay::EntityWorkingSetLayout::CanonicalSoA,
-            partitions: partitions.clone(),
-            mutation_journal: Default::default(),
-            // Original row replay reconstructs content separately at root admission.
-            content: Default::default(),
-        }
-    }
-
-    pub(crate) fn into_original_root_partitions(
-        self,
-    ) -> crate::storage::substrate::SharedMap<PartitionId, PartitionState> {
-        self.partitions
-    }
-
     pub(crate) fn get_partition_mut_for_request(
         &mut self,
         id: PartitionId,

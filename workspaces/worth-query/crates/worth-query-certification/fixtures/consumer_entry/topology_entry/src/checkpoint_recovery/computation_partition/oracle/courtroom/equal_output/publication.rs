@@ -4,8 +4,7 @@ use super::*;
 use worth_query_decl::facade::application_operation::*;
 use worth_query_decl::facade::application_schema::*;
 use worth_query_decl::facade::{
-    worth_query_operation, worth_query_operation_reads, worth_query_operation_writes,
-    worth_query_structured_value_binding,
+    worth_query_operation, worth_query_operation_reads, worth_query_structured_value_binding,
 };
 use worth_query_host::facade::primary_graph::HandlerExecutionDenial;
 
@@ -16,8 +15,7 @@ pub(super) struct Input {
 }
 worth_query_structured_value_binding!(pub(super) InputBinding for Input { identity: "courtroom-equal-root-input" });
 worth_query_operation!(pub(super) PublishRoot for Schema: TopologySchemaBinding, input InputBinding);
-worth_query_operation_reads!(PublishRoot => [Body, BodyKey, Length]);
-worth_query_operation_writes!(PublishRoot => [Length]);
+worth_query_operation_reads!(PublishRoot =>[Body]);
 
 pub(super) struct Binding;
 impl ApplicationMutationBinding<Schema> for Binding {
@@ -37,7 +35,7 @@ impl ApplicationMutationBinding<Schema> for Binding {
     type Denial = PlanarMutationDenial;
     type DenialBinding = PlanarMutationDenialBinding;
     type Output = PlanarOutputs;
-    type ScopeBinding = PlanarMutationScope<Schema>;
+    type ScopeBinding = PlanarMutationScope;
     type PrincipalBinding = ConsumerPrincipalBinding;
     type Mapping = ExternalPrincipalMapping;
     type Principal = Principal;
@@ -48,17 +46,8 @@ impl ApplicationMutationBinding<Schema> for Binding {
     const HANDLER_IDENTITY: &'static str = "courtroom-equal-root-handler";
     const IDEMPOTENCY_IDENTITY: &'static str = "courtroom-equal-root-command";
 
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Body,
-        PlanarPosition,
-        BodyKey,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        BodyKey::reference()
+    fn scope_field() -> BodyKey {
+        BodyKey::at("BodyKey")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         Schema,
@@ -76,8 +65,8 @@ impl ApplicationMutationIntent<Schema> for Input {
     fn input(&self) -> &Self {
         self
     }
-    fn scope_binding(&self) -> PlanarMutationScope<Schema> {
-        PlanarMutationScope::new(BodyKey::reference(), self.scope_key.clone())
+    fn scope_binding(&self) -> PlanarMutationScope {
+        PlanarMutationScope::new(BodyKey::at("BodyKey"), self.scope_key.clone())
     }
 }
 
@@ -89,8 +78,8 @@ impl OperationHandler<Schema, Binding> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
     ) -> HandlerResult<PositiveLength, PlanarMutationDenial> {
         let value = (|| {
-            let entity = reader.resolve_entity(BodyKey::reference(), input.scope_key.clone())?;
-            let _ = reader.field(&entity, Length::reference())?;
+            let entity = reader.resolve_entity(BodyKey::at("BodyKey"), input.scope_key.clone())?;
+            let _ = reader.field(&entity, Length::at("Length"))?;
             // Quantized output: adjacent positive inputs share a canonical value.
             let value = input
                 .entries
@@ -113,13 +102,13 @@ impl OperationHandler<Schema, Binding> for Handler {
     ) -> HandlerResult<PlanarAdjustmentResult, PlanarMutationDenial> {
         let result = (|| {
             let entity = writer
-                .resolve_entity(BodyKey::reference(), input.scope_key.clone())
+                .resolve_entity(BodyKey::at("BodyKey"), input.scope_key.clone())
                 .map_err(HandlerExecutionDenial::new)?;
             writer
                 .preserve_output::<PlanarAnchorOutput<Schema>>(&entity)
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .write_field(&entity, Length::reference(), value)
+                .write_field(&entity, Length::at("Length"), value)
                 .map_err(HandlerExecutionDenial::new)?;
             Ok(PlanarAdjustmentResult {
                 changed_vertices: 1,
@@ -145,8 +134,8 @@ pub(super) fn declare(
         )
         .operation_projection_work_budget(operation, 4096)
         .operation_read_entity(operation, Body::reference())
-        .operation_read_field(operation, BodyKey::reference())
-        .operation_read_field(operation, Length::reference())
-        .operation_write(operation, Length::reference())
+        .operation_read_field(operation, BodyKey::at("BodyKey"))
+        .operation_read_field(operation, Length::at("Length"))
+        .operation_write(operation, Length::at("Length"))
         .application_mutation_binding::<Binding>()
 }

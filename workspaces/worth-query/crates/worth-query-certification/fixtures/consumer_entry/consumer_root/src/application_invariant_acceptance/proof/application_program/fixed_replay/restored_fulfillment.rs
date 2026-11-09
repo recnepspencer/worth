@@ -102,7 +102,7 @@ fn a_new_performed_source_is_fulfilled_by_restored_outputs_without_reexecution()
             .capture_application_checkpoint(&phase, worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy::SystemAllocation).unwrap()
     ).unwrap();
     let program = ApplicationProgramAuthoring::<ConsumerSchema, crate::ConsumerProgram>::begin()
-        .with_schema(&ConsumerSchema::declaration().unwrap())
+        .with_schema(&<ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap())
         .validated_program()
         .unwrap();
     let restored = installation::restore_selected_program(&world, program, checkpoint);

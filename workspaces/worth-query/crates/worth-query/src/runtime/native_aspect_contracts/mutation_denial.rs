@@ -1,7 +1,9 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::runtime::WorthQueryAspectTouch;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryMutationContractDenialKind {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     MissingContract,
     ContractValidationDenied,
     FieldMutationRequiresScalar,
@@ -14,7 +16,7 @@ pub enum WorthQueryMutationContractDenialKind {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryMutationContractDenial {
     kind: WorthQueryMutationContractDenialKind,
-    touch: WorthQueryAspectTouch,
+    touch: Option<WorthQueryAspectTouch>,
     detail: String,
 }
 
@@ -26,7 +28,7 @@ impl WorthQueryMutationContractDenial {
     ) -> Self {
         Self {
             kind,
-            touch,
+            touch: Some(touch),
             detail: detail.into(),
         }
     }
@@ -35,8 +37,8 @@ impl WorthQueryMutationContractDenial {
         self.kind
     }
 
-    pub fn touch(&self) -> &WorthQueryAspectTouch {
-        &self.touch
+    pub fn touch(&self) -> Option<&WorthQueryAspectTouch> {
+        self.touch.as_ref()
     }
 
     pub fn detail(&self) -> &str {
@@ -70,10 +72,23 @@ impl std::fmt::Display for WorthQueryMutationContractDenial {
         write!(
             formatter,
             "native mutation contract admission denied `{}`: {}",
-            self.touch.admitted_touch_digest_part(),
+            self.touch
+                .as_ref()
+                .map(WorthQueryAspectTouch::admitted_touch_digest_part)
+                .unwrap_or_default(),
             self.detail
         )
     }
 }
 
 impl std::error::Error for WorthQueryMutationContractDenial {}
+
+impl From<IdentityDerivationDenial> for WorthQueryMutationContractDenial {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self {
+            kind: WorthQueryMutationContractDenialKind::EvidenceIdentityDerivationDenied(cause),
+            touch: None,
+            detail: "canonical digest bounds refused mutation identity construction".into(),
+        }
+    }
+}

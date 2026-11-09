@@ -1,6 +1,6 @@
 use super::*;
 
-pub(super) fn summarize_commit_aspects(
+pub(in crate::authority::commit::pipeline) fn summarize_commit_aspects(
     deltas: &[crate::authority::mutation::CanonicalRecordAspectDelta],
 ) -> CommitAspectSummary {
     let mut changed_entity_aspect_count = 0;

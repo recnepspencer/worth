@@ -1,11 +1,11 @@
 use std::collections::BTreeMap;
 use std::marker::PhantomData;
+use worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus;
 
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use worth_query_installation::facade::{
-    ApplicationEntityRef, ApplicationFieldRef, ApplicationFieldUnit, ApplicationRelationRef,
-    ApplicationScalarValueBinding, ApplicationSchema, DeclaredApplicationFieldValue,
-    EqualityPosture, WritePosture,
+    ApplicationEntityRef, ApplicationRelationRef, ApplicationScalarValueBinding, ApplicationSchema,
+    ApplicationValueEncodeDenial,
 };
 use worth_relational::facade::identity::KindId;
 
@@ -14,6 +14,11 @@ use super::{
     WorthQueryPrimaryGraphInstallationDenialKind,
 };
 
+type EncodedSeedField = Result<
+    (String, String, AspectValue),
+    (ApplicationFieldBindingLocus, ApplicationValueEncodeDenial),
+>;
+
 /// One entity to seed into the primary graph at bootstrap: its kind, key, and
 /// field values.
 ///
@@ -21,30 +26,36 @@ use super::{
 pub struct WorthQueryApplicationEntitySeed<Schema, Entity> {
     entity: &'static str,
     key: WorthQueryApplicationEntityKey<Schema, Entity>,
-    fields: Vec<
-        Result<
-            (&'static str, &'static str, AspectValue),
-            worth_query_installation::facade::ApplicationValueEncodeDenial,
-        >,
-    >,
+    fields: Vec<EncodedSeedField>,
 }
 
 impl<Schema, Entity> WorthQueryApplicationEntitySeed<Schema, Entity> {
     pub(super) fn migration_cost(&self) -> (usize, usize) {
         let bytes = std::mem::size_of::<Self>()
             .saturating_add(self.key.owned_allocation_capacity_bytes())
-            .saturating_add(self.fields.capacity().saturating_mul(std::mem::size_of::<
-                Result<
-                    (&'static str, &'static str, AspectValue),
-                    worth_query_installation::facade::ApplicationValueEncodeDenial,
-                >,
-            >()));
+            .saturating_add(
+                self.fields
+                    .capacity()
+                    .saturating_mul(std::mem::size_of::<EncodedSeedField>()),
+            );
         let bytes = self.fields.iter().fold(bytes, |bytes, field| {
-            bytes.saturating_add(
-                field
-                    .as_ref()
-                    .map_or(0, |(_, _, value)| value.owned_allocation_capacity_bytes()),
-            )
+            bytes.saturating_add(field.as_ref().map_or_else(
+                |(locus, cause)| {
+                    locus
+                        .entity()
+                        .len()
+                        .saturating_add(locus.aspect().len())
+                        .saturating_add(locus.field().len())
+                        .saturating_add(cause.retained_heap_bytes())
+                },
+                |(aspect, field, value)| {
+                    aspect.capacity().saturating_add(
+                        field
+                            .capacity()
+                            .saturating_add(value.owned_allocation_capacity_bytes()),
+                    )
+                },
+            ))
         });
         (1_usize.saturating_add(self.fields.len()), bytes)
     }
@@ -60,20 +71,52 @@ impl<Schema, Entity> WorthQueryApplicationEntitySeed<Schema, Entity> {
         }
     }
 
-    pub fn field<Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn record_field<
+        A: worth_query_declaration::facade::application_schema::fragment::Aspect,
+        T,
+    >(
         mut self,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
-        value: Value,
-    ) -> Self
+        field: worth_query_declaration::facade::application_schema::fragment::RecordField<
+            Entity,
+            A,
+            T,
+        >,
+        value: T,
+    ) -> Result<
+        Self,
+        worth_query_declaration::facade::application_schema::fragment::FieldEncodeRefusal,
+    > {
+        let encoded = field.encode(&value)?;
+        self.fields.push(Ok((
+            field.locus().aspect().to_owned(),
+            field.locus().field().to_owned(),
+            encoded,
+        )));
+        Ok(self)
+    }
+
+    pub fn field<Aspect, Field, Value>(mut self, field: Field, value: Value) -> Self
     where
-        Field: DeclaredApplicationFieldValue<Value = Value>,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
         Field::Binding: ApplicationScalarValueBinding<Value = Value>,
-        Write: WritePosture,
-        Equality: EqualityPosture,
-        Unit: ApplicationFieldUnit,
     {
         self.fields.push(
-            Field::Binding::encode(&value).map(|value| (field.aspect(), field.field(), value)),
+            Field::Binding::encode(&value)
+                .map(|value| (field.aspect().to_owned(), field.field().to_owned(), value))
+                .map_err(|cause| {
+                    (
+                        ApplicationFieldBindingLocus::new(
+                            self.entity,
+                            field.aspect(),
+                            field.field(),
+                        ),
+                        cause,
+                    )
+                }),
         );
         self
     }
@@ -160,29 +203,33 @@ impl TypedBootstrapRows {
                 "signed entities require native authenticated publication",
             ));
         }
-        if !self.entity_keys.insert((kind, key.clone())) {
+        if self.entity_keys.contains(&(kind, key.clone())) {
             return Err(invalid_seed("duplicate application entity key"));
         }
-        self.pending_entity_keys.insert((kind, key.clone()));
-        let fields = seed
-            .fields
-            .into_iter()
-            .map(|encoded| {
-                let (aspect, field, value) = encoded
-                    .map_err(|_| invalid_seed("typed bootstrap field value failed validation"))?;
-                layout
-                    .field_locator(seed.entity, aspect, field)
-                    .cloned()
-                    .map(|locator| (locator, value))
-                    .ok_or_else(|| invalid_seed(field))
-            })
-            .collect::<Result<BTreeMap<_, _>, _>>()?;
+        let mut fields = BTreeMap::new();
+        for encoded in seed.fields {
+            let (aspect, field, value) = encoded.map_err(|(field, cause)| {
+                invalid_seed("typed bootstrap field value failed validation")
+                    .with_field_encoding_denial(field, cause)
+            })?;
+            let locator = layout
+                .field_locator(seed.entity, &aspect, &field)
+                .cloned()
+                .ok_or_else(|| invalid_seed(&field))?;
+            let locus = ApplicationFieldBindingLocus::new(seed.entity, &aspect, &field);
+            fields.insert(locator, value);
+            if let Some(presence) = layout.record_presence_locator(&locus) {
+                fields.insert(presence.clone(), AspectValue::Bool(true));
+            }
+        }
         super::bootstrap::unique_seed_values::admit_values(
             layout,
             recovered,
             &mut self.unique_seed_values,
             fields.iter().map(|(locator, value)| (kind, locator, value)),
         )?;
+        self.entity_keys.insert((kind, key.clone()));
+        self.pending_entity_keys.insert((kind, key.clone()));
         self.entity_rows
             .push(WorthQueryTypedEntityBootstrapRow { kind, key, fields });
         Ok(())

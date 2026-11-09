@@ -10,7 +10,8 @@ fn effect_declaration_rejects_missing_triggers_before_registration() {
         "ui.missing",
         WorthQueryEffectTrigger::live_view_name("tasks.missing", test_aspect_touches(["title"])),
         "ui.badges",
-    );
+    )
+    .expect("fixture digest must fit");
     let error = runtime
         .declare_effect::<WorthQueryUnrefinedLiveShape>(missing)
         .expect_err("missing live trigger should reject");
@@ -48,6 +49,7 @@ fn effect_declaration_rejects_truth_delivery_without_intent_boundary() {
         WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title"])),
         "Task",
     )
+    .expect("fixture digest must fit")
     .with_target_lane(WorthQueryAuthorityLane::AuthoritativeTruth);
 
     let error = runtime

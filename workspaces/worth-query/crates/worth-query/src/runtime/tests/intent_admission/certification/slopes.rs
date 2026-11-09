@@ -5,7 +5,7 @@ fn intent_admission_certification_reports_small_medium_and_large_width_runs_for_
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let bundle = certify_intent_admission(request_execution);
+    let bundle = certify_intent_admission(request_execution).expect("fixture digest must fit");
     let slope_report = bundle.slope_report();
     let width_runs = slope_report.width_runs();
 

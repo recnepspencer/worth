@@ -15,11 +15,14 @@ fn execution_stays_separate_from_preparation_and_produces_runtime_artifact() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let handle = admitted_handle(request_execution, "main");
-    let prepared = match handle.prepare_continuation_from_target(target_request::<RuntimeFamily>(
-        &handle,
-        "face-a",
-        runtime_route_request(),
-    )) {
+    let prepared = match handle
+        .prepare_continuation_from_target(target_request::<RuntimeFamily>(
+            &handle,
+            "face-a",
+            runtime_route_request(),
+        ))
+        .expect("fixture digest must fit")
+    {
         crate::continuation_pipeline::WorthQueryPreparedContinuationOutcome::Prepared(prepared) => {
             prepared
         }
@@ -27,7 +30,10 @@ fn execution_stays_separate_from_preparation_and_produces_runtime_artifact() {
     };
     let prepared_digest = prepared.prepared_digest().to_string();
 
-    let executed = match handle.execute_prepared_continuation(prepared) {
+    let executed = match handle
+        .execute_prepared_continuation(prepared)
+        .expect("fixture digest must fit")
+    {
         WorthQueryContinuationExecutionOutcome::Executed(executed) => executed,
         _ => panic!("expected executed continuation"),
     };
@@ -48,27 +54,34 @@ fn preparation_and_execution_both_preserve_wrong_world_when_world_changes() {
     let (workspace, left) = admitted_workspace(request_execution, "left");
     let right = continuation_handle_in(&workspace, "right");
 
-    let wrong_world = right.prepare_continuation_from_target(target_request::<RuntimeFamily>(
-        &left,
-        "face-a",
-        runtime_route_request(),
-    ));
+    let wrong_world = right
+        .prepare_continuation_from_target(target_request::<RuntimeFamily>(
+            &left,
+            "face-a",
+            runtime_route_request(),
+        ))
+        .expect("fixture digest must fit");
     assert!(matches!(
         wrong_world,
         crate::continuation_pipeline::WorthQueryPreparedContinuationOutcome::WrongWorld(_)
     ));
 
-    let prepared = match left.prepare_continuation_from_target(target_request::<RuntimeFamily>(
-        &left,
-        "face-a",
-        runtime_route_request(),
-    )) {
+    let prepared = match left
+        .prepare_continuation_from_target(target_request::<RuntimeFamily>(
+            &left,
+            "face-a",
+            runtime_route_request(),
+        ))
+        .expect("fixture digest must fit")
+    {
         crate::continuation_pipeline::WorthQueryPreparedContinuationOutcome::Prepared(prepared) => {
             prepared
         }
         _ => panic!("expected prepared continuation"),
     };
-    let execution = right.execute_prepared_continuation(prepared);
+    let execution = right
+        .execute_prepared_continuation(prepared)
+        .expect("fixture digest must fit");
     assert!(matches!(
         execution,
         WorthQueryContinuationExecutionOutcome::WrongWorld(_)
@@ -81,33 +94,43 @@ fn continuation_ordinary_outcome_keeps_execution_topology_honest() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (workspace, handle) = admitted_workspace(request_execution, "main");
-    let prepared =
-        match handle.prepare_continuation_from_target_outcome(target_request::<RuntimeFamily>(
+    let prepared = match handle
+        .prepare_continuation_from_target_outcome(target_request::<RuntimeFamily>(
             &handle,
             "face-a",
             runtime_route_request(),
-        )) {
-            WorthQueryOrdinaryOutcome::Bound(prepared) => prepared,
-            _ => panic!("expected bound continuation outcome"),
-        };
+        ))
+        .expect("fixture digest must fit")
+    {
+        WorthQueryOrdinaryOutcome::Bound(prepared) => prepared,
+        _ => panic!("expected bound continuation outcome"),
+    };
 
     assert!(matches!(
-        handle.execute_prepared_continuation_outcome(prepared),
+        handle
+            .execute_prepared_continuation_outcome(prepared)
+            .expect("fixture digest must fit"),
         WorthQueryOrdinaryOutcome::Bound(_)
     ));
 
-    match continuation_handle_in(&workspace, "right").execute_prepared_continuation_outcome(
-        match handle.prepare_continuation_from_target(target_request::<RuntimeFamily>(
-            &handle,
-            "face-a",
-            runtime_route_request(),
-        )) {
-            crate::continuation_pipeline::WorthQueryPreparedContinuationOutcome::Prepared(
-                prepared,
-            ) => prepared,
-            _ => panic!("expected prepared continuation"),
-        },
-    ) {
+    match continuation_handle_in(&workspace, "right")
+        .execute_prepared_continuation_outcome(
+            match handle
+                .prepare_continuation_from_target(target_request::<RuntimeFamily>(
+                    &handle,
+                    "face-a",
+                    runtime_route_request(),
+                ))
+                .expect("fixture digest must fit")
+            {
+                crate::continuation_pipeline::WorthQueryPreparedContinuationOutcome::Prepared(
+                    prepared,
+                ) => prepared,
+                _ => panic!("expected prepared continuation"),
+            },
+        )
+        .expect("fixture digest must fit")
+    {
         WorthQueryOrdinaryOutcome::WrongWorld(posture) => {
             assert_eq!(
                 posture.checked_topology().continuation_kind(),
@@ -124,11 +147,14 @@ fn execution_readmission_preserves_basis_identity_for_equivalent_runtime_meaning
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let handle = admitted_handle(request_execution, "main");
-    let prepared = match handle.prepare_continuation_from_target(target_request::<RuntimeFamily>(
-        &handle,
-        "face-a",
-        runtime_route_request(),
-    )) {
+    let prepared = match handle
+        .prepare_continuation_from_target(target_request::<RuntimeFamily>(
+            &handle,
+            "face-a",
+            runtime_route_request(),
+        ))
+        .expect("fixture digest must fit")
+    {
         crate::continuation_pipeline::WorthQueryPreparedContinuationOutcome::Prepared(prepared) => {
             prepared
         }
@@ -155,11 +181,14 @@ fn continuation_ordinary_outcome_keeps_new_execution_denials_visible() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (workspace, handle) = admitted_workspace(request_execution, "main");
-    let prepared = match handle.prepare_continuation_from_target(target_request::<RuntimeFamily>(
-        &handle,
-        "face-a",
-        runtime_route_request(),
-    )) {
+    let prepared = match handle
+        .prepare_continuation_from_target(target_request::<RuntimeFamily>(
+            &handle,
+            "face-a",
+            runtime_route_request(),
+        ))
+        .expect("fixture digest must fit")
+    {
         crate::continuation_pipeline::WorthQueryPreparedContinuationOutcome::Prepared(prepared) => {
             prepared
         }
@@ -168,7 +197,8 @@ fn continuation_ordinary_outcome_keeps_new_execution_denials_visible() {
 
     match crate::continuation_pipeline::ordinary_outcome_from_execution_checked(
         drifted_readmission_handle_in(&workspace, "main", ReadmissionDrift::AuthorityMismatch)
-            .execute_prepared_continuation_checked(prepared),
+            .execute_prepared_continuation_checked(prepared)
+            .expect("fixture digest must fit"),
     ) {
         WorthQueryOrdinaryOutcome::AuthorityMismatch(posture) => {
             assert_eq!(
@@ -186,11 +216,14 @@ fn continuation_ordinary_outcome_keeps_execution_drift_topology_visible() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (workspace, handle) = admitted_workspace(request_execution, "main");
-    let prepared = match handle.prepare_continuation_from_target(target_request::<RuntimeFamily>(
-        &handle,
-        "face-a",
-        runtime_route_request(),
-    )) {
+    let prepared = match handle
+        .prepare_continuation_from_target(target_request::<RuntimeFamily>(
+            &handle,
+            "face-a",
+            runtime_route_request(),
+        ))
+        .expect("fixture digest must fit")
+    {
         crate::continuation_pipeline::WorthQueryPreparedContinuationOutcome::Prepared(prepared) => {
             prepared
         }
@@ -199,7 +232,8 @@ fn continuation_ordinary_outcome_keeps_execution_drift_topology_visible() {
 
     match crate::continuation_pipeline::ordinary_outcome_from_execution_checked(
         drifted_readmission_handle_in(&workspace, "main", ReadmissionDrift::AsyncRequest)
-            .execute_prepared_continuation_checked(prepared),
+            .execute_prepared_continuation_checked(prepared)
+            .expect("fixture digest must fit"),
     ) {
         WorthQueryOrdinaryOutcome::RebindRequired(posture) => {
             assert_eq!(

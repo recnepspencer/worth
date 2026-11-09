@@ -142,6 +142,12 @@ pub fn field_declaration(
 
 pub fn row_variant(value: AspectValue, row: u64) -> AspectValue {
     match value {
+        AspectValue::String(InternedString::Stored(value)) => {
+            let value = value.as_string();
+            {
+                AspectValue::String(InternedString::Raw(format!("{value}-{row}")))
+            }
+        }
         AspectValue::String(InternedString::Raw(value)) => {
             AspectValue::String(InternedString::Raw(format!("{value}-{row}")))
         }

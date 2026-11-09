@@ -29,7 +29,7 @@ impl<L: LawPolicy>
     fn partitions(
         &self,
         _: &mut WorthQueryComputationReader<'_, '_, '_, GraphSchema<L>, CountTwoSteps>,
-        _: &WorthQueryInvariantEntityIdentity<GraphSchema<L>, Node>,
+        _: &WorthQueryInvariantEntityIdentity<GraphSchema<L>, GraphNode<GraphSchema<L>>>,
     ) -> Result<
         WorthQueryComputationPartitionPlan<Self::Item>,
         WorthQueryComputationInputDenial<GraphDenial>,
@@ -42,7 +42,7 @@ impl<L: LawPolicy>
     fn partition_key(
         &self,
         _: &mut WorthQueryComputationReader<'_, '_, '_, GraphSchema<L>, CountTwoSteps>,
-        _: &WorthQueryInvariantEntityIdentity<GraphSchema<L>, Node>,
+        _: &WorthQueryInvariantEntityIdentity<GraphSchema<L>, GraphNode<GraphSchema<L>>>,
         _: &Self::Item,
     ) -> Result<
         ApplicationDerivedRelationCountPartition,
@@ -53,7 +53,7 @@ impl<L: LawPolicy>
     fn gather(
         &self,
         _: &mut WorthQueryComputationReader<'_, '_, '_, GraphSchema<L>, CountTwoSteps>,
-        _: &WorthQueryInvariantEntityIdentity<GraphSchema<L>, Node>,
+        _: &WorthQueryInvariantEntityIdentity<GraphSchema<L>, GraphNode<GraphSchema<L>>>,
         _: WorthQueryComputationPartitionMembers<
             '_,
             ApplicationDerivedRelationCountPartition,

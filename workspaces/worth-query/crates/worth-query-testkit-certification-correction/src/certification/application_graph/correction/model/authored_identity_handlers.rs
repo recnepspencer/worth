@@ -20,12 +20,12 @@ macro_rules! worlds_certification_application_graph_correction_model_authored_id
         macro_rules! initialize {
             ($Field:ty, $value:expr) => {
                 $writer
-                    .initialize_field(&entity, <$Field>::reference(), $value)
+                    .initialize_field(&entity, <$Field>::at(stringify!($Field)), $value)
                     .map_err(HandlerExecutionDenial::new)?
             };
         }
         initialize!(Key, $image.name);
-        initialize!(Primary, $image.primary);
+        initialize!(Primary, Counter($image.primary));
         initialize!(Secondary, $image.secondary);
         initialize!(ReadEnabled, $image.read_enabled);
         initialize!(Ceiling, $image.ceiling);
@@ -62,11 +62,11 @@ macro_rules! worlds_certification_application_graph_correction_model_authored_id
                 input: &$Input,
                 reader: &mut DecisionReader<'_, '_, '_, NumericSchema, $Binding>,
             ) -> HandlerResult<Target, MissingValue> {
-                let parent = match reader.resolve_entity(Key::reference(), input.key.clone()) {
+                let parent = match reader.resolve_entity(Key::at("Key"), input.key.clone()) {
                     Ok(entity) => entity,
                     Err(cause) => return HandlerResult::ExecutionDenied(cause),
                 };
-                match reader.field(&parent, Primary::reference()) {
+                match reader.field(&parent, Primary::at("Primary")) {
                     Ok(Some(_)) => (),
                     Ok(None) => return HandlerResult::DomainDenied(MissingValue),
                     Err(cause) => return HandlerResult::ExecutionDenied(cause),
@@ -116,13 +116,13 @@ impl OperationHandler<NumericSchema, RetireBinding> for Handler {
         input: &Retire,
         reader: &mut DecisionReader<'_, '_, '_, NumericSchema, RetireBinding>,
     ) -> HandlerResult<Retirement, MissingValue> {
-        let entity = match reader.resolve_entity(Key::reference(), input.target.clone()) {
+        let entity = match reader.resolve_entity(Key::at("Key"), input.target.clone()) {
             Ok(entity) => entity,
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
         };
         macro_rules! observe {
             ($Field:ty) => {
-                match reader.field(&entity, <$Field>::reference()) {
+                match reader.field(&entity, <$Field>::at(stringify!($Field))) {
                     Ok(Some(_)) => (),
                     Ok(None) => return HandlerResult::DomainDenied(MissingValue),
                     Err(cause) => return HandlerResult::ExecutionDenied(cause),

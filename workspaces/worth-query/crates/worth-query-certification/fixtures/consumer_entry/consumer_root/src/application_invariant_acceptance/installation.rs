@@ -65,7 +65,7 @@ pub(super) fn assert_program_cannot_omit_an_installed_rule() {
     let result = installation::in_memory_program(
         crate::application_program::validated_omitted_installed_rule_program()
             .expect("the omitted-rule program is declaration-valid"),
-        ConsumerSchema::declaration().expect("the contributed declaration is valid"),
+        <ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the contributed declaration is valid"),
         configuration,
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         limits,
@@ -116,7 +116,7 @@ pub(super) fn assert_program_cannot_omit_a_required_binding() {
     );
     let result = installation::in_memory_program(
         crate::application_program::validated_omitted_program_binding(),
-        ConsumerSchema::declaration().expect("the contributed declaration is valid"),
+        <ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the contributed declaration is valid"),
         configuration,
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         limits,
@@ -171,12 +171,12 @@ pub(super) fn assert_required_output_source_cannot_be_an_action() {
         ConsumerSchema,
         crate::application_program::RequiredSourceAsActionProgram,
     >::begin()
-    .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
+    .with_schema(&<ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the completed schema is valid"))
     .validated_program()
     .expect("the overlapping action is declaration-valid");
     let result = installation::in_memory_program(
         program,
-        ConsumerSchema::declaration().unwrap(),
+        <ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap(),
         configuration,
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         limits,

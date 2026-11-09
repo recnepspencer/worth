@@ -15,6 +15,7 @@ pub(super) use arena_images::ImageReadmission;
 use arena_images::{arena_from_image, arena_to_image};
 
 pub(crate) fn partition_to_image_with_contracts(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     partition: PartitionState,
     catalog: &AspectContractPlanCatalog,
     contracts: &CheckpointAspectContractCatalog,
@@ -22,11 +23,13 @@ pub(crate) fn partition_to_image_with_contracts(
     Ok(PartitionCheckpointImage {
         partition_id: partition.partition_id,
         entity_arena: arena_to_image::<EntityRecordKind>(
+            lane,
             partition.entity_arena,
             catalog,
             contracts,
         )?,
         relation_arena: arena_to_image::<RelationRecordKind>(
+            lane,
             partition.relation_arena,
             catalog,
             contracts,
@@ -57,17 +60,18 @@ pub(crate) fn partition_to_image_with_contracts(
 }
 
 pub(crate) fn partition_from_image(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     image: PartitionCheckpointImage,
     catalog: &AspectContractPlanCatalog,
     contracts: &CheckpointAspectContractCatalog,
 ) -> Result<PartitionState, DurabilityError> {
     partition_from_image_using(
+        lane,
         image,
         catalog,
         contracts,
         &ImageReadmission {
             request: None,
-            contract_bound: 0,
         },
     )
     .map_err(|cause| match cause {
@@ -78,18 +82,20 @@ pub(crate) fn partition_from_image(
     })
 }
 pub(crate) fn partition_from_image_for_request(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     image: PartitionCheckpointImage,
     catalog: &AspectContractPlanCatalog,
     contracts: &CheckpointAspectContractCatalog,
     request: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<PartitionState, Stop> {
+    crate::execution::check_request(request).map_err(Stop::Request)?;
     let admission = ImageReadmission {
         request: Some(request),
-        contract_bound: contracts.max_clone_bound(request)?,
     };
-    partition_from_image_using(image, catalog, contracts, &admission)
+    partition_from_image_using(lane, image, catalog, contracts, &admission)
 }
 fn partition_from_image_using(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     image: PartitionCheckpointImage,
     catalog: &AspectContractPlanCatalog,
     contracts: &CheckpointAspectContractCatalog,
@@ -103,6 +109,7 @@ fn partition_from_image_using(
         partition_id: image.partition_id,
         relation_overlay_is_sparse: false,
         entity_arena: arena_from_image::<EntityRecordKind>(
+            lane,
             image.partition_id,
             image.entity_arena,
             catalog,
@@ -110,18 +117,20 @@ fn partition_from_image_using(
             admission,
         )?,
         relation_arena: arena_from_image::<RelationRecordKind>(
+            lane,
             image.partition_id,
             image.relation_arena,
             catalog,
             contracts,
             admission,
         )?,
-        adjacency: adjacency_from_image(image.adjacency, admission, &policy)?,
-        reverse_adjacency: adjacency_from_image(image.reverse_adjacency, admission, &policy)?,
+        adjacency: adjacency_from_image(lane, image.adjacency, admission, &policy)?,
+        reverse_adjacency: adjacency_from_image(lane, image.reverse_adjacency, admission, &policy)?,
         adjacency_policy: policy,
     })
 }
 fn adjacency_from_image(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     entries: Vec<crate::durability::data::DurableAdjacencyEntry>,
     admission: &ImageReadmission<'_, '_, '_>,
     policy: &AdjacencyPolicy,
@@ -132,6 +141,7 @@ fn adjacency_from_image(
         match admission.request {
             Some(request) => {
                 let value = AdjacencySet::checkpoint_for_request(
+                    lane,
                     entry.relations,
                     entry.structural_revisions,
                     request,
@@ -141,6 +151,7 @@ fn adjacency_from_image(
             None => {
                 *table.ensure(entry.slot as usize, policy) =
                     AdjacencySet::compressed_from_checkpoint(
+                        lane,
                         entry.relations,
                         entry.structural_revisions,
                     );

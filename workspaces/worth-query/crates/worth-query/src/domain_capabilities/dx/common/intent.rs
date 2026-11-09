@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_relational::facade::runtime::InvariantCatalog;
 
 use crate::domain_capabilities::authoring::{
@@ -24,7 +25,8 @@ use crate::domain_capabilities::{
     WorthQueryDomainCapabilityTargetKind, WorthQueryInstalledDeclarationContributionTarget,
 };
 
-use super::shared::{materialize_common_lane, qualify_semantic_code};
+use super::materialization::materialize_common_lane;
+use super::semantic_code::qualify_semantic_code;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryIntentDomainContributionSurface {
@@ -108,30 +110,33 @@ pub struct WorthQueryIntentSupportContribution {
 impl WorthQueryIntentSupportContribution {
     pub fn try_materialize(
         self,
-    ) -> WorthQueryCheckedDomainCapabilityOutcome<
-        WorthQueryIntentDeclarationSupportTraceabilityArtifact,
+    ) -> Result<
+        WorthQueryCheckedDomainCapabilityOutcome<
+            WorthQueryIntentDeclarationSupportTraceabilityArtifact,
+        >,
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
     > {
         let semantic_code = qualify_semantic_code(self.target.authority(), &self.semantic_code);
         let target = self.target.clone();
-        let requested = match self.posture {
+        let requested = (match self.posture {
             WorthQuerySupportContributionPosture::DeclarationSupport => {
                 WorthQuerySupportContributionAuthoring::declaration_support(
                     semantic_code,
                     self.detail,
-                )
+                )?
                 .bind_to_installed_target(self.target)
             }
             WorthQuerySupportContributionPosture::DeclarationTraceability => {
                 WorthQuerySupportContributionAuthoring::declaration_traceability(
                     semantic_code,
                     self.detail,
-                )
+                )?
                 .bind_to_installed_target(self.target)
             }
             WorthQuerySupportContributionPosture::NarrowedSupport => unreachable!(),
-        };
+        })?;
 
-        materialize_common_lane(
+        Ok(materialize_common_lane(
             "support-traceability",
             WorthQueryDomainCapabilityTargetKind::IntentDeclaration,
             self.posture.as_str(),
@@ -144,7 +149,7 @@ impl WorthQueryIntentSupportContribution {
                 )
             },
             materialize_intent_declaration_support_traceability_artifact,
-        )
+        )?)
     }
 
     pub fn materialize(
@@ -153,7 +158,7 @@ impl WorthQueryIntentSupportContribution {
         WorthQueryIntentDeclarationSupportTraceabilityArtifact,
         WorthQueryDomainCapabilityMaterializationError,
     > {
-        self.try_materialize().into_result()
+        self.try_materialize()?.into_result()
     }
 }
 
@@ -189,17 +194,19 @@ pub struct WorthQueryIntentInvariantRegistrationContribution {
 impl WorthQueryIntentInvariantRegistrationContribution {
     pub fn try_materialize(
         self,
-    ) -> WorthQueryCheckedDomainCapabilityOutcome<WorthQueryInvariantCatalogRegistrationArtifact>
-    {
+    ) -> Result<
+        WorthQueryCheckedDomainCapabilityOutcome<WorthQueryInvariantCatalogRegistrationArtifact>,
+        IdentityDerivationDenial,
+    > {
         let target = self.target.clone();
         let requested = WorthQueryInvariantCapabilityContributionAuthoring::invariant_registration(
             self.invariant_catalog,
             qualify_semantic_code(self.target.authority(), &self.semantic_code),
             self.detail,
-        )
-        .bind_to_installed_target(self.target);
+        )?
+        .bind_to_installed_target(self.target)?;
 
-        materialize_common_lane(
+        Ok(materialize_common_lane(
             "invariant-capability",
             WorthQueryDomainCapabilityTargetKind::IntentDeclaration,
             WorthQueryInvariantCapabilityContributionPosture::InvariantRegistration.as_str(),
@@ -212,7 +219,7 @@ impl WorthQueryIntentInvariantRegistrationContribution {
                 )
             },
             materialize_query_invariant_catalog_registration_artifact,
-        )
+        )?)
     }
 
     pub fn materialize(
@@ -221,6 +228,6 @@ impl WorthQueryIntentInvariantRegistrationContribution {
         WorthQueryInvariantCatalogRegistrationArtifact,
         WorthQueryDomainCapabilityMaterializationError,
     > {
-        self.try_materialize().into_result()
+        self.try_materialize()?.into_result()
     }
 }

@@ -103,6 +103,44 @@ impl CommitCreatedEntityBindings {
         u64::try_from(work).ok()
     }
 
+    /// Borrow the exact reference that this apply allocated. Coupled suffixes
+    /// retain it in the enclosing transaction, rather than inventing a second
+    /// record ID for a reference obtained from the actual applied image.
+    pub(crate) fn creation_reference<E>(
+        &self,
+        entity_id: EntityId,
+        mut checkpoint: impl FnMut() -> Result<(), E>,
+    ) -> Result<Option<&CreatedEntityRef>, E> {
+        for (reference, allocated) in &self.by_exact_reference {
+            checkpoint()?;
+            if *allocated == entity_id {
+                return Ok(Some(reference));
+            }
+        }
+        Ok(None)
+    }
+
+    /// Compare actual prefix key text while scoping an independent writer's local references.
+    pub(crate) fn contains_client_key_text<E>(
+        &self,
+        text: &str,
+        mut charge: impl FnMut(u64) -> Result<(), E>,
+    ) -> Result<bool, E> {
+        for prior in self.by_stable_reference.keys() {
+            charge(
+                prior
+                    .client_key
+                    .len()
+                    .saturating_add(text.len())
+                    .saturating_add(1) as u64,
+            )?;
+            if prior.client_key == text {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+
     /// Recover diagnostic creation meaning from this apply's actual correspondence.
     /// Only the refusal path walks these retained bindings; ordinary successful
     /// validation allocates no reverse index. The caller checkpoints each entry.

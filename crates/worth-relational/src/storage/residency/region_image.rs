@@ -10,8 +10,8 @@ use crate::identity::data::{KindId, PartitionId, RelationId};
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
 use crate::storage::overlay::PartitionHistoryFrontiers;
 
-const MAGIC: &[u8] = b"WORTH-REL-REG6\n";
-const VERSION: u16 = 6;
+pub(in crate::storage::residency) const MAGIC: &[u8] = b"WORTH-REL-REG7\n";
+const VERSION: u16 = 7;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) enum RelationalRegionImageKind {
@@ -62,7 +62,10 @@ pub(super) struct RegionHistoryRow<T> {
 }
 
 impl RegionHistoryImage {
-    pub(super) fn direct_bases(&self) -> Vec<RelationalDurableMemberLocator> {
+    pub(super) fn direct_bases(
+        &self,
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+    ) -> Vec<RelationalDurableMemberLocator> {
         self.entities
             .iter()
             .filter_map(|row| row.prefix.as_ref())
@@ -83,12 +86,29 @@ pub(crate) struct RegionAdjacencyKinds {
 
 impl<'bytes> RelationalRegionImage<'bytes> {
     pub(crate) fn encode(
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        checkpoint: &mut dyn FnMut(u64, u64) -> Result<(), Cause>,
         partition_id: PartitionId,
         schema_carrier_digest: [u8; 32],
         kind: RelationalRegionImageKind,
         payload: &impl Serialize,
     ) -> Result<(RelationalDurableMemberLocator, Vec<u8>), Cause> {
-        let payload = rmp_serde::to_vec(payload).map_err(|_| Cause::Damaged)?;
+        let mut payload_bytes = Vec::new();
+        let mut writer = AdmittedImageWriter {
+            bytes: &mut payload_bytes,
+            checkpoint,
+            stopped: None,
+        };
+        let encoded = rmp_serde::encode::write(&mut writer, payload);
+        if let Some(cause) = writer.stopped {
+            return Err(cause);
+        }
+        encoded.map_err(|_| Cause::Damaged)?;
+        let payload = payload_bytes;
+        checkpoint(
+            payload.len() as u64,
+            (MAGIC.len() + 39 + payload.len()) as u64,
+        )?;
         let mut bytes = Vec::new();
         bytes
             .try_reserve_exact(MAGIC.len() + 39 + payload.len())
@@ -112,12 +132,15 @@ impl<'bytes> RelationalRegionImage<'bytes> {
     }
 
     pub(crate) fn decode(
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        checkpoint: &mut dyn FnMut(u64, u64) -> Result<(), Cause>,
         bytes: &'bytes [u8],
         locator: RelationalDurableMemberLocator,
         partition_id: PartitionId,
         schema_carrier_digest: [u8; 32],
         kind: RelationalRegionImageKind,
     ) -> Result<Self, Cause> {
+        checkpoint(1, 0)?;
         if bytes.len() as u64 != locator.length
             || <[u8; 32]>::from(Sha256::digest(bytes)) != locator.sha256
         {
@@ -172,5 +195,24 @@ impl RelationalRegionImage<'_> {
             length: bytes.len() as u64,
         };
         Ok((locator, bytes))
+    }
+}
+
+struct AdmittedImageWriter<'a> {
+    bytes: &'a mut Vec<u8>,
+    checkpoint: &'a mut dyn FnMut(u64, u64) -> Result<(), Cause>,
+    stopped: Option<Cause>,
+}
+impl std::io::Write for AdmittedImageWriter<'_> {
+    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+        if let Err(cause) = (self.checkpoint)(0, bytes.len() as u64) {
+            self.stopped = Some(cause);
+            return Err(std::io::Error::other("original checkpoint request stopped"));
+        }
+        self.bytes.extend_from_slice(bytes);
+        Ok(bytes.len())
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
     }
 }

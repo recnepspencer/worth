@@ -209,7 +209,7 @@ fn workflow_stage_retains_the_same_signal_decision_in_its_receipt() {
         )
         .unwrap()
         .start_workflow(&mut workspace)
-        .unwrap();
+        .unwrap().unwrap();
     let run = run
         .advance(
             "start",

@@ -25,7 +25,7 @@ impl WorthQueryCommitIdentity {
                 WorthQueryEvidenceScope::WriteReceiptCommitIdentity,
             )
             .field_shape(WorthQueryEvidenceTag::new("commit_state"), "absent")
-            .seal(),
+            .seal().expect("bounded record identity grammar: literals, primitive record coordinates, or already sealed identity tokens"),
             WorthQueryCommitIdentityInner::RelationalBridge { bridge_identity } => {
                 let commit_id = bridge_identity
                     .relational_commit_id()
@@ -37,7 +37,7 @@ impl WorthQueryCommitIdentity {
                     WorthQueryEvidenceTag::new("relational_commit_id"),
                     commit_id as usize,
                 )
-                .seal()
+                .seal().expect("bounded record identity grammar: literals, primitive record coordinates, or already sealed identity tokens")
             }
             WorthQueryCommitIdentityInner::Preview { evidence_identity } => {
                 evidence_identity.clone()

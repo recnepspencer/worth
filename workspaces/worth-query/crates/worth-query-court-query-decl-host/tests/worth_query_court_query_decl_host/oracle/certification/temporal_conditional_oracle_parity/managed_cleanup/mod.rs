@@ -29,7 +29,7 @@ fn conditional_reinstallation_retains_failed_cleanup_without_repeating_business(
     assert_eq!((contacts.2, contacts.3), (1, 1));
     assert_authoritative_value(
         &world,
-        IntentEffectField::reference(),
+        IntentEffectField::at("IntentEffectField"),
         "payload".to_string(),
     );
     drop(guard);
@@ -77,7 +77,7 @@ fn conditional_reinstallation_retains_failed_cleanup_without_repeating_business(
     );
     assert_authoritative_value(
         &world,
-        IntentEffectField::reference(),
+        IntentEffectField::at("IntentEffectField"),
         "payload".to_string(),
     );
 }

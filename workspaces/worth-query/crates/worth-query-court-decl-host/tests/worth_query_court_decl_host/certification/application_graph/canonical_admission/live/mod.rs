@@ -34,29 +34,27 @@ fn live_nested_decode_requires_original_funding_before_receipt_and_cause_handoff
     let mut live = native::open(&narrow);
     publish(&narrow, 78_002);
     reset();
-    let (baseline, funded) = native::next(&narrow, &mut live, super::FUNDED_WORK);
+    let (primed, _) = native::next(&narrow, &mut live, super::FUNDED_WORK);
+    assert!(matches!(
+        primed,
+        WorthQueryApplicationLiveOutcome::Delivered(_)
+    ));
+    publish(&narrow, 78_005);
+    reset();
+    let (baseline, _) = native::next(&narrow, &mut live, super::FUNDED_WORK);
     let WorthQueryApplicationLiveOutcome::Delivered(update) = baseline else {
         panic!("the same native delivery helper must genuinely deliver before narrowing");
     };
     assert_eq!(update.result().value, super::value());
     assert_eq!(returned(), 1);
     assert_eq!(opaque::ignored_refusals(), 0);
+    // Use the actual funded second seed's accepted consult prefix. Sharing
+    // removes copy work; wire-length subtraction cannot locate this boundary.
+    let work = narrow
+        .second_decode_work
+        .get()
+        .expect("the funded native live owner reached its second decoder seed");
     publish(&narrow, 78_003);
-    use worth_query_host::facade::declaration::application_schema::ApplicationScalarValueBinding;
-    let worth_foundational::facade::AspectValue::String(
-        worth_foundational::facade::InternedString::Raw(wire),
-    ) = super::binding::NestedBinding::encode(&opaque::SwallowingValue(super::value())).unwrap()
-    else {
-        panic!("the installed canonical binding has a string carrier");
-    };
-    // The actual public bill includes the last canonical wire comparison.
-    // Sixteen 256-byte nested tags dominate the admitted seed itself. Removing
-    // that comparison and half a wire reaches this seed, after read one, rather
-    // than underfunding the unrelated source publication. Assertions qualify it.
-    let work = funded
-        .charged_work()
-        .checked_sub(u64::try_from(wire.len() * 3 / 2).unwrap())
-        .expect("a genuine live delivery funds more than its last decoder tail");
     reset();
     let (denied, _) = native::next(&narrow, &mut live, work);
     let WorthQueryApplicationLiveOutcome::ProjectionDenied(denial) = denied else {

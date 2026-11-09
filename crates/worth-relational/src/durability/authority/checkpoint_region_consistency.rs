@@ -7,11 +7,26 @@ use crate::storage::data::{
 };
 
 pub(super) fn validate(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     selected: &RelationalRootRegionCheckpoint,
     captured: &RelationalCheckpointRegion,
+) -> Result<(), crate::durability::data::RelationalRecoveryStop> {
+    let equal = crate::storage::residency::verify_checkpoint_directory(
+        execution,
+        &selected.directory,
+        &captured.directory,
+    )?;
+    validate_value(selected, captured, equal).map_err(Into::into)
+}
+fn validate_value(
+    selected: &RelationalRootRegionCheckpoint,
+    captured: &RelationalCheckpointRegion,
+    directory_equal: bool,
 ) -> Result<(), DurabilityError> {
     if captured.partition_id == selected.partition_id
         && captured.content_digest == selected.content_digest
+        && directory_equal
+        && captured.live_counts == selected.live_counts
         && captured.entity_slots == selected.entity_slots
         && captured.relation_slots == selected.relation_slots
         && captured.unavailable_records == selected.unavailable_records

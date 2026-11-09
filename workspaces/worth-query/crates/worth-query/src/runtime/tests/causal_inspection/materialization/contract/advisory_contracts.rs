@@ -16,7 +16,8 @@ fn advisory_materialization_rejects_mismatched_query_observation_binding() {
     let flow = admit_causal_inspection(request_for(
         reference_set,
         CausalInspectionRichness::MaterializedDetail,
-    ));
+    ))
+    .expect("fixture digest must fit");
     let CausalInspectionProofFlow::Advisory(advisory) = flow else {
         panic!("materialized detail should narrow to advisory");
     };
@@ -62,6 +63,7 @@ fn advisory_materialization_rejects_mismatched_query_observation_binding() {
         CausalInspectionMaterializationPolicy::OfflineInterpretableArtifact,
     )
     .unwrap_err();
+    let error=match error { worth_query_execution::facade::causal_inspection::CausalInspectionConstructionStop::Materialization(denial)=>denial, other=>panic!("expected a semantic denial, got {other:?}"), };
 
     assert_eq!(
         error.kind(),
@@ -101,6 +103,7 @@ fn advisory_replay_materialization_rejects_missing_requested_replay_posture() {
         CausalInspectionMaterializationPolicy::OfflineInterpretableArtifact,
     )
     .unwrap_err();
+    let error=match error { worth_query_execution::facade::causal_inspection::CausalInspectionConstructionStop::Materialization(denial)=>denial, other=>panic!("expected a semantic denial, got {other:?}"), };
 
     assert_eq!(
         error.kind(),

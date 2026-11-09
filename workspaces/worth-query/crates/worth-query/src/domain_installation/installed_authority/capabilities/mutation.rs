@@ -80,7 +80,15 @@ impl<D: 'static> WorthQueryInstalledDomainMutationRequest<D> {
                 )
             },
         )?;
-        Ok(match self.request.run(execution, workspace) {
+        let outcome = self.request.run(execution, workspace).map_err(|cause| {
+            WorthQueryInstalledDomainCapabilityStop::identity_refused(
+                self.witness.clone(),
+                WorthQueryInstalledDomainCapabilityKind::Mutation,
+                Some(self.declaration_identity.clone()),
+                cause,
+            )
+        })?;
+        Ok(match outcome {
             WorthQueryMutationOutcome::Completed(completion) => {
                 let receipt = WorthQueryInstalledDomainExecutionReceipt::new(
                     self.witness,

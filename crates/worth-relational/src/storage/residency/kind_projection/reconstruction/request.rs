@@ -5,6 +5,7 @@ use crate::execution::RelationalExecutionDenialCause;
 use worth_execution::ExecutionRequest;
 
 pub(in crate::storage::residency) fn rebuild_for_request(
+    lane: &ReconstructionLane<'_>,
     partition: &mut PartitionState,
     projection: &[RegionRelationProjection],
     basis: AdjacencyKindBasis,
@@ -13,6 +14,7 @@ pub(in crate::storage::residency) fn rebuild_for_request(
     let id = partition.partition_id;
     drive(request, id, &mut |funding, checkpoint| {
         super::rebuild_using(
+            lane,
             partition,
             projection,
             basis,
@@ -23,13 +25,14 @@ pub(in crate::storage::residency) fn rebuild_for_request(
     })
 }
 pub(in crate::storage::residency) fn rebuild_head_history_for_request(
+    lane: &ReconstructionLane<'_>,
     partition: &mut PartitionState,
     projection: &[RegionRelationProjection],
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<(), Failure> {
     let id = partition.partition_id;
     drive(request, id, &mut |funding, checkpoint| {
-        super::rebuild_head_using(partition, projection, Some(funding), checkpoint)
+        super::rebuild_head_using(lane, partition, projection, Some(funding), checkpoint)
     })
 }
 

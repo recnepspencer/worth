@@ -36,7 +36,7 @@ fn pair_rebase_uses_native_revision_and_never_retains_partial_facts() {
             selected
                 .resolve_entity(
                     &phase,
-                    PrincipalIdentityField::reference(),
+                    PrincipalIdentityField::at("PrincipalIdentityField"),
                     1,
                     &live_scope(),
                     WorthQueryPrincipalResolutionMode::Ordinary,

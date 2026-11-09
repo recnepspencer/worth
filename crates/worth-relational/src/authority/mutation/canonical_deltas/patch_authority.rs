@@ -158,27 +158,3 @@ fn field_level_patch_evidence<'a>(
         operation: super::BorrowedPatchOperation::FieldLevelPatch { patch: field_patch },
     })
 }
-
-/// Original entity retirement borrows the exact cleared aspect roster from the
-/// retained prestate instead of constructing a second publication patch.
-pub(super) fn borrowed_deletion_binding_evidence<'a>(
-    binding: &'a crate::schema::data::LoweredAspectContractBinding,
-    structural_change: RecordStructuralChange,
-    state: Option<&worth_foundational::facade::AuthoritativeRecordAspectState>,
-) -> Option<super::BorrowedAspectDeltaEvidence<'a>> {
-    match &binding.target {
-        AspectBinding::StructuralRegion
-        | AspectBinding::StructuralPartition
-        | AspectBinding::StructuralFacet => structural_evidence(binding, structural_change),
-        AspectBinding::LifecycleTransition => {
-            lifecycle_structural_evidence(binding, structural_change)
-        }
-        _ => state
-            .and_then(|state| state.get(binding.contract.key()))
-            .map(|_| super::BorrowedAspectDeltaEvidence::AuthoritativePatch {
-                operation: super::BorrowedPatchOperation::WholeAspectClear {
-                    contract: &binding.contract,
-                },
-            }),
-    }
-}

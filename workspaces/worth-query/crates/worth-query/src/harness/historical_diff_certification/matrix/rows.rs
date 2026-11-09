@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::facade::foundation::{HistoricalCapabilityDescriptor, HistoricalPathReuseDescriptor};
 use crate::harness::certification::{
     CanonicalCertificationRow, ParityAnchor, RejectionCertificationRow,
@@ -29,7 +30,10 @@ pub(super) fn canonical_row(
     preview: &HistoricalDiffLane,
     branch_diff: &HistoricalDiffLane,
     current_historical_diff: &HistoricalDiffLane,
-) -> CanonicalCertificationRow<HistoricalDiffPerturbationClass, HistoricalDiffLane> {
+) -> Result<
+    CanonicalCertificationRow<HistoricalDiffPerturbationClass, HistoricalDiffLane>,
+    IdentityDerivationDenial,
+> {
     let (control_lane, hostile_lane) = match spec.row_name {
         "current-vs-branch-basis-explicitness" => (current.clone(), branch.clone()),
         "current-vs-historical-basis-explicitness" => (current.clone(), historical.clone()),
@@ -49,11 +53,11 @@ pub(super) fn canonical_row(
     let parity_lane = match spec.row_name {
         "current-vs-branch-basis-explicitness" => current_lane(),
         "current-vs-historical-basis-explicitness" => current_lane(),
-        "historical-materialization-path-explicitness" => historical_lane(),
-        "runtime-vs-store-historical-parity" => store_historical_lane(),
+        "historical-materialization-path-explicitness" => historical_lane()?,
+        "runtime-vs-store-historical-parity" => store_historical_lane()?,
         "diff-comparison-family-explicitness" => branch_diff_lane(),
         "branch-to-branch-diff-shaped" => branch_diff_lane(),
-        "current-to-historical-diff-shaped" => current_historical_diff_lane(),
+        "current-to-historical-diff-shaped" => current_historical_diff_lane()?,
         "result-shape-parity-across-basis-variants" => current_lane(),
         "preview-derived-historical-basis-explicitness" => preview_lane(),
         "admitted-diff-cost-class-explicitness" => branch_diff_lane(),
@@ -61,7 +65,7 @@ pub(super) fn canonical_row(
         other => panic!("unexpected historical diff canonical row {other}"),
     };
 
-    CanonicalCertificationRow {
+    Ok(CanonicalCertificationRow {
         row_name: spec.row_name,
         perturbation_class: spec.perturbation_class,
         hostile_expectation: spec.hostile_expectation,
@@ -69,15 +73,18 @@ pub(super) fn canonical_row(
         control_lane,
         hostile_lane,
         parity_lane,
-    }
+    })
 }
 
 pub(super) fn rejection_row(
     spec: &HistoricalDiffRejectionRowSpec,
-) -> RejectionCertificationRow<
-    HistoricalDiffPerturbationClass,
-    HistoricalDiffLane,
-    HistoricalDiffRejection,
+) -> Result<
+    RejectionCertificationRow<
+        HistoricalDiffPerturbationClass,
+        HistoricalDiffLane,
+        HistoricalDiffRejection,
+    >,
+    IdentityDerivationDenial,
 > {
     let control_lane = current_lane();
     let parity_lane = branch_lane();
@@ -89,7 +96,7 @@ pub(super) fn rejection_row(
                     &HistoricalCapabilityDescriptor::retained_snapshot_for_test(
                         "history:unsupported",
                         HistoricalPathReuseDescriptor::retained_reuse(),
-                    ),
+                    )?,
                 ),
             )
             .expect_err("raw historical capability should not mint an admitted query context"),
@@ -103,13 +110,13 @@ pub(super) fn rejection_row(
         }
         "diff-scope-mismatch" => HistoricalDiffRejection::from_error(&diff_scope_mismatch_error()),
         "forbidden-basis-substitution" => {
-            HistoricalDiffRejection::from_error(&basis_substitution_error())
+            HistoricalDiffRejection::from_error(&basis_substitution_error()?)
         }
         "raw-storage-delta-leakage-forbidden" => {
             HistoricalDiffRejection::from_error(&reject_raw_storage_delta_access())
         }
         "historical-broadening-denied" => {
-            HistoricalDiffRejection::from_error(&historical_broadening_error())
+            HistoricalDiffRejection::from_error(&historical_broadening_error()?)
         }
         "broadening-required-comparison-denial" => {
             HistoricalDiffRejection::from_error(&comparison_broadening_error())
@@ -120,11 +127,11 @@ pub(super) fn rejection_row(
         other => panic!("unexpected historical diff rejection row {other}"),
     };
 
-    RejectionCertificationRow {
+    Ok(RejectionCertificationRow {
         row_name: spec.row_name,
         perturbation_class: spec.perturbation_class,
         control_lane,
         hostile_lane,
         parity_lane,
-    }
+    })
 }

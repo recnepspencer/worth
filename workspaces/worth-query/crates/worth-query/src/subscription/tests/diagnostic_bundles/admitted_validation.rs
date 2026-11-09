@@ -9,7 +9,8 @@ fn admitted_bundle_rejects_trace_with_missing_terminal_certification_stage() {
         &artifacts.declaration,
         &artifacts.admission,
         &artifacts.active_admission,
-    );
+    )
+    .expect("fixture digest must fit");
     let support_evidence =
         QuerySubscriptionSupportEvidence::admission(&artifacts.declaration, &artifacts.admission)
             .unwrap();
@@ -20,11 +21,13 @@ fn admitted_bundle_rejects_trace_with_missing_terminal_certification_stage() {
             QuerySubscriptionSupportSubject::activation(
                 &artifacts.declaration,
                 &prepare_subscription_activation(artifacts.admission.clone()),
-            ),
+            )
+            .expect("fixture digest must fit"),
             QuerySubscriptionSupportEvidence::declaration(&artifacts.declaration),
         )
         .unwrap_err(),
-    );
+    )
+    .expect("fixture digest must fit");
     let selection_context =
         QuerySubscriptionDiagnosticSelectionContext::from_selection(&artifacts.selection);
     let denied_trace = trace_denied_query_subscription_diagnostics(
@@ -65,7 +68,8 @@ fn admitted_bundle_rejects_trace_with_unclaimed_optional_continuation_stage() {
         &artifacts.declaration,
         &artifacts.admission,
         artifacts.continuation_report.as_ref().unwrap(),
-    );
+    )
+    .expect("fixture digest must fit");
     let support_evidence =
         QuerySubscriptionSupportEvidence::admission(&artifacts.declaration, &artifacts.admission)
             .unwrap();
@@ -115,7 +119,8 @@ fn lifecycle_instance_churn_changes_trace_without_changing_family_semantic_label
             &base.declaration,
             &base.admission,
             &base.active_admission,
-        ),
+        )
+        .expect("fixture digest must fit"),
         QuerySubscriptionSupportEvidence::admission(&base.declaration, &base.admission).unwrap(),
     )
     .unwrap()
@@ -125,7 +130,8 @@ fn lifecycle_instance_churn_changes_trace_without_changing_family_semantic_label
             &continued.declaration,
             &continued.admission,
             continued.continuation_report.as_ref().unwrap(),
-        ),
+        )
+        .expect("fixture digest must fit"),
         QuerySubscriptionSupportEvidence::admission(&continued.declaration, &continued.admission)
             .unwrap(),
     )

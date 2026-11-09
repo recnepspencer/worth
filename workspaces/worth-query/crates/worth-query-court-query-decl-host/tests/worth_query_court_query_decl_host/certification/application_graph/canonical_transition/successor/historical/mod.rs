@@ -1,4 +1,5 @@
 pub(crate) use worth_query_testkit_certification_canonical::facade::certification::canonical_transition::successor::historical::*;
+use worth_query_decl::facade::application_schema::ApplicationSchema;
 
 #[test]
 fn held_v1_result_snapshot_output_and_observation_survive_independent_v2_adoption() {
@@ -44,7 +45,7 @@ fn held_v1_result_snapshot_output_and_observation_survive_independent_v2_adoptio
                 |reader| {
                     reader
                         .resolve_entity(
-                            old_schema::DerivedIdentityField::reference(),
+                            old_schema::DerivedIdentityField::at("DerivedIdentityField"),
                             "derived-report".to_owned(),
                         )
                         .unwrap()
@@ -112,7 +113,7 @@ fn held_v1_result_snapshot_output_and_observation_survive_independent_v2_adoptio
                 .field(
                     &execution,
                     &old_identity,
-                    old_schema::DerivedValueField::reference(),
+                    old_schema::DerivedValueField::at("DerivedValueField"),
                 )
                 .unwrap()
                 .unwrap()
@@ -185,7 +186,7 @@ fn held_v1_result_snapshot_output_and_observation_survive_independent_v2_adoptio
                                 let value = reader
                                     .field(
                                         &old_identity,
-                                        old_schema::DerivedValueField::reference(),
+                                        old_schema::DerivedValueField::at("DerivedValueField"),
                                     )
                                     .unwrap()
                                     .unwrap();
@@ -232,7 +233,7 @@ fn held_v1_result_snapshot_output_and_observation_survive_independent_v2_adoptio
                 .field(
                     &execution,
                     &old_identity,
-                    old_schema::DerivedValueField::reference(),
+                    old_schema::DerivedValueField::at("DerivedValueField"),
                 )
                 .unwrap()
                 .unwrap()

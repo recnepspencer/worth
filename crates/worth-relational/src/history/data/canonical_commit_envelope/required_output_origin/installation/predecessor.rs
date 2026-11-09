@@ -8,6 +8,7 @@ pub(super) fn validate<'a>(
     predecessor: &'a crate::mvcc::RelationalRequiredOutputPublication,
     meaning: &crate::mvcc::RequiredOutputPublicationMeaning,
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<&'a CanonicalRequiredOutputOrigin, TransactionCommitError> {
     if predecessor.runtime_instance_id != runtime.runtime.runtime_instance_id() {
@@ -45,17 +46,61 @@ pub(super) fn validate<'a>(
             "predecessor is not the publication selected at the native before image",
         ));
     }
+    if origin.source_scope_owned
+        && origin
+            .members
+            .iter()
+            .any(|member| member.posture != crate::mvcc::RequiredOutputRolePosture::Retire)
+    {
+        let current = runtime.runtime.current_ownership.as_ref().ok_or_else(|| {
+            crate::mvcc::origin_denial("live owned predecessor requires current Native custody")
+        })?;
+        let canonical = current
+            .origins()
+            .find(|other| other.meaning.same_route(&origin.meaning))
+            .ok_or_else(|| {
+                crate::mvcc::origin_denial(
+                    "live owned predecessor is absent from current Native custody",
+                )
+            })?;
+        compare_retained_origin(origin, canonical, context)?;
+        if let crate::publication::ownership::PublicationEvidence::Current(retained) =
+            &predecessor.evidence
+            && retained.basis.as_ref() != Some(basis.descriptor())
+        {
+            return Err(crate::mvcc::origin_denial(
+                "current publication custody has a different Native basis",
+            ));
+        }
+        return Ok(origin.as_ref());
+    }
     // The carried holder is checked against its exact performed native coordinate,
     // not an ancestry search or a caller-supplied description.
     context.checkpoint(1).map_err(origin_request)?;
-    if predecessor.envelope.commit != origin.commit {
+    let crate::publication::ownership::PublicationEvidence::Canonical(envelope) =
+        &predecessor.evidence
+    else {
+        return Err(crate::mvcc::origin_denial(
+            "historical predecessor requires its canonical envelope",
+        ));
+    };
+    if envelope.commit != origin.commit {
         return Err(crate::mvcc::origin_denial(
             "carried origin differs from its canonical envelope",
         ));
     }
-    let canonical = runtime
-        .history
-        .canonical_envelope_for_version(origin.commit.version_id, context).map_err(crate::history::data::canonical_commit_envelope::required_output_origin::installation::relation_stop)?
+    let canonical = validated_history
+        .by_version(
+            origin.commit.version_id,
+            &mut |version, context| {
+                runtime
+                    .history
+                    .canonical_envelope_for_version(version, context)
+            },
+            &runtime.history.execution(),
+            context,
+        )
+        .map_err(super::relation_stop)?
         .ok_or_else(|| {
             crate::mvcc::origin_denial("retained predecessor canonical position absent")
         })?;
@@ -67,7 +112,11 @@ pub(super) fn validate<'a>(
         &basis.inner.root,
         None,
         origin,
-        None,
+        Some(
+            crate::history::data::publication_relations::CurrentPublicationFrame::Complete(
+                canonical.as_view(),
+            ),
+        ),
         &mut |commit| runtime.history.canonical_envelope(commit),
         &mut |version, context| {
             runtime
@@ -76,6 +125,8 @@ pub(super) fn validate<'a>(
         },
         runtime.history.canonical_catalog_len(),
         lease,
+        validated_history,
+        &runtime.history.execution(),
         context,
     )
     .map_err(|stop| super::relation_context(stop, "predecessor", basis, candidate))?;

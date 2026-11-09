@@ -3,7 +3,7 @@ use super::*;
 use serde::{Deserialize, Serialize};
 use worth_query_host::facade::domain::InternedString;
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-pub(super) struct Contributor {
+pub struct Contributor {
     pub(super) kind: members::Kind,
     pub(super) measure: Measure,
     pub(super) source: (u32, (u64, u32)),
@@ -11,12 +11,12 @@ pub(super) struct Contributor {
 }
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "status", content = "value")]
-pub(super) enum Measure {
+pub enum Measure {
     Pending,
     Complete(u64),
 }
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-pub(super) struct Snapshot {
+pub struct Snapshot {
     pub(super) count: u64,
     pub(super) measure: Measure,
     pub(super) contributors: Vec<Contributor>,
@@ -84,12 +84,12 @@ fn encode(value: &Snapshot) -> InternedString {
     InternedString::Raw(toml::to_string(value).expect("finite typed snapshot encodes"))
 }
 fn decode(value: InternedString) -> Option<Snapshot> {
-    let InternedString::Raw(value) = value else {
+    let Some(value) = (value).raw_text() else {
         return None;
     };
     toml::from_str(&value).ok()
 }
-worth_query_value_binding! { pub(super) SnapshotBinding for Snapshot {
+worth_query_value_binding! { pub SnapshotBinding for Snapshot {
     identity: "worth.query.certification.availability-snapshot.v1", scalar: String,
     encode: encode, decode: decode,
 }}

@@ -40,6 +40,10 @@ impl EntityRecordProjection for NamedEntityProjection {
 
 fn raw_interned_string(value: &InternedString) -> Option<&str> {
     match value {
+        InternedString::Stored(value) => {
+            let value = value.as_string();
+            Some(value.as_str())
+        }
         InternedString::Raw(value) => Some(value.as_str()),
         InternedString::Symbol(_) => None,
     }

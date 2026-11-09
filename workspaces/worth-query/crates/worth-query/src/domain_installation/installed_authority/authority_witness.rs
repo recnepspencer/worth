@@ -25,7 +25,7 @@ impl WorthQueryInstalledDomainAuthorityWitness {
                     WorthQueryEvidenceTag::new("world"),
                     authority.world_identity(),
                 )
-                .seal();
+                .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens");
         Self {
             authority,
             witness_identity,

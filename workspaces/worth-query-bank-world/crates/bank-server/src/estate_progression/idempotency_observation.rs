@@ -115,10 +115,10 @@ impl BankIdentityRuntime {
 }
 fn map_observation_denial(denial: Denial) -> BankEstateProgressionDenial {
     match denial {
-        Denial::ExecutionRequest(cause) => BankEstateProgressionDenial::ApplicationEntry(
+        Denial::ExecutionRequest(cause) => BankEstateProgressionDenial::ApplicationEntry(Box::new(
             WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause),
-        ),
-        Denial::Program(cause) => BankEstateProgressionDenial::ProgramAction(cause),
+        )),
+        Denial::Program(cause) => BankEstateProgressionDenial::ProgramAction(Box::new(cause)),
         Denial::ProgramMismatch => BankEstateProgressionDenial::ProgramMismatch,
         Denial::PrincipalBindingInstallation(cause) => {
             BankEstateProgressionDenial::PrincipalBindingInstallation(cause)

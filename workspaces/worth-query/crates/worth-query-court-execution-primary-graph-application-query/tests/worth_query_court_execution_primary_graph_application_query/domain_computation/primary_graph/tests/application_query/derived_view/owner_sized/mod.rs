@@ -54,7 +54,7 @@ fn owner_sized_image_grows_from_actual_census_and_preserves_clean_arcs() {
                     )
                     .resolve_entity(
                         &host_custody.phase_for_application_for_test(&world.application),
-                        AccountLabel::reference(),
+                        AccountLabel::at("AccountLabel"),
                         label.to_owned(),
                         &request,
                         WorthQueryPrincipalResolutionMode::Ordinary,
@@ -69,7 +69,7 @@ fn owner_sized_image_grows_from_actual_census_and_preserves_clean_arcs() {
                 )
                 .resolve_entity(
                     &host_custody.phase_for_application_for_test(&world.application),
-                    PrincipalIdentityField::reference(),
+                    PrincipalIdentityField::at("PrincipalIdentityField"),
                     1_u64,
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -127,7 +127,7 @@ fn owner_sized_image_grows_from_actual_census_and_preserves_clean_arcs() {
                 let scope = current
                     .resolve_entity(
                         &host_custody.phase_for_application_for_test(&world.application),
-                        PrincipalIdentityField::reference(),
+                        PrincipalIdentityField::at("PrincipalIdentityField"),
                         1_u64,
                         &request,
                         WorthQueryPrincipalResolutionMode::Ordinary,

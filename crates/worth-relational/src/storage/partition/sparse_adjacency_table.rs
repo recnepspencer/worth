@@ -113,18 +113,12 @@ impl SparseAdjacencyTable {
             .or_insert_with(|| AdjacencySet::new(policy))
     }
 
-    pub(crate) fn iter(&self) -> impl Iterator<Item = (&usize, &AdjacencySet)> {
+    pub(crate) fn iter(&self) -> impl ExactSizeIterator<Item = (&usize, &AdjacencySet)> {
         self.entries.iter()
     }
 
     pub(crate) fn into_entries(self) -> impl Iterator<Item = (usize, AdjacencySet)> {
         self.entries.into_iter()
-    }
-
-    pub(crate) fn from_entries(entries: impl IntoIterator<Item = (usize, AdjacencySet)>) -> Self {
-        Self {
-            entries: entries.into_iter().collect(),
-        }
     }
 
     pub(crate) fn allocation_bytes(&self) -> u64 {

@@ -34,17 +34,8 @@ impl ApplicationMutationBinding<Catalog> for Binding {
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
     }
-    fn scope_field() -> ApplicationFieldRef<
-        Catalog,
-        Directory,
-        DirectoryFacts,
-        DirectoryIdentity,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DirectoryIdentity::reference()
+    fn scope_field() -> DirectoryIdentity {
+        DirectoryIdentity::at("DirectoryIdentity")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         Catalog,
@@ -76,6 +67,9 @@ impl ApplicationMutationIntent<Catalog> for RenameExact {
         &self.0
     }
     fn scope_binding(&self) -> <Binding as ApplicationMutationBinding<Catalog>>::ScopeBinding {
-        ApplicationMutationFieldScope::new(DirectoryIdentity::reference(), self.0.directory.clone())
+        ApplicationMutationFieldScope::new(
+            DirectoryIdentity::at("DirectoryIdentity"),
+            self.0.directory.clone(),
+        )
     }
 }

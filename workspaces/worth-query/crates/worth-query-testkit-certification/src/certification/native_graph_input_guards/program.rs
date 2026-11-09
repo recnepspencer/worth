@@ -11,136 +11,7 @@ pub struct Contribution;
 impl ApplicationSchemaContribution<Schema> for Contribution {
     const IDENTITY: ApplicationSchemaContributionIdentity =
         ApplicationSchemaContributionIdentity::new("worth.query.path-input.contribution.v1");
-    fn register_members(
-        builder: ApplicationSchemaDeclarationBuilder<Schema>,
-    ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-        let builder = super::path_value_targets::declare(builder);
-        let builder = super::retiring_actions::declare(super::selection_schema::declare(builder));
-        let builder = super::reuse_actions::declare(super::peer_audit::declare(builder));
-        let builder = super::child_actions::declare(builder);
-        let builder = super::path_signing::declare(builder);
-        let builder = super::reference_input::declare(builder);
-        builder
-            .entity(Mapping::reference())
-            .entity(Principal::reference())
-            .entity(Parent::reference())
-            .entity(Row::reference())
-            .entity(Audit::reference())
-            .aspect(Mapping::reference(), MappingFacts::reference())
-            .aspect(Principal::reference(), PrincipalFacts::reference())
-            .aspect(Parent::reference(), ParentFacts::reference())
-            .aspect(Row::reference(), RowFacts::reference())
-            .aspect(Audit::reference(), AuditFacts::reference())
-            .field(Mapping::reference(), ExternalIdentity::reference())
-            .field(Mapping::reference(), MappingStatus::reference())
-            .field(Principal::reference(), PrincipalIdentity::reference())
-            .unique_field(Parent::reference(), ParentIdentity::reference())
-            .field(Parent::reference(), Company::reference())
-            .field(Parent::reference(), ParentRevision::reference())
-            .field(Row::reference(), RowIdentity::reference())
-            .field(Row::reference(), RowValue::reference())
-            .field(Audit::reference(), AuditIdentity::reference())
-            .field(Audit::reference(), AuditValue::reference())
-            .relation(
-                MappingTarget::reference(),
-                Mapping::reference(),
-                Principal::reference(),
-            )
-            .relation(
-                ParentRows::reference(),
-                Parent::reference(),
-                Row::reference(),
-            )
-            .principal_binding(PrincipalBinding::reference())
-            .operation(
-                Save::reference()
-                    .definition()
-                    .no_external_effect()
-                    .no_aftermath()
-                    .finish()
-                    .with_body(save_body())
-                    .unwrap(),
-            )
-            .operation(
-                Change::reference()
-                    .definition()
-                    .no_external_effect()
-                    .no_aftermath()
-                    .finish()
-                    .with_body(
-                        Change::reference()
-                            .body()
-                            .set_optional_input(Company::reference(), "company")
-                            .unwrap()
-                            .finish()
-                            .unwrap(),
-                    )
-                    .unwrap(),
-            )
-            .operation(
-                Introduce::reference()
-                    .definition()
-                    .no_external_effect()
-                    .no_aftermath()
-                    .finish()
-                    .with_body(
-                        Introduce::reference()
-                            .body()
-                            .in_scope(Row::reference())
-                            .unwrap()
-                            .create_in_scope(Parent::reference(), "parent")
-                            .unwrap()
-                            .initialize_input(ParentIdentity::reference(), "identity")
-                            .unwrap()
-                            .initialize_optional_input(Company::reference(), "optional_company")
-                            .unwrap()
-                            .initialize(ParentRevision::reference(), 1)
-                            .unwrap()
-                            .link_to_scope(ParentRows::reference(), "parent-row")
-                            .unwrap()
-                            .finish()
-                            .unwrap(),
-                    )
-                    .unwrap(),
-            )
-            .operation_read_field(Change::reference(), ParentIdentity::reference())
-            .operation_read_field(Introduce::reference(), RowIdentity::reference())
-            .operation_projection_work_budget(Save::reference(), 128)
-            .operation_projection_work_budget(Change::reference(), 32)
-            .operation_projection_work_budget(Introduce::reference(), 32)
-            .application_mutation_binding::<SaveBinding>()
-            .application_mutation_binding::<ChangeBinding>()
-            .application_mutation_binding::<IntroduceBinding>()
-            .application_query(super::row_query::definition())
-            .application_query(super::child_query::definition())
-            .application_query(super::child_query::archive_definition())
-            .application_query_binding::<super::child_query::ReadArchiveBinding>()
-            .application_query_binding::<super::child_query::ReadBinding>()
-            .application_query_binding::<super::row_query::ReadBinding>()
-            .application_query(super::audit_query::definition())
-            .application_query_binding::<super::audit_query::ReadBinding>()
-            .application_query(super::revision_query::definition())
-            .application_query_binding::<super::revision_query::ReadBinding>()
-            .operation(
-                super::path_value::Bump::reference()
-                    .definition()
-                    .no_external_effect()
-                    .no_aftermath()
-                    .finish()
-                    .with_body(super::path_value::body())
-                    .unwrap(),
-            )
-            .operation_projection_work_budget(super::path_value::Bump::reference(), 256)
-            .operation_read_field(
-                super::path_value::Bump::reference(),
-                RowIdentity::reference(),
-            )
-            .application_mutation_binding::<super::path_value_binding::BumpBinding>()
-            .application_query(super::snapshot_query::definition())
-            .application_query_binding::<super::snapshot_query::ReadBinding>()
-            .application_query(super::current_snapshot_query::definition())
-            .application_query_binding::<super::current_snapshot_query::ReadBinding>()
-    }
+    type Members = (super::schema::InputModel, Contracts);
 }
 impl WorthQueryApplicationContribution<Schema> for Contribution {
     type Configuration = ();
@@ -219,12 +90,7 @@ impl ApplicationProgramDefinition<Schema> for Program {
     }
 }
 pub fn schema() -> ApplicationSchemaDeclaration<Schema> {
-    ApplicationSchemaDeclarationBuilder::<Schema>::for_schema()
-        .contributions()
-        .register::<Contribution>()
-        .unwrap()
-        .build()
-        .unwrap()
+    Schema::declaration().unwrap()
 }
 pub fn validated(
     schema: &ApplicationSchemaDeclaration<Schema>,
@@ -233,4 +99,115 @@ pub fn validated(
         .with_schema(schema)
         .validated_program()
         .unwrap()
+}
+
+pub struct Contracts;
+impl worth_query_decl::facade::application_schema::fragment::Registration<Schema> for Contracts {
+    fn register(
+        builder: ApplicationSchemaDeclarationBuilder<Schema>,
+    ) -> Result<ApplicationSchemaDeclarationBuilder<Schema>, ApplicationSchemaDeclarationDenial>
+    {
+        Ok({
+            let builder = super::path_value_targets::declare(builder);
+            let builder =
+                super::retiring_actions::declare(super::selection_schema::declare(builder));
+            let builder = super::reuse_actions::declare(super::peer_audit::declare(builder));
+            let builder = super::child_actions::declare(builder);
+            let builder = super::path_signing::declare(builder);
+            let builder = super::reference_input::declare(builder);
+            builder
+                .principal_binding(PrincipalBinding::reference())
+                .operation(
+                    Save::reference()
+                        .definition()
+                        .no_external_effect()
+                        .no_aftermath()
+                        .finish()
+                        .with_body(save_body())
+                        .unwrap(),
+                )
+                .operation(
+                    Change::reference()
+                        .definition()
+                        .no_external_effect()
+                        .no_aftermath()
+                        .finish()
+                        .with_body(
+                            Change::reference()
+                                .body()
+                                .set_optional_input(Company::at("Company"), "company")
+                                .unwrap()
+                                .finish()
+                                .unwrap(),
+                        )
+                        .unwrap(),
+                )
+                .operation(
+                    Introduce::reference()
+                        .definition()
+                        .no_external_effect()
+                        .no_aftermath()
+                        .finish()
+                        .with_body(
+                            Introduce::reference()
+                                .body()
+                                .in_scope(Row::reference())
+                                .unwrap()
+                                .create_in_scope(Parent::reference(), "parent")
+                                .unwrap()
+                                .initialize_input(ParentIdentity::at("ParentIdentity"), "identity")
+                                .unwrap()
+                                .initialize_optional_input(
+                                    Company::at("Company"),
+                                    "optional_company",
+                                )
+                                .unwrap()
+                                .initialize(ParentRevision::at("ParentRevision"), 1)
+                                .unwrap()
+                                .link_to_scope(ParentRows::reference(), "parent-row")
+                                .unwrap()
+                                .finish()
+                                .unwrap(),
+                        )
+                        .unwrap(),
+                )
+                .operation_read_field(Change::reference(), ParentIdentity::at("ParentIdentity"))
+                .operation_read_field(Introduce::reference(), RowIdentity::at("RowIdentity"))
+                .operation_projection_work_budget(Save::reference(), 128)
+                .operation_projection_work_budget(Change::reference(), 32)
+                .operation_projection_work_budget(Introduce::reference(), 32)
+                .application_mutation_binding::<SaveBinding>()
+                .application_mutation_binding::<ChangeBinding>()
+                .application_mutation_binding::<IntroduceBinding>()
+                .application_query(super::row_query::definition())
+                .application_query(super::child_query::definition())
+                .application_query(super::child_query::archive_definition())
+                .application_query_binding::<super::child_query::ReadArchiveBinding>()
+                .application_query_binding::<super::child_query::ReadBinding>()
+                .application_query_binding::<super::row_query::ReadBinding>()
+                .application_query(super::audit_query::definition())
+                .application_query_binding::<super::audit_query::ReadBinding>()
+                .application_query(super::revision_query::definition())
+                .application_query_binding::<super::revision_query::ReadBinding>()
+                .operation(
+                    super::path_value::Bump::reference()
+                        .definition()
+                        .no_external_effect()
+                        .no_aftermath()
+                        .finish()
+                        .with_body(super::path_value::body())
+                        .unwrap(),
+                )
+                .operation_projection_work_budget(super::path_value::Bump::reference(), 256)
+                .operation_read_field(
+                    super::path_value::Bump::reference(),
+                    RowIdentity::at("RowIdentity"),
+                )
+                .application_mutation_binding::<super::path_value_binding::BumpBinding>()
+                .application_query(super::snapshot_query::definition())
+                .application_query_binding::<super::snapshot_query::ReadBinding>()
+                .application_query(super::current_snapshot_query::definition())
+                .application_query_binding::<super::current_snapshot_query::ReadBinding>()
+        })
+    }
 }

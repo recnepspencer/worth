@@ -114,7 +114,9 @@ pub(super) const fn admission(kind: Query) -> BankApplicationQueryAdmissionDenia
         Query::DisclosureContractInvalid => Bank::DisclosureContractInvalid,
         Query::DisclosureAuthorizationMismatch => Bank::DisclosureAuthorizationMismatch,
         Query::InternalComputationDenied => Bank::InternalComputationDenied,
-        Query::Parameter(kind) => Bank::Parameter(parameter(kind)),
+        Query::Parameter(kind) => {
+            Bank::Parameter(BankApplicationQueryParameterDenialKind::from_query(kind))
+        }
         Query::WorkLimitExceeded => Bank::WorkLimitExceeded,
         Query::CanonicalWorkDenied => Bank::CanonicalWorkDenied,
         Query::GraphReadPlan(kind) => Bank::GraphReadPlan(graph_read(kind)),
@@ -124,18 +126,20 @@ pub(super) const fn admission(kind: Query) -> BankApplicationQueryAdmissionDenia
     }
 }
 
-const fn parameter(kind: QueryParameter) -> BankApplicationQueryParameterDenialKind {
-    use BankApplicationQueryParameterDenialKind as Bank;
-    match kind {
-        QueryParameter::ParameterSetMismatch => Bank::ParameterSetMismatch,
-        QueryParameter::ParameterTypeMismatch => Bank::ParameterTypeMismatch,
-        QueryParameter::CanonicalEntryBudgetExceeded => Bank::CanonicalEntryBudgetExceeded,
-        QueryParameter::CanonicalEncodedByteBudgetExceeded => {
-            Bank::CanonicalEncodedByteBudgetExceeded
-        }
-        QueryParameter::CanonicalDigestSlotRejected => Bank::CanonicalDigestSlotRejected,
-        QueryParameter::UnsupportedSortImplementation(cause) => {
-            Bank::UnsupportedSortImplementation(cause)
+impl BankApplicationQueryParameterDenialKind {
+    pub const fn from_query(kind: QueryParameter) -> Self {
+        use BankApplicationQueryParameterDenialKind as Bank;
+        match kind {
+            QueryParameter::ParameterSetMismatch => Bank::ParameterSetMismatch,
+            QueryParameter::ParameterTypeMismatch => Bank::ParameterTypeMismatch,
+            QueryParameter::CanonicalEntryBudgetExceeded => Bank::CanonicalEntryBudgetExceeded,
+            QueryParameter::CanonicalEncodedByteBudgetExceeded => {
+                Bank::CanonicalEncodedByteBudgetExceeded
+            }
+            QueryParameter::CanonicalDigestSlotRejected => Bank::CanonicalDigestSlotRejected,
+            QueryParameter::UnsupportedSortImplementation(cause) => {
+                Bank::UnsupportedSortImplementation(cause)
+            }
         }
     }
 }

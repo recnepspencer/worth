@@ -32,7 +32,7 @@ impl WorthQueryGraphCompositionBreadth {
                     WorthQueryEvidenceTag::new("symbolic_relations"),
                     symbolic_relation_declaration_count,
                 )
-                .seal();
+                .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens");
         Self {
             component_count,
             symbolic_entity_declaration_count,

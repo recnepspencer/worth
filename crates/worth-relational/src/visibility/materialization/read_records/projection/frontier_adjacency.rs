@@ -79,7 +79,7 @@ impl VisibilityProjectionView {
         )
     }
 
-    fn bounded_relations_for_frontier(
+    pub(in crate::visibility::materialization::read_records) fn bounded_relations_for_frontier(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_ids: &BTreeSet<EntityId>,

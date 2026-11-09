@@ -1,9 +1,11 @@
 use super::*;
+use crate::aspects::FieldKey;
 use crate::aspects::{
     AbsenceLaw, AspectContract, AspectContractRevision, AspectEvolutionPolicy, AspectIdentity,
     AspectKey, AspectMask, AuthoritativeRecordAspectPatch, CanonicalFieldPath, FieldDeclaration,
     FieldRequirement, StructAspectShape,
 };
+use crate::values::AspectValue;
 use crate::values::{InternedString, ScalarAspectType};
 use worth_proof::TransitionOutcome;
 
@@ -59,7 +61,7 @@ fn field_application_merges_canonical_streams_with_sets_after_clears() {
     let bound = field_patch
         .struct_field_merge_allocation_bound(&current)
         .unwrap();
-    let result = apply(&current, field_patch);
+    let result = current.patched(field_patch.field_sets(), field_patch.field_clears());
     assert_eq!(
         result
             .fields()

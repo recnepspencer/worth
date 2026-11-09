@@ -50,3 +50,7 @@ pub use crate::validation::candidate_source::{
 pub use crate::validation::DuplicateCustomInvariantRegistration;
 
 pub use worth_foundational::facade::AggregateLineageKind;
+
+pub use crate::validation::data::{
+    CustomInvariantAccessDenial, CustomInvariantAccessDenialKind, CustomInvariantFailureCause,
+};

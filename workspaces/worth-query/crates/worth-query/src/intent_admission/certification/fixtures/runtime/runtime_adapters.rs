@@ -27,6 +27,7 @@ pub(super) struct CertificationSubscriptionActivation;
 impl WorthQueryRuntimeSubscriptionActivationAdapter for CertificationSubscriptionActivation {
     fn support_evidence_identity(&self) -> WorthQueryEvidenceIdentity {
         runtime_subscription_support_evidence_identity("certification-subscription-activation")
+            .expect("fixed certification activation support literal is within digest bounds")
     }
 
     fn admit_activation(
@@ -34,8 +35,8 @@ impl WorthQueryRuntimeSubscriptionActivationAdapter for CertificationSubscriptio
         view_name: &str,
         activation: &SubscriptionActivationInput,
     ) -> Result<SubscriptionActivationBoundaryReceipt, WorthQueryWorkspaceError> {
-        let receipt = self.build_subscription_activation_receipt(view_name, activation);
-        Ok(self.build_subscription_activation_boundary_receipt(view_name, activation, receipt))
+        let receipt = self.build_subscription_activation_receipt(view_name, activation)?;
+        Ok(self.build_subscription_activation_boundary_receipt(view_name, activation, receipt)?)
     }
 }
 
@@ -52,8 +53,8 @@ impl WorthQueryRuntimePreviewBasisAdapter for CertificationPreviewBasis {
             authority,
             label.clone(),
             effect_policy,
-            WorthQueryBasisAdmissionEvidenceRow::rows_from_values(["certification-preview-basis"]),
-        ))
+            WorthQueryBasisAdmissionEvidenceRow::rows_from_values(["certification-preview-basis"])?,
+        )?)
     }
 }
 

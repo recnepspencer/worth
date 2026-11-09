@@ -50,7 +50,7 @@ impl ApplicationMutationIntent<CapabilitySchema> for Original {
         &self,
     ) -> <SetRetentionBinding as ApplicationMutationBinding<CapabilitySchema>>::ScopeBinding {
         <SetRetentionBinding as ApplicationMutationBinding<CapabilitySchema>>::ScopeBinding::new(
-            DocumentIdentityField::reference(),
+            DocumentIdentityField::at("DocumentIdentityField"),
             self.input.identity.clone(),
         )
     }

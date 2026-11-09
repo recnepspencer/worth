@@ -1,5 +1,6 @@
 use super::*;
 use crate::identity::data::KindId;
+use crate::storage::substrate::maintenance::ReconstructionLane;
 
 // Numeric projection keys take one comparison unit. Include both node search
 // and rearrangement; never use the node's unused allocation slots as work.
@@ -14,12 +15,15 @@ fn ordered_lookup_work(entries: usize) -> Result<u64, Cause> {
 
 /// Owned relations are reconstructed from record metadata. Peer relations use
 /// only the projection authenticated by this region's canonical root leaf.
+#[cfg(test)]
 pub(in crate::storage::residency) fn rebuild(
+    lane: &ReconstructionLane<'_>,
     partition: &mut PartitionState,
     projection: &[RegionRelationProjection],
     basis: AdjacencyKindBasis,
 ) -> Result<(), Cause> {
     rebuild_controlled(
+        lane,
         partition,
         projection,
         basis,
@@ -29,15 +33,17 @@ pub(in crate::storage::residency) fn rebuild(
 }
 
 pub(in crate::storage::residency) fn rebuild_controlled(
+    lane: &ReconstructionLane<'_>,
     partition: &mut PartitionState,
     projection: &[RegionRelationProjection],
     basis: AdjacencyKindBasis,
     checkpoint: &mut ProjectionCheckpoint<'_>,
     retain: &mut ProjectionRetention<'_>,
 ) -> Result<(), Cause> {
-    rebuild_using(partition, projection, basis, None, checkpoint, retain)
+    rebuild_using(lane, partition, projection, basis, None, checkpoint, retain)
 }
 fn rebuild_using(
+    lane: &ReconstructionLane<'_>,
     partition: &mut PartitionState,
     projection: &[RegionRelationProjection],
     basis: AdjacencyKindBasis,
@@ -74,12 +80,14 @@ fn rebuild_using(
             checkpoint(ordered_lookup_work(expected.len())?, 0)?;
             expected.remove(&id);
         }
-        project_owned_history(partition, &mut expected, checkpoint)?;
+        project_owned_history(lane, partition, &mut expected, checkpoint)?;
         if !claims_match(&expected, projection, checkpoint)? {
             return Err(Cause::IntegrityMismatch);
         }
     }
-    installation::install(partition, &expected, basis, request, checkpoint, retain)?;
+    installation::install(
+        lane, partition, &expected, basis, request, checkpoint, retain,
+    )?;
     if !historical {
         for entry in expected
             .values()
@@ -128,6 +136,7 @@ fn rebuild_using(
 /// The digest is authenticated by the caller. Head can corroborate current
 /// owned claims; Full must later reconstruct all owned historical claims.
 fn rebuild_head_using(
+    lane: &ReconstructionLane<'_>,
     partition: &mut PartitionState,
     projection: &[RegionRelationProjection],
     request: Option<&request::RequestProjection<'_, '_, '_>>,
@@ -145,7 +154,7 @@ fn rebuild_head_using(
         }
     }
     let mut known = BTreeMap::new();
-    project_owned_history(partition, &mut known, checkpoint)?;
+    project_owned_history(lane, partition, &mut known, checkpoint)?;
     for (relation, claim) in known {
         checkpoint(ordered_lookup_work(expected.len())?, 0)?;
         let supplied = expected.get(&relation).ok_or(Cause::IntegrityMismatch)?;
@@ -171,6 +180,7 @@ fn rebuild_head_using(
         }
     }
     installation::install(
+        lane,
         partition,
         &expected,
         AdjacencyKindBasis::Historical,
@@ -180,24 +190,27 @@ fn rebuild_head_using(
     )
 }
 
+#[cfg(test)]
 pub(in crate::storage::residency) fn canonical_history(
+    lane: &ReconstructionLane<'_>,
     partition: &PartitionState,
 ) -> Result<Vec<RegionRelationProjection>, Cause> {
-    canonical_history_controlled(partition, &mut |_, _| Ok(()))
+    canonical_history_controlled(lane, partition, &mut |_, _| Ok(()))
 }
 
 pub(in crate::storage::residency) fn canonical_history_controlled(
+    lane: &ReconstructionLane<'_>,
     partition: &PartitionState,
     checkpoint: &mut ProjectionCheckpoint<'_>,
 ) -> Result<Vec<RegionRelationProjection>, Cause> {
     let mut expected = BTreeMap::new();
-    for entry in capture_controlled(partition, AdjacencyKindBasis::Historical, checkpoint)? {
+    for entry in capture_controlled(lane, partition, AdjacencyKindBasis::Historical, checkpoint)? {
         checkpoint(1, 4096)?;
         if entry.relation.partition_id != partition.partition_id {
             expected.insert(entry.relation, entry);
         }
     }
-    project_owned_history(partition, &mut expected, checkpoint)?;
+    project_owned_history(lane, partition, &mut expected, checkpoint)?;
     let mut answer = Vec::new();
     for entry in expected.into_values() {
         checkpoint(1, 2 * size_of::<RegionRelationProjection>() as u64)?;

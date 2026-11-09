@@ -9,19 +9,13 @@ pub struct Parameters;
 pub struct ValueSlot;
 pub struct IdentitySlot;
 worth_query_portable_type!(IdentitySlot => "canonical-companion.first-identity.v1");
-pub fn identity_field() -> ApplicationQueryResultFieldRef<
-    ValueQuery,
-    IdentitySlot,
-    CanonicalSchema,
-    Companion,
-    CompanionFacts,
-    CompanionIdentityField,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("identity", CompanionIdentityField::reference())
+pub fn identity_field(
+) -> ApplicationQueryResultFieldRef<ValueQuery, IdentitySlot, CanonicalSchema, CompanionIdentityField>
+{
+    ApplicationQueryResultFieldRef::new(
+        "identity",
+        CompanionIdentityField::at("CompanionIdentityField"),
+    )
 }
 worth_query_portable_type!(ValueSlot => "canonical-companion.value-slot.v1");
 worth_query_structured_value_binding!(pub ParametersBinding for Parameters { identity: "canonical-companion.parameters.v1" });
@@ -29,23 +23,13 @@ worth_query_structured_value_binding!(pub ResultBinding for String { identity: "
 worth_query_application_query!(pub ValueQuery for CanonicalSchema, identity "canonical-companion.read.v1",
     parameters ParametersBinding, result ResultBinding, scope Companion => "Companion", name "companion_value");
 
-pub fn value_field() -> ApplicationQueryResultFieldRef<
-    ValueQuery,
-    ValueSlot,
-    CanonicalSchema,
-    Companion,
-    CompanionFacts,
-    CompanionValueField,
-    String,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("value", CompanionValueField::reference())
+pub fn value_field(
+) -> ApplicationQueryResultFieldRef<ValueQuery, ValueSlot, CanonicalSchema, CompanionValueField> {
+    ApplicationQueryResultFieldRef::new("value", CompanionValueField::at("CompanionValueField"))
 }
 
 pub fn definition(
-) -> ApplicationQueryDefinition<CanonicalSchema, ValueQuery, Parameters, String, Companion> {
+) -> ApplicationQueryDefinitionBuilder<CanonicalSchema, ValueQuery, Parameters, String, Companion> {
     let shape = ApplicationQueryResultShapeBuilder::<
         CanonicalSchema,
         ValueQuery,
@@ -65,8 +49,6 @@ pub fn definition(
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<CanonicalSchema, ValueQuery> for String {
     fn project(
@@ -83,15 +65,7 @@ pub struct ReadValue {
 }
 worth_query_structured_value_binding!(pub ReadInputBinding for ReadValue { identity: "canonical-companion.read-input.v1" });
 pub struct ReadBinding;
-pub type ReadScope = ApplicationQueryFieldScope<
-    CanonicalSchema,
-    Companion,
-    CompanionFacts,
-    CompanionIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type ReadScope = ApplicationQueryFieldScope<CompanionIdentityField>;
 impl ApplicationQueryBinding<CanonicalSchema> for ReadBinding {
     type Input = ReadValue;
     type InputBinding = ReadInputBinding;
@@ -106,17 +80,8 @@ impl ApplicationQueryBinding<CanonicalSchema> for ReadBinding {
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "canonical-companion.read-binding.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        CanonicalSchema,
-        Companion,
-        CompanionFacts,
-        CompanionIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        CompanionIdentityField::reference()
+    fn scope_field() -> CompanionIdentityField {
+        CompanionIdentityField::at("CompanionIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         CanonicalSchema,
@@ -135,6 +100,9 @@ impl ApplicationQueryIntent<CanonicalSchema> for ReadValue {
         ApplicationQueryParameterSet::new()
     }
     fn into_scope(self) -> ReadScope {
-        ReadScope::new(CompanionIdentityField::reference(), self.identity)
+        ReadScope::new(
+            CompanionIdentityField::at("CompanionIdentityField"),
+            self.identity,
+        )
     }
 }

@@ -9,7 +9,7 @@ pub(super) fn workflow_section_lane() -> UnifiedFacadeLane {
     let facade = WorthQueryApplicationFacade::runtime_backed_default();
     let preflight = execution_preflights::direct_runtime_preflight();
     let support = facade.support_matrix();
-    let report = facade.support_report();
+    let report = facade.support_report().expect("fixture digest must fit");
     let (section, counters) =
         facade.resolve_config_section(WorthQueryConfigSectionFamily::Relational);
     UnifiedFacadeLane::new(
@@ -41,7 +41,7 @@ pub(super) fn support_sync_lane() -> UnifiedFacadeLane {
     let facade = WorthQueryApplicationFacade::runtime_backed_default();
     let preflight = execution_preflights::direct_runtime_preflight();
     let support = facade.support_matrix();
-    let report = facade.support_report();
+    let report = facade.support_report().expect("fixture digest must fit");
     let query_context = facade
         .query_context_capability()
         .expect("query context capability should be admitted in the unified facade");
@@ -91,7 +91,7 @@ pub(super) fn identity_evolution_support_sync_lane() -> UnifiedFacadeLane {
     let facade = WorthQueryApplicationFacade::runtime_backed_default();
     let preflight = execution_preflights::direct_runtime_preflight();
     let support = facade.support_matrix();
-    let report = facade.support_report();
+    let report = facade.support_report().expect("fixture digest must fit");
     let identity = facade
         .identity_evolution_capability()
         .expect("identity evolution capability should be admitted in the unified facade");

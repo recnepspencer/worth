@@ -11,6 +11,10 @@
 incremental = true
 rustflags = [
     "-C", "overflow-checks=on",
+    # Native code and compiler courts share one artifact graph. Keep full type
+    # diagnostics here, rather than appending a court-only flag that recompiles
+    # shared units (and avoid unstable .long-type-* diagnostic file paths).
+    "--verbose",
     # WORTH UI selects its Linux windowing system at compile time. The arms and
     # their exhaustiveness guard are nested under cfg(target_os = "linux"), so
     # carrying this on every target is inert off Linux. It lives in [build]
@@ -22,6 +26,12 @@ rustflags = [
     # offers hardware adapters no surface formats; products build "hardware".
     "--cfg", "worth_ui_adapter=\"hardware\"",
 ]
+
+# Relocate executable metadata away from the arm64 dyld shared-cache slide
+# range, then validate every mapped segment before publication (#67). Choosing a
+# linker preserves all [build].rustflags; target.rustflags would replace them.
+[target.aarch64-apple-darwin]
+linker = "scripts/macos_linker"
 
 # Keep the compiler's safety/windowing flags above when choosing LLVM's linker.
 [target.x86_64-pc-windows-msvc]

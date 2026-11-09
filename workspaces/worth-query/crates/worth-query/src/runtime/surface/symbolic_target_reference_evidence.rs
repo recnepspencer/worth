@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::WorthQueryEntityIdentity;
 use crate::runtime::{
     WorthQueryMutationSymbolIdentity, WorthQueryMutationTargetCollectionIdentity,
@@ -26,8 +27,8 @@ impl WorthQuerySymbolicTargetReferenceEvidence {
         reference: &BridgeSymbolicTargetReferenceBundle,
         _resolved_entity_identity: Option<&WorthQueryEntityIdentity>,
         target_collection: Option<&str>,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             family: match reference.family() {
                 BridgeSymbolicTargetReferenceFamily::SameBatchDeclaredTarget => {
                     crate::runtime::WorthQuerySymbolicTargetReferenceFamily::SameBatchDeclaredTarget
@@ -41,34 +42,36 @@ impl WorthQuerySymbolicTargetReferenceEvidence {
             symbol: WorthQueryMutationSymbolIdentity::from_bridge_symbolic_target(
                 "symbolic-target-reference",
                 reference.symbol_handle(),
-            ),
+            )?,
             resolved_entity_identity: WorthQueryEntityIdentity::from_relational_record(
                 reference
                     .resolved_entity_identity_handle()
                     .relational_record_parts(),
             ),
-            target_collection: reference.target_collection().or(target_collection).map(
-                |collection| {
+            target_collection: reference
+                .target_collection()
+                .or(target_collection)
+                .map(|collection| {
                     WorthQueryMutationTargetCollectionIdentity::new("symbolic-target", collection)
-                },
-            ),
-        }
+                })
+                .transpose()?,
+        })
     }
 
     pub(in crate::runtime) fn from_reference(
         reference: &crate::runtime::WorthQuerySymbolicTargetReference,
         resolved_entity_identity: &WorthQueryEntityIdentity,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             family: reference.family(),
             outcome: WorthQuerySymbolicTargetReferenceOutcome::SameBatchSymbolicTarget,
             symbol: WorthQueryMutationSymbolIdentity::new(
                 "symbolic-target-reference",
                 reference.symbol(),
-            ),
+            )?,
             resolved_entity_identity: resolved_entity_identity.clone(),
             target_collection: reference.target_collection_identity().cloned(),
-        }
+        })
     }
 
     pub fn family(&self) -> crate::runtime::WorthQuerySymbolicTargetReferenceFamily {
@@ -101,10 +104,12 @@ impl WorthQuerySymbolicTargetReferenceEvidence {
             family:
                 crate::runtime::WorthQuerySymbolicTargetReferenceFamily::SameBatchDeclaredTarget,
             outcome: WorthQuerySymbolicTargetReferenceOutcome::SameBatchSymbolicTarget,
-            symbol: WorthQueryMutationSymbolIdentity::new("symbolic-target-reference", symbol),
+            symbol: WorthQueryMutationSymbolIdentity::new("symbolic-target-reference", symbol)
+                .expect("fixture digest must fit"),
             resolved_entity_identity,
             target_collection: target_collection.map(|collection| {
                 WorthQueryMutationTargetCollectionIdentity::new("symbolic-target", collection)
+                    .expect("fixture digest must fit")
             }),
         }
     }

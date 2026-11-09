@@ -7,8 +7,7 @@ use std::marker::PhantomData;
 use worth_query_consumer_values::{PlanarAdjustmentResult, PlanarMutationDenial, PositiveLength};
 use worth_query_decl::facade::{
     application_operation::*, application_schema::*, worth_query_operation,
-    worth_query_operation_reads, worth_query_operation_writes,
-    worth_query_structured_value_binding,
+    worth_query_operation_reads, worth_query_structured_value_binding,
 };
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
@@ -16,8 +15,8 @@ use worth_query_host::facade::primary_graph::{
 };
 
 use super::facts::{
-    self, EntryFault, EntryNumber, EntryRegion, EntrySet, EntrySetKey, EntrySetMember,
-    EntryValueBits, EntryWork, SetEntry,
+    EntryFault, EntryNumber, EntryRegion, EntrySet, EntrySetKey, EntrySetMember, EntryValueBits,
+    EntryWork, SetEntry,
 };
 use super::*;
 
@@ -33,11 +32,7 @@ worth_query_structured_value_binding!(pub(super) RegionTotalsDemandInputBinding 
     identity: "worth.query.certification.region-totals-demand-input.v1"
 });
 worth_query_operation!(pub(super) TotalRegions for Schema: TopologySchemaBinding, input RegionTotalsDemandInputBinding);
-worth_query_operation_reads!(TotalRegions => [
-    Body, BodyKey, PositionY, EntrySet, EntrySetKey, EntrySetMember, SetEntry, EntryNumber,
-    EntryRegion, EntryValueBits, EntryWork, EntryFault,
-]);
-worth_query_operation_writes!(TotalRegions => [PositionY]);
+worth_query_operation_reads!(TotalRegions =>[Body,EntrySet,EntrySetMember,SetEntry]);
 
 pub(super) struct RegionTotalsDemandBinding<Schema>(PhantomData<fn() -> Schema>);
 
@@ -60,7 +55,7 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     type Denial = PlanarMutationDenial;
     type DenialBinding = PlanarMutationDenialBinding;
     type Output = NoApplicationMutationOutputs;
-    type ScopeBinding = PlanarMutationScope<Schema>;
+    type ScopeBinding = PlanarMutationScope;
     type PrincipalBinding = ConsumerPrincipalBinding;
     type Mapping = ExternalPrincipalMapping;
     type Principal = Principal;
@@ -74,17 +69,8 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.region-totals-demand-command.v1";
 
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Body,
-        PlanarPosition,
-        BodyKey,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        BodyKey::reference()
+    fn scope_field() -> BodyKey {
+        BodyKey::at("BodyKey")
     }
 
     fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -106,8 +92,8 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationIntent<Schema> for Region
         self
     }
 
-    fn scope_binding(&self) -> PlanarMutationScope<Schema> {
-        PlanarMutationScope::new(BodyKey::reference(), self.scope_key.clone())
+    fn scope_binding(&self) -> PlanarMutationScope {
+        PlanarMutationScope::new(BodyKey::at("BodyKey"), self.scope_key.clone())
     }
 }
 
@@ -157,8 +143,8 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, RegionTotalsDemandB
         reader: &mut Decision<'_, '_, '_, Schema>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<Schema, Body>, PlanarMutationDenial> {
         let decided = (|| {
-            let scope = reader.resolve_entity(BodyKey::reference(), input.scope_key.clone())?;
-            if reader.field(&scope, PositionY::reference())?.is_none() {
+            let scope = reader.resolve_entity(BodyKey::at("BodyKey"), input.scope_key.clone())?;
+            if reader.field(&scope, PositionY::at("PositionY"))?.is_none() {
                 return Ok(None);
             }
             reader.mutation_target(&scope).map(Some)
@@ -177,7 +163,9 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, RegionTotalsDemandB
     ) -> WorthQueryDecisionPlan<WorthQueryInvariantMutationTarget<Schema, Body>, PlanarMutationDenial>
     {
         let plan = if let Some(run) = &self.0 {
-            let set = match reader.resolve_entity(EntrySetKey::reference(), input.entries.clone()) {
+            let set = match reader
+                .resolve_entity(EntrySetKey::at("EntrySetKey"), input.entries.clone())
+            {
                 Ok(set) => set,
                 Err(error) => {
                     return WorthQueryDecisionPlan::immediate(HandlerResult::ExecutionDenied(error))
@@ -202,7 +190,7 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, RegionTotalsDemandB
         writer: &mut CandidateWriter<'_, Schema, RegionTotalsDemandBinding<Schema>>,
     ) -> HandlerResult<PlanarAdjustmentResult, PlanarMutationDenial> {
         let written = writer.projected_entity(&target).and_then(|entity| {
-            writer.write_field(&entity, PositionY::reference(), input.replacement_y)
+            writer.write_field(&entity, PositionY::at("PositionY"), input.replacement_y)
         });
         match written {
             Ok(()) => HandlerResult::Completed(PlanarAdjustmentResult {
@@ -221,7 +209,7 @@ pub(super) fn declare<Schema: TopologySchemaBinding>(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
     let operation = TotalRegions::reference::<Schema>();
-    facts::declare(schema)
+    schema
         .operation(
             operation
                 .definition()
@@ -231,17 +219,17 @@ pub(super) fn declare<Schema: TopologySchemaBinding>(
         )
         .operation_projection_work_budget(operation, 4_096)
         .operation_read_entity(operation, Body::reference())
-        .operation_read_field(operation, BodyKey::reference())
-        .operation_read_field(operation, PositionY::reference())
+        .operation_read_field(operation, BodyKey::at("BodyKey"))
+        .operation_read_field(operation, PositionY::at("PositionY"))
         .operation_read_entity(operation, EntrySet::reference())
-        .operation_read_field(operation, EntrySetKey::reference())
+        .operation_read_field(operation, EntrySetKey::at("EntrySetKey"))
         .operation_read_relation(operation, EntrySetMember::reference())
         .operation_read_entity(operation, SetEntry::reference())
-        .operation_read_field(operation, EntryNumber::reference())
-        .operation_read_field(operation, EntryRegion::reference())
-        .operation_read_field(operation, EntryValueBits::reference())
-        .operation_read_field(operation, EntryWork::reference())
-        .operation_read_field(operation, EntryFault::reference())
-        .operation_write(operation, PositionY::reference())
+        .operation_read_field(operation, EntryNumber::at("EntryNumber"))
+        .operation_read_field(operation, EntryRegion::at("EntryRegion"))
+        .operation_read_field(operation, EntryValueBits::at("EntryValueBits"))
+        .operation_read_field(operation, EntryWork::at("EntryWork"))
+        .operation_read_field(operation, EntryFault::at("EntryFault"))
+        .operation_write(operation, PositionY::at("PositionY"))
         .application_mutation_binding::<RegionTotalsDemandBinding<Schema>>()
 }

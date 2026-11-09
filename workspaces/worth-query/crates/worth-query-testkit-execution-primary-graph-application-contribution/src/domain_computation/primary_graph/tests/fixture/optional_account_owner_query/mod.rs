@@ -60,7 +60,7 @@ impl WorthQueryApplicationProjection<IdentityExecutionSchema, OptionalAccountOwn
     }
 }
 
-pub fn definition() -> ApplicationQueryDefinition<
+pub fn definition() -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     OptionalAccountOwnerQuery,
     AccountSummaryParameters,
@@ -96,6 +96,4 @@ pub fn definition() -> ApplicationQueryDefinition<
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }

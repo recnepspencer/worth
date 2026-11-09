@@ -1,4 +1,6 @@
 pub(crate) mod aftermath_causality;
+mod authored_retirement_selection;
+mod native_publication_roles;
 pub(crate) mod relational_execution_denial;
 pub use aftermath_causality::WorthQueryAftermathCausalityReadDenial;
 pub(in crate::domain_computation::primary_graph) use aftermath_causality::{
@@ -10,6 +12,9 @@ pub(in crate::domain_computation::primary_graph::provider) use application_attem
 pub(in crate::domain_computation::primary_graph::provider) use application_attempt_state::ManagedUnpublishedAttempt;
 pub(in crate::domain_computation::primary_graph) use application_attempt_state::RebaseVerificationFailure;
 pub(in crate::domain_computation) use application_attempt_state::RegisteredPrimaryRead;
+pub(in crate::domain_computation::primary_graph) use application_attempt_state::{
+    CoupledApplicationMember, CoupledProducerPreparation,
+};
 pub use application_attempt_state::{
     FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason,
 };
@@ -56,8 +61,10 @@ pub(in crate::domain_computation::primary_graph) use inbound_completion::WorthQu
 pub(crate) mod inbound_terminal_index;
 pub(in crate::domain_computation) use inbound_terminal_index::WorthQueryCanonicalInboundCompletion;
 pub(in crate::domain_computation) use inbound_terminal_index::WorthQueryInboundTerminalIndexDenial;
+mod coupled_members;
 mod installation;
 mod invariant_execution;
+pub(in crate::domain_computation::primary_graph) use invariant_execution::CoupledProducerAssembly;
 pub(crate) mod invariant_execution_failure;
 mod managed_application_recovery;
 pub(in crate::domain_computation::primary_graph) use managed_application_recovery::ProducerRecoveryCustody;
@@ -110,7 +117,9 @@ pub use mutation_work::WorthQueryTouchedRecordIdentity;
 pub(in crate::domain_computation) use session_commit::WorthQueryCommittedDispatchOutboxBinding;
 pub(super) use session_commit::WorthQueryCommittedDispatchOutboxBindingDenial;
 pub(super) use session_commit::WorthQueryCommittedDispatchOutboxReceiptSeal;
-pub(crate) use session_commit::WorthQueryRetainedPreImageSeal;
+pub(crate) use session_commit::{
+    WorthQueryRetainedPreImageSeal, WorthQueryRetainedRelationPreImageSeal,
+};
 use std::sync::Arc;
 use std::sync::Mutex;
 

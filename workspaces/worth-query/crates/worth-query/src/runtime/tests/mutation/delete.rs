@@ -267,6 +267,7 @@ fn preview_delete_with_preserves_declared_target_collection_and_delete_meaning()
             |delete| {
                 delete
                     .target_collection("Task")
+                    .expect("fixture digest must fit")
                     .touch(test_aspect_touch("title.value"))
                     .metadata("author", "worth-topo")
             },

@@ -6,10 +6,9 @@
 
 pub use worth_query_host::facade::declaration;
 pub use worth_query_host::facade::declaration::application_query::{
-    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
-    ApplicationQueryLaneEligibility, ApplicationQueryResultFieldRef,
-    ApplicationQueryResultShapeBuilder,
+    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
+    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
+    ApplicationQueryResultFieldRef, ApplicationQueryResultShapeBuilder,
 };
 pub use worth_query_host::facade::{
     worth_query_application_query, worth_query_portable_type, worth_query_structured_value_binding,
@@ -61,7 +60,7 @@ worth_query_application_query!(
     name "document_retention_condition_query"
 );
 
-pub fn document_retention_query_definition() -> ApplicationQueryDefinition<
+pub fn document_retention_query_definition() -> ApplicationQueryDefinitionBuilder<
     DocumentRetentionSchema,
     DocumentRetentionQuery,
     DocumentQueryParameters,
@@ -87,11 +86,9 @@ pub fn document_retention_query_definition() -> ApplicationQueryDefinition<
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .expect("the document retention query is canonical")
 }
 
-pub fn document_retention_condition_query_definition() -> ApplicationQueryDefinition<
+pub fn document_retention_condition_query_definition() -> ApplicationQueryDefinitionBuilder<
     DocumentRetentionSchema,
     DocumentRetentionConditionQuery,
     DocumentQueryParameters,
@@ -116,52 +113,33 @@ pub fn document_retention_condition_query_definition() -> ApplicationQueryDefini
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .expect("the document condition query is canonical")
 }
 
-pub type ResultField<Slot, Field, Value, Write> = ApplicationQueryResultFieldRef<
-    DocumentRetentionQuery,
-    Slot,
-    DocumentRetentionSchema,
-    Document,
-    DocumentFacts,
-    Field,
-    Value,
-    Write,
-    declaration::application_schema::EqualityPredicate,
-    declaration::application_schema::NoApplicationUnit,
->;
+pub type ResultField<Slot, Field> =
+    ApplicationQueryResultFieldRef<DocumentRetentionQuery, Slot, DocumentRetentionSchema, Field>;
 
-pub fn identity_result() -> ResultField<
-    DocumentIdentitySlot,
-    DocumentIdentityField,
-    String,
-    declaration::application_schema::ReadOnly,
-> {
-    ApplicationQueryResultFieldRef::new("identity", DocumentIdentityField::reference())
+pub fn identity_result() -> ResultField<DocumentIdentitySlot, DocumentIdentityField> {
+    ApplicationQueryResultFieldRef::new(
+        "identity",
+        DocumentIdentityField::at("DocumentIdentityField"),
+    )
 }
 
-pub fn retention_result() -> ResultField<
-    DocumentRetentionSlot,
-    DocumentRetentionField,
-    u64,
-    declaration::application_schema::ReadWrite,
-> {
-    ApplicationQueryResultFieldRef::new("retention", DocumentRetentionField::reference())
+pub fn retention_result() -> ResultField<DocumentRetentionSlot, DocumentRetentionField> {
+    ApplicationQueryResultFieldRef::new(
+        "retention",
+        DocumentRetentionField::at("DocumentRetentionField"),
+    )
 }
 
 pub fn condition_retention_result() -> ApplicationQueryResultFieldRef<
     DocumentRetentionConditionQuery,
     DocumentConditionRetentionSlot,
     DocumentRetentionSchema,
-    Document,
-    DocumentFacts,
     DocumentRetentionField,
-    u64,
-    declaration::application_schema::ReadWrite,
-    declaration::application_schema::EqualityPredicate,
-    declaration::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("retention", DocumentRetentionField::reference())
+    ApplicationQueryResultFieldRef::new(
+        "retention",
+        DocumentRetentionField::at("DocumentRetentionField"),
+    )
 }

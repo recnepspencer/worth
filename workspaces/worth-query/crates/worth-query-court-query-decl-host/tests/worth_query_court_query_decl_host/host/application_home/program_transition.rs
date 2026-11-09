@@ -1,5 +1,7 @@
 //! Public Host transition over the original nonempty directory and ordinary B reopen.
 use super::*;
+use fixture::schema::{Account, AccountIdentity, HomeRecords};
+use worth_query_decl::facade::application_schema::fragment::FieldSelection;
 mod activation_siblings;
 mod successor;
 use worth_query_host::facade::{
@@ -158,10 +160,20 @@ fn host_transition_plans_on_nonempty_a_then_serves_writes_closes_and_reopens_b()
                 panic!("the author reads the original seeded A row");
             };
             let before = source
-                .planned_field("Account", "AccountIdentity", "Balance")
+                .planned_field(
+                    "Account",
+                    FieldSelection::<HomeRecords, Account, AccountIdentity, u64>::at("Balance")
+                        .aspect(),
+                    "Balance",
+                )
                 .unwrap();
             let after = target
-                .planned_field("Account", "AccountIdentity", "Balance")
+                .planned_field(
+                    "Account",
+                    FieldSelection::<HomeRecords, Account, AccountIdentity, u64>::at("Balance")
+                        .aspect(),
+                    "Balance",
+                )
                 .unwrap();
             let mut target_body = body(row.entity_id, after.clone(), 9);
             target_body.batches.push(successor::body(target));

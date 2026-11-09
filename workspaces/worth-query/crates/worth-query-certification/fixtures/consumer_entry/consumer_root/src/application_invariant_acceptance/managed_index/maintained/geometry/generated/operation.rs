@@ -23,10 +23,9 @@ worth_query_structured_value_binding!(pub InputBinding for Generate { identity: 
 worth_query_structured_value_binding!(pub ResultBinding for Generated { identity: "maintained-generated-geometry.operation-result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "maintained-generated-geometry.operation-denial.v1" });
 worth_query_operation!(pub GenerateGeometry for Catalog, input InputBinding);
-worth_query_operation_reads!(GenerateGeometry => [Directory, DirectoryIdentity, DirectoryNote]);
+worth_query_operation_reads!(GenerateGeometry => [Directory]);
 worth_query_operation_creates!(GenerateGeometry => [Edge, Vertex]);
 worth_query_operation_links!(GenerateGeometry => [ContainsEdge, Starts, Ends]);
-worth_query_operation_writes!(GenerateGeometry => [EdgeIdentity, VertexIdentity, VertexRegion]);
 
 pub struct Outputs;
 pub struct EdgeOutput;
@@ -79,15 +78,7 @@ impl ApplicationMutationBinding<Catalog> for Binding {
     type Denial = Denial;
     type DenialBinding = DenialBinding;
     type Output = Outputs;
-    type ScopeBinding = ApplicationMutationFieldScope<
-        Catalog,
-        Directory,
-        DirectoryFacts,
-        DirectoryIdentity,
-        String,
-        ReadOnly,
-        NoApplicationUnit,
-    >;
+    type ScopeBinding = ApplicationMutationFieldScope<DirectoryIdentity>;
     type PrincipalBinding = CatalogPrincipal;
     type Mapping = ExternalMapping;
     type Principal = Principal;
@@ -101,17 +92,8 @@ impl ApplicationMutationBinding<Catalog> for Binding {
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
     }
-    fn scope_field() -> ApplicationFieldRef<
-        Catalog,
-        Directory,
-        DirectoryFacts,
-        DirectoryIdentity,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DirectoryIdentity::reference()
+    fn scope_field() -> DirectoryIdentity {
+        DirectoryIdentity::at("DirectoryIdentity")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         Catalog,
@@ -130,7 +112,10 @@ impl ApplicationMutationIntent<Catalog> for Generate {
         self
     }
     fn scope_binding(&self) -> <Binding as ApplicationMutationBinding<Catalog>>::ScopeBinding {
-        ApplicationMutationFieldScope::new(DirectoryIdentity::reference(), self.directory.clone())
+        ApplicationMutationFieldScope::new(
+            DirectoryIdentity::at("DirectoryIdentity"),
+            self.directory.clone(),
+        )
     }
 }
 pub(super) fn declare(
@@ -141,15 +126,15 @@ pub(super) fn declare(
         .operation(op.definition().no_external_effect().no_aftermath().finish())
         .operation_projection_work_budget(op, 64)
         .operation_read_entity(op, Directory::reference())
-        .operation_read_field(op, DirectoryIdentity::reference())
-        .operation_read_field(op, DirectoryNote::reference())
+        .operation_read_field(op, DirectoryIdentity::at("DirectoryIdentity"))
+        .operation_read_field(op, DirectoryNote::at("DirectoryNote"))
         .operation_create(op, Edge::reference())
         .operation_create(op, Vertex::reference())
         .operation_link(op, ContainsEdge::reference())
         .operation_link(op, Starts::reference())
         .operation_link(op, Ends::reference())
-        .operation_write(op, EdgeIdentity::reference())
-        .operation_write(op, VertexIdentity::reference())
-        .operation_write(op, VertexRegion::reference())
+        .operation_write(op, EdgeIdentity::at("EdgeIdentity"))
+        .operation_write(op, VertexIdentity::at("VertexIdentity"))
+        .operation_write(op, VertexRegion::at("VertexRegion"))
         .application_mutation_binding::<Binding>()
 }

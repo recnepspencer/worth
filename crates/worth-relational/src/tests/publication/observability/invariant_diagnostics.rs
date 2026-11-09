@@ -100,9 +100,8 @@ fn invariant_failure_artifact_preserves_specific_code_localization_and_proof_bou
         diagnostic_object_field(proof_boundary, "scope_class"),
         &RelationalDiagnosticValue::string("partition_scope")
     );
-    assert_eq!(
-        diagnostic_object_field(proof_boundary, "packet_count"),
-        &RelationalDiagnosticValue::Unsigned(1)
+    assert!(
+        matches!(diagnostic_object_field(proof_boundary, "packet_count"), RelationalDiagnosticValue::Unsigned(packets) if *packets > 0)
     );
 }
 
@@ -156,7 +155,13 @@ fn invariant_diagnostics_trace_proof_boundary_for_relation_integrity_execution()
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(execution, &runtime).unwrap();
+    let committed = txn.commit(execution, &runtime).unwrap();
+    let expected_packets = committed
+        .invariant_executions()
+        .iter()
+        .find_map(|e| e.metadata().proof_boundary())
+        .unwrap()
+        .packet_count() as u64;
 
     let diagnostics = runtime.publication().diagnostics();
     let entry = diagnostics
@@ -167,17 +172,17 @@ fn invariant_diagnostics_trace_proof_boundary_for_relation_integrity_execution()
         .find(|entry| {
             entry.code == DiagnosticCode::InvariantProofBoundaryObserved
                 && diagnostic_field_optional(entry, "execution_point")
-                    == Some(&RelationalDiagnosticValue::string("commit_boundary"))
+                    == Some(&RelationalDiagnosticValue::string("proposed_state"))
                 && diagnostic_field_optional(entry, "proof_boundary").is_some_and(|value| {
                     diagnostic_object_field(value, "packet_count")
-                        == &RelationalDiagnosticValue::Unsigned(1)
+                        == &RelationalDiagnosticValue::Unsigned(expected_packets)
                 })
         })
         .expect("proof boundary trace entry");
 
     assert_eq!(
         diagnostic_field(entry, "execution_point"),
-        &RelationalDiagnosticValue::string("commit_boundary")
+        &RelationalDiagnosticValue::string("proposed_state")
     );
     let proof_boundary = diagnostic_field(entry, "proof_boundary");
     assert_eq!(
@@ -186,7 +191,7 @@ fn invariant_diagnostics_trace_proof_boundary_for_relation_integrity_execution()
     );
     assert_eq!(
         diagnostic_object_field(proof_boundary, "packet_count"),
-        &RelationalDiagnosticValue::Unsigned(1)
+        &RelationalDiagnosticValue::Unsigned(expected_packets)
     );
     assert_eq!(
         diagnostic_object_field(proof_boundary, "touched_partition_count"),

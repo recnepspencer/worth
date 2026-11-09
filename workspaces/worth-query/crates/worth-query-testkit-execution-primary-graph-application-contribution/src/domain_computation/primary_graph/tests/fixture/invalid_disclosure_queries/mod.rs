@@ -1,6 +1,5 @@
 use worth_query_declaration::facade::application_query::ApplicationQueryBasisSupport;
 use worth_query_declaration::facade::application_query::ApplicationQueryCardinality;
-use worth_query_declaration::facade::application_query::ApplicationQueryDefinition;
 use worth_query_declaration::facade::application_query::ApplicationQueryDefinitionBuilder;
 use worth_query_declaration::facade::application_query::ApplicationQueryDisclosureContract;
 use worth_query_declaration::facade::application_query::ApplicationQueryInfluenceContract;
@@ -56,7 +55,7 @@ worth_query_application_query!(
     name "result_rule_predicate"
 );
 
-pub fn incomplete_disclosure_definition() -> ApplicationQueryDefinition<
+pub fn incomplete_disclosure_definition() -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     IncompleteDisclosureQuery,
     AccountSummaryParameters,
@@ -81,7 +80,7 @@ pub fn incomplete_disclosure_definition() -> ApplicationQueryDefinition<
     )
 }
 
-pub fn forbidden_influence_definition() -> ApplicationQueryDefinition<
+pub fn forbidden_influence_definition() -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     ForbiddenInfluenceQuery,
     AccountSummaryParameters,
@@ -94,10 +93,11 @@ pub fn forbidden_influence_definition() -> ApplicationQueryDefinition<
         TouchAccountCapability::reference(),
     )
     .use_field_by(
-        AccountStatus::reference(),
+        AccountStatus::at("AccountStatus"),
         encoded_disclosure(CapabilityDisclosure::AccountActivity),
         ApplicationQueryInfluenceContract::forbid_all(),
     )
+    .expect("record field contract")
     .disclose_field_by(
         status_result_field::<ForbiddenInfluenceQuery>(),
         encoded_disclosure(CapabilityDisclosure::AccountActivity),
@@ -116,7 +116,7 @@ pub fn forbidden_influence_definition() -> ApplicationQueryDefinition<
     )
 }
 
-pub fn result_rule_predicate_definition() -> ApplicationQueryDefinition<
+pub fn result_rule_predicate_definition() -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     ResultRulePredicateQuery,
     AccountSummaryParameters,
@@ -192,7 +192,7 @@ pub fn definition<
     >,
     disclosure: ApplicationQueryDisclosureContract,
     predicate: bool,
-) -> ApplicationQueryDefinition<
+) -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     Query,
     AccountSummaryParameters,
@@ -214,11 +214,9 @@ where
     if predicate {
         builder
             .parameter(status_parameter())
-            .where_equal(AccountStatus::reference(), status_parameter())
-            .build()
-            .unwrap()
+            .where_equal(AccountStatus::at("AccountStatus"), status_parameter())
     } else {
-        builder.build().unwrap()
+        builder
     }
 }
 

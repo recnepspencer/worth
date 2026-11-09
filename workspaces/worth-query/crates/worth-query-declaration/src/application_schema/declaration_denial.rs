@@ -2,6 +2,66 @@ use super::ApplicationOperationDependencyLocus;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ApplicationSchemaDeclarationDenial {
+    InvalidCorrectionMechanism {
+        correction: String,
+        cause: crate::application_aftermath::DeclaredCorrectionMechanismDenial,
+    },
+
+    InvalidQueryDefinition {
+        owner: String,
+        query: String,
+        cause: crate::application_query::ApplicationQueryDefinitionDenial,
+    },
+    InvalidCorrectionDemand {
+        correction: String,
+        cause: crate::application_aftermath::DeclaredPreImageDemandDenial,
+    },
+
+    MissingReferencedMutation {
+        operation: String,
+        binding: String,
+    },
+    InvalidPrincipalBindingField {
+        binding: String,
+        field: super::ApplicationFieldBindingLocus,
+    },
+    InvalidCorrectionField {
+        correction: String,
+        field: super::ApplicationFieldBindingLocus,
+    },
+    ExtensionRelationMinimum {
+        path: String,
+    },
+    UndeclaredExtensionEntity {
+        path: String,
+    },
+    DuplicateExtensionMember {
+        first: String,
+        path: String,
+    },
+    DuplicateFragmentMember {
+        path: String,
+    },
+    FragmentIdentityCollision {
+        identity: u64,
+        first: String,
+        second: String,
+    },
+    InvalidRecord {
+        path: String,
+    },
+    InvalidRecordRevision,
+    DuplicateOneOfRow {
+        entity: String,
+        group: &'static str,
+        row: &'static str,
+    },
+    InvalidRecordMember {
+        path: String,
+    },
+    InvalidRecordField {
+        field: super::ApplicationFieldBindingLocus,
+    },
     InvalidIdentifier,
     InvalidCanonicalOrdering,
     DuplicateMember,

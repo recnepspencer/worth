@@ -1,9 +1,13 @@
 pub(crate) mod assembly;
 mod authority;
 mod binding;
+mod construction_stop;
 mod counters;
 mod denial;
 mod digest_basis;
+mod digest_refusal;
+pub use construction_stop::BridgeCausalEnvelopeConstructionStop;
+pub use digest_refusal::BridgeCausalDigestRefusal;
 mod evidence_reference;
 mod explanation_envelope;
 mod identity;
@@ -65,7 +69,7 @@ fn value_part(value: &str) -> BridgeCausalEnvelopeIdentityPart<'_> {
 fn compose_bridge_causal_envelope_evidence_identity(
     artifact: BridgeCausalEnvelopeDigestArtifact,
     parts: &[BridgeCausalEnvelopeIdentityPart<'_>],
-) -> BridgeIdentityEvidence {
+) -> Result<BridgeIdentityEvidence, BridgeCausalDigestRefusal> {
     let mut entries = vec![
         causal_envelope_entry(
             "bridge.causal.scheme",
@@ -102,11 +106,16 @@ fn compose_bridge_causal_envelope_evidence_identity(
         CanonicalBasisEntryKind::Shape,
         parts.len().to_string(),
     ));
-    let digest = derive_canonical_bridge_causal_digest(entries);
-    BridgeIdentityEvidence::from_canonical_bridge_evidence(
+    let digest = derive_canonical_bridge_causal_digest(entries).map_err(|cause| {
+        BridgeCausalDigestRefusal {
+            subject: artifact.digest_domain(),
+            cause,
+        }
+    })?;
+    Ok(BridgeIdentityEvidence::from_canonical_bridge_evidence(
         canonical_bridge_identity_token(&digest),
         artifact.digest_domain(),
-    )
+    ))
 }
 
 fn canonical_entry_kind_for_part(
@@ -142,7 +151,7 @@ fn causal_envelope_entry(
 
 fn derive_canonical_bridge_causal_digest(
     entries: Vec<CanonicalBasisEntry>,
-) -> CanonicalDerivedDigest {
+) -> Result<CanonicalDerivedDigest, worth_foundational::facade::CanonicalDigestDerivationDenial> {
     let version = CanonicalizationRuleVersion::new(BRIDGE_CAUSAL_ENVELOPE_IDENTITY_SCHEME)
         .expect("bridge causal envelope evidence scheme must remain canonical");
     let ready = causal_basis_from_entries(version.clone(), entries);
@@ -152,13 +161,13 @@ fn derive_canonical_bridge_causal_digest(
             panic!("bridge causal envelope identity bundle should prepare cleanly: {outcome:?}")
         }
     };
-    let digest_ready = match CanonicalDigestFrontDoor
-        .for_bundle(bundle, CanonicalDigestAlgorithmId::sha256())
-    {
-        TransitionOutcome::Success(ready) => ready,
-        outcome => panic!("bridge causal envelope digest derivation should succeed: {outcome:?}"),
-    };
-    derive_canonical_digest(digest_ready)
+    let digest_ready =
+        match CanonicalDigestFrontDoor.for_bundle(bundle, CanonicalDigestAlgorithmId::sha256()) {
+            TransitionOutcome::Success(ready) => ready,
+            TransitionOutcome::Denied(cause) => return Err(cause),
+            _ => unreachable!("canonical digest admission only succeeds or denies"),
+        };
+    Ok(derive_canonical_digest(digest_ready))
 }
 
 fn causal_basis_from_entries(
@@ -187,3 +196,6 @@ fn canonical_bridge_identity_token(digest: &CanonicalDerivedDigest) -> String {
     }
     token
 }
+
+#[cfg(test)]
+mod limit_tests;

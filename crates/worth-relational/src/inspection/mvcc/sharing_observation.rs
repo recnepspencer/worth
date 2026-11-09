@@ -94,7 +94,7 @@ use super::root_commitment::{
 ///     .expect("the commit snapshot releases exactly once");
 ///
 /// let observation = runtime
-///     .observe_branch_sharing(&[runtime.main_branch_identity()])
+///     .observe_branch_sharing(execution, &[runtime.main_branch_identity()])
 ///     .expect("a published main branch is inspectable");
 ///
 /// // Declaration lane: the contract the remaining metrics are read under.

@@ -94,6 +94,13 @@ where
     Schema: ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema>,
 {
+    /// Data-only recording transport; ordinary parent authority stays ordinary.
+    fn record_history_discovery(
+        &mut self,
+        origin: std::sync::Arc<worth_query_execution::publication_boundary::document_history::WorthQueryHistoryRecordingOutputOrigin>,
+        index: usize,
+    );
+
     /// Check every retained query subject, including closed sibling prefixes.
     fn authorize_history(
         &self,
@@ -150,6 +157,29 @@ where
 {
         None
     }
+
+    fn capture_history_root_recipes<
+        H: worth_query_declaration::facade::application_history::ApplicationHistoryBinding<Schema>,
+    >(
+        document: &worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistory<'_, Schema, H>,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
+        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
+        profile: &worth_query_execution::publication_boundary::document_history::WorthQueryHistoryOutputProfile,
+        parent_demand: &ParentDemand,
+    ) -> Result<(), crate::application_entry::WorthQueryHistoryOutputDenial>;
+
+    fn start_verified(
+        application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
+        parent_demand: &ParentDemand,
+        parent: &worth_query_execution::publication_boundary::document_history::WorthQueryVerifiedHistoryParent<Schema, Program, ParentDemand>,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+        controls: WorthQueryOutputDemandControls,
+    ) -> Result<
+        Box<dyn ProgramOutputContinuation<Schema, Program>>,
+        WorthQueryRequiredOutputPreparationDenial,
+    >;
 
     fn start(
         application: &WorthQueryProgramApplicationRuntime<Schema, Program>,

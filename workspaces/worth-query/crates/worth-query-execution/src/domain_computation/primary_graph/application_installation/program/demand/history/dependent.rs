@@ -86,7 +86,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         Ok(WorthQueryHistoryDependentOutputRead {
             source: HistoryDependentSource {
                 authority,
-                parent: &parent.settled.retained,
+                parent: crate::domain_computation::primary_graph::product_operation::document_history::navigation::HistoryDependentParent::Settled(std::sync::Arc::clone(&parent.settled.retained)),
                 connection: crate::equality_type_id::EqualityTypeId::of::<C>().into_external(),
                 source: basis,
                 minimum,
@@ -135,7 +135,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         if !parent.profile.matches_program(self)
             || !parent.profile.same_custody(source.authority.profile())
             || !std::sync::Arc::ptr_eq(&parent.original, source.authority.original())
-            || !std::sync::Arc::ptr_eq(source.parent, &parent.settled.retained)
+            || !source.parent.same_custody(&crate::domain_computation::primary_graph::product_operation::document_history::navigation::HistoryDependentParent::Settled(std::sync::Arc::clone(&parent.settled.retained)))
             || source.connection
                 != crate::equality_type_id::EqualityTypeId::of::<C>().into_external()
             || source.executed_binding != source.output_binding

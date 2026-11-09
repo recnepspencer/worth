@@ -9,8 +9,8 @@ use super::super::{
 use super::*;
 use std::{cell::RefCell, sync::Arc};
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
-pub(super) fn advance<E>(
-    basis: &RootPathReadBasis<'_, '_, '_>,
+pub(super) fn advance<E, Phase>(
+    basis: &RootPathReadBasis<'_, '_, '_, Phase>,
     layout: &WorthQueryPrimaryRelationLayout,
     located: PathStep<'_>,
     frontier: &mut Frontier,
@@ -53,8 +53,9 @@ pub(super) fn advance<E>(
                 .map_err(|cause| RootPathReadDenial::native(subject, cause))?;
             roots.push(*root);
         }
-        let observed = StructuralWalkObservation::read(
+        let observed = StructuralWalkObservation::read_projected(
             basis.runtime,
+            basis.origin,
             basis.execution,
             StructuralWalkQuery {
                 relation: subject,

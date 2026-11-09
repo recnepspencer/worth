@@ -43,13 +43,13 @@ pub(in crate::domain_computation::primary_graph) fn preflight_home_application<
         })
         .map_err(super::super::super::bootstrap::request_read_denial::read)?;
     graph.with_runtime(&phase.execution_request(), |native| {
-        graph.ensure_primary_indexes_for_basis(&phase.execution_request(), native, basis)
+        graph.carry_primary_index_basis_for_basis(&phase.execution_request(), native, basis)
             .map_err(|cause| match cause {
                 super::super::super::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Execution(cause) =>
                     super::super::super::bootstrap::request_read_denial::read(cause),
                 cause => WorthQueryPrimaryGraphInstallationDenial::new(
                     WorthQueryPrimaryGraphInstallationDenialKind::IndexBuildRejected,
-                    format!("Home selected-basis index reconstruction denied: {cause:?}")),
+                    format!("Home selected-basis index admission denied: {cause:?}")),
             })?;
         graph.bind_truth_head_basis_in_runtime(native, basis)
         .map_err(|cause| {

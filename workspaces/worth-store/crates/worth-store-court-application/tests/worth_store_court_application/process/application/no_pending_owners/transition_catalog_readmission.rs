@@ -165,6 +165,11 @@ fn a_completed_transition_occurrence_restores_target_contracts_and_continues_onl
                 assigned.original(),
                 &association,
                 assigned.admission(),
+                worth_relational::facade::indexes::DerivedIndexMaintenanceBudget {
+                    maximum_work_units: None,
+                    maximum_cold_record_slots: None,
+                    maximum_derived_rows: None,
+                },
             )
             .unwrap();
         transaction

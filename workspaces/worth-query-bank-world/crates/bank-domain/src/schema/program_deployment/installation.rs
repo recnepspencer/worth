@@ -6,72 +6,6 @@ pub(crate) fn install(
     schema: ApplicationSchemaDeclarationBuilder<BankSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
     let schema = schema
-        .entity(ProgramDeploymentScope::reference())
-        .aspect(
-            ProgramDeploymentScope::reference(),
-            ProgramDeploymentScopeFacts::reference(),
-        )
-        .unique_field(
-            ProgramDeploymentScope::reference(),
-            ProgramDeploymentSourceRevision::reference(),
-        )
-        .entity(ProgramDeploymentGrant::reference())
-        .aspect(
-            ProgramDeploymentGrant::reference(),
-            ProgramDeploymentGrantFacts::reference(),
-        )
-        .unique_field(
-            ProgramDeploymentGrant::reference(),
-            ProgramDeploymentGrantIdentity::reference(),
-        )
-        .field(
-            ProgramDeploymentGrant::reference(),
-            ProgramDeploymentGrantSourceRevision::reference(),
-        )
-        .field(
-            ProgramDeploymentGrant::reference(),
-            ProgramDeploymentGrantAction::reference(),
-        )
-        .field(
-            ProgramDeploymentGrant::reference(),
-            ProgramDeploymentGrantPurpose::reference(),
-        )
-        .field(
-            ProgramDeploymentGrant::reference(),
-            ProgramDeploymentGrantStatus::reference(),
-        )
-        .field(
-            ProgramDeploymentGrant::reference(),
-            ProgramDeploymentGrantNotBefore::reference(),
-        )
-        .field(
-            ProgramDeploymentGrant::reference(),
-            ProgramDeploymentGrantNotAfter::reference(),
-        )
-        .field(
-            ProgramDeploymentGrant::reference(),
-            ProgramDeploymentGrantDepth::reference(),
-        )
-        .relation(
-            ProgramDeploymentGrantResource::reference(),
-            ProgramDeploymentGrant::reference(),
-            ProgramDeploymentScope::reference(),
-        )
-        .relation(
-            ProgramDeploymentGrantParent::reference(),
-            ProgramDeploymentGrant::reference(),
-            ProgramDeploymentGrant::reference(),
-        )
-        .relation(
-            ProgramDeploymentGrantGrantor::reference(),
-            Principal::reference(),
-            ProgramDeploymentGrant::reference(),
-        )
-        .relation(
-            ProgramDeploymentGrantGrantee::reference(),
-            Principal::reference(),
-            ProgramDeploymentGrant::reference(),
-        )
         .capability_context(ProgramDeploymentContext::reference())
         .capability_provenance(ProgramDeploymentProvenance::reference())
         .operation(
@@ -84,7 +18,7 @@ pub(crate) fn install(
         .operation_projection_work_budget(DeployBankProgramOperation::reference(), 512)
         .operation_read_field(
             DeployBankProgramOperation::reference(),
-            ProgramDeploymentSourceRevision::reference(),
+            ProgramDeploymentSourceRevision::at("ProgramDeploymentSourceRevision"),
         )
         .capability(contract());
     super::revocation::install(schema)
@@ -106,43 +40,43 @@ fn contract() -> ApplicationCapabilityContract<
     )
     .target(ApplicationCapabilityTargetDefinition::new(
         ApplicationCapabilityValueBinding::new(
-            ProgramDeploymentGrantAction::reference(),
+            ProgramDeploymentGrantAction::at("ProgramDeploymentGrantAction"),
             encoded("deploy-bank-program".to_owned()),
-        ),
+        ).unwrap(),
         ApplicationCapabilityRelationBinding::from_reference(
             ProgramDeploymentGrantResource::reference(),
         ),
         ApplicationCapabilityRelationDimension::not_applicable(),
         ApplicationCapabilityFieldDimension::not_applicable(),
         ApplicationCapabilityValueBinding::new(
-            ProgramDeploymentGrantPurpose::reference(),
+            ProgramDeploymentGrantPurpose::at("ProgramDeploymentGrantPurpose"),
             encoded("program-deployment".to_owned()),
-        ),
+        ).unwrap(),
     ))
     .constraints(ApplicationCapabilityConstraintDefinition::new(
         ApplicationCapabilityMagnitudeDimension::not_applicable(),
         ApplicationCapabilityCardinalityDimension::One,
         ApplicationCapabilityCurrentnessDefinition::new(
             ApplicationCapabilityValueBinding::new(
-                ProgramDeploymentGrantStatus::reference(),
+                ProgramDeploymentGrantStatus::at("ProgramDeploymentGrantStatus"),
                 encoded("active".to_owned()),
-            ),
+            ).unwrap(),
             ApplicationCapabilityWorkflowDefinition::new(
                 ApplicationCapabilityFieldBinding::from_reference(
-                    ProgramDeploymentGrantSourceRevision::reference(),
-                ),
+                    ProgramDeploymentGrantSourceRevision::at("ProgramDeploymentGrantSourceRevision"),
+                ).unwrap(),
                 ApplicationCapabilityFieldBinding::from_reference(
-                    ProgramDeploymentSourceRevision::reference(),
-                ),
+                    ProgramDeploymentSourceRevision::at("ProgramDeploymentSourceRevision"),
+                ).unwrap(),
             ),
             ApplicationCapabilityValidityDefinition::new(
                 ApplicationCapabilityValidityTimeline::UnixEpochSeconds,
                 ApplicationCapabilityFieldBinding::from_reference(
-                    ProgramDeploymentGrantNotBefore::reference(),
-                ),
+                    ProgramDeploymentGrantNotBefore::at("ProgramDeploymentGrantNotBefore"),
+                ).unwrap(),
                 ApplicationCapabilityFieldBinding::from_reference(
-                    ProgramDeploymentGrantNotAfter::reference(),
-                ),
+                    ProgramDeploymentGrantNotAfter::at("ProgramDeploymentGrantNotAfter"),
+                ).unwrap(),
             ),
         ),
         ProgramDeploymentContext::reference(),
@@ -157,7 +91,7 @@ fn contract() -> ApplicationCapabilityContract<
         ApplicationCapabilityRelationBinding::from_reference(
             ProgramDeploymentGrantGrantee::reference(),
         ),
-        ApplicationCapabilityFieldBinding::from_reference(ProgramDeploymentGrantDepth::reference()),
+        ApplicationCapabilityFieldBinding::from_reference(ProgramDeploymentGrantDepth::at("ProgramDeploymentGrantDepth")).unwrap(),
         ProgramDeploymentProvenance::reference(),
     ))
     .composition(ApplicationCapabilityComposition::new(

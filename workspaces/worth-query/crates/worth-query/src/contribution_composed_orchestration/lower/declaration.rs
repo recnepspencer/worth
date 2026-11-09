@@ -42,7 +42,7 @@ pub(crate) fn lower_progressed_declaration<
     handle: &WorthQueryInstalledDomainDeclarationContext<D, C>,
     progressed: WorthQueryAdmittedDeclarationProgression<D, I>,
 ) -> Result<DeclarationLowering<D, I>, WorthQueryContributionComposedOrchestrationOutcome<D, I>> {
-    let target = handle.contribution_target(progressed.canonical_declaration());
+    let target = handle.contribution_target(progressed.canonical_declaration())?;
     let envelope = match handle.orchestrate_envelope_from_progressed(progressed) {
         Ok(envelope) => envelope,
         Err(error) => return Err(envelope_error_outcome(error)),

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::execution::ExecutionCounters;
 use crate::identity::{CanonicalQueryDigest, ValidatedQueryDigest};
 use crate::preview::binding::PreviewSessionPlanBinding;
@@ -53,6 +54,7 @@ impl PreviewWorkflowFoundationRequest {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PreviewWorkflowFoundationFailureClass {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     OutOfScopeWorkflowFoundationRequest,
     ReadOnlyPreviewWritebackFoundationForbidden,
 }
@@ -65,6 +67,18 @@ pub struct PreviewWorkflowFoundationError {
 }
 
 impl PreviewWorkflowFoundationError {
+    pub(crate) fn identity_refused(
+        cause: IdentityDerivationDenial,
+        counters: PreviewExecutionCounters,
+    ) -> Self {
+        Self {
+            failure_class: PreviewWorkflowFoundationFailureClass::EvidenceIdentityDerivationDenied(
+                cause,
+            ),
+            message: "preview workflow foundation identity refused",
+            counters,
+        }
+    }
     pub fn failure_class(&self) -> &PreviewWorkflowFoundationFailureClass {
         &self.failure_class
     }
@@ -219,18 +233,18 @@ impl AdmittedPreviewWorkflowFoundation {
 fn derive_preview_workflow_foundation(
     binding: &PreviewSessionPlanBinding,
     request: PreviewWorkflowFoundationRequest,
-) -> PreviewWorkflowFoundationArtifact {
+) -> Result<PreviewWorkflowFoundationArtifact, IdentityDerivationDenial> {
     let binding_tuple = binding.basis().binding_tuple();
     let execution_record_identity = binding_tuple
         .execution_record_identity()
         .cloned()
         .expect("active preview bindings must carry an execution record identity");
     let binding_identity =
-        workflow_context_identity::compose_preview_binding_tuple_workflow_identity(binding_tuple);
+        workflow_context_identity::compose_preview_binding_tuple_workflow_identity(binding_tuple)?;
     let declaration_digest_identity =
         workflow_context_identity::compose_preview_declaration_digest_workflow_identity(
             binding_tuple,
-        );
+        )?;
     let artifact_identity =
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowContextBinding)
             .field_shape(
@@ -269,9 +283,9 @@ fn derive_preview_workflow_foundation(
                 WorthQueryEvidenceTag::new("evaluation_class"),
                 binding_tuple.evaluation_class().as_str(),
             )
-            .seal();
+            .seal()?;
 
-    PreviewWorkflowFoundationArtifact {
+    Ok(PreviewWorkflowFoundationArtifact {
         artifact_identity,
         binding_identity,
         canonical_query_digest: binding_tuple.canonical_query_digest().clone(),
@@ -283,9 +297,9 @@ fn derive_preview_workflow_foundation(
         lifecycle_state_kind: binding_tuple.lifecycle_state_kind(),
         evaluation_class: binding_tuple.evaluation_class().clone(),
         execution_record_identity,
-        shape_check_width: PreviewComparisonShapeContract::from_preflight(binding.preflight())
+        shape_check_width: PreviewComparisonShapeContract::from_preflight(binding.preflight())?
             .shape_check_width,
-    }
+    })
 }
 
 pub fn admit_preview_workflow_foundation(
@@ -327,21 +341,24 @@ pub fn admit_preview_workflow_foundation_request(
         });
     }
 
-    Ok(AdmittedPreviewWorkflowFoundation {
-        artifact: derive_preview_workflow_foundation(binding, request),
-        counters: PreviewExecutionCounters {
-            binding_counters: binding.report().counters().clone(),
-            execution_counters: ExecutionCounters::default(),
-            preview_execution_envelope_count: 0,
-            preview_execution_count: 0,
-            preview_promotable_execution_count: 0,
-            preview_read_only_execution_count: 0,
-            preview_comparison_eligibility_proof_count: 0,
-            preview_comparison_shape_check_width: 0,
-            preview_workflow_foundation_admission_count: 1,
-            preview_workflow_foundation_denial_count: 0,
-            preview_workflow_foundation_artifact_lookup_count: 1,
-            preview_work_avoided_by_explicit_basis_count: 1,
-        },
-    })
+    let mut counters = PreviewExecutionCounters {
+        binding_counters: binding.report().counters().clone(),
+        execution_counters: ExecutionCounters::default(),
+        preview_execution_envelope_count: 0,
+        preview_execution_count: 0,
+        preview_promotable_execution_count: 0,
+        preview_read_only_execution_count: 0,
+        preview_comparison_eligibility_proof_count: 0,
+        preview_comparison_shape_check_width: 0,
+        preview_workflow_foundation_admission_count: 1,
+        preview_workflow_foundation_denial_count: 0,
+        preview_workflow_foundation_artifact_lookup_count: 1,
+        preview_work_avoided_by_explicit_basis_count: 1,
+    };
+    let artifact = derive_preview_workflow_foundation(binding, request).map_err(|cause| {
+        counters.preview_workflow_foundation_admission_count = 0;
+        counters.preview_workflow_foundation_denial_count = 1;
+        PreviewWorkflowFoundationError::identity_refused(cause, counters.clone())
+    })?;
+    Ok(AdmittedPreviewWorkflowFoundation { artifact, counters })
 }

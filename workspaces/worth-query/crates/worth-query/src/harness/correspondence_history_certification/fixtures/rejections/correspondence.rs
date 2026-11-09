@@ -3,6 +3,7 @@ use crate::correspondence::{
     StructuralCandidateDiscoveryPlan,
 };
 use crate::correspondence_history::compose_correspondence_historical_envelope;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::facade::foundation::build_correspondence_historical_parity_bundle;
 
 use super::super::scenarios::{
@@ -13,7 +14,7 @@ use crate::harness::correspondence_history_certification::model::{
 };
 
 pub(crate) fn unsupported_correspondence_family_rejection(
-) -> CorrespondenceHistoryCertificationRejection {
+) -> Result<CorrespondenceHistoryCertificationRejection, IdentityDerivationDenial> {
     let preflight = detail_preflight_bundle();
     let correspondence = resolve_correspondence_evidence(
         CorrespondenceEvaluationRequest::unsupported_structural_family(
@@ -26,7 +27,7 @@ pub(crate) fn unsupported_correspondence_family_rejection(
     let envelope = compose_correspondence_historical_envelope(
         crate::execution::execute_preflight_bundle(&preflight).expect("execution should succeed"),
         correspondence,
-        retained_resolved("basis:a"),
+        retained_resolved("basis:a")?,
     );
     let parity_bundle = build_correspondence_historical_parity_bundle(
         &envelope,
@@ -34,7 +35,7 @@ pub(crate) fn unsupported_correspondence_family_rejection(
         Some(preflight.basis().proof().digest().clone()),
     )
     .expect("unsupported correspondence denial bundle should build");
-    CorrespondenceHistoryCertificationRejection {
+    Ok(CorrespondenceHistoryCertificationRejection {
         failure_class: CorrespondenceHistoryFailureClass::CorrespondenceDenied,
         failure_digest: parity_bundle
             .failure_digest()
@@ -42,12 +43,13 @@ pub(crate) fn unsupported_correspondence_family_rejection(
             .as_str()
             .to_string(),
         counter_snapshot_digest: Some(parity_bundle.counter_snapshot_digest().as_str().to_string()),
-    }
+    })
 }
 
-pub(crate) fn broad_candidate_scan_rejection() -> CorrespondenceHistoryCertificationRejection {
+pub(crate) fn broad_candidate_scan_rejection(
+) -> Result<CorrespondenceHistoryCertificationRejection, IdentityDerivationDenial> {
     let error = crate::correspondence::CorrespondenceEvaluationError::BroadStructuralScanRequired;
-    CorrespondenceHistoryCertificationRejection {
+    Ok(CorrespondenceHistoryCertificationRejection {
         failure_class: CorrespondenceHistoryFailureClass::CorrespondenceDenied,
         failure_digest: format!(
             "correspondence:{:?}:{}",
@@ -56,7 +58,7 @@ pub(crate) fn broad_candidate_scan_rejection() -> CorrespondenceHistoryCertifica
         ),
         counter_snapshot_digest: Some(
             build_correspondence_historical_parity_bundle(
-                &correspondence_denied_envelope(),
+                &correspondence_denied_envelope()?,
                 Some(
                     detail_preflight_bundle()
                         .plan()
@@ -71,5 +73,5 @@ pub(crate) fn broad_candidate_scan_rejection() -> CorrespondenceHistoryCertifica
             .as_str()
             .to_string(),
         ),
-    }
+    })
 }

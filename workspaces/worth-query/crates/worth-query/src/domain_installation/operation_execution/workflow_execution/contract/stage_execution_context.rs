@@ -126,7 +126,7 @@ impl<'a> WorthQueryWorkflowStageExecutionContext<'a> {
                 self.operation_identity,
                 &self.identity_evolution_basis_identity,
                 descriptor,
-            );
+            )?;
         let admitted = crate::identity_evolution::admit_identity_evolution_query(query)
             .map_err(WorthQueryWorkflowStageLineageDenial::IdentityEvolutionAdmission)?;
         let artifact =
@@ -147,7 +147,7 @@ impl<'a> WorthQueryWorkflowStageExecutionContext<'a> {
                     .map(|delta| delta.entity_identity().clone())
                     .collect(),
             },
-        )
+        )?
         .ok_or(WorthQueryWorkflowStageLineageDenial::IdentityEvolutionOutcomeMismatch)
     }
 
@@ -168,7 +168,7 @@ impl<'a> WorthQueryWorkflowStageExecutionContext<'a> {
                 self.operation_identity,
                 &self.identity_evolution_basis_identity,
                 observation.into_engine_comparison(),
-            );
+            )?;
         let admitted = crate::identity_evolution::admit_identity_evolution_query(query)
             .map_err(WorthQueryWorkflowStageLineageDenial::IdentityEvolutionAdmission)?;
         let artifact =
@@ -189,7 +189,7 @@ impl<'a> WorthQueryWorkflowStageExecutionContext<'a> {
                     .map(|delta| delta.entity_identity().clone())
                     .collect(),
             },
-        )
+        )?
         .ok_or(WorthQueryWorkflowStageLineageDenial::IdentityEvolutionOutcomeMismatch)
     }
 

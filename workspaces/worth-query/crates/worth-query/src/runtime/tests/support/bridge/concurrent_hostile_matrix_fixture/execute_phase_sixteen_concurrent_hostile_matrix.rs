@@ -27,4 +27,5 @@ pub(in crate::runtime::tests) fn execute_phase_sixteen_concurrent_hostile_matrix
         repeated_run_equal,
         true,
     )
+    .expect("fixture digest must fit")
 }

@@ -25,9 +25,9 @@ worth_query_structured_value_binding!(pub InputBinding for AttemptInput {identit
 worth_query_structured_value_binding!(pub ResultBinding for Registered {identity:"proposal-application.claim.result.v1"});
 worth_query_structured_value_binding!(pub DenialBinding for Denial {identity:"proposal-application.claim.denial.v1"});
 worth_query_operation!(pub RegisterAttempt for Schema,input InputBinding);
-worth_query_operation_reads!(RegisterAttempt=>[ModelName,ModelProposal,ProposalName,ProposalData,ModelClaim,ClaimData]);
+worth_query_operation_reads!(RegisterAttempt => [ModelProposal, ModelClaim]);
 worth_query_operation_creates!(RegisterAttempt=>[AcceptanceClaim]);
-worth_query_operation_writes!(RegisterAttempt=>[ClaimName,ClaimData]);
+
 worth_query_operation_links!(RegisterAttempt=>[ModelClaim]);
 fn model(input: &AttemptInput) -> String {
     input.proposal.model.label.clone()
@@ -39,7 +39,7 @@ worth_query_mutation_binding!(pub Binding for AttemptInput,schema Schema,
     workflow_requirements ApplicationWorkflowExecutionRequirements::not_applicable(),outputs NoApplicationMutationOutputs,
     principal PrincipalBinding,mapping ExternalMapping,principal_entity Principal,
     principal_identity u64,identity_binding U64ApplicationValueBinding,
-    scope Model,ModelFacts,ModelName,String,ReadOnly,NoApplicationUnit,field ModelName::reference(),value model,
+    scope ModelName, field ModelName::at("ModelName"),value model,
 );
 pub fn declare(
     builder: ApplicationSchemaDeclarationBuilder<Schema>,
@@ -48,15 +48,15 @@ pub fn declare(
     builder
         .operation(op.definition().no_external_effect().no_aftermath().finish())
         .operation_projection_work_budget(op, 16)
-        .operation_read_field(op, ModelName::reference())
-        .operation_read_field(op, ProposalName::reference())
-        .operation_read_field(op, ProposalData::reference())
-        .operation_read_field(op, ClaimData::reference())
+        .operation_read_field(op, ModelName::at("ModelName"))
+        .operation_read_field(op, ProposalName::at("ProposalName"))
+        .operation_read_field(op, ProposalData::at("ProposalData"))
+        .operation_read_field(op, ClaimData::at("ClaimData"))
         .operation_read_relation(op, ModelProposal::reference())
         .operation_read_relation(op, ModelClaim::reference())
         .operation_create(op, AcceptanceClaim::reference())
-        .operation_write(op, ClaimName::reference())
-        .operation_write(op, ClaimData::reference())
+        .operation_write(op, ClaimName::at("ClaimName"))
+        .operation_write(op, ClaimData::at("ClaimData"))
         .operation_link(op, ModelClaim::reference())
         .application_mutation_binding::<Binding>()
 }

@@ -7,12 +7,14 @@ fn denied_offline_temporal_async_artifact(
     requested_families: &[CausalEvidenceFamily],
 ) -> DeniedQueryCausalInspectionArtifact {
     let anchor = anchor_causal_observation(
-        QueryObservationReceipt::fixture(outcome, evidence_identities),
+        QueryObservationReceipt::fixture(outcome, evidence_identities)
+            .expect("positive fixture identity fits canonical digest bounds"),
         reason,
     )
     .expect("offline temporal/async receipt should anchor");
     let CausalEvidenceReferenceResolution::Resolved { reference_set, .. } =
         resolve_causal_evidence_references(anchor, requested_families)
+            .expect("fixture digest must fit")
     else {
         panic!("offline temporal/async references should resolve");
     };
@@ -30,7 +32,9 @@ fn denied_offline_temporal_async_artifact(
         requested_families,
     )
     .expect("unsupported family should still reach admission boundary");
-    let CausalInspectionProofFlow::Denied(denied) = admit_causal_inspection(request) else {
+    let CausalInspectionProofFlow::Denied(denied) =
+        admit_causal_inspection(request).expect("fixture digest must fit")
+    else {
         panic!("durable archive should deny while preserving retained evidence");
     };
     let QueryCausalInspectionArtifact::Denied(artifact) = materialize_denied_causal_inspection(
@@ -38,7 +42,8 @@ fn denied_offline_temporal_async_artifact(
         None,
         CausalInspectionRedactionPolicy::PreserveDetail,
         CausalInspectionMaterializationPolicy::OfflineInterpretableArtifact,
-    ) else {
+    )
+    .expect("fixture digest must fit") else {
         panic!("expected denied offline temporal/async artifact");
     };
     artifact
@@ -55,13 +60,15 @@ fn offline_temporal_async_diagnostics_preserve_remask_replay_resume_and_stale_co
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                     "query-inspection:offline-remask",
                 ),
-            ),
+            )
+            .expect("fixture digest must fit"),
             CausalObservationEvidenceIdentity::new(
                 CausalEvidenceFamily::BridgePreview,
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                     "bridge-preview:offline-remask",
                 ),
-            ),
+            )
+            .expect("fixture digest must fit"),
         ],
         &[CausalEvidenceFamily::BridgePreview],
     );
@@ -74,13 +81,15 @@ fn offline_temporal_async_diagnostics_preserve_remask_replay_resume_and_stale_co
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                     "query-inspection:offline-replay-drift",
                 ),
-            ),
+            )
+            .expect("fixture digest must fit"),
             CausalObservationEvidenceIdentity::new(
                 CausalEvidenceFamily::BridgeReplay,
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                     "bridge-replay:offline-replay-drift",
                 ),
-            ),
+            )
+            .expect("fixture digest must fit"),
         ],
         &[CausalEvidenceFamily::BridgeReplay],
     );
@@ -93,25 +102,29 @@ fn offline_temporal_async_diagnostics_preserve_remask_replay_resume_and_stale_co
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                     "query-inspection:offline-resume-mismatch",
                 ),
-            ),
+            )
+            .expect("fixture digest must fit"),
             CausalObservationEvidenceIdentity::new(
                 CausalEvidenceFamily::BridgeReplay,
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                     "bridge-replay:offline-resume-mismatch",
                 ),
-            ),
+            )
+            .expect("fixture digest must fit"),
             CausalObservationEvidenceIdentity::new(
                 CausalEvidenceFamily::SignalReplayCursor,
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                     "signal-replay-cursor:offline-resume-mismatch",
                 ),
-            ),
+            )
+            .expect("fixture digest must fit"),
             CausalObservationEvidenceIdentity::new(
                 CausalEvidenceFamily::BridgeContinuity,
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                     "bridge-continuity:offline-resume-mismatch",
                 ),
-            ),
+            )
+            .expect("positive fixture identity fits canonical digest bounds"),
         ],
         &[
             CausalEvidenceFamily::BridgeReplay,
@@ -128,19 +141,22 @@ fn offline_temporal_async_diagnostics_preserve_remask_replay_resume_and_stale_co
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                     "query-inspection:offline-stale-completion",
                 ),
-            ),
+            )
+            .expect("fixture digest must fit"),
             CausalObservationEvidenceIdentity::new(
                 CausalEvidenceFamily::SignalEvaluation,
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                     "signal-evaluation:offline-stale-completion",
                 ),
-            ),
+            )
+            .expect("fixture digest must fit"),
             CausalObservationEvidenceIdentity::new(
                 CausalEvidenceFamily::BridgeSourceFailure,
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                     "bridge-source-failure:offline-stale-completion",
                 ),
-            ),
+            )
+            .expect("fixture digest must fit"),
         ],
         &[
             CausalEvidenceFamily::SignalEvaluation,

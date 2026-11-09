@@ -1,7 +1,7 @@
 //! Genuine closed outbox-contract installation profiles; no execution runtime.
 use std::{num::NonZeroU64, sync::Arc};
 use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
-use worth_query_declaration::facade::application_schema::*;
+use worth_query_declaration::facade::application_schema::{fragment, *};
 use worth_query_installation::facade::{
     InstalledOperationCatalog, InstalledOperationSource, WorthQueryExternalEffectCorrelationFamily,
     WorthQueryInstallationAdmissionProfile, WorthQueryInstallationGeneration,
@@ -10,9 +10,45 @@ use worth_query_installation::facade::{
 };
 
 pub struct Schema;
-worth_query_declaration::worth_query_entity!(Entity for Schema);
-worth_query_declaration::worth_query_aspect!(Facts for Schema, Entity; identity = AspectIdentity(0x48640001), revision = AspectContractRevision(1));
-worth_query_declaration::worth_query_field!(Value for Schema, Entity, Facts: u64 => U64ApplicationValueBinding, read_write, equality);
+pub struct Entity;
+pub struct Facts;
+pub struct FactsRow(u64);
+pub struct Bindings;
+impl fragment::Fragment for Schema {
+    const NAME: &'static str = "Schema";
+    type Bindings = Bindings;
+    type Members = (Entity,);
+}
+impl fragment::Entity for Entity {
+    const NAME: &'static str = "Entity";
+    type Aspects = (Facts,);
+    type Relations = ();
+}
+impl fragment::Aspect for Facts {
+    const NAME: &'static str = "Facts";
+    type Row = FactsRow;
+}
+impl fragment::BindingSet for Bindings {
+    type Work<'a> = ValueDecodeAdmission<'a>;
+    fn with_admission<T>(
+        work: &mut Self::Work<'_>,
+        use_admission: impl FnOnce(&mut ValueDecodeAdmission<'_>) -> T,
+    ) -> T {
+        use_admission(work)
+    }
+}
+impl fragment::Scalar<u64> for Bindings {
+    type Binding = U64ApplicationValueBinding;
+}
+impl fragment::Record<FactsRow> for Bindings {
+    fn record() -> impl fragment::Shape<FactsRow, Self> {
+        fragment::field("Value", |row: &FactsRow| row.0)
+            .equality_queryable(true)
+            .build(|value, _: &mut ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(FactsRow(value))
+            })
+    }
+}
 worth_query_declaration::worth_query_structured_value_binding!(pub Payload for () { identity: "worth.rust.unit" });
 impl ApplicationExternalEffectBinding for Payload {
     const PROTOCOL: ApplicationExternalEffectProtocol = ApplicationExternalEffectProtocol::new(
@@ -64,10 +100,7 @@ fn declaration(
     }
     .no_aftermath()
     .finish();
-    ApplicationSchemaDeclarationBuilder::for_schema()
-        .entity(Entity::reference())
-        .aspect(Entity::reference(), Facts::reference())
-        .field(Entity::reference(), Value::reference())
+    fragment::declaration_builder(Schema)?
         .effect(Notice::reference())
         .operation(operation)
         .operation_emit(Notify::reference(), Notice::reference())

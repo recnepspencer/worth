@@ -1,9 +1,7 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_installation::facade::{
-    ApplicationFieldUnit, ApplicationReadableScalarValueBinding, ApplicationScalarValueBinding,
-    ApplicationSchema, DeclaredApplicationFieldValue, OperationReads, OperationWrites,
-    WorthQueryTemporalIntentCandidate, WorthQueryTemporalIntentRevisionValue, WritableCapability,
-    WritePosture,
+    ApplicationReadableScalarValueBinding, ApplicationScalarValueBinding, ApplicationSchema,
+    WorthQueryTemporalIntentCandidate, WorthQueryTemporalIntentRevisionValue,
 };
 
 use super::{
@@ -19,28 +17,20 @@ use crate::domain_computation::primary_graph::{
 };
 
 #[rustfmt::skip]
-impl<Schema, Operation, Input, Scope, Invoker, IntentEntity, IdentityAspect, IdentityField, IdentityValue, IdentityWrite, IdentityUnit, RevisionAspect, RevisionField, RevisionValue, RevisionWrite, RevisionEquality, RevisionUnit, LifecycleAspect, LifecycleField, LifecycleValue, LifecycleWrite, LifecycleEquality, LifecycleUnit, Authorization>
-    WorthQueryTemporalOperationExecution<Schema, Operation, Input, Scope, Invoker, IntentEntity, IdentityAspect, IdentityField, IdentityValue, IdentityWrite, IdentityUnit, RevisionAspect, RevisionField, RevisionValue, RevisionWrite, RevisionEquality, RevisionUnit, LifecycleAspect, LifecycleField, LifecycleValue, LifecycleWrite, LifecycleEquality, LifecycleUnit, Authorization>
+impl<Schema, Operation, Input, Scope, Invoker, IntentEntity, IdentityField, IdentityValue, RevisionField, RevisionValue, LifecycleField, LifecycleValue, Authorization>
+    WorthQueryTemporalOperationExecution<Schema, Operation, Input, Scope, Invoker, IntentEntity, IdentityField, IdentityValue, RevisionField, RevisionValue, LifecycleField, LifecycleValue, Authorization>
 where
     Schema: ApplicationSchema,
     Operation: 'static,
     Input: Clone + Send + Sync + 'static,
     Invoker: WorthQueryTemporalOperationInvoker<Schema, Operation, Input, Scope>,
-    IdentityField: DeclaredApplicationFieldValue<Value = IdentityValue>,
+    IdentityField: worth_query_declaration::facade::application_schema::fragment::RecordSelection<Entity = IntentEntity, Value = IdentityValue>,
     IdentityField::Binding: ApplicationReadableScalarValueBinding<Value = IdentityValue>,
-    IdentityWrite: WritePosture,
-    IdentityUnit: ApplicationFieldUnit,
-    RevisionField: OperationWrites<Operation>
-        + DeclaredApplicationFieldValue<Value = RevisionValue>,
+    RevisionField: worth_query_declaration::facade::application_schema::fragment::RecordSelection<Entity = IntentEntity, Value = RevisionValue>,
     RevisionField::Binding: ApplicationReadableScalarValueBinding<Value = RevisionValue>
         + WorthQueryTemporalIntentRevisionValue,
-    RevisionWrite: WritableCapability,
-    RevisionUnit: ApplicationFieldUnit,
-    LifecycleField: OperationWrites<Operation>,
-    LifecycleField: DeclaredApplicationFieldValue<Value = LifecycleValue>,
+    LifecycleField: worth_query_declaration::facade::application_schema::fragment::RecordSelection<Entity = IntentEntity, Value = LifecycleValue>,
     LifecycleField::Binding: ApplicationScalarValueBinding<Value = LifecycleValue>,
-    LifecycleWrite: WritableCapability,
-    LifecycleUnit: ApplicationFieldUnit,
 {
     pub(super) fn commit_projected_temporal_effect<Clock>(
         &self,
@@ -54,11 +44,9 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         idempotency: &WorthQueryPreparedTemporalIdempotency,
     ) -> Result<WorthQueryTemporalReentryOutcome, super::super::WorthQueryConditionalReentryFailure>
     where
-        RevisionField: OperationReads<Operation>,
-        RevisionField: DeclaredApplicationFieldValue<Value = RevisionValue>,
+        RevisionField: worth_query_declaration::facade::application_schema::fragment::RecordSelection<Entity = IntentEntity, Value = RevisionValue>,
         RevisionField::Binding: ApplicationReadableScalarValueBinding<Value = RevisionValue> + worth_query_installation::facade::WorthQueryTemporalIntentRevisionValue,
         RevisionValue: Clone,
-        LifecycleField: OperationReads<Operation>,
         LifecycleField::Binding: ApplicationReadableScalarValueBinding<Value = LifecycleValue>,
         LifecycleValue: Clone,
     {

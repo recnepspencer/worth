@@ -44,7 +44,7 @@ impl QueryDeliveryBatch {
                 .performance_receipt()
                 .performance_receipt_identity(),
             work_packet.maintenance_delta().delivery_posture().as_str(),
-        );
+        ).expect("delivery batch identity contains six sealed tokens, a boolean and a closed density posture");
 
         counters.delivery_batch_count = 1;
         counters.fanout_delivery_count = 1;
@@ -94,7 +94,8 @@ impl QueryDeliveryBatch {
             receipt.evidence_identity(),
             &absent_performance,
             "time_only",
-        );
+        )
+        .expect("time-only batch identity uses sealed tokens and a literal posture");
         let mut counters = ActiveSubscriptionCounters::default();
         counters.delivery_batch_count = 1;
         counters.fanout_delivery_count = 1;
@@ -135,7 +136,8 @@ impl QueryDeliveryBatch {
             receipt.evidence_identity(),
             &absent_performance,
             "mixed_cause",
-        );
+        )
+        .expect("mixed-cause batch identity uses sealed tokens and a literal posture");
         let mut counters = ActiveSubscriptionCounters::default();
         counters.delivery_batch_count = 1;
         counters.fanout_delivery_count = 1;

@@ -16,6 +16,7 @@ pub struct ReadAccess {
 worth_query_structured_value_binding!(pub InputBinding for ReadAccess { identity:"managed-catalog.box-access.v1" });
 worth_query_operation!(pub InspectBoxes for Catalog, input InputBinding);
 worth_query_operation_reads!(InspectBoxes => [DirectoryIdentity,grants::GrantDisclosure]);
+
 pub fn encoded() -> ApplicationEncodedScalarValue<U64ApplicationValueBinding> {
     ApplicationEncodedScalarValue::try_new(1).unwrap()
 }
@@ -30,12 +31,13 @@ impl ApplicationCapabilityRequest<Catalog, ReadBoxes> for ReadAccess {
     > {
         Ok(ApplicationCapabilityRequestProjection::new(
             ApplicationCapabilityEntitySelector::new(
-                DirectoryIdentity::reference(),
+                DirectoryIdentity::at("DirectoryIdentity"),
                 ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
                     self.directory.clone(),
                 )
                 .unwrap(),
-            ),
+            )
+            .unwrap(),
             encoded(),
             encoded(),
             ApplicationCapabilityRequestContext::new(BoxContext::reference()),
@@ -58,7 +60,8 @@ pub fn declare(
             [
                 ApplicationAuthorizationPathBuilder::from_principal(Principal::reference())
                     .forward(GrantGrantee::reference())
-                    .where_equal(GrantReadStatus::reference(), encoded())
+                    .where_equal(GrantReadStatus::at("GrantReadStatus"), encoded())
+                    .expect("record field contract")
                     .forward(GrantResource::reference())
                     .allow(Directory::reference()),
             ],
@@ -71,6 +74,9 @@ pub fn declare(
                 .finish(),
         )
         .operation_projection_work_budget(InspectBoxes::reference(), 32)
-        .operation_read_field(InspectBoxes::reference(), DirectoryIdentity::reference())
+        .operation_read_field(
+            InspectBoxes::reference(),
+            DirectoryIdentity::at("DirectoryIdentity"),
+        )
         .capability(contract::definition())
 }

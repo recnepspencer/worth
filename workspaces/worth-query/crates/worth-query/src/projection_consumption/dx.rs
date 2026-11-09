@@ -1,5 +1,6 @@
 use crate::authorized_projection::AuthorizedProjectionArtifact;
 use crate::canonicalization::CanonicalResultShapeArtifact;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::query_context::QueryContextExecutionArtifact;
 use crate::runtime::{
     WorthQueryDerivedArtifactBinding, WorthQueryLiveArtifactBinding, WorthQueryLiveReadResult,
@@ -24,6 +25,7 @@ use super::ConsumedProjectionFactSet;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ProjectionFactConsumptionPathError {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     Declaration(ProjectionConsumptionDeclarationError),
     Extraction(ProjectionFactExtractionError),
 }
@@ -117,12 +119,16 @@ impl CompletedProjectionFactConsumption {
     pub fn transition_rules(
         &self,
     ) -> super::receipt_transitions::ProjectionConsumptionTransitionRules {
-        self.receipt.transition_rules()
+        self.receipt
+            .transition_rules()
+            .expect("positive fixture identity fits canonical digest bounds")
     }
 
     #[cfg(test)]
     pub fn projection_consumption_envelope(&self) -> SelfDescribingProjectionConsumptionEnvelope {
-        self.receipt.projection_consumption_envelope()
+        self.receipt
+            .projection_consumption_envelope()
+            .expect("positive fixture identity fits canonical digest bounds")
     }
 }
 
@@ -230,11 +236,10 @@ impl crate::runtime::WorthQueryReadReceipt {
     pub fn discover_projection_fact_consumption_support(
         &self,
         result_shape: &CanonicalResultShapeArtifact,
-    ) -> ProjectionConsumptionSupportReport {
-        discover_projection_consumption_support(&ProjectionConsumptionSource::from_read_receipt(
-            self,
-            result_shape,
-        ))
+    ) -> Result<ProjectionConsumptionSupportReport, IdentityDerivationDenial> {
+        Ok(discover_projection_consumption_support(
+            &ProjectionConsumptionSource::from_read_receipt(self, result_shape),
+        )?)
     }
 }
 
@@ -259,10 +264,10 @@ impl WorthQueryWriteReceipt {
 
     pub fn discover_projection_fact_consumption_support(
         &self,
-    ) -> ProjectionConsumptionSupportReport {
-        discover_projection_consumption_support(&ProjectionConsumptionSource::from_write_receipt(
-            self,
-        ))
+    ) -> Result<ProjectionConsumptionSupportReport, IdentityDerivationDenial> {
+        Ok(discover_projection_consumption_support(
+            &ProjectionConsumptionSource::from_write_receipt(self),
+        )?)
     }
 }
 
@@ -282,10 +287,10 @@ impl QueryContextExecutionArtifact {
 
     pub fn discover_projection_fact_consumption_support(
         &self,
-    ) -> ProjectionConsumptionSupportReport {
-        discover_projection_consumption_support(
+    ) -> Result<ProjectionConsumptionSupportReport, IdentityDerivationDenial> {
+        Ok(discover_projection_consumption_support(
             &ProjectionConsumptionSource::from_query_context_execution(self),
-        )
+        )?)
     }
 }
 
@@ -306,10 +311,10 @@ impl WorthQueryDerivedArtifactBinding {
 
     pub fn discover_projection_fact_consumption_support(
         &self,
-    ) -> ProjectionConsumptionSupportReport {
-        discover_projection_consumption_support(
+    ) -> Result<ProjectionConsumptionSupportReport, IdentityDerivationDenial> {
+        Ok(discover_projection_consumption_support(
             &ProjectionConsumptionSource::from_retained_derived_artifact_binding(self),
-        )
+        )?)
     }
 }
 
@@ -334,57 +339,19 @@ impl WorthQueryLiveArtifactBinding {
 
     pub fn discover_projection_fact_consumption_support(
         &self,
-    ) -> ProjectionConsumptionSupportReport {
-        discover_projection_consumption_support(
+    ) -> Result<ProjectionConsumptionSupportReport, IdentityDerivationDenial> {
+        Ok(discover_projection_consumption_support(
             &ProjectionConsumptionSource::from_live_artifact_binding(self),
-        )
+        )?)
     }
 }
 
-fn consume_attempt_from_declaration(
-    declaration: ProjectionConsumptionDeclaration,
-    extract: impl FnOnce(
-        &MaterializedProjectionContract,
-    ) -> Result<ConsumedProjectionFactSet, ProjectionFactExtractionError>,
-) -> Result<ProjectionFactConsumptionAttempt, ProjectionFactConsumptionPathError> {
-    match evaluate_projection_consumption_eligibility(&declaration) {
-        ProjectionConsumptionEligibility::Admitted(admitted) => {
-            let contract = admitted.bind_contract();
-            let facts =
-                extract(&contract).map_err(ProjectionFactConsumptionPathError::Extraction)?;
-            let receipt = facts.issue_receipt();
-            Ok(ProjectionFactConsumptionAttempt::Admitted(
-                CompletedProjectionFactConsumption {
-                    declaration,
-                    contract,
-                    facts,
-                    receipt,
-                },
-            ))
-        }
-        ProjectionConsumptionEligibility::AdmittedWithWarnings(admitted, warnings) => {
-            let contract = admitted.bind_contract();
-            let facts =
-                extract(&contract).map_err(ProjectionFactConsumptionPathError::Extraction)?;
-            let receipt = facts.issue_receipt();
-            Ok(ProjectionFactConsumptionAttempt::AdmittedWithWarnings(
-                CompletedProjectionFactConsumption {
-                    declaration,
-                    contract,
-                    facts,
-                    receipt,
-                },
-                warnings,
-            ))
-        }
-        ProjectionConsumptionEligibility::Denied(denied) => {
-            Ok(ProjectionFactConsumptionAttempt::Denied(denied))
-        }
-        ProjectionConsumptionEligibility::Deferred(deferred) => {
-            Ok(ProjectionFactConsumptionAttempt::Deferred(deferred))
-        }
-        ProjectionConsumptionEligibility::SourceMismatch(mismatch) => {
-            Ok(ProjectionFactConsumptionAttempt::SourceMismatch(mismatch))
-        }
+#[path = "dx/consume_attempt_from_declaration.rs"]
+mod consume_attempt_from_declaration;
+use consume_attempt_from_declaration::consume_attempt_from_declaration;
+
+impl From<IdentityDerivationDenial> for ProjectionFactConsumptionPathError {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
     }
 }

@@ -1,8 +1,10 @@
 mod verification_denial;
 pub(in crate::domain_computation::primary_graph) use verification_denial::verification_denial;
 mod dependency;
+mod restored_facts;
 pub(crate) mod selection;
 mod verification_extent;
+pub(super) use restored_facts::{evidence_answer, evidence_unavailable, restored_facts_hold};
 pub(in crate::domain_computation::primary_graph) use verification_extent::RetainedFactVerification;
 
 pub(super) use dependency::require_installed_output_dependencies;
@@ -15,3 +17,6 @@ pub(super) use selection::{
 pub(in crate::domain_computation::primary_graph) use selection::{
     owner_read, preflight_stop, retained_fact_denial,
 };
+
+mod historical_selection;
+pub(in crate::domain_computation::primary_graph) use historical_selection::HistoricalOutputRead;

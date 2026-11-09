@@ -9,32 +9,36 @@ fn truth_view_helpers_keep_current_and_historical_meaning_distinct() {
     let handle = admitted_handle(request_execution, "main");
     let current_helper = handle
         .geometry_helpers()
-        .prepare_current_truth_view_for_active_face_selection_checked(progressed(
-            &handle, "face-b",
-        ));
+        .prepare_current_truth_view_for_active_face_selection_checked(progressed(&handle, "face-b"))
+        .expect("fixture digest must fit");
     let historical_helper = handle
         .geometry_helpers()
         .prepare_historical_truth_view_for_active_face_selection_checked(progressed(
             &handle, "face-c",
-        ));
-    let current_generic = handle.orchestrate_signal_compatibility_checked(
-        generic_signal_orchestration_input(&handle, progressed(&handle, "face-b"))
-            .with_bridge_request(
-                crate::application::WorthQueryDeclarationBridgeContinuationRequest::new(
-                    crate::application::WorthQueryDeclarationBridgeContinuationMode::TruthView,
-                    crate::application::WorthQueryDeclarationBridgeTruthContext::Current,
+        ))
+        .expect("fixture digest must fit");
+    let current_generic = handle
+        .orchestrate_signal_compatibility_checked(
+            generic_signal_orchestration_input(&handle, progressed(&handle, "face-b"))
+                .with_bridge_request(
+                    crate::application::WorthQueryDeclarationBridgeContinuationRequest::new(
+                        crate::application::WorthQueryDeclarationBridgeContinuationMode::TruthView,
+                        crate::application::WorthQueryDeclarationBridgeTruthContext::Current,
+                    ),
                 ),
-            ),
-    );
-    let historical_generic = handle.orchestrate_signal_compatibility_checked(
-        generic_signal_orchestration_input(&handle, progressed(&handle, "face-c"))
-            .with_bridge_request(
-                crate::application::WorthQueryDeclarationBridgeContinuationRequest::new(
-                    crate::application::WorthQueryDeclarationBridgeContinuationMode::TruthView,
-                    crate::application::WorthQueryDeclarationBridgeTruthContext::Historical,
+        )
+        .expect("fixture digest must fit");
+    let historical_generic = handle
+        .orchestrate_signal_compatibility_checked(
+            generic_signal_orchestration_input(&handle, progressed(&handle, "face-c"))
+                .with_bridge_request(
+                    crate::application::WorthQueryDeclarationBridgeContinuationRequest::new(
+                        crate::application::WorthQueryDeclarationBridgeContinuationMode::TruthView,
+                        crate::application::WorthQueryDeclarationBridgeTruthContext::Historical,
+                    ),
                 ),
-            ),
-    );
+        )
+        .expect("fixture digest must fit");
 
     assert_eq!(
         current_helper.orchestration_digest(),

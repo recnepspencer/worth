@@ -1,12 +1,15 @@
 use super::super::delivery::WorthQueryRuntimeRetainedDelivery;
 use super::delivery::WorthQueryRuntimeDownstreamDeliveryParts;
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 pub(crate) fn project_downstream_delivery(
     contract: &WorthQueryRuntimeDownstreamDeliveryContract,
     state: &WorthQueryRuntimeLiveSubscriptionState,
-) -> Option<WorthQueryRuntimeDownstreamDelivery> {
-    let delivery = state.last_delivery.as_ref()?;
+) -> Result<Option<WorthQueryRuntimeDownstreamDelivery>, IdentityDerivationDenial> {
+    let Some(delivery) = state.last_delivery.as_ref() else {
+        return Ok(None);
+    };
     let delivery_class = classify_delivery(delivery, state.async_result_state.as_ref());
     let support_posture = classify_support_posture(state.remask_posture.as_ref());
     let mixed_cause_identity = matches!(
@@ -49,8 +52,8 @@ pub(crate) fn project_downstream_delivery(
             remask_identity: remask_identity.as_ref(),
             runtime_resume_support_identity: contract.runtime_resume_support_identity(),
             durable_resume_support_identity: contract.durable_resume_support_identity(),
-        });
-    Some(WorthQueryRuntimeDownstreamDelivery::from_projection(
+        })?;
+    Ok(Some(WorthQueryRuntimeDownstreamDelivery::from_projection(
         WorthQueryRuntimeDownstreamDeliveryParts {
             view_name: state.installation.view_name().to_string(),
             delivery_batch_identity,
@@ -70,7 +73,7 @@ pub(crate) fn project_downstream_delivery(
             durable_resume_support_identity: contract.durable_resume_support_identity().clone(),
             delivery_identity,
         },
-    ))
+    )))
 }
 
 fn classify_delivery(

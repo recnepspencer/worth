@@ -2,11 +2,24 @@ use crate::application_program::{
     ApplicationFeature, ApplicationFeatureInputLeaf, ApplicationFeatureSpec,
 };
 
-crate::worth_query_application_schema! {
-    schema FeatureSpecMacroSchema {
-        owner: feature_spec_macro_test,
-        version: (1, 0),
-        members: |schema| { schema }
+use crate::facade::application_schema::{
+    fragment::{self, Fragment, NoBindings},
+    ApplicationSchema, ApplicationSchemaDeclaration, ApplicationSchemaDeclarationDenial,
+};
+struct FeatureSpecMacroSchema;
+impl Fragment for FeatureSpecMacroSchema {
+    const NAME: &'static str = "FeatureSpecMacroSchema";
+    type Bindings = NoBindings;
+    type Members = ();
+}
+impl ApplicationSchema for FeatureSpecMacroSchema {
+    const OWNER: &'static str = "feature_spec_macro_test";
+    const NAME: &'static str = <Self as Fragment>::NAME;
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        fragment::declare(Self)
     }
 }
 

@@ -84,7 +84,8 @@ fn every_query_family_lowers_to_explicit_bridge_family_and_slices() {
 #[test]
 fn equivalent_declarations_lower_to_identical_bridge_digest() {
     let declaration = |source| {
-        let input = LiveQueryAdmissionArtifact::for_test(LiveQueryFamily::Detail, None, source);
+        let input = LiveQueryAdmissionArtifact::for_test(LiveQueryFamily::Detail, None, source)
+            .expect("fixture digest must fit");
         let selection = select_query_subscription_family(input, roomy_budget()).unwrap();
         declare_query_subscription(selection, roomy_slice_budget()).unwrap()
     };

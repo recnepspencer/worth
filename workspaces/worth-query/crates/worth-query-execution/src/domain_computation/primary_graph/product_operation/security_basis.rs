@@ -118,7 +118,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 .integration_handle();
             graph
                 .with_runtime(execution, |runtime| {
-                    graph.ensure_primary_indexes_for_basis(
+                    graph.carry_primary_index_basis_for_basis(
                         execution,
                         runtime,
                         observation.basis().relational_basis(),

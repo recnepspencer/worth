@@ -1,5 +1,6 @@
 use super::WorthQueryWriteReceipt;
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::{
     WorthQueryCommitIdentity, WorthQueryEntityIdentity, WorthQueryMutationDelta,
     WorthQueryMutationReceipt, WorthQuerySnapshotIdentity,
@@ -278,15 +279,15 @@ impl WorthQueryWriteReceipt {
         reference: &WorthQuerySymbolicTargetReference,
         resolved_entity_identity: WorthQueryEntityIdentity,
         resolved_collection: Option<WorthQueryMutationTargetCollectionIdentity>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         self.symbolic_target_reference_evidence =
             Some(WorthQuerySymbolicTargetReferenceEvidence::from_reference(
                 reference,
                 &resolved_entity_identity,
-            ));
+            )?);
         self.target_entity_identity = Some(resolved_entity_identity);
         self.target_collection_identity = resolved_collection;
-        self
+        Ok(self)
     }
 
     #[cfg(test)]
@@ -299,7 +300,7 @@ impl WorthQueryWriteReceipt {
         provenance_execution_record_digest: Option<&str>,
         symbolic_target_symbol: Option<&str>,
         continuity: Option<crate::runtime::WorthQueryContinuityMutationEvidence>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let commit_evidence_identity =
             super::write_receipt_commit_evidence_identity(&commit_identity);
         let committed_truth_identity = super::write_receipt_committed_truth_identity(
@@ -308,11 +309,11 @@ impl WorthQueryWriteReceipt {
                 snapshot_identity.clone(),
                 Vec::new(),
             ),
-        );
+        )?;
         let journal_position = WorthQueryJournalPosition::from_commit_identity(&commit_identity);
         let snapshot_evidence_identity =
             super::write_receipt_snapshot_evidence_identity(&snapshot_identity);
-        Self {
+        Ok(Self {
             inner: WorthQueryMutationReceipt::from_authoritative_parts(
                 commit_identity,
                 snapshot_identity,
@@ -338,6 +339,7 @@ impl WorthQueryWriteReceipt {
                     symbol,
                     target_entity_identity.clone().unwrap_or_else(|| {
                         crate::memory_workspace::admit_authored_entity_label("resolved-target:test")
+                            .expect("fixture digest must fit")
                     }),
                     target_collection,
                 )
@@ -345,13 +347,16 @@ impl WorthQueryWriteReceipt {
             symbolic_aspect_resolution_evidence: Vec::new(),
             naming_mutation_evidence: None,
             continuity_mutation_evidence: continuity,
-            provenance_evidence: provenance_execution_record_digest
-                .map(WorthQueryMutationProvenanceEvidence::test_only),
+            provenance_evidence: provenance_execution_record_digest.map(|digest| {
+                WorthQueryMutationProvenanceEvidence::test_only(digest)
+                    .expect("fixture digest must fit")
+            }),
             declared_collection_identity: target_collection.map(|collection| {
                 crate::runtime::WorthQueryMutationTargetCollectionIdentity::new(
                     "write-receipt-test-declared",
                     collection,
                 )
+                .expect("fixture digest must fit")
             }),
             declared_entity_identity: target_entity_identity.clone(),
             target_collection_identity: target_collection.map(|collection| {
@@ -359,6 +364,7 @@ impl WorthQueryWriteReceipt {
                     "write-receipt-test-target",
                     collection,
                 )
+                .expect("fixture digest must fit")
             }),
             target_entity_identity,
             declared_aspect_operations: Vec::new(),
@@ -376,6 +382,6 @@ impl WorthQueryWriteReceipt {
             refresh_fallback: false,
             decision_trace_envelope: None,
             execution_provenance: None,
-        }
+        })
     }
 }

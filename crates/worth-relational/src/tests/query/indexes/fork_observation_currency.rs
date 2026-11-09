@@ -17,7 +17,7 @@ fn name_index(runtime: &RelationalRuntime, name: &str, branch_scoped: bool) -> D
 }
 
 #[test]
-fn a_fresh_fork_needs_its_own_branch_scoped_generation() {
+fn a_fresh_fork_carries_authoring_generation_through_its_own_basis() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -42,13 +42,16 @@ fn a_fresh_fork_needs_its_own_branch_scoped_generation() {
     let fork_observation = fork_basis.observation();
     let access = runtime.index_access();
 
-    // The fork selects its parent's commit, but a scoped generation published
-    // for main is not current for the fork.
+    // Fork installation carries the exact source selection before exposing the target.
     assert_eq!(fork_observation.commit_id(), Some(anchor.commit.commit_id));
-    assert!(access
+    let carried = access
         .read_published_generation_for_observation(execution, scoped, &fork_observation)
         .unwrap()
-        .is_none());
+        .unwrap();
+    assert_eq!(
+        carried.generation_id,
+        main_build.generations[0].generation_id
+    );
     let shared = access
         .read_published_generation_for_observation(execution, global, &fork_observation)
         .unwrap()
@@ -58,9 +61,7 @@ fn a_fresh_fork_needs_its_own_branch_scoped_generation() {
         .iter()
         .any(|built| built.generation_id == shared.generation_id));
 
-    // The production refresh reuses the shared global generation and seeds the
-    // scoped one from main's generation at the same root. A zero cold budget
-    // proves neither projects the graph.
+    // Reads reuse both carried selections without projecting the graph.
     let fork_build = runtime
         .index_authority()
         .refresh_for_basis(
@@ -80,8 +81,8 @@ fn a_fresh_fork_needs_its_own_branch_scoped_generation() {
         )
         .unwrap();
     assert_eq!(fork_build.generations.len(), 2);
-    assert_eq!(fork_build.work.reused_generations, 1);
-    assert_eq!(fork_build.work.seeded_generations, 1);
+    assert_eq!(fork_build.work.reused_generations, 2);
+    assert_eq!(fork_build.work.seeded_generations, 0);
     assert_eq!(fork_build.work.cold_record_slots, 0);
     let fork_generation = access
         .read_published_generation_for_observation(execution, scoped, &fork_observation)
@@ -91,7 +92,7 @@ fn a_fresh_fork_needs_its_own_branch_scoped_generation() {
         .generations
         .iter()
         .any(|built| built.generation_id == fork_generation.generation_id));
-    assert_eq!(fork_generation.source_branch_id, fork);
+    assert_eq!(fork_generation.source_branch_id, main);
 
     let (_, main_basis) = runtime
         .observe_branch(&runtime.branch_identity(&main).unwrap())
@@ -101,7 +102,7 @@ fn a_fresh_fork_needs_its_own_branch_scoped_generation() {
         .unwrap()
         .unwrap();
     assert_eq!(main_generation.source_branch_id, main);
-    assert_ne!(main_generation.generation_id, fork_generation.generation_id);
+    assert_eq!(main_generation.generation_id, fork_generation.generation_id);
     assert_eq!(main_generation.entries, fork_generation.entries);
 }
 
@@ -155,11 +156,15 @@ fn selected_fork_currency_uses_original_request_work_and_never_cold_population()
         short.unwrap_err().kind,
         Denial::Execution(Cause::WorkExhausted)
     );
-    assert!(runtime
-        .index_access()
-        .read_published_generation_for_observation(execution, index, &basis.observation())
-        .unwrap()
-        .is_none());
+    assert_eq!(
+        runtime
+            .index_access()
+            .read_published_generation_for_observation(execution, index, &basis.observation(),)
+            .unwrap()
+            .unwrap()
+            .generation_id,
+        main_build.generations[0].generation_id
+    );
     let (funded, report) = execution
         .run(ExecutionWorkCeiling::new(None), |_| {
             runtime
@@ -174,7 +179,10 @@ fn selected_fork_currency_uses_original_request_work_and_never_cold_population()
         .read_published_generation_for_observation(execution, index, &basis.observation())
         .unwrap()
         .unwrap();
-    assert_eq!(fork_generation.source_branch_id, fork);
+    assert_eq!(
+        fork_generation.generation_id,
+        main_build.generations[0].generation_id
+    );
     assert_eq!(fork_generation.entries, main_build.generations[0].entries);
     let (warm, report) = execution
         .run(ExecutionWorkCeiling::new(None), |_| {

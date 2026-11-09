@@ -5,6 +5,7 @@ use super::subscription_fixtures::{
     scale_axis_evidence, scale_slope_report, slice_budget, work_budget,
 };
 use super::SubscriptionLifecycleCertificationBundle;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::harness::certification::digest_parts;
 use crate::live::LiveQueryFamily;
 use crate::subscription::{
@@ -23,8 +24,10 @@ use crate::subscription::{
     SubscriptionLifecycleCloseRequest, SubscriptionLifecyclePreviewCertification,
 };
 
-fn continuation_harness_identity(label: &str) -> crate::WorthQueryEvidenceIdentity {
-    crate::WorthQueryEvidenceIdentity::compose(
+fn continuation_harness_identity(
+    label: &str,
+) -> Result<crate::WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(crate::WorthQueryEvidenceIdentity::compose(
         crate::WorthQueryEvidenceScope::SubscriptionActivationReceipt,
     )
     .field_shape(
@@ -32,7 +35,7 @@ fn continuation_harness_identity(label: &str) -> crate::WorthQueryEvidenceIdenti
         "subscription_continuation_harness_identity_v1",
     )
     .field_shape(crate::WorthQueryEvidenceTag::new("label"), label)
-    .seal()
+    .seal()?)
 }
 
 pub(super) fn lifecycle_lane(
@@ -42,8 +45,8 @@ pub(super) fn lifecycle_lane(
     affected_scope: &str,
     patch_width: u64,
     continuation_width: u64,
-) -> SubscriptionLifecycleCertificationBundle {
-    lifecycle_lane_with_delivery_profile(
+) -> Result<SubscriptionLifecycleCertificationBundle, IdentityDerivationDenial> {
+    Ok(lifecycle_lane_with_delivery_profile(
         live_family,
         view_family,
         delta_kind,
@@ -53,11 +56,12 @@ pub(super) fn lifecycle_lane(
         ActiveDeliveryDensityPosture::SparseDelta,
         1,
         ActiveSubscriptionAllocationPosture::PatchScratch,
-    )
+    )?)
 }
 
-pub(super) fn lifecycle_lane_with_posture() -> SubscriptionLifecycleCertificationBundle {
-    lifecycle_lane_with_delivery_profile(
+pub(super) fn lifecycle_lane_with_posture(
+) -> Result<SubscriptionLifecycleCertificationBundle, IdentityDerivationDenial> {
+    Ok(lifecycle_lane_with_delivery_profile(
         LiveQueryFamily::Detail,
         None,
         QuerySubscriptionMaintenanceDeltaKind::DetailFieldDelta,
@@ -67,7 +71,7 @@ pub(super) fn lifecycle_lane_with_posture() -> SubscriptionLifecycleCertificatio
         ActiveDeliveryDensityPosture::BurstCoalesced,
         2,
         ActiveSubscriptionAllocationPosture::HeapAllocationDebtExplicit,
-    )
+    )?)
 }
 
 fn lifecycle_lane_with_delivery_profile(
@@ -80,19 +84,20 @@ fn lifecycle_lane_with_delivery_profile(
     density_posture: ActiveDeliveryDensityPosture,
     allocation_scope_width: u64,
     allocation_posture: ActiveSubscriptionAllocationPosture,
-) -> SubscriptionLifecycleCertificationBundle {
+) -> Result<SubscriptionLifecycleCertificationBundle, IdentityDerivationDenial> {
     let live = LiveQueryAdmissionArtifact::for_test(
         live_family,
         view_family,
         QuerySubscriptionConstructionSource::FacadeLive,
-    );
+    )?;
     let selection = select_query_subscription_family(live.clone(), work_budget()).unwrap();
-    let context = SubscriptionLifecycleCertificationContext::from_live_selection(&live, &selection);
+    let context =
+        SubscriptionLifecycleCertificationContext::from_live_selection(&live, &selection)?;
     let declaration = declare_query_subscription(selection, slice_budget()).unwrap();
     let lowering = lower_query_subscription_to_bridge(declaration, lowering_budget()).unwrap();
     let admission_artifact = admit_query_subscription(lowering, admission_budget()).unwrap();
     let activation = prepare_subscription_activation(admission_artifact.clone());
-    let scale_report = scale_slope_report(&activation, patch_width, continuation_width);
+    let scale_report = scale_slope_report(&activation, patch_width, continuation_width)?;
     let mut runtime = ActiveSubscriptionRuntime::new();
     let active_admission =
         admit_active_subscription_lane(activation.clone(), active_budget()).unwrap();
@@ -100,7 +105,7 @@ fn lifecycle_lane_with_delivery_profile(
     let attachment = attach_subscription_consumer(
         &mut runtime,
         &handle,
-        SubscriptionConsumerAttachmentRequest::admitted("employee-dashboard", "cursor"),
+        SubscriptionConsumerAttachmentRequest::admitted("employee-dashboard", "cursor")?,
         attachment_budget(),
     )
     .unwrap();
@@ -113,10 +118,10 @@ fn lifecycle_lane_with_delivery_profile(
         affected_scope,
         patch_width,
         continuation_width,
-    );
+    )?;
     let (delta, lowering_report, lowering_counters) =
         lower_query_subscription_maintenance_delta(delta).unwrap();
-    finish_delivery_lane(
+    Ok(finish_delivery_lane(
         &mut runtime,
         context,
         admission_artifact,
@@ -140,7 +145,7 @@ fn lifecycle_lane_with_delivery_profile(
         density_posture,
         allocation_scope_width,
         allocation_posture,
-    )
+    ))
 }
 
 fn prepare_maintenance_delta(
@@ -151,20 +156,23 @@ fn prepare_maintenance_delta(
     affected_scope: &str,
     patch_width: u64,
     continuation_width: u64,
-) -> (
-    crate::subscription::QueryDeliveryWindow,
-    QuerySubscriptionMaintenanceDelta,
-    Option<crate::subscription::SubscriptionContinuationReport>,
-    Vec<String>,
-) {
-    if continuation_width > 0 {
+) -> Result<
+    (
+        crate::subscription::QueryDeliveryWindow,
+        QuerySubscriptionMaintenanceDelta,
+        Option<crate::subscription::SubscriptionContinuationReport>,
+        Vec<String>,
+    ),
+    IdentityDerivationDenial,
+> {
+    Ok(if continuation_width > 0 {
         let evidence = admit_subscription_continuation_evidence(
             attachment.lane_digest().clone(),
             SubscriptionContinuationClass::IdentityRemap,
-            continuation_harness_identity("employee:old"),
-            continuation_harness_identity("employee:new"),
-            continuation_harness_identity("basis:current"),
-            continuation_harness_identity("identity-authority"),
+            continuation_harness_identity("employee:old")?,
+            continuation_harness_identity("employee:new")?,
+            continuation_harness_identity("basis:current")?,
+            continuation_harness_identity("identity-authority")?,
             ContinuationRemapWidth::measured(continuation_width),
         )
         .unwrap();
@@ -183,9 +191,9 @@ fn prepare_maintenance_delta(
             attachment.lane_digest().clone(),
             affected_scope,
             MaintenanceDeltaWidth::measured(patch_width),
-        );
+        )?;
         (window, delta, None, Vec::new())
-    }
+    })
 }
 
 fn finish_delivery_lane(

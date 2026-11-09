@@ -32,6 +32,7 @@ fn admitted_replay_materialization_rejects_missing_requested_replay_posture() {
         CausalInspectionMaterializationPolicy::OfflineInterpretableArtifact,
     )
     .unwrap_err();
+    let error=match error { worth_query_execution::facade::causal_inspection::CausalInspectionConstructionStop::Materialization(denial)=>denial, other=>panic!("expected a semantic denial, got {other:?}"), };
 
     assert_eq!(
         error.kind(),
@@ -56,7 +57,8 @@ fn bridge_request_rejects_missing_query_observation_binding_before_materializati
     let flow = admit_causal_inspection(request_for(
         reference_set,
         CausalInspectionRichness::ReferenceOnly,
-    ));
+    ))
+    .expect("fixture digest must fit");
     let CausalInspectionProofFlow::Admitted(admitted) = flow else {
         panic!("reference-only inspection should admit");
     };
@@ -71,6 +73,12 @@ fn bridge_request_rejects_missing_query_observation_binding_before_materializati
         )],
     )
     .expect_err("bridge request should reject a missing query observation anchor");
+    let bridge_request_denial = match bridge_request_denial {
+        worth_runtime_bridge::facade::BridgeCausalEnvelopeConstructionStop::Denied(denial) => {
+            denial
+        }
+        other => panic!("expected a semantic denial, got {other:?}"),
+    };
 
     assert_eq!(
         bridge_request_denial.kind(),
@@ -94,7 +102,8 @@ fn bridge_request_rejects_multiple_query_observation_bindings_before_materializa
     let flow = admit_causal_inspection(request_for(
         reference_set,
         CausalInspectionRichness::ReferenceOnly,
-    ));
+    ))
+    .expect("fixture digest must fit");
     let CausalInspectionProofFlow::Admitted(admitted) = flow else {
         panic!("reference-only inspection should admit");
     };
@@ -125,6 +134,12 @@ fn bridge_request_rejects_multiple_query_observation_bindings_before_materializa
         ],
     )
     .expect_err("bridge request should reject multiple query observation anchors");
+    let bridge_request_denial = match bridge_request_denial {
+        worth_runtime_bridge::facade::BridgeCausalEnvelopeConstructionStop::Denied(denial) => {
+            denial
+        }
+        other => panic!("expected a semantic denial, got {other:?}"),
+    };
 
     assert_eq!(
         bridge_request_denial.kind(),

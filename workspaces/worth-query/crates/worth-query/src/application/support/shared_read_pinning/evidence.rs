@@ -1,3 +1,5 @@
+#[cfg(test)]
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -166,7 +168,7 @@ impl WorthQuerySharedReadPinningCounterEvidence {
                     WorthQueryEvidenceTag::new("reader_derived_evaluation_count"),
                     reader_derived_evaluation_count,
                 )
-                .seal()
+                .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens")
                 .as_str()
                 .to_string();
         Self {
@@ -192,13 +194,13 @@ impl WorthQuerySharedReadPinningCounterEvidence {
     }
 
     #[cfg(test)]
-    pub fn with_unretired_pin_for_sabotage(&self) -> Self {
-        Self::new(
+    pub fn with_unretired_pin_for_sabotage(&self) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             self.committed_read_hot_path_lock_count,
             self.orphaned_generation_count,
             self.unretired_pin_count + 1,
             self.shared_read_mint_row_clone_count,
             self.reader_derived_evaluation_count,
-        )
+        ))
     }
 }

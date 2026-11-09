@@ -22,7 +22,7 @@ fn a_stale_preflight_after_an_unindexed_fork_winner_cannot_poison_later_writes()
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
-    let field = AccountLabel::reference();
+    let field = AccountLabel::at("AccountLabel");
     let locator = graph
         .layout()
         .field_locator(field.entity(), field.aspect(), field.field())

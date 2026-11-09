@@ -108,9 +108,10 @@ impl ApplicationCapabilityRevocationRequest<BankSchema, RevokeEstateCapability> 
         };
         Ok(ApplicationCapabilityRevocationRequestProjection::new(
             ApplicationCapabilityEntitySelector::new(
-                CapabilityGrantIdentityField::reference(),
+                CapabilityGrantIdentityField::at("CapabilityGrantIdentityField"),
                 crate::schema::encoded_bank_value::<crate::schema::CapabilityGrantIdBinding>(grant),
-            ),
+            )
+            .unwrap(),
         ))
     }
 }
@@ -139,11 +140,12 @@ macro_rules! view_request {
                 };
                 Ok(ApplicationCapabilityRequestProjection::new(
                     ApplicationCapabilityEntitySelector::new(
-                        EstateCaseIdentityField::reference(),
+                        EstateCaseIdentityField::at("EstateCaseIdentityField"),
                         crate::schema::encoded_bank_value::<crate::schema::EstateCaseIdBinding>(
                             estate,
                         ),
-                    ),
+                    )
+                    .unwrap(),
                     crate::schema::encoded_bank_value::<
                         crate::schema::EstateCapabilityOperationBinding,
                     >(self.operation()),
@@ -185,9 +187,10 @@ impl ApplicationCapabilityRequest<BankSchema, RecognizeEstateExecutorCapability>
         };
         Ok(ApplicationCapabilityRequestProjection::new(
             ApplicationCapabilityEntitySelector::new(
-                EstateCaseIdentityField::reference(),
+                EstateCaseIdentityField::at("EstateCaseIdentityField"),
                 crate::schema::encoded_bank_value::<crate::schema::EstateCaseIdBinding>(estate),
-            ),
+            )
+            .unwrap(),
             crate::schema::encoded_bank_value::<crate::schema::EstateCapabilityOperationBinding>(
                 self.operation(),
             ),
@@ -197,11 +200,12 @@ impl ApplicationCapabilityRequest<BankSchema, RecognizeEstateExecutorCapability>
             ApplicationCapabilityRequestContext::new(EstateActionContext::reference()).entity(
                 EstateLegalAuthoritySlot::reference(),
                 ApplicationCapabilityEntitySelector::new(
-                    LegalAuthorityIdentityField::reference(),
+                    LegalAuthorityIdentityField::at("LegalAuthorityIdentityField"),
                     crate::schema::encoded_bank_value::<crate::schema::LegalAuthorityIdBinding>(
                         authority,
                     ),
-                ),
+                )
+                .unwrap(),
             ),
         ))
     }
@@ -213,9 +217,10 @@ fn estate_request(
 ) -> ApplicationCapabilityRequestProjection<BankSchema, EstateCase, EstateActionContext> {
     ApplicationCapabilityRequestProjection::new(
         ApplicationCapabilityEntitySelector::new(
-            EstateCaseIdentityField::reference(),
+            EstateCaseIdentityField::at("EstateCaseIdentityField"),
             crate::schema::encoded_bank_value::<crate::schema::EstateCaseIdBinding>(estate),
-        ),
+        )
+        .unwrap(),
         crate::schema::encoded_bank_value::<crate::schema::EstateCapabilityOperationBinding>(
             action.operation(),
         ),

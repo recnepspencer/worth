@@ -1,4 +1,4 @@
-//! Result-image-first v5 input commitments reuse one funded SHA state per carrier.
+//! Result-image-first v8 input commitments reuse one funded SHA state per carrier.
 use super::commitment_writer::{in_context, CommitmentWriter};
 use crate::config::data::MutationConfig;
 use crate::durability::data::{DurableBranchRootSchemaImage, RelationalRecoveryStop};

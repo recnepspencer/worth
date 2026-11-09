@@ -17,7 +17,7 @@ pub fn author_record(
             UnrelatedRecord::reference(),
             primary_graph::WorthQueryApplicationEntityKey::new(key).unwrap(),
         )
-        .field(UnrelatedValueField::reference(), value),
+        .field(UnrelatedValueField::at("UnrelatedValueField"), value),
     )
 }
 
@@ -47,7 +47,7 @@ pub fn assert_target_record(
             selected
                 .resolve_entity(
                     &host_phase,
-                    UnrelatedValueField::reference(),
+                    UnrelatedValueField::at("UnrelatedValueField"),
                     value,
                     &request_scope(),
                     primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,

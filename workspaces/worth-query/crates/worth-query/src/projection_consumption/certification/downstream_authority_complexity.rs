@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::projection_consumption::downstream_authority::seal_completed_consumption_with_contract;
 use crate::projection_consumption::identity::{
     compose_certification_row_digest, compose_digest_sequence,
@@ -119,35 +120,37 @@ impl ConsumedProjectionAuthorityComplexityEvidence {
     }
 }
 
-pub(super) fn complexity_evidence() -> ConsumedProjectionAuthorityComplexityEvidence {
+pub(super) fn complexity_evidence(
+) -> Result<ConsumedProjectionAuthorityComplexityEvidence, IdentityDerivationDenial> {
     let rows = vec![
-        requirement_width_row(),
-        fact_width_row(),
+        requirement_width_row()?,
+        fact_width_row()?,
         irrelevant_growth_row(
             ConsumedProjectionAuthorityComplexityAxis::UnrelatedWorkspaceGrowth,
             &[0, 32, 128],
-        ),
+        )?,
         irrelevant_growth_row(
             ConsumedProjectionAuthorityComplexityAxis::HistoricalBasisGrowth,
             &[0, 16, 64],
-        ),
+        )?,
         irrelevant_growth_row(
             ConsumedProjectionAuthorityComplexityAxis::ConsumerGraphGrowth,
             &[0, 64, 256],
-        ),
+        )?,
     ];
     let evidence_digest = compose_digest_sequence(
         "consumed_projection_authority_complexity_evidence_v2",
         "axis",
         rows.iter().map(|row| row.row_digest.clone()),
-    );
-    ConsumedProjectionAuthorityComplexityEvidence {
+    )?;
+    Ok(ConsumedProjectionAuthorityComplexityEvidence {
         rows,
         evidence_digest,
-    }
+    })
 }
 
-fn requirement_width_row() -> ConsumedProjectionAuthorityComplexityRow {
+fn requirement_width_row(
+) -> Result<ConsumedProjectionAuthorityComplexityRow, IdentityDerivationDenial> {
     let scale = vec![1, 2, 3];
     let all = [
         ProjectionAuthorityRequirement::SettledConsumption,
@@ -157,70 +160,72 @@ fn requirement_width_row() -> ConsumedProjectionAuthorityComplexityRow {
     let counters = scale
         .iter()
         .map(|width| {
-            let completed = control_row_set_lifecycle(2).into_completed();
+            let completed = control_row_set_lifecycle(2)?.into_completed();
             let contract = ProjectionAuthorityContract::certification(
                 completed.declaration().requested().clone(),
                 all[..*width].iter().copied(),
             );
-            seal_completed_consumption_with_contract(completed, contract)
-                .expect("scaled requirements must admit")
-                .counters()
-                .clone()
+            Ok(
+                seal_completed_consumption_with_contract(completed, contract)
+                    .expect("scaled requirements must admit")
+                    .counters()
+                    .clone(),
+            )
         })
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?;
     let satisfied = counters.iter().zip(&scale).all(|(counter, width)| {
         counter.requirement_checks() == *width
             && counter.relationship_checks() == 10
             && counter.authority_constructions() == 1
     });
-    row(
+    Ok(row(
         ConsumedProjectionAuthorityComplexityAxis::RequirementWidth,
         scale,
         counters,
         satisfied,
-    )
+    )?)
 }
 
-fn fact_width_row() -> ConsumedProjectionAuthorityComplexityRow {
+fn fact_width_row() -> Result<ConsumedProjectionAuthorityComplexityRow, IdentityDerivationDenial> {
     let scale = vec![1, 2, 3];
     let counters = scale
         .iter()
         .map(|width| {
-            super::downstream_authority_bundle::seal_control(*width)
+            Ok(super::downstream_authority_bundle::seal_control(*width)?
                 .counters()
-                .clone()
+                .clone())
         })
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?;
     let satisfied = counters.iter().zip(&scale).all(|(counter, width)| {
         counter.consumed_fact_visits() == width * 2
             && counter.relationship_checks() == 10
             && counter.requirement_checks() == 2
             && counter.authority_constructions() == 1
     });
-    row(
+    Ok(row(
         ConsumedProjectionAuthorityComplexityAxis::FactWidth,
         scale,
         counters,
         satisfied,
-    )
+    )?)
 }
 
 fn irrelevant_growth_row(
     axis: ConsumedProjectionAuthorityComplexityAxis,
     scale: &[usize],
-) -> ConsumedProjectionAuthorityComplexityRow {
+) -> Result<ConsumedProjectionAuthorityComplexityRow, IdentityDerivationDenial> {
     let counters = scale
         .iter()
         .map(|width| {
             let unrelated = (0..*width).collect::<Vec<_>>();
-            let authority = super::downstream_authority_bundle::seal_control(2);
+            let authority = super::downstream_authority_bundle::seal_control(2)?;
             assert_eq!(unrelated.len(), *width);
-            authority.counters().clone()
+            Ok(authority.counters().clone())
         })
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?;
     let baseline = &counters[0];
     let satisfied = counters.iter().all(|counter| counter == baseline);
-    row(axis, scale.to_vec(), counters, satisfied)
+    Ok(row(axis, scale.to_vec(), counters, satisfied)?)
 }
 
 fn row(
@@ -228,7 +233,7 @@ fn row(
     scale: Vec<usize>,
     counters: Vec<ConsumedProjectionAuthorityCounters>,
     satisfied: bool,
-) -> ConsumedProjectionAuthorityComplexityRow {
+) -> Result<ConsumedProjectionAuthorityComplexityRow, IdentityDerivationDenial> {
     let counter_text = format!("{counters:?}");
     let scale_text = format!("{scale:?}");
     let row_digest = compose_certification_row_digest(
@@ -239,14 +244,14 @@ fn row(
             ("counters", counter_text.as_str()),
             ("satisfied", if satisfied { "true" } else { "false" }),
         ],
-    );
-    ConsumedProjectionAuthorityComplexityRow {
+    )?;
+    Ok(ConsumedProjectionAuthorityComplexityRow {
         axis,
         scale,
         counters,
         satisfied,
         row_digest,
-    }
+    })
 }
 
 fn counter_values(

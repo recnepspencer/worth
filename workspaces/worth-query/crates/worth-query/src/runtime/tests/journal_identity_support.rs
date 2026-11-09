@@ -33,6 +33,7 @@ pub(super) fn journal_replay_surface_evidence(
         &[first, second],
         counter_snapshot,
     )
+    .expect("fixture digest must fit")
 }
 
 pub(super) fn assert_closed_replay_boundary_certification(

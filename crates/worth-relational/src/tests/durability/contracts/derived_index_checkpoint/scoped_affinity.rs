@@ -142,7 +142,7 @@ fn digest_valid_unissued_scoped_branch_denies_without_replacing_target_state() {
         .derived_index_checkpoint
         .as_ref()
         .unwrap()
-        .readmit()
+        .readmit(&crate::storage::substrate::maintenance::ReconstructionLane::oracle())
         .unwrap();
     assert_eq!(generations.len(), 1);
     let foreign = BranchId("unissued-checkpoint-index-scope".into());
@@ -154,12 +154,16 @@ fn digest_valid_unissued_scoped_branch_denies_without_replacing_target_state() {
     generations[0].applicability.branch_id = foreign.clone();
     let artifact =
         crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::capture(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
             generations.into_iter().map(std::sync::Arc::new).collect(),
+            Vec::new(),
         )
         .unwrap();
     // Establish that the genuine delta/digest owner admits this wire payload:
     // the requested refusal must come from joining it to native branch authority.
-    let decoded = artifact.readmit().unwrap();
+    let decoded = artifact
+        .readmit(&crate::storage::substrate::maintenance::ReconstructionLane::oracle())
+        .unwrap();
     assert_eq!(decoded[0].source_branch_id, foreign);
     assert_eq!(decoded[0].applicability.branch_id, foreign);
     checkpoint.derived_index_checkpoint = Some(artifact);

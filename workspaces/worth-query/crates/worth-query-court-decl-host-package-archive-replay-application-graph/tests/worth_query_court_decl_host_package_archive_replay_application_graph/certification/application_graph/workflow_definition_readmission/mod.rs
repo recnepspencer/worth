@@ -63,12 +63,16 @@ fn workflow_actor_contract_reheadered_predecessor_refuses_without_capture_origin
         WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
     )
     .err()
-    .expect("the old native frame must refuse before authority readmission");
+    .expect("untrusted transport must refuse before Native authority readmission");
+    // These imported bytes have no issuing capture authority, so Query refuses
+    // before Native decoding. Native owns the legacy-frame first refusal in
+    // native_checkpoint_codec::tests::chk6_and_retired_inner_partition_grammars_are_refused
+    // and recorded_component_checkpoint_refuses_chk15_before_source_admission.
     match denial {
         worth_query_host::facade::application_installation::WorthQueryApplicationPreparationDenial::Graph(cause) => {
             assert_eq!(cause.kind(), worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::InterimCheckpointCaptureOriginMissing);
         }
-        other => panic!("expected native frame refusal: {other:?}"),
+        other => panic!("expected missing capture origin refusal: {other:?}"),
     }
     assert_eq!(retained.bytes(), intact);
     assert_eq!(retained.bytes().as_ptr(), backing);

@@ -41,64 +41,31 @@ worth_query_application_query!(pub AuditQuery for Schema: BodySchemaBinding,
     identity "AuditQuery", parameters DocumentQueryParametersBinding,
     result AuditRowBinding, scope Audit => "Audit", name "body_audit_read");
 
-pub fn identity_result<Schema: BodySchemaBinding>() -> ApplicationQueryResultFieldRef<
-    AuditQuery,
-    AuditIdentitySlot,
-    Schema,
-    Audit,
-    AuditFacts,
-    AuditIdentityField,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("identity", AuditIdentityField::reference())
+pub fn identity_result<Schema: BodySchemaBinding>(
+) -> ApplicationQueryResultFieldRef<AuditQuery, AuditIdentitySlot, Schema, AuditIdentityField> {
+    ApplicationQueryResultFieldRef::new("identity", AuditIdentityField::at("AuditIdentityField"))
 }
-pub fn retention_result<Schema: BodySchemaBinding>() -> ApplicationQueryResultFieldRef<
-    AuditQuery,
-    AuditRetentionSlot,
-    Schema,
-    Audit,
-    AuditFacts,
-    AuditRetentionField,
-    u64,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("retention", AuditRetentionField::reference())
+pub fn retention_result<Schema: BodySchemaBinding>(
+) -> ApplicationQueryResultFieldRef<AuditQuery, AuditRetentionSlot, Schema, AuditRetentionField> {
+    ApplicationQueryResultFieldRef::new("retention", AuditRetentionField::at("AuditRetentionField"))
 }
 pub fn prior_retention_result<Schema: BodySchemaBinding>() -> ApplicationQueryResultFieldRef<
     AuditQuery,
     AuditPriorRetentionSlot,
     Schema,
-    Audit,
-    AuditFacts,
     AuditPriorRetentionField,
-    u64,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("prior_retention", AuditPriorRetentionField::reference())
+    ApplicationQueryResultFieldRef::new(
+        "prior_retention",
+        AuditPriorRetentionField::at("AuditPriorRetentionField"),
+    )
 }
 
-pub fn actor_result<Schema: BodySchemaBinding>() -> ApplicationQueryResultFieldRef<
-    AuditQuery,
-    AuditActorSlot,
-    Schema,
-    Audit,
-    AuditActorFacts,
-    AuditActorField,
-    u64,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("actor", AuditActorField::reference())
+pub fn actor_result<Schema: BodySchemaBinding>(
+) -> ApplicationQueryResultFieldRef<AuditQuery, AuditActorSlot, Schema, AuditActorField> {
+    ApplicationQueryResultFieldRef::new("actor", AuditActorField::at("AuditActorField"))
 }
-pub fn audit_query_definition<const DESTINATION: u64>() -> ApplicationQueryDefinition<
+pub fn audit_query_definition<const DESTINATION: u64>() -> ApplicationQueryDefinitionBuilder<
     DocumentRetentionSchema<DESTINATION>,
     AuditQuery,
     DocumentQueryParameters,
@@ -130,8 +97,6 @@ pub fn audit_query_definition<const DESTINATION: u64>() -> ApplicationQueryDefin
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 
 impl<const DESTINATION: u64>
@@ -158,15 +123,7 @@ impl<const DESTINATION: u64>
 }
 
 pub struct AuditQueryBinding<const DESTINATION: u64>;
-pub type Scope<const DESTINATION: u64> = ApplicationQueryFieldScope<
-    DocumentRetentionSchema<DESTINATION>,
-    Audit,
-    AuditFacts,
-    AuditIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type Scope<const DESTINATION: u64> = ApplicationQueryFieldScope<AuditIdentityField>;
 impl<const DESTINATION: u64> ApplicationQueryBinding<DocumentRetentionSchema<DESTINATION>>
     for AuditQueryBinding<DESTINATION>
 {
@@ -183,17 +140,8 @@ impl<const DESTINATION: u64> ApplicationQueryBinding<DocumentRetentionSchema<DES
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "worth.query.body-court.audit-query-binding.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        DocumentRetentionSchema<DESTINATION>,
-        Audit,
-        AuditFacts,
-        AuditIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        AuditIdentityField::reference()
+    fn scope_field() -> AuditIdentityField {
+        AuditIdentityField::at("AuditIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         DocumentRetentionSchema<DESTINATION>,
@@ -214,6 +162,6 @@ impl<const DESTINATION: u64> ApplicationQueryIntent<DocumentRetentionSchema<DEST
         ApplicationQueryParameterSet::new()
     }
     fn into_scope(self) -> Scope<DESTINATION> {
-        Scope::new(AuditIdentityField::reference(), self.identity)
+        Scope::new(AuditIdentityField::at("AuditIdentityField"), self.identity)
     }
 }

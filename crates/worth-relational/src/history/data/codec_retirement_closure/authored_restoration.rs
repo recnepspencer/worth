@@ -1,5 +1,6 @@
 //! Restore plans reconstruct exactly recorded members and owned edges, with fresh generations.
 use super::{authored_cascade::reject, charge, CodecRetirementClosureStop as Stop};
+use crate::history::data::canonical_commit_envelope::OutputOriginHistory;
 use crate::{
     branch::AdmittedRelationalBranchBasis, history::data::CommitId, identity::data::EntityId,
     mvcc::*, publication::data::AuthoredRetirementRefusal as Cause, runtime::RelationalRuntime,
@@ -7,6 +8,8 @@ use crate::{
 };
 use worth_execution::{ExecutionRequest, ExecutionWorkCeiling};
 use worth_foundational::facade::*;
+mod creation_patch;
+pub(super) use creation_patch::creation_patch;
 
 fn failure(stop: Stop) -> TransactionCommitError {
     match stop {
@@ -28,6 +31,27 @@ impl RelationalRuntime {
         original: EntityId,
         anchor: CreatedEntityRef,
     ) -> Result<Option<RelationalAuthoredRestoration>, TransactionCommitError> {
+        self.prepare_authored_source_restoration_with_co_anchors(
+            execution,
+            installed,
+            basis,
+            retirement,
+            (original, anchor),
+            &[],
+        )
+    }
+
+    /// Every co-anchor is recreated by its own authored inverse Create.
+    pub fn prepare_authored_source_restoration_with_co_anchors(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        installed: &RelationalInstalledApplicationPublicationAuthority,
+        basis: &AdmittedRelationalBranchBasis,
+        retirement: CommitId,
+        anchor: (EntityId, CreatedEntityRef),
+        co_anchors: &[(EntityId, CreatedEntityRef)],
+    ) -> Result<Option<RelationalAuthoredRestoration>, TransactionCommitError> {
+        let (original, anchor) = anchor;
         if installed.runtime_instance_id != self.runtime_instance_id() || !basis.is_current() {
             return Err(reject(Cause::InvalidAuthoredAnchor, original));
         }
@@ -42,10 +66,16 @@ impl RelationalRuntime {
                         |context| {
                             charge(context, self.history.catalog_len().saturating_add(1))
                                 .map_err(failure)?;
-                            history
+                            let envelope = history
                                 .commit(retirement)
                                 .map_err(failure)?
-                                .ok_or_else(|| reject(Cause::CorruptPublication, original))
+                                .ok_or_else(|| reject(Cause::CorruptPublication, original))?;
+                            if envelope.authored_source_retirement().is_some() {
+                                super::source_scope_closure::validate_historical_prefix(
+                                    execution, &history, basis, &envelope, original, context,
+                                )?;
+                            }
+                            Ok::<_, TransactionCommitError>(envelope)
                         },
                     )
                 });
@@ -53,7 +83,7 @@ impl RelationalRuntime {
                     .map_err(|cause| failure(super::request(cause)))?
                     .map_err(|cause| failure(super::request(cause)))?
                     .0?;
-                let Some(event) = &envelope.authored_cascade_retirement else {
+                let Some(event) = envelope.authored_source_retirement() else {
                     return Ok(None);
                 };
                 if event.anchor != original {
@@ -62,7 +92,7 @@ impl RelationalRuntime {
                 let mut publications = Vec::with_capacity(event.publications.len());
                 for origin in &event.publications {
                     publications.push(
-                        self.readmit_authored_output_retirement_successor(
+                        self.readmit_native_output_transition_successor(
                             execution,
                             installed,
                             basis,
@@ -76,26 +106,50 @@ impl RelationalRuntime {
                         lease,
                         None,
                         |context| {
-                            basis
-                                .inner
-                                .root
-                                .demand_full_partition(execution, original.partition_id)
-                                .map_err(|cause| failure(super::request(cause)))?;
-                            let partition = basis
-                                .inner
-                                .root
-                                .partition_state(original.partition_id)
-                                .map_err(|cause| failure(cause.into()))?
-                                .ok_or_else(|| reject(Cause::InvalidAuthoredAnchor, original))?;
-                            let row = partition
-                                .entity_arena
-                                .get(&original)
-                                .filter(|row| {
-                                    row.retired_at() == Some(envelope.commit.version_id)
-                                        && row.kind_id() == Some(anchor.kind_id)
-                                })
-                                .ok_or_else(|| reject(Cause::InvalidAuthoredAnchor, original))?;
-                            let _ = row;
+                            charge(
+                                context,
+                                co_anchors.len().saturating_mul(event.co_anchors.len() + 1),
+                            )
+                            .map_err(failure)?;
+                            if co_anchors.len() != event.co_anchors.len() {
+                                return Err(reject(Cause::IncompleteRestoration, original));
+                            }
+                            for (index, (id, _)) in co_anchors.iter().enumerate() {
+                                charge(context, index + 1).map_err(failure)?;
+                                if !event.co_anchors.iter().any(|(old, _)| old == id)
+                                    || co_anchors[..index].iter().any(|(old, _)| old == id)
+                                {
+                                    return Err(reject(Cause::IncompleteRestoration, *id));
+                                }
+                            }
+                            for (original, anchor) in std::iter::once((original, &anchor))
+                                .chain(co_anchors.iter().map(|(id, target)| (*id, target)))
+                            {
+                                basis
+                                    .inner
+                                    .root
+                                    .demand_full_partition(execution, original.partition_id)
+                                    .map_err(|cause| failure(super::request(cause)))?;
+                                let partition = basis
+                                    .inner
+                                    .root
+                                    .partition_state(original.partition_id)
+                                    .map_err(|cause| failure(cause.into()))?
+                                    .ok_or_else(|| {
+                                        reject(Cause::InvalidAuthoredAnchor, original)
+                                    })?;
+                                let row = partition
+                                    .entity_arena
+                                    .get(&original)
+                                    .filter(|row| {
+                                        row.retired_at() == Some(envelope.commit.version_id)
+                                            && row.kind_id() == Some(anchor.kind_id)
+                                    })
+                                    .ok_or_else(|| {
+                                        reject(Cause::InvalidAuthoredAnchor, original)
+                                    })?;
+                                let _ = row;
+                            }
                             // Fund the fixed-width multi-publication proof comparisons before returning custody.
                             charge(
                                 context,
@@ -105,6 +159,7 @@ impl RelationalRuntime {
                             )
                             .map_err(failure)?;
                             let mut entities = vec![(original, anchor.clone())];
+                            entities.extend_from_slice(co_anchors);
                             for prior in &publications {
                                 for member in &prior.origin.members {
                                     charge(context, 1).map_err(failure)?;
@@ -123,15 +178,25 @@ impl RelationalRuntime {
                                     ));
                                 }
                             }
+                            let mut origin_frames = OutputOriginHistory::default();
+                            let validated_history = &mut origin_frames;
                             let mut inverse = Vec::new();
+                            let mut content =
+                                crate::content::RelationalContentAttachments::default();
                             let mut relations = Vec::new();
+                            let mut aggregate_memberships = Vec::new();
                             for prior in &publications {
                                 let predecessor =
                                     prior.origin.publication.predecessor().ok_or_else(|| {
                                         reject(Cause::CorruptPublication, original)
                                     })?;
-                                let live = history
-                                    .commit(predecessor)
+                                let live = validated_history
+                                    .by_commit(
+                                        predecessor,
+                                        &mut |commit| history.commit(commit),
+                                        &history.execution(),
+                                        context,
+                                    )
                                     .map_err(failure)?
                                     .ok_or_else(|| reject(Cause::CorruptPublication, original))?;
                                 for member in &prior.origin.members {
@@ -144,9 +209,23 @@ impl RelationalRuntime {
                                             reject(Cause::CorruptPublication, member.id)
                                         })?;
                                     let payload = super::membership::reconstruct(
-                                        &history, &live, member.id, plan, context, lease,
+                                        &history,
+                                        &live,
+                                        member.id,
+                                        plan,
+                                        validated_history,
+                                        context,
+                                        lease,
+                                        basis.inner.root.schema_authority(),
                                     )
                                     .map_err(failure)?;
+                                    live.content
+                                        .retain_restoration_content(
+                                            execution,
+                                            payload.as_ref().and_then(|p| p.state.as_ref()),
+                                            &mut content,
+                                        )
+                                        .map_err(crate::content::commit_denial)?;
                                     charge(context, entities.len()).map_err(failure)?;
                                     let target = entities
                                         .iter()
@@ -182,9 +261,50 @@ impl RelationalRuntime {
                                             reject(Cause::CorruptPublication, original)
                                         })?;
                                     let payload = super::relation_payload::reconstruct(
-                                        &history, &live, edge.id, plan, context, lease,
+                                        &history,
+                                        &live,
+                                        edge.id,
+                                        plan,
+                                        validated_history,
+                                        context,
+                                        lease,
+                                        basis.inner.root.schema_authority(),
                                     )
                                     .map_err(failure)?;
+                                    live.content
+                                        .retain_restoration_content(
+                                            execution,
+                                            payload.as_ref().and_then(|p| p.state.as_ref()),
+                                            &mut content,
+                                        )
+                                        .map_err(crate::content::commit_denial)?;
+                                    if basis
+                                        .inner
+                                        .root
+                                        .schema_authority()
+                                        .registry()
+                                        .native_private_kinds
+                                        .contains(&edge.kind)
+                                    {
+                                        let (state, funding) = match payload {
+                                            Some(payload) => {
+                                                let (state, funding) =
+                                                    payload.into_retained_parts();
+                                                (state, Some(funding))
+                                            }
+                                            None => (None, None),
+                                        };
+                                        aggregate_memberships.push(
+                                            crate::aggregate_identity::RestoredMembership::capture(
+                                                edge.id,
+                                                edge.kind,
+                                                edge.source,
+                                                state,
+                                                funding,
+                                            ),
+                                        );
+                                        continue;
+                                    }
                                     charge(context, entities.len().saturating_mul(2))
                                         .map_err(failure)?;
                                     let resolve = |id| {
@@ -225,14 +345,20 @@ impl RelationalRuntime {
                                     relations.push((edge.id, target));
                                 }
                             }
-                            Ok::<_, TransactionCommitError>((entities, relations, inverse))
+                            Ok::<_, TransactionCommitError>((
+                                entities,
+                                relations,
+                                inverse,
+                                content,
+                                aggregate_memberships,
+                            ))
                         },
                     )
                 });
                 execution
                     .consult()
                     .map_err(|cause| failure(super::request(cause)))?;
-                let (entities, relations, inverse) = result
+                let (entities, relations, inverse, content, aggregate_memberships) = result
                     .map_err(|cause| failure(super::request(cause)))?
                     .map_err(|cause| failure(super::request(cause)))?
                     .0?;
@@ -244,53 +370,10 @@ impl RelationalRuntime {
                     relations,
                     publications,
                     inverse,
+                    content,
+                    aggregate_memberships,
                 }))
             })
             .map_err(|cause| failure(super::request(cause)))?
     }
-}
-
-pub(super) fn creation_patch(
-    state: Option<&AuthoritativeRecordAspectState>,
-    plan: &crate::schema::data::LoweredAspectContractPlan,
-    context: &mut worth_execution::MapKernelContext<'_, '_>,
-) -> Result<PortableRecordAspectPatch, Stop> {
-    let Some(state) = state else {
-        return Ok(PortableRecordAspectPatch::new([]));
-    };
-    charge(
-        context,
-        state.owned_allocation_capacity_bytes().saturating_add(
-            state
-                .aspects()
-                .len()
-                .saturating_mul(plan.executable_bindings.len()),
-        ),
-    )?;
-    Ok(PortableRecordAspectPatch::new(
-        state
-            .aspects()
-            .entries()
-            .filter(|(key, _)| {
-                !plan.executable_bindings.iter().any(|binding| {
-                    binding.aspect_key() == *key
-                        && matches!(
-                            binding.target,
-                            crate::schema::data::AspectBinding::RelationSourceEndpoint
-                                | crate::schema::data::AspectBinding::RelationTargetEndpoint
-                        )
-                })
-            })
-            .map(|(_, value)| PortableAspectPatchOperation::SetWhole {
-                basis: PortableAspectContractBasis::from_contract(value.contract()),
-                value: match value.view() {
-                    ContractValidatedAspectValueView::Scalar(value) => {
-                        ContractValidationInput::Scalar(value.clone())
-                    }
-                    ContractValidatedAspectValueView::Struct(value) => {
-                        ContractValidationInput::Struct(value.clone())
-                    }
-                },
-            }),
-    ))
 }

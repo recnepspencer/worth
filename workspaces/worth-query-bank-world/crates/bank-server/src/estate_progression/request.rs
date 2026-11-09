@@ -35,7 +35,10 @@ impl BankIdentityRuntime {
                     self.invariant_projection(),
                     |reader, estate| {
                         reader
-                            .require_decision_field(estate, EstateCaseIdentityField::reference())
+                            .require_decision_field(
+                                estate,
+                                EstateCaseIdentityField::at("EstateCaseIdentityField"),
+                            )
                             .map(|_| ())
                     },
                 )
@@ -51,10 +54,9 @@ fn map_request_denial(
 ) -> BankEstateProgressionDenial {
     use WorthQueryApplicationElevationRequestDenial as Query;
     match denial {
-        Query::ExecutionRequest(cause) => BankEstateProgressionDenial::ApplicationEntry(
-            worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause),
-        ),
-        Query::Program(denial) => BankEstateProgressionDenial::ProgramAction(denial),
+        Query::ExecutionRequest(cause) => BankEstateProgressionDenial::ApplicationEntry(Box::new(
+            worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause))),
+        Query::Program(denial) => BankEstateProgressionDenial::ProgramAction(Box::new(denial)),
         Query::ProgramMismatch => BankEstateProgressionDenial::ProgramMismatch,
         Query::PrincipalBindingInstallation(denial) => {
             BankEstateProgressionDenial::PrincipalBindingInstallation(denial)

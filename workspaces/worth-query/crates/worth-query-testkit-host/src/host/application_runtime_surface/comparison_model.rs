@@ -9,7 +9,7 @@ use super::{
 };
 use worth_query_decl::facade::{
     application_query::{
-        ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
+        ApplicationQueryBasisSupport, ApplicationQueryCardinality,
         ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
         ApplicationQueryInfluenceContract, ApplicationQueryInspectionDefinition,
         ApplicationQueryLaneEligibility, ApplicationQueryParameterSet,
@@ -26,7 +26,7 @@ worth_query_application_query!(pub GovernedAccountQuery for HostIdentitySchema,
     identity "HostGovernedInspectionAccountQuery", parameters AccountParametersBinding,
     result AccountResultBinding, scope Account => "Account", name "host_governed_inspection_account_query");
 
-pub(super) fn definition() -> ApplicationQueryDefinition<
+pub(super) fn definition() -> ApplicationQueryDefinitionBuilder<
     HostIdentitySchema,
     GovernedAccountQuery,
     AccountParameters,
@@ -60,8 +60,6 @@ pub(super) fn definition() -> ApplicationQueryDefinition<
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<HostIdentitySchema, GovernedAccountQuery> for String {
     fn project(
@@ -87,8 +85,8 @@ worth_query_query_binding!(pub GovernedAccountReadBinding for GovernedAccountRea
     result AccountResultBinding,
     principal IdentityBinding, mapping ExternalMapping, principal_entity Principal,
         principal_identity u64, identity_binding worth_query_decl::facade::application_schema::U64ApplicationValueBinding,
-    scope Account, AccountIdentity, AccountNumber, String, ReadOnly, NoApplicationUnit,
-    field AccountNumber::reference(), value GovernedAccountRead::into_number, limits results 1
+    scope AccountNumber,
+    field AccountNumber::at("AccountNumber"), value GovernedAccountRead::into_number, limits results 1
 );
 pub(super) fn inspection_definition(
 ) -> ApplicationQueryInspectionDefinition<HostIdentitySchema, GovernedAccountReadBinding> {

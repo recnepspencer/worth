@@ -149,6 +149,9 @@ impl CourtWorthQueryOutputDemandSettlementForTest for WorthQueryOutputDemandSett
                     Reason::RestoredCheckpointMismatch,
                 ));
             }
+            OriginalSettledProducerSource::HistoricalSelection { .. } => {
+                panic!("this provenance fixture requires a committed, stable or checkpoint source")
+            }
         }
         check(self).unwrap();
         if let OriginalSettledProducerSource::Committed { .. } = original.source() {

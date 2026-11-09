@@ -108,7 +108,7 @@ impl WorthQueryLowerRuntimeBoundaryEnvelope {
                     WorthQueryEvidenceTag::new("classification"),
                     row.classification().as_str(),
                 )
-                .seal();
+                .seal().expect("bounded route grammar: sealed identifiers, primitive counts and closed inventory or policy labels");
         let route_evidence_identity =
             worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
                 .field_evidence_identity(
@@ -119,7 +119,7 @@ impl WorthQueryLowerRuntimeBoundaryEnvelope {
                     WorthQueryEvidenceTag::new("retained"),
                     retained_evidence_identity.evidence_identity(),
                 )
-                .seal();
+                .seal().expect("bounded route grammar: sealed identifiers, primitive counts and closed inventory or policy labels");
         let envelope_identity =
             worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEnvelope)
                 .field_shape(WorthQueryEvidenceTag::new("seam"), row.seam_key().as_str())
@@ -180,7 +180,7 @@ impl WorthQueryLowerRuntimeBoundaryEnvelope {
                     WorthQueryEvidenceTag::new("failure"),
                     route_failure_topology.as_str(),
                 )
-                .seal();
+                .seal().expect("bounded route grammar: sealed identifiers, primitive counts and closed inventory or policy labels");
         Self {
             seam_key: row.seam_key(),
             capability_label: row.capability_label(),

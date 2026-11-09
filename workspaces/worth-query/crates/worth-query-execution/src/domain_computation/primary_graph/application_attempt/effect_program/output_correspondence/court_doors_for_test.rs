@@ -107,3 +107,19 @@ impl WorthQueryCheckpointOutputRole {
         }
     }
 }
+
+impl WorthQueryApplicationOutputCorrespondence {
+    /// Selector fixture only: vary the proof lane of already bound retirements.
+    /// Native closure admission is exercised by the installed producer courts.
+    #[doc(hidden)]
+    pub fn retirement_roles_as_closure_for_test(mut self) -> Self {
+        let storage = std::sync::Arc::get_mut(&mut self.storage)
+            .expect("the selector fixture owns its correspondence");
+        assert!(storage
+            .roles
+            .iter()
+            .all(|(_, binding)| binding.posture == WorthQueryApplicationOutputPosture::Retire));
+        storage.closure_evidence.append(&mut storage.roles);
+        self
+    }
+}

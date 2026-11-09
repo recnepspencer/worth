@@ -27,7 +27,8 @@ impl ConcurrentMatrixState {
                 })
                 .expect("preview insert should stage");
             preview.discard()
-        };
+        }
+        .expect("fixture digest must fit");
         self.delivery_residue_count += hostile_preview_delivery_residue_count(&discarded);
         self.preview_closeout_digests
             .push(hostile_preview_closeout_digest(&discarded));

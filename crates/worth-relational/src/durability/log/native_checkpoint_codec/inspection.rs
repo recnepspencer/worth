@@ -13,9 +13,7 @@ pub(crate) fn inspect<'a>(
     execution
         .check_live()
         .map_err(|stop| RelationalRecoveryStop::Request(stop.into()))?;
-    let payload = bytes
-        .strip_prefix(super::CHECKPOINT_MAGIC)
-        .ok_or_else(|| invalid("unknown native checkpoint frame"))?;
+    let payload = super::checkpoint_payload(bytes)?;
     // The one request-aware codec admits the roster/table before they grow.
     let decoded = super::decode_checkpoint(execution, bytes)?.checkpoint;
     let symbol_identity_frontier = decoded.symbol_identity_frontier;
@@ -60,6 +58,14 @@ pub(crate) fn inspect<'a>(
         })
         .collect();
     let mut live_records = BTreeSet::new();
+    let mut current_publication_records = BTreeSet::new();
+    let mut roster_kinds = BTreeSet::new();
+    for schema in &decoded.branch_root_schema_images {
+        let (registry, _) = schema.readmit_registry().map_err(invalid)?;
+        if let Some(storage) = registry.current_publication_storage {
+            roster_kinds.extend(storage.metadata_kinds());
+        }
+    }
     // Alias targets are encoded in the mirror or another root. Union all
     // present arena images; a shared identity may be live in several roots.
     for partitions in std::iter::once(partition_images)
@@ -72,12 +78,16 @@ pub(crate) fn inspect<'a>(
                 partition.partition_id.0,
                 partition.entity_arena,
                 &mut root_live,
+                &roster_kinds,
+                &mut current_publication_records,
             )?;
             census(
                 RecordAllocationClass::Relation,
                 partition.partition_id.0,
                 partition.relation_arena,
                 &mut root_live,
+                &roster_kinds,
+                &mut current_publication_records,
             )?;
         }
         live_records.extend(root_live);
@@ -98,6 +108,7 @@ pub(crate) fn inspect<'a>(
         frontiers,
         generations,
         live_records,
+        current_publication_records,
     })
 }
 fn record_class(class: DurableRecordGenerationClass) -> RecordAllocationClass {
@@ -111,12 +122,14 @@ fn census<K: RecordArenaCheckpointKind>(
     partition_id: u32,
     arena: RecordArenaCheckpointImage<K>,
     result: &mut BTreeSet<CheckpointRecordIdentity>,
+    roster_kinds: &BTreeSet<crate::identity::data::KindId>,
+    roster_records: &mut BTreeSet<CheckpointRecordIdentity>,
 ) -> Result<(), DurabilityError> {
     let RecordArenaCheckpointImage {
         slots,
         generations,
         lifecycle,
-        kind_ids: _,
+        kind_ids,
         metadata_history: _,
         created_at: _,
         retired_at: _,
@@ -146,12 +159,21 @@ fn census<K: RecordArenaCheckpointKind>(
                 } else {
                     slots[index]
                 };
-                if !result.insert(CheckpointRecordIdentity {
+                let identity = CheckpointRecordIdentity {
                     class,
                     partition_id,
                     slot,
                     generation,
-                }) {
+                };
+                if kind_ids
+                    .get(index)
+                    .copied()
+                    .flatten()
+                    .is_some_and(|kind| roster_kinds.contains(&kind))
+                {
+                    roster_records.insert(identity);
+                }
+                if !result.insert(identity) {
                     return Err(invalid("duplicate live record identity"));
                 }
             }

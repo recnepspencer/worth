@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod row_materialization;
 
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
@@ -56,8 +57,8 @@ pub struct CausalInspectionRepresentativeRowDigestSet {
 fn representative_query_digest(
     query_observation_receipt_digest: &str,
     causal_observation_anchor_digest: &str,
-) -> String {
-    WorthQueryEvidenceIdentity::compose(
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(WorthQueryEvidenceIdentity::compose(
         WorthQueryEvidenceScope::CausalInspectionCertificationFailureEvidence,
     )
     .field_shape(
@@ -72,7 +73,7 @@ fn representative_query_digest(
         WorthQueryEvidenceTag::new("anchor"),
         causal_observation_anchor_digest,
     )
-    .seal()
+    .seal()?
     .as_str()
-    .to_string()
+    .to_string())
 }

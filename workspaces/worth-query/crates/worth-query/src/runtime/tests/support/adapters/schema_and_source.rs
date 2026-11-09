@@ -14,8 +14,12 @@ impl WorthQueryRuntimeSchemaAdapter for TestSchemaAdapter {
         request: &DeclarativeLiveQueryRequest,
         _schema_view: &QuerySchemaView,
     ) -> Result<LiveViewDeclarationAdmissionBoundaryReceipt, WorthQueryWorkspaceError> {
-        let receipt = self.build_live_view_declaration_admission_receipt(name, request);
-        Ok(self.build_live_view_declaration_boundary_receipt(name, request, receipt))
+        let receipt = self
+            .build_live_view_declaration_admission_receipt(name, request)
+            .expect("fixture digest must fit");
+        Ok(self
+            .build_live_view_declaration_boundary_receipt(name, request, receipt)
+            .expect("fixture digest must fit"))
     }
 }
 
@@ -45,8 +49,12 @@ impl WorthQueryRuntimeSchemaAdapter for DriftingSchemaReceiptAdapter {
         request: &DeclarativeLiveQueryRequest,
         _schema_view: &QuerySchemaView,
     ) -> Result<LiveViewDeclarationAdmissionBoundaryReceipt, WorthQueryWorkspaceError> {
-        let receipt = self.build_live_view_declaration_admission_receipt("drifted.view", request);
-        Ok(self.build_live_view_declaration_boundary_receipt("drifted.view", request, receipt))
+        let receipt = self
+            .build_live_view_declaration_admission_receipt("drifted.view", request)
+            .expect("fixture digest must fit");
+        Ok(self
+            .build_live_view_declaration_boundary_receipt("drifted.view", request, receipt)
+            .expect("fixture digest must fit"))
     }
 }
 
@@ -88,8 +96,12 @@ impl WorthQueryRuntimeSourceAdapter for TestSourceAdapter {
             ));
         }
         let live_target = WorthQueryLiveArtifactTarget::from_view_name(name.clone());
-        self.live_views
-            .insert(live_target, request.target_collection_identity());
+        self.live_views.insert(
+            live_target,
+            request
+                .target_collection_identity()
+                .expect("fixture digest must fit"),
+        );
         Ok(WorthQueryLiveViewHandle::new(name))
     }
 
@@ -243,7 +255,8 @@ impl WorthQueryRuntimeSnapshotIdentityAdapter for TestSnapshotIdentityAdapter {
                     "stable",
                 )
                 .field_usize(WorthQueryEvidenceTag::new("test_snapshot_sequence"), 1)
-                .seal(),
+                .seal()
+                .expect("fixture digest must fit"),
         )
     }
 }
@@ -266,7 +279,8 @@ impl WorthQueryRuntimeSnapshotIdentityAdapter for DriftingSnapshotIdentityAdapte
                     WorthQueryEvidenceTag::new("drifting_snapshot_sequence"),
                     snapshot_sequence as usize,
                 )
-                .seal(),
+                .seal()
+                .expect("fixture digest must fit"),
         )
     }
 }

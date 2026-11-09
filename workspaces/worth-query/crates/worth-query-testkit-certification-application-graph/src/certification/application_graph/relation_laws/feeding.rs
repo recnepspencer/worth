@@ -34,23 +34,14 @@ impl EditFeeds {
         ApplicationOperationRef::from_declaration()
     }
 }
-worth_query_operation_reads!(EditFeeds => [NodeKey, LeafKey, Feeds, Node, Leaf]);
+worth_query_operation_reads!(EditFeeds =>[Feeds,Node,Leaf]);
 worth_query_operation_links!(EditFeeds => [Feeds]);
 worth_query_operation_unlinks!(EditFeeds => [Feeds]);
 worth_query_operation_deletes!(EditFeeds => [Node, Leaf]);
 worth_query_operation_creates!(EditFeeds => [Leaf]);
-worth_query_operation_writes!(EditFeeds => [LeafKey]);
 
 pub struct FeedsBinding<L: LawPolicy>(pub PhantomData<fn() -> L>);
-pub type NodeScope<L> = ApplicationMutationFieldScope<
-    GraphSchema<L>,
-    Node,
-    NodeFacts,
-    NodeKey,
-    u64,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type NodeScope<L> = ApplicationMutationFieldScope<GraphKey<GraphSchema<L>>>;
 impl<L: LawPolicy> ApplicationMutationBinding<GraphSchema<L>> for FeedsBinding<L> {
     type Input = FeedsEditInput;
     type InputBinding = FeedsInputBinding;
@@ -75,17 +66,8 @@ impl<L: LawPolicy> ApplicationMutationBinding<GraphSchema<L>> for FeedsBinding<L
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
     }
-    fn scope_field() -> ApplicationFieldRef<
-        GraphSchema<L>,
-        Node,
-        NodeFacts,
-        NodeKey,
-        u64,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        NodeKey::reference()
+    fn scope_field() -> GraphKey<GraphSchema<L>> {
+        node_key::<GraphSchema<L>>()
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         GraphSchema<L>,
@@ -109,11 +91,12 @@ impl<L: LawPolicy> ApplicationMutationIntent<GraphSchema<L>> for FeedsEdit<L> {
         &self.input
     }
     fn scope_binding(&self) -> NodeScope<L> {
-        NodeScope::new(NodeKey::reference(), self.input.context)
+        NodeScope::<L>::new(node_key::<GraphSchema<L>>(), self.input.context)
     }
 }
 
-pub type NodeTarget<L> = WorthQueryInvariantMutationTarget<GraphSchema<L>, Node>;
+pub type NodeTarget<L> =
+    WorthQueryInvariantMutationTarget<GraphSchema<L>, GraphNode<GraphSchema<L>>>;
 pub type LeafTarget<L> = WorthQueryInvariantMutationTarget<GraphSchema<L>, Leaf>;
 pub enum FeedDecision<L: LawPolicy> {
     Replace {
@@ -153,20 +136,20 @@ pub fn decide_feeds<L: LawPolicy>(
     input: &FeedsEditInput,
     reader: &mut DecisionReader<'_, '_, '_, GraphSchema<L>, FeedsBinding<L>>,
 ) -> Result<FeedDecision<L>, HandlerExecutionDenial> {
-    let source = reader.resolve_entity(NodeKey::reference(), input.context)?;
+    let source = reader.resolve_entity(node_key::<GraphSchema<L>>(), input.context)?;
     Ok(match input.change {
         FeedsChange::DeleteSource => {
-            reader.entity(&source, Node::reference())?;
+            reader.entity(&source, node::<GraphSchema<L>>())?;
             FeedDecision::DeleteSource(reader.mutation_target(&source)?)
         }
         FeedsChange::DeleteLeaf { key } => {
-            let leaf = reader.resolve_entity(LeafKey::reference(), key)?;
+            let leaf = reader.resolve_entity(LeafKey::at("LeafKey"), key)?;
             reader.entity(&leaf, Leaf::reference())?;
             FeedDecision::DeleteLeaf(reader.mutation_target(&leaf)?)
         }
         FeedsChange::Replace { first_leaf, count } => {
             let observed = reader
-                .relations_from(Feeds::reference(), &source)
+                .relations_from(feeds::<GraphSchema<L>>(), &source)
                 .map_err(HandlerExecutionDenial::new)?;
             let mut removed = Vec::new();
             let mut commands = std::collections::BTreeSet::new();
@@ -191,7 +174,7 @@ pub fn write_feeds<L: LawPolicy>(
     match decision {
         FeedDecision::DeleteSource(source) => {
             let source = writer.projected_entity(&source)?;
-            writer.delete_entity(Node::reference(), &source)?;
+            writer.delete_entity(node::<GraphSchema<L>>(), &source)?;
         }
         FeedDecision::DeleteLeaf(leaf) => {
             let leaf = writer.projected_entity(&leaf)?;
@@ -206,7 +189,7 @@ pub fn write_feeds<L: LawPolicy>(
             let source = writer.projected_entity(&source)?;
             for leaf in removed {
                 let leaf = writer.projected_entity(&leaf)?;
-                writer.unlink(Feeds::reference(), &source, &leaf)?;
+                writer.unlink(feeds::<GraphSchema<L>>(), &source, &leaf)?;
             }
             for offset in 0..count {
                 let key = first + u64::from(offset);
@@ -215,8 +198,13 @@ pub fn write_feeds<L: LawPolicy>(
                     Leaf::reference(),
                     WorthQueryApplicationEntityKey::new(format!("leaf-{key}")).unwrap(),
                 )?;
-                writer.initialize_field(&leaf, LeafKey::reference(), key)?;
-                writer.link(Feeds::reference(), format!("feed-{key}"), &source, &leaf)?;
+                writer.initialize_field(&leaf, LeafKey::at("LeafKey"), key)?;
+                writer.link(
+                    feeds::<GraphSchema<L>>(),
+                    format!("feed-{key}"),
+                    &source,
+                    &leaf,
+                )?;
             }
         }
     }

@@ -110,17 +110,26 @@ fn compare_bindings(
             if old_field.codec() == new_field.codec() {
                 continue;
             }
-            let reason = if old_field.codec().is_none() || new_field.codec().is_none() {
-                "recovered field codec has missing meaning classification"
-            } else if new.revision() <= old.revision() {
-                "recovered field codec meaning changed without an advanced semantic aspect revision"
-            } else {
-                "recovered derived codec requires authenticated native transition admission"
-            };
-            return Err(DurabilityError::new(RecoveryFailureClass::SchemaMismatch, reason).into());
+            return Err(codec_change_denial(old, new, old_field, new_field).into());
         }
     }
     Ok(())
+}
+
+fn codec_change_denial(
+    previous: &worth_foundational::facade::AspectContract,
+    next: &worth_foundational::facade::AspectContract,
+    previous_field: &worth_foundational::facade::FieldDeclaration,
+    next_field: &worth_foundational::facade::FieldDeclaration,
+) -> DurabilityError {
+    let reason = if previous_field.codec().is_none() || next_field.codec().is_none() {
+        "recovered field codec has missing meaning classification"
+    } else if next.revision() == previous.revision() {
+        "recovered field codec meaning changed without a changed semantic aspect revision"
+    } else {
+        "recovered derived codec requires authenticated native transition admission"
+    };
+    DurabilityError::new(RecoveryFailureClass::SchemaMismatch, reason)
 }
 
 fn has_codec(
@@ -181,3 +190,6 @@ pub(super) fn request(
 ) -> RelationalRecoveryStop {
     RelationalRecoveryStop::Request(cause.into())
 }
+
+#[cfg(test)]
+mod fingerprint_tests;

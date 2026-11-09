@@ -1,11 +1,21 @@
 use crate::installation::aspect_native_identity::model;
 
 fn measure<const R: usize, const F: usize>() -> (u32, usize) {
-    let operation = model::install::<R, F>().expect("finite aspect-native declaration installs");
+    let declaration = model::declaration::<R, F, false>().unwrap();
+    let admitted = model::package(&declaration).validate().unwrap();
+    let source = admitted.canonical_work();
+    let index = model::index_from(admitted);
+    let operation = index
+        .bind_application_schema(declaration)
+        .unwrap()
+        .installed_operation(model::operation())
+        .expect("finite aspect-native declaration installs");
     let work = operation
         .graph_obligations()
         .installation_evidence()
         .canonical_work();
+    assert!(work.canonical_entries() <= 16 * source.canonical_entries());
+    assert!(work.canonical_encoded_bytes() <= 16 * source.canonical_encoded_bytes());
     println!(
         "aspect-native records={R} fields={F} entries={} bytes={}",
         work.canonical_entries(),

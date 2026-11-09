@@ -4,9 +4,8 @@ use worth_query_declaration::facade::application_schema::{
     ApplicationStructuredValueBinding, OperationEmits,
 };
 use worth_query_installation::facade::{
-    ApplicationEntityRef, ApplicationFieldRef, ApplicationFieldUnit, ApplicationRelationRef,
-    DeclaredApplicationFieldValue, OperationCreates, OperationDeletes, OperationLinks,
-    OperationWrites, OptionalApplicationFieldValue, WritableCapability,
+    ApplicationEntityRef, ApplicationRelationRef, OperationCreates, OperationDeletes,
+    OperationLinks,
 };
 
 use super::CandidateWriter;
@@ -20,6 +19,7 @@ where
     Schema: worth_query_installation::facade::ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
 {
+    #[inline(always)]
     pub fn create_entity<Entity>(
         &mut self,
         entity: ApplicationEntityRef<Schema, Entity>,
@@ -31,6 +31,7 @@ where
         self.candidate.create_entity(entity, key)
     }
 
+    #[inline(always)]
     pub fn create_entity_in_context<Entity, ContextEntity>(
         &mut self,
         context: &WorthQueryApplicationEffectEntity<Schema, ContextEntity>,
@@ -44,50 +45,61 @@ where
             .create_entity_in_context(context, entity, key)
     }
 
-    pub fn initialize_field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    #[inline(always)]
+    pub fn initialize_field<Entity, Aspect, Field, Value>(
         &mut self,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+        field: Field,
         value: Value,
     ) -> Result<(), WorthQueryApplicationAttemptDenial>
     where
         Entity: OperationCreates<Binding::Operation>,
-        Field: OperationWrites<Binding::Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
     {
         self.candidate.initialize_field(target, field, value)
     }
 
-    pub fn write_field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    #[inline(always)]
+    pub fn write_field<Entity, Aspect, Field, Value>(
         &mut self,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+        field: Field,
         value: Value,
     ) -> Result<(), WorthQueryApplicationAttemptDenial>
     where
-        Field: OperationWrites<Binding::Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Write: WritableCapability,
-        Unit: ApplicationFieldUnit,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
     {
         self.candidate.write_field(target, field, value)
     }
 
     /// Writes or clears one optional field using the same observed target and
     /// effect authority as every other handler-authored effect.
-    pub fn write_optional_field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    #[inline(always)]
+    pub fn write_optional_field<Entity, Aspect, Field, Value>(
         &mut self,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+        field: Field,
         value: Option<Value>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial>
     where
-        Field: OperationWrites<Binding::Operation> + OptionalApplicationFieldValue<Value = Value>,
-        Write: WritableCapability,
-        Unit: ApplicationFieldUnit,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
     {
         self.candidate.write_optional_field(target, field, value)
     }
 
+    #[inline(always)]
     pub fn link<Relation, From, To>(
         &mut self,
         relation: ApplicationRelationRef<Schema, Relation, From, To>,

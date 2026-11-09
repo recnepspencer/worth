@@ -9,6 +9,7 @@ mod checkpoint_transition;
 mod conditional;
 mod construction;
 pub(crate) mod demand;
+pub(in crate::domain_computation::primary_graph) use demand::HistoryAdmittedChildSource;
 pub(in crate::domain_computation::primary_graph) use demand::OriginalProgramRootCompletion;
 mod derived_artifact;
 mod output_roots;

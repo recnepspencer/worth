@@ -20,7 +20,7 @@ impl ConsumerDeploymentGrantSeed {
     ) -> Self {
         Self {
             source: *ApplicationProgramAuthoring::<ConsumerSchema, Source>::begin()
-                .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
+                .with_schema(&<ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the completed schema is valid"))
                 .validated_program()
                 .expect("deployment grant names actual validated source meaning")
                 .revision(),
@@ -39,26 +39,40 @@ impl ConsumerDeploymentGrantSeed {
         let grant = format!("{scope}:{}", self.grantee);
         graph.bind_entity(
             WorthQueryApplicationEntitySeed::new(ProgramDeploymentGrant::reference(), key(&grant))
-                .field(ProgramDeploymentGrantIdentity::reference(), grant.clone())
                 .field(
-                    ProgramDeploymentGrantSourceRevision::reference(),
+                    ProgramDeploymentGrantIdentity::at("ProgramDeploymentGrantIdentity"),
+                    grant.clone(),
+                )
+                .field(
+                    ProgramDeploymentGrantSourceRevision::at(
+                        "ProgramDeploymentGrantSourceRevision",
+                    ),
                     self.source.to_string(),
                 )
                 .field(
-                    ProgramDeploymentGrantAction::reference(),
+                    ProgramDeploymentGrantAction::at("ProgramDeploymentGrantAction"),
                     "deploy-consumer-program".to_owned(),
                 )
                 .field(
-                    ProgramDeploymentGrantPurpose::reference(),
+                    ProgramDeploymentGrantPurpose::at("ProgramDeploymentGrantPurpose"),
                     "program-deployment".to_owned(),
                 )
                 .field(
-                    ProgramDeploymentGrantStatus::reference(),
+                    ProgramDeploymentGrantStatus::at("ProgramDeploymentGrantStatus"),
                     "active".to_owned(),
                 )
-                .field(ProgramDeploymentGrantNotBefore::reference(), 0)
-                .field(ProgramDeploymentGrantNotAfter::reference(), u64::MAX)
-                .field(ProgramDeploymentGrantDepth::reference(), 0),
+                .field(
+                    ProgramDeploymentGrantNotBefore::at("ProgramDeploymentGrantNotBefore"),
+                    0,
+                )
+                .field(
+                    ProgramDeploymentGrantNotAfter::at("ProgramDeploymentGrantNotAfter"),
+                    u64::MAX,
+                )
+                .field(
+                    ProgramDeploymentGrantDepth::at("ProgramDeploymentGrantDepth"),
+                    0,
+                ),
         )?;
         graph.bind_relation(WorthQueryApplicationRelationSeed::new(
             ProgramDeploymentGrantResource::reference(),
@@ -94,7 +108,7 @@ pub(crate) fn bind_scope(
     graph.bind_entity(
         WorthQueryApplicationEntitySeed::new(ProgramDeploymentScope::reference(), key(&scope))
             .field(
-                ProgramDeploymentSourceRevision::reference(),
+                ProgramDeploymentSourceRevision::at("ProgramDeploymentSourceRevision"),
                 source.to_string(),
             ),
     )

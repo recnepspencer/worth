@@ -35,7 +35,7 @@ fn ordinary_resolution_keeps_lookup_cancellation_and_deadline() {
                 let denial = selected
                     .resolve_entity(
                         &phase,
-                        AccountStatus::reference(),
+                        AccountStatus::at("AccountStatus"),
                         "open".to_owned(),
                         &request,
                         WorthQueryPrincipalResolutionMode::Ordinary,

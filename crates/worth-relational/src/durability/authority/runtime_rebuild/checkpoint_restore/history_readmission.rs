@@ -4,15 +4,20 @@ use crate::durability::data::{CheckpointRestoreWork, DurabilityError, DurableChe
 use crate::history::data::VersionNode;
 use crate::runtime::{HistorySubsystem, RelationalRuntime};
 use std::sync::Arc;
+pub(super) struct PreparedCheckpointHistory {
+    pub(super) history: HistorySubsystem,
+    pub(super) roots: root_readmission::ReadmittedRootImages,
+}
 
 pub(super) fn prepare_history(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
     checkpoint: &DurableCheckpoint,
     mut branch_roots: branch_root_images::RestoredBranchRootImages,
     symbols: &crate::symbols::data::StringInterner,
     work: &mut CheckpointRestoreWork,
-) -> Result<HistorySubsystem, crate::durability::data::RelationalRecoveryStop> {
+) -> Result<PreparedCheckpointHistory, crate::durability::data::RelationalRecoveryStop> {
     let mut history = restored
         .history
         .detached_owner_snapshot()
@@ -38,17 +43,34 @@ pub(super) fn prepare_history(
     } else {
         let mut catalog = crate::history::RelationalCommitCatalog::default();
         for commit in &checkpoint.envelopes {
-            catalog
-                .append_checkpoint_recovery(
-                    commit.canonical_arc().clone(),
-                    None,
-                    checkpoint.commit_descriptors.get(&commit.commit.commit_id),
-                )
-                .map_err(|denial| {
-                    DurabilityError::new(
-                        crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
-                        format!("checkpoint canonical admission: {denial:?}"),
+            let original = crate::branch::RelationalOriginalRootCommitEvidence::prepare(
+                execution,
+                Arc::clone(commit.canonical_arc()),
+            )
+            .map_err(super::super::original_inputs::root_stop)?;
+            let artifact = match checkpoint.commit_descriptors.get(&commit.commit.commit_id) {
+                Some(descriptor) => {
+                    crate::history::RelationalCommitArtifact::from_preencoded_with_descriptor(
+                        original,
+                        descriptor.clone(),
                     )
+                }
+                None => crate::history::RelationalCommitArtifact::from_preencoded(original),
+            }
+            .map_err(|cause| {
+                crate::durability::checkpoints::region_directory::corrupt(format!(
+                    "checkpoint canonical admission: {cause:?}"
+                ))
+            })?;
+            let artifact = artifact
+                .prepare_catalog_owner(execution)
+                .map_err(crate::durability::data::RelationalRecoveryStop::Request)?;
+            catalog
+                .append_preencoded_recovery(artifact)
+                .map_err(|cause| {
+                    crate::durability::checkpoints::region_directory::corrupt(format!(
+                        "checkpoint canonical insertion: {cause:?}"
+                    ))
                 })?;
         }
         catalog
@@ -114,10 +136,11 @@ pub(super) fn prepare_history(
     )?;
     history
         .restore_branch_cells(
+            lane,
             &checkpoint.branch_cells,
             &checkpoint.branch_lifecycle,
             &checkpoint.retired_branch_names,
-            &roots,
+            &roots.roots,
             &restored.config.schema.registry,
         )
         .map_err(|detail| {
@@ -128,5 +151,5 @@ pub(super) fn prepare_history(
         })?;
     work.branch_cells_readmitted += checkpoint.branch_cells.len();
     history.restore_branch_transition_coverage(checkpoint.coverage.up_to_branch_transition);
-    Ok(history)
+    Ok(PreparedCheckpointHistory { history, roots })
 }

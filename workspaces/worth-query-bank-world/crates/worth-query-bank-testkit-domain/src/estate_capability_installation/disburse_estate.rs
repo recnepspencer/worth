@@ -85,7 +85,10 @@ pub fn expected_program() -> BTreeSet<InstalledProgramTarget> {
 pub fn field(entity: &str, aspect: &str, field: &str) -> InstalledReadTarget {
     InstalledReadTarget::Field {
         entity: entity.to_owned(),
-        aspect: aspect.to_owned(),
+        aspect: crate::facade::domain_contracts::schema_inventory::support::native_aspect(
+            entity, aspect,
+        )
+        .to_owned(),
         path: path(field),
     }
 }
@@ -101,7 +104,10 @@ pub fn relation(relation: &str, from: &str, to: &str) -> InstalledReadTarget {
 pub fn write(entity: &str, aspect: &str, field: &str) -> InstalledProgramTarget {
     InstalledProgramTarget::Write {
         entity: entity.to_owned(),
-        aspect: aspect.to_owned(),
+        aspect: crate::facade::domain_contracts::schema_inventory::support::native_aspect(
+            entity, aspect,
+        )
+        .to_owned(),
         path: path(field),
     }
 }

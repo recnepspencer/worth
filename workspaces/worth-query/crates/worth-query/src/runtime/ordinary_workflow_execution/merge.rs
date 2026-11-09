@@ -5,6 +5,7 @@ use crate::effect_lifecycle::{
     EffectEligibility, EffectEligibilityOutcome, EffectExecutionReceipt,
     ExecutedEffectAuthorityArtifact, ExecutedEffectPlan, RawEffectIntent,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::workflow::{
     synthetic_runtime_workflow_binding_scoped_for_branch_snapshot_binding_identity,
     MergeLoweringInput, WorkflowAuthorityTargetFamily, WorkflowBindingScopeField,
@@ -25,6 +26,7 @@ pub(crate) enum WorthQueryOrdinaryMergeFailureStage {
 }
 
 pub(crate) enum WorthQueryOrdinaryMergeExecutionError {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     Deferred {
         kind: crate::effect_lifecycle::EffectExecutionDeferredKind,
         message: String,
@@ -133,7 +135,7 @@ impl WorthQueryRuntime {
                 &scope,
                 authority.snapshot_identity().clone(),
                 target_branch.clone(),
-            );
+            )?;
         let basis = basis_lifecycle()
             .branch_head(&target_branch.0, true)
             .prepare_mutation()
@@ -164,7 +166,7 @@ impl WorthQueryRuntime {
                 denial.message(),
             )
         })?;
-        let eligibility = admitted_eligibility(evaluate_effect_eligibility(normalized))?;
+        let eligibility = admitted_eligibility(evaluate_effect_eligibility(normalized)?)?;
         let admitted = admit_effect_intent(eligibility);
         let admitted_effect_identity = admitted.admitted_identity().clone();
         let lowered = scope_admitted_effect_plan(admitted)
@@ -194,7 +196,8 @@ impl WorthQueryRuntime {
             ExecutedEffectPlan::new(lowered, ExecutedEffectAuthorityArtifact::Merge(outcome), 1);
         let receipt = executed.receipt();
         let diagnostics = materialize_inspection
-            .then(|| receipt.materialize_diagnostics(EffectDiagnosticsRequest::forensic()));
+            .then(|| receipt.materialize_diagnostics(EffectDiagnosticsRequest::forensic()))
+            .transpose()?;
         Ok(WorthQueryLowerRuntimeMergeExecution {
             admitted_effect_identity,
             lowered_plan_identity,
@@ -229,4 +232,10 @@ fn eligibility_error(message: &str) -> WorthQueryOrdinaryMergeExecutionError {
         WorthQueryOrdinaryMergeFailureStage::Eligibility,
         message,
     )
+}
+
+impl From<IdentityDerivationDenial> for WorthQueryOrdinaryMergeExecutionError {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
+    }
 }

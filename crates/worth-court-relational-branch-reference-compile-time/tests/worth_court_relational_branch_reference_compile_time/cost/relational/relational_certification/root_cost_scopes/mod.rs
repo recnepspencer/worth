@@ -44,7 +44,7 @@ fn selected_publication_tuple_is_stable_across_target_history_lengths() {
         )
         .expect("the actual prestate admits the Medical delta");
         commit_branch_batch(execution, &world.runtime, branch_id, batch);
-        let observation = world.runtime.observe_mvcc_cost(&scope).unwrap();
+        let observation = world.runtime.observe_mvcc_cost(execution, &scope).unwrap();
         let publication = observation.sharing_cost_delta();
         observed_costs.push((
             publication.publication_touched_region_count,
@@ -105,7 +105,10 @@ fn selected_publication_tuple_ignores_unrelated_population_reads_and_validation(
 
         exercise_unrelated_branch_reads_and_validation(execution, &mut world, &unrelated_branches);
 
-        let unrelated_cost = world.runtime.observe_mvcc_cost(&unrelated_scope).unwrap();
+        let unrelated_cost = world
+            .runtime
+            .observe_mvcc_cost(execution, &unrelated_scope)
+            .unwrap();
         assert_eq!(
             unrelated_cost.sharing_cost_delta(),
             worth_relational::facade::inspection::RelationalBranchSharingCostCounters::default(),
@@ -119,7 +122,7 @@ fn selected_publication_tuple_ignores_unrelated_population_reads_and_validation(
         );
         let unrelated_work = world
             .runtime
-            .observe_mvcc_cost(&unrelated_work_scope)
+            .observe_mvcc_cost(execution, &unrelated_work_scope)
             .unwrap()
             .sharing_cost_delta();
         assert_eq!(
@@ -147,7 +150,10 @@ fn selected_publication_tuple_ignores_unrelated_population_reads_and_validation(
         )
         .expect("the selected branch validates after unrelated work");
         commit_branch_batch(execution, &world.runtime, selected_branch, batch);
-        let publication = world.runtime.observe_mvcc_cost(&publication_scope).unwrap();
+        let publication = world
+            .runtime
+            .observe_mvcc_cost(execution, &publication_scope)
+            .unwrap();
         let delta = publication.sharing_cost_delta();
         observed_costs.push((
             delta.publication_touched_region_count,

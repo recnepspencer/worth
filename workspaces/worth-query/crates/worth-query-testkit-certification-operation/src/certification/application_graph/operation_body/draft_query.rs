@@ -38,50 +38,29 @@ worth_query_application_query!(pub DraftQuery for Schema: BodySchemaBinding,
     identity "DraftQuery", parameters DocumentQueryParametersBinding,
     result DraftRowBinding, scope Document => "Document", name "body_draft_read");
 
-pub fn identity<Schema: BodySchemaBinding>() -> ApplicationQueryResultFieldRef<
-    DraftQuery,
-    IdentitySlot,
-    Schema,
-    Document,
-    DocumentFacts,
-    DocumentIdentityField,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("identity", DocumentIdentityField::reference())
+pub fn identity<Schema: BodySchemaBinding>(
+) -> ApplicationQueryResultFieldRef<DraftQuery, IdentitySlot, Schema, DocumentIdentityField> {
+    ApplicationQueryResultFieldRef::new(
+        "identity",
+        DocumentIdentityField::at("DocumentIdentityField"),
+    )
 }
-pub fn note<Schema: BodySchemaBinding>() -> ApplicationQueryOptionalResultFieldRef<
-    DraftQuery,
-    NoteSlot,
-    Schema,
-    Document,
-    DocumentDraftFacts,
-    DocumentDraftNoteField,
-    String,
-    ReadWrite,
-    NoEqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryOptionalResultFieldRef::new("note", DocumentDraftNoteField::reference())
+pub fn note<Schema: BodySchemaBinding>(
+) -> ApplicationQueryOptionalResultFieldRef<DraftQuery, NoteSlot, Schema, DocumentDraftNoteField> {
+    ApplicationQueryOptionalResultFieldRef::new(
+        "note",
+        DocumentDraftNoteField::at("DocumentDraftNoteField"),
+    )
 }
-pub fn audit_source<Schema: BodySchemaBinding>() -> ApplicationQueryResultFieldRef<
-    DraftQuery,
-    AuditSourceSlot,
-    Schema,
-    Document,
-    DocumentFacts,
-    DocumentAuditSourceField,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("audit_source", DocumentAuditSourceField::reference())
+pub fn audit_source<Schema: BodySchemaBinding>(
+) -> ApplicationQueryResultFieldRef<DraftQuery, AuditSourceSlot, Schema, DocumentAuditSourceField> {
+    ApplicationQueryResultFieldRef::new(
+        "audit_source",
+        DocumentAuditSourceField::at("DocumentAuditSourceField"),
+    )
 }
 
-pub fn draft_query_definition<const DESTINATION: u64>() -> ApplicationQueryDefinition<
+pub fn draft_query_definition<const DESTINATION: u64>() -> ApplicationQueryDefinitionBuilder<
     DocumentRetentionSchema<DESTINATION>,
     DraftQuery,
     DocumentQueryParameters,
@@ -108,8 +87,6 @@ pub fn draft_query_definition<const DESTINATION: u64>() -> ApplicationQueryDefin
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 impl<const DESTINATION: u64>
     WorthQueryApplicationProjection<DocumentRetentionSchema<DESTINATION>, DraftQuery> for DraftRow
@@ -123,21 +100,13 @@ impl<const DESTINATION: u64>
     ) -> Result<Self, WorthQueryApplicationProjectionDenial> {
         Ok(Self {
             identity: row.field(identity())?,
-            note: row.optional_field(note())?,
+            note: row.optional_field(note())?.map(Into::into),
             audit_source: row.field(audit_source())?,
         })
     }
 }
 pub struct DraftQueryBinding<const DESTINATION: u64>;
-pub type Scope<const DESTINATION: u64> = ApplicationQueryFieldScope<
-    DocumentRetentionSchema<DESTINATION>,
-    Document,
-    DocumentFacts,
-    DocumentIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type Scope<const DESTINATION: u64> = ApplicationQueryFieldScope<DocumentIdentityField>;
 impl<const DESTINATION: u64> ApplicationQueryBinding<DocumentRetentionSchema<DESTINATION>>
     for DraftQueryBinding<DESTINATION>
 {
@@ -154,17 +123,8 @@ impl<const DESTINATION: u64> ApplicationQueryBinding<DocumentRetentionSchema<DES
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "worth.query.body-court.draft-query-binding.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        DocumentRetentionSchema<DESTINATION>,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         DocumentRetentionSchema<DESTINATION>,
@@ -185,7 +145,10 @@ impl<const DESTINATION: u64> ApplicationQueryIntent<DocumentRetentionSchema<DEST
         ApplicationQueryParameterSet::new()
     }
     fn into_scope(self) -> Scope<DESTINATION> {
-        Scope::new(DocumentIdentityField::reference(), self.identity)
+        Scope::new(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            self.identity,
+        )
     }
 }
 

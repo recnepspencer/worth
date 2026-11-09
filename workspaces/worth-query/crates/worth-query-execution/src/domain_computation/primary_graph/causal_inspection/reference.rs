@@ -1,3 +1,4 @@
+use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial;
 use crate::domain_computation::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -23,7 +24,7 @@ impl CausalEvidenceReference {
         owner: CausalEvidenceOwner,
         family: CausalEvidenceFamily,
         reference_digest: CausalEvidenceReferenceDigest,
-    ) -> Self {
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         let evidence_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::CausalEvidenceReference)
                 .field_shape(WorthQueryEvidenceTag::new("owner"), owner.as_str())
@@ -32,13 +33,13 @@ impl CausalEvidenceReference {
                     WorthQueryEvidenceTag::new("reference"),
                     reference_digest.evidence_identity(),
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             owner,
             family,
             reference_digest,
             evidence_identity,
-        }
+        })
     }
 
     pub fn owner(&self) -> CausalEvidenceOwner {
@@ -73,7 +74,7 @@ impl CausalEvidenceReferenceReceipt {
         reference_set_digest: CausalEvidenceReferenceDigest,
         resolved_reference_count: usize,
         missing_reference_family_count: usize,
-    ) -> Self {
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         let receipt_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::CausalEvidenceReferenceReceipt,
         )
@@ -93,15 +94,15 @@ impl CausalEvidenceReferenceReceipt {
             WorthQueryEvidenceTag::new("missing"),
             missing_reference_family_count,
         )
-        .seal()
+        .seal()?
         .into();
-        Self {
+        Ok(Self {
             receipt_identity,
             anchor_digest,
             reference_set_digest,
             resolved_reference_count,
             missing_reference_family_count,
-        }
+        })
     }
 
     pub fn receipt_digest(&self) -> &str {
@@ -187,7 +188,7 @@ impl CausalEvidenceReferenceResolutionCounters {
         index_lookup_count: usize,
         resolved_reference_count: usize,
         missing_required_reference_count: usize,
-    ) -> Self {
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         let counter_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::CausalEvidenceReferenceResolutionCounters,
         )
@@ -221,9 +222,9 @@ impl CausalEvidenceReferenceResolutionCounters {
         )
         .field_usize(WorthQueryEvidenceTag::new("retained_record_scan_count"), 0)
         .field_usize(WorthQueryEvidenceTag::new("runtime_graph_scan_count"), 0)
-        .seal()
+        .seal()?
         .into();
-        Self {
+        Ok(Self {
             requested_family_count,
             anchor_reference_width,
             indexed_record_count: consulted_indexed_record_count,
@@ -234,7 +235,7 @@ impl CausalEvidenceReferenceResolutionCounters {
             retained_record_scan_count: 0,
             runtime_graph_scan_count: 0,
             counter_identity,
-        }
+        })
     }
 
     pub fn requested_family_count(&self) -> usize {
@@ -291,7 +292,7 @@ impl CausalEvidenceReferenceResolutionDenial {
         anchor_digest: CausalObservationAnchorDigest,
         missing_families: Vec<CausalEvidenceFamily>,
         missing_indexed_reference_count: usize,
-    ) -> Self {
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         let failure_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::CausalEvidenceReferenceResolutionDenial,
         )
@@ -307,14 +308,14 @@ impl CausalEvidenceReferenceResolutionDenial {
             WorthQueryEvidenceTag::new("missing_indexed_reference_count"),
             missing_indexed_reference_count,
         )
-        .seal()
+        .seal()?
         .into();
-        Self {
+        Ok(Self {
             anchor_digest,
             missing_families,
             missing_indexed_reference_count,
             failure_identity,
-        }
+        })
     }
 
     pub fn anchor_digest(&self) -> &CausalObservationAnchorDigest {

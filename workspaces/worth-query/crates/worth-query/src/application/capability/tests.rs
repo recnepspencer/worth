@@ -17,7 +17,7 @@ mod historical;
 fn facade_support_matrix_stays_in_sync_with_capability_admission() {
     let facade = WorthQueryApplicationFacade::runtime_backed_default();
     let support = facade.support_matrix();
-    let report = facade.support_report();
+    let report = facade.support_report().expect("fixture digest must fit");
 
     let live_descriptor = support
         .descriptor(WorthQueryCapabilityFamily::LiveQuery)

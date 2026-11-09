@@ -99,12 +99,16 @@ impl domain::WorthQueryHostConditionalPredicateProvider<ReadyNode> for Predicate
                             "present numeric dependency lacks Primary",
                         )
                     })?;
-                Some(InlineCounterBinding::decode(raw).map_err(|cause| {
-                    domain::WorthQueryHostPredicateFailure::new(
-                        domain::WorthQueryHostPredicateFailureKind::ObservationUnsupported,
-                        format!("numeric Primary codec refused: {cause:?}"),
-                    )
-                })?)
+                Some(
+                    InlineCounterBinding::decode(raw)
+                        .map_err(|cause| {
+                            domain::WorthQueryHostPredicateFailure::new(
+                                domain::WorthQueryHostPredicateFailureKind::ObservationUnsupported,
+                                format!("numeric Primary codec refused: {cause:?}"),
+                            )
+                        })?
+                        .0,
+                )
             }
         };
         // Both authored rows (5 and 23) satisfy the dependency condition. At
@@ -172,9 +176,9 @@ impl WorthQueryApplicationConditionalBinding<NumericSchema> for Conditional {
         let execution = WorthQueryTemporalOperationExecution::with_authorization(
             invariant,
             Invoker,
-            Key::reference(),
-            DefinitionRevision::reference(),
-            Ceiling::reference(),
+            Key::at("Key"),
+            DefinitionRevision::at("DefinitionRevision"),
+            Ceiling::at("Ceiling"),
             100_u64,
             101_u64,
             WorthQueryPublicTemporalOperationAuthorization,
@@ -183,7 +187,7 @@ impl WorthQueryApplicationConditionalBinding<NumericSchema> for Conditional {
         let reconstruction = WorthQueryTemporalReconstructionAccess::new(
             principal,
             PrincipalSource(authentication),
-            Key::reference(),
+            Key::at("Key"),
             "numeric".to_owned(),
         )
         .unwrap();

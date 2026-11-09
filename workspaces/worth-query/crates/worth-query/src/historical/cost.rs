@@ -1,5 +1,6 @@
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum HistoricalPathCostPosture {
+    EvidenceIdentityDerivationDenied,
     HistoricalRetainedFastPath,
     HistoricalReplayBounded,
     HistoricalReconstructionExpensive,
@@ -12,6 +13,7 @@ pub enum HistoricalPathCostPosture {
 impl HistoricalPathCostPosture {
     pub fn as_str(&self) -> &'static str {
         match self {
+            Self::EvidenceIdentityDerivationDenied => "evidence_identity_derivation_denied",
             Self::HistoricalRetainedFastPath => "historical_retained_fast_path",
             Self::HistoricalReplayBounded => "historical_replay_bounded",
             Self::HistoricalReconstructionExpensive => "historical_reconstruction_expensive",

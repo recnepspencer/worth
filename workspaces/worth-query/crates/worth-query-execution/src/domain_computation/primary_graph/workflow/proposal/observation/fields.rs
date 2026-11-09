@@ -11,9 +11,10 @@ pub(super) fn required_text(
 ) -> Result<String, WorthQueryApplicationAttemptDenial> {
     let value = observe_field_value(runtime, execution, snapshot, entity, kind, locator)?
         .ok_or_else(|| denial("workflow operation input field is unavailable"))?;
-    let AspectValue::String(InternedString::Raw(text)) = &value else {
+    let Some(text) = (&value).raw_text() else {
         return Err(denial("workflow operation input field has the wrong type"));
     };
+    let text = text.to_owned();
     let text = text.clone();
     facts.push(WorthQueryApplicationObservedFact::Field {
         entity_id: entity,
@@ -65,12 +66,13 @@ pub(super) fn optional_identity(
         });
         return Ok(None);
     };
-    let AspectValue::String(InternedString::Raw(text)) = &value else {
+    let Some(text) = (&value).raw_text() else {
         return Err(denial(
             "workflow operation source identity has the wrong type",
         ));
     };
-    let identity = decode_identity(text)
+    let text = text.to_owned();
+    let identity = decode_identity(&text)
         .ok_or_else(|| denial("workflow operation source identity is malformed"))?;
     facts.push(WorthQueryApplicationObservedFact::Field {
         entity_id: entity,

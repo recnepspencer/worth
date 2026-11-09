@@ -13,7 +13,7 @@ use worth_execution::ExecutionMemoryReservation;
 pub(crate) struct ReducedInvariantPrefix {
     // The summary's cloned failures drop before the tickets that cover them.
     summary: InvariantExecutionSummary,
-    stages: [Option<ReducedStage>; 2],
+    stages: [Option<ReducedStage>; 4],
     stage_count: usize,
 }
 
@@ -40,11 +40,14 @@ impl ReducedInvariantPrefix {
     pub(crate) fn new() -> Self {
         Self {
             summary: InvariantExecutionSummary::empty(),
-            stages: [None, None],
+            stages: [None, None, None, None],
             stage_count: 0,
         }
     }
 
+    pub(crate) fn has_blocking_violation(&self) -> bool {
+        self.summary.has_blocking_violation()
+    }
     pub(crate) fn packet_count(&self) -> usize {
         self.completed()
             .map(|stage| stage.output.envelopes.len())
@@ -57,6 +60,11 @@ impl ReducedInvariantPrefix {
             | InvariantExecutionPoint::CertificationBoundary => {
                 self.summary.has_publication_violation()
             }
+            InvariantExecutionPoint::ProposedState => self
+                .completed()
+                .flat_map(|stage| &stage.output.envelopes)
+                .flat_map(|envelope| &envelope.results)
+                .any(|worker| worker.result.blocks_proposed_state()),
             InvariantExecutionPoint::HarnessAudit => false,
             _ => self.summary.has_blocking_violation(),
         }

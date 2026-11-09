@@ -281,6 +281,39 @@ mod tests {
             }
         );
     }
+
+    #[test]
+    fn repeated_source_facts_retain_one_body_and_conflicting_truth_poison_completion() {
+        use super::super::super::retained_decision_facts::{
+            AuthoringSourceFacts, StorageControl, StoreDenial,
+        };
+        let control = StorageControl::new(
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            None,
+        );
+        let original = adjacency(4, 7, vec![endpoint(2)]);
+        let mut equal = AuthoringSourceFacts::new(control).unwrap();
+        equal.capture(original.clone(), control).unwrap();
+        equal.capture(original.clone(), control).unwrap();
+        let retained = equal.finish(control).unwrap();
+        assert_eq!(
+            retained.into_values().collect::<Vec<_>>(),
+            vec![original.clone()]
+        );
+
+        let changed = adjacency(5, 7, vec![endpoint(2)]);
+        assert_eq!(original.dependency_key(), changed.dependency_key());
+        let mut conflicting = AuthoringSourceFacts::new(control).unwrap();
+        conflicting.capture(original, control).unwrap();
+        assert_eq!(
+            conflicting.capture(changed, control),
+            Err(StoreDenial::ConflictingBody)
+        );
+        assert!(matches!(
+            conflicting.finish(control),
+            Err(StoreDenial::ConflictingBody)
+        ));
+    }
 }
 
 fn comparison_fault(

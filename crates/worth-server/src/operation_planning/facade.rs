@@ -66,7 +66,15 @@ impl WorthServerOperationPlanner {
                     })?
             }
         };
-        let downstream_delivery_contract = workspace.public_downstream_delivery_contract();
+        let downstream_delivery_contract = workspace
+            .public_downstream_delivery_contract()
+            .map_err(|cause| {
+                WorthServerOperationPlanDenial::new(
+                    WorthServerOperationPlanDenialCode::EvidenceIdentityDerivationDenied(cause),
+                    diagnostics_profile,
+                    "downstream contract identity exceeded canonical digest bounds",
+                )
+            })?;
         let readiness = match &self.operation_registry {
             Some(operation_registry) => {
                 WorthServerOperationReadinessFacade::with_operation_registry(

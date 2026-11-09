@@ -45,11 +45,11 @@ impl QuerySubscriptionDeliveryIntent {
 
     pub fn evidence_identity(&self) -> WorthQueryEvidenceIdentity {
         WorthQueryEvidenceIdentity::compose(DELIVERY_INTENT_IDENTITY_SCOPE)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "query_subscription_delivery_intent_v1",
-            )
-            .field_shape(WorthQueryEvidenceTag::new("intent"), self.as_str())
-            .seal()
+                .field_shape(
+                    WorthQueryEvidenceTag::new("identity_family"),
+                    "query_subscription_delivery_intent_v1",
+                )
+                .field_shape(WorthQueryEvidenceTag::new("intent"), self.as_str())
+                .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
     }
 }

@@ -84,6 +84,7 @@ impl WorthQueryMutationTargetEvidence {
             target_class,
             collection: collection.map(|collection| {
                 WorthQueryMutationTargetCollectionIdentity::new("mutation-target", collection)
+                    .expect("fixture digest must fit")
             }),
             entity_identity,
         };

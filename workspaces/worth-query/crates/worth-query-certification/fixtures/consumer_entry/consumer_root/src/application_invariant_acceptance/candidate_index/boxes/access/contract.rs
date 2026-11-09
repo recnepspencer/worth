@@ -14,25 +14,37 @@ pub(super) fn definition(
         BoxGrant::reference(),
     )
     .target(ApplicationCapabilityTargetDefinition::new(
-        ApplicationCapabilityValueBinding::new(GrantAction::reference(), encoded()),
+        ApplicationCapabilityValueBinding::new(GrantAction::at("GrantAction"), encoded()).unwrap(),
         ApplicationCapabilityRelationBinding::from_reference(GrantResource::reference()),
         ApplicationCapabilityRelationDimension::not_applicable(),
-        ApplicationCapabilityFieldDimension::bound(GrantDisclosure::reference()),
-        ApplicationCapabilityValueBinding::new(GrantPurpose::reference(), encoded()),
+        ApplicationCapabilityFieldDimension::bound(GrantDisclosure::at("GrantDisclosure")).unwrap(),
+        ApplicationCapabilityValueBinding::new(GrantPurpose::at("GrantPurpose"), encoded())
+            .unwrap(),
     ))
     .constraints(ApplicationCapabilityConstraintDefinition::new(
         ApplicationCapabilityMagnitudeDimension::not_applicable(),
         ApplicationCapabilityCardinalityDimension::One,
         ApplicationCapabilityCurrentnessDefinition::new(
-            ApplicationCapabilityValueBinding::new(GrantStatus::reference(), encoded()),
+            ApplicationCapabilityValueBinding::new(GrantStatus::at("GrantStatus"), encoded())
+                .unwrap(),
             ApplicationCapabilityWorkflowDefinition::new(
-                ApplicationCapabilityFieldBinding::from_reference(GrantScope::reference()),
-                ApplicationCapabilityFieldBinding::from_reference(DirectoryIdentity::reference()),
+                ApplicationCapabilityFieldBinding::from_reference(GrantScope::at("GrantScope"))
+                    .unwrap(),
+                ApplicationCapabilityFieldBinding::from_reference(DirectoryIdentity::at(
+                    "DirectoryIdentity",
+                ))
+                .unwrap(),
             ),
             ApplicationCapabilityValidityDefinition::new(
                 ApplicationCapabilityValidityTimeline::UnixEpochSeconds,
-                ApplicationCapabilityFieldBinding::from_reference(GrantNotBefore::reference()),
-                ApplicationCapabilityFieldBinding::from_reference(GrantNotAfter::reference()),
+                ApplicationCapabilityFieldBinding::from_reference(GrantNotBefore::at(
+                    "GrantNotBefore",
+                ))
+                .unwrap(),
+                ApplicationCapabilityFieldBinding::from_reference(GrantNotAfter::at(
+                    "GrantNotAfter",
+                ))
+                .unwrap(),
             ),
         ),
         BoxContext::reference(),
@@ -41,7 +53,7 @@ pub(super) fn definition(
         ApplicationCapabilityRelationBinding::from_reference(GrantParent::reference()),
         ApplicationCapabilityRelationBinding::from_reference(GrantGrantor::reference()),
         ApplicationCapabilityRelationBinding::from_reference(GrantGrantee::reference()),
-        ApplicationCapabilityFieldBinding::from_reference(GrantDepth::reference()),
+        ApplicationCapabilityFieldBinding::from_reference(GrantDepth::at("GrantDepth")).unwrap(),
         BoxProvenance::reference(),
     ))
     .composition(ApplicationCapabilityComposition::new(
@@ -62,9 +74,10 @@ pub(super) fn definition(
             ApplicationCapabilityDisclosureRule::permit([
                 ApplicationCapabilityScopeGuard::requiring([
                     ApplicationCapabilityAcceptedValues::one_of(
-                        GrantDisclosure::reference(),
+                        GrantDisclosure::at("GrantDisclosure"),
                         [encoded()],
-                    ),
+                    )
+                    .unwrap(),
                 ]),
             ]),
         ),

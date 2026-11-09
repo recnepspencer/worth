@@ -79,7 +79,10 @@ fn bind_institutions(
                 Institution::reference(),
                 entity_key(institution_key(institution.get())),
             )
-            .field(InstitutionIdentityField::reference(), institution),
+            .field(
+                InstitutionIdentityField::at("InstitutionIdentityField"),
+                institution,
+            ),
         )?;
     }
     Ok(())
@@ -95,7 +98,7 @@ fn bind_businesses(
                 Business::reference(),
                 entity_key(business_key(business.get())),
             )
-            .field(BusinessIdentityField::reference(), business),
+            .field(BusinessIdentityField::at("BusinessIdentityField"), business),
         )?;
     }
     Ok(())
@@ -124,14 +127,14 @@ fn bind_accounts(
                 Account::reference(),
                 entity_key(account_key(account.id())),
             )
-            .field(AccountIdentity::reference(), account.id())
+            .field(AccountIdentity::at("AccountIdentity"), account.id())
             .field(
-                AccountDisplayName::reference(),
+                AccountDisplayName::at("AccountDisplayName"),
                 account.display_name().clone(),
             )
-            .field(Kind::reference(), account.kind())
-            .field(AccountingRevision::reference(), revision)
-            .field(Status::reference(), account.status()),
+            .field(Kind::at("Kind"), account.kind())
+            .field(AccountingRevision::at("AccountingRevision"), revision)
+            .field(Status::at("Status"), account.status()),
         )?;
     }
     Ok(())
@@ -148,10 +151,13 @@ fn bind_authorizations(
                 entity_key(authorization_key(authorization.id())),
             )
             .field(
-                AccountAuthorizationIdentity::reference(),
+                AccountAuthorizationIdentity::at("AccountAuthorizationIdentity"),
                 authorization.id(),
             )
-            .field(AuthorizationRole::reference(), authorization.role()),
+            .field(
+                AuthorizationRole::at("AuthorizationRole"),
+                authorization.role(),
+            ),
         )?;
     }
     Ok(())
@@ -167,8 +173,11 @@ fn bind_employees(
                 EmployeeAssignment::reference(),
                 entity_key(employee_key(employee.id().get())),
             )
-            .field(EmployeeAssignmentIdentityField::reference(), employee.id())
-            .field(AssignmentRole::reference(), employee.role()),
+            .field(
+                EmployeeAssignmentIdentityField::at("EmployeeAssignmentIdentityField"),
+                employee.id(),
+            )
+            .field(AssignmentRole::at("AssignmentRole"), employee.role()),
         )?;
     }
     Ok(())

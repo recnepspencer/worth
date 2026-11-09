@@ -9,7 +9,7 @@ fn causal_inspection_public_dx_signatures_are_referenced() {
             &RuntimeBridge,
         ) -> Result<
             QueryCausalInspectionArtifact,
-            worth_query::facade::runtime::CausalInspectionMaterializationError,
+            worth_query::facade::runtime::CausalInspectionConstructionStop,
         >;
     let _ = plan_inspection_compiles as fn(QueryObservationReceipt, ScopedInspectionBasis);
     let _ = support_discovery_compiles as fn();

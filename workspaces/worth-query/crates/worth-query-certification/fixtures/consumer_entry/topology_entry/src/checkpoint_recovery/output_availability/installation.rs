@@ -12,17 +12,11 @@ pub(super) struct Contribution;
 impl ApplicationSchemaContribution<Schema> for Contribution {
     const IDENTITY: ApplicationSchemaContributionIdentity =
         ApplicationSchemaContributionIdentity::new("availability-contribution");
-    fn register_members(
-        schema: ApplicationSchemaDeclarationBuilder<Schema>,
-    ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-        let schema =
-            <TopologyContribution as ApplicationSchemaContribution<Schema>>::register_members(
-                schema,
-            );
-        binding::declare(members::declare(schema))
-            .application_query(read::definition())
-            .application_query_binding::<read::Binding>()
-    }
+    type Members = (
+        crate::TopologyCoreMembers<Schema, members::AvailabilityRecords>,
+        crate::CheckpointMembers<Schema>,
+        ContributionContracts,
+    );
 }
 impl WorthQueryApplicationContribution<Schema> for Contribution {
     type Configuration = (TopologyConfiguration, Arc<EnrollmentWindow>);
@@ -128,10 +122,10 @@ fn install_selected_with_window(
     ),);
     application_installation::in_memory_program(
         ApplicationProgramAuthoring::<Schema, Program>::begin()
-            .with_schema(&Schema::declaration().expect("the completed schema is valid"))
+            .with_schema(&<Schema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the completed schema is valid"))
             .validated_program()
             .unwrap(),
-        Schema::declaration().unwrap(),
+        <Schema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap(),
         configuration,
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         // This journey holds historical deliveries and multiple original output
@@ -174,27 +168,36 @@ fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>, demand_key: &str) {
             Body::reference(),
             WorthQueryApplicationEntityKey::new(key).unwrap(),
         )
-        .field(BodyKey::reference(), key.to_owned())
-        .field(PositionX::reference(), length(x))
-        .field(PositionY::reference(), length(y))
-        .field(Length::reference(), length(1));
+        .field(BodyKey::at("BodyKey"), key.to_owned())
+        .field(PositionX::at("PositionX"), length(x))
+        .field(PositionY::at("PositionY"), length(y))
+        .field(Length::at("Length"), length(1));
         if member {
             seed = seed
-                .field(members::MemberNumber::reference(), 1u64)
-                .field(members::DemandKey::reference(), demand_key.to_owned())
-                .field(members::MemberKind::reference(), members::Kind::Geometry);
+                .field(members::MemberNumber::at("MemberNumber"), 1u64)
+                .field(members::DemandKey::at("DemandKey"), demand_key.to_owned())
+                .field(
+                    members::MemberKind::at("MemberKind"),
+                    members::Kind::Geometry,
+                );
         }
         if key == "measure-b" {
             seed = seed
-                .field(members::MemberNumber::reference(), 3u64)
-                .field(members::DemandKey::reference(), "measure-b".to_owned())
-                .field(members::MemberKind::reference(), members::Kind::Geometry);
+                .field(members::MemberNumber::at("MemberNumber"), 3u64)
+                .field(members::DemandKey::at("DemandKey"), "measure-b".to_owned())
+                .field(
+                    members::MemberKind::at("MemberKind"),
+                    members::Kind::Geometry,
+                );
         }
         if key == "population" {
             seed = seed
-                .field(members::MemberNumber::reference(), 2u64)
-                .field(members::DemandKey::reference(), "population".to_owned())
-                .field(members::MemberKind::reference(), members::Kind::Quantity);
+                .field(members::MemberNumber::at("MemberNumber"), 2u64)
+                .field(members::DemandKey::at("DemandKey"), "population".to_owned())
+                .field(
+                    members::MemberKind::at("MemberKind"),
+                    members::Kind::Quantity,
+                );
         }
         graph.bind_entity(seed).unwrap();
     }
@@ -243,4 +246,21 @@ fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>, demand_key: &str) {
             WorthQueryApplicationEntityKey::new("measure-a").unwrap(),
         ))
         .unwrap();
+}
+
+pub struct ContributionContracts;
+impl worth_query_decl::facade::application_schema::fragment::Registration<Schema>
+    for ContributionContracts
+{
+    fn register(
+        builder: ApplicationSchemaDeclarationBuilder<Schema>,
+    ) -> Result<ApplicationSchemaDeclarationBuilder<Schema>, ApplicationSchemaDeclarationDenial>
+    {
+        Ok({
+            let schema = builder;
+            binding::declare(schema)
+                .application_query(read::definition())
+                .application_query_binding::<read::Binding>()
+        })
+    }
 }

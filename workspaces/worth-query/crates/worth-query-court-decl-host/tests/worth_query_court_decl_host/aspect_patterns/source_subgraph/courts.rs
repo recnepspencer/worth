@@ -16,7 +16,7 @@ fn expected(key: &str, left: u64, right: u64) -> GraphRow {
     }
 }
 #[test]
-fn partial_member_edit_pinned_previous_graph_and_recorded_undo_preserve_neighbors() {
+fn correction_restores_an_extension_aspect_and_preserves_neighbors() {
     let host = world::install(world::Fault::None, Hashes::default());
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);

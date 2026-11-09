@@ -8,11 +8,13 @@ use worth_query_host::facade::primary_graph::{
 
 pub(super) struct TrackedAuthorizationTime {
     releases: Arc<AtomicUsize>,
+    admission_clock:
+        worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock,
 }
 
 impl TrackedAuthorizationTime {
     pub(super) fn new(releases: Arc<AtomicUsize>) -> Self {
-        Self { releases }
+        Self { releases, admission_clock: worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system() }
     }
 }
 
@@ -21,9 +23,8 @@ impl WorthQueryRuntimeTimeSource for TrackedAuthorizationTime {
         &self,
     ) -> worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock
     {
-        worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()
+        self.admission_clock.clone()
     }
-
     fn current_time(&self) -> Result<SystemTime, WorthQueryRuntimeTimeSourceDenial> {
         Ok(SystemTime::now())
     }

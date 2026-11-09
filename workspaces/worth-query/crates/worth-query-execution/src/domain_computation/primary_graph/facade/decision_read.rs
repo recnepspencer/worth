@@ -3,7 +3,8 @@ pub use super::super::aggregate_identity::{
     WorthQueryAggregateIdentity, WorthQueryAggregateLineage, WorthQueryAggregateLineageEvent,
 };
 pub use super::super::invariant_projection::{
-    VerificationCapacityStop, WorthQueryApplicationInvariantProjectionAuthority,
+    PredecessorDecisionReader, PredecessorEntity, PredecessorRelation, VerificationCapacityStop,
+    WorthQueryApplicationInvariantProjectionAuthority,
     WorthQueryApplicationInvariantProjectionReader,
     WorthQueryApplicationInvariantProjectionSnapshot,
     WorthQueryApplicationOperationInvariantProjectionReader,

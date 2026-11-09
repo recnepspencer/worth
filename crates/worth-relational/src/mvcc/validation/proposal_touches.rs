@@ -12,6 +12,8 @@ mod authored_restoration;
 mod collection;
 #[path = "proposal_touches/intent_projection.rs"]
 mod intent_projection;
+#[path = "proposal_touches/owned_graph.rs"]
+mod owned_graph;
 #[path = "proposal_touches/preparation.rs"]
 mod preparation;
 
@@ -168,6 +170,69 @@ impl ValidatedRelationalProposal {
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<ValidatedMutationTouches<'_>, ValidatedMutationTouchProjectionError> {
         preparation::project(self, execution, true)
+    }
+
+    /// Actor-only authoring in an admitted coupled group. The complete proposal
+    /// remains available through `mutation_touches` for Native inspection.
+    pub fn authored_mutation_touches(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<ValidatedMutationTouches<'_>, ValidatedMutationTouchProjectionError> {
+        let commands = match self
+            .state
+            .required_output_publication
+            .as_ref()
+            .map(|p| &p.publication)
+        {
+            Some(crate::mvcc::RequiredOutputPublication::CoupledAuthored { group }) => {
+                Some(group.authored_commands.plan().merged_intents.as_slice())
+            }
+            _ => None,
+        };
+        preparation::project_commands(self, execution, true, commands)
+    }
+
+    /// Each concrete producer's touches use its own applied command contribution,
+    /// under the final proposal's single invariant judgment and request budgets.
+    pub fn coupled_producer_mutation_touches<'a>(
+        &'a self,
+        execution: &'a ExecutionRequest<'_, '_>,
+    ) -> impl Iterator<
+        Item = (
+            &'a str,
+            &'a crate::mvcc::RequiredOutputPublicationMeaning,
+            Result<ValidatedMutationTouches<'a>, ValidatedMutationTouchProjectionError>,
+        ),
+    > + 'a {
+        self.state
+            .required_output_publication
+            .iter()
+            .filter_map(|p| match &p.publication {
+                crate::mvcc::RequiredOutputPublication::CoupledAuthored { group } => Some(group),
+                _ => None,
+            })
+            .flat_map(|group| group.parts.iter())
+            .map(move |part| {
+                let (producer, _) = part
+                    .publication
+                    .lineage_attribution()
+                    .expect("Native admitted Preserve participant");
+                let crate::mvcc::RequiredOutputPublication::Preserve { meaning, .. } =
+                    &part.publication
+                else {
+                    unreachable!("Native admitted Preserve participant")
+                };
+                (
+                    producer,
+                    meaning,
+                    preparation::project_commands(
+                        self,
+                        execution,
+                        false,
+                        Some(&part.commands.plan().merged_intents),
+                    ),
+                )
+            })
     }
 
     /// O(reached intents + prior/supplied fields), plus canonical sorting.

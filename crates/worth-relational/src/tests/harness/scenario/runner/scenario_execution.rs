@@ -122,7 +122,7 @@ pub(crate) fn run_property_scenario(
                 .branch_cell(branch)
                 .and_then(|cell| cell.root())
                 .unwrap();
-            assert!(root.is_complete(&symbols),
+            assert!(root.is_complete(execution, &symbols),
                 "step {step}, {operation:?}, branch {branch:?}: incremental root differs from cold truth");
             root.assert_derived_inventory_matches_cold();
         }

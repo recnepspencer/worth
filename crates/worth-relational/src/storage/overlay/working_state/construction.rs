@@ -77,13 +77,18 @@ impl WorkingState {
         sparse_relation_overlay_partitions: Option<&BTreeSet<PartitionId>>,
     ) -> Self {
         let mut partitions = SharedMap::new();
-        let mut mutation_journal = SharedMap::new();
+        let mut mutation_journal: SharedMap<PartitionId, PartitionMutationJournal> =
+            SharedMap::new();
         for partition_id in touched_partitions {
             if mutation_journal.contains_key(&partition_id) {
                 continue;
             }
             mutation_journal.insert(partition_id, PartitionMutationJournal::default());
             if let Some(partition) = base_partitions.get_current_partition(partition_id) {
+                mutation_journal
+                    .entry(partition_id)
+                    .or_default()
+                    .adjacency_omitted = clone_mode == PartitionCloneMode::EntityOnly;
                 let partition_state = partition.clone_for_mutation(
                     clone_mode,
                     sparse_entity_slots.and_then(|slots| slots.get(&partition_id)),

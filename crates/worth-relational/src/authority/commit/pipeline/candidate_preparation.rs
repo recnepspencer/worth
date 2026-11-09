@@ -16,6 +16,8 @@ struct HistoryPreparedCandidate<'scope, 'authority> {
     branch_id: crate::history::data::BranchId,
     control: crate::mvcc::RelationalOperationControl,
     retention_binding: crate::history::retention::RelationalBranchRetentionBinding,
+    decision_basis: crate::branch::AdmittedRelationalBranchBasis,
+    coupled_proposal: Option<crate::mvcc::RelationalMutationProposalIdentity>,
     expected_basis: crate::branch::RelationalBranchBasisDescriptor,
     expected_root: std::sync::Arc<crate::branch::RelationalBranchRoot>,
     publication_cell: crate::branch::RelationalBranchPublicationCell,
@@ -111,7 +113,9 @@ fn prepare_history<'scope, 'authority>(
         .inner
         .retention_binding
         .clone();
-    let expected_basis = context.validation_input.basis().descriptor().clone();
+    let decision_basis = context.validation_input.basis().clone();
+    let coupled_proposal = context.validation_input.coupled_proposal().cloned();
+    let expected_basis = decision_basis.descriptor().clone();
     let expected_root = std::sync::Arc::clone(&context.validation_input.basis().inner.root);
     if let Some(interruption) =
         control.observe(crate::mvcc::RelationalInterruptionBoundary::CandidatePreparation)
@@ -147,6 +151,8 @@ fn prepare_history<'scope, 'authority>(
             branch_id,
             control,
             retention_binding,
+            decision_basis,
+            coupled_proposal,
             expected_basis,
             expected_root,
             publication_cell,

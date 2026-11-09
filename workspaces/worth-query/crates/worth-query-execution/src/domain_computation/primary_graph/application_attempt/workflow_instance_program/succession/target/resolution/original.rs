@@ -118,6 +118,10 @@ pub(super) fn observe<Schema: ApplicationSchema, Spec: ApplicationWorkflowSpec<S
         &layout.instance.resume_node_path,
     )? {
         None => None,
+        Some(AspectValue::String(InternedString::Stored(path))) if !path.as_str().is_empty() => {
+            let path = path.as_str().to_owned();
+            Some(path)
+        }
         Some(AspectValue::String(InternedString::Raw(path))) if !path.is_empty() => Some(path),
         _ => {
             return Err(super::super::super::mismatch(
@@ -270,6 +274,12 @@ impl OriginalRead<'_, '_, '_> {
         locator: &AspectFieldLocator,
     ) -> Result<String, WorthQueryApplicationAttemptDenial> {
         match self.field(entity, kind, locator)? {
+            Some(AspectValue::String(InternedString::Stored(value)))
+                if !value.as_str().is_empty() =>
+            {
+                let value = value.as_str().to_owned();
+                Ok(value)
+            }
             Some(AspectValue::String(InternedString::Raw(value))) if !value.is_empty() => Ok(value),
             _ => Err(super::super::super::mismatch(
                 "original predecessor text field is malformed",

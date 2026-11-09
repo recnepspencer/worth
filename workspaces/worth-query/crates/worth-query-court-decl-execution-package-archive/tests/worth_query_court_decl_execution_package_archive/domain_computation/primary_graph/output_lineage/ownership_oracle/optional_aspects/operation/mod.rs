@@ -11,7 +11,7 @@ macro_rules! input {
         impl<Schema: BirthSchema> ApplicationMutationIntent<Schema> for $input {
             type Binding = Binding<Schema, $keep>;
             fn input(&self) -> &Self { self }
-            fn scope_binding(&self) -> PlanarMutationScope<Schema> { PlanarMutationScope::new(BodyKey::reference(), self.scope_key.clone()) }
+            fn scope_binding(&self) -> PlanarMutationScope { PlanarMutationScope::new(BodyKey::at("BodyKey"), self.scope_key.clone()) }
         }
     };
 }
@@ -28,17 +28,17 @@ input!(
     "worth.query.test.optional-keep-input.v1"
 );
 worth_query_operation!(pub Produce for Schema: BirthSchema, input InputBinding);
-worth_query_operation_reads!(Produce => [Body, BodyKey, SourceContent, SourceSelection, OutputNode, PresentNode, FieldlessNode, StrictNode, Incidence]);
-worth_query_operation_writes!(Produce => [Value, Extra, SourceContent, SourceSelection]);
+worth_query_operation_reads!(Produce => [Body, BodyKey, SourceContent, OutputNode, PresentNode, FieldlessNode, StrictNode, Incidence]);
+worth_query_operation_writes!(Produce => [Value, Extra, SourceContent]);
 worth_query_operation_creates!(Produce => [OutputNode, PresentNode, FieldlessNode, StrictNode]);
 worth_query_operation_links!(Produce => [Incidence]);
 worth_query_operation!(pub OrdinaryProduce for Schema: BirthSchema, input InputBinding);
-worth_query_operation_reads!(OrdinaryProduce => [Body, BodyKey, SourceContent, SourceSelection, OutputNode, PresentNode, FieldlessNode, StrictNode, Incidence]);
+worth_query_operation_reads!(OrdinaryProduce => [Body, BodyKey, SourceContent, OutputNode, PresentNode, FieldlessNode, StrictNode, Incidence]);
 worth_query_operation_writes!(OrdinaryProduce => [Value, Extra]);
 worth_query_operation_creates!(OrdinaryProduce => [OutputNode, PresentNode, FieldlessNode, StrictNode]);
 worth_query_operation_links!(OrdinaryProduce => [Incidence]);
 worth_query_operation!(pub KeepProduce for Schema: BirthSchema, input KeepInputBinding);
-worth_query_operation_reads!(KeepProduce => [Value, Note, Body, BodyKey, PositionY, SourceContent, SourceSelection, OutputNode, PresentNode, FieldlessNode, StrictNode, Incidence]);
+worth_query_operation_reads!(KeepProduce => [Value, Note, Body, BodyKey, PositionY, SourceContent, OutputNode, PresentNode, FieldlessNode, StrictNode, Incidence]);
 worth_query_operation_writes!(KeepProduce => [Value, Extra, PositionY]);
 worth_query_operation_creates!(KeepProduce => [OutputNode, PresentNode, FieldlessNode, StrictNode]);
 worth_query_operation_links!(KeepProduce => [Incidence]);
@@ -64,7 +64,7 @@ macro_rules! binding {
             type Denial = PlanarMutationDenial;
             type DenialBinding = PlanarMutationDenialBinding;
             type Output = $outputs;
-            type ScopeBinding = PlanarMutationScope<Schema>;
+            type ScopeBinding = PlanarMutationScope;
             type PrincipalBinding = ConsumerPrincipalBinding;
             type Mapping = ExternalPrincipalMapping;
             type Principal = Principal;
@@ -78,17 +78,8 @@ macro_rules! binding {
             fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
                 ApplicationWorkflowExecutionRequirements::not_applicable()
             }
-            fn scope_field() -> ApplicationFieldRef<
-                Schema,
-                Body,
-                PlanarPosition,
-                BodyKey,
-                String,
-                ReadOnly,
-                EqualityPredicate,
-                NoApplicationUnit,
-            > {
-                BodyKey::reference()
+            fn scope_field() -> BodyKey {
+                BodyKey::at("BodyKey")
             }
             fn principal_binding() -> ApplicationPrincipalBindingRef<
                 Schema,
@@ -125,19 +116,19 @@ impl<Schema: BirthSchema> OperationHandler<Schema, Binding<Schema, true>> for Ha
         let result = (|| {
             crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::tracked_reads::preserve(reader, &input.scope_key)?;
             let node = reader.prior_output::<Binding<Schema, false>, BornNode<Schema>>()?;
-            let _note = reader.field(&node, Note::reference())?;
+            let _note = reader.field(&node, Note::at("Note"))?;
             let present = reader.prior_output::<Binding<Schema, false>, BornPresent<Schema>>()?;
             let source = if Schema::RENEW_OUTPUT {
-                let value = reader.field(&present, Value::reference())?;
+                let value = reader.field(&present, Value::at("Value"))?;
                 assert!(matches!(
                     value.as_deref(),
                     Some("native-present" | "native-changed")
                 ));
                 let root = reader
-                    .resolve_entity(BodyKey::reference(), input.scope_key.clone())
+                    .resolve_entity(BodyKey::at("BodyKey"), input.scope_key.clone())
                     .map_err(HandlerExecutionDenial::new)?;
                 let y = reader
-                    .field(&root, PositionY::reference())?
+                    .field(&root, PositionY::at("PositionY"))?
                     .expect("the actual query input has its Required ordinate");
                 assert!(matches!(PositiveLength::get(&y), 1 | 2));
                 Some(reader.mutation_target(&root)?)
@@ -185,7 +176,7 @@ impl<Schema: BirthSchema> OperationHandler<Schema, Binding<Schema, true>> for Ha
                     .projected_entity(decision.present.as_ref().unwrap())
                     .map_err(HandlerExecutionDenial::new)?;
                 writer
-                    .write_field(&target, Value::reference(), "native-changed".to_owned())
+                    .write_field(&target, Value::at("Value"), "native-changed".to_owned())
                     .map_err(HandlerExecutionDenial::new)?;
                 // This is an actual PlanarQuery input. Unlike a handler-only
                 // field, its original SourceFieldRevision cannot be rebased
@@ -196,7 +187,7 @@ impl<Schema: BirthSchema> OperationHandler<Schema, Binding<Schema, true>> for Ha
                 writer
                     .write_field(
                         &root,
-                        PositionY::reference(),
+                        PositionY::at("PositionY"),
                         PositiveLength::new(2).unwrap(),
                     )
                     .map_err(HandlerExecutionDenial::new)?;
@@ -250,9 +241,9 @@ pub fn declare<Schema: BirthSchema>(
                 .operation(op.definition().no_external_effect().no_aftermath().finish())
                 .operation_projection_work_budget(op, 64)
                 .operation_read_entity(op, Body::reference())
-                .operation_read_field(op, BodyKey::reference())
-                .operation_read_field(op, SourceContent::reference())
-                .operation_read_field(op, SourceSelection::reference())
+                .operation_read_field(op, BodyKey::at("BodyKey"))
+                .operation_read_field(op, SourceContent::at("SourceContent"))
+                .operation_read_field(op, SourceSelection::at("SourceSelection"))
                 .operation_read_entity(op, OutputNode::reference())
                 .operation_read_entity(op, PresentNode::reference())
                 .operation_read_entity(op, FieldlessNode::reference())
@@ -262,8 +253,8 @@ pub fn declare<Schema: BirthSchema>(
                 .operation_create(op, PresentNode::reference())
                 .operation_create(op, FieldlessNode::reference())
                 .operation_create(op, StrictNode::reference())
-                .operation_write(op, Value::reference())
-                .operation_write(op, Extra::reference())
+                .operation_write(op, Value::at("Value"))
+                .operation_write(op, Extra::at("Extra"))
                 .operation_link(op, Incidence::reference())
                 .application_mutation_binding::<$binding>()
         }};
@@ -273,14 +264,14 @@ pub fn declare<Schema: BirthSchema>(
         KeepProduce,
         Binding<Schema, true>
     )
-    .operation_read_field(KeepProduce::reference(), Note::reference())
-    .operation_write(Produce::reference(), SourceContent::reference())
-    .operation_write(Produce::reference(), SourceSelection::reference());
+    .operation_read_field(KeepProduce::reference(), Note::at("Note"))
+    .operation_write(Produce::reference(), SourceContent::at("SourceContent"))
+    .operation_write(Produce::reference(), SourceSelection::at("SourceSelection"));
     if Schema::RENEW_OUTPUT {
         schema
-            .operation_read_field(KeepProduce::reference(), Value::reference())
-            .operation_read_field(KeepProduce::reference(), PositionY::reference())
-            .operation_write(KeepProduce::reference(), PositionY::reference())
+            .operation_read_field(KeepProduce::reference(), Value::at("Value"))
+            .operation_read_field(KeepProduce::reference(), PositionY::at("PositionY"))
+            .operation_write(KeepProduce::reference(), PositionY::at("PositionY"))
     } else {
         schema
     }

@@ -10,7 +10,7 @@ fn typed_finish_refuses_duplicate_declared_path_destinations() {
     let op = Copy::reference();
     let operands = op
         .requirement_operands()
-        .field("value", RowValue::reference())
+        .field("value", RowValue::at("RowValue"))
         .unwrap();
     let expression = worth_foundational::expression_api::expressions()
         .reading_within(ApplicationOperationBodyExpression::PROFILE)
@@ -23,9 +23,9 @@ fn typed_finish_refuses_duplicate_declared_path_destinations() {
     let path = || ApplicationQueryRootPath::from(Row::reference()).reverse(ParentRows::reference());
     let body = op
         .body()
-        .assign_value_at_path(path(), ParentRevision::reference(), &value)
+        .assign_value_at_path(path(), ParentRevision::at("ParentRevision"), &value)
         .unwrap()
-        .assign_value_at_path(path(), ParentRevision::reference(), &value)
+        .assign_value_at_path(path(), ParentRevision::at("ParentRevision"), &value)
         .unwrap()
         .finish();
     assert!(matches!(

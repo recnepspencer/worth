@@ -159,6 +159,7 @@ impl ConsumedFieldValueFact {
 
 #[cfg(test)]
 mod tests {
+    use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
     use worth_foundational::facade::{
         AspectValue, AspectValuePosture, CanonicalBigInt, CanonicalDate, CanonicalDecimal,
         CanonicalF32, CanonicalF64, CanonicalRational, CanonicalTime, CanonicalTimestamp,
@@ -176,9 +177,10 @@ mod tests {
     };
 
     #[test]
-    fn borrowed_refinement_preserves_every_foundational_scalar_family() {
+    fn borrowed_refinement_preserves_every_foundational_scalar_family(
+    ) -> Result<(), IdentityDerivationDenial> {
         for value in scalar_samples() {
-            let fact = scalar_fact(value.clone());
+            let fact = scalar_fact(value.clone())?;
             match value {
                 AspectValue::InlineBytes(expected) => {
                     assert_eq!(fact.as_inline_bytes(), Ok(&expected))
@@ -218,11 +220,14 @@ mod tests {
                 }
             }
         }
+
+        Ok(())
     }
 
     #[test]
-    fn refinement_denial_carries_shape_path_source_and_projection_authority() {
-        let fact = scalar_fact(AspectValue::UInt32(7));
+    fn refinement_denial_carries_shape_path_source_and_projection_authority(
+    ) -> Result<(), IdentityDerivationDenial> {
+        let fact = scalar_fact(AspectValue::UInt32(7))?;
         let denial = fact.as_int32().unwrap_err();
 
         assert_eq!(
@@ -251,7 +256,7 @@ mod tests {
         )])
         .unwrap();
         let structured_fact = ConsumedFieldValueFact::new_native(
-            &contract(),
+            &contract()?,
             "row:test",
             field_path(),
             ConsumedNativeValue::struct_value(structured.clone()),
@@ -261,13 +266,23 @@ mod tests {
             structured_fact.as_uint32().unwrap_err().actual(),
             AspectValuePosture::Struct
         );
+
+        Ok(())
     }
 
-    fn scalar_fact(value: AspectValue) -> ConsumedFieldValueFact {
-        ConsumedFieldValueFact::new(&contract(), "row:test", field_path(), value)
+    fn scalar_fact(value: AspectValue) -> Result<ConsumedFieldValueFact, IdentityDerivationDenial> {
+        Ok(ConsumedFieldValueFact::new(
+            &contract()?,
+            "row:test",
+            field_path(),
+            value,
+        ))
     }
 
-    fn contract() -> crate::projection_consumption::MaterializedProjectionContract {
+    fn contract() -> Result<
+        crate::projection_consumption::MaterializedProjectionContract,
+        IdentityDerivationDenial,
+    > {
         let source = ProjectionConsumptionSource::test_only(
             ProjectionSourceFamily::QueryReadReceipt,
             Some("query:test"),
@@ -288,11 +303,11 @@ mod tests {
         )
         .unwrap();
         let ProjectionConsumptionEligibility::Admitted(admitted) =
-            evaluate_projection_consumption_eligibility(&declaration)
+            evaluate_projection_consumption_eligibility(&declaration)?
         else {
             panic!("native refinement fixture must admit")
         };
-        bind_materialized_projection_contract(&admitted)
+        Ok(bind_materialized_projection_contract(&admitted)?)
     }
 
     fn field_path() -> crate::projection_consumption::ProjectionFactFieldPath {

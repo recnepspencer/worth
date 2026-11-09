@@ -1,11 +1,10 @@
 use super::*;
 use worth_query_declaration::facade::{
-    application_query::*,
-    application_schema::{ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder},
+    application_query::*, application_schema::ApplicationSchemaDeclaration,
 };
 
 fn declaration(inspect: bool) -> ApplicationSchemaDeclaration<IdentitySchema> {
-    let schema = schema_members::declare(ApplicationSchemaDeclarationBuilder::for_schema());
+    let schema = schema_members::declare();
     let schema = if inspect {
         schema.application_query_inspection(
             ApplicationQueryInspectionDefinition::<IdentitySchema, PrincipalQueryBinding>::new(

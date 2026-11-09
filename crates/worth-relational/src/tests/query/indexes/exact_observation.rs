@@ -233,6 +233,20 @@ fn current_query_rejects_an_older_generation_and_returns_every_exact_match() {
         .visibility_authority()
         .snapshot()
         .expect("current snapshot fixture is admitted");
+    runtime
+        .index_authority()
+        .discard_generations(crate::indexes::data::DerivedIndexDiscardRequest::all_bases(
+            older_build.generations[0].index_id,
+        ))
+        .unwrap();
+    let older_build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
+            source_commit_id: older_build.generations[0].source_commit_id,
+            branch_id: BranchId("main".into()),
+            index_ids: vec![older_build.generations[0].index_id],
+        },
+    );
     let context = runtime
         .read_truth()
         .query_plan_context(&snapshot)

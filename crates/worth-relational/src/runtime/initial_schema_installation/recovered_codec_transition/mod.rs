@@ -63,6 +63,7 @@ impl RelationalRuntime {
         let previous = &installed.schema_contract_runtime;
         let rebuilt = super::rebuilt_schema_contract_runtime(
             &registry,
+            &installed.config.schema.invariant_catalog.registrations,
             previous.custom_invariant_registries.clone(),
             previous.custom_invariant_generation,
             previous.initial_custom_invariants_sealed,

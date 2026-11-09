@@ -193,11 +193,17 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                 correlation_family: external_effect.correlation_family,
             });
         }
-        if let Some(contract) = definition.aftermath {
-            self.push_member_in_place(ApplicationSchemaMember::OperationAftermath {
-                operation,
-                contract,
-            });
+        if let Some(aftermath) = definition.aftermath {
+            self.correction_fields.expect(aftermath.fields);
+            match aftermath.contract {
+                Ok(contract) => {
+                    self.push_member_in_place(ApplicationSchemaMember::OperationAftermath {
+                        operation,
+                        contract,
+                    })
+                }
+                Err(denial) => self.correction_fields.refuse(denial),
+            }
         }
         self
     }

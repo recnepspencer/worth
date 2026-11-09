@@ -44,79 +44,107 @@ pub(super) fn prepare(
     symbols: &crate::runtime::RuntimeSymbolTable,
     execution_contracts: Option<Arc<crate::runtime::RelationalRootExecutionContracts>>,
 ) -> Result<PreparedRelationalBranchRootCapture, RelationalBranchRootCaptureDenial> {
-    if content.records() != envelope.content.records() {
-        return Err(RelationalBranchRootCaptureDenial::UnadmittedContent);
-    }
-    let root_id = issuer.issue_root_id()?;
-    let prepared_schema = prepare_schema(
-        issuer,
-        previous,
-        &envelope,
-        registry,
-        execution_contracts.as_ref(),
-    )?;
-    let prepared_regions = prepare_regions(
+    crate::execution::phase_observation::run(
         execution,
-        issuer,
-        root_id,
-        partitions,
-        published_delta,
-        previous,
-        symbols,
-        &prepared_schema.authority,
-    )?;
-    let publication_cost = prepared_schema.apply_cost(prepared_regions.publication_cost);
-    let correctness_index = RelationalRootCorrectnessIndex::AuthoritativeFallback;
-    let axes = RelationalBranchRootAxes {
-        storage_version: envelope.commit.version_id.0,
-        storage_root: prepared_regions.storage_root,
-        schema_root: prepared_schema.schema_root,
-        correctness_index,
-        visibility: RelationalBranchVisibilityCommitment::for_root(
-            &envelope,
-            prepared_regions.storage_root,
-            prepared_schema.schema_root,
-            correctness_index,
-        ),
-    };
-    let root = Arc::new(RelationalBranchRoot {
-        content: content.directory()?,
-        managed_source_image: std::sync::OnceLock::new(),
-        id: root_id,
-        regions: prepared_regions.regions,
-        entity_slot_count: prepared_regions.entity_slot_count,
-        relation_slot_count: prepared_regions.relation_slot_count,
-        content_accumulator: prepared_regions.content_accumulator,
-        output_publication_positions: if envelope.is_unmerged_output_publication_step() {
-            previous
-                .map(|root| root.output_publication_positions.clone())
-                .unwrap_or_default()
-        } else {
-            // The recovery class refuses merged physical output ownership.
-            // Carry no old selector across an unsupported canonical step.
-            crate::history::data::RequiredOutputPublicationPositions::unresolved_at(
-                envelope.commit.commit_id,
-            )
+        "root_admission",
+        || {
+            if content.records() != envelope.content.records() {
+                return Err(RelationalBranchRootCaptureDenial::UnadmittedContent);
+            }
+            let memory = super::reserve_arc_memory::<RelationalBranchRoot>(Some(execution))?;
+            let root_id = issuer.issue_root_id()?;
+            let prepared_schema = prepare_schema(
+                issuer,
+                previous,
+                &envelope,
+                registry,
+                execution_contracts.as_ref(),
+            )?;
+            let change = crate::storage::substrate::maintenance::CommitChange::from_publication(
+                execution,
+                previous.map(Arc::as_ref),
+                published_delta,
+                Arc::clone(&envelope),
+                previous.is_none_or(|root| {
+                    root.schema_authority().authority_digest() != prepared_schema.schema_root
+                }),
+            )?;
+            let prepared_regions = prepare_regions(
+                execution,
+                issuer,
+                root_id,
+                partitions,
+                published_delta,
+                previous,
+                symbols,
+                &prepared_schema.authority,
+                &change,
+            )?;
+            let publication_cost = prepared_schema.apply_cost(prepared_regions.publication_cost);
+            let correctness_index = RelationalRootCorrectnessIndex::AuthoritativeFallback;
+            let evidence = super::RelationalRootCommitEvidence::original_for_request(
+                execution,
+                Arc::clone(&envelope),
+            )?;
+            let original = evidence
+                .original_payload()
+                .expect("Original preparation carries mandatory payload custody");
+            let axes = RelationalBranchRootAxes {
+                storage_version: envelope.commit.version_id.0,
+                storage_root: prepared_regions.storage_root,
+                schema_root: prepared_schema.schema_root,
+                correctness_index,
+                visibility: RelationalBranchVisibilityCommitment::for_payload_for_request(
+                    original.payload(),
+                    prepared_regions.storage_root,
+                    prepared_schema.schema_root,
+                    correctness_index,
+                    execution,
+                )?,
+            };
+            let root = Arc::new(RelationalBranchRoot {
+                publication_bases: Default::default(),
+                content: content.directory()?,
+                managed_source_image: std::sync::OnceLock::new(),
+                id: root_id,
+                regions: prepared_regions.regions,
+                entity_slot_count: prepared_regions.entity_slot_count,
+                relation_slot_count: prepared_regions.relation_slot_count,
+                content_accumulator: prepared_regions.content_accumulator,
+                output_publication_positions: if envelope.is_unmerged_output_publication_step() {
+                    previous
+                        .map(|root| root.output_publication_positions.clone())
+                        .unwrap_or_default()
+                } else {
+                    // The recovery class refuses merged physical output ownership.
+                    // Carry no old selector across an unsupported canonical step.
+                    crate::history::data::RequiredOutputPublicationPositions::unresolved_at(
+                        envelope.commit.commit_id,
+                    )
+                },
+                execution_contracts: match execution_contracts {
+                    Some(contracts) => std::sync::OnceLock::from(contracts),
+                    None => previous
+                        .map(|source| source.execution_contracts.clone())
+                        .unwrap_or_default(),
+                },
+                schema_authority: prepared_schema.authority,
+                _memory: memory,
+                committed: Some(RelationalCommittedBranchRoot {
+                    commit_change: Some(change),
+                    descriptor: super::RelationalBranchRootDescriptor::new(
+                        axes.storage_root,
+                        axes.schema_root,
+                    ),
+                    evidence,
+                    axes,
+                    publication_cost,
+                }),
+            });
+            Ok(PreparedRelationalBranchRootCapture { root })
         },
-        execution_contracts: match execution_contracts {
-            Some(contracts) => std::sync::OnceLock::from(contracts),
-            None => previous
-                .map(|source| source.execution_contracts.clone())
-                .unwrap_or_default(),
-        },
-        schema_authority: prepared_schema.authority,
-        _memory: None,
-        committed: Some(RelationalCommittedBranchRoot {
-            descriptor: super::RelationalBranchRootDescriptor::new(
-                axes.storage_root,
-                axes.schema_root,
-            ),
-            evidence: super::RelationalRootCommitEvidence::Original(envelope),
-            axes,
-            publication_cost,
-        }),
-    });
-    Ok(PreparedRelationalBranchRootCapture { root })
+        RelationalBranchRootCaptureDenial::Execution,
+    )
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -129,6 +157,7 @@ fn prepare_regions(
     previous: Option<&Arc<RelationalBranchRoot>>,
     symbols: &crate::runtime::RuntimeSymbolTable,
     schema: &Arc<RelationalBranchRootSchemaAuthority>,
+    change: &Arc<crate::storage::substrate::maintenance::CommitChange>,
 ) -> Result<PreparedRootRegions, RelationalBranchRootCaptureDenial> {
     let (regions, publication_cost) = match previous {
         Some(previous) if previous.committed.is_some() => capture::build_incremental_regions(
@@ -139,16 +168,21 @@ fn prepare_regions(
             previous,
             symbols,
             schema,
+            Some(change),
         )?,
-        _ => {
-            let projected = published_delta.projected_partitions_from_access(partitions);
-            capture::build_initial_regions(
-                issuer,
-                root_id,
-                &projected,
-                &symbols.interner_snapshot(),
-            )?
-        }
+        _ => crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
+            |lane| {
+                let projected = published_delta.projected_partitions_from_access(lane, partitions);
+                capture::build_initial_regions(
+                    lane,
+                    execution,
+                    issuer,
+                    root_id,
+                    &projected,
+                    &symbols.interner_snapshot(),
+                )
+            },
+        )?,
     };
     let (entity_slot_count, relation_slot_count) =
         root_slot_counts(&regions, previous, published_delta);
@@ -163,7 +197,7 @@ fn prepare_regions(
     })
 }
 
-fn root_slot_counts(
+pub(super) fn root_slot_counts(
     regions: &RelationalPersistentRegionSet,
     previous: Option<&Arc<RelationalBranchRoot>>,
     published_delta: &RelationalPublishedPartitionDelta,
@@ -198,15 +232,17 @@ fn root_slot_counts(
 fn prepare_schema(
     issuer: &RelationalBranchRootIdentityIssuer,
     previous: Option<&Arc<RelationalBranchRoot>>,
-    envelope: &CanonicalCommitEnvelope,
+    envelope: &crate::history::data::CanonicalCommitEnvelopeBody,
     registry: &crate::schema::data::RelationalSchemaRegistry,
     execution: Option<&Arc<crate::runtime::RelationalRootExecutionContracts>>,
 ) -> Result<PreparedRootSchema, RelationalBranchRootCaptureDenial> {
     let schema_root =
         crate::schema::data::schema_authority_snapshot_digest_bytes(&envelope.schema_authority);
-    if let Some(execution) =
-        execution.filter(|execution| execution.schema.matches(&envelope.schema_authority))
-    {
+    if let Some(execution) = execution.filter(|execution| {
+        execution.schema.matches(&envelope.schema_authority)
+            && execution.schema.descriptor_semantics_version()
+                == envelope.descriptor_semantics_version
+    }) {
         let authority = execution.schema.clone();
         let reused =
             previous.is_some_and(|source| Arc::ptr_eq(&source.schema_authority, &authority));
@@ -222,9 +258,11 @@ fn prepare_schema(
             schema_root,
         });
     }
-    if let Some(previous) =
-        previous.filter(|root| root.schema_authority.matches(&envelope.schema_authority))
-    {
+    if let Some(previous) = previous.filter(|root| {
+        root.schema_authority.matches(&envelope.schema_authority)
+            && root.schema_authority.descriptor_semantics_version()
+                == envelope.descriptor_semantics_version
+    }) {
         return Ok(PreparedRootSchema {
             authority: Arc::clone(&previous.schema_authority),
             schema_root,
@@ -271,3 +309,7 @@ impl PreparedRootSchema {
         cost
     }
 }
+
+#[cfg(test)]
+#[path = "root_capture_preparation/schema_reuse_tests.rs"]
+mod schema_reuse_tests;

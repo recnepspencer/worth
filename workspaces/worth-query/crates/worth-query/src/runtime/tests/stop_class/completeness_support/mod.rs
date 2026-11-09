@@ -60,10 +60,12 @@ pub(super) fn representative_runtime_stop_errors(
             crate::runtime::WorthQueryMutationTargetCollectionIdentity::new(
                 "graph-composition-test",
                 "Task",
-            ),
+            )
+            .expect("fixture digest must fit"),
         ),
         "duplicate symbol",
-    );
+    )
+    .expect("fixture digest must fit");
     let naming_intent = WorthQueryNamingMutationIntent::attach_new_target(
         crate::runtime::WorthQueryMutationAuthorityIdentity::naming_attachment(
             crate::runtime::WorthQueryNamingAttachmentAuthorityLabel::new("attachment-1")
@@ -113,7 +115,17 @@ pub(super) fn representative_runtime_stop_errors(
         ),
     );
 
+    let refusal = crate::evidence_identity::WorthQueryEvidenceIdentity::compose(
+        crate::evidence_identity::WorthQueryEvidenceScope::MutationEvidenceAggregateDigest,
+    )
+    .field_value(
+        crate::evidence_identity::WorthQueryEvidenceTag::new("runtime_stop_census"),
+        "x".repeat(4 * 1024 * 1024),
+    )
+    .seal()
+    .expect_err("oversized runtime identity fixture must refuse");
     vec![
+        WorthQueryRuntimeError::EvidenceIdentityDerivationDenied(refusal),
         WorthQueryRuntimeError::InstalledDomainAuthorityDenied(domain_handle_denial),
         WorthQueryRuntimeError::MissingBackend,
         WorthQueryRuntimeError::MissingRuntimeBridge,
@@ -148,7 +160,8 @@ pub(super) fn representative_runtime_stop_errors(
         WorthQueryRuntimeError::SharedReadStaleBasis {
             snapshot_identity: crate::memory_workspace::admit_external_snapshot_label(
                 "snapshot.stale",
-            ),
+            )
+            .expect("fixture digest must fit"),
         },
         WorthQueryRuntimeError::JournalReplayDenied(replay_denial),
         WorthQueryRuntimeError::MissingEffect("effect.name".to_string()),

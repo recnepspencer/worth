@@ -32,8 +32,8 @@ worth_query_mutation_binding!(
     outputs NoApplicationMutationOutputs,
     principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit,
-    field DirectoryIdentity::reference(), value scope,
+    scope DirectoryIdentity,
+    field DirectoryIdentity::at("DirectoryIdentity"), value scope,
 );
 pub struct Handler;
 impl OperationHandler<Catalog, Binding> for Handler {
@@ -47,13 +47,15 @@ impl OperationHandler<Catalog, Binding> for Handler {
                 Edit::Retire => "empty",
                 Edit::Create => "catalog",
             };
-            let directory =
-                reader.resolve_entity(DirectoryIdentity::reference(), identity.to_owned())?;
+            let directory = reader.resolve_entity(
+                DirectoryIdentity::at("DirectoryIdentity"),
+                identity.to_owned(),
+            )?;
             reader
                 .reader()
                 .require_decision_entity(&directory, Directory::reference())
                 .map_err(HandlerExecutionDenial::new)?;
-            reader.field(&directory, DirectoryIdentity::reference())?;
+            reader.field(&directory, DirectoryIdentity::at("DirectoryIdentity"))?;
             reader.mutation_target(&directory)
         };
         match observe() {
@@ -84,7 +86,7 @@ impl OperationHandler<Catalog, Binding> for Handler {
                     writer
                         .initialize_field(
                             &replacement,
-                            DirectoryIdentity::reference(),
+                            DirectoryIdentity::at("DirectoryIdentity"),
                             "empty".to_owned(),
                         )
                         .map_err(HandlerExecutionDenial::new)
@@ -109,19 +111,9 @@ worth_query_application_query!(pub DirectoryQuery for Catalog,
     result ResultBinding, scope Directory => "Directory", name "directory_observation");
 pub struct IdentitySlot;
 worth_query_portable_type!(IdentitySlot => "managed-catalog.directory-identity-slot.v1");
-fn identity() -> ApplicationQueryResultFieldRef<
-    DirectoryQuery,
-    IdentitySlot,
-    Catalog,
-    Directory,
-    DirectoryFacts,
-    DirectoryIdentity,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("identity", DirectoryIdentity::reference())
+fn identity(
+) -> ApplicationQueryResultFieldRef<DirectoryQuery, IdentitySlot, Catalog, DirectoryIdentity> {
+    ApplicationQueryResultFieldRef::new("identity", DirectoryIdentity::at("DirectoryIdentity"))
 }
 impl WorthQueryApplicationProjection<Catalog, DirectoryQuery> for Row {
     fn project(
@@ -151,8 +143,8 @@ worth_query_query_binding!(pub QueryBinding for Read, schema Catalog,
     query DirectoryQuery, parameters ParametersBinding => |_| ApplicationQueryParameterSet::new(),
     result ResultBinding, principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit,
-    field DirectoryIdentity::reference(), value read_scope, limits results 1
+    scope DirectoryIdentity,
+    field DirectoryIdentity::at("DirectoryIdentity"), value read_scope, limits results 1
 );
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Catalog>,
@@ -175,18 +167,16 @@ pub fn declare(
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
-        .public()
-        .build()
-        .unwrap();
+        .public();
     let op = EditDirectory::reference();
     schema
         .operation(op.definition().no_external_effect().no_aftermath().finish())
         .operation_projection_work_budget(op, 16)
         .operation_read_entity(op, Directory::reference())
-        .operation_read_field(op, DirectoryIdentity::reference())
+        .operation_read_field(op, DirectoryIdentity::at("DirectoryIdentity"))
         .operation_create(op, Directory::reference())
         .operation_delete(op, Directory::reference())
-        .operation_write(op, DirectoryIdentity::reference())
+        .operation_write(op, DirectoryIdentity::at("DirectoryIdentity"))
         .application_mutation_binding::<Binding>()
         .application_query(query)
         .application_query_binding::<QueryBinding>()

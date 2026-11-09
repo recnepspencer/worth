@@ -26,7 +26,8 @@ fn causal_inspection_proof_shape_binds_runtime_path_inputs() {
         &changed,
         &representatives,
         &boundary_audit,
-    );
+    )
+    .expect("fixture digest must fit");
 
     assert!(proof_shape.phase_skipping_rejected());
     assert!(proof_shape.raw_collection_substitution_rejected());
@@ -55,7 +56,8 @@ fn causal_inspection_proof_shape_binds_runtime_path_inputs() {
         &changed,
         &alternate_representatives,
         &boundary_audit,
-    );
+    )
+    .expect("fixture digest must fit");
     assert_ne!(
         proof_shape.representative_matrix_digest(),
         alternate_matrix_proof.representative_matrix_digest()
@@ -83,7 +85,8 @@ fn causal_inspection_proof_shape_binds_runtime_path_inputs() {
         &alternate_changed,
         &representatives,
         &alternate_boundary,
-    );
+    )
+    .expect("fixture digest must fit");
     assert_ne!(
         proof_shape.inspected_artifact_digest(),
         alternate_artifact_proof.inspected_artifact_digest()
@@ -119,19 +122,23 @@ fn causal_inspection_certification_rejects_worthd_proof_shape() {
         &changed,
         &representatives,
         &boundary_audit,
-    );
+    )
+    .expect("fixture digest must fit");
     let small = CausalInspectionScaleCounterSnapshot::from_artifact(
         CausalInspectionScaleFixtureSize::Small,
         &changed,
-    );
+    )
+    .expect("fixture digest must fit");
     let medium = CausalInspectionScaleCounterSnapshot::from_artifact(
         CausalInspectionScaleFixtureSize::Medium,
         &changed,
-    );
+    )
+    .expect("fixture digest must fit");
     let large = CausalInspectionScaleCounterSnapshot::from_artifact(
         CausalInspectionScaleFixtureSize::Large,
         &changed,
-    );
+    )
+    .expect("fixture digest must fit");
 
     let error = build_causal_inspection_certification_scope(
         &changed,
@@ -175,19 +182,23 @@ fn causal_inspection_certification_rejects_stale_proof_shape_digest() {
         &changed,
         &representatives,
         &boundary_audit,
-    );
+    )
+    .expect("fixture digest must fit");
     let small = CausalInspectionScaleCounterSnapshot::from_artifact(
         CausalInspectionScaleFixtureSize::Small,
         &changed,
-    );
+    )
+    .expect("fixture digest must fit");
     let medium = CausalInspectionScaleCounterSnapshot::from_artifact(
         CausalInspectionScaleFixtureSize::Medium,
         &changed,
-    );
+    )
+    .expect("fixture digest must fit");
     let large = CausalInspectionScaleCounterSnapshot::from_artifact(
         CausalInspectionScaleFixtureSize::Large,
         &changed,
-    );
+    )
+    .expect("fixture digest must fit");
 
     let error = build_causal_inspection_certification_scope(
         &changed,

@@ -32,11 +32,11 @@ impl ExecutedEffectPlan {
                 Some(oracle.bridge_oracle_identity()),
             ));
         };
-        if bridge_observation_outcome_subject_identity(execution.outcome().digest())
+        if bridge_observation_outcome_subject_identity(execution.outcome().digest())?
             != *oracle.outcome_subject_identity()
             || bridge_observation_outcome_subject_identity(
                 execution.execution_receipt().authority_outcome_digest(),
-            ) != *oracle.outcome_subject_identity()
+            )? != *oracle.outcome_subject_identity()
         {
             return Err(EffectExecutionOracleError::new(
                 EffectExecutionOracleErrorKind::BridgeOracleOutcomeMismatch,
@@ -65,11 +65,11 @@ impl ExecutedEffectPlan {
                 Some(oracle.bridge_oracle_identity()),
             ));
         }
-        if bridge_observation_receipt_subject_identity(execution.authority_receipt().digest())
+        if bridge_observation_receipt_subject_identity(execution.authority_receipt().digest())?
             != *oracle.receipt_subject_identity()
             || bridge_observation_receipt_subject_identity(
                 execution.execution_receipt().authority_receipt_digest(),
-            ) != *oracle.receipt_subject_identity()
+            )? != *oracle.receipt_subject_identity()
         {
             return Err(EffectExecutionOracleError::new(
                 EffectExecutionOracleErrorKind::BridgeOracleReceiptMismatch,
@@ -85,7 +85,7 @@ impl ExecutedEffectPlan {
         }
         if bridge_observation_request_subject_identity(
             execution.authority_receipt().request_digest(),
-        ) != *oracle.request_subject_identity()
+        )? != *oracle.request_subject_identity()
         {
             return Err(EffectExecutionOracleError::new(
                 EffectExecutionOracleErrorKind::BridgeOracleRequestMismatch,
@@ -102,7 +102,7 @@ impl ExecutedEffectPlan {
             oracle.execution_receipt_subject_identity()
             && bridge_observation_execution_receipt_subject_identity(
                 execution.execution_receipt().digest(),
-            ) != *execution_receipt_subject_identity
+            )? != *execution_receipt_subject_identity
         {
             return Err(EffectExecutionOracleError::new(
                     EffectExecutionOracleErrorKind::BridgeOracleReceiptMismatch,
@@ -152,68 +152,60 @@ fn matching_bridge_oracle_for_plan(
             )
         })?;
     let outcome_digest = record.outcome_digest().ok_or_else(|| {
-        EffectExecutionOracleError::new(
+        EffectExecutionOracleError::with_oracle_derivation(
             EffectExecutionOracleErrorKind::BridgeObservationIncompleteWritebackRecord,
             format!(
                 "matching bridge writeback record `{}` is missing outcome digest",
                 record.digest()
             ),
             executed.effect_execution_identity(),
-            Some(&bridge_observation_execution_record_subject_identity(
-                record.digest(),
-            )),
+            bridge_observation_execution_record_subject_identity(record.digest()).map(Some),
         )
     })?;
     let outcome_class = record.outcome_class().ok_or_else(|| {
-        EffectExecutionOracleError::new(
+        EffectExecutionOracleError::with_oracle_derivation(
             EffectExecutionOracleErrorKind::BridgeObservationIncompleteWritebackRecord,
             format!(
                 "matching bridge writeback record `{}` is missing outcome class",
                 record.digest()
             ),
             executed.effect_execution_identity(),
-            Some(&bridge_observation_execution_record_subject_identity(
-                record.digest(),
-            )),
+            bridge_observation_execution_record_subject_identity(record.digest()).map(Some),
         )
     })?;
     let request_digest = record.request_digest().ok_or_else(|| {
-        EffectExecutionOracleError::new(
+        EffectExecutionOracleError::with_oracle_derivation(
             EffectExecutionOracleErrorKind::BridgeObservationIncompleteWritebackRecord,
             format!(
                 "matching bridge writeback record `{}` is missing request digest",
                 record.digest()
             ),
             executed.effect_execution_identity(),
-            Some(&bridge_observation_execution_record_subject_identity(
-                record.digest(),
-            )),
+            bridge_observation_execution_record_subject_identity(record.digest()).map(Some),
         )
     })?;
     let receipt_digest = record.receipt_digest().ok_or_else(|| {
-        EffectExecutionOracleError::new(
+        EffectExecutionOracleError::with_oracle_derivation(
             EffectExecutionOracleErrorKind::BridgeObservationIncompleteWritebackRecord,
             format!(
                 "matching bridge writeback record `{}` is missing receipt digest",
                 record.digest()
             ),
             executed.effect_execution_identity(),
-            Some(&bridge_observation_execution_record_subject_identity(
-                record.digest(),
-            )),
+            bridge_observation_execution_record_subject_identity(record.digest()).map(Some),
         )
     })?;
     let oracle = BridgeExecutionOracle::new(
-        bridge_observation_execution_record_subject_identity(record.digest()),
-        bridge_observation_outcome_subject_identity(outcome_digest),
+        bridge_observation_execution_record_subject_identity(record.digest())?,
+        bridge_observation_outcome_subject_identity(outcome_digest)?,
         outcome_class,
-        bridge_observation_request_subject_identity(request_digest),
-        bridge_observation_receipt_subject_identity(receipt_digest),
-    );
+        bridge_observation_request_subject_identity(request_digest)?,
+        bridge_observation_receipt_subject_identity(receipt_digest)?,
+    )?;
     Ok(match record.execution_receipt_digest() {
         Some(execution_receipt_digest) => oracle.with_execution_receipt_subject_identity(
-            bridge_observation_execution_receipt_subject_identity(execution_receipt_digest),
-        ),
+            bridge_observation_execution_receipt_subject_identity(execution_receipt_digest)?,
+        )?,
         None => oracle,
     })
 }

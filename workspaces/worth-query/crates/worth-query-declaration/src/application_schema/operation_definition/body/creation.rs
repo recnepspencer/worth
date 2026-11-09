@@ -2,11 +2,7 @@
 
 use std::marker::PhantomData;
 
-use crate::application_schema::{
-    ApplicationEntityRef, ApplicationFieldBindingLocus, ApplicationFieldRef, ApplicationFieldUnit,
-    ApplicationScalarValueBinding, DeclaredApplicationFieldValue, OperationCreates, OperationReads,
-    OperationWrites, OptionalApplicationFieldValue,
-};
+use crate::application_schema::{ApplicationEntityRef, OperationCreates};
 
 use super::{
     ApplicationOperationBody, ApplicationOperationBodyAuthoringDenial,
@@ -70,138 +66,67 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
 impl<Schema, Operation, Input, Entity>
     ApplicationOperationBodyCreationBuilder<Schema, Operation, Input, Entity>
 {
-    pub fn initialize<Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn initialize<
+        Selection: crate::application_schema::fragment::RecordSelection<Entity = Entity>,
+    >(
         mut self,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
-        value: Value,
-    ) -> Result<Self, ApplicationOperationBodyAuthoringDenial>
-    where
-        Field: OperationWrites<Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
-    {
-        self.fields.push(super::initialization::literal::<
-            Schema,
-            Operation,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            Equality,
-            Unit,
-        >(field, value)?);
+        field: Selection,
+        value: Selection::Value,
+    ) -> Result<Self, ApplicationOperationBodyAuthoringDenial> {
+        self.fields
+            .push(super::initialization::literal(field, value)?);
         Ok(self)
     }
 
-    pub fn initialize_input<Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn initialize_input<
+        Selection: crate::application_schema::fragment::RecordSelection<Entity = Entity>,
+    >(
         mut self,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+        field: Selection,
         member: &str,
-    ) -> Result<Self, ApplicationOperationBodyAuthoringDenial>
-    where
-        Field: OperationWrites<Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
-    {
-        self.fields.push(super::initialization::input::<
-            Schema,
-            Operation,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            Equality,
-            Unit,
-        >(field, member, false)?);
+    ) -> Result<Self, ApplicationOperationBodyAuthoringDenial> {
+        self.fields
+            .push(super::initialization::input(field, member, false)?);
         Ok(self)
     }
 
     /// Initializes an optional created field from a serialized Option. None
     /// leaves it absent; Some initializes it through the installed scalar codec.
-    pub fn initialize_optional_input<Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn initialize_optional_input<
+        Selection: crate::application_schema::fragment::RecordSelection<Entity = Entity>,
+    >(
         mut self,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+        field: Selection,
         member: &str,
-    ) -> Result<Self, ApplicationOperationBodyAuthoringDenial>
-    where
-        Field: OperationWrites<Operation> + OptionalApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
-    {
-        self.fields.push(super::initialization::input::<
-            Schema,
-            Operation,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            Equality,
-            Unit,
-        >(field, member, true)?);
+    ) -> Result<Self, ApplicationOperationBodyAuthoringDenial> {
+        self.fields
+            .push(super::initialization::input(field, member, true)?);
         Ok(self)
     }
 
     /// Copies the scope's tracked preimage into one created field. Both fields
     /// share the same value, unit and exact codec; the host supplies no value.
-    pub fn initialize_from_scope<
-        SourceEntity,
-        SourceAspect,
-        SourceField,
-        SourceWrite,
-        SourceEquality,
-        TargetAspect,
-        TargetField,
-        TargetWrite,
-        TargetEquality,
-        Value,
-        Unit,
-    >(
+    pub fn initialize_from_scope<Source, Field>(
         mut self,
-        source: ApplicationFieldRef<
-            Schema,
-            SourceEntity,
-            SourceAspect,
-            SourceField,
-            Value,
-            SourceWrite,
-            SourceEquality,
-            Unit,
-        >,
-        field: ApplicationFieldRef<
-            Schema,
-            Entity,
-            TargetAspect,
-            TargetField,
-            Value,
-            TargetWrite,
-            TargetEquality,
-            Unit,
-        >,
+        source: Source,
+        field: Field,
     ) -> Result<Self, ApplicationOperationBodyAuthoringDenial>
     where
-        SourceField: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        TargetField: OperationWrites<Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
+        Source: crate::application_schema::fragment::RecordSelection,
+        Field: crate::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Value = Source::Value,
+            Binding = Source::Binding,
+        >,
     {
-        if SourceField::Binding::IDENTITY != TargetField::Binding::IDENTITY
-            || SourceField::Binding::SCALAR_FAMILY != TargetField::Binding::SCALAR_FAMILY
-        {
-            return Err(ApplicationOperationBodyAuthoringDenial::IncompatibleSourceBinding);
-        }
+        let source = super::record_authoring::resolve(source)?;
+        let field = super::record_authoring::resolve(field)?;
         self.fields
             .push(ApplicationOperationBodyCreatedField::ScopeField {
-                field: ApplicationFieldBindingLocus::new(
-                    field.entity(),
-                    field.aspect(),
-                    field.field(),
-                ),
-                binding: TargetField::Binding::IDENTITY,
-                scalar_family: TargetField::Binding::SCALAR_FAMILY,
-                source: ApplicationFieldBindingLocus::new(
-                    source.entity(),
-                    source.aspect(),
-                    source.field(),
-                ),
+                field: field.locus().clone(),
+                binding: field.recipe().binding_identity().clone(),
+                scalar_family: field.recipe().scalar_family(),
+                source: source.locus().clone(),
             });
         Ok(self)
     }

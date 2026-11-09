@@ -2,6 +2,7 @@ use super::active_lifecycle::lifecycle_lane;
 use super::delivery_evidence::deliver_to_attachment;
 use super::subscription_fixtures::{active_budget, attachment_budget, delivery_budget};
 use super::SubscriptionLifecycleCertificationBundle;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::harness::certification::digest_parts;
 use crate::live::LiveQueryFamily;
 use crate::subscription::{
@@ -16,13 +17,13 @@ use crate::subscription::{
 pub(super) fn sharing_lane(
     first_consumer: &str,
     second_consumer: &str,
-) -> SubscriptionLifecycleCertificationBundle {
+) -> Result<SubscriptionLifecycleCertificationBundle, IdentityDerivationDenial> {
     let mut runtime = ActiveSubscriptionRuntime::new();
     let activation = super::subscription_fixtures::activation_for(
         LiveQueryFamily::Detail,
         None,
         QuerySubscriptionConstructionSource::FacadeLive,
-    );
+    )?;
     let admission = admit_active_subscription_lane(activation.clone(), active_budget()).unwrap();
     let handle = open_active_subscription_lane(&mut runtime, admission).unwrap();
     let open_counter_digest = runtime.counters().counter_projection().label().to_string();
@@ -32,7 +33,7 @@ pub(super) fn sharing_lane(
     let first = attach_subscription_consumer(
         &mut runtime,
         &handle,
-        SubscriptionConsumerAttachmentRequest::admitted(first_consumer, "cursor-a"),
+        SubscriptionConsumerAttachmentRequest::admitted(first_consumer, "cursor-a")?,
         attachment_budget(),
     )
     .unwrap();
@@ -41,7 +42,7 @@ pub(super) fn sharing_lane(
     let second = attach_subscription_consumer(
         &mut runtime,
         &joined,
-        SubscriptionConsumerAttachmentRequest::admitted(second_consumer, "cursor-b"),
+        SubscriptionConsumerAttachmentRequest::admitted(second_consumer, "cursor-b")?,
         attachment_budget(),
     )
     .unwrap();
@@ -57,7 +58,7 @@ pub(super) fn sharing_lane(
         first.lane_digest().clone(),
         "shared-manager",
         MaintenanceDeltaWidth::measured(1),
-    );
+    )?;
     let (first_delta, first_lowering, first_lowering_counters) =
         lower_query_subscription_maintenance_delta(first_delta).unwrap();
     let second_delta = QuerySubscriptionMaintenanceDelta::admitted_with_scope_label(
@@ -65,7 +66,7 @@ pub(super) fn sharing_lane(
         second.lane_digest().clone(),
         "shared-manager",
         MaintenanceDeltaWidth::measured(1),
-    );
+    )?;
     let (second_delta, second_lowering, second_lowering_counters) =
         lower_query_subscription_maintenance_delta(second_delta).unwrap();
     let first_digest = first.attachment_projection().label().to_string();
@@ -107,7 +108,7 @@ pub(super) fn sharing_lane(
         "shared-manager",
         1,
         0,
-    );
+    )?;
     bundle.active_lane_digest = handle.lane_projection().label().to_string();
     bundle.active_lane_handle_digest = digest_parts(&[
         format!("opened:{}", handle.lane_projection().label()),
@@ -178,5 +179,5 @@ pub(super) fn sharing_lane(
     ];
     bundle.counter_snapshot = digest_parts(&sharing_counter_evidence);
     bundle.counter_evidence = sharing_counter_evidence;
-    bundle
+    Ok(bundle)
 }

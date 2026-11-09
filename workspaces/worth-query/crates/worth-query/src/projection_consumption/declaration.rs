@@ -1,5 +1,6 @@
 use crate::authorized_projection::{AuthorizedProjectionArtifact, AuthorizedProjectionFieldPath};
 use crate::canonicalization::CanonicalResultShapeArtifact;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 #[cfg(test)]
 use worth_foundational::facade::{AspectKey, FieldKey};
 
@@ -238,6 +239,7 @@ impl ProjectionConsumptionDeclaration {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ProjectionConsumptionDeclarationError {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     NoRequestedFacts,
     SourceAuthorizedProjectionQueryMismatch {
         source_query_digest: String,
@@ -293,11 +295,17 @@ pub fn declare_projection_consumption(
             },
         );
     }
-    let declaration_digest = compose_declaration_digest(&source, &binding, &requested);
+    let declaration_digest = compose_declaration_digest(&source, &binding, &requested)?;
     Ok(ProjectionConsumptionDeclaration {
         source,
         binding,
         requested,
         declaration_digest,
     })
+}
+
+impl From<IdentityDerivationDenial> for ProjectionConsumptionDeclarationError {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
+    }
 }

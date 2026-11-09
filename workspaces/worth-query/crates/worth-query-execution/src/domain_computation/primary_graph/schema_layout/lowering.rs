@@ -196,7 +196,7 @@ impl WorthQueryPrimaryGraphLayout {
             lower_continuation_orderings(schema, &entity_kinds, &relation_layouts)?;
         let capability_grant_joins =
             lower_capability_grant_joins(schema, &entity_kinds, &relation_layouts)?;
-        let fields = lower_fields(schema, &entity_kinds)?;
+        let fields = lower_fields(schema, &entity_kinds, value_bindings)?;
         let (registry, managed_sources) = managed_source::lower(
             sources,
             registry,
@@ -213,9 +213,17 @@ impl WorthQueryPrimaryGraphLayout {
             field_capability_keys(fields.values().filter(|layout| layout.equality_queryable));
         let projection_field_keys = field_capability_keys(fields.values());
 
+        let history_ownership = history_ownership::lower(
+            schema,
+            &entity_kinds,
+            &relation_layouts,
+            &live_control_entity_kinds,
+        )?;
         let physical_roles = roles.finish(&registry, entity_kinds, relation_kinds)?;
         Ok((
             Self {
+                history_ownership,
+                value_bindings: value_bindings.clone(),
                 principal_bindings,
                 live_control_entity_kinds,
                 authorization_selectors,

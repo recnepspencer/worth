@@ -66,7 +66,7 @@ where
             let scope = selected
                 .resolve_entity(
                     &phase,
-                    NodeKey::reference(),
+                    node_key::<Schema>(),
                     input.key,
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

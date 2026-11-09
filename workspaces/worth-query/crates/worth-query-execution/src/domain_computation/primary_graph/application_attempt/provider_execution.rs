@@ -37,3 +37,8 @@ pub(in crate::domain_computation::primary_graph) use phase::ReadmittedCommitProg
 #[cfg(test)]
 #[path = "provider_execution_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
+
+pub(in crate::domain_computation::primary_graph) use phase::{
+    inspect_coupled_application, prepare_coupled_application, register_coupled_application,
+    ApprovedCoupledWriter, CommitPreparedCoupledWriter, InspectedCoupledWriter,
+};

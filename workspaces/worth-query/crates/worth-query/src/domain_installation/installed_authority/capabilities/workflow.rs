@@ -75,7 +75,15 @@ impl<D: 'static> WorthQueryInstalledDomainWorkflowRequest<D> {
                 )
             },
         )?;
-        Ok(match self.request.run(execution, workspace) {
+        let outcome = self.request.run(execution, workspace).map_err(|cause| {
+            WorthQueryInstalledDomainCapabilityStop::identity_refused(
+                self.witness.clone(),
+                WorthQueryInstalledDomainCapabilityKind::Workflow,
+                Some(self.declaration_identity.clone()),
+                cause,
+            )
+        })?;
+        Ok(match outcome {
             WorthQueryWorkflowOutcome::Completed(completion) => {
                 let receipt = WorthQueryInstalledDomainExecutionReceipt::new(
                     self.witness,

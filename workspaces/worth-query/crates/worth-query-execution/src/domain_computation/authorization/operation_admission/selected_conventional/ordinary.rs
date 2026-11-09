@@ -33,6 +33,7 @@ where
         SelectedMutationProducts {
             mutation: shared,
             control: None,
+            history: None,
         },
         current,
         prepared,

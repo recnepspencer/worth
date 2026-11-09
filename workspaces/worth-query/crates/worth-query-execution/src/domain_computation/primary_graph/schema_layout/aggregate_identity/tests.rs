@@ -9,10 +9,30 @@ use worth_query_installation::facade::{
 };
 
 struct Schema<const ORBIT: bool>;
-struct Node;
-struct Next;
-impl<const ORBIT: bool> ApplicationEntityMarkerIdentity<Schema<ORBIT>> for Node {
-    const IDENTIFIER: &'static str = "Node";
+use worth_query_declaration::facade::application_schema::fragment;
+struct Node<const O: bool = false>;
+struct Next<const O: bool = false>;
+struct Other<const O: bool>;
+struct AggregateRecords<const O: bool>;
+impl<const O: bool> fragment::Fragment for AggregateRecords<O> {
+    const NAME: &'static str = "aggregate_records";
+    type Bindings = fragment::NoBindings;
+    type Members = (Node<O>,);
+}
+impl<const O: bool> fragment::Entity for Node<O> {
+    const NAME: &'static str = "Node";
+    type Aspects = ();
+    type Relations = (Next<O>, Other<O>);
+}
+impl<const O: bool> fragment::Relation for Next<O> {
+    const NAME: &'static str = "Next";
+    type To = Node<O>;
+    const ORBIT: bool = O;
+}
+impl<const O: bool> fragment::Relation for Other<O> {
+    const NAME: &'static str = "Other";
+    type To = Node<O>;
+    const ORBIT: bool = O;
 }
 impl<const ORBIT: bool> ApplicationSchema for Schema<ORBIT> {
     const OWNER: &'static str = "worth.tests.aggregate";
@@ -21,25 +41,7 @@ impl<const ORBIT: bool> ApplicationSchema for Schema<ORBIT> {
     const MINOR: u32 = 0;
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
-        let node = ApplicationEntityRef::<Self, Node>::from_schema_identifier("Node");
-        let base = ApplicationRelationIntegrity::same_context_unbounded_retain_dangling();
-        let law = if ORBIT { base.orbit() } else { base };
-        ApplicationSchemaDeclarationBuilder::<Self>::for_schema()
-            .entity(node)
-            .relation(
-                ApplicationRelationRef::<Self, Next, Node, Node>::from_schema_identifiers(
-                    "Next", "Node", "Node", law,
-                ),
-                node,
-                node,
-            )
-            .relation(
-                ApplicationRelationRef::<Self, Next, Node, Node>::from_schema_identifiers(
-                    "Other", "Node", "Node", law,
-                ),
-                node,
-                node,
-            )
+        ApplicationSchemaDeclarationBuilder::<Self>::from_fragment(AggregateRecords::<ORBIT>)?
             .build()
     }
 }

@@ -7,6 +7,7 @@ use worth_query_admission::facade::authenticated_principal::{
 
 /// This retains the actual admitted request, not a permission decision. Only
 /// the operation admission owner constructs it from its authentication facts.
+#[derive(Clone)]
 pub(in crate::domain_computation) struct AdmittedRequestCurrentness {
     pub(super) request: WorthQueryRequestScope,
     pub(super) authentication_valid_until: Instant,

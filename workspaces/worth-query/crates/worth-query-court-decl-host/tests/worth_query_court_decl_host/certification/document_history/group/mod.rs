@@ -37,9 +37,13 @@ type Group<'r> = WorthQueryGroupedHistoryDocument<
     'r,
     DocumentRetentionSchema,
     RetentionHistory,
-    SetRetentionIntent,
     RetentionProgramP0,
-    Action,
+    worth_query_host::facade::application_entry::WorthQueryHistoryTypedMembers<
+        DocumentRetentionSchema,
+        SetRetentionIntent,
+        RetentionProgramP0,
+        Action,
+    >,
 >;
 
 fn input(days: u64) -> SetRetentionIntent {

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 #[cfg(test)]
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
@@ -34,7 +35,7 @@ pub struct WorthQueryExistingTruthBindingDenial {
     binding: WorthQueryExistingTruthTargetBinding,
     kind: WorthQueryExistingTruthBindingDenialKind,
     message: String,
-    denial_digest: String,
+    denial_digest: Result<String, IdentityDerivationDenial>,
 }
 
 impl WorthQueryExistingTruthBindingDenial {
@@ -45,35 +46,38 @@ impl WorthQueryExistingTruthBindingDenial {
         message: impl Into<String>,
     ) -> Self {
         let message = message.into();
-        let denial_digest =
-            worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
-                .field_shape(
-                    WorthQueryEvidenceTag::new("role"),
-                    "existing-truth-binding-denial",
-                )
-                .field_shape(
-                    WorthQueryEvidenceTag::new("family"),
-                    binding.family().as_str(),
-                )
-                .field_evidence_identity(
-                    WorthQueryEvidenceTag::new("authoritative"),
-                    binding.authoritative_identity().evidence_identity(),
-                )
-                .field_evidence_identity(
-                    WorthQueryEvidenceTag::new("resolved"),
-                    &binding.resolved_target_identity().evidence_identity(),
-                )
-                .optional_evidence_identity(
-                    WorthQueryEvidenceTag::new("collection"),
-                    binding
-                        .target_collection_identity()
-                        .map(WorthQueryMutationTargetCollectionIdentity::evidence_identity),
-                )
-                .field_shape(WorthQueryEvidenceTag::new("kind"), kind.as_str())
-                .field_value(WorthQueryEvidenceTag::new("message"), &message)
-                .seal()
-                .as_str()
-                .to_string();
+        let denial_digest = (|| {
+            Ok(worth_query_evidence_identity(
+                WorthQueryEvidenceScope::MutationEvidenceAggregateDigest,
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("role"),
+                "existing-truth-binding-denial",
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("family"),
+                binding.family().as_str(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("authoritative"),
+                binding.authoritative_identity().evidence_identity(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("resolved"),
+                &binding.resolved_target_identity().evidence_identity(),
+            )
+            .optional_evidence_identity(
+                WorthQueryEvidenceTag::new("collection"),
+                binding
+                    .target_collection_identity()
+                    .map(WorthQueryMutationTargetCollectionIdentity::evidence_identity),
+            )
+            .field_shape(WorthQueryEvidenceTag::new("kind"), kind.as_str())
+            .field_value(WorthQueryEvidenceTag::new("message"), &message)
+            .seal()?
+            .as_str()
+            .to_string())
+        })();
         Self {
             binding: binding.clone(),
             kind,
@@ -94,8 +98,8 @@ impl WorthQueryExistingTruthBindingDenial {
         &self.message
     }
 
-    pub fn denial_digest(&self) -> &str {
-        &self.denial_digest
+    pub fn denial_digest(&self) -> Result<&str, IdentityDerivationDenial> {
+        Ok(self.denial_digest.as_ref().map_err(|cause| *cause)?)
     }
 }
 

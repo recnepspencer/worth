@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::collections::BTreeSet;
 
 use super::super::support_snapshot::WorthQuerySupportSnapshot;
@@ -66,7 +67,7 @@ impl WorthQuerySupportPinContract {
         &self,
     ) -> Result<WorthQuerySupportPinContractTerminalJsonDocument, WorthQuerySupportPinningError>
     {
-        self.to_document().to_canonical_terminal_json_document()
+        self.to_document()?.to_canonical_terminal_json_document()
     }
 
     pub fn to_stable_terminal_json_document(
@@ -76,8 +77,10 @@ impl WorthQuerySupportPinContract {
         self.to_canonical_terminal_json_document()
     }
 
-    pub(crate) fn to_document(&self) -> WorthQuerySupportPinContractDocument {
-        WorthQuerySupportPinContractDocument::from_contract(self)
+    pub(crate) fn to_document(
+        &self,
+    ) -> Result<WorthQuerySupportPinContractDocument, IdentityDerivationDenial> {
+        Ok(WorthQuerySupportPinContractDocument::from_contract(self)?)
     }
 
     pub fn consumer_name(&self) -> &str {

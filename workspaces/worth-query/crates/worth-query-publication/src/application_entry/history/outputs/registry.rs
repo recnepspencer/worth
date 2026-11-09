@@ -56,7 +56,13 @@ where
         let mut registry = self.slots.try_lock().map_err(|_| Denial::Busy)?;
         let levels = u64::from(usize::BITS - registry.len().saturating_add(1).leading_zeros()) + 1;
         execution
-            .run_native_with_checkpoint(|context| context.checkpoint(levels * 11))
+            .run_native_with_checkpoint(|context| {
+                if context.has_accounting() {
+                    context.checkpoint(levels * 11)
+                } else {
+                    context.poll()
+                }
+            })
             .map_err(Denial::Work)?
             .0
             .map_err(|cause| Denial::Work(worth_execution::WorkCeilingDenial::Stopped(cause)))?;

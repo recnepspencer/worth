@@ -1,6 +1,7 @@
 use crate::application::config::{
     ValidatedWorthQueryConfig, WorthQueryConfigSectionFamily, WorthQuerySubsystemOwner,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -147,7 +148,9 @@ pub struct WorthQueryCapabilityRegistry {
 }
 
 impl WorthQueryCapabilityRegistry {
-    pub(crate) fn from_validated_config(config: &ValidatedWorthQueryConfig) -> Self {
+    pub(crate) fn from_validated_config(
+        config: &ValidatedWorthQueryConfig,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let descriptors = vec![
             WorthQueryCapabilityDescriptor::new(
                 WorthQueryCapabilityFamily::QueryRead,
@@ -280,7 +283,7 @@ impl WorthQueryCapabilityRegistry {
         let descriptor_identities = descriptors
             .iter()
             .map(capability_descriptor_identity)
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, _>>()?;
         let registry_digest =
             worth_query_evidence_identity(WorthQueryEvidenceScope::ApplicationSupportReport)
                 .field_shape(WorthQueryEvidenceTag::new("role"), "capability-registry")
@@ -288,14 +291,14 @@ impl WorthQueryCapabilityRegistry {
                     WorthQueryEvidenceTag::new("descriptors"),
                     descriptor_identities.iter().map(String::as_str),
                 )
-                .seal()
+                .seal()?
                 .as_str()
                 .to_string();
 
-        Self {
+        Ok(Self {
             descriptors,
             registry_digest,
-        }
+        })
     }
 
     pub fn descriptors(&self) -> &[WorthQueryCapabilityDescriptor] {
@@ -316,27 +319,31 @@ impl WorthQueryCapabilityRegistry {
     }
 }
 
-fn capability_descriptor_identity(descriptor: &WorthQueryCapabilityDescriptor) -> String {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::ApplicationSupportReport)
-        .field_shape(WorthQueryEvidenceTag::new("role"), "capability-descriptor")
-        .field_shape(
-            WorthQueryEvidenceTag::new("family"),
-            descriptor.family().as_str(),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("status"),
-            descriptor.status().as_str(),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("owner"),
-            descriptor.owner().as_str(),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("config_section"),
-            descriptor.config_section().as_str(),
-        )
-        .field_value(WorthQueryEvidenceTag::new("reason"), descriptor.reason())
-        .seal()
-        .as_str()
-        .to_string()
+fn capability_descriptor_identity(
+    descriptor: &WorthQueryCapabilityDescriptor,
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(
+        worth_query_evidence_identity(WorthQueryEvidenceScope::ApplicationSupportReport)
+            .field_shape(WorthQueryEvidenceTag::new("role"), "capability-descriptor")
+            .field_shape(
+                WorthQueryEvidenceTag::new("family"),
+                descriptor.family().as_str(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("status"),
+                descriptor.status().as_str(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("owner"),
+                descriptor.owner().as_str(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("config_section"),
+                descriptor.config_section().as_str(),
+            )
+            .field_value(WorthQueryEvidenceTag::new("reason"), descriptor.reason())
+            .seal()?
+            .as_str()
+            .to_string(),
+    )
 }

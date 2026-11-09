@@ -68,4 +68,81 @@ impl ComponentSelection {
     }
 }
 
+impl ComponentSelection {
+    pub(in crate::domain_computation::primary_graph) fn support_equal_between(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        runtime: &RelationalRuntime,
+        before: &SnapshotHandle,
+        left: &worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+        right: &worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+    ) -> Result<bool, super::super::application_attempt::WorthQueryApplicationAttemptDenial> {
+        use super::super::application_attempt::WorthQueryApplicationAttemptDenial as Denial;
+        let stop = super::super::application_attempt::candidate_support_source_stop;
+        let poll = || execution.consult().map_err(Cause::from);
+        if !self
+            .layout()
+            .matches_native_definition(left, &poll)
+            .map_err(|cause| {
+                Denial::relational_read_stopped(cause, "coupled component definition")
+            })?
+            || !self
+                .layout()
+                .matches_native_definition(right, &poll)
+                .map_err(|cause| {
+                    Denial::relational_read_stopped(cause, "coupled component definition")
+                })?
+        {
+            return Ok(false);
+        }
+        match self.aggregate_bodies() {
+            super::ComponentAggregateBodies::Physical(bodies) => {
+                for body in bodies {
+                    if !body
+                        .support_equal_between(execution, left, right)
+                        .map_err(stop)?
+                    {
+                        return Ok(false);
+                    }
+                }
+            }
+            super::ComponentAggregateBodies::Derived(bodies) => {
+                for body in bodies {
+                    if !body
+                        .support_equal_between(execution, left, right)
+                        .map_err(stop)?
+                    {
+                        return Ok(false);
+                    }
+                }
+            }
+        }
+        for source in self.facts() {
+            if let Some(walks) = &source.walks {
+                for walk in walks.values() {
+                    if !walk
+                        .support_equal_between(execution, left, right)
+                        .map_err(stop)?
+                    {
+                        return Ok(false);
+                    }
+                }
+            }
+        }
+        let mut equal = true;
+        self.visit_physical(|fact| {
+            if equal {
+                equal =
+                    fact.support_equal_after_own_effect(execution, runtime, before, left, right)?;
+            }
+            Ok::<_, Denial>(())
+        })?;
+        Ok(equal)
+    }
+}
+
 mod court_doors_for_test;

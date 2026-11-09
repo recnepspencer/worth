@@ -25,8 +25,13 @@ impl PreparedSelections {
         fact: &WorthQueryApplicationObservedFact,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
+        applied: Option<
+            &worth_relational::facade::runtime::RelationalPinnedRead<
+                worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+            >,
+        >,
         control: StorageControl<'_, '_>,
     ) -> Result<bool, WorthQueryDecisionReadSetFailure> {
-        Self::remains_equal(self, execution, fact, runtime, snapshot, control)
+        Self::remains_equal(self, execution, fact, runtime, snapshot, applied, control)
     }
 }

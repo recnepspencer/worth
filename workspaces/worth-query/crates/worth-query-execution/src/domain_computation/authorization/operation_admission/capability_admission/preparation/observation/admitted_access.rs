@@ -158,6 +158,7 @@ pub struct WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Ope
 where
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
+    authentication: Arc<dyn std::any::Any + Send + Sync>,
     runtime_authority:
         crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
     home_owner: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,

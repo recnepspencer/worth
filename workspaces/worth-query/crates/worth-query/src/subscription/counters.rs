@@ -204,6 +204,7 @@ impl QuerySubscriptionDeclarationCounters {
                 self.forbidden_heap_allocation_denial_count as usize,
             )
             .seal()
+            .expect("fixed counter grammar contains only primitive values and literals")
     }
 
     pub fn family_selection_count(&self) -> u64 {

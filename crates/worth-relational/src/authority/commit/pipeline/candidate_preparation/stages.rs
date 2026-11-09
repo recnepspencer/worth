@@ -47,6 +47,8 @@ pub(super) fn validate(
         branch_id,
         control,
         retention_binding,
+        decision_basis,
+        coupled_proposal,
         expected_basis,
         expected_root,
         publication_cell,
@@ -75,6 +77,8 @@ pub(super) fn validate(
                     branch_id,
                     control,
                     retention_binding,
+                    decision_basis,
+                    coupled_proposal,
                     expected_basis,
                     expected_root,
                     publication_cell,
@@ -100,8 +104,21 @@ pub(super) fn assemble(
         inputs,
         validated,
     } = checked.into_inner();
-    let assembled =
-        artifact_execution::assemble_commit_artifacts(request, &context.runtime, validated)?;
+    let lineage_deferred = (inputs.publication.is_some()
+        || validated.value().has_codec_publication())
+        && context
+            .registration
+            .expected_root
+            .schema_authority()
+            .registry()
+            .current_publication_storage
+            .is_some();
+    let assembled = artifact_execution::assemble_commit_artifacts(
+        request,
+        &context.runtime,
+        validated,
+        lineage_deferred,
+    )?;
     CommitPhaseBacking::new(
         request,
         AssembledCandidate {

@@ -137,11 +137,11 @@ fn native_field_text_checkpoint_then_tail_recovers_exact_json_after_original_own
         .symbols
         .with_read(|symbols| assert_eq!(symbols.resolve(key), Some("native-managed-text")));
     drop(restored);
+    let symbols = pinned.symbols();
     assert_eq!(
-        pinned
-            .symbols()
+        symbols
             .symbol(JSON)
-            .and_then(|symbol| pinned.symbols().resolve(symbol)),
+            .and_then(|symbol| symbols.resolve(symbol)),
         Some(JSON)
     );
 }

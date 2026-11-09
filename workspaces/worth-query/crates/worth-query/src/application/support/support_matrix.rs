@@ -2,6 +2,7 @@ use super::{
     WorthQueryCapabilityDescriptor, WorthQueryCapabilityFamily, WorthQueryCapabilityRegistry,
     WorthQueryCapabilityStatus,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -13,7 +14,9 @@ pub struct WorthQuerySupportMatrix {
 }
 
 impl WorthQuerySupportMatrix {
-    pub(crate) fn new(registry: WorthQueryCapabilityRegistry) -> Self {
+    pub(crate) fn new(
+        registry: WorthQueryCapabilityRegistry,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let admitted = count_status(&registry, WorthQueryCapabilityStatus::Admitted);
         let deferred = count_status(&registry, WorthQueryCapabilityStatus::DeferredDebt);
         let unsupported = count_status(&registry, WorthQueryCapabilityStatus::Unsupported);
@@ -27,13 +30,13 @@ impl WorthQuerySupportMatrix {
                 .field_usize(WorthQueryEvidenceTag::new("admitted"), admitted)
                 .field_usize(WorthQueryEvidenceTag::new("deferred"), deferred)
                 .field_usize(WorthQueryEvidenceTag::new("unsupported"), unsupported)
-                .seal()
+                .seal()?
                 .as_str()
                 .to_string();
-        Self {
+        Ok(Self {
             registry,
             support_matrix_digest,
-        }
+        })
     }
 
     pub fn descriptor(

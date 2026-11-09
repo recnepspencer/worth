@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -75,9 +76,9 @@ impl WorthQueryGraphCompositionDenial {
         symbol: Option<String>,
         target_collection: Option<WorthQueryMutationTargetCollectionIdentity>,
         message: impl Into<String>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let message = message.into();
-        let admission_trace = default_admission_trace(kind);
+        let admission_trace = default_admission_trace(kind)?;
         let denial_digest =
             worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
                 .field_shape(
@@ -97,17 +98,17 @@ impl WorthQueryGraphCompositionDenial {
                     admission_trace.admission_trace_digest(),
                 )
                 .field_value(WorthQueryEvidenceTag::new("message"), &message)
-                .seal()
+                .seal()?
                 .as_str()
                 .to_string();
-        Self {
+        Ok(Self {
             kind,
             symbol,
             target_collection,
             admission_trace,
             message,
             denial_digest,
-        }
+        })
     }
 
     pub fn kind(&self) -> WorthQueryGraphCompositionDenialKind {
@@ -169,26 +170,23 @@ pub(crate) fn graph_composition_error(
     symbol: Option<String>,
     target_collection: Option<WorthQueryMutationTargetCollectionIdentity>,
     message: impl Into<String>,
-) -> WorthQueryRuntimeError {
-    WorthQueryRuntimeError::GraphCompositionDenied(WorthQueryGraphCompositionDenial::new(
-        kind,
-        symbol,
-        target_collection,
-        message,
+) -> Result<WorthQueryRuntimeError, IdentityDerivationDenial> {
+    Ok(WorthQueryRuntimeError::GraphCompositionDenied(
+        WorthQueryGraphCompositionDenial::new(kind, symbol, target_collection, message)?,
     ))
 }
 
 fn default_admission_trace(
     kind: WorthQueryGraphCompositionDenialKind,
-) -> WorthQueryGraphCompositionAdmissionTrace {
+) -> Result<WorthQueryGraphCompositionAdmissionTrace, IdentityDerivationDenial> {
     use WorthQueryGraphCompositionAdmissionTraceStage as Stage;
 
-    match kind {
+    Ok(match kind {
         WorthQueryGraphCompositionDenialKind::EmptyComposition => {
             WorthQueryGraphCompositionAdmissionTrace::new(
                 vec![Stage::ProgramParsed, Stage::DeniedBeforeExecution],
                 Stage::ProgramParsed,
-            )
+            )?
         }
         WorthQueryGraphCompositionDenialKind::DuplicateSymbolDeclaration => {
             WorthQueryGraphCompositionAdmissionTrace::new(
@@ -198,7 +196,7 @@ fn default_admission_trace(
                     Stage::DeniedBeforeExecution,
                 ],
                 Stage::SymbolsValidated,
-            )
+            )?
         }
         WorthQueryGraphCompositionDenialKind::UnresolvedSymbolicReference
         | WorthQueryGraphCompositionDenialKind::SymbolicCollectionMismatch
@@ -216,7 +214,7 @@ fn default_admission_trace(
                     Stage::DeniedBeforeExecution,
                 ],
                 Stage::LoweringValidated,
-            )
+            )?
         }
         WorthQueryGraphCompositionDenialKind::ExistingTargetBackendVerificationUnsupported
         | WorthQueryGraphCompositionDenialKind::ExistingTargetClearAssertionUnsupported
@@ -231,7 +229,7 @@ fn default_admission_trace(
                     Stage::DeniedBeforeExecution,
                 ],
                 Stage::VerificationSubstrateEvaluated,
-            )
+            )?
         }
-    }
+    })
 }

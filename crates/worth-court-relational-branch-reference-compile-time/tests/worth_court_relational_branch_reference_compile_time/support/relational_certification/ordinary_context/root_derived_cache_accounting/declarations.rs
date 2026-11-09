@@ -17,7 +17,7 @@ pub(crate) fn empty_entity_field_cache_growth(
     let source_commit = head_for_supply_chain_branch(&world.runtime, &main_branch);
     let before = world
         .runtime
-        .observe_branch_sharing(std::slice::from_ref(&main_identity))
+        .observe_branch_sharing(execution, std::slice::from_ref(&main_identity))
         .expect("empty-cache baseline is inspectable")
         .unique_optional_cache_bytes();
     let index = world
@@ -52,7 +52,7 @@ pub(crate) fn empty_entity_field_cache_growth(
     ));
     world
         .runtime
-        .observe_branch_sharing(std::slice::from_ref(&main_identity))
+        .observe_branch_sharing(execution, std::slice::from_ref(&main_identity))
         .expect("empty derived generation is inspectable")
         .unique_optional_cache_bytes()
         .saturating_sub(before)

@@ -3,6 +3,7 @@ use crate::application::{
     WorthQueryDeclarationInput, WorthQueryDomainEntryMarker, WorthQueryDomainOperatingContext,
     WorthQueryInstalledDomainDeclarationContext,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::hash_parts;
 
 use super::artifact::{
@@ -199,6 +200,7 @@ pub enum WorthQueryGroupedOrchestrationStop<
     D: WorthQueryDomainEntryMarker,
     I: WorthQueryDeclarationInput<D>,
 > {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     MemberStopped(WorthQueryGroupedMemberOrchestrationStop<D, I>),
     WrongWorld(WorthQueryGroupedOrchestrationAlignmentStop<D, I>),
     WrongHandle(WorthQueryGroupedOrchestrationAlignmentStop<D, I>),
@@ -298,4 +300,12 @@ pub(crate) fn worth_query_grouped_orchestration_proof_on_handle<
     let (checked, member_transcripts) =
         lower_grouped_members_on_handle(handle, declaration.clone(), true).into_parts();
     WorthQueryGroupedOrchestrationProof::new(declaration, member_transcripts, checked)
+}
+
+impl<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>
+    From<IdentityDerivationDenial> for WorthQueryGroupedOrchestrationStop<D, I>
+{
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
+    }
 }

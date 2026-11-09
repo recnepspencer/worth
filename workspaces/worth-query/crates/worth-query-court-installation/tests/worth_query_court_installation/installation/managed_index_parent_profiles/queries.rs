@@ -11,10 +11,10 @@ use worth_query_declaration::{
 worth_query_structured_value_binding!(pub ParametersBinding for () { identity: "worth.rust.unit" });
 worth_query_application_query!(pub SourceQuery for Schema: ModelSchema,
     identity "worth.query.tests.managed-parent-source.v1", parameters ParametersBinding,
-    result PrincipalQueryResultBinding, scope Principal => "Principal", name "managed_parent_source");
+    result PrincipalQueryResultBinding, scope Principal<Schema> => "Principal", name "managed_parent_source");
 worth_query_application_query!(pub ParentQuery for Schema: ModelSchema,
     identity "worth.query.tests.managed-parent-read.v1", parameters ParametersBinding,
-    result PrincipalQueryResultBinding, scope Principal => "Principal", name "managed_parent_read");
+    result PrincipalQueryResultBinding, scope Principal<Schema> => "Principal", name "managed_parent_read");
 pub struct ContentSlot;
 worth_query_portable_type!(ContentSlot => "worth.query.tests.managed-parent-content-slot.v1");
 pub struct IdentitySlot;
@@ -25,7 +25,7 @@ pub struct ModelIndex<S>(PhantomData<fn() -> S>);
 impl<S: ModelSchema> ApplicationManagedIndexBinding<S> for ModelIndex<S> {
     type SourceBinding = SourceBinding<S>;
     type ProbeBinding = ProbeBinding;
-    type Entity = Principal;
+    type Entity = Principal<S>;
     const NAME: &'static str = "PrincipalPrefix";
     const PROVIDER: &'static str = "worth.query.tests.prefix-provider.v1";
     const PROVIDER_VERSION: u32 = 1;
@@ -46,7 +46,7 @@ pub struct OtherIndex<S>(PhantomData<fn() -> S>);
 impl<S: ModelSchema> ApplicationManagedIndexBinding<S> for OtherIndex<S> {
     type SourceBinding = SourceBinding<S>;
     type ProbeBinding = OtherProbeBinding;
-    type Entity = Principal;
+    type Entity = Principal<S>;
     const NAME: &'static str = ModelIndex::<S>::NAME;
     const PROVIDER: &'static str = ModelIndex::<S>::PROVIDER;
     const PROVIDER_VERSION: u32 = ModelIndex::<S>::PROVIDER_VERSION;
@@ -54,61 +54,52 @@ impl<S: ModelSchema> ApplicationManagedIndexBinding<S> for OtherIndex<S> {
 fn shape<S: ModelSchema, Q: ApplicationQueryMarkerIdentity<S>>() -> TypedApplicationQueryResultShape<
     S,
     Q,
-    Principal,
+    Principal<S>,
     PrincipalQueryResult,
     PrincipalQueryResultBinding,
 > {
-    let shape = ApplicationQueryResultShapeBuilder::new(Principal::reference()).field(
-        ApplicationQueryResultFieldRef::<
-            Q,
-            IdentitySlot,
-            S,
-            Principal,
-            PrincipalFacts,
-            PrincipalIdentity,
-            u64,
-            ReadOnly,
-            EqualityPredicate,
-            NoApplicationUnit,
-        >::new("identity", PrincipalIdentity::reference()),
+    let shape = ApplicationQueryResultShapeBuilder::new(principal::<S>()).field(
+        ApplicationQueryResultFieldRef::<Q, IdentitySlot, S, PrincipalIdentity<S>>::new(
+            identity_output::<S>(),
+            principal_identity::<S>(),
+        ),
     );
-    let shape = if S::MODE == 8 {
+    let shape = if let Some(samples) = S::Model::content() {
         shape.field(ApplicationQueryResultFieldRef::<
             Q,
             ContentSlot,
             S,
-            Principal,
-            PrincipalFacts,
-            ContentSamples,
-            worth_foundational::facade::ContentRefId,
-            ReadOnly,
-            NoEqualityPredicate,
-            NoApplicationUnit,
-        >::new("samples", ContentSamples::reference()))
+            ContentSamples<S>,
+        >::new("samples", samples))
     } else {
         shape
     };
     shape.build()
 }
+fn identity_output<S: ModelSchema>() -> &'static str {
+    if S::MODE == 9 {
+        crate::cost::admitted_query_identity::identity_output()
+    } else {
+        "identity"
+    }
+}
 pub fn source<S: ModelSchema>(
-) -> ApplicationQueryDefinition<S, SourceQuery, (), PrincipalQueryResult, Principal> {
+) -> ApplicationQueryDefinitionBuilder<S, SourceQuery, (), PrincipalQueryResult, Principal<S>> {
     ApplicationQueryDefinitionBuilder::declare(SourceQuery::reference())
-        .root(Principal::reference())
-        .scope(Principal::reference())
+        .root(principal::<S>())
+        .scope(principal::<S>())
         .result_shape(shape())
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 pub fn parent<S: ModelSchema>(
-) -> ApplicationQueryDefinition<S, ParentQuery, (), PrincipalQueryResult, Principal> {
+) -> ApplicationQueryDefinitionBuilder<S, ParentQuery, (), PrincipalQueryResult, Principal<S>> {
     let query = ApplicationQueryDefinitionBuilder::declare(ParentQuery::reference())
-        .root(Principal::reference())
-        .scope(Principal::reference())
+        .root(principal::<S>())
+        .scope(principal::<S>())
         .result_shape(shape())
         .cardinality(ApplicationQueryCardinality::Many)
         .disclosure(if S::MODE == 3 {
@@ -123,24 +114,15 @@ pub fn parent<S: ModelSchema>(
     } else {
         query.public()
     };
-    let query = if S::MODE == 1 {
+    if S::MODE == 1 {
         query.managed_index(OtherIndex::<S>::reference(), ApplicationQueryParameterRef::<ParentQuery, ProbeParameter, OtherProbeBinding>::from_query_identifier("probe"))
     } else {
         query.managed_index(ModelIndex::<S>::reference(), ApplicationQueryParameterRef::<ParentQuery, ProbeParameter, ProbeBinding>::from_query_identifier("probe"))
-    };
-    query.build().unwrap()
+    }
 }
 pub struct SourceBinding<S>(PhantomData<fn() -> S>);
 pub struct ParentBinding<S>(PhantomData<fn() -> S>);
-type Scope<S> = ApplicationQueryPrincipalScope<
-    S,
-    Principal,
-    PrincipalFacts,
-    PrincipalIdentity,
-    u64,
-    ReadOnly,
-    NoApplicationUnit,
->;
+type Scope<S> = ApplicationQueryPrincipalScope<PrincipalIdentity<S>>;
 macro_rules! binding {
     ($binding:ident, $query:ty, $identity:literal) => {
         impl<S: ModelSchema> ApplicationQueryBinding<S> for $binding<S> {
@@ -151,29 +133,20 @@ macro_rules! binding {
             type ResultBinding = PrincipalQueryResultBinding;
             type ScopeBinding = Scope<S>;
             type PrincipalBinding = PrincipalBinding;
-            type Mapping = Mapping;
-            type Principal = Principal;
+            type Mapping = Mapping<S>;
+            type Principal = Principal<S>;
             type PrincipalIdentity = u64;
             type PrincipalIdentityBinding = U64ApplicationValueBinding;
             const IDENTITY: &'static str = $identity;
             const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(8);
-            fn scope_field() -> ApplicationFieldRef<
-                S,
-                Principal,
-                PrincipalFacts,
-                PrincipalIdentity,
-                u64,
-                ReadOnly,
-                EqualityPredicate,
-                NoApplicationUnit,
-            > {
-                PrincipalIdentity::reference()
+            fn scope_field() -> PrincipalIdentity<S> {
+                principal_identity::<S>()
             }
             fn principal_binding() -> ApplicationPrincipalBindingRef<
                 S,
                 PrincipalBinding,
-                Mapping,
-                Principal,
+                Mapping<S>,
+                Principal<S>,
                 u64,
                 U64ApplicationValueBinding,
             > {

@@ -21,6 +21,8 @@ pub struct RelationIntegrityDeclarations {
     pub connectivity_minimum_contracts: Vec<ConnectivityMinimumContractDeclaration>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub aggregate_identity: Option<super::AggregateIdentityContractDeclaration>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub current_publication_storage: Option<crate::schema::data::CurrentPublicationStorage>,
 }
 
 impl RelationIntegrityDeclarations {
@@ -33,6 +35,7 @@ impl RelationIntegrityDeclarations {
     ) -> Self {
         Self {
             aggregate_identity: None,
+            current_publication_storage: None,
             plan_revision: derive_relation_integrity_plan_revision(
                 &endpoint_kind_contracts,
                 &cardinality_contracts,
@@ -42,6 +45,7 @@ impl RelationIntegrityDeclarations {
                 &[],
                 &[],
                 &[],
+                None,
                 None,
             ),
             endpoint_kind_contracts,
@@ -57,6 +61,7 @@ impl RelationIntegrityDeclarations {
 
     pub fn contract_count(&self) -> usize {
         usize::from(self.aggregate_identity.is_some())
+            + usize::from(self.current_publication_storage.is_some())
             + self.endpoint_kind_contracts.len()
             + self.cardinality_contracts.len()
             + self.uniqueness_contracts.len()
@@ -105,7 +110,17 @@ impl RelationIntegrityDeclarations {
             &self.partition_isolation_contracts,
             &self.connectivity_minimum_contracts,
             self.aggregate_identity.as_ref(),
+            self.current_publication_storage.as_ref(),
         );
+    }
+
+    pub fn with_current_publication_storage(
+        mut self,
+        storage: crate::schema::data::CurrentPublicationStorage,
+    ) -> Self {
+        self.current_publication_storage = Some(storage);
+        self.recompute_plan_revision();
+        self
     }
 
     pub fn with_aggregate_identity(

@@ -116,7 +116,7 @@ pub fn break_narrowing_axis(
     }
     let (field, value, grant) = match axis {
         NarrowingAxis::Action => (
-            field(world, CapabilityActionField::reference()),
+            field(world, CapabilityActionField::at("CapabilityActionField")),
             worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::CapabilityActionBinding::encode(
                 &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::capability::declaration::CapabilityAction::Inspect,
             )
@@ -124,7 +124,7 @@ pub fn break_narrowing_axis(
             "capability-parent",
         ),
         NarrowingAxis::Purpose => (
-            field(world, CapabilityPurposeField::reference()),
+            field(world, CapabilityPurposeField::at("CapabilityPurposeField")),
             worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::CapabilityPurposeBinding::encode(
                 &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::capability::declaration::CapabilityPurpose::Audit,
             )
@@ -132,7 +132,7 @@ pub fn break_narrowing_axis(
             "capability-parent",
         ),
         NarrowingAxis::Disclosure => (
-            field(world, CapabilityDisclosureField::reference()),
+            field(world, CapabilityDisclosureField::at("CapabilityDisclosureField")),
             worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::CapabilityDisclosureBinding::encode(
                 &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::capability::declaration::CapabilityDisclosure::PrivateLabel,
             )
@@ -140,27 +140,27 @@ pub fn break_narrowing_axis(
             "capability-parent",
         ),
         NarrowingAxis::Magnitude => (
-            field(world, CapabilityAmountField::reference()),
+            field(world, CapabilityAmountField::at("CapabilityAmountField")),
             U64ApplicationValueBinding::encode(&76_u64).unwrap(),
             "capability-child",
         ),
         NarrowingAxis::Workflow => (
-            field(world, CapabilityWorkflowField::reference()),
+            field(world, CapabilityWorkflowField::at("CapabilityWorkflowField")),
             StringApplicationValueBinding::encode(&"closed".to_owned()).unwrap(),
             "capability-parent",
         ),
         NarrowingAxis::ValidityStart => (
-            field(world, CapabilityNotBeforeField::reference()),
+            field(world, CapabilityNotBeforeField::at("CapabilityNotBeforeField")),
             U64ApplicationValueBinding::encode(&89_u64).unwrap(),
             "capability-child",
         ),
         NarrowingAxis::ValidityEnd => (
-            field(world, CapabilityNotAfterField::reference()),
+            field(world, CapabilityNotAfterField::at("CapabilityNotAfterField")),
             U64ApplicationValueBinding::encode(&111_u64).unwrap(),
             "capability-child",
         ),
         NarrowingAxis::DownstreamDelegation => (
-            field(world, CapabilityDelegationLimitField::reference()),
+            field(world, CapabilityDelegationLimitField::at("CapabilityDelegationLimitField")),
             U64ApplicationValueBinding::encode(&2_u64).unwrap(),
             "capability-child",
         ),

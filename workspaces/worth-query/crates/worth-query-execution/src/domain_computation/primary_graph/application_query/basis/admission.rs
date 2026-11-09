@@ -1,4 +1,4 @@
-use super::{map_index_currency_denial, map_registration_denial};
+use super::map_registration_denial;
 use crate::domain_computation::primary_graph::application_query::{
     controls::WorthQueryApplicationQueryBasis, WorthQueryApplicationQueryAdmissionDenial,
 };
@@ -89,11 +89,6 @@ where
     Schema: ApplicationSchema,
 {
     let graph = application.runtime.primary_provider.graph.clone();
-    graph
-        .with_runtime(execution, |runtime| {
-            graph.ensure_primary_indexes_for_basis(execution, runtime, &basis)
-        })
-        .map_err(map_index_currency_denial)?;
     application
         .runtime
         .basis_leases

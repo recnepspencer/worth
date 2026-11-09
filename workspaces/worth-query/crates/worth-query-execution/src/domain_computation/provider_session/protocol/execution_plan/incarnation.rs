@@ -8,8 +8,11 @@ impl WorthQueryAdmittedProviderExecutionPlan<'_> {
     ) -> Result<(), WorthQueryProviderSessionFailure> {
         let presented = match &self.product {
             WorthQueryProviderProductAffinity::Standalone => match &self.run {
-                WorthQueryProviderRunBorrow::Direct(run) => run.execution_owner_identity(),
-                WorthQueryProviderRunBorrow::Workflow(run) => run.execution_owner_identity(),
+                WorthQueryProviderRunCustody::Direct(run) => run.execution_owner_identity(),
+                WorthQueryProviderRunCustody::CoupledDirect(owned) => {
+                    owned.run().execution_owner_identity()
+                }
+                WorthQueryProviderRunCustody::Workflow(run) => run.execution_owner_identity(),
             },
             WorthQueryProviderProductAffinity::Application(product) => {
                 Some(product.observation().owner_identity())

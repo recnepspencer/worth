@@ -12,6 +12,7 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 pub(super) fn split_rows<K: RecordKind, T>(
+    _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     arena: &RecordArena<K>,
     rows: &mut [Vec<T>],
 ) -> Result<Vec<RegionHistoryRow<T>>, Cause> {
@@ -44,6 +45,7 @@ pub(super) fn split_rows<K: RecordKind, T>(
 }
 
 pub(super) fn directory(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     partition: &PartitionState,
     member: RelationalDurableMemberLocator,
     bases: Vec<RelationalDurableMemberLocator>,
@@ -80,7 +82,7 @@ pub(super) fn directory(
         .into_iter()
         .map(|(member, bases)| RelationalCheckpointHistoryDependency { member, bases })
         .collect::<Vec<_>>();
-    RelationalHistoryMemberDirectory::readmit(&declarations, [member]).map(Arc::new)
+    RelationalHistoryMemberDirectory::readmit(lane, &declarations, [member]).map(Arc::new)
 }
 
 fn merge(

@@ -15,15 +15,14 @@ use crate::{
         WorthQueryPortableApplicationQueryResultShapeParts,
     },
     application_schema::{
-        ApplicationAbilityRef, ApplicationEntityRef, ApplicationFieldRef,
-        ApplicationSchemaDeclarationDenial, ApplicationSchemaMember, EqualityPredicate, ReadOnly,
+        ApplicationAbilityRef, ApplicationEntityRef, ApplicationSchemaDeclarationDenial,
+        ApplicationSchemaMember,
     },
 };
 
 struct TestSchema;
 struct Account;
 struct AccountFacts;
-struct AccountId;
 struct AccountParameters;
 struct AccountResult;
 struct AccountIdSlot;
@@ -41,15 +40,6 @@ crate::worth_query_application_query!(
 );
 worth_query_portable_type!(AccountResult => "worth.query.test.member-closure.account-result.v1");
 worth_query_portable_type!(AccountIdSlot => "worth.query.test.member-closure.account-id-slot.v1");
-
-impl crate::application_schema::DeclaredApplicationFieldValue for AccountId {
-    type Value = u64;
-    type Binding = crate::application_schema::U64ApplicationValueBinding;
-    const PRESENCE: crate::application_schema::ApplicationFieldPresence =
-        crate::application_schema::ApplicationFieldPresence::Required;
-}
-
-impl crate::application_schema::RequiredApplicationFieldValue for AccountId {}
 
 #[test]
 fn valid_query_dependencies_and_projection_types_close() {
@@ -167,14 +157,14 @@ fn dependencies() -> Vec<ApplicationSchemaMember> {
         ApplicationSchemaMember::Aspect {
             absence: worth_foundational::facade::AbsenceLaw::Required,
             entity: "Account".to_string(),
-            aspect: "AccountFacts".to_string(),
+            aspect: AccountId::at("AccountId").aspect().to_string(),
             identity: worth_foundational::facade::AspectIdentity(0x91613005),
             revision: worth_foundational::facade::AspectContractRevision(1),
         },
         ApplicationSchemaMember::Field {
             content_format: None,
             entity: "Account".to_string(),
-            aspect: "AccountFacts".to_string(),
+            aspect: AccountId::at("AccountId").aspect().to_string(),
             field: "AccountId".to_string(),
             presence: crate::application_schema::ApplicationFieldPresence::Required,
             scalar_family: ScalarAspectType::UInt64,
@@ -276,28 +266,12 @@ fn relation_predicate_shape() -> ApplicationQueryResultShape {
 }
 
 fn query(field_name: &'static str, output_name: &'static str) -> ErasedApplicationQueryDefinition {
-    let field = ApplicationFieldRef::<
-        TestSchema,
-        Account,
-        AccountFacts,
-        AccountId,
-        u64,
-        ReadOnly,
-        EqualityPredicate,
-    >::from_schema_identifiers("Account", "AccountFacts", field_name);
-    build_query(output_name, field)
+    let _field = AccountId::at("AccountId");
+    build_query(output_name, AccountId::at(field_name))
 }
 
 fn governed_query() -> ErasedApplicationQueryDefinition {
-    let field = ApplicationFieldRef::<
-        TestSchema,
-        Account,
-        AccountFacts,
-        AccountId,
-        u64,
-        ReadOnly,
-        EqualityPredicate,
-    >::from_schema_identifiers("Account", "AccountFacts", "AccountId");
+    let field = AccountId::at("AccountId");
     let account = ApplicationEntityRef::<TestSchema, Account>::from_schema_identifier("Account");
     let shape = ApplicationQueryResultShapeBuilder::<
         TestSchema,
@@ -310,13 +284,7 @@ fn governed_query() -> ErasedApplicationQueryDefinition {
         AccountQuery,
         AccountIdSlot,
         TestSchema,
-        Account,
-        AccountFacts,
         AccountId,
-        u64,
-        ReadOnly,
-        EqualityPredicate,
-        crate::application_schema::NoApplicationUnit,
     >::new("id", field))
     .build();
     ApplicationQueryDefinitionBuilder::declare(AccountQuery::reference())
@@ -338,31 +306,13 @@ fn governed_query() -> ErasedApplicationQueryDefinition {
         .into_erased()
 }
 
-fn build_query(
-    output_name: &'static str,
-    field: ApplicationFieldRef<
-        TestSchema,
-        Account,
-        AccountFacts,
-        AccountId,
-        u64,
-        ReadOnly,
-        EqualityPredicate,
-    >,
-) -> ErasedApplicationQueryDefinition {
+fn build_query(output_name: &'static str, field: AccountId) -> ErasedApplicationQueryDefinition {
     let account = ApplicationEntityRef::<TestSchema, Account>::from_schema_identifier("Account");
-    let result_field = ApplicationQueryResultFieldRef::<
-        AccountQuery,
-        AccountIdSlot,
-        TestSchema,
-        Account,
-        AccountFacts,
-        AccountId,
-        u64,
-        ReadOnly,
-        EqualityPredicate,
-        crate::application_schema::NoApplicationUnit,
-    >::new(output_name, field);
+    let result_field =
+        ApplicationQueryResultFieldRef::<AccountQuery, AccountIdSlot, TestSchema, AccountId>::new(
+            output_name,
+            field,
+        );
     let shape = ApplicationQueryResultShapeBuilder::<
         TestSchema,
         AccountQuery,
@@ -388,3 +338,47 @@ fn build_query(
 
 #[path = "query_member_closure_tests/managed_source_authorization.rs"]
 mod managed_source_authorization;
+
+use crate::application_schema::fragment;
+struct QueryModel;
+impl fragment::Fragment for QueryModel {
+    const NAME: &'static str = "query_model";
+    type Bindings = QueryBindings;
+    type Members = (Account,);
+}
+struct QueryBindings;
+impl fragment::BindingSet for QueryBindings {
+    type Work<'a> = crate::application_schema::ValueDecodeAdmission<'a>;
+    fn with_admission<T>(
+        work: &mut Self::Work<'_>,
+        run: impl FnOnce(&mut crate::application_schema::ValueDecodeAdmission<'_>) -> T,
+    ) -> T {
+        run(work)
+    }
+}
+impl fragment::Scalar<u64> for QueryBindings {
+    type Binding = crate::application_schema::U64ApplicationValueBinding;
+    const WRITABLE: bool = false;
+}
+impl fragment::Entity for Account {
+    const NAME: &'static str = "Account";
+    type Aspects = (AccountFacts,);
+    type Relations = ();
+}
+impl fragment::Aspect for AccountFacts {
+    const NAME: &'static str = "AccountFacts";
+    type Row = QueryRow0;
+}
+struct QueryRow0(u64);
+impl fragment::Record<QueryRow0> for QueryBindings {
+    fn record() -> impl fragment::Shape<QueryRow0, Self> {
+        fragment::field("AccountId", |row: &QueryRow0| row.0)
+            .equality_queryable(true)
+            .build(
+                |value, _: &mut crate::application_schema::ValueDecodeAdmission<'_>| {
+                    Ok::<_, std::convert::Infallible>(QueryRow0(value))
+                },
+            )
+    }
+}
+type AccountId = fragment::FieldSelection<QueryModel, Account, AccountFacts, u64>;

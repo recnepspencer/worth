@@ -5,6 +5,8 @@ use std::sync::Arc;
 
 #[must_use = "retain this historical source or close its holder"]
 pub struct WorthQueryHistoryPreview {
+    pub(in crate::domain_computation::primary_graph) discovery_recipes:
+        Option<Arc<super::discovery_recipes::HistoryDiscoveryRecipes>>,
     pub(in crate::domain_computation::primary_graph) step: WorthQueryHistoryStep,
     pub(in crate::domain_computation::primary_graph) model: HistoryModelIdentity,
     pub(in crate::domain_computation::primary_graph) source:

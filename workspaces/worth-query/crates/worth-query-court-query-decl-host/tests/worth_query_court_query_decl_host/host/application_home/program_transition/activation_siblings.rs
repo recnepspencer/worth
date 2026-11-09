@@ -96,7 +96,12 @@ fn directory_open_refuses_an_unrostered_activation_on_a_non_main_branch() {
                 panic!("one authored Account");
             };
             let after = target
-                .planned_field("Account", "AccountIdentity", "Balance")
+                .planned_field(
+                    "Account",
+                    FieldSelection::<HomeRecords, Account, AccountIdentity, u64>::at("Balance")
+                        .aspect(),
+                    "Balance",
+                )
                 .unwrap();
             let mut step = body(row.entity_id, after, 9);
             step.batches.push(successor::body(target));

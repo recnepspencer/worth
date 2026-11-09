@@ -251,13 +251,18 @@ fn graft_disconnected_branch_head(
     envelope.body_mut_for_test().commit = orphan_head.clone();
     envelope.body_mut_for_test().branch_context = branch_id.clone();
 
+    let original =
+        crate::branch::RelationalOriginalRootCommitEvidence::prepare(execution, Arc::new(envelope))
+            .expect("disconnected source fixture owns its genuine request");
+    let artifact = crate::history::RelationalCommitArtifact::from_preencoded(original)
+        .expect("disconnected artifact keeps canonical parentage")
+        .prepare_catalog_owner(execution)
+        .unwrap();
+    let cell = artifact.envelope_residency();
+    let orphan_commit_id = artifact.commit_id();
     runtime
         .history
-        .with_ledger_mut(|ledger| {
-            ledger
-                .commit_catalog
-                .append_envelope(Arc::new(envelope.copy_original_for_test(execution)))
-        })
+        .with_ledger_mut(|ledger| ledger.commit_catalog.append_preencoded_recovery(artifact))
         .expect("disconnected artifact id is unique");
     let branch_cell =
         RelationalBranchReferenceCell::empty(runtime.runtime_instance_id(), branch_id.clone())
@@ -278,14 +283,7 @@ fn graft_disconnected_branch_head(
             commit: orphan_head,
         },
     );
-    let payload = envelope.authoritative_payload_observation().unwrap();
     runtime.history.with_ledger_mut(|ledger| {
-        ledger.commit_envelopes.insert(
-            envelope.body_mut_for_test().commit.commit_id,
-            Arc::new(crate::history::RelationalCommitEnvelopeResidency::resident(
-                Arc::new(envelope),
-                payload,
-            )),
-        )
+        ledger.commit_envelopes.insert(orphan_commit_id, cell);
     });
 }

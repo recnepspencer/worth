@@ -19,6 +19,7 @@ fn ordinary_continuity_reuses_registry_allocation_at_small_and_large_schema_scal
 
         let preparation = runtime.preparation_runtime_snapshot();
         let plan = crate::authority::commit::phases::schema_continuity::resolve_schema_continuity(
+            execution,
             &preparation,
             &BranchId("main".to_owned()),
             &options,

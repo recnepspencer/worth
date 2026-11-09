@@ -133,7 +133,7 @@ pub fn actor_and_account(
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             phase_custody,
-            AccountIdentity::reference(),
+            AccountIdentity::at("AccountIdentity"),
             "account-1".to_owned(),
             &scope,
             WorthQueryPrincipalResolutionMode::Ordinary,
@@ -160,7 +160,7 @@ pub fn actor(
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             phase_custody,
-            PrincipalIdentityField::reference(),
+            PrincipalIdentityField::at("PrincipalIdentityField"),
             1_u64,
             &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,
@@ -187,7 +187,7 @@ pub fn resolve_action_record(
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             phase_custody,
-            CapabilityActionRecordIdentity::reference(),
+            CapabilityActionRecordIdentity::at("CapabilityActionRecordIdentity"),
             record.to_owned(),
             &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,

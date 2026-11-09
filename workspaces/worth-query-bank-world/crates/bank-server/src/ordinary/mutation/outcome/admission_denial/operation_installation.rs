@@ -2,6 +2,7 @@ use worth_query_host::facade::domain::WorthQueryApplicationOperationInstallation
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankOperationInstallationDenialKind {
+    PreImageDemandNotCoveredByAuthoredAnchors,
     MutationBindingIdentityCollision,
     MutationBindingNotInstalled,
     MutationBindingMeaningChanged,
@@ -55,6 +56,9 @@ impl BankOperationInstallationDenial {
     pub const fn code(self) -> &'static str {
         use BankOperationInstallationDenialKind as Bank;
         match self.kind {
+            Bank::PreImageDemandNotCoveredByAuthoredAnchors => {
+                "preimage-demand-not-covered-by-authored-anchors"
+            }
             Bank::MutationBindingIdentityCollision => "mutation-binding-identity-collision",
             Bank::MutationBindingNotInstalled => "mutation-binding-not-installed",
             Bank::MutationBindingMeaningChanged => "mutation-binding-meaning-changed",
@@ -109,6 +113,9 @@ impl BankOperationInstallationDenial {
     pub(crate) const fn from_query(kind: QueryKind) -> Self {
         use BankOperationInstallationDenialKind as Bank;
         let kind = match kind {
+            QueryKind::PreImageDemandNotCoveredByAuthoredAnchors => {
+                Bank::PreImageDemandNotCoveredByAuthoredAnchors
+            }
             QueryKind::MutationBindingIdentityCollision => Bank::MutationBindingIdentityCollision,
             QueryKind::MutationBindingNotInstalled => Bank::MutationBindingNotInstalled,
             QueryKind::MutationBindingMeaningChanged => Bank::MutationBindingMeaningChanged,

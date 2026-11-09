@@ -31,7 +31,7 @@ impl OperationHandler<Schema, Binding> for Handler {
             return HandlerResult::DomainDenied(Denial::ModelMismatch);
         }
         let observed = (|| -> Result<_, HandlerExecutionDenial> {
-            if reader.field(&model, ModelName::reference())?
+            if reader.field(&model, ModelName::at("ModelName"))?
                 != Some(input.proposal.model.label.clone())
             {
                 return Ok(Err(Denial::ModelMismatch));
@@ -49,8 +49,8 @@ impl OperationHandler<Schema, Binding> for Handler {
                     generation: id.generation_value(),
                 };
                 if occurrence == input.reference.occurrence {
-                    let name = reader.field(proposal, ProposalName::reference())?;
-                    let data = reader.field(proposal, ProposalData::reference())?;
+                    let name = reader.field(proposal, ProposalName::at("ProposalName"))?;
+                    let data = reader.field(proposal, ProposalData::at("ProposalData"))?;
                     if name != Some(input.reference.key.clone())
                         || data.as_ref() != Some(&input.proposal)
                         || input.reference.revision != input.proposal.revision
@@ -69,7 +69,7 @@ impl OperationHandler<Schema, Binding> for Handler {
                 .map_err(HandlerExecutionDenial::new)?
             {
                 if reader
-                    .field(relation.to(), ClaimData::reference())?
+                    .field(relation.to(), ClaimData::at("ClaimData"))?
                     .is_some_and(|data| data.input.attempt == input.attempt)
                 {
                     existing += 1;
@@ -117,12 +117,12 @@ impl OperationHandler<Schema, Binding> for Handler {
                 )
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .initialize_field(&claim, ClaimName::reference(), key.clone())
+                .initialize_field(&claim, ClaimName::at("ClaimName"), key.clone())
                 .map_err(HandlerExecutionDenial::new)?;
             writer
                 .initialize_field(
                     &claim,
-                    ClaimData::reference(),
+                    ClaimData::at("ClaimData"),
                     StoredClaim {
                         input: input.clone(),
                         principal: decision.principal,

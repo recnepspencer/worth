@@ -43,7 +43,7 @@ pub fn seed_members<const MODE: u64>(
                 WorthQueryApplicationEntityKey::new(*member).unwrap(),
             )
             .field(
-                AuditIdentityField::reference(),
+                AuditIdentityField::at("AuditIdentityField"),
                 if *member == "body-member" {
                     "member"
                 } else {
@@ -51,8 +51,8 @@ pub fn seed_members<const MODE: u64>(
                 }
                 .to_string(),
             )
-            .field(AuditRetentionField::reference(), 7)
-            .field(AuditPriorRetentionField::reference(), 7),
+            .field(AuditRetentionField::at("AuditRetentionField"), 7)
+            .field(AuditPriorRetentionField::at("AuditPriorRetentionField"), 7),
         )?;
         graph.bind_relation(WorthQueryApplicationRelationSeed::new(
             DocumentMembers::reference(),

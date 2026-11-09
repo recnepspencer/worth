@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::super::super::{
     WorthQueryAuthorityLane, WorthQueryEffectPolicy, WorthQueryIntentSourceLane,
@@ -25,12 +26,14 @@ pub struct WorthQueryPreviewIntentReceiptInspection {
 }
 
 impl WorthQueryPreviewIntentReceiptInspection {
-    pub(in crate::runtime) fn from_receipt(receipt: &WorthQueryPreviewIntentReceipt) -> Self {
+    pub(in crate::runtime) fn from_receipt(
+        receipt: &WorthQueryPreviewIntentReceipt,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let basis_evidence = receipt.basis_evidence().to_vec();
-        let basis_identity = preview_intent_receipt_inspection_basis_identity(receipt);
+        let basis_identity = preview_intent_receipt_inspection_basis_identity(receipt)?;
         let inspection_identity =
-            preview_intent_receipt_inspection_identity(receipt, &basis_identity);
-        Self {
+            preview_intent_receipt_inspection_identity(receipt, &basis_identity)?;
+        Ok(Self {
             intent_name: receipt.intent_name().to_string(),
             strategy_identity: receipt.strategy_identity().to_string(),
             strategy_version: receipt.strategy_version().to_string(),
@@ -43,7 +46,7 @@ impl WorthQueryPreviewIntentReceiptInspection {
             admission_identity: receipt.admission_identity().clone(),
             receipt_identity: receipt.receipt_identity().clone(),
             inspection_identity,
-        }
+        })
     }
 
     pub fn intent_name(&self) -> &str {

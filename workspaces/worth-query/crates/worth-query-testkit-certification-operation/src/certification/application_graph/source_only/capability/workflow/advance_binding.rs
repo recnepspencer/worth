@@ -18,15 +18,7 @@ impl ApplicationMutationBinding<CapabilitySchema> for AdvanceBinding {
     type Denial = SetRetentionDenial;
     type DenialBinding = SetRetentionDenialBinding;
     type Output = NoApplicationMutationOutputs;
-    type ScopeBinding = ApplicationMutationFieldScope<
-        CapabilitySchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        NoApplicationUnit,
-    >;
+    type ScopeBinding = ApplicationMutationFieldScope<DocumentIdentityField>;
     type PrincipalBinding = DocumentPrincipalBinding;
     type Mapping = ExternalMapping;
     type Principal = Principal;
@@ -38,17 +30,8 @@ impl ApplicationMutationBinding<CapabilitySchema> for AdvanceBinding {
     const IDEMPOTENCY_IDENTITY: &'static str = "capability-workflow.key.AdvanceBinding";
     // Native progression/acceptance uses the existing finite workflow profile.
 
-    fn scope_field() -> ApplicationFieldRef<
-        CapabilitySchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         CapabilitySchema,

@@ -122,19 +122,21 @@ impl WorthQueryCompletedCommitEvidenceStore {
         commit: CommitId,
     ) -> Option<WorthQueryPrimaryGraphCommittedApplication> {
         let evidence = self.by_commit.remove(&commit)?;
-        let keys = EvidenceKeys::of(&evidence);
-        if self.by_session.get(&keys.affinity) == Some(&commit) {
-            self.by_session.remove(&keys.affinity);
-        }
-        if self.by_idempotency.get(&keys.idempotency) == Some(&commit) {
-            self.by_idempotency.remove(&keys.idempotency);
-        }
-        if let Some(correlation) = keys.dispatch_correlation
-            && let Some(indexed) = self.by_dispatch_correlation.get_mut(&correlation)
-        {
-            indexed.remove(&commit);
-            if indexed.is_empty() {
-                self.by_dispatch_correlation.remove(&correlation);
+        for member in evidence.publication_members() {
+            let keys = EvidenceKeys::of(member);
+            if self.by_session.get(&keys.affinity) == Some(&commit) {
+                self.by_session.remove(&keys.affinity);
+            }
+            if self.by_idempotency.get(&keys.idempotency) == Some(&commit) {
+                self.by_idempotency.remove(&keys.idempotency);
+            }
+            if let Some(correlation) = keys.dispatch_correlation
+                && let Some(indexed) = self.by_dispatch_correlation.get_mut(&correlation)
+            {
+                indexed.remove(&commit);
+                if indexed.is_empty() {
+                    self.by_dispatch_correlation.remove(&correlation);
+                }
             }
         }
         let world = evidence.committed_product_publication().composite_commit();
@@ -182,22 +184,9 @@ impl WorthQueryCompletedCommitEvidenceStore {
         let mut evidence = evidence;
         drop(evidence.take_history());
         let commit = evidence.commit_reference().commit_id;
-        let EvidenceKeys {
-            affinity,
-            idempotency: idempotency_key,
-            dispatch_correlation,
-        } = EvidenceKeys::of(&evidence);
-        assert!(
-            !self.by_session.contains_key(&affinity),
-            "one provider session may record completed evidence only once"
-        );
         assert!(
             !self.by_commit.contains_key(&commit),
-            "one Relational commit may record provider evidence only once"
-        );
-        assert!(
-            !self.by_idempotency.contains_key(&idempotency_key),
-            "one product-occurrence-qualified idempotency key may record completed evidence only once"
+            "one Relational commit records its completed writer group once"
         );
         self.performed_by_world.insert(
             evidence
@@ -206,13 +195,28 @@ impl WorthQueryCompletedCommitEvidenceStore {
                 .clone(),
             commit,
         );
-        self.by_session.insert(affinity, commit);
-        self.by_idempotency.insert(idempotency_key, commit);
-        if let Some(correlation) = dispatch_correlation {
-            self.by_dispatch_correlation
-                .entry(correlation)
-                .or_default()
-                .insert(commit);
+        for member in evidence.publication_members() {
+            let EvidenceKeys {
+                affinity,
+                idempotency: key,
+                dispatch_correlation,
+            } = EvidenceKeys::of(member);
+            assert!(
+                !self.by_session.contains_key(&affinity),
+                "one provider session records completed evidence once"
+            );
+            assert!(
+                !self.by_idempotency.contains_key(&key),
+                "one product-qualified idempotency key records evidence once"
+            );
+            self.by_session.insert(affinity, commit);
+            self.by_idempotency.insert(key, commit);
+            if let Some(correlation) = dispatch_correlation {
+                self.by_dispatch_correlation
+                    .entry(correlation)
+                    .or_default()
+                    .insert(commit);
+            }
         }
         self.by_commit.insert(commit, evidence);
     }
@@ -230,7 +234,15 @@ impl WorthQueryCompletedCommitEvidenceStore {
             return Err(());
         }
         let commit = commits.iter().next().expect("one indexed commit");
-        self.by_commit.get(commit).cloned().map(Some).ok_or(())
+        let evidence = self.by_commit.get(commit).ok_or(())?;
+        let mut matching = evidence.publication_members().filter(|member| {
+            EvidenceKeys::of(member).dispatch_correlation.as_ref() == Some(correlation)
+        });
+        let selected = matching.next().ok_or(())?;
+        if matching.next().is_some() {
+            return Err(());
+        }
+        Ok(Some(selected.clone()))
     }
 
     pub(in crate::domain_computation::primary_graph) fn observe(
@@ -253,7 +265,11 @@ impl WorthQueryCompletedCommitEvidenceStore {
         WorthQueryPrimaryGraphCommittedApplication,
     )>{
         let commit = self.by_idempotency.get(key)?;
-        let evidence = self.by_commit.get(commit)?;
+        let evidence = self
+            .by_commit
+            .get(commit)?
+            .publication_members()
+            .find(|evidence| &EvidenceKeys::of(evidence).idempotency == key)?;
         Some((evidence.commit_evidence().idempotency(), evidence.clone()))
     }
 }

@@ -14,6 +14,7 @@ pub(crate) mod application_attempt;
 pub(crate) mod application_branch;
 pub(crate) mod application_checkpoint;
 pub(crate) mod application_contribution;
+pub(crate) mod projection_read_origin;
 pub(in crate::domain_computation) use application_contribution::ComputationPrior;
 pub(in crate::domain_computation) use application_contribution::SealedComputationRetention;
 pub(crate) mod application_discovery;
@@ -51,9 +52,15 @@ pub(crate) mod entity_resolution;
 mod entity_resolution_denial;
 pub(crate) mod exact_basis_access;
 mod expression;
+mod fragment_view;
 pub(crate) mod freshness;
 mod granular_invalidation;
 pub(crate) mod handler;
+#[doc(hidden)]
+pub use fragment_view::Readable as FragmentReadable;
+pub use fragment_view::{
+    CandidateEntity, FragmentDenial, ObservedEntity, ObservedTarget, Reading, View, Writing,
+};
 pub(in crate::domain_computation) use handler::DecisionContextUse;
 pub(crate) mod index_currency;
 pub(crate) mod index_maintenance_budget;
@@ -95,36 +102,39 @@ pub use application_query::{
 };
 pub use product_operation::document_history::{
     WorthQueryAdmittedHistoryProgramOutput, WorthQueryCompletedHistoryOutputs,
-    WorthQueryDocumentHistory, WorthQueryDocumentHistoryAdoptionFailure,
-    WorthQueryDocumentHistoryAttachmentFailure, WorthQueryDocumentHistoryCandidateDenial,
-    WorthQueryDocumentHistoryCapturePauseForTest, WorthQueryDocumentHistoryCloseFailure,
-    WorthQueryDocumentHistoryCloseReceipt, WorthQueryDocumentHistoryClosing,
-    WorthQueryDocumentHistoryClosingDenial, WorthQueryDocumentHistoryDenial,
-    WorthQueryDocumentHistoryGroupAborting, WorthQueryDocumentHistoryGroupAdoptionFailure,
-    WorthQueryDocumentHistoryGroupPreparation, WorthQueryDocumentHistoryGroupReservation,
-    WorthQueryDocumentHistoryIdentity, WorthQueryDocumentHistoryNavigation,
-    WorthQueryDocumentHistoryOperation, WorthQueryDocumentHistoryOperationConstraint,
-    WorthQueryDocumentHistoryRecordPreparation, WorthQueryDocumentHistoryReservation,
-    WorthQueryHistoryCommandContextDenial, WorthQueryHistoryContextRefreshDenial,
-    WorthQueryHistoryContextRefreshLimits, WorthQueryHistoryContextRefreshPauseForTest,
-    WorthQueryHistoryDependentOutputRead, WorthQueryHistoryDescriptionContext,
-    WorthQueryHistoryEnrollmentObservationForTest, WorthQueryHistoryEnrollmentReportForTest,
-    WorthQueryHistoryGroupCandidateCreation, WorthQueryHistoryGroupMemberAdmission,
-    WorthQueryHistoryNavigationCompletion, WorthQueryHistoryNavigationDenial,
-    WorthQueryHistoryNavigationEligibilityDenial, WorthQueryHistoryNavigationIntent,
-    WorthQueryHistoryNavigationPauseForTest, WorthQueryHistoryNavigationPosture,
-    WorthQueryHistoryNodeId, WorthQueryHistoryOutputAdvanceDenial,
-    WorthQueryHistoryOutputAuthority, WorthQueryHistoryOutputDiscovery,
-    WorthQueryHistoryOutputNavigationAdvance, WorthQueryHistoryOutputProfile,
+    WorthQueryCompletedRecordingOutputs, WorthQueryDocumentHistory,
+    WorthQueryDocumentHistoryAdoptionFailure, WorthQueryDocumentHistoryAttachmentFailure,
+    WorthQueryDocumentHistoryCandidateDenial, WorthQueryDocumentHistoryCapturePauseForTest,
+    WorthQueryDocumentHistoryCloseFailure, WorthQueryDocumentHistoryCloseReceipt,
+    WorthQueryDocumentHistoryClosing, WorthQueryDocumentHistoryClosingDenial,
+    WorthQueryDocumentHistoryDenial, WorthQueryDocumentHistoryGroupAborting,
+    WorthQueryDocumentHistoryGroupAdoptionFailure, WorthQueryDocumentHistoryGroupPreparation,
+    WorthQueryDocumentHistoryGroupReservation, WorthQueryDocumentHistoryIdentity,
+    WorthQueryDocumentHistoryNavigation, WorthQueryDocumentHistoryOperation,
+    WorthQueryDocumentHistoryOperationConstraint, WorthQueryDocumentHistoryRecordPreparation,
+    WorthQueryDocumentHistoryReservation, WorthQueryHistoryCommandContextDenial,
+    WorthQueryHistoryContextRefreshDenial, WorthQueryHistoryContextRefreshLimits,
+    WorthQueryHistoryContextRefreshPauseForTest, WorthQueryHistoryDependentOutputRead,
+    WorthQueryHistoryDescriptionContext, WorthQueryHistoryEnrollmentObservationForTest,
+    WorthQueryHistoryEnrollmentReportForTest, WorthQueryHistoryGroupCandidateCreation,
+    WorthQueryHistoryGroupMemberAdmission, WorthQueryHistoryNavigationCompletion,
+    WorthQueryHistoryNavigationDenial, WorthQueryHistoryNavigationEligibilityDenial,
+    WorthQueryHistoryNavigationIntent, WorthQueryHistoryNavigationPauseForTest,
+    WorthQueryHistoryNavigationPosture, WorthQueryHistoryNodeId,
+    WorthQueryHistoryOutputAdvanceDenial, WorthQueryHistoryOutputAuthority,
+    WorthQueryHistoryOutputDiscovery, WorthQueryHistoryOutputNavigationAdvance,
+    WorthQueryHistoryOutputProfile, WorthQueryHistoryOutputQualificationDenial,
     WorthQueryHistoryOutputSource, WorthQueryHistoryPage,
     WorthQueryHistoryPageAssemblyPauseForTest, WorthQueryHistoryPageCursor,
     WorthQueryHistoryPageDenial, WorthQueryHistoryPageEntry, WorthQueryHistoryPageLimits,
     WorthQueryHistoryPageRow, WorthQueryHistoryParentBoundary, WorthQueryHistoryPreview,
-    WorthQueryHistoryProgramOutputAdvance, WorthQueryHistoryRedoChoice,
-    WorthQueryHistoryRedoChoices, WorthQueryHistoryReleaseOutcome,
+    WorthQueryHistoryProgramOutputAdvance, WorthQueryHistoryRecordingOutputOrigin,
+    WorthQueryHistoryRedoChoice, WorthQueryHistoryRedoChoices, WorthQueryHistoryReleaseOutcome,
     WorthQueryHistoryRetentionChangePauseForTest, WorthQueryHistoryRetentionStatus,
     WorthQueryHistoryRootOutputAdmissionDenial, WorthQueryHistorySelection, WorthQueryHistoryStep,
-    WorthQuerySettledHistoryProgramOutput,
+    WorthQueryRecordingOutputQualificationDenial, WorthQueryRetainedHistoryOutputTree,
+    WorthQueryRetainedRecordingOutputTree, WorthQuerySettledHistoryProgramOutput,
+    WorthQueryVerifiedHistoryParent,
 };
 pub(in crate::domain_computation) use product_operation::SharedSelectedProductOperation;
 pub use product_operation::WorthQueryHistoryOutputControlDenial;
@@ -181,8 +191,8 @@ pub(in crate::domain_computation) use provider::CompletedApplicationFacts;
 pub(in crate::domain_computation) use provider::WorthQueryPrimaryGraphApplicationDecisionFact;
 pub(crate) use provider::WorthQueryPrimaryGraphProvider;
 pub(crate) use provider::WorthQueryPrimaryLogicalGraph;
-pub(crate) use provider::WorthQueryRetainedPreImageSeal;
 pub(in crate::domain_computation) use provider::WorthQueryUnpublishedIdempotencyDisposition;
+pub(crate) use provider::{WorthQueryRetainedPreImageSeal, WorthQueryRetainedRelationPreImageSeal};
 
 pub(crate) use application_query::WorthQueryApplicationQueryControls;
 pub(in crate::domain_computation) use crate::domain_computation::application_aftermath::external_effect::WorthQueryAdmittedExternalDispatchAttempt;

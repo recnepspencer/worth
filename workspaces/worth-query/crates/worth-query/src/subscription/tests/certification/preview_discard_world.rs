@@ -8,9 +8,11 @@ pub(super) fn preview_discard_certification_artifacts() -> LifecycleCertificatio
         LiveQueryFamily::Detail,
         None,
         QuerySubscriptionConstructionSource::FacadeLive,
-    );
+    )
+    .expect("fixture digest must fit");
     let selection = select_query_subscription_family(live.clone(), roomy_budget()).unwrap();
-    let context = SubscriptionLifecycleCertificationContext::from_live_selection(&live, &selection);
+    let context = SubscriptionLifecycleCertificationContext::from_live_selection(&live, &selection)
+        .expect("fixture digest must fit");
     let declaration = declare_query_subscription(selection, roomy_slice_budget()).unwrap();
     let lowering =
         lower_query_subscription_to_bridge(declaration, roomy_lowering_budget()).unwrap();
@@ -21,17 +23,20 @@ pub(super) fn preview_discard_certification_artifacts() -> LifecycleCertificatio
             QuerySubscriptionScaleFixtureSize::Small,
             11,
             &activation,
-        ),
+        )
+        .expect("fixture digest must fit"),
         QuerySubscriptionScaleCounterSnapshot::from_activation(
             QuerySubscriptionScaleFixtureSize::Medium,
             110,
             &activation,
-        ),
+        )
+        .expect("fixture digest must fit"),
         QuerySubscriptionScaleCounterSnapshot::from_activation(
             QuerySubscriptionScaleFixtureSize::Large,
             1100,
             &activation,
-        ),
+        )
+        .expect("fixture digest must fit"),
     )
     .unwrap();
     let mut runtime = ActiveSubscriptionRuntime::new();
@@ -49,7 +54,8 @@ pub(super) fn preview_discard_certification_artifacts() -> LifecycleCertificatio
     let attachment = attach_subscription_consumer(
         &mut runtime,
         &handle,
-        SubscriptionConsumerAttachmentRequest::admitted("preview-dashboard", "cursor"),
+        SubscriptionConsumerAttachmentRequest::admitted("preview-dashboard", "cursor")
+            .expect("fixture digest must fit"),
         SubscriptionConsumerAttachmentBudget::admitted(
             ActiveFanoutWidth::measured(1),
             ConsumerDeliveryPacingWidth::measured(1),
@@ -76,7 +82,8 @@ pub(super) fn preview_discard_certification_artifacts() -> LifecycleCertificatio
         attachment.lane_digest().clone(),
         "preview-field",
         MaintenanceDeltaWidth::measured(1),
-    );
+    )
+    .expect("fixture digest must fit");
     let (delta, lowering_report, _) = lower_query_subscription_maintenance_delta(delta).unwrap();
     let work_packet = build_active_delivery_work_packet(
         &mut runtime,

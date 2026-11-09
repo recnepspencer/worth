@@ -16,7 +16,7 @@ from query_gate_courts import CATEGORIES, CATEGORY_SUITES, TEST_SUITES, landing_
 DOC_SUITES = {workspace + '-doc': workspace for workspace in ('root', 'query', 'bank')}
 DOC_ALIASES = {'doc': tuple(DOC_SUITES)}
 LANDING_ALIASES = {workspace + '-landing': (*landing_suites(workspace), workspace + '-doc')
-                   for workspace in ('query', 'bank')}
+                   for workspace in ('root', 'query', 'bank')}
 SUITE_ALIASES = {**DOC_ALIASES, **LANDING_ALIASES}
 
 

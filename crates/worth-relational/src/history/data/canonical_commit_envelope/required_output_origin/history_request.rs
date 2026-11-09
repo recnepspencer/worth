@@ -28,7 +28,11 @@ pub(super) struct PreparationHistoryRequest<'r, 'q, 'l> {
     history: &'r RelationalPreparationHistory,
     execution: ExecutionRequest<'q, 'l>,
 }
-impl PreparationHistoryRequest<'_, '_, '_> {
+impl<'r, 'q, 'l> PreparationHistoryRequest<'r, 'q, 'l> {
+    pub(super) fn execution(&self) -> ExecutionRequest<'q, 'l> {
+        self.execution
+    }
+
     pub(super) fn canonical_catalog_len(&self) -> usize {
         self.history.canonical_catalog_len()
     }

@@ -3,6 +3,7 @@ use super::{
     WorthQueryRuntime, WorthQueryRuntimeError, WorthQueryRuntimeFacadeFamily,
     WorthQueryUnifiedInspectionResult, WorthQueryWorkspace,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::intent_admission::{
     WorthQueryGenericInspectionIntentTarget, WorthQueryRuntimeInspectionIntentAuthoring,
 };
@@ -39,11 +40,14 @@ impl<'a> WorthQueryWorkspaceInspectionLane<'a> {
         self.runtime.inspect(execution, target)
     }
 
-    pub fn inspect_intent<T>(&self, target: T) -> WorthQueryRuntimeInspectionIntentAuthoring<'a>
+    pub fn inspect_intent<T>(
+        &self,
+        target: T,
+    ) -> Result<WorthQueryRuntimeInspectionIntentAuthoring<'a>, IdentityDerivationDenial>
     where
         T: WorthQueryGenericInspectionIntentTarget<'a>,
     {
-        self.runtime.inspect_intent(target)
+        Ok(self.runtime.inspect_intent(target)?)
     }
 }
 

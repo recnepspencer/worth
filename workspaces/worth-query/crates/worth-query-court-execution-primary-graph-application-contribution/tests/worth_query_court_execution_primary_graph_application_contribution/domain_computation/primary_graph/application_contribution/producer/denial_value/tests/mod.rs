@@ -33,10 +33,7 @@ pub fn encode_unbounded(value: &str) -> InternedString {
     value.to_owned().into()
 }
 pub fn decode_unbounded(value: InternedString) -> Option<String> {
-    let InternedString::Raw(value) = value else {
-        return None;
-    };
-    Some(value)
+    value.into_raw_text()
 }
 
 pub fn refusal(evidence: &str) -> PlanRefusal {

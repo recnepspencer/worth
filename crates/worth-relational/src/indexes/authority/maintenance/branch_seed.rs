@@ -1,6 +1,5 @@
-use super::IndexAuthority;
 use crate::indexes::data::{DerivedIndexBuildRequest, DerivedIndexGeneration, DerivedIndexId};
-impl IndexAuthority<'_> {
+impl super::owner::IndexMaintenanceOwner<'_> {
     /// The authoring branch's generation for the exact root a fresh fork
     /// selects. Entries are a pure function of the root, so the fork publishes
     /// its own generation from them instead of cold-projecting the graph.
@@ -23,11 +22,10 @@ impl IndexAuthority<'_> {
             return Ok(None);
         }
         let selected = self
-            .runtime
             .indexes
             .maintenance_inputs_admitted(
                 index_id,
-                None,
+                self.prepared_catalog(),
                 authoring,
                 request.source_commit_id,
                 version,

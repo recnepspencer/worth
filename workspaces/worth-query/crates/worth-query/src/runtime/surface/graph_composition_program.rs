@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -118,7 +119,7 @@ impl WorthQueryGraphCompositionProgram {
     pub(crate) fn new(
         steps: Vec<WorthQueryGraphCompositionProgramStep>,
         breadth: &WorthQueryGraphCompositionBreadth,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let step_digests = steps
             .iter()
             .map(|step| {
@@ -150,7 +151,7 @@ impl WorthQueryGraphCompositionProgram {
                 )
                 .seal()
             })
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, _>>()?;
         let program_digest =
             worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
                 .field_shape(
@@ -165,15 +166,18 @@ impl WorthQueryGraphCompositionProgram {
                     WorthQueryEvidenceTag::new("step"),
                     step_digests.iter(),
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             steps,
             program_digest,
-        }
+        })
     }
 
-    pub(crate) fn empty() -> Self {
-        Self::new(Vec::new(), &WorthQueryGraphCompositionBreadth::empty())
+    pub(crate) fn empty() -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
+            Vec::new(),
+            &WorthQueryGraphCompositionBreadth::empty(),
+        )?)
     }
 
     pub fn is_empty(&self) -> bool {

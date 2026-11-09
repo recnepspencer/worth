@@ -1,9 +1,9 @@
 //! Check authoritative reconstructed regions against the committed root.
 use super::{
-    axes, RelationalBranchRoot, RelationalBranchRootAxes, RelationalBranchRootDescriptor,
+    RelationalBranchRoot, RelationalBranchRootAxes, RelationalBranchRootDescriptor,
     RelationalBranchVisibilityCommitment, RelationalRootCommitEvidence,
 };
-use crate::history::data::CanonicalCommitEnvelopeBody;
+use crate::history::data::CanonicalCommitEnvelope;
 use worth_foundational::CanonicalDigestId;
 
 #[derive(Clone, Copy)]
@@ -14,12 +14,15 @@ struct ReconstructedContent {
 }
 
 impl RelationalBranchRoot {
-    pub(crate) fn is_complete(&self, symbols: &crate::symbols::data::StringInterner) -> bool {
+    pub(crate) fn is_complete(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        symbols: &crate::symbols::data::StringInterner,
+    ) -> bool {
         let Some(committed) = self.committed.as_ref() else {
             return false;
         };
-        let Ok((storage, accumulator)) =
-            axes::storage_root_from_authoritative_regions(&self.regions, symbols)
+        let Ok((storage, accumulator)) = self.verify_resident_storage_content(execution, symbols)
         else {
             return false;
         };
@@ -30,12 +33,12 @@ impl RelationalBranchRoot {
         };
         let schema_matches = committed.evidence.matches_schema(&self.schema_authority);
         match &committed.evidence {
-            RelationalRootCommitEvidence::Original(envelope) => original_is_complete(
+            RelationalRootCommitEvidence::Original(original) => original_is_complete(
                 committed.axes,
                 &committed.descriptor,
                 self.content_accumulator,
                 content,
-                envelope,
+                original.envelope(),
                 schema_matches,
             ),
             RelationalRootCommitEvidence::Checkpoint(commit) => bindings_match(
@@ -60,11 +63,11 @@ fn original_is_complete(
     descriptor: &RelationalBranchRootDescriptor,
     accumulator: [u8; 32],
     content: ReconstructedContent,
-    body: &CanonicalCommitEnvelopeBody,
+    body: &CanonicalCommitEnvelope,
     schema_matches: bool,
 ) -> bool {
     // The production original-evidence predicate recomputes visibility here.
-    // Descriptive Body DATA is sufficient; no runtime root or admission is minted.
+    // Its actual sealed semantic image is observed; no runtime admission is minted.
     let reconstructed = RelationalBranchRootAxes {
         storage_version: body.commit.version_id.0,
         storage_root: *content.storage.bytes(),
@@ -225,7 +228,7 @@ mod tests {
     }
 
     fn binding(
-        body: &CanonicalCommitEnvelopeBody,
+        body: &CanonicalCommitEnvelope,
     ) -> (
         RelationalBranchRootAxes,
         RelationalBranchRootDescriptor,
@@ -257,12 +260,13 @@ mod tests {
         )
     }
 
-    // Unsealed descriptive values only: no runtime or semantic/publication authority.
-    fn body(opaque: bool) -> CanonicalCommitEnvelopeBody {
+    // Pure predicate inputs, using the same actual-original/body-control recipe
+    // as root_physical_linkage_tests. No altered value enters publication or recovery.
+    fn body(opaque: bool) -> CanonicalCommitEnvelope {
         use crate::diagnostics::data::*;
         use crate::lineage::data::*;
         let branch = BranchId("completeness-value".into());
-        CanonicalCommitEnvelopeDraft::new(
+        let draft = CanonicalCommitEnvelopeDraft::new(
             Default::default(),
             crate::history::data::CanonicalIndexDefinitionDelta::prepared(1, 1, vec![], None),
             RelationalCommitReceipt {
@@ -315,6 +319,22 @@ mod tests {
             None,
             DescriptorSemanticsVersion(1),
         )
-        .into_body()
+        .into_body();
+        let request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&request);
+        let runtime = crate::tests::support::runtime_with_test_schema();
+        let produced = crate::tests::support::create_entity_outcome(
+            execution,
+            &runtime,
+            "completeness-semantic-source",
+        );
+        let envelope = produced.publication().envelope.clone().into_arc();
+        crate::tests::support::release_test_commit_snapshot(&runtime, &produced);
+        drop(produced);
+        drop(runtime);
+        let mut envelope = std::sync::Arc::try_unwrap(envelope)
+            .expect("actual source and result have retired their original shares");
+        *envelope.body_mut_for_test() = draft;
+        envelope
     }
 }

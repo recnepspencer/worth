@@ -1,8 +1,6 @@
 use worth_foundational::facade::ScalarAspectType;
 
-use crate::application_schema::{
-    ApplicationFieldUnit, ApplicationScalarValueBinding, RequiredApplicationFieldValue,
-};
+use crate::application_schema::ApplicationScalarValueBinding;
 
 use super::{ApplicationQueryMarkerIdentity, ApplicationQueryResultFieldRef};
 use crate::portable_identity::{WorthQueryPortableType, WorthQueryPortableTypeIdentity};
@@ -54,35 +52,16 @@ impl ApplicationQueryOrderingTerm {
         }
     }
 
-    pub(super) fn from_result_field<
-        Query,
-        Slot,
-        Schema,
-        Entity,
-        Aspect,
-        Field,
-        Value,
-        Write,
-        Equality,
-        Unit,
-    >(
-        selector: ApplicationQueryResultFieldRef<
-            Query,
-            Slot,
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            Equality,
-            Unit,
-        >,
+    pub(super) fn from_result_field<Query, Slot, Schema, Entity, Aspect, Field, Value>(
+        selector: ApplicationQueryResultFieldRef<Query, Slot, Schema, Field>,
         direction: ApplicationQueryOrderingDirection,
     ) -> Self
     where
-        Field: RequiredApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
+        Field: crate::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
         Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {

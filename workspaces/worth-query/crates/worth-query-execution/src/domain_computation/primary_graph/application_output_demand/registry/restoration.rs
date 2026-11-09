@@ -12,10 +12,12 @@ use crate::domain_computation::primary_graph::output_lineage::RecordedSettlement
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 
+mod origin;
+pub use origin::RestoredOutputOrigin;
+
 #[derive(Clone)]
 pub struct WorthQueryRestoredAcceptedOutput {
-    pub(in crate::domain_computation::primary_graph) checkpoint:
-        super::WorthQueryAcceptedOutputCheckpointIdentity,
+    pub(in crate::domain_computation::primary_graph) origin: RestoredOutputOrigin,
     pub(in crate::domain_computation::primary_graph) correspondence: std::sync::Arc<
         crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
     >,
@@ -39,7 +41,7 @@ impl WorthQueryRestoredAcceptedOutput {
         &self,
         other: &Self,
     ) -> bool {
-        self.checkpoint == other.checkpoint
+        self.origin.same_owner(&other.origin)
             && std::sync::Arc::ptr_eq(&self.correspondence, &other.correspondence)
             && self.observation == other.observation
             && self.source_scope == other.source_scope
@@ -52,13 +54,16 @@ impl WorthQueryRestoredAcceptedOutput {
         &self,
     ) -> crate::domain_computation::primary_graph::WorthQueryOutputSettlementPosture {
         use crate::domain_computation::primary_graph::WorthQueryOutputSettlementPosture as Posture;
-        match self.checkpoint.posture {
-            super::WorthQueryAcceptedOutputCheckpointPosture::Performed => {
-                Posture::RecoveredPerformed
-            }
-            super::WorthQueryAcceptedOutputCheckpointPosture::StableReused => {
-                Posture::RecoveredStableReused
-            }
+        match &self.origin {
+            RestoredOutputOrigin::HistoricalSelection(_) => Posture::HistoricallySelected,
+            RestoredOutputOrigin::Checkpoint(checkpoint) => match checkpoint.posture {
+                super::WorthQueryAcceptedOutputCheckpointPosture::Performed => {
+                    Posture::RecoveredPerformed
+                }
+                super::WorthQueryAcceptedOutputCheckpointPosture::StableReused => {
+                    Posture::RecoveredStableReused
+                }
+            },
         }
     }
 }

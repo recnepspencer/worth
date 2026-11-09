@@ -1,0 +1,6 @@
+{
+  "workspaces/worth-ui/crates/worth-ui/tests/ui/runtime_authority/fail/ordinary_frame_target_string_constructor_missing.stderr": "#117",
+  "workspaces/worth-ui/crates/worth-ui/tests/ui/runtime_authority/fail/ordinary_widget_fallback_cannot_execute_realtime_lane.stderr": "#117",
+  "workspaces/worth-ui/crates/worth-ui/tests/ui/runtime_authority/fail/raw_plan_input_cannot_execute_ordinary_lane.stderr": "#117",
+  "workspaces/worth-ui/crates/worth-ui/tests/ui/runtime_authority/fail/raw_renderer_pointer_cannot_execute_realtime_lane.stderr": "#117"
+}

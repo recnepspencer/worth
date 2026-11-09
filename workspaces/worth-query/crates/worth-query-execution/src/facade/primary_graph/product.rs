@@ -10,3 +10,20 @@ pub use crate::domain_computation::{
     WorthQueryProductPreparationPending, WorthQueryProductPreparationRefusal,
     WorthQueryProductPreparationRefused, WorthQueryProductPreparationStage,
 };
+
+pub use worth_foundational::facade::{
+    DurableCompositeCommitIdentity, DurableProductBranchReference, DurableQueryOutputSettlement,
+    MemoryProductBranchReference, RecordedCompositePublicationAttemptIdentity,
+    RecordedProductBranchReference, WorldOwnerCoordinate,
+};
+
+pub use worth_runtime_world::facade::{
+    CompositeAncestorSelectionDenial, CompositeCommitIdentity, CompositeHistoryCatalogDenial,
+    CompositePublicationAttemptIdentity, NoEffectCause, ProductBranchAncestorSelectionDenial,
+    ProductExactHistoryDenial, ProductUnpublishedCause, ProductUnpublishedNextAction,
+    ProductUnpublishedOwnerEffectsIdentity, ProductUnpublishedRecoveryHandle,
+    RecoveryContinuationContract, RuntimeWorldBranchAdmissionDenial, RuntimeWorldRecoveryCursor,
+    RuntimeWorldRecoveryDenial, RuntimeWorldRecoveryPage, RuntimeWorldServiceDenial,
+    RuntimeWorldSettledRelationalAdoptionDenial, WorldRecoveredContinuationDenial,
+    WorldRecoveredContinuationOutcome,
+};

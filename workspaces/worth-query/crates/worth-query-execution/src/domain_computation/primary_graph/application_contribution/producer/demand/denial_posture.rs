@@ -30,7 +30,7 @@ impl WorthQueryOutputDemandDenialKind {
                 }
                 _ => Retryable,
             },
-            Self::RecoveryPublication(_) => Terminal,
+            Self::RecoveryPublication(_) | Self::CurrentPublication(_) => Terminal,
             Self::ProductDelivery(_) => Terminal,
             Self::CorrespondenceDelivery(cause) => match cause.as_ref() {
                 worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryStop::Denied(_)
@@ -97,6 +97,7 @@ impl WorthQueryOutputDemandDenialKind {
             | Self::IncompleteDependencyCoverage
             | Self::RetainedBasisUnavailable
             | Self::Closed
+            | Self::PredecessorRead(_)
             | Self::DuplicatePerformedSource => Terminal,
         }
     }

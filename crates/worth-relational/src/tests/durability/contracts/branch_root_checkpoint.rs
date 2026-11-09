@@ -270,3 +270,5 @@ fn current_branch_entity_count(
 
 #[path = "branch_root_checkpoint/foreign_targets.rs"]
 mod foreign_targets;
+
+mod unsupported_root_version;

@@ -31,21 +31,12 @@ impl CreateNode {
         ApplicationOperationRef::from_declaration()
     }
 }
-worth_query_operation_reads!(CreateNode => [NodeKey]);
+
 worth_query_operation_links!(CreateNode => [Precedes]);
 worth_query_operation_creates!(CreateNode => [Node]);
-worth_query_operation_writes!(CreateNode => [NodeKey]);
 
 pub struct CreateBinding<L: LawPolicy>(pub PhantomData<fn() -> L>);
-pub type NodeScope<L> = ApplicationMutationFieldScope<
-    GraphSchema<L>,
-    Node,
-    NodeFacts,
-    NodeKey,
-    u64,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type NodeScope<L> = ApplicationMutationFieldScope<GraphKey<GraphSchema<L>>>;
 impl<L: LawPolicy> ApplicationMutationBinding<GraphSchema<L>> for CreateBinding<L> {
     type Input = CreateNodeInput;
     type InputBinding = CreateNodeInputBinding;
@@ -53,7 +44,7 @@ impl<L: LawPolicy> ApplicationMutationBinding<GraphSchema<L>> for CreateBinding<
     type ResultBinding = EditedBinding;
     type IdempotencyKey = u64;
     type Operation = CreateNode;
-    type Decision = WorthQueryInvariantMutationTarget<GraphSchema<L>, Node>;
+    type Decision = WorthQueryInvariantMutationTarget<GraphSchema<L>, GraphNode<GraphSchema<L>>>;
     type Denial = GraphDenial;
     type DenialBinding = GraphDenialBinding;
     type Output = NoApplicationMutationOutputs;
@@ -70,17 +61,8 @@ impl<L: LawPolicy> ApplicationMutationBinding<GraphSchema<L>> for CreateBinding<
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
     }
-    fn scope_field() -> ApplicationFieldRef<
-        GraphSchema<L>,
-        Node,
-        NodeFacts,
-        NodeKey,
-        u64,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        NodeKey::reference()
+    fn scope_field() -> GraphKey<GraphSchema<L>> {
+        node_key::<GraphSchema<L>>()
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         GraphSchema<L>,
@@ -104,7 +86,7 @@ impl<L: LawPolicy> ApplicationMutationIntent<GraphSchema<L>> for Create<L> {
         &self.input
     }
     fn scope_binding(&self) -> NodeScope<L> {
-        NodeScope::new(NodeKey::reference(), self.input.context)
+        NodeScope::<L>::new(node_key::<GraphSchema<L>>(), self.input.context)
     }
 }
 
@@ -114,8 +96,11 @@ impl<L: LawPolicy> OperationHandler<GraphSchema<L>, CreateBinding<L>> for Create
         &self,
         input: &CreateNodeInput,
         reader: &mut DecisionReader<'_, '_, '_, GraphSchema<L>, CreateBinding<L>>,
-    ) -> HandlerResult<WorthQueryInvariantMutationTarget<GraphSchema<L>, Node>, GraphDenial> {
-        let source = match reader.resolve_entity(NodeKey::reference(), input.context) {
+    ) -> HandlerResult<
+        WorthQueryInvariantMutationTarget<GraphSchema<L>, GraphNode<GraphSchema<L>>>,
+        GraphDenial,
+    > {
+        let source = match reader.resolve_entity(node_key::<GraphSchema<L>>(), input.context) {
             Ok(value) => value,
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };
@@ -127,21 +112,21 @@ impl<L: LawPolicy> OperationHandler<GraphSchema<L>, CreateBinding<L>> for Create
     fn build_candidate(
         &self,
         input: &CreateNodeInput,
-        source: WorthQueryInvariantMutationTarget<GraphSchema<L>, Node>,
+        source: WorthQueryInvariantMutationTarget<GraphSchema<L>, GraphNode<GraphSchema<L>>>,
         writer: &mut CandidateWriter<'_, GraphSchema<L>, CreateBinding<L>>,
     ) -> HandlerResult<Edited, GraphDenial> {
         let build = |writer: &mut CandidateWriter<'_, GraphSchema<L>, CreateBinding<L>>| {
             let source = writer.projected_entity(&source)?;
             let key = WorthQueryApplicationEntityKey::new(format!("node-{}", input.key)).unwrap();
             let target = if input.in_context {
-                writer.create_entity_in_context(&source, Node::reference(), key)?
+                writer.create_entity_in_context(&source, node::<GraphSchema<L>>(), key)?
             } else {
-                writer.create_entity(Node::reference(), key)?
+                writer.create_entity(node::<GraphSchema<L>>(), key)?
             };
-            writer.initialize_field(&target, NodeKey::reference(), input.key)?;
+            writer.initialize_field(&target, node_key::<GraphSchema<L>>(), input.key)?;
             if input.self_cycle {
                 writer.link(
-                    Precedes::reference(),
+                    precedes::<GraphSchema<L>>(),
                     format!("self-edge-{}", input.key),
                     &target,
                     &target,
@@ -149,7 +134,7 @@ impl<L: LawPolicy> OperationHandler<GraphSchema<L>, CreateBinding<L>> for Create
             }
             if input.link {
                 writer.link(
-                    Precedes::reference(),
+                    precedes::<GraphSchema<L>>(),
                     format!("created-edge-{}", input.key),
                     &source,
                     &target,
@@ -157,7 +142,7 @@ impl<L: LawPolicy> OperationHandler<GraphSchema<L>, CreateBinding<L>> for Create
             }
             if input.backlink {
                 writer.link(
-                    Precedes::reference(),
+                    precedes::<GraphSchema<L>>(),
                     format!("return-edge-{}", input.key),
                     &target,
                     &source,

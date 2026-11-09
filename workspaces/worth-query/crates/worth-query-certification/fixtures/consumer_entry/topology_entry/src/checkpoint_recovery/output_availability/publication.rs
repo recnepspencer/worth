@@ -28,10 +28,10 @@ macro_rules! handler {
                 if $observe {
                     let observed = (|| -> Result<(), HandlerExecutionDenial> {
                         let output = reader.resolve_entity(
-                            QuantityKey::reference(),
+                            QuantityKey::at("QuantityKey"),
                             output_key(&input.scope_key),
                         )?;
-                        reader.field(&output, QuantitySnapshot::reference())?;
+                        reader.field(&output, QuantitySnapshot::at("QuantitySnapshot"))?;
                         Ok(())
                     })();
                     if let Err(error) = observed {
@@ -40,7 +40,7 @@ macro_rules! handler {
                         ));
                     }
                 }
-                match reader.resolve_entity(BodyKey::reference(), input.scope_key.clone()) {
+                match reader.resolve_entity(BodyKey::at("BodyKey"), input.scope_key.clone()) {
                     Ok(root) => (self.0)(reader, &root),
                     Err(error) => {
                         WorthQueryDecisionPlan::immediate(HandlerResult::ExecutionDenied(error))
@@ -81,10 +81,10 @@ fn create(
         )
         .map_err(HandlerExecutionDenial::new)?;
     writer
-        .initialize_field(&target, QuantityKey::reference(), key.to_owned())
+        .initialize_field(&target, QuantityKey::at("QuantityKey"), key.to_owned())
         .map_err(HandlerExecutionDenial::new)?;
     writer
-        .initialize_field(&target, QuantitySnapshot::reference(), value)
+        .initialize_field(&target, QuantitySnapshot::at("QuantitySnapshot"), value)
         .map_err(HandlerExecutionDenial::new)?;
     writer
         .create_output::<binding::Created>(&target)
@@ -96,10 +96,10 @@ fn preserve(
     value: Snapshot,
 ) -> Result<(), HandlerExecutionDenial> {
     let target = writer
-        .resolve_entity(QuantityKey::reference(), key.to_owned())
+        .resolve_entity(QuantityKey::at("QuantityKey"), key.to_owned())
         .map_err(HandlerExecutionDenial::new)?;
     writer
-        .write_field(&target, QuantitySnapshot::reference(), value)
+        .write_field(&target, QuantitySnapshot::at("QuantitySnapshot"), value)
         .map_err(HandlerExecutionDenial::new)?;
     writer
         .preserve_output::<binding::Preserved>(&target)

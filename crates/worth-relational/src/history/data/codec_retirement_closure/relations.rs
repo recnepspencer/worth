@@ -1,6 +1,7 @@
 //! Destructive retirement requires a closed set of authenticated incident relations.
 use super::{charge, memory_overflow, reserve, CodecRetirementClosureStop, OutputOrigin};
 use crate::branch::RelationalBranchRoot;
+use crate::history::data::canonical_commit_envelope::OutputOriginHistory;
 use crate::identity::data::RelationId;
 use worth_execution::{ExecutionMemoryReservation, ExecutionResourceLease, MapKernelContext};
 
@@ -19,6 +20,7 @@ pub(super) fn derive_closed_relations(
     root: &RelationalBranchRoot,
     origins: &[OutputOrigin],
     purpose: RelationClosurePurpose,
+    validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Result<(Vec<RelationId>, ExecutionMemoryReservation), CodecRetirementClosureStop> {
@@ -43,6 +45,17 @@ pub(super) fn derive_closed_relations(
                 .get_slot(slot)
                 .ok_or("native relation disappeared")?;
             if !record.is_live() {
+                continue;
+            }
+            // Current custody links are removed by publication completion in
+            // this same codec retirement, rather than claimed as producer edges.
+            if record.kind_id().is_some_and(|kind| {
+                root.schema_authority()
+                    .registry()
+                    .current_publication_storage
+                    .as_ref()
+                    .is_some_and(|storage| storage.metadata_kinds().contains(&kind))
+            }) {
                 continue;
             }
             let endpoints = record
@@ -96,10 +109,23 @@ pub(super) fn derive_closed_relations(
         let source = origins
             .binary_search_by_key(&ends.source, |(id, _, _)| *id)
             .map_err(|_| "relation source outside complete output closure")?;
-        let envelope = runtime
-            .commit(origins[source].2.commit.commit_id)?
+        let envelope = validated_history
+            .by_commit(
+                origins[source].2.commit.commit_id,
+                &mut |commit| runtime.commit(commit),
+                &runtime.execution(),
+                context,
+            )?
             .ok_or("complete relation publication absent")?;
-        super::relation_payload::validate(runtime, root, &envelope, *id, context, lease)?;
+        super::relation_payload::validate(
+            runtime,
+            root,
+            &envelope,
+            *id,
+            validated_history,
+            context,
+            lease,
+        )?;
     }
     charge(
         context,

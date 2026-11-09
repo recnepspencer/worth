@@ -29,9 +29,9 @@ impl WorthQueryEffectIntentReceipt {
     pub(in crate::runtime) fn new(
         delivery: &WorthQueryEffectDelivery,
         intent_receipt: WorthQueryIntentReceipt,
-    ) -> Self {
-        let receipt_identity = effect_intent_receipt_identity(delivery, &intent_receipt);
-        Self {
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+        let receipt_identity = effect_intent_receipt_identity(delivery, &intent_receipt)?;
+        Ok(Self {
             effect_name: delivery.effect_name().to_string(),
             trigger_commit_evidence_identity: delivery.trigger_commit_evidence_identity().clone(),
             trigger_source_kind: delivery.trigger_source_kind(),
@@ -43,7 +43,7 @@ impl WorthQueryEffectIntentReceipt {
             phase_evidence: delivery.phase_evidence().clone(),
             intent_receipt,
             receipt_identity,
-        }
+        })
     }
 
     pub fn effect_name(&self) -> &str {

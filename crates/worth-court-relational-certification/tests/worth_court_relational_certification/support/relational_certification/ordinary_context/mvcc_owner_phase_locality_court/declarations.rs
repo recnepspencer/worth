@@ -314,7 +314,7 @@ pub(crate) fn coordination_counters(
         .branch_identity(branch)
         .expect("the court branch identity is owner-issued");
     let observation = runtime
-        .observe_branch_sharing(std::slice::from_ref(&identity))
+        .observe_branch_sharing(&worth_execution::ExecutionRequest::serial(&worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request()), std::slice::from_ref(&identity))
         .expect("the paused court branch remains inspectable through public sharing");
     BranchCoordination {
         contacts: observation.coordination_contacts(),

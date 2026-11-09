@@ -9,6 +9,10 @@ use super::WorthQueryPrimaryMutationWorkCounters;
 pub(in crate::domain_computation::primary_graph::provider) struct ManagedUnpublishedAttempt {
     pub(super) _completion: Option<super::super::super::super::commit_completion::WorthQueryApplicationAttemptCompletion>,
     pub(super) publication_mode: ManagedUnpublishedPublicationMode,
+    pub(super) members: Vec<crate::domain_computation::primary_graph::provider::CoupledApplicationMember>,
+    pub(super) group_emissions: Option<crate::domain_computation::primary_graph::application_attempt::WorthQueryAdmittedApplicationEmissionBatch>,
+    pub(super) group_evidence: Option<super::coupled::CoupledEvidenceSlots>,
+    pub(super) prepared_group_publications: Option<worth_relational::facade::mvcc::RelationalPreparedOutputPublications>,
     pub(super) attempt: WorthQueryPrimaryGraphApplicationAttempt,
     pub(super) work: WorthQueryPrimaryMutationWorkCounters,
     pub(super) predicate: Option<crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationOwner>,
@@ -82,6 +86,7 @@ impl ManagedUnpublishedAttempt {
         provider: &crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
         planned: &worth_runtime_world::facade::PlannedProductReferenceSuccessor,
     ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial> {
+        super::coupled::prepare_lineage(provider, &mut self.members, planned)?;
         let Some(binding) = self.attempt.output_binding_type() else {
             assert!(self.required_prerequisites.is_none());
             return Ok(());
@@ -167,6 +172,12 @@ impl ManagedUnpublishedAttempt {
             .expect("settled World adoption retains the original Relational result");
         super::WorthQueryCommittedApplicationSession {
             attempt: self.attempt,
+            members: self.members,
+            prepared_group_publications: self.prepared_group_publications,
+            group_evidence: self.group_evidence,
+            group_emissions: self.group_emissions,
+            own_publication: None,
+            own_records: None,
             work: self.work,
             predicate: self.predicate,
             index_maintenance_work: self.index_maintenance_work,

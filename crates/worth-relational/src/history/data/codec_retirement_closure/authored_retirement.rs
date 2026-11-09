@@ -1,5 +1,6 @@
 //! Reconstructive selection for an ordinary author's exact retired output roster.
 use super::{charge, require_linear_history, CodecRetirementClosureStop as Stop};
+use crate::history::data::canonical_commit_envelope::OutputOriginHistory;
 use crate::{
     branch::AdmittedRelationalBranchBasis,
     history::data::{CanonicalRequiredOutputOrigin, SelectedOutputPublication},
@@ -27,10 +28,28 @@ pub(crate) fn select_authored_retirement(
             lease,
             None,
             |context| {
-                if !has_owned_birth(execution, runtime, basis, roles, owned_only, context)? {
+                let mut origin_frames = OutputOriginHistory::default();
+                let validated_history = &mut origin_frames;
+                if !has_owned_birth(
+                    execution,
+                    runtime,
+                    basis,
+                    roles,
+                    owned_only,
+                    validated_history,
+                    context,
+                )? {
                     return Ok(None);
                 }
-                select(runtime, basis, roles, owned_only, context, lease)
+                select(
+                    runtime,
+                    basis,
+                    roles,
+                    owned_only,
+                    validated_history,
+                    context,
+                    lease,
+                )
             },
         )
     });
@@ -43,6 +62,7 @@ fn select(
     basis: &AdmittedRelationalBranchBasis,
     roles: &[RequiredOutputRoleTarget],
     owned_only: bool,
+    validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Result<Option<SelectedOutputPublication>, Stop> {
@@ -52,10 +72,16 @@ fn select(
     for _ in 0..bound {
         let Some(commit) = next else { return Ok(None) };
         charge(context, bound.saturating_add(roles.len()))?;
-        let envelope = runtime
-            .commit(commit)?
+        let envelope = validated_history
+            .by_commit(
+                commit,
+                &mut |commit| runtime.commit(commit),
+                &runtime.execution(),
+                context,
+            )?
             .ok_or("authored retirement lost selected canonical history")?;
         require_linear_history(&envelope)?;
+        let validated = envelope.as_view();
         for (ordinal, origin) in envelope.output_origins().enumerate() {
             let comparisons =
                 roles
@@ -71,7 +97,7 @@ fn select(
                     .iter()
                     .any(|member| role.target == EntityReference::Existing(member.id))
             }) {
-                envelope.output_origin_for_route(&origin.meaning, context)?;
+                validated.output_origin_for_route(&origin.meaning, context)?;
                 if owned_only && !origin.source_scope_owned {
                     continue;
                 }
@@ -82,13 +108,21 @@ fn select(
                 }
                 return Ok(Some(SelectedOutputPublication {
                     origin: Arc::clone(origin),
-                    envelope: Arc::clone(&envelope),
+                    evidence: crate::publication::ownership::PublicationEvidence::Canonical(
+                        Arc::clone(&envelope),
+                    ),
                     ordinal,
                 }));
             }
         }
         if let Some(event) = &envelope.required_output_materialization {
-            super::materialization::validate_semantics(runtime, &envelope, context, lease)?;
+            super::materialization::validate_semantics(
+                runtime,
+                &envelope,
+                context,
+                lease,
+                basis.inner.root.schema_authority(),
+            )?;
             next = Some(event.source_commit);
         } else {
             next = envelope.commit.parents.first().copied();
@@ -140,6 +174,7 @@ fn has_owned_birth(
     basis: &AdmittedRelationalBranchBasis,
     roles: &[RequiredOutputRoleTarget],
     owned_only: bool,
+    validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<bool, Stop> {
     use crate::{
@@ -184,8 +219,13 @@ fn has_owned_birth(
             .entity_arena
             .created_at_for_slot(id.slot_index())
             .ok_or("retirement before-image birth absent")?;
-        let envelope = runtime
-            .version(created, context)?
+        let envelope = validated_history
+            .by_version(
+                created,
+                &mut |version, context| runtime.version(version, context),
+                &runtime.execution(),
+                context,
+            )?
             .ok_or("retirement canonical birth unavailable")?;
         charge(
             context,
@@ -212,9 +252,10 @@ fn has_owned_birth(
         {
             return Err("retirement lacks exact canonical full-generation allocation".into());
         }
+        let validated = envelope.as_view();
         for origin in envelope.output_origins() {
             charge(context, origin.members.len() + origin.outputs.len() + 1)?;
-            envelope.output_origin_for_route(&origin.meaning, context)?;
+            validated.output_origin_for_route(&origin.meaning, context)?;
             owned |= (!owned_only || origin.source_scope_owned)
                 && origin.outputs.binary_search(&id).is_ok();
         }

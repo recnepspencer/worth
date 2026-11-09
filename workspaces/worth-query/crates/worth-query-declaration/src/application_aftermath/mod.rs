@@ -4,6 +4,11 @@
 //! axes. Published law-14 posture names are derived only at installation.
 
 mod contract;
+// Descriptive historical endpoints can be carried by an application using only
+// the declaration and host facades; these identifiers grant no current handle.
+pub use worth_foundational::facade::{EntityId, PartitionId};
+mod relation_material;
+pub use relation_material::ApplicationCorrectionRelationMaterial;
 mod correction_binding;
 pub use correction_binding::{
     dispatch_application_correction, ApplicationCorrectionBinding,
@@ -39,10 +44,13 @@ mod recorded_inverse_tests;
 pub use contract::{DeclaredApplicationAftermathContract, PortableApplicationAftermathContract};
 pub use correction_authority::DeclaredCorrectionAuthority;
 pub use correction_mechanism::{
-    DeclaredCompensation, DeclaredCorrectionMechanism, DeclaredLoweringCorrespondenceRef,
-    DeclaredPreImageDemand, DeclaredPreImageDemandDenial, DeclaredPreImageLocus,
-    DeclaredRecordedInverse, PortableCorrectionMechanism, PortablePreImageDemand,
-    PortablePreImageLocus, PortableRecordedInverse,
+    DeclaredCompensation, DeclaredCorrectionMechanism, DeclaredCorrectionMechanismDenial,
+    DeclaredLoweringCorrespondenceRef, DeclaredPreImageDemand, DeclaredPreImageDemandDenial,
+    DeclaredPreImageLocus, DeclaredPreImageRelationLocus, DeclaredRecordedInverse,
+    PortableCorrectionMechanism, PortablePreImageDemand, PortablePreImageLocus,
+    PortablePreImageRelationLocus, PortableRecordedInverse,
 };
 pub use postcondition::DeclaredAftermathPostcondition;
 pub use reconciliation::DeclaredReconciliationProcedure;
+
+pub(crate) use contract::AssociatedAftermathContract;

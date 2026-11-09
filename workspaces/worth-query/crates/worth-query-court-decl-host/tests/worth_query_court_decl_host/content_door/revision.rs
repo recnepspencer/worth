@@ -12,7 +12,7 @@ worth_query_structured_value_binding!(pub Input for Revise { identity: "content-
 #[derive(Debug)]
 pub struct Revised;
 worth_query_structured_value_binding!(pub ResultBinding for Revised { identity: "content-revision.result.v1" });
-worth_query_operation!(pub ReviseSamples for Schema, input Input; access { read_fields: [Key, Values]; writes: [Values]; });
+worth_query_operation!(pub ReviseSamples for Schema, input Input; access { read_fields: [Key::at("Key"), Values::at("Values")]; writes: [Values::at("Values")]; });
 fn key(input: &Revise) -> String {
     input.key.clone()
 }
@@ -21,7 +21,7 @@ worth_query_mutation_binding!(pub Binding for Revise, schema Schema,
  idempotency String, identity "content-revision.idempotency.v1", decision WorthQueryInvariantMutationTarget<Schema, Record>,
  denial operation::DenialBinding, handler identity "content-revision.handler.v1", program required, outputs NoApplicationMutationOutputs,
  principal Actor, mapping Mapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
- scope Record, Identity, Key, String, ReadOnly, NoApplicationUnit, field Key::reference(), value key,
+ scope Key, field Key::at("Key"), value key,
 );
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
@@ -36,7 +36,7 @@ impl OperationHandler<Schema, Binding> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<Schema, Record>, operation::Denial> {
         let result = (|| {
-            let row = reader.resolve_entity(Key::reference(), input.key.clone())?;
+            let row = reader.resolve_entity(Key::at("Key"), input.key.clone())?;
             reader
                 .content(&row, samples())
                 .map_err(HandlerExecutionDenial::new)?;
@@ -78,7 +78,7 @@ impl OperationHandler<Schema, Binding> for Handler {
                         .expect("correction carries a full identity"),
                 );
                 writer
-                    .write_field(&row, Values::reference(), id)
+                    .write_field(&row, Values::at("Values"), BoundReference::new(id))
                     .map_err(HandlerExecutionDenial::new)
             }
         })();
@@ -107,13 +107,10 @@ impl ApplicationCorrectionBinding<Schema> for Restore {
         Ok(ApplicationQueryParameterSet::new())
     }
     fn mechanism() -> DeclaredCorrectionMechanism<Schema> {
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
-            DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(Values::reference())],
-                4096,
-            )
-            .unwrap(),
-        )
+        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
+            [DeclaredPreImageLocus::from_field(Values::at("Values"))],
+            4096,
+        ))
     }
     fn derive_correction(
         original: &Revise,
@@ -123,7 +120,7 @@ impl ApplicationCorrectionBinding<Schema> for Restore {
             return Err(ApplicationCorrectionDerivationDenial::UnsupportedSourceMeaning);
         };
         let value = prior
-            .field(&DeclaredPreImageLocus::from_field(Values::reference()))
+            .field(&DeclaredPreImageLocus::from_field(Values::at("Values")))
             .ok_or(ApplicationCorrectionDerivationDenial::MissingPreImage)?;
         let id = ContentRefApplicationValueBinding::decode(value)
             .map_err(|_| ApplicationCorrectionDerivationDenial::InvalidPreImage)?;

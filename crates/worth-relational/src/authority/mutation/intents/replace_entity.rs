@@ -1,6 +1,6 @@
 use crate::authority::mutation::outcomes::MutationOutcome;
 use crate::authority::mutation::record_changes::{
-    allocate_entity_with_extra, delete_entity_with_cascade, delete_entity_with_cascade_original,
+    allocate_entity_with_extra, delete_entity_with_cascade,
 };
 use crate::authority::mutation::stale_targets::ensure_entity_target_is_current;
 use crate::authority::mutation::MutationWorkspace;
@@ -15,12 +15,6 @@ pub(super) fn apply(
     workspace: &mut MutationWorkspace<'_>,
 ) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
     apply_using(intent, workspace, delete_entity_with_cascade)
-}
-pub(super) fn apply_original(
-    intent: &ReplaceEntityIntent,
-    workspace: &mut MutationWorkspace<'_>,
-) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
-    apply_using(intent, workspace, delete_entity_with_cascade_original)
 }
 fn apply_using(
     intent: &ReplaceEntityIntent,
@@ -53,6 +47,7 @@ fn apply_using(
             context.schema,
             cascade_delete_policy,
             &mut outcome,
+            context.deferred_publication_edges,
         )?;
         let replacement_id = allocate_entity_with_extra(
             &context.execution,

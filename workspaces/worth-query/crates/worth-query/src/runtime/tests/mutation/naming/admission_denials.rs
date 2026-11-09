@@ -44,7 +44,10 @@ fn naming_existing_target_denies_missing_binding_typed_and_early() {
                 denial.kind(),
                 WorthQueryNamingMutationDenialKind::RequiresExistingTruthBinding
             );
-            assert!(!denial.denial_digest().is_empty());
+            assert!(!denial
+                .denial_digest()
+                .expect("fixture digest must fit")
+                .is_empty());
         }
         other => panic!("expected typed naming denial, got {other:?}"),
     }
@@ -60,7 +63,8 @@ fn naming_remove_denies_non_delete_family_typed_and_early() {
         .expect("task runtime should open a named workspace");
 
     let command = WorthQueryWriteCommand::UpdateAspects {
-        entity_identity: crate::memory_workspace::admit_authored_entity_label("entity:0:1:0"),
+        entity_identity: crate::memory_workspace::admit_authored_entity_label("entity:0:1:0")
+            .expect("fixture digest must fit"),
         aspects: Vec::new(),
         metadata: WorthQueryMutationMetadata::default(),
         naming_intent: Some(WorthQueryNamingMutationIntent::remove(
@@ -89,7 +93,10 @@ fn naming_remove_denies_non_delete_family_typed_and_early() {
                 denial.kind(),
                 WorthQueryNamingMutationDenialKind::RequiresDeleteFamily
             );
-            assert!(!denial.denial_digest().is_empty());
+            assert!(!denial
+                .denial_digest()
+                .expect("fixture digest must fit")
+                .is_empty());
         }
         other => panic!("expected typed naming denial, got {other:?}"),
     }

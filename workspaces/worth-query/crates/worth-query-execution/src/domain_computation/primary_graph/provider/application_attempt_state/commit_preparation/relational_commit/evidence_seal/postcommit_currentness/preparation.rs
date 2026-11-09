@@ -18,6 +18,14 @@ pub(super) enum Preparation {
     Selected(selected::SelectedRebase),
 }
 impl PreparedSourceFactRebase {
+    pub(in crate::domain_computation::primary_graph) fn with_predecessor(
+        mut self,
+        predecessor: Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
+    ) -> Self {
+        self.predecessor = predecessor;
+        self
+    }
+
     pub(in crate::domain_computation::primary_graph) fn retaining_output_field_evidence(
         mut self,
         requested: bool,
@@ -53,6 +61,7 @@ impl PreparedSourceFactRebase {
             preparation: Preparation::Full(FullSourceFactRebase::admit(facts, moved, control)?),
             performed_input_facts: None,
             retain_output_field_evidence: false,
+            predecessor: None,
         })
     }
     pub(in crate::domain_computation::primary_graph) fn admit_output(
@@ -72,6 +81,7 @@ impl PreparedSourceFactRebase {
                 },
                 performed_input_facts: None,
                 retain_output_field_evidence: false,
+                predecessor: None,
             }),
             _ => Self::full_payload(facts, moved, control),
         }?;
@@ -88,6 +98,7 @@ impl PreparedSourceFactRebase {
             preparation: Preparation::FullPayload { facts, moved },
             performed_input_facts: None,
             retain_output_field_evidence: false,
+            predecessor: None,
         })
     }
     pub(in crate::domain_computation::primary_graph) fn prepare_candidate(
@@ -98,6 +109,7 @@ impl PreparedSourceFactRebase {
 
         control: StorageControl<'_, '_>,
     ) -> Result<Self, PreparedRebaseDenial> {
+        let predecessor = self.predecessor;
         let performed_input_facts = self.performed_input_facts;
         let retain_output_field_evidence = self.retain_output_field_evidence;
         let preparation = match self.preparation {
@@ -108,6 +120,7 @@ impl PreparedSourceFactRebase {
                     )?),
                     performed_input_facts,
                     retain_output_field_evidence,
+                    predecessor,
                 })
             }
             preparation => preparation,
@@ -122,6 +135,7 @@ impl PreparedSourceFactRebase {
                 preparation,
                 performed_input_facts,
                 retain_output_field_evidence,
+                predecessor,
             });
         };
         control.check_live()?;
@@ -136,6 +150,7 @@ impl PreparedSourceFactRebase {
                 )?),
                 performed_input_facts,
                 retain_output_field_evidence,
+                predecessor,
             });
         }
         control.check_live()?;
@@ -151,6 +166,7 @@ impl PreparedSourceFactRebase {
                 )?),
                 performed_input_facts,
                 retain_output_field_evidence,
+                predecessor,
             });
         };
         Ok(Self {
@@ -164,6 +180,7 @@ impl PreparedSourceFactRebase {
             )?),
             performed_input_facts,
             retain_output_field_evidence,
+            predecessor,
         })
     }
 }
@@ -179,12 +196,24 @@ pub(super) fn rebase(
     control: StorageControl<'_, '_>,
 ) -> RebasedSourceFacts {
     match prepared.preparation {
-        Preparation::Full(full) => {
-            rebase_walk::rebase(execution, runtime, snapshot, full, retired, producer)
-        }
-        Preparation::Selected(selected) => {
-            selected.rebase(execution, runtime, snapshot, retired, producer, control)
-        }
+        Preparation::Full(full) => rebase_walk::rebase(
+            execution,
+            runtime,
+            snapshot,
+            full,
+            retired,
+            producer,
+            prepared.predecessor.as_ref(),
+        ),
+        Preparation::Selected(selected) => selected.rebase(
+            execution,
+            runtime,
+            snapshot,
+            retired,
+            producer,
+            prepared.predecessor.as_ref(),
+            control,
+        ),
         Preparation::Pending { .. } | Preparation::FullPayload { .. } => {
             unreachable!("native candidate selection precedes publication")
         }

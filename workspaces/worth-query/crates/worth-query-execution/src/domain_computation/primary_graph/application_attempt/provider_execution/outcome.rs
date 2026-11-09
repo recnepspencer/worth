@@ -6,6 +6,7 @@ use super::super::{
 use crate::domain_computation::provider_session::WorthQueryMutationGraphWorkCompletion;
 
 pub enum WorthQueryProviderProgressionOutcome {
+    CoupledFailure(super::super::WorthQueryApplicationUncommitted),
     ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
     ProductPreparationPending(crate::domain_computation::WorthQueryProductPreparationPending),
@@ -29,6 +30,7 @@ impl WorthQueryProviderProgressionOutcome {
         completion: WorthQueryMutationGraphWorkCompletion,
     ) -> Option<WorthQueryApplicationCommitOutcome> {
         Some(match self {
+            Self::CoupledFailure(outcome) => outcome.into(),
             Self::ProductStale(stale) => WorthQueryApplicationCommitOutcome::ProductStale(stale),
             Self::ProductUnpublished(unpublished) => {
                 WorthQueryApplicationCommitOutcome::ProductUnpublished(unpublished)

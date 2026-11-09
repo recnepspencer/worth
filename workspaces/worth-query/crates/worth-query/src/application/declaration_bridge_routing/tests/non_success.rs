@@ -23,9 +23,12 @@ fn explicit_routing_rejects_envelopes_from_the_wrong_handle() {
         .envelope_routes_from_progressed(progressed)
         .unwrap_or_else(|_| panic!("envelope should admit"));
 
-    match second.route_bridge_continuation_checked(
-        crate::application::WorthQueryDeclarationBridgeRoutingInput::enveloped(envelope),
-    ) {
+    match second
+        .route_bridge_continuation_checked(
+            crate::application::WorthQueryDeclarationBridgeRoutingInput::enveloped(envelope),
+        )
+        .expect("fixture digest must fit")
+    {
         WorthQueryDeclarationBridgeRoutingChecked::Denied(routing) => {
             assert_eq!(
                 routing.cause(),
@@ -85,11 +88,14 @@ fn denied_receipt_envelopes_stay_denied_for_bridge_routing() {
         WorthQueryDeclarationEnvelopeInput::receipt_checked(receipt_checked),
     );
 
-    match handle.route_bridge_continuation_checked(
-        crate::application::WorthQueryDeclarationBridgeRoutingInput::envelope_checked(
-            envelope_checked,
-        ),
-    ) {
+    match handle
+        .route_bridge_continuation_checked(
+            crate::application::WorthQueryDeclarationBridgeRoutingInput::envelope_checked(
+                envelope_checked,
+            ),
+        )
+        .expect("fixture digest must fit")
+    {
         WorthQueryDeclarationBridgeRoutingChecked::Denied(_)
         | WorthQueryDeclarationBridgeRoutingChecked::Deferred(_) => {}
         _ => panic!("non-success envelope input should not route"),

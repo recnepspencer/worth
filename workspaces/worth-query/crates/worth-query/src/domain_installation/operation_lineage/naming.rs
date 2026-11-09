@@ -5,6 +5,7 @@ use crate::domain_installation::operation_authority_chain::{
 };
 use crate::domain_installation::operation_identity_basis::canonical_operation_identity;
 use crate::domain_installation::WorthQueryCompletedWorkflowTrace;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::WorthQueryEntityIdentity;
 use crate::runtime::{WorthQueryMutationAuthorityIdentity, WorthQueryNamingMutationOutcome};
 use worth_proof::TransitionOutcome;
@@ -104,20 +105,24 @@ impl<D, O, F, L: BasisOperationLane> WorthQueryCompletedWorkflowTrace<D, O, F, L
         &self,
         lineage_evidence_index: usize,
         intent: WorthQueryPersistentNameIntent,
-    ) -> WorthQueryPersistentNameOutcome {
+    ) -> Result<WorthQueryPersistentNameOutcome, IdentityDerivationDenial> {
         if !self.bound().installation_is_current() {
-            return TransitionOutcome::Stale(
+            return Ok(TransitionOutcome::Stale(
                 WorthQueryPersistentNameDenial::StaleInstallationGeneration,
-            );
+            ));
         }
         let Some(report) = self.lineage_report() else {
-            return denied(WorthQueryPersistentNameDenial::LineageMissing);
+            return Ok(denied(WorthQueryPersistentNameDenial::LineageMissing));
         };
         let Some(evidence) = report.evidence().get(lineage_evidence_index) else {
-            return denied(WorthQueryPersistentNameDenial::LineageEvidenceMissing);
+            return Ok(denied(
+                WorthQueryPersistentNameDenial::LineageEvidenceMissing,
+            ));
         };
         if !evidence.outcome().is_authoritative_continuity() {
-            return denied(WorthQueryPersistentNameDenial::AdvisoryAmbiguousRetiredOrBroken);
+            return Ok(denied(
+                WorthQueryPersistentNameDenial::AdvisoryAmbiguousRetiredOrBroken,
+            ));
         }
         let target_is_established = match intent.target() {
             WorthQueryPersistentNameTarget::ExistingAuthority(target) => {
@@ -128,7 +133,9 @@ impl<D, O, F, L: BasisOperationLane> WorthQueryCompletedWorkflowTrace<D, O, F, L
             }
         };
         if !target_is_established {
-            return denied(WorthQueryPersistentNameDenial::TargetNotEstablishedByEvidence);
+            return Ok(denied(
+                WorthQueryPersistentNameDenial::TargetNotEstablishedByEvidence,
+            ));
         }
         let Some(effect) = self
             .stage_receipts()
@@ -143,18 +150,24 @@ impl<D, O, F, L: BasisOperationLane> WorthQueryCompletedWorkflowTrace<D, O, F, L
                 })
             })
         else {
-            return denied(WorthQueryPersistentNameDenial::EstablishingEffectMissing);
+            return Ok(denied(
+                WorthQueryPersistentNameDenial::EstablishingEffectMissing,
+            ));
         };
         let Some(naming) = effect
             .mutation_receipt()
             .and_then(|receipt| receipt.naming_mutation_evidence())
         else {
-            return denied(WorthQueryPersistentNameDenial::NamingMutationMissing);
+            return Ok(denied(
+                WorthQueryPersistentNameDenial::NamingMutationMissing,
+            ));
         };
         if naming.outcome() == WorthQueryNamingMutationOutcome::Removed
             || naming.attachment_identity() != intent.attachment_identity()
         {
-            return denied(WorthQueryPersistentNameDenial::NamingAttachmentMismatch);
+            return Ok(denied(
+                WorthQueryPersistentNameDenial::NamingAttachmentMismatch,
+            ));
         }
         let naming_target_matches = match intent.target() {
             WorthQueryPersistentNameTarget::ExistingAuthority(target) => naming
@@ -168,7 +181,7 @@ impl<D, O, F, L: BasisOperationLane> WorthQueryCompletedWorkflowTrace<D, O, F, L
             }
         };
         if !naming_target_matches {
-            return denied(WorthQueryPersistentNameDenial::NamingTargetMismatch);
+            return Ok(denied(WorthQueryPersistentNameDenial::NamingTargetMismatch));
         }
         let identity = canonical_operation_identity(
             "persistent-name-admission-v2",
@@ -188,19 +201,21 @@ impl<D, O, F, L: BasisOperationLane> WorthQueryCompletedWorkflowTrace<D, O, F, L
                     persistent_name_target_material(intent.target()),
                 ),
             ],
-        );
+        )?;
         let proof = mint_operation_phase_proof(
             identity.clone(),
             Some(self.phase_proof().payload().identity()),
             operation_phase_basis(self.phase_proof()).clone(),
         );
-        TransitionOutcome::Success(WorthQueryPersistentNameAdmission {
-            identity,
-            lineage_report_identity: report.identity().to_owned(),
-            lineage_evidence_index,
-            intent,
-            proof,
-        })
+        Ok(TransitionOutcome::Success(
+            WorthQueryPersistentNameAdmission {
+                identity,
+                lineage_report_identity: report.identity().to_owned(),
+                lineage_evidence_index,
+                intent,
+                proof,
+            },
+        ))
     }
 }
 

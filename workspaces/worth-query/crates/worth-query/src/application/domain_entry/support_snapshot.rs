@@ -3,6 +3,7 @@ use crate::application::{
     WorthQueryCapabilityFamily, WorthQueryCapabilityStatus, WorthQuerySupportMatrix,
     WorthQuerySupportReport, WorthQuerySupportSectionPosture,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::hash_parts;
 use crate::runtime::{
     WorthQueryRuntimeBackendPosture, WorthQueryRuntimeFamilySupportStatus,
@@ -18,13 +19,16 @@ pub struct WorthQueryDomainEntrySupportSnapshot {
 }
 
 impl WorthQueryDomainEntrySupportSnapshot {
-    pub(crate) fn from_support_report(report: WorthQuerySupportReport) -> Self {
-        let runtime_support_matrix = WorthQueryRuntimePublicSupportMatrix::from_public_api_contract(
-            &WorthQueryRuntimePublicApiContract::from_support_profile(
-                &WorthQueryRuntimeSupportProfile::scaffold_backend_profile()
-                    .with_posture(WorthQueryRuntimeBackendPosture::Primary),
-            ),
-        );
+    pub(crate) fn from_support_report(
+        report: WorthQuerySupportReport,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        let runtime_support_matrix =
+            WorthQueryRuntimePublicSupportMatrix::from_public_api_contract(
+                &WorthQueryRuntimePublicApiContract::from_support_profile(
+                    &WorthQueryRuntimeSupportProfile::scaffold_backend_profile()
+                        .with_posture(WorthQueryRuntimeBackendPosture::Primary),
+                )?,
+            )?;
         let snapshot_digest = hash_parts(&[
             format!("report:{}", report.report_digest()),
             format!(
@@ -34,11 +38,11 @@ impl WorthQueryDomainEntrySupportSnapshot {
                     .terminal_projection_for_reporting()
             ),
         ]);
-        Self {
+        Ok(Self {
             report,
             runtime_support_matrix,
             snapshot_digest,
-        }
+        })
     }
 
     pub fn support_matrix(&self) -> &WorthQuerySupportMatrix {

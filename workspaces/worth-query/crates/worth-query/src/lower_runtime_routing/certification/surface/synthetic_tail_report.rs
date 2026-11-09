@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::hash_parts;
 use crate::lower_runtime_routing::WorthQueryLowerRuntimeSeamKey;
 
@@ -90,8 +91,8 @@ impl WorthQueryLowerRuntimeSyntheticTailReport {
 
 pub fn worth_query_lower_runtime_synthetic_tail_report(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> WorthQueryLowerRuntimeSyntheticTailReport {
-    let surface = worth_query_lower_runtime_representative_surface(execution);
+) -> Result<WorthQueryLowerRuntimeSyntheticTailReport, IdentityDerivationDenial> {
+    let surface = worth_query_lower_runtime_representative_surface(execution)?;
     let rows = allowed_phase_six_synthetic_seams()
         .iter()
         .map(|row| {
@@ -112,7 +113,7 @@ pub fn worth_query_lower_runtime_synthetic_tail_report(
         })
         .collect::<Vec<_>>();
 
-    WorthQueryLowerRuntimeSyntheticTailReport::new(rows)
+    Ok(WorthQueryLowerRuntimeSyntheticTailReport::new(rows))
 }
 
 fn evidence_source_label(
@@ -133,11 +134,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn synthetic_tail_report_matches_allowlist_exactly() {
+    fn synthetic_tail_report_matches_allowlist_exactly() -> Result<(), IdentityDerivationDenial> {
         let host_request = crate::test_execution_policy::serial_request();
         let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-        let report = worth_query_lower_runtime_synthetic_tail_report(request_execution);
+        let report = worth_query_lower_runtime_synthetic_tail_report(request_execution)?;
 
         assert_eq!(
             report.rows().len(),
@@ -149,14 +150,17 @@ mod tests {
                 .iter()
                 .any(|row| row.seam_key() == allowed.seam_key()));
         }
+
+        Ok(())
     }
 
     #[test]
-    fn synthetic_tail_report_rows_stay_inventory_synthesized() {
+    fn synthetic_tail_report_rows_stay_inventory_synthesized(
+    ) -> Result<(), IdentityDerivationDenial> {
         let host_request = crate::test_execution_policy::serial_request();
         let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-        let report = worth_query_lower_runtime_synthetic_tail_report(request_execution);
+        let report = worth_query_lower_runtime_synthetic_tail_report(request_execution)?;
 
         for row in report.rows() {
             assert_eq!(
@@ -164,5 +168,7 @@ mod tests {
                 WorthQueryLowerRuntimeRepresentativeEvidenceSource::InventorySynthesized
             );
         }
+
+        Ok(())
     }
 }

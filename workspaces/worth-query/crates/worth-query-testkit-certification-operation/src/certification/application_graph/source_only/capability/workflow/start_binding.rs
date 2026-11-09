@@ -17,15 +17,7 @@ impl ApplicationMutationBinding<CapabilitySchema> for StartBinding {
     type Denial = SetRetentionDenial;
     type DenialBinding = SetRetentionDenialBinding;
     type Output = NoApplicationMutationOutputs;
-    type ScopeBinding = ApplicationMutationFieldScope<
-        CapabilitySchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        NoApplicationUnit,
-    >;
+    type ScopeBinding = ApplicationMutationFieldScope<DocumentIdentityField>;
     type PrincipalBinding = DocumentPrincipalBinding;
     type Mapping = ExternalMapping;
     type Principal = Principal;
@@ -38,17 +30,8 @@ impl ApplicationMutationBinding<CapabilitySchema> for StartBinding {
     // Closed propose/effect/done graph: eight native creates and fifteen links.
     // Reuse the finite small kernel profile; domain writer limits remain separate.
 
-    fn scope_field() -> ApplicationFieldRef<
-        CapabilitySchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         CapabilitySchema,

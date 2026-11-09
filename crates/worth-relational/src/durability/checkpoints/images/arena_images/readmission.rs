@@ -7,7 +7,6 @@ use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 
 pub(crate) struct ImageReadmission<'a, 's, 'h> {
     pub(crate) request: Option<&'a ExecutionRequest<'s, 'h>>,
-    pub(crate) contract_bound: u64,
 }
 impl ImageReadmission<'_, '_, '_> {
     pub(crate) fn charge(&self, units: u64) -> Result<(), Stop> {
@@ -76,12 +75,15 @@ impl ImageReadmission<'_, '_, '_> {
     }
     fn bitset(
         &self,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         value: DurableBitSet,
     ) -> Result<crate::storage::partition::DenseSlotBitSet, Stop> {
         match self.request {
-            Some(request) => super::super::bitset_image::restore_bitset_for_request(value, request)
-                .map_err(Stop::from),
-            None => Ok(restore_bitset(value)),
+            Some(request) => {
+                super::super::bitset_image::restore_bitset_for_request(lane, value, request)
+                    .map_err(Stop::from)
+            }
+            None => Ok(restore_bitset(lane, value)),
         }
     }
 }
@@ -89,6 +91,7 @@ fn corrupt(detail: &'static str) -> Stop {
     DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint, detail).into()
 }
 pub(super) fn arena<K: CheckpointArenaKind>(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     partition_id: PartitionId,
     mut image: RecordArenaCheckpointImage<K::ImageKind>,
     catalog: &AspectContractPlanCatalog,
@@ -125,18 +128,16 @@ pub(super) fn arena<K: CheckpointArenaKind>(
         return Err(corrupt("record arena slot directory length differs"));
     }
     let slots = match admission.request {
-        Some(request) => {
-            crate::storage::substrate::RecordSlotDirectory::restore_for_request(slots, request)
-                .map_err(|cause| match cause {
-                    crate::storage::substrate::MetadataWriteDenial::Request(cause) => {
-                        Stop::Request(cause)
-                    }
-                    crate::storage::substrate::MetadataWriteDenial::Invalid(detail) => {
-                        corrupt(detail)
-                    }
-                })?
+        Some(request) => crate::storage::substrate::RecordSlotDirectory::restore_for_request(
+            lane, slots, request,
+        )
+        .map_err(|cause| match cause {
+            crate::storage::substrate::MetadataWriteDenial::Request(cause) => Stop::Request(cause),
+            crate::storage::substrate::MetadataWriteDenial::Invalid(detail) => corrupt(detail),
+        })?,
+        None => {
+            crate::storage::substrate::RecordSlotDirectory::restore(lane, slots).map_err(corrupt)?
         }
-        None => crate::storage::substrate::RecordSlotDirectory::restore(slots).map_err(corrupt)?,
     };
     let _metadata_rows = admission.scratch::<SharedColumn<StorageAllocation<K::Meta>>>(n)?;
     let mut metadata = Vec::with_capacity(n);
@@ -240,8 +241,8 @@ pub(super) fn arena<K: CheckpointArenaKind>(
         branch_pins: Vec::new().into(),
         replay_pins: Vec::new().into(),
         snapshot_pins: Vec::new().into(),
-        live_bitset: admission.bitset(image.live_bitset)?,
-        reclaimable_bitset: admission.bitset(image.reclaimable_bitset)?,
+        live_bitset: admission.bitset(lane, image.live_bitset)?,
+        reclaimable_bitset: admission.bitset(lane, image.reclaimable_bitset)?,
     };
     match admission.request {
         Some(request) => {
@@ -309,14 +310,12 @@ mod tests {
             change(&mut image);
             let contracts = CheckpointAspectContractCatalog::from_contracts(&[]).unwrap();
             let error = arena::<EntityRecordKind>(
+                &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
                 PartitionId::main(),
                 image,
                 &AspectContractPlanCatalog::empty(),
                 &contracts,
-                &ImageReadmission {
-                    request: None,
-                    contract_bound: 0,
-                },
+                &ImageReadmission { request: None },
             )
             .unwrap_err();
             assert!(matches!(error, Stop::Durability(error)

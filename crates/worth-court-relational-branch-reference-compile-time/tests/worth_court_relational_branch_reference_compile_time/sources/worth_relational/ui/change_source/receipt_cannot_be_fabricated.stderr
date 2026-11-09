@@ -1,7 +1,5 @@
-error: cannot construct `RelationalChangeReceipt` with struct literal syntax due to private fields
- --> tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/change_source/receipt_cannot_be_fabricated.rs:4:13
+error[E0451]: fields `patch`, `records_examined`, `records_filtered_out`, `consistency`, `proof` and `commit_identity` of struct `RelationalChangeReceipt` are private
+ --> tests/ui/change_source/receipt_cannot_be_fabricated.rs:4:33
   |
-4 |     let _ = RelationalChangeReceipt {};
-  |             ^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = note: private fields `patch`, `records_examined`, `records_filtered_out`, `consistency`, `proof` and `commit_identity` that were not provided
+4 |     RelationalChangeReceipt { ..value }
+  |                                 ^^^^^ fields `patch`, `records_examined`, `records_filtered_out`, `consistency`, `proof` and `commit_identity` are private

@@ -23,8 +23,10 @@ impl<'de> Visitor<'de> for CanonicalEnvelopeSeed<'_, '_, '_, '_> {
         let mut index_definition_delta = None;
         let mut semantic_result = None;
         let mut caller_association = None;
+        let mut coupled_authored_publication = None;
         let mut required_output_codec_retirements = None;
         let mut required_output_origin = None;
+        let mut historical_output_selection = None;
         let mut producer_cascade_retirement = None;
         let mut authored_cascade_restoration = None;
         let mut authored_cascade_retirement = None;
@@ -87,6 +89,12 @@ impl<'de> Visitor<'de> for CanonicalEnvelopeSeed<'_, '_, '_, '_> {
                     }
                     required_output_codec_retirements = Some(map.next_value()?);
                 }
+                "historical_output_selection" => {
+                    if historical_output_selection.is_some() {
+                        return Err(M::Error::duplicate_field("historical_output_selection"));
+                    }
+                    historical_output_selection = Some(map.next_value()?);
+                }
                 "required_output_origin" => {
                     if required_output_origin.is_some() {
                         return Err(M::Error::duplicate_field("required_output_origin"));
@@ -110,6 +118,12 @@ impl<'de> Visitor<'de> for CanonicalEnvelopeSeed<'_, '_, '_, '_> {
                         return Err(M::Error::duplicate_field("authored_cascade_restoration"));
                     }
                     authored_cascade_restoration = Some(map.next_value()?);
+                }
+                "coupled_authored_publication" => {
+                    if coupled_authored_publication.is_some() {
+                        return Err(M::Error::duplicate_field("coupled_authored_publication"));
+                    }
+                    coupled_authored_publication = Some(map.next_value()?);
                 }
                 "required_output_materialization" => {
                     if required_output_materialization.is_some() {
@@ -274,7 +288,9 @@ impl<'de> Visitor<'de> for CanonicalEnvelopeSeed<'_, '_, '_, '_> {
             caller_association: caller_association
                 .ok_or_else(|| M::Error::missing_field("caller_association"))?,
             readmission_memory: Default::default(),
+            historical_output_selection: historical_output_selection.flatten(),
             content: content.ok_or_else(|| M::Error::missing_field("content"))?,
+            coupled_authored_publication: coupled_authored_publication.flatten(),
             required_output_codec_retirements: required_output_codec_retirements
                 .ok_or_else(|| M::Error::missing_field("required_output_codec_retirements"))?,
             required_output_origin: required_output_origin

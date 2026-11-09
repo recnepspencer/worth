@@ -13,6 +13,7 @@ pub use context::{WorthQueryHistoryContextRefreshDenial, WorthQueryHistoryContex
 pub use context_pause::WorthQueryHistoryContextRefreshPauseForTest;
 mod denial;
 mod description;
+pub(in crate::domain_computation::primary_graph) mod discovery_recipes;
 pub use description::{
     WorthQueryDocumentHistoryIdentity, WorthQueryHistoryCommandContextDenial,
     WorthQueryHistoryDescriptionContext,
@@ -32,7 +33,6 @@ pub(crate) mod navigation;
 pub use navigation::WorthQueryHistoryNavigationPauseForTest;
 pub(in crate::domain_computation::primary_graph) use navigation::{
     HistoryBorrowedReadStop, HistoryDependentSource, HistoryProducerCutover,
-    HistoryProducerInvocation,
 };
 pub(in crate::domain_computation::primary_graph) use navigation::{
     HistoryOutputLookup, HistoryOutputLookupPhase,
@@ -45,12 +45,15 @@ pub use navigation::{
     WorthQueryHistoryNavigationPosture, WorthQueryHistoryOutputAdvanceDenial,
     WorthQueryHistoryOutputAuthority, WorthQueryHistoryOutputDiscovery,
     WorthQueryHistoryOutputNavigationAdvance, WorthQueryHistoryOutputProfile,
-    WorthQueryHistoryOutputSource, WorthQueryHistoryProgramOutputAdvance,
-    WorthQueryHistoryRootOutputAdmissionDenial, WorthQueryHistorySelection,
-    WorthQuerySettledHistoryProgramOutput,
+    WorthQueryHistoryOutputQualificationDenial, WorthQueryHistoryOutputSource,
+    WorthQueryHistoryProgramOutputAdvance, WorthQueryHistoryRootOutputAdmissionDenial,
+    WorthQueryHistorySelection, WorthQueryRetainedHistoryOutputTree,
+    WorthQuerySettledHistoryProgramOutput, WorthQueryVerifiedHistoryParent,
 };
 mod observation;
 mod operation_context;
+mod operation_scope;
+pub(in crate::domain_computation::primary_graph) use operation_scope::HistoryOperationScope;
 mod page_pause;
 mod paging;
 mod preview;
@@ -63,10 +66,16 @@ mod retention;
 pub use redo::{WorthQueryHistoryRedoChoice, WorthQueryHistoryRedoChoices};
 pub(in crate::domain_computation::primary_graph) use retention::HistoryRetentionChange;
 pub use retention::{WorthQueryHistoryReleaseOutcome, WorthQueryHistoryRetentionStatus};
+mod recording_outputs;
 mod reservation;
 mod sealing;
+pub use recording_outputs::{
+    WorthQueryCompletedRecordingOutputs, WorthQueryHistoryRecordingOutputOrigin,
+    WorthQueryRecordingOutputQualificationDenial, WorthQueryRetainedRecordingOutputTree,
+};
 mod selection;
 mod source_evidence;
+pub use source_evidence::WorthQueryHistorySourceEvidence;
 mod step;
 pub use candidate::WorthQueryDocumentHistoryCandidateDenial;
 #[doc(hidden)]
@@ -152,3 +161,5 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> std::fmt::Debug
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
+
+pub(in crate::domain_computation) use navigation::HistoryProducerInvocation;

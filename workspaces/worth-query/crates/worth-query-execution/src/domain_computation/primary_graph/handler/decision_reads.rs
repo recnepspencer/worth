@@ -11,9 +11,8 @@ use worth_query_declaration::facade::{
     application_schema::ApplicationEntityMarkerIdentity,
 };
 use worth_query_installation::facade::{
-    ApplicationEntityRef, ApplicationFieldRef, ApplicationFieldUnit,
-    ApplicationReadableScalarValueBinding, ApplicationRelationRef, ApplicationSchema,
-    DeclaredApplicationFieldValue, OperationReads, WritePosture,
+    ApplicationEntityRef, ApplicationReadableScalarValueBinding, ApplicationRelationRef,
+    ApplicationSchema, OperationReads,
 };
 
 use super::super::invariant_projection::WorthQueryPriorOutputRead;
@@ -204,16 +203,19 @@ where
     }
 
     /// Read a value while retaining its exact field dependency for the attempt.
-    pub fn field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    #[inline(always)]
+    pub fn field<Entity, Aspect, Field, Value>(
         &mut self,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+        field: Field,
     ) -> Result<Option<Value>, HandlerExecutionDenial>
     where
-        Field: OperationReads<Binding::Operation> + DeclaredApplicationFieldValue<Value = Value>,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
         Field::Binding: ApplicationReadableScalarValueBinding,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
     {
         let _execution = self.execution().execution_request().map_err(|cause| {
             HandlerExecutionDenial::new(
@@ -229,6 +231,7 @@ where
 
     /// Read the complete admitted outgoing adjacency and retain absence as a
     /// source dependency for publication-time comparison.
+    #[inline(always)]
     pub fn relations_from<Relation, From, To>(
         &mut self,
         relation: ApplicationRelationRef<Schema, Relation, From, To>,
@@ -251,6 +254,7 @@ where
 
     /// Read the complete admitted incoming adjacency and retain absence as a
     /// source dependency for publication-time comparison.
+    #[inline(always)]
     pub fn relations_to<Relation, From, To>(
         &mut self,
         relation: ApplicationRelationRef<Schema, Relation, From, To>,

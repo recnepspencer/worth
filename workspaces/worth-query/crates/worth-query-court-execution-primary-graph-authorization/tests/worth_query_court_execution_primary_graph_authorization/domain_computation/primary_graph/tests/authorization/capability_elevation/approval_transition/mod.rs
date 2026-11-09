@@ -204,36 +204,63 @@ pub fn seal_approval_facts(
 ) {
     let elevation = reader
         .resolve_entity(
-            CapabilityElevationIdentity::reference(),
-            "elevation-2".to_owned(),
+            CapabilityElevationIdentity::at("CapabilityElevationIdentity"),
+            "elevation-2".into(),
         )
         .unwrap();
     let review = reader
-        .resolve_entity(CapabilityReviewIdentity::reference(), "review-2".to_owned())
+        .resolve_entity(
+            CapabilityReviewIdentity::at("CapabilityReviewIdentity"),
+            "review-2".to_owned(),
+        )
         .unwrap();
     reader
-        .require_decision_field(&elevation, CapabilityElevationIdentity::reference())
+        .require_decision_field(
+            &elevation,
+            CapabilityElevationIdentity::at("CapabilityElevationIdentity"),
+        )
         .unwrap();
     reader
-        .require_decision_field(&elevation, CapabilityElevationReason::reference())
+        .require_decision_field(
+            &elevation,
+            CapabilityElevationReason::at("CapabilityElevationReason"),
+        )
         .unwrap();
     reader
-        .require_decision_field(&elevation, CapabilityElevationStatusField::reference())
+        .require_decision_field(
+            &elevation,
+            CapabilityElevationStatusField::at("CapabilityElevationStatusField"),
+        )
         .unwrap();
     reader
-        .require_decision_field(&elevation, CapabilityElevationNotBefore::reference())
+        .require_decision_field(
+            &elevation,
+            CapabilityElevationNotBefore::at("CapabilityElevationNotBefore"),
+        )
         .unwrap();
     reader
-        .require_decision_field(&elevation, CapabilityElevationNotAfter::reference())
+        .require_decision_field(
+            &elevation,
+            CapabilityElevationNotAfter::at("CapabilityElevationNotAfter"),
+        )
         .unwrap();
     reader
-        .require_decision_field(&review, CapabilityReviewIdentity::reference())
+        .require_decision_field(
+            &review,
+            CapabilityReviewIdentity::at("CapabilityReviewIdentity"),
+        )
         .unwrap();
     reader
-        .require_decision_field(&review, CapabilityReviewKindField::reference())
+        .require_decision_field(
+            &review,
+            CapabilityReviewKindField::at("CapabilityReviewKindField"),
+        )
         .unwrap();
     reader
-        .require_decision_field(&review, CapabilityReviewStatusField::reference())
+        .require_decision_field(
+            &review,
+            CapabilityReviewStatusField::at("CapabilityReviewStatusField"),
+        )
         .unwrap();
     reader
         .decision_relations_to(CapabilityElevationRequester::reference(), &elevation)

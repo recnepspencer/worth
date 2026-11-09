@@ -35,23 +35,10 @@ pub(super) fn estate_denial(denial: BankEstateProgressionDenial) -> BankHttpDeni
         D::Projection(bank_server::BankEstateOperationProjectionDenial::InvariantAdmission(
             worth_query_host::facade::primary_graph::WorthQueryInvariantProjectionDenialKind::ExecutionRequest(cause),
         )) => super::relational_execution_denial::denial(cause),
-        D::Attempt(bank_server::BankCommitPreparationDenial::StorageUnavailable(failure)) => super::relational_execution_denial::denial(worth_query_host::facade::primary_graph::RelationalExecutionDenialCause::StorageUnavailable(failure)),
-        D::Attempt(bank_server::BankCommitPreparationDenial::Application {
-            kind: bank_server::BankApplicationAttemptDenialKind::ContentInconsistency,
-            ..
-        }) => BankHttpDenial::new(BankHttpDenialKind::InternalDenied, BankHttpNextAction::ContactOperator),
-        D::Attempt(bank_server::BankCommitPreparationDenial::Application {
-            kind: bank_server::BankApplicationAttemptDenialKind::Cancelled,
-            ..
-        }) => BankHttpDenial::new(BankHttpDenialKind::Cancelled, BankHttpNextAction::Retry),
-        D::Attempt(bank_server::BankCommitPreparationDenial::Application {
-            kind: bank_server::BankApplicationAttemptDenialKind::DeadlineExceeded,
-            ..
-        }) => BankHttpDenial::new(BankHttpDenialKind::DeadlineExceeded, BankHttpNextAction::Retry),
-        D::Attempt(bank_server::BankCommitPreparationDenial::Application {
-            kind: bank_server::BankApplicationAttemptDenialKind::ExecutionRequest(cause),
-            ..
-        }) => super::mutation_application::pending_execution_denial(cause),
+        D::Attempt(denial) => match *denial {
+            bank_server::BankCommitPreparationDenial::StorageUnavailable(failure) => super::relational_execution_denial::denial(worth_query_host::facade::primary_graph::RelationalExecutionDenialCause::StorageUnavailable(failure)),
+            bank_server::BankCommitPreparationDenial::Application { kind, .. } => attempt_kind(kind),
+        },
         D::CommandInput(_)
         | D::Projection(_)
         | D::DecisionProjection(_)
@@ -71,8 +58,7 @@ pub(super) fn estate_denial(denial: BankEstateProgressionDenial) -> BankHttpDeni
             BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh)
         }
         D::CapabilityInstallation(_)
-        | D::OperationInstallation(_)
-        | D::Attempt(_) => {
+        | D::OperationInstallation(_) => {
             BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry)
         }
     }
@@ -292,3 +278,28 @@ fn principal_resolution_denial(kind: WorthQueryPrincipalResolutionDenialKind) ->
 #[cfg(test)]
 #[path = "estate_denial/recovery_instruction_tests.rs"]
 mod recovery_instruction_tests;
+
+pub(in crate::http::server) fn attempt_kind(
+    kind: bank_server::BankApplicationAttemptDenialKind,
+) -> BankHttpDenial {
+    use bank_server::BankApplicationAttemptDenialKind as Attempt;
+    match kind {
+        Attempt::Cancelled => {
+            BankHttpDenial::new(BankHttpDenialKind::Cancelled, BankHttpNextAction::Retry)
+        }
+        Attempt::DeadlineExceeded => BankHttpDenial::new(
+            BankHttpDenialKind::DeadlineExceeded,
+            BankHttpNextAction::Retry,
+        ),
+        Attempt::ExecutionRequest(cause) => {
+            super::mutation_application::pending_execution_denial(cause)
+        }
+        Attempt::EffectExecution(cause) => super::advancement_denial::request(cause),
+        Attempt::ValueDecode(cause) => super::query_denial::value_decode(cause),
+        Attempt::ContentInconsistency => BankHttpDenial::new(
+            BankHttpDenialKind::InternalDenied,
+            BankHttpNextAction::ContactOperator,
+        ),
+        _ => BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry),
+    }
+}

@@ -10,26 +10,44 @@ crate::worth_query_value_binding! {
 }
 
 #[test]
-fn admitted_recipe_dispatches_nested_seed_and_reserves_its_erased_box() {
+fn admitted_recipe_dispatches_nested_seed_into_a_stack_slot() {
     let recipe = ApplicationFieldBindingRecipe::of::<NestedBinding>(
         ApplicationFieldBindingLocus::new("Entity", "Aspect", "Field"),
     );
     let raw = NestedBinding::encode(&vec!["nondefault".into(), "escaped\ntext".into()]).unwrap();
-    let mut first = None;
     let mut total = (0, 0);
-    let result = recipe.admitted_decode().unwrap()(&raw, &mut |work, bytes| {
-        first.get_or_insert((work, bytes));
-        total.0 += work;
-        total.1 += bytes;
-        Ok(())
-    })
-    .unwrap()
-    .downcast::<Vec<String>>()
+    let mut result: Option<Vec<String>> = None;
+    recipe.admitted_decode().unwrap()(
+        &raw,
+        &mut |work, bytes| {
+            total.0 += work;
+            total.1 += bytes;
+            Ok(())
+        },
+        Some(&mut result),
+    )
     .unwrap();
-    assert_eq!(*result, vec!["nondefault", "escaped\ntext"]);
-    assert_eq!(first, Some((1, std::mem::size_of::<Vec<String>>())));
-    assert!(total.0 > 1);
-    assert!(total.1 > std::mem::size_of::<Vec<String>>());
+    assert_eq!(result.unwrap(), vec!["nondefault", "escaped\ntext"]);
+    assert!(total.0 > 0);
+    assert!(total.1 > 0);
+}
+
+#[test]
+fn an_incorrect_output_slot_refuses_before_the_owner_or_admission_runs() {
+    let recipe = ApplicationFieldBindingRecipe::of::<SwallowingBinding>(
+        ApplicationFieldBindingLocus::new("Entity", "Aspect", "Field"),
+    );
+    let mut wrong: Option<String> = None;
+    let result = recipe.admitted_decode().unwrap()(
+        &AspectValue::UInt64(91),
+        &mut |_, _| panic!("wrong slot must refuse first"),
+        Some(&mut wrong),
+    );
+    assert!(matches!(
+        result,
+        Err(ApplicationValueDecodeDenial::CodecRejected { .. })
+    ));
+    assert!(wrong.is_none());
 }
 
 struct SwallowingBinding;
@@ -70,14 +88,16 @@ fn erased_dispatch_vetoes_a_successful_owner_that_swallowed_admission_refusal() 
         ApplicationFieldBindingLocus::new("Entity", "Aspect", "Field"),
     );
     let mut calls = 0;
-    let result = recipe.admitted_decode().unwrap()(&AspectValue::UInt64(91), &mut |_, _| {
-        calls += 1;
-        if calls > 1 {
+    let mut output: Option<u64> = None;
+    let result = recipe.admitted_decode().unwrap()(
+        &AspectValue::UInt64(91),
+        &mut |_, _| {
+            calls += 1;
             Err(ValueCodecDenial::Admission)
-        } else {
-            Ok(())
-        }
-    });
+        },
+        Some(&mut output),
+    );
+    assert!(output.is_none());
     assert!(matches!(
         result,
         Err(ApplicationValueDecodeDenial::Canonical {
@@ -85,5 +105,5 @@ fn erased_dispatch_vetoes_a_successful_owner_that_swallowed_admission_refusal() 
             ..
         })
     ));
-    assert_eq!(calls, 2, "latched refusal cannot call the lender again");
+    assert_eq!(calls, 1, "latched refusal cannot call the lender again");
 }

@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryIssuedSelectedScope, WorthQuerySelectedProductOperation,
 };
 use worth_query_installation::facade::ApplicationSchema;
+mod historical_source;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 /// Both typed identities came from their owners on one selected immutable
@@ -33,6 +34,7 @@ pub(in crate::domain_computation::primary_graph) struct SelectedIssuedAccessRoot
     pub(super) request:
         &'a worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     truth: Option<SelectedIssuedTruthRoot<'a>>,
+    historical_source: Option<crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation<'a>>,
 }
 
 struct SelectedIssuedTruthRoot<'a> {
@@ -91,6 +93,7 @@ impl<'a, Schema, Principal, PrincipalIdentity, Scope>
             product: selected.product().observation(),
             request: principal.request(),
             truth: None,
+            historical_source: None,
         })
     }
 

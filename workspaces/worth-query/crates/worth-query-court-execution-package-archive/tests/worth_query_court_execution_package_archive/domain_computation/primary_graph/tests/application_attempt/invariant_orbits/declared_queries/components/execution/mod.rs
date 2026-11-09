@@ -121,7 +121,7 @@ pub fn native_oracle(
                         let mut groups = [0_u64, 1]
                             .map(|key| {
                                 let root =
-                                    reader.resolve_entity(NodeKey::reference(), key).unwrap();
+                                    reader.resolve_entity(NodeKey::at("NodeKey"), key).unwrap();
                                 let component =
                                     reader.component_of(Shells::reference(), &root).unwrap();
                                 (
@@ -129,7 +129,7 @@ pub fn native_oracle(
                                     component
                                         .members()
                                         .map(|member| {
-                                            reader.field(&member, NodeKey::reference()).unwrap()
+                                            reader.field(&member, NodeKey::at("NodeKey")).unwrap()
                                         })
                                         .collect::<Vec<_>>(),
                                 )
@@ -137,7 +137,7 @@ pub fn native_oracle(
                             .to_vec();
                         groups.sort_by_key(|(identity, _)| *identity.bytes());
                         let by_entity = (0_u64..5).map(|key| {
-                            let entity = reader.resolve_entity(NodeKey::reference(),key).unwrap();
+                            let entity = reader.resolve_entity(NodeKey::at("NodeKey"),key).unwrap();
                             (entity.entity_id(), key)
                         }).collect::<std::collections::BTreeMap<_,_>>();
                         assert_ne!(groups.iter().flat_map(|(_,keys)| keys.iter().copied()).collect::<Vec<_>>(), by_entity.into_values().collect::<Vec<_>>(), "the actual fixture must distinguish Native grouping from global entity sorting");

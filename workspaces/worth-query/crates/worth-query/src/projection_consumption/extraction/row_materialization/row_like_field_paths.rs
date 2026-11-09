@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::collections::{BTreeMap, BTreeSet};
 
 use worth_foundational::facade::FieldKey;
@@ -40,18 +41,23 @@ impl ProjectionMaterializedField {
     ) -> Result<Self, ProjectionFactExtractionError> {
         projection_fact_field_path_from_bridge_projection(projection)
             .map(|field_path| Self { field_path, value })
-            .map_err(
-                |_message| ProjectionFactExtractionError::InvalidDeclaredFieldValueShape {
-                    source_family: contract.source_family(),
-                    source_identity: compose_scoped_row_source_identity(
-                        contract.source_identity(),
-                        row_identity,
-                    ),
-                    field_key: projection.field_identity().as_str().to_string(),
-                    fact_kind: ProjectionFactKind::DerivedField,
-                    expected_shape: "bridge projection field locator",
-                },
-            )
+            .map_err(|_message| {
+                (|| {
+                    Ok::<_, IdentityDerivationDenial>(
+                        ProjectionFactExtractionError::InvalidDeclaredFieldValueShape {
+                            source_family: contract.source_family(),
+                            source_identity: compose_scoped_row_source_identity(
+                                contract.source_identity(),
+                                row_identity,
+                            )?,
+                            field_key: projection.field_identity().as_str().to_string(),
+                            fact_kind: ProjectionFactKind::DerivedField,
+                            expected_shape: "bridge projection field locator",
+                        },
+                    )
+                })()
+                .unwrap_or_else(ProjectionFactExtractionError::from)
+            })
     }
 
     fn into_parts(self) -> (ProjectionFactFieldPath, ConsumedNativeValue) {
@@ -201,16 +207,21 @@ fn lookup_declared_scalar(
                 .expect("non-native projection path remains canonical"),
         )
         .map_err(|_message| {
-            ProjectionFactExtractionError::InvalidDeclaredFieldValueShape {
-                source_family: contract.source_family(),
-                source_identity: compose_scoped_row_source_identity(
-                    contract.source_identity(),
-                    row.identity().evidence_identity().reporting_projection(),
-                ),
-                field_key: field_path.terminal_projection_for_boundary().to_string(),
-                fact_kind: ProjectionFactKind::DerivedField,
-                expected_shape: "foundational scalar",
-            }
+            (|| {
+                Ok::<_, IdentityDerivationDenial>(
+                    ProjectionFactExtractionError::InvalidDeclaredFieldValueShape {
+                        source_family: contract.source_family(),
+                        source_identity: compose_scoped_row_source_identity(
+                            contract.source_identity(),
+                            row.identity().evidence_identity().reporting_projection(),
+                        )?,
+                        field_key: field_path.terminal_projection_for_boundary().to_string(),
+                        fact_kind: ProjectionFactKind::DerivedField,
+                        expected_shape: "foundational scalar",
+                    },
+                )
+            })()
+            .unwrap_or_else(ProjectionFactExtractionError::from)
         })?
     };
     Ok(value)

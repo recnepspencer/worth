@@ -45,40 +45,14 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 Family::IDENTITY,
             ));
         };
-        if let Some(retained_basis) = retained_program_basis {
-            if let Some(shared) = selected_override {
-                if !selected_basis::historical_basis_matches(self, retained_basis, shared)? {
-                    return Err(WorthQueryOutputDemandDenial::new(
-                        WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
-                        Family::IDENTITY,
-                    ));
-                }
-            } else {
-                let retained = self
-                    .select_application_read_observation_with_request(execution, retained_basis)
-                    .map_err(|cause| match cause {
-                        cause
-                        @ crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(_) => {
-                            WorthQueryOutputDemandDenial::product_selection(cause, Family::IDENTITY)
-                        }
-                        crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(_) => {
-                            WorthQueryOutputDemandDenial::new(
-                                WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
-                                Family::IDENTITY,
-                            )
-                        }
-                    })?;
-                if crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
-                    retained.product().observation(),
-                ) != *observation
-                {
-                    return Err(WorthQueryOutputDemandDenial::new(
-                        WorthQueryOutputDemandDenialKind::ForeignSource,
-                        Family::IDENTITY,
-                    ));
-                }
-            }
-        }
+        selected_basis::require_retained_source(
+            self,
+            execution,
+            retained_program_basis,
+            selected_override,
+            observation,
+            Family::IDENTITY,
+        )?;
         if let Some(shared) = selected_override {
             selected_basis::require_fresh_source(self, observation, Family::IDENTITY, shared)?;
         }
@@ -111,14 +85,17 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             .output_lineage
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        self.record_recovered_output_candidates::<Family>(
-            source,
+        self.record_recovered_output_candidates(
+            None,
+            source.partition_identity(),
+            &source.checkpoint_identity().bytes(),
             lifecycle_observation,
             scope,
             &output_bindings,
             &mut lineage,
-        );
-        let candidates = lineage
+        )
+        .map_err(|stop| selected_basis::selection_lookup_denial(stop, Family::IDENTITY))?;
+        let mut candidates = lineage
             .retained_output_candidates_metered(
                 self.runtime.authority_identity().as_u64(),
                 &self.installed_schema.binding_identity(),
@@ -131,6 +108,62 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             )
             .map_err(|stop| selected_basis::selection_lookup_denial(stop, Family::IDENTITY))?;
         drop(lineage);
+        if candidates.is_empty()
+            && self.installed_producers.entries.values().any(|entry| {
+                entry.declaration.output_family_type
+                    == crate::equality_type_id::EqualityTypeId::of::<Family>()
+                    && entry.declaration.owned_scope_entity.is_some()
+            })
+        {
+            let newly_selected = if selected_override.is_none() && program_selection.is_none() {
+                Some(
+                    self.on_branch(observation.product_branch())
+                        .select_with_request(execution)
+                        .map_err(|cause| {
+                            WorthQueryOutputDemandDenial::product_selection(cause, Family::IDENTITY)
+                        })?,
+                )
+            } else {
+                None
+            };
+            let selected = selected_override
+                .map(|shared| shared.selected())
+                .or(program_selection.as_ref())
+                .or(newly_selected.as_ref())
+                .expect("Native restored prior lookup owns one selected product");
+            if !source_basis_is_admitted(
+                observation,
+                selected.product().observation(),
+                retained_program_basis.is_some(),
+            ) {
+                return Err(WorthQueryOutputDemandDenial::new(
+                    WorthQueryOutputDemandDenialKind::Superseded,
+                    Family::IDENTITY,
+                )
+                .with_recovery_posture(WorthQueryOutputDemandRecoveryPosture::Retryable));
+            }
+            self.record_native_restored_output_prior::<Family>(
+                execution, source, selected, native,
+            )?;
+            candidates = self
+                .runtime
+                .primary_provider
+                .graph
+                .output_lineage
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .retained_output_candidates_metered(
+                    self.runtime.authority_identity().as_u64(),
+                    &self.installed_schema.binding_identity(),
+                    scope,
+                    lifecycle_observation.lifecycle_incarnation(),
+                    lifecycle_observation.reference_generation().get(),
+                    &output_bindings,
+                    source.partition_identity(),
+                    execution,
+                )
+                .map_err(|stop| selected_basis::selection_lookup_denial(stop, Family::IDENTITY))?;
+        }
         let mut live_candidates = Vec::new();
         for candidate in candidates {
             let role = self
@@ -205,6 +238,11 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
 use crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity;
                 for (candidate, entity) in &live_candidates {
                     let live=retained_liveness::read(execution,&view,*entity)?;
+                    if candidate.historical_selection.is_some() {
+                        let exact = live && self.restored_output_is_current::<Family>(execution, runtime, selected, candidate)?;
+                        current.push((live, exact));
+                        continue;
+                    }
                     let identity_current = candidate.source_identity.is_some_and(|identity| {
                         match identity {
                             RecordedSourceIdentity::Runtime(runtime) => runtime == source.idempotency_identity(),
@@ -269,21 +307,19 @@ use crate::domain_computation::primary_graph::output_lineage::RecordedSourceIden
                     let (mut selected, entry) = self
                         .installed_producers
                         .select_exact::<Family>(candidate.binding)?;
-                    // A runtime record reaches the input cutoff and needs its
-                    // declared decision proof. A current checkpoint record is
-                    // readmitted through its complete recovered facts instead.
+                    // Restored rows use their own authenticated readmission;
+                    // other runtime rows still need the input cutoff.
                     let recovered = matches!(candidate.source_identity, Some(
                         crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity::Checkpoint(_)
                     ));
                     if recovered
+                        || candidate.historical_selection.is_some()
                         || entry.declaration.input_reuse.is_some_and(|contract| {
                             contract.determinism()
                                 == worth_foundational::facade::DeterminismContract::CanonicalBitwise
                         })
                     {
-                        selected.retained_idempotency_key =
-                            Some(candidate.idempotency_key_identity);
-                        selected.retained_output_binding = Some(candidate.binding);
+                        selected.retain_verified_output(&candidate);
                         return Ok((selected, entry));
                     }
                     // A cached delivery belongs to the currently applicable

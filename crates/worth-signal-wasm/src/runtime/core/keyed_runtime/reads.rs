@@ -261,7 +261,6 @@ impl RuntimeCore {
         let _ = self
             .runtime
             .targets(nodes)
-            .on_demand()
             .read_many(&self.store, &evaluator)
             .map_err(WorthSignalJsError::from)?;
         stats.runtime_read_ms = perf_now_ms() - read_started_at;

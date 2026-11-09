@@ -95,9 +95,8 @@ pub(crate) fn prepare_publication(
     source: Option<&ContentDirectory>,
 ) -> Result<ContentPublication, Denial> {
     super::control::run(execution, |_control| {
-        let complete = !std::ptr::eq(root.retained_schema_authority().registry(), schema);
-        let directory = root.retained_content().prepare(
-            execution, schema, records, state, changed, version, source, complete,
+        let directory = super::schema_transition::prepare_directory(
+            execution, root, schema, records, state, changed, version, source,
         )?;
         Ok(ContentPublication {
             records: records.clone(),
@@ -119,15 +118,15 @@ impl ContentPublication {
         version: crate::identity::data::VersionId,
     ) -> Result<Self, Denial> {
         let prior = root.retained_content();
-        let directory = prior.prepare(
+        let directory = super::schema_transition::prepare_directory(
             execution,
+            root,
             schema,
             &self.records,
             state,
             changed,
             version,
             self.source.as_ref(),
-            !std::ptr::eq(root.retained_schema_authority().registry(), schema),
         )?;
         if let Some(identity) = directory.unreferenced_attachment(execution, &self.records)? {
             return Err(Denial::UnreferencedAttachment { identity });

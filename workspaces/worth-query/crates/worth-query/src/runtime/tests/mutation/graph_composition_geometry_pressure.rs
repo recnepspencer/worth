@@ -67,25 +67,30 @@ fn compose_graph_supports_verified_loop_successor_rewire_with_assumption_summary
         .expect("graph composition receipt should expose program");
     let lifecycle = receipt
         .graph_composition_lifecycle_outcomes()
-        .expect("graph composition receipt should expose lifecycle");
+        .expect("graph composition receipt should expose lifecycle")
+        .expect("fixture digest must fit");
     let evidence = receipt
         .graph_composition_evidence()
-        .expect("graph composition receipt should expose evidence");
+        .expect("graph composition receipt should expose evidence")
+        .expect("fixture digest must fit");
     let assumptions = receipt
         .graph_composition_assumption_summary()
-        .expect("verified graph composition should expose assumption summary");
+        .expect("verified graph composition should expose assumption summary")
+        .expect("fixture digest must fit");
     let resolution_map = receipt.graph_composition_resolution_map();
 
     assert_eq!(program.component_count(), 2);
     assert_eq!(
         receipt
             .batch_mutation_evidence()
+            .expect("fixture digest must fit")
             .symbolic_resolution_count(),
         1
     );
     assert_eq!(
         receipt
             .batch_mutation_evidence()
+            .expect("fixture digest must fit")
             .symbolic_target_reference_count(),
         0
     );

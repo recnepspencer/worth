@@ -59,9 +59,7 @@ fn workflow_binding_refusal_preserves_inputs_until_real_operation_closes() {
             pending.runtime.installed_schema(),
             WorthQueryAuthenticationAdapterAdmission::new(
                 configuration.audience,
-                configuration.method,
-                worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system(),
-            ),
+                configuration.method, worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
             CausalBankAuthenticationAdapter,
         )
         .expect("the real authentication adapter is admitted"),

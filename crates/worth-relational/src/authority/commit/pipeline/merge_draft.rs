@@ -10,9 +10,7 @@ use crate::validation::engine::{InvariantExecutionResult, InvariantPreparationCo
 
 pub(super) struct AcceptedMergeDraft {
     pub(super) scope: PreparedAuthorityScope,
-    pub(super) boundary: InvariantExecutionResult,
-    pub(super) mutation_sensitive: InvariantExecutionResult,
-    pub(super) publication: InvariantExecutionResult,
+    pub(super) invariants: InvariantExecutionResult,
 }
 
 pub(super) fn prepare_merge_draft(
@@ -109,39 +107,17 @@ fn prepare_symbol_round(
                 &candidate,
                 selected,
                 &identity,
-                (parent_count == 0 && admitted.semantic_plan().selection().is_none())
+                (parent_count == 0 && !admitted.semantic_plan().has_selection())
                     .then_some(admitted.command_plan()),
             )?;
-            let invariants = candidate.invariant_authority();
             let control = InvariantPreparationControl::for_transaction(
                 input,
                 execution.allocation_policy(),
                 crate::mvcc::RelationalInterruptionBoundary::CandidatePreparation,
             );
-            let boundary = invariants.enforce_commit_boundary_for_selected_branch(
+            let pending = candidate.invariant_authority().begin_proposed_state(
                 &selected,
                 mutation.state(),
-                identity.proposed_version_id(),
-                admitted.semantic_plan(),
-                Some(&identity),
-                mutation.aggregate_source(selected),
-                execution,
-                &control,
-            )?;
-            let mutation_sensitive = invariants.enforce_mutation_sensitive_for_working_state(
-                &selected,
-                mutation.state(),
-                identity.proposed_version_id(),
-                admitted.semantic_plan(),
-                Some(&identity),
-                mutation.aggregate_source(selected),
-                execution,
-                &control,
-            )?;
-            let publication = invariants.enforce_snapshot_publication_for_working_state(
-                &selected,
-                mutation.state(),
-                &mutation.outcome.created_entities,
                 identity.proposed_version_id(),
                 admitted.semantic_plan(),
                 Some(&identity),
@@ -150,6 +126,33 @@ fn prepare_symbol_round(
                 &control,
             )?;
             mutation.prepare_aggregate(execution, round, selected, admitted.command_plan())?;
+            let aggregate_admission = mutation.complete_aggregate_draft(
+                execution,
+                &candidate,
+                &selected,
+                admitted.semantic_plan(),
+                input,
+                &identity,
+            )?;
+            let candidate = round.with_candidate_symbols(mutation.candidate_symbols());
+            let invariant_plan = aggregate_admission
+                .as_ref()
+                .map_or(admitted.semantic_plan(), |admission| {
+                    admitted.semantic_plan().with_commands(&admission.plan)
+                });
+            let invariants = candidate.invariant_authority();
+            let invariants = invariants.enforce_proposed_state(
+                &selected,
+                mutation.state(),
+                pending,
+                &mutation.outcome.created_entities,
+                identity.proposed_version_id(),
+                invariant_plan,
+                Some(&identity),
+                mutation.aggregate_source(selected),
+                execution,
+                &control,
+            )?;
             Ok(AcceptedMergeDraft {
                 scope: PreparedAuthorityScope {
                     selected_branch_state: selected.selected().clone(),
@@ -158,9 +161,7 @@ fn prepare_symbol_round(
                     mutation_proposal: (identity, mutation),
                     phase_timing,
                 },
-                boundary,
-                mutation_sensitive,
-                publication,
+                invariants,
             })
         },
     )

@@ -1,6 +1,6 @@
 use crate::conditional_execution::BridgeConditionalSemanticObservation;
 use std::alloc::Layout;
-use std::mem::{align_of, size_of};
+use std::mem::size_of;
 use std::sync::atomic::AtomicUsize;
 use worth_foundational::facade::*;
 
@@ -72,10 +72,12 @@ pub(super) fn variable_width_cases() -> Vec<PayloadCase> {
             let artifact = scalar(value);
             assert_canonical_scalar_allocation(&artifact, allocation_bytes);
             PayloadCase {
+                // Foundational owns the cached shared-payload extent and courts
+                // its equality to fresh admission. This oracle independently
+                // composes that boundary quote with Bridge's backing layout.
+                payload_bytes: artifact.payload().owned_allocation_capacity_bytes(),
                 artifact,
                 mask: AspectMask::whole_aspect(),
-                // The validated payload and its contract each own "balance".
-                payload_bytes: 2 * "balance".len() + allocation_bytes,
                 mask_bytes: 0,
             }
         })
@@ -90,6 +92,10 @@ fn assert_canonical_scalar_allocation(artifact: &ContractValidatedAspectArtifact
     };
     // Inspect actual canonical buffers independently of admission's accounting.
     let actual = match value {
+        AspectValue::String(InternedString::Stored(value)) => {
+            let value = value.as_string();
+            value.capacity()
+        }
         AspectValue::String(InternedString::Raw(value)) => value.capacity(),
         AspectValue::Decimal(value) => value.0.capacity(),
         AspectValue::BigInt(value) => value.0.capacity(),
@@ -139,26 +145,12 @@ fn struct_case() -> PayloadCase {
     )
     .unwrap();
     let artifact = validate(&contract, ContractValidationInput::Struct(value));
-    // The pinned tree bound allows one node per entry plus an empty root,
-    // eleven key/value slots, twelve child pointers, and a parent pointer.
-    let alignment = align_of::<FieldKey>()
-        .max(align_of::<AspectValue>())
-        .max(align_of::<usize>());
-    let tree_node = 11 * (size_of::<FieldKey>() + size_of::<AspectValue>())
-        + 13 * size_of::<usize>()
-        + 2 * size_of::<u16>()
-        + 5 * alignment;
     PayloadCase {
+        payload_bytes: artifact.payload().owned_allocation_capacity_bytes(),
         artifact,
         mask: AspectMask::new([CanonicalFieldPath::single(
             FieldKey::new("available").unwrap(),
         )]),
-        payload_bytes: 2 * "holdings".len()
-            + 2 * size_of::<FieldDeclaration>()
-            + 2 * ("available".len() + "ratio".len())
-            + "stored".len()
-            + 2
-            + 3 * tree_node,
         mask_bytes: available_mask_bytes(),
     }
 }
@@ -171,4 +163,37 @@ fn validate(
         worth_proof::TransitionOutcome::Success(value) => value,
         _ => panic!("real canonical payload must satisfy its declared contract"),
     }
+}
+
+/// Real admitted variable-width state for retention's shared-reference court.
+pub(super) fn wide_struct(count: usize) -> ContractValidatedAspectArtifact {
+    let fields = (0..count)
+        .map(|index| {
+            (
+                FieldKey::new(format!("field-{index:04}")).unwrap(),
+                AspectValue::UInt64(index as u64),
+            )
+        })
+        .collect::<Vec<_>>();
+    let shape = StructAspectShape::new(fields.iter().map(|(key, value)| {
+        FieldDeclaration::new(
+            key.clone(),
+            value.value_family(),
+            FieldRequirement::Required,
+            AbsenceLaw::Required,
+            AspectEvolutionPolicy::ExplicitBreakRequired,
+        )
+        .unwrap()
+    }))
+    .unwrap();
+    let contract = AspectContract::struct_aspect(
+        AspectKey::new("wide").unwrap(),
+        AspectIdentity(702),
+        AspectContractRevision(1),
+        shape,
+    );
+    validate(
+        &contract,
+        ContractValidationInput::Struct(StructAspectValue::new(fields).unwrap()),
+    )
 }

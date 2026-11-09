@@ -2,6 +2,9 @@ use super::super::super::support::*;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in super::super) enum ConsumerStopRoute {
+    EvidenceIdentityDerivationDenied(
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+    ),
     Advancement(
         worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
     ),
@@ -45,6 +48,9 @@ pub(in super::super) fn route_consumer_stop_class(
     error: &WorthQueryRuntimeError,
 ) -> ConsumerStopRoute {
     match error.stop_class() {
+        WorthQueryStopClass::EvidenceIdentityDerivationDenied { denial } => {
+            ConsumerStopRoute::EvidenceIdentityDerivationDenied(*denial)
+        }
         WorthQueryStopClass::Advancement { denial } => ConsumerStopRoute::Advancement(*denial),
         WorthQueryStopClass::ForeignPhase { denial } => ConsumerStopRoute::ForeignPhase(*denial),
         WorthQueryStopClass::InstalledDomainAuthorityDenied { denial } => {

@@ -13,6 +13,7 @@ pub(crate) struct CapturedCheckpointGenerations {
     _funding: ExecutionArray<Option<ExecutionMemoryReservation>>,
 }
 pub(crate) fn decode(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     payload: &[u8],
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<CapturedCheckpointGenerations, Stop> {
@@ -67,7 +68,7 @@ pub(crate) fn decode(
         )?;
         let decoded: DerivedIndexCheckpointArtifacts = rmp_serde::from_slice(checkpoint.0)
             .map_err(|_| super::corrupt("invalid delta index generations"))?;
-        decoded.readmit_controlled(&mut budget)?
+        decoded.readmit_controlled(lane, &mut budget)?
     };
     if generations.len() != count {
         return Err(super::corrupt("index generation count mismatch").into());

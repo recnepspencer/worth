@@ -5,6 +5,11 @@ use crate::domain_computation::primary_graph::{
 };
 
 impl PreparedPrerequisiteClaims {
+    pub(in crate::domain_computation::primary_graph) fn selected_read_predecessor(
+        &self,
+    ) -> Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication> {
+        self.context.selected_read_predecessor()
+    }
     pub(in crate::domain_computation::primary_graph) fn native_publication_family(
         &self,
     ) -> &'static str {

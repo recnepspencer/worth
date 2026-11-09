@@ -10,8 +10,13 @@ fn probe() -> ApplicationQueryParameterRef<ContactQuery, source::ProbeParameter,
 {
     ApplicationQueryParameterRef::from_query_identifier("probe")
 }
-pub fn definition(
-) -> ApplicationQueryDefinition<Catalog, ContactQuery, source::Parameters, source::Row, Directory> {
+pub fn definition() -> ApplicationQueryDefinitionBuilder<
+    Catalog,
+    ContactQuery,
+    source::Parameters,
+    source::Row,
+    Directory,
+> {
     source::base(
         ContactQuery::reference(),
         ApplicationQueryLaneEligibility::one_shot().with_live(),
@@ -21,8 +26,6 @@ pub fn definition(
         source::identity(),
         ApplicationQueryOrderingDirection::Ascending,
     )
-    .build()
-    .unwrap()
 }
 #[derive(Clone, Debug, worth_foundational::facade::WorthValue)]
 pub struct FindContact {
@@ -36,4 +39,4 @@ fn scope(input: FindContact) -> String {
 worth_query_query_binding!(pub Binding for FindContact, schema Catalog, identity "maintained-geometry.contact-binding.v1", input InputBinding,
     query ContactQuery, parameters source::ParametersBinding => |input:&FindContact| ApplicationQueryParameterSet::new().bind(probe(),input.probe).unwrap(), result source::ResultBinding,
     principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit, field DirectoryIdentity::reference(), value scope, limits results 4096);
+    scope DirectoryIdentity, field DirectoryIdentity::at("DirectoryIdentity"), value scope, limits results 4096);

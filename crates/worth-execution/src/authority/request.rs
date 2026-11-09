@@ -355,3 +355,5 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
 
 #[path = "request/consult_observation.rs"]
 pub(crate) mod consult_observation;
+
+mod append_controls;

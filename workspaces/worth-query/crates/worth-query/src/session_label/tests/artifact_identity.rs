@@ -21,7 +21,8 @@ fn artifact_is_exported_through_runtime_facade_and_recomposes_from_typed_parts()
                 WorthQueryEvidenceTag::new("session_label_name_segments"),
                 ["temporal", "preview"],
             )
-            .seal();
+            .seal()
+            .expect("fixture digest must fit");
 
     assert_eq!(
         label.identity_digest().scope(),

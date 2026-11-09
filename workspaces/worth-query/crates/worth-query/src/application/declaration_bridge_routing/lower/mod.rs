@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod continuation_requests;
 mod evidence;
 mod preparation_bindings;
@@ -39,13 +40,16 @@ pub(crate) fn worth_query_lower_bridge_binding<
 >(
     envelope: &WorthQueryDeclarationEnvelope<D, I>,
     contract: WorthQueryDeclarationBridgeContinuationContract,
-) -> (
-    WorthQueryDeclarationBridgeContinuationRequest,
-    WorthQueryDeclarationBridgeContinuationFamily,
-    WorthQueryDeclarationBridgeBinding,
-) {
+) -> Result<
+    (
+        WorthQueryDeclarationBridgeContinuationRequest,
+        WorthQueryDeclarationBridgeContinuationFamily,
+        WorthQueryDeclarationBridgeBinding,
+    ),
+    IdentityDerivationDenial,
+> {
     let request = contract.request();
-    let lowering = BridgeLoweringContext::new(envelope);
+    let lowering = BridgeLoweringContext::new(envelope)?;
     let binding = match request.mode() {
         WorthQueryDeclarationBridgeContinuationMode::RuntimeRoute => {
             WorthQueryDeclarationBridgeBinding::RuntimeRoute(runtime_route_request(envelope))
@@ -58,25 +62,25 @@ pub(crate) fn worth_query_lower_bridge_binding<
         WorthQueryDeclarationBridgeContinuationMode::PreviewSession => {
             WorthQueryDeclarationBridgeBinding::PreviewSession(preview_session_request(
                 envelope, &lowering, request,
-            ))
+            )?)
         }
         WorthQueryDeclarationBridgeContinuationMode::PreviewPromotion => {
             WorthQueryDeclarationBridgeBinding::PreviewPromotion(preview_promotion_binding(
                 envelope, &lowering, request,
-            ))
+            )?)
         }
         WorthQueryDeclarationBridgeContinuationMode::SubscriptionPreparation => {
             WorthQueryDeclarationBridgeBinding::SubscriptionPreparation(
-                subscription_preparation_request(envelope, &lowering, request),
+                subscription_preparation_request(envelope, &lowering, request)?,
             )
         }
         WorthQueryDeclarationBridgeContinuationMode::WritebackPreparation => {
             WorthQueryDeclarationBridgeBinding::WritebackPreparation(writeback_preparation_request(
                 envelope, &lowering, request,
-            ))
+            )?)
         }
     };
-    (request, contract.family(), binding)
+    Ok((request, contract.family(), binding))
 }
 
 struct BridgeLoweringContext {
@@ -89,10 +93,10 @@ impl BridgeLoweringContext {
         I: crate::application::WorthQueryDeclarationInput<D>,
     >(
         envelope: &WorthQueryDeclarationEnvelope<D, I>,
-    ) -> Self {
-        Self {
-            runtime_surface_identity: runtime_surface_identity(envelope),
-        }
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
+            runtime_surface_identity: runtime_surface_identity(envelope)?,
+        })
     }
 
     fn truth_view_selector<

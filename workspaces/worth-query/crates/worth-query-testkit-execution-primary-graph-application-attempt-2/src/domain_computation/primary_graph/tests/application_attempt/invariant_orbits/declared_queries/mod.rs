@@ -49,7 +49,7 @@ pub fn native_oracle(
                         let ids = [0_u64, 2, 1].map(|key| {
                             (
                                 key,
-                                reader.resolve_entity(NodeKey::reference(), key).unwrap(),
+                                reader.resolve_entity(NodeKey::at("NodeKey"), key).unwrap(),
                             )
                         });
                         let least = ids
@@ -64,7 +64,7 @@ pub fn native_oracle(
                             .chain(&cycle[..offset])
                             .copied()
                             .collect();
-                        let root = reader.resolve_entity(NodeKey::reference(), 1).unwrap();
+                        let root = reader.resolve_entity(NodeKey::at("NodeKey"), 1).unwrap();
                         (
                             expected,
                             reader

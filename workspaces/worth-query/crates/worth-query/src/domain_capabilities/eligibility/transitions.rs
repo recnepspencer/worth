@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 
 use crate::domain_capabilities::denials::{
@@ -87,39 +88,46 @@ where
 pub fn prepare_admitted_domain_capability_contribution_for_materialization<P, T>(
     admitted: WorthQueryAdmittedDomainCapabilityContribution<P, T>,
     current_target: T,
-) -> WorthQueryDomainCapabilityTransitionOutcome<
-    WorthQueryMaterializationReadyDomainCapabilityContribution<P, T>,
+) -> Result<
+    WorthQueryDomainCapabilityTransitionOutcome<
+        WorthQueryMaterializationReadyDomainCapabilityContribution<P, T>,
+    >,
+    IdentityDerivationDenial,
 >
 where
     P: WorthQueryDomainCapabilityPayload,
     T: WorthQueryDomainCapabilityTargetBinding,
 {
     if let Some(denial) = stale_installation_generation_denial(admitted.payload()) {
-        return TransitionOutcome::Denied(denial);
+        return Ok(TransitionOutcome::Denied(denial));
     }
     let basis = contribution_basis(&admitted.0);
     let payload = admitted.into_inner().into_parts().into_parts().0;
     let category = payload.category().as_str();
     let bound_target = payload.target();
     if bound_target.binding_identity() != current_target.binding_identity() {
-        return match current_target.kind() {
+        return Ok(match current_target.kind() {
             WorthQueryDomainCapabilityTargetKind::LowerRuntimeBoundaryEnvelope => {
                 TransitionOutcome::Stale(WorthQueryDomainCapabilityStale::new(
                     category,
-                    bound_target.target_identity(),
-                    current_target.target_identity(),
+                    bound_target.target_identity()?,
+                    current_target.target_identity()?,
                 ))
             }
             _ => TransitionOutcome::RebindRequired(WorthQueryDomainCapabilityRebindRequired::new(
                 category,
-                bound_target.target_identity(),
-                current_target.target_identity(),
+                bound_target.target_identity()?,
+                current_target.target_identity()?,
             )),
-        };
+        });
     }
 
-    TransitionOutcome::Success(WorthQueryMaterializationReadyDomainCapabilityContribution(
-        remint_with_phase(payload, basis, materialization_ready_proof()),
+    Ok(TransitionOutcome::Success(
+        WorthQueryMaterializationReadyDomainCapabilityContribution(remint_with_phase(
+            payload,
+            basis,
+            materialization_ready_proof(),
+        )),
     ))
 }
 

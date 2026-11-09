@@ -114,6 +114,7 @@ fn assert_lookup_width(runtime: &WorthQueryRuntime, expected_operation_count: us
     assert_eq!(
         runtime
             .verify_domain_execution_index_rebuild()
+            .expect("fixture digest must fit")
             .operation_count(),
         expected_operation_count
     );

@@ -72,7 +72,7 @@ pub fn declare(label: WorthQuerySessionLabel) -> WorthQueryReadOnlyPreviewDeclar
                 WorthQueryEvidenceTag::new("session_label"),
                 label.identity_digest(),
             )
-            .seal();
+            .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens");
     WorthQueryReadOnlyPreviewDeclaration {
         identity,
         label,

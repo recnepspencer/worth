@@ -55,6 +55,7 @@ fn head_capture_acknowledges_and_carries_the_entire_layer_closure_without_loadin
         assert_eq!(repeated.history_dependencies, captured.history_dependencies);
         assert_eq!(source.reads.load(Ordering::SeqCst), before);
         let directory = RelationalHistoryMemberDirectory::readmit(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
             &captured.history_dependencies,
             [captured.leaf.history],
         )
@@ -200,9 +201,19 @@ pub(super) fn encode_layer(
     source: &Arc<CountedSource>,
     partition: &PartitionState,
 ) -> (RelationalColdRegion, Arc<CountedSource>) {
+    let request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&request);
     let symbols = cold.symbols.interner_snapshot();
-    let (commitment, _) = PartitionContentCommitment::capture_layered(partition, &symbols).unwrap();
+    let (commitment, _) = PartitionContentCommitment::capture_layered(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &worth_execution::ExecutionRequest::serial(&crate::test_execution_policy::serial_request()),
+        partition,
+        &symbols,
+    )
+    .unwrap();
     let captured = capture_region_members(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        execution,
         partition,
         &commitment,
         &cold.schema,

@@ -80,11 +80,11 @@ fn caller_abandonment_uses_the_actual_typed_outcome_and_retained_owner_effect() 
             "queries retain the unmoved product basis"
         );
         let account_kind =
-            worth_query_testkit_host::facade::host::application_home::schema::Account::reference();
+            <worth_query_testkit_host::facade::host::application_home::schema::Account as worth_query_host::facade::declaration::application_schema::fragment::Entity>::NAME;
         let account = after
             .entities
             .iter()
-            .find(|e| e.kind_name == account_kind.name())
+            .find(|e| e.kind_name == account_kind)
             .expect("the actual account row");
         let changed_balance =
             serde_json::to_value(worth_foundational::facade::AspectValue::UInt64(90_991)).unwrap();

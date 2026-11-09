@@ -51,7 +51,7 @@ impl WorthQueryWriteCommandTemplate {
                 collection: crate::runtime::WorthQueryMutationTargetCollectionIdentity::new(
                     "write-command-declared",
                     collection,
-                ),
+                )?,
                 aspects: aspects
                     .iter()
                     .map(|aspect| {
@@ -75,7 +75,7 @@ impl WorthQueryWriteCommandTemplate {
             } => Ok(crate::runtime::WorthQueryWriteCommand::UpdateAspect {
                 entity_identity: crate::memory_workspace::admit_authored_entity_label(
                     expect_string(entity_identity.evaluate(inputs)?, "entity_identity")?,
-                ),
+                )?,
                 aspect: crate::runtime::WorthQueryAuthoredAspectMutation::new_set(
                     aspect_touch.clone(),
                     value.evaluate(inputs)?.foundational_scalar_value()?,
@@ -86,7 +86,7 @@ impl WorthQueryWriteCommandTemplate {
                 Ok(crate::runtime::WorthQueryWriteCommand::Delete {
                     entity_identity: crate::memory_workspace::admit_authored_entity_label(
                         expect_string(entity_identity.evaluate(inputs)?, "entity_identity")?,
-                    ),
+                    )?,
                 })
             }
         }

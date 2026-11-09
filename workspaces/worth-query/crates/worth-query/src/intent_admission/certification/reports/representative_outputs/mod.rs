@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod fixtures;
 
 use crate::intent_admission::WorthQueryAdmittedIntentPlan;
@@ -29,22 +30,22 @@ impl WorthQueryIntentAdmissionRepresentativeOutputReport {
 
 pub fn worth_query_intent_admission_representative_output_report(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> WorthQueryIntentAdmissionRepresentativeOutputReport {
-    let fixtures = RepresentativeOutputFixtures::load(execution);
+) -> Result<WorthQueryIntentAdmissionRepresentativeOutputReport, IdentityDerivationDenial> {
+    let fixtures = RepresentativeOutputFixtures::load(execution)?;
     let eligibility = fixtures.eligibility();
-    let outputs = representative_outputs(&fixtures, &eligibility);
+    let outputs = representative_outputs(&fixtures, &eligibility)?;
     let report_digest = digest_output_rows(&outputs);
-    WorthQueryIntentAdmissionRepresentativeOutputReport {
+    Ok(WorthQueryIntentAdmissionRepresentativeOutputReport {
         outputs,
         report_digest,
-    }
+    })
 }
 
 fn representative_outputs(
     fixtures: &RepresentativeOutputFixtures,
     eligibility: &RepresentativeEligibilityDigests,
-) -> Vec<OutputRow> {
-    vec![
+) -> Result<Vec<OutputRow>, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(vec![
         query_digest_output(fixtures),
         raw_intent_digest_output(fixtures),
         intent_eligibility_digest_output(eligibility),
@@ -117,9 +118,9 @@ fn representative_outputs(
         ),
         execution_provenance_chain_digest_output(fixtures),
         output("failure_digest", fixtures.failure.failure_digest.clone()),
-        basis_observation_fixture_digest_output(),
-        projection_consumption_fixture_digest_output(),
-    ]
+        basis_observation_fixture_digest_output()?,
+        projection_consumption_fixture_digest_output()?,
+    ])
 }
 
 fn query_digest_output(fixtures: &RepresentativeOutputFixtures) -> OutputRow {

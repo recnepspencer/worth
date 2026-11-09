@@ -1,6 +1,5 @@
 use worth_query_declaration::facade::application_query::ApplicationQueryBasisSupport;
 use worth_query_declaration::facade::application_query::ApplicationQueryCardinality;
-use worth_query_declaration::facade::application_query::ApplicationQueryDefinition;
 use worth_query_declaration::facade::application_query::ApplicationQueryDefinitionBuilder;
 use worth_query_declaration::facade::application_query::ApplicationQueryDisclosureContract;
 use worth_query_declaration::facade::application_query::ApplicationQueryInfluenceContract;
@@ -29,9 +28,7 @@ use crate::domain_computation::primary_graph::tests::fixture::live_account_query
 use crate::domain_computation::primary_graph::tests::fixture::Account;
 use crate::domain_computation::primary_graph::tests::fixture::AccountAllActivity;
 use crate::domain_computation::primary_graph::tests::fixture::AccountIdentity;
-use crate::domain_computation::primary_graph::tests::fixture::AccountPolicy;
 use crate::domain_computation::primary_graph::tests::fixture::Activity;
-use crate::domain_computation::primary_graph::tests::fixture::ActivityFacts;
 use crate::domain_computation::primary_graph::tests::fixture::ActivityIdentity;
 use crate::domain_computation::primary_graph::tests::fixture::CapabilityDisclosureBinding;
 use crate::domain_computation::primary_graph::tests::fixture::IdentityExecutionSchema;
@@ -74,7 +71,7 @@ worth_query_application_query!(
     name "forbidden_live_target_identity"
 );
 
-pub fn forbidden_live_scope_identity_definition() -> ApplicationQueryDefinition<
+pub fn forbidden_live_scope_identity_definition() -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     ForbiddenLiveScopeIdentityQuery,
     AccountSummaryParameters,
@@ -88,7 +85,7 @@ pub fn forbidden_live_scope_identity_definition() -> ApplicationQueryDefinition<
     )
 }
 
-pub fn forbidden_live_target_identity_definition() -> ApplicationQueryDefinition<
+pub fn forbidden_live_target_identity_definition() -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     ForbiddenLiveTargetIdentityQuery,
     AccountSummaryParameters,
@@ -127,7 +124,7 @@ pub fn definition<
     >,
     scope_influence: ApplicationQueryInfluenceContract,
     target_influence: ApplicationQueryInfluenceContract,
-) -> ApplicationQueryDefinition<
+) -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     Query,
     AccountSummaryParameters,
@@ -168,15 +165,17 @@ where
         TouchAccountCapability::reference(),
     )
     .use_field_by(
-        AccountIdentity::reference(),
+        AccountIdentity::at("AccountIdentity"),
         encoded_disclosure(CapabilityDisclosure::AccountActivity),
         scope_influence,
     )
+    .expect("record field contract")
     .use_field_by(
-        ActivityIdentity::reference(),
+        ActivityIdentity::at("ActivityIdentity"),
         encoded_disclosure(CapabilityDisclosure::AccountActivity),
         target_influence,
     )
+    .expect("record field contract")
     .disclose_field_by(
         account_identity::<Query>(),
         encoded_disclosure(CapabilityDisclosure::AccountActivity),
@@ -202,18 +201,16 @@ where
         .lanes(ApplicationQueryLaneEligibility::one_shot().with_live())
         .public()
         .parameter(account_parameter::<Query>())
-        .where_equal(AccountIdentity::reference(), account_parameter::<Query>())
+        .where_equal(
+            AccountIdentity::at("AccountIdentity"),
+            account_parameter::<Query>(),
+        )
         .order_by(
             activity_identity::<Query>(),
             ApplicationQueryOrderingDirection::Ascending,
         )
         .continue_by(activities::<Query>())
-        .live_by::<Activity, Cause, _, _, _, _, _, _, _, _>(
-            account_identity::<Query>(),
-            activity_identity::<Query>(),
-        )
-        .build()
-        .unwrap()
+        .live_by::<Activity, Cause>(account_identity::<Query>(), activity_identity::<Query>())
 }
 
 pub fn influence_without_live_membership() -> ApplicationQueryInfluenceContract {
@@ -291,15 +288,9 @@ pub fn account_identity<
     Query,
     AccountIdentitySlot,
     IdentityExecutionSchema,
-    Account,
-    AccountPolicy,
     AccountIdentity,
-    String,
-    worth_query_declaration::facade::application_schema::ReadOnly,
-    worth_query_declaration::facade::application_schema::EqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("account", AccountIdentity::reference())
+    ApplicationQueryResultFieldRef::new("account", AccountIdentity::at("AccountIdentity"))
 }
 
 pub fn activity_identity<
@@ -310,15 +301,9 @@ pub fn activity_identity<
     Query,
     ActivityIdentitySlot,
     IdentityExecutionSchema,
-    Activity,
-    ActivityFacts,
     ActivityIdentity,
-    String,
-    worth_query_declaration::facade::application_schema::ReadOnly,
-    worth_query_declaration::facade::application_schema::EqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("activity", ActivityIdentity::reference())
+    ApplicationQueryResultFieldRef::new("activity", ActivityIdentity::at("ActivityIdentity"))
 }
 
 pub fn activities<

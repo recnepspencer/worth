@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 use worth_relational::facade::runtime::{InvariantCatalog, InvariantRegistration, InvariantRule};
 
@@ -11,16 +12,17 @@ use super::super::{
 };
 
 #[test]
-fn invariant_registration_materializer_builds_query_registration_artifact() {
+fn invariant_registration_materializer_builds_query_registration_artifact(
+) -> Result<(), IdentityDerivationDenial> {
     let artifact = success(materialize_query_invariant_catalog_registration_artifact(
         ready_invariant_registration(
             WorthQueryInvariantCapabilityContributionAuthoring::invariant_rule_registration(
                 InvariantRegistration::commit_boundary_blocking(InvariantRule::MaxMergedIntents(2)),
                 "runtime.invariant.catalog_registration",
                 "register merged-intent invariant at declaration scope",
-            ),
-        ),
-    ));
+            )?,
+        )?,
+    )?);
 
     assert_eq!(artifact.lane(), "query_invariant_catalog_registration");
     assert_eq!(
@@ -41,10 +43,13 @@ fn invariant_registration_materializer_builds_query_registration_artifact() {
         artifact.strategy_name(),
         "worth.domain_capability.intent-invariant"
     );
+
+    Ok(())
 }
 
 #[test]
-fn invariant_registration_materializer_denies_wrong_posture() {
+fn invariant_registration_materializer_denies_wrong_posture() -> Result<(), IdentityDerivationDenial>
+{
     let wrong_posture = materialize_query_invariant_catalog_registration_artifact(
         ready_invariant_registration_payload(
             WorthQueryInvariantCapabilityContributionPayload::with_invariant_registration(
@@ -56,11 +61,11 @@ fn invariant_registration_materializer_denies_wrong_posture() {
                         InvariantRegistration::commit_boundary_blocking(
                             InvariantRule::MaxMergedIntents(2),
                         ),
-                    ),
+                    )?,
                 ),
-            ),
-        ),
-    );
+            )?,
+        )?,
+    )?;
 
     assert!(matches!(
         wrong_posture,
@@ -68,17 +73,20 @@ fn invariant_registration_materializer_denies_wrong_posture() {
             if denial.kind()
                 == super::super::WorthQueryDomainCapabilityProgressionDenialKind::UnsupportedCanonicalMaterializationPosture
     ));
+
+    Ok(())
 }
 
 #[test]
-fn invariant_registration_materializer_denies_missing_runtime_semantics() {
+fn invariant_registration_materializer_denies_missing_runtime_semantics(
+) -> Result<(), IdentityDerivationDenial> {
     let missing =
         materialize_query_invariant_catalog_registration_artifact(ready_invariant_registration(
             WorthQueryInvariantCapabilityContributionAuthoring::support_summary(
                 "runtime.invariant.catalog_registration",
                 "registration semantics are absent here",
-            ),
-        ));
+            )?,
+        )?)?;
 
     assert!(matches!(
         missing,
@@ -86,10 +94,13 @@ fn invariant_registration_materializer_denies_missing_runtime_semantics() {
             if denial.kind()
                 == super::super::WorthQueryDomainCapabilityProgressionDenialKind::MissingCanonicalMaterializationSemantics
     ));
+
+    Ok(())
 }
 
 #[test]
-fn invariant_registration_materializer_accepts_empty_native_catalog() {
+fn invariant_registration_materializer_accepts_empty_native_catalog(
+) -> Result<(), IdentityDerivationDenial> {
     let artifact = success(materialize_query_invariant_catalog_registration_artifact(
         ready_invariant_registration(
             WorthQueryInvariantCapabilityContributionAuthoring::invariant_registration(
@@ -98,15 +109,18 @@ fn invariant_registration_materializer_accepts_empty_native_catalog() {
                 },
                 "runtime.invariant.catalog_registration",
                 "empty catalog still carries explicit registration semantics",
-            ),
-        ),
-    ));
+            )?,
+        )?,
+    )?);
 
     assert!(artifact.invariant_catalog().registrations.is_empty());
+
+    Ok(())
 }
 
 #[test]
-fn invariant_registration_materializer_preserves_parity_across_catalog_ordering() {
+fn invariant_registration_materializer_preserves_parity_across_catalog_ordering(
+) -> Result<(), IdentityDerivationDenial> {
     let left = success(materialize_query_invariant_catalog_registration_artifact(
         ready_invariant_registration(
             WorthQueryInvariantCapabilityContributionAuthoring::invariant_registration(
@@ -120,9 +134,9 @@ fn invariant_registration_materializer_preserves_parity_across_catalog_ordering(
                 ]),
                 "runtime.invariant.catalog_registration",
                 "register two native invariants",
-            ),
-        ),
-    ));
+            )?,
+        )?,
+    )?);
     let right = success(materialize_query_invariant_catalog_registration_artifact(
         ready_invariant_registration(
             WorthQueryInvariantCapabilityContributionAuthoring::invariant_registration(
@@ -136,9 +150,9 @@ fn invariant_registration_materializer_preserves_parity_across_catalog_ordering(
                 ]),
                 "runtime.invariant.catalog_registration",
                 "register two native invariants",
-            ),
-        ),
-    ));
+            )?,
+        )?,
+    )?);
     let different = success(materialize_query_invariant_catalog_registration_artifact(
         ready_invariant_registration(
             WorthQueryInvariantCapabilityContributionAuthoring::invariant_registration(
@@ -152,9 +166,9 @@ fn invariant_registration_materializer_preserves_parity_across_catalog_ordering(
                 ]),
                 "runtime.invariant.catalog_registration",
                 "register two native invariants",
-            ),
-        ),
-    ));
+            )?,
+        )?,
+    )?);
 
     assert_eq!(
         left.materialization_digest(),
@@ -166,6 +180,8 @@ fn invariant_registration_materializer_preserves_parity_across_catalog_ordering(
         different.materialization_digest()
     );
     assert_ne!(left, different);
+
+    Ok(())
 }
 
 fn registration_catalog(
@@ -178,16 +194,27 @@ fn registration_catalog(
 
 fn ready_invariant_registration(
     authoring: WorthQueryInvariantCapabilityContributionAuthoring,
-) -> super::super::WorthQueryMaterializationReadyInvariantCapabilityContribution<
-    super::super::WorthQueryDeclarationBoundContributionTarget,
+) -> Result<
+    super::super::WorthQueryMaterializationReadyInvariantCapabilityContribution<
+        super::super::WorthQueryDeclarationBoundContributionTarget,
+    >,
+    IdentityDerivationDenial,
 > {
-    ready(authoring.bind_to_declaration_target(declaration_target("intent-invariant")))
+    Ok(ready(authoring.bind_to_declaration_target(
+        declaration_target("intent-invariant"),
+    )?)?)
 }
 
 fn ready_invariant_registration_payload(
     payload: WorthQueryInvariantCapabilityContributionPayload,
-) -> super::super::WorthQueryMaterializationReadyInvariantCapabilityContribution<
-    super::super::WorthQueryDeclarationBoundContributionTarget,
+) -> Result<
+    super::super::WorthQueryMaterializationReadyInvariantCapabilityContribution<
+        super::super::WorthQueryDeclarationBoundContributionTarget,
+    >,
+    IdentityDerivationDenial,
 > {
-    ready_payload(declaration_target("intent-invariant"), payload)
+    Ok(ready_payload(
+        declaration_target("intent-invariant"),
+        payload,
+    )?)
 }

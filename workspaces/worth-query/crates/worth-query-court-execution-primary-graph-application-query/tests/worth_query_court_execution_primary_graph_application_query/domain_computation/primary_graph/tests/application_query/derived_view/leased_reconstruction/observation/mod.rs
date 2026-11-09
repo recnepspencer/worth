@@ -14,6 +14,7 @@ pub use worth_execution::ExecutionRequest;
 pub use worth_execution::ExecutionWorkCeiling;
 pub use worth_execution::LeaseRequest;
 
+pub use crate::domain_computation::primary_graph::tests::application_query::derived_view::leased_reconstruction::observation::default_case::observe;
 pub fn observe_case(
     workers: Option<usize>,
     count: usize,
@@ -81,7 +82,7 @@ pub fn observe_case(
             selected
                 .resolve_entity(
                     &phase_custody.phase_for_application_for_test(&world.application),
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     status.to_owned(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,

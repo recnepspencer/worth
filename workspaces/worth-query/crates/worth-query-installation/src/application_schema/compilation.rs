@@ -43,6 +43,7 @@ pub(crate) enum ApplicationSchemaCompilationDenial {
 }
 
 pub(crate) struct ApplicationSchemaCompilationInput<'a, Schema> {
+    pub identity_budget: worth_foundational::facade::CanonicalDigestWorkBudget,
     pub operation_catalog: Arc<crate::application_operation::InstalledOperationCatalog>,
     pub package_authority: WorthQueryInstalledPackageAuthority,
     pub declaration: &'a ApplicationSchemaDeclaration<Schema>,
@@ -55,6 +56,7 @@ pub(crate) struct ApplicationSchemaCompilationInput<'a, Schema> {
 }
 
 pub(crate) struct CompiledApplicationSchema<Schema> {
+    pub identity_budget: worth_foundational::facade::CanonicalDigestWorkBudget,
     pub operation_catalog: Arc<crate::application_operation::InstalledOperationCatalog>,
     pub package_authority: WorthQueryInstalledPackageAuthority,
     pub schema_name: String,
@@ -100,8 +102,9 @@ where
     let capability_registry =
         compile_capability_registry(&input.package_authority, &binding_identity, members)
             .map_err(ApplicationSchemaCompilationDenial::Capability)?;
-    let authorization_policy_registry = compile_authorization_policy_registry(members)
-        .map_err(ApplicationSchemaCompilationDenial::Canonical)?;
+    let authorization_policy_registry =
+        compile_authorization_policy_registry(members, input.identity_budget)
+            .map_err(ApplicationSchemaCompilationDenial::Canonical)?;
     let capability_work = capability_registry.values().fold(
         WorthQueryCanonicalWorkEvidence::zero(),
         |work, capability| work.combine(capability.canonical().work()),
@@ -114,6 +117,7 @@ where
             |work, requirement| work.combine(requirement.canonical_work()),
         );
     Ok(CompiledApplicationSchema {
+        identity_budget: input.identity_budget,
         operation_catalog: input.operation_catalog,
         schema_name: input.declaration.erased().name().to_string(),
         schema_identity: input.schema_identity,

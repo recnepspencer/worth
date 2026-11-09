@@ -2,42 +2,114 @@
 use crate::application_schema::*;
 mod generic;
 
-crate::worth_query_application_schema! {
-    schema Schema {
-        owner: "worth.test.declared-operation",
-        version: (1, 0),
-        members: |schema| {
-            schema
-                .entity(Record::reference())
-                .aspect(Record::reference(), Facts::reference())
-                .field(Record::reference(), Value::reference())
-                .field(Record::reference(), generic::InheritedValue::reference())
-                .relation(Children::reference(), Record::reference(), Record::reference())
-                .declared_operation::<Edit>(Edit::reference().definition()
-                    .no_external_effect().no_aftermath().finish())
-                .declared_operation::<generic::GenericEdit>(generic::GenericEdit::reference::<Schema>().definition()
-                    .no_external_effect().no_aftermath().finish())
-        }
+use crate::application_schema::fragment::{self, FieldSelection};
+pub(super) struct Schema;
+impl fragment::Fragment for Schema {
+    const NAME: &'static str = "Schema";
+    type Bindings = fragment::NoBindings;
+    type Members = (AccessModel, Contracts);
+}
+impl ApplicationSchema for Schema {
+    const OWNER: &'static str = "worth.test.declared-operation";
+    const NAME: &'static str = <Self as fragment::Fragment>::NAME;
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        fragment::declare(Self)
     }
 }
-crate::worth_query_entity!(Record for S: generic::Bound);
-crate::worth_query_aspect!(Facts for S: generic::Bound, Record;
-    identity = AspectIdentity(0x9161_5f01), revision = AspectContractRevision(1),);
-crate::worth_query_field!(Value for S: generic::Bound, Record, Facts:
-    u64 => U64ApplicationValueBinding, read_write, equality);
-crate::worth_query_relation!(Children in Schema, Record => Record;
-    integrity = same_context_unbounded_retain_dangling);
+pub(super) struct AccessModel;
+impl fragment::Fragment for AccessModel {
+    const NAME: &'static str = "access_model";
+    type Bindings = AccessBindings;
+    type Members = (Record,);
+}
+pub(super) struct AccessBindings;
+impl fragment::BindingSet for AccessBindings {
+    type Work<'a> = ValueDecodeAdmission<'a>;
+    fn with_admission<T>(
+        work: &mut Self::Work<'_>,
+        run: impl FnOnce(&mut ValueDecodeAdmission<'_>) -> T,
+    ) -> T {
+        run(work)
+    }
+}
+impl fragment::Scalar<u64> for AccessBindings {
+    type Binding = U64ApplicationValueBinding;
+}
+pub(super) struct Record;
+impl fragment::Entity for Record {
+    const NAME: &'static str = "Record";
+    type Aspects = (Facts,);
+    type Relations = (Children,);
+}
+pub(super) struct Facts;
+impl fragment::Aspect for Facts {
+    const NAME: &'static str = "Facts";
+    type Row = AccessRow;
+}
+pub(super) struct AccessRow {
+    value: u64,
+    inherited: u64,
+}
+impl fragment::Record<AccessRow> for AccessBindings {
+    fn record() -> impl fragment::Shape<AccessRow, Self> {
+        fragment::field("Value", |row: &AccessRow| row.value)
+            .equality_queryable(true)
+            .and("InheritedValue", |row: &AccessRow| row.inherited)
+            .equality_queryable(true)
+            .build(|value, inherited, _: &mut ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(AccessRow { value, inherited })
+            })
+    }
+}
+pub(super) type Value = FieldSelection<AccessModel, Record, Facts, u64>;
+pub(super) type InheritedValue = FieldSelection<AccessModel, Record, Facts, u64>;
+pub(super) struct Children;
+impl fragment::Relation for Children {
+    const NAME: &'static str = "Children";
+    type To = Record;
+}
+impl Children {
+    fn reference() -> ApplicationRelationRef<Schema, Self, Record, Record> {
+        fragment::relation(AccessModel, Record, Self)
+    }
+}
+pub struct Contracts;
+impl fragment::Registration<Schema> for Contracts {
+    fn register(
+        builder: ApplicationSchemaDeclarationBuilder<Schema>,
+    ) -> Result<ApplicationSchemaDeclarationBuilder<Schema>, ApplicationSchemaDeclarationDenial>
+    {
+        Ok(builder
+            .declared_operation::<Edit>(
+                Edit::reference()
+                    .definition()
+                    .no_external_effect()
+                    .no_aftermath()
+                    .finish(),
+            )
+            .declared_operation::<generic::GenericEdit>(
+                generic::GenericEdit::reference::<Schema>()
+                    .definition()
+                    .no_external_effect()
+                    .no_aftermath()
+                    .finish(),
+            ))
+    }
+}
 crate::worth_query_structured_value_binding!(Input for () {
     identity: "worth.test.declared-operation.input.v1"
 });
 crate::worth_query_operation!(Edit for Schema, input Input;
     access {
         read_entities: [Record];
-        read_fields: [Value];
+        read_fields: [Value::at("Value")];
         read_relations: [Children];
-        writes: [Value];
-        expects_version: [Value];
-        expects_fact: [Value];
+        writes: [Value::at("Value")];
+        expects_version: [Value::at("Value")];
+        expects_fact: [Value::at("Value")];
         creates: [Record];
         deletes: [Record];
         links: [Children];
@@ -47,18 +119,12 @@ crate::worth_query_operation!(Edit for Schema, input Input;
 
 #[test]
 fn declared_access_supplies_capabilities_and_schema_without_an_invoice() {
-    fn accepts_field<
-        T: OperationReads<Edit>
-            + OperationWrites<Edit>
-            + OperationExpectsVersion<Edit>
-            + OperationExpectsFact<Edit>,
-    >() {
-    }
+    fn accepts_field<F: fragment::RecordSelection<Value = u64>>(_: F) {}
     fn accepts_entity<T: OperationReads<Edit> + OperationCreates<Edit> + OperationDeletes<Edit>>() {
     }
     fn accepts_relation<T: OperationReads<Edit> + OperationLinks<Edit> + OperationUnlinks<Edit>>() {
     }
-    accepts_field::<Value>();
+    accepts_field(Value::at("Value"));
     accepts_entity::<Record>();
     accepts_relation::<Children>();
 
@@ -80,7 +146,7 @@ fn assert_declared_reads(members: &[ApplicationSchemaMember]) {
         },
         ApplicationOperationDecisionReadTarget::Field {
             entity: "Record".into(),
-            aspect: "Facts".into(),
+            aspect: fragment::aspect(AccessModel, Record, Facts).name().into(),
             field: "Value".into(),
         },
         ApplicationOperationDecisionReadTarget::Relation {
@@ -99,7 +165,7 @@ fn assert_declared_effects(members: &[ApplicationSchemaMember]) {
     for expected in [
         ApplicationOperationProgramTarget::Write {
             entity: "Record".into(),
-            aspect: "Facts".into(),
+            aspect: fragment::aspect(AccessModel, Record, Facts).name().into(),
             field: "Value".into(),
         },
         ApplicationOperationProgramTarget::Create {

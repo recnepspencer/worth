@@ -28,24 +28,24 @@ pub(super) fn create<Schema: TopologyModelBinding>(
             )
             .map_err(HandlerExecutionDenial::new)?;
         writer
-            .initialize_field(&entity, BodyKey::reference(), key.clone())
+            .initialize_field(&entity, BodyKey::at("BodyKey"), key.clone())
             .map_err(HandlerExecutionDenial::new)?;
         writer
             .initialize_field(
                 &entity,
-                PositionX::reference(),
+                PositionX::at("PositionX"),
                 PositiveLength::new(x).unwrap(),
             )
             .map_err(HandlerExecutionDenial::new)?;
         writer
             .initialize_field(
                 &entity,
-                PositionY::reference(),
+                PositionY::at("PositionY"),
                 PositiveLength::new(y).unwrap(),
             )
             .map_err(HandlerExecutionDenial::new)?;
         writer
-            .initialize_field(&entity, Length::reference(), value)
+            .initialize_field(&entity, Length::at("Length"), value)
             .map_err(HandlerExecutionDenial::new)?;
         writer
             .create_member::<PlanarCreatedOutputs<Schema>>(key, &entity)

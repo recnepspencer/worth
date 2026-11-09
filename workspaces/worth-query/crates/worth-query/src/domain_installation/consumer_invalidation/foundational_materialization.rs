@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_foundational::facade::{
     claim_derived_projection_boundary_surface, materialize_descriptive_boundary_surface,
     FoundationalBoundaryArtifactSurface, FoundationalBoundaryEvidenceFreshnessPosture,
@@ -12,6 +13,7 @@ pub type WorthQueryFoundationalInvalidationBoundaryArtifact =
     >;
 
 pub enum WorthQueryFoundationalInvalidationMaterializationStop {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     ForeignOrStaleLease,
     Foundational(FoundationalBoundaryMaterializationDenial),
 }
@@ -20,13 +22,17 @@ impl super::WorthQueryAdmittedConsumerInvalidation<'_> {
     pub fn foundational_projection(
         &self,
         workspace: &crate::runtime::WorthQueryWorkspace,
-    ) -> Option<super::WorthQueryFoundationalInvalidationProjection> {
-        self.remains_current(workspace).then(|| {
-            super::foundational_projection::foundational_projection(
-                self.delta(),
-                FoundationalBoundaryEvidenceFreshnessPosture::FreshRetained,
-            )
-        })
+    ) -> Result<Option<super::WorthQueryFoundationalInvalidationProjection>, IdentityDerivationDenial>
+    {
+        Ok(self
+            .remains_current(workspace)
+            .then(|| {
+                super::foundational_projection::foundational_projection(
+                    self.delta(),
+                    FoundationalBoundaryEvidenceFreshnessPosture::FreshRetained,
+                )
+            })
+            .transpose()?)
     }
 
     pub fn materialize_foundational_projection(
@@ -39,6 +45,7 @@ impl super::WorthQueryAdmittedConsumerInvalidation<'_> {
     > {
         let projection = self
             .foundational_projection(workspace)
+            .map_err(WorthQueryFoundationalInvalidationMaterializationStop::EvidenceIdentityDerivationDenied)?
             .ok_or(WorthQueryFoundationalInvalidationMaterializationStop::ForeignOrStaleLease)?;
         let surface = FoundationalBoundaryArtifactSurface::new(projection, 1);
         materialize_descriptive_boundary_surface(

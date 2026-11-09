@@ -30,7 +30,10 @@ fn removing_and_writing_one_aspect_names_the_same_entity_and_aspect_in_both_orde
             subject.starts_with("Record RecordId {") || subject.starts_with("Record EntityId {"),
             "{subject}"
         );
-        assert!(subject.ends_with(".First"), "{subject}");
+        assert!(
+            subject.ends_with(&format!(".{}", First::reference().name())),
+            "{subject}"
+        );
         subjects.push(subject.to_owned());
         assert_eq!(
             selected.selected_commit(),

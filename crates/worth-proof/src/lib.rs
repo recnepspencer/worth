@@ -61,9 +61,10 @@ pub use relational_publication_readmission::RelationalPublicationReadmitted;
 mod source_observation;
 pub use application_publication::{
     AdmittedAuthoredOutputRetirement, AdmittedCheckpointProgramActivation,
-    AdmittedProducerOutputRetirement, AdmittedRequiredOutputPublication,
-    AdmittedRequiredOutputSuccession, InstalledApplicationPublicationAuthority,
-    InstalledApplicationPublicationOwner, RequiredOutputPublicationAuthority,
+    AdmittedHistoricalOutputSelection, AdmittedProducerOutputRetirement,
+    AdmittedRequiredOutputPublication, AdmittedRequiredOutputSuccession,
+    InstalledApplicationPublicationAuthority, InstalledApplicationPublicationOwner,
+    RequiredOutputPublicationAuthority,
 };
 pub use managed_source::{
     AdmittedManagedIndexSourceAudience, AdmittedManagedIndexSourceCorrespondence,

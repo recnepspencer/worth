@@ -24,8 +24,9 @@ fn prepared_continuation_rejects_foreign_runtime_before_later_work() {
     let foreign = admitted_handle(request_execution, "main");
     let prepared = prepared_runtime_continuation(&owner);
 
-    let WorthQueryContinuationExecutionOutcome::InstalledAuthorityDrift(drift) =
-        foreign.execute_prepared_continuation(prepared)
+    let WorthQueryContinuationExecutionOutcome::InstalledAuthorityDrift(drift) = foreign
+        .execute_prepared_continuation(prepared)
+        .expect("fixture digest must fit")
     else {
         panic!("foreign runtime must stop at installed authority")
     };
@@ -68,8 +69,9 @@ fn prepared_continuation_rejects_stale_generation_on_current_handle() {
             > retained_generation
     );
 
-    let WorthQueryContinuationExecutionOutcome::InstalledAuthorityDrift(drift) =
-        current_handle.execute_prepared_continuation(prepared)
+    let WorthQueryContinuationExecutionOutcome::InstalledAuthorityDrift(drift) = current_handle
+        .execute_prepared_continuation(prepared)
+        .expect("fixture digest must fit")
     else {
         panic!("stale prepared authority must not execute on the successor generation")
     };
@@ -103,8 +105,9 @@ fn stale_handle_cannot_prepare_after_generation_turnover() {
         .replace_domain_installation_with_successor_generation()
         .unwrap();
 
-    let WorthQueryPreparedContinuationOutcome::InstalledAuthorityDrift(drift) =
-        stale_handle.prepare_continuation_from_target(request)
+    let WorthQueryPreparedContinuationOutcome::InstalledAuthorityDrift(drift) = stale_handle
+        .prepare_continuation_from_target(request)
+        .expect("fixture digest must fit")
     else {
         panic!("stale installed authority must stop before continuation preparation")
     };
@@ -127,7 +130,9 @@ fn recovery_retains_foreign_runtime_authority_drift_without_promoting_it() {
     let prepared = prepared_runtime_continuation(&owner);
 
     let brief = worth_query_recovery_brief_from_continuation_execution_checked(
-        foreign.execute_prepared_continuation_checked(prepared),
+        foreign
+            .execute_prepared_continuation_checked(prepared)
+            .expect("fixture digest must fit"),
     )
     .expect("foreign installed authority must produce a recovery brief");
     let drift = brief
@@ -167,11 +172,14 @@ fn prepared_runtime_continuation(
     super::support::ContinuationDomain,
     super::support::Input<RuntimeFamily>,
 > {
-    match handle.prepare_continuation_from_target(target_request::<RuntimeFamily>(
-        handle,
-        "face-a",
-        runtime_route_request(),
-    )) {
+    match handle
+        .prepare_continuation_from_target(target_request::<RuntimeFamily>(
+            handle,
+            "face-a",
+            runtime_route_request(),
+        ))
+        .expect("fixture digest must fit")
+    {
         WorthQueryPreparedContinuationOutcome::Prepared(prepared) => prepared,
         _ => panic!("fixture must prepare a runtime continuation"),
     }

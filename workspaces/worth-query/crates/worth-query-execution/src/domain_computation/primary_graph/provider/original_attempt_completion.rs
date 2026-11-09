@@ -14,6 +14,7 @@ pub(in crate::domain_computation::primary_graph) trait OriginalCompletionSlot:
 {
     fn complete(&self, completed: Completed);
     fn take(&self) -> Option<Completed>;
+    fn has_completion(&self, session: &WorthQueryProviderSessionTerminalBinding) -> bool;
     fn retain_cleanup(&self, original: Pending);
     fn original_cleanup(&self) -> &Pending;
 }
@@ -39,6 +40,18 @@ impl OriginalCompletionSlot for PendingOriginalSlot {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .take()
+    }
+    fn has_completion(&self, session: &WorthQueryProviderSessionTerminalBinding) -> bool {
+        self.completion
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .as_ref()
+            .is_some_and(|completed| {
+                completed
+                    .commit_evidence()
+                    .provider_session_binding()
+                    .same_session(session)
+            })
     }
     fn retain_cleanup(&self, original: Pending) {
         assert!(
@@ -99,6 +112,15 @@ impl OriginalCompletionPublisher {
     }
 }
 impl OriginalCompletionReceiver {
+    /// Observe only this performing attempt's preallocated one-shot slot.
+    /// This read neither takes the original nor issues receipt authority.
+    pub(in crate::domain_computation::primary_graph) fn has_completion(
+        &self,
+        session: &WorthQueryProviderSessionTerminalBinding,
+    ) -> bool {
+        self.slot.has_completion(session)
+    }
+
     pub(in crate::domain_computation::primary_graph) fn retain_cleanup(
         &self,
         original: Pending,

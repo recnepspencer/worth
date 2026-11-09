@@ -21,7 +21,7 @@ pub(super) fn install(
     // as the estate request projection; this does not enlarge host admission.
     let schema = schema
         .operation_projection_work_budget(view, 32)
-        .operation_read_field(view, EstateCaseIdentityField::reference());
+        .operation_read_field(view, EstateCaseIdentityField::at("EstateCaseIdentityField"));
     let schema = lifecycle::install(schema);
     let schema = delegation::install(schema);
     let schema = capability_revocation::install(schema);

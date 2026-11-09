@@ -31,7 +31,7 @@ impl<L: LawPolicy> ApplicationDerivedArtifact<GraphSchema<L>, GraphFeature> for 
 }
 pub struct RootInput<L: LawPolicy>(pub std::marker::PhantomData<fn() -> L>);
 impl<L: LawPolicy> ApplicationComputationInput for RootInput<L> {
-    type Value = WorthQueryInvariantEntityIdentity<GraphSchema<L>, Node>;
+    type Value = WorthQueryInvariantEntityIdentity<GraphSchema<L>, GraphNode<GraphSchema<L>>>;
     const IDENTITY: &'static str = "derived.count.exact-root";
 }
 impl ApplicationComputationReuse for Contract {

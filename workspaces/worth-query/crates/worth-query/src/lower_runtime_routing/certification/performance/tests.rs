@@ -13,7 +13,8 @@ fn scenario_profiles_are_monotonic_across_width_variants() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let surface = worth_query_lower_runtime_representative_surface(request_execution);
+    let surface = worth_query_lower_runtime_representative_surface(request_execution)
+        .expect("fixture digest must fit");
     let report = certify_lower_runtime_performance_slopes(&surface);
     let profiles = report.profiles();
 
@@ -49,7 +50,8 @@ fn slope_report_emits_all_outputs_from_observed_profiles() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let surface = worth_query_lower_runtime_representative_surface(request_execution);
+    let surface = worth_query_lower_runtime_representative_surface(request_execution)
+        .expect("fixture digest must fit");
     let report = certify_lower_runtime_performance_slopes(&surface);
 
     assert_eq!(report.rows().len(), 6);
@@ -71,7 +73,8 @@ fn full_profile_counter_snapshot_matches_exact_producer_widths() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let surface = worth_query_lower_runtime_representative_surface(request_execution);
+    let surface = worth_query_lower_runtime_representative_surface(request_execution)
+        .expect("fixture digest must fit");
     let report = certify_lower_runtime_performance_slopes(&surface);
     let full = report.full_profile().counters();
 

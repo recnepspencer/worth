@@ -6,10 +6,7 @@ use super::{
     ApplicationQueryResultTraversal,
 };
 use crate::application_capability::ApplicationCapabilityRef;
-use crate::application_schema::{
-    ApplicationEncodedScalarValue, ApplicationFieldRef, ApplicationFieldUnit,
-    ApplicationScalarValueBinding, OptionalApplicationFieldValue, RequiredApplicationFieldValue,
-};
+use crate::application_schema::{ApplicationEncodedScalarValue, ApplicationScalarValueBinding};
 
 mod history;
 pub use history::ApplicationHistoryMetadataDisclosureDenial;
@@ -150,28 +147,17 @@ impl ApplicationQueryDisclosureContract {
         }
     }
 
-    #[allow(clippy::too_many_arguments)]
-    pub fn use_field_by<
-        Schema,
-        Entity,
-        Aspect,
-        Field,
-        Value,
-        Write,
-        Equality,
-        Unit,
-        DisclosureBinding,
-    >(
+    pub fn use_field_by<Field, DisclosureBinding>(
         mut self,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+        field: Field,
         disclosure_value: ApplicationEncodedScalarValue<DisclosureBinding>,
         influence: ApplicationQueryInfluenceContract,
-    ) -> Self
+    ) -> Result<Self, crate::application_schema::ApplicationSchemaDeclarationDenial>
     where
-        Field: crate::application_schema::DeclaredApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
+        Field: crate::application_schema::fragment::RecordSelection,
         DisclosureBinding: ApplicationScalarValueBinding,
     {
+        field.checked()?;
         let field_key = FieldKey::new(field.field())
             .expect("typed application fields are valid Foundational keys");
         self.rules.push(ApplicationQueryDisclosureRule {
@@ -186,42 +172,22 @@ impl ApplicationQueryDisclosureContract {
             influence,
         });
         self.rules.sort();
-        self
+        Ok(self)
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn disclose_field_by<
-        Query,
-        Slot,
-        Schema,
-        Entity,
-        Aspect,
-        Field,
-        Value,
-        Write,
-        Equality,
-        Unit,
-        DisclosureBinding,
-    >(
+    pub fn disclose_field_by<Query, Slot, Schema, Entity, Aspect, Field, Value, DisclosureBinding>(
         mut self,
-        selector: ApplicationQueryResultFieldRef<
-            Query,
-            Slot,
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            Equality,
-            Unit,
-        >,
+        selector: ApplicationQueryResultFieldRef<Query, Slot, Schema, Field>,
         disclosure_value: ApplicationEncodedScalarValue<DisclosureBinding>,
         influence: ApplicationQueryInfluenceContract,
     ) -> Self
     where
-        Field: RequiredApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
+        Field: crate::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
         DisclosureBinding: ApplicationScalarValueBinding,
         Query: super::ApplicationQueryMarkerIdentity<Schema> + 'static,
         Slot: crate::portable_identity::WorthQueryPortableType + 'static,
@@ -258,30 +224,19 @@ impl ApplicationQueryDisclosureContract {
         Aspect,
         Field,
         Value,
-        Write,
-        Equality,
-        Unit,
         DisclosureBinding,
     >(
         mut self,
-        selector: ApplicationQueryOptionalResultFieldRef<
-            Query,
-            Slot,
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            Equality,
-            Unit,
-        >,
+        selector: ApplicationQueryOptionalResultFieldRef<Query, Slot, Schema, Field>,
         disclosure_value: ApplicationEncodedScalarValue<DisclosureBinding>,
         influence: ApplicationQueryInfluenceContract,
     ) -> Self
     where
-        Field: OptionalApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
+        Field: crate::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
         DisclosureBinding: ApplicationScalarValueBinding,
         Query: super::ApplicationQueryMarkerIdentity<Schema> + 'static,
         Slot: crate::portable_identity::WorthQueryPortableType + 'static,

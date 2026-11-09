@@ -15,9 +15,9 @@ use worth_query_host::facade::{application_contribution, domain};
 
 use super::{
     Body, BodyKey, ConsumerPrincipalBinding, ExternalPrincipalMapping, Length,
-    PlanarMutationDenialBinding, PlanarMutationResultBinding, PlanarMutationScope, PlanarPosition,
-    PlanarQuery, PlanarRead, PlanarReadBinding, PlanarReadResult, PlanarSuccessor, PositionX,
-    PositionY, Principal, TopologySchemaBinding,
+    PlanarMutationDenialBinding, PlanarMutationResultBinding, PlanarMutationScope, PlanarQuery,
+    PlanarRead, PlanarReadBinding, PlanarReadResult, PlanarSuccessor, PositionX, PositionY,
+    Principal, TopologySchemaBinding,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
@@ -32,8 +32,8 @@ worth_query_structured_value_binding!(pub FinalPlanarMutationInputBinding for Fi
 });
 worth_query_operation!(pub PublishFinalPlanarOutput for Schema: TopologySchemaBinding, input FinalPlanarMutationInputBinding;
     access {
-        read_entities: [Body]; read_fields: [BodyKey, Length];
-        writes: [BodyKey, PositionX, PositionY, Length];
+        read_entities: [Body]; read_fields: [BodyKey::at("BodyKey"), Length::at("Length")];
+        writes: [BodyKey::at("BodyKey"), PositionX::at("PositionX"), PositionY::at("PositionY"), Length::at("Length")];
         creates: [Body]; links: [PlanarSuccessor];
     }
 );
@@ -63,7 +63,7 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     type Denial = worth_query_consumer_values::PlanarMutationDenial;
     type DenialBinding = PlanarMutationDenialBinding;
     type Output = FinalPlanarOutputs;
-    type ScopeBinding = PlanarMutationScope<Schema>;
+    type ScopeBinding = PlanarMutationScope;
     type PrincipalBinding = ConsumerPrincipalBinding;
     type Mapping = ExternalPrincipalMapping;
     type Principal = Principal;
@@ -75,17 +75,8 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     const HANDLER_IDENTITY: &'static str = "worth.query.certification.final-planar-handler.v2";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.certification.final-planar-command.v1";
 
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Body,
-        PlanarPosition,
-        BodyKey,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        BodyKey::reference()
+    fn scope_field() -> BodyKey {
+        BodyKey::at("BodyKey")
     }
 
     fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -107,8 +98,8 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationIntent<Schema> for FinalP
         self
     }
 
-    fn scope_binding(&self) -> PlanarMutationScope<Schema> {
-        PlanarMutationScope::new(BodyKey::reference(), self.scope_key.clone())
+    fn scope_binding(&self) -> PlanarMutationScope {
+        PlanarMutationScope::new(BodyKey::at("BodyKey"), self.scope_key.clone())
     }
 }
 

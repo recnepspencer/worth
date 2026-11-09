@@ -19,6 +19,7 @@ mod discovered_roots;
 mod fulfillment;
 mod handle;
 mod history;
+pub(in crate::domain_computation::primary_graph) use history::HistoryAdmittedChildSource;
 mod history_group;
 mod read_close;
 mod root_completion;

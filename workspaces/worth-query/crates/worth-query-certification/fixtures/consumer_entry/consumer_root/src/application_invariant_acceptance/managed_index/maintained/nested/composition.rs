@@ -8,15 +8,11 @@ pub struct Contribution;
 impl ApplicationSchemaContribution<Catalog> for Contribution {
     const IDENTITY: ApplicationSchemaContributionIdentity =
         ApplicationSchemaContributionIdentity::new("nested-catalog.members.v1");
-    fn register_members(
-        schema: ApplicationSchemaDeclarationBuilder<Catalog>,
-    ) -> ApplicationSchemaDeclarationBuilder<Catalog> {
-        super::schema::declare(schema)
-    }
+    type Members = (CatalogRecords, ContributionContracts);
 }
 pub struct Configuration {
     pub provider: Arc<prefix_observation::Calls>,
-    pub records: Arc<rule::Calls>,
+    pub(in super::super) records: Arc<rule::Calls>,
 }
 impl WorthQueryApplicationContribution<Catalog> for Contribution {
     type Configuration = Configuration;
@@ -62,5 +58,17 @@ impl ApplicationProgramDefinition<Catalog> for Program {
             .native_action::<mutation::Binding>()
             .finish_action()
             .finish()]
+    }
+}
+
+pub struct ContributionContracts;
+impl worth_query_decl::facade::application_schema::fragment::Registration<Catalog>
+    for ContributionContracts
+{
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<Catalog>,
+    ) -> Result<ApplicationSchemaDeclarationBuilder<Catalog>, ApplicationSchemaDeclarationDenial>
+    {
+        Ok(super::schema::declare(schema))
     }
 }

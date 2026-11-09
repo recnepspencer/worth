@@ -126,7 +126,11 @@ impl BranchHeadVersionIndexAuthority {
 
     /// Replace the whole index with the given live heads under one lock, so a
     /// concurrent fence read never observes a half-rebuilt index.
-    pub(crate) fn rebuild(&self, roots: impl IntoIterator<Item = Arc<RelationalBranchRoot>>) {
+    pub(crate) fn rebuild(
+        &self,
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        roots: impl IntoIterator<Item = Arc<RelationalBranchRoot>>,
+    ) {
         let mut index = self
             .index
             .lock()

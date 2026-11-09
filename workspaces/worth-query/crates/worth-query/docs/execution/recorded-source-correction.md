@@ -399,7 +399,7 @@ fn mechanism() -> DeclaredCorrectionMechanism<NumericSchema> {
         DeclaredAftermathPostcondition::BusinessPostcondition {
             identity: "original-credit-neutralized".to_owned(),
         },
-    ).expect("the compensation declares a business postcondition")
+    )
 }
 
 fn derive_correction(
@@ -463,7 +463,7 @@ Declare the source's real external effect and inbound protocol in
 fn completed_external_reconciliation() -> Option<DeclaredReconciliationProcedure> {
     Some(DeclaredReconciliationProcedure::new(
         "confirm-approved-payment-settlement",
-    ).expect("the payment settlement procedure has a stable identity"))
+    ))
 }
 ```
 

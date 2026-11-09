@@ -9,6 +9,8 @@ pub(super) struct CandidateRegistration {
     pub(super) branch_id: crate::history::data::BranchId,
     pub(super) control: crate::mvcc::RelationalOperationControl,
     pub(super) retention_binding: crate::history::retention::RelationalBranchRetentionBinding,
+    pub(super) decision_basis: crate::branch::AdmittedRelationalBranchBasis,
+    pub(super) coupled_proposal: Option<crate::mvcc::RelationalMutationProposalIdentity>,
     pub(super) expected_basis: crate::branch::RelationalBranchBasisDescriptor,
     pub(super) expected_root: std::sync::Arc<crate::branch::RelationalBranchRoot>,
     pub(super) publication_cell: crate::branch::RelationalBranchPublicationCell,
@@ -29,6 +31,8 @@ impl CandidateRegistration {
             branch_id,
             control,
             retention_binding,
+            decision_basis,
+            coupled_proposal,
             expected_basis,
             expected_root,
             publication_cell,
@@ -55,12 +59,18 @@ impl CandidateRegistration {
                 }
             }
         })?;
+        let publication_bases = crate::history::retention::PublicationBasisImage::prepare(
+            execution,
+            &decision_basis,
+            prepared.prepared_root(),
+        )?;
         let candidate_retention =
             crate::history::retention::RelationalCandidateRetentionObligation::acquire(
                 &retention_binding,
                 publication_cell.identity().clone(),
                 std::sync::Arc::clone(&expected_root),
                 std::sync::Arc::clone(prepared.prepared_root()),
+                publication_bases,
             )
             .map_err(|denial| match denial {
                 crate::history::retention::RelationalRetentionAcquisitionDenial::CapacityExhausted => {
@@ -98,7 +108,7 @@ impl CandidateRegistration {
             return Err(TransactionCommitError::interrupted(interruption));
         }
         prepared.release_transaction_retention();
-        let candidate = crate::mvcc::PreparedRelationalCommitCandidate::new(
+        let mut candidate = crate::mvcc::PreparedRelationalCommitCandidate::new(
             runtime_instance_id,
             runtime.configuration_generation,
             runtime.configuration_epoch.clone(),
@@ -127,6 +137,9 @@ impl CandidateRegistration {
                 TransactionCommitError::publication_failed(failure)
             }
         })?;
+        if let Some(proposal) = coupled_proposal {
+            candidate.retain_coupled_read(runtime, decision_basis, proposal);
+        }
         runtime
             .history
             .record_candidate_preparation(candidate.branch());

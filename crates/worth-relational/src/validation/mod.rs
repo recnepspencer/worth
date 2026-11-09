@@ -14,5 +14,6 @@ pub(crate) use custom_registry::{
     CustomInvariantCompilationDenial, CustomInvariantCompilationFunding,
     FrozenCustomInvariantRegistry, SourcePreparationInventory,
 };
+pub(crate) use custom_rule::StructuralPresenceDenial;
 pub(crate) use custom_rule::{CustomInvariantWorkMeter, CustomPreparationBudget};
 pub use invariant_access::InvariantAccess;

@@ -31,21 +31,3 @@ where
         ))
     }
 }
-
-pub(super) fn validate_application_schema<Schema>(
-    runtime: &WorthQueryExecutionRuntime,
-    installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
-) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>
-where
-    Schema: ApplicationSchema,
-{
-    runtime
-        .installed_packages()
-        .validate_application_schema(installed_schema)
-        .map_err(|denial| {
-            WorthQueryPrimaryGraphInstallationDenial::new(
-                WorthQueryPrimaryGraphInstallationDenialKind::StaleInstalledSchema,
-                denial.subject(),
-            )
-        })
-}

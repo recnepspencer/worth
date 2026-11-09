@@ -110,6 +110,10 @@ fn read_name(
         )
         .unwrap();
     match result.records()[0].scalar_aspect_value() {
+        Some(AspectValue::String(InternedString::Stored(name))) => {
+            let name = name.as_string();
+            name.clone()
+        }
         Some(AspectValue::String(InternedString::Raw(name))) => name.clone(),
         other => panic!("the name reads as a raw string: {other:?}"),
     }

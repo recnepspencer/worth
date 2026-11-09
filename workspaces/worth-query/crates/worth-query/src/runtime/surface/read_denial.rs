@@ -4,6 +4,7 @@ use super::{
     WorthQueryReadRelationshipProofDenial,
 };
 use crate::domain_installation::WorthQueryInstalledGraphReadOperationBindingDenial;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::runtime::{
     WorthQueryGraphReadAccessAdmission, WorthQueryGraphReadAccessExecutionCounters,
     WorthQueryGraphReadPersistentArtifactAudit,
@@ -11,6 +12,7 @@ use crate::runtime::{
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryReadDenialKind {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     ForeignPhase(
         worth_query_execution::facade::application_contribution::WorthQueryForeignAdvancementPhase,
     ),
@@ -31,6 +33,7 @@ pub enum WorthQueryReadDenialKind {
 impl WorthQueryReadDenialKind {
     pub fn as_str(&self) -> &'static str {
         match self {
+            Self::EvidenceIdentityDerivationDenied(_) => "evidence_identity_derivation_denied",
             Self::ForeignPhase(_) => "foreign_advancement_phase",
             Self::InvalidRoot => "invalid_root",
             Self::BuiltInOperatorDenied => "built_in_operator_denied",
@@ -335,6 +338,15 @@ impl
         Self::new(
             WorthQueryReadDenialKind::ForeignPhase(cause),
             "foreign advancement phase",
+        )
+    }
+}
+
+impl From<IdentityDerivationDenial> for WorthQueryReadDenial {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::new(
+            WorthQueryReadDenialKind::EvidenceIdentityDerivationDenied(cause),
+            "read evidence identity refused",
         )
     }
 }

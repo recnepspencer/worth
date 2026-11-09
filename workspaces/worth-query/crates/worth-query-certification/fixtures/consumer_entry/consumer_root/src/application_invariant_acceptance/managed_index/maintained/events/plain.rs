@@ -23,8 +23,7 @@ worth_query_structured_value_binding!(pub InputBinding for Rename { identity: "e
 worth_query_structured_value_binding!(pub ResultBinding for Renamed { identity: "event-catalog.plain-rename.result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "event-catalog.plain-rename.denial.v1" });
 worth_query_operation!(pub PlainRenameItem for Catalog, input InputBinding);
-worth_query_operation_reads!(PlainRenameItem => [DirectoryIdentity, ItemIdentity, ItemName]);
-worth_query_operation_writes!(PlainRenameItem => [ItemName]);
+
 pub struct Binding;
 impl ApplicationMutationAdmissionBinding<Catalog> for Binding {
     type Admission = ApplicationConventionalAdmission;
@@ -40,15 +39,7 @@ impl ApplicationMutationBinding<Catalog> for Binding {
     type Denial = Denial;
     type DenialBinding = DenialBinding;
     type Output = NoApplicationMutationOutputs;
-    type ScopeBinding = ApplicationMutationFieldScope<
-        Catalog,
-        Directory,
-        DirectoryFacts,
-        DirectoryIdentity,
-        String,
-        ReadOnly,
-        NoApplicationUnit,
-    >;
+    type ScopeBinding = ApplicationMutationFieldScope<DirectoryIdentity>;
     type PrincipalBinding = CatalogPrincipal;
     type Mapping = ExternalMapping;
     type Principal = Principal;
@@ -62,17 +53,8 @@ impl ApplicationMutationBinding<Catalog> for Binding {
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
     }
-    fn scope_field() -> ApplicationFieldRef<
-        Catalog,
-        Directory,
-        DirectoryFacts,
-        DirectoryIdentity,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DirectoryIdentity::reference()
+    fn scope_field() -> DirectoryIdentity {
+        DirectoryIdentity::at("DirectoryIdentity")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         Catalog,
@@ -99,7 +81,10 @@ impl ApplicationMutationIntent<Catalog> for Rename {
         self
     }
     fn scope_binding(&self) -> <Binding as ApplicationMutationBinding<Catalog>>::ScopeBinding {
-        ApplicationMutationFieldScope::new(DirectoryIdentity::reference(), self.directory.clone())
+        ApplicationMutationFieldScope::new(
+            DirectoryIdentity::at("DirectoryIdentity"),
+            self.directory.clone(),
+        )
     }
 }
 pub fn declare(
@@ -109,9 +94,9 @@ pub fn declare(
     schema
         .operation(op.definition().no_external_effect().no_aftermath().finish())
         .operation_projection_work_budget(op, 32)
-        .operation_read_field(op, DirectoryIdentity::reference())
-        .operation_read_field(op, ItemIdentity::reference())
-        .operation_read_field(op, ItemName::reference())
-        .operation_write(op, ItemName::reference())
+        .operation_read_field(op, DirectoryIdentity::at("DirectoryIdentity"))
+        .operation_read_field(op, ItemIdentity::at("ItemIdentity"))
+        .operation_read_field(op, ItemName::at("ItemName"))
+        .operation_write(op, ItemName::at("ItemName"))
         .application_mutation_binding::<Binding>()
 }

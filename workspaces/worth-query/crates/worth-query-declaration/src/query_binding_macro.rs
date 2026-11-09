@@ -10,7 +10,7 @@ macro_rules! worth_query_query_binding {
         result $ResultBinding:path,
         principal $PrincipalBinding:path, mapping $Mapping:ty, principal_entity $Principal:ty,
             principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:path,
-        scope $Scope:ty, $Aspect:ty, $Field:ty, $Value:ty, $Write:ty, $Unit:ty,
+        scope $Selected:ty,
         field $scope_field:expr,
         value $scope_value:path,
         limits results $maximum_results:expr
@@ -22,9 +22,9 @@ macro_rules! worth_query_query_binding {
             principal $PrincipalBinding, mapping $Mapping, principal_entity $Principal,
             principal_identity $PrincipalIdentity, identity_binding $PrincipalIdentityBinding,
             scope_binding $crate::facade::application_query::ApplicationQueryFieldScope<
-                $Schema, $Scope, $Aspect, $Field, $Value, $Write, $Unit
+                $Selected
             >,
-            scope_field_type $Scope, $Aspect, $Field, $Value, $Write, $Unit,
+            scope_field_type $Selected,
             scope_field $scope_field,
             limits results $maximum_results
         );
@@ -53,7 +53,7 @@ macro_rules! worth_query_query_binding {
         result $ResultBinding:path,
         principal $PrincipalBinding:path, mapping $Mapping:ty, principal_entity $Principal:ty,
             principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:path,
-        scope $Scope:ty, $Aspect:ty, $Field:ty, $Value:ty, $Write:ty, $Unit:ty,
+        scope $Selected:ty,
         principal_field $scope_field:expr,
         limits results $maximum_results:expr
     ) => {
@@ -64,9 +64,9 @@ macro_rules! worth_query_query_binding {
             principal $PrincipalBinding, mapping $Mapping, principal_entity $Principal,
             principal_identity $PrincipalIdentity, identity_binding $PrincipalIdentityBinding,
             scope_binding $crate::facade::application_query::ApplicationQueryPrincipalScope<
-                $Schema, $Scope, $Aspect, $Field, $Value, $Write, $Unit
+                $Selected
             >,
-            scope_field_type $Scope, $Aspect, $Field, $Value, $Write, $Unit,
+            scope_field_type $Selected,
             scope_field $scope_field,
             limits results $maximum_results
         );
@@ -90,7 +90,7 @@ macro_rules! worth_query_query_binding {
         principal $PrincipalBinding:path, mapping $Mapping:ty, principal_entity $Principal:ty,
         principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:path,
         scope_binding $ScopeBinding:ty,
-        scope_field_type $Scope:ty, $Aspect:ty, $Field:ty, $Value:ty, $Write:ty, $Unit:ty,
+        scope_field_type $Selected:ty,
         scope_field $scope_field:expr,
         limits results $maximum_results:expr
     ) => {
@@ -113,10 +113,7 @@ macro_rules! worth_query_query_binding {
             const LIMITS: $crate::facade::application_query::ApplicationQueryBindingLimits =
                 $crate::worth_query_query_binding!(@limits $maximum_results);
 
-            fn scope_field() -> $crate::facade::application_schema::ApplicationFieldRef<
-                $Schema, $Scope, $Aspect, $Field, $Value, $Write,
-                $crate::facade::application_schema::EqualityPredicate, $Unit,
-            > {
+            fn scope_field() -> $Selected {
                 $scope_field
             }
 

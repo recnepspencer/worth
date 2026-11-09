@@ -87,13 +87,17 @@ impl<Schema: ApplicationSchema, Operation>
             let selected = access.shared.selected();
             let original = self
                 .reader
-                .runtime
+                .native
+                .committed_runtime()
+                .ok_or_else(unavailable)?
                 .read_truth()
                 .positioned_snapshot(self.reader.snapshot)
                 .map_err(|_| HandlerExecutionDenial::new(IndexDecisionStop::ForeignProjection))?;
             let borrowed = self
                 .reader
-                .runtime
+                .native
+                .committed_runtime()
+                .ok_or_else(unavailable)?
                 .read_truth()
                 .positioned_snapshot(selected.application_basis().snapshot_handle())
                 .map_err(|_| HandlerExecutionDenial::new(IndexDecisionStop::ForeignProjection))?;
@@ -119,8 +123,14 @@ impl<Schema: ApplicationSchema, Operation>
                 .runtime
                 .primary_graph()
                 .ok_or_else(unavailable)?;
-            let mut native = ApplicationQueryNativeAccess::borrowed(graph, self.reader.runtime)
-                .map_err(HandlerExecutionDenial::new)?;
+            let mut native = ApplicationQueryNativeAccess::borrowed(
+                graph,
+                self.reader
+                    .native
+                    .committed_runtime()
+                    .ok_or_else(unavailable)?,
+            )
+            .map_err(HandlerExecutionDenial::new)?;
             let (rows, observation) = application_query::managed_index::read_decision::<Schema, B>(
                 execution,
                 access,

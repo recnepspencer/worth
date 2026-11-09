@@ -6,14 +6,15 @@ impl ContentDirectory {
     /// admitted afresh and the reconstructed fields choose the exact closure.
     pub(crate) fn reconstruct_original(
         &self,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         execution: &ExecutionRequest<'_, '_>,
         schema: &RelationalSchemaRegistry,
         incoming: &crate::content::RelationalContentAttachments,
         state: &dyn crate::storage::overlay::CurrentPartitionAccess,
         version: crate::identity::data::VersionId,
     ) -> Result<Self, Denial> {
-        let directory =
-            self.prepare(execution, schema, incoming, state, &[], version, None, true)?;
+        let directory = self
+            .prepare_schema_transition(lane, execution, schema, incoming, state, version, None)?;
         if directory
             .unreferenced_attachment(execution, incoming)?
             .is_some()
@@ -24,6 +25,7 @@ impl ContentDirectory {
     }
 
     pub(crate) fn reconstruct(
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         execution: &ExecutionRequest<'_, '_>,
         schema: &RelationalSchemaRegistry,
         records: &crate::content::RelationalContentAttachments,
@@ -53,7 +55,7 @@ impl ContentDirectory {
             None,
             &mut resolved,
         );
-        crate::content::reconstruction::visit_records(execution, state, &mut |record| {
+        crate::content::reconstruction::visit_records(lane, execution, state, &mut |record| {
             directory.replace_record(execution, schema, &view, record, &mut resolution)
         })?;
         // Require the exact closure: omitted bytes refuse during field traversal;
@@ -65,6 +67,32 @@ impl ContentDirectory {
             return Err(Denial::NonCanonicalContent);
         }
         Ok(directory)
+    }
+    pub(in crate::content) fn prepare_schema_transition(
+        &self,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        execution: &ExecutionRequest<'_, '_>,
+        schema: &RelationalSchemaRegistry,
+        attachments: &RelationalContentAttachments,
+        state: &dyn crate::storage::overlay::CurrentPartitionAccess,
+        version: crate::identity::data::VersionId,
+        source: Option<&Self>,
+    ) -> Result<Self, Denial> {
+        let staged = ContentFrameAdmission::admit(execution, &schema.content_formats, attachments)?;
+        let mut next = Self::default();
+        let view = InvariantStateView::new(state, version);
+        let mut resolved = ExecutionOrderedMap::default();
+        let mut resolution = ContentResolution::new(
+            &schema.content_formats,
+            &staged,
+            self,
+            source,
+            &mut resolved,
+        );
+        crate::content::reconstruction::visit_records(lane, execution, state, &mut |record| {
+            next.replace_record(execution, schema, &view, record, &mut resolution)
+        })?;
+        Ok(next)
     }
     /// Existing immutable fields/bytes remain certified. Only the incoming
     /// envelope's declared records need fresh admission and exact comparison.

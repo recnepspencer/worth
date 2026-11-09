@@ -168,6 +168,13 @@ impl PerformedPublicationStream {
             self.reservation.assignments.fetch_add(1, Ordering::Relaxed);
             let completed = cutover(positioned.position());
             route.mark_performed();
+            crate::execution::phase_observation::published_commit(
+                positioned
+                    .envelope()
+                    .patch
+                    .authoritative_record_patches
+                    .len(),
+            );
             (positioned, completed)
         }))
     }

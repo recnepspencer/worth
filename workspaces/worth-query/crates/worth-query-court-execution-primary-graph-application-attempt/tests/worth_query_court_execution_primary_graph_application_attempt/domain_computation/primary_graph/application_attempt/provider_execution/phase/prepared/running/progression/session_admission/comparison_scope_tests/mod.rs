@@ -100,7 +100,7 @@ fn primary_comparison_scope_preserves_registration_cancellation_cleanup_and_retr
                 };
                 let running = start_managed_application_commit(phase, &world.application, prepared)
                     .unwrap_or_else(|outcome| panic!("overlay fixture must start: {outcome:?}"));
-                let (admission, lease, provider_attempt, outcome_identity, _workflow_settlement_publication, mut authorization, retained_idempotency, mut running, mutation_run, attempt_basis, aftermath_causality, _completion_storage,) = running.into_parts_for_test();
+                let (_coupled_outputs, admission, lease, provider_attempt, outcome_identity, _workflow_settlement_publication, mut authorization, retained_idempotency, mut running, mutation_run, attempt_basis, aftermath_causality, _completion_storage,) = running.into_parts_for_test();
                 let admitted_session = admit_provider_session(
                     phase,
                     &mut running,

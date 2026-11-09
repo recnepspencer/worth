@@ -19,8 +19,6 @@ worth_query_portable_type!(Input => "worth.query.certification.record-history.ca
 worth_query_structured_value_binding!(pub InputBinding for Input { identity: "worth.query.certification.record-history.capability-input.v1" });
 worth_query_operation!(pub PayloadRead for DocumentRetentionSchema, input InputBinding);
 worth_query_operation!(pub MetadataRead for DocumentRetentionSchema, input InputBinding);
-worth_query_operation_reads!(PayloadRead => [DocumentIdentityField]);
-worth_query_operation_reads!(MetadataRead => [DocumentIdentityField]);
 
 pub trait Role: ApplicationCapabilityMarkerIdentity<Schema = DocumentRetentionSchema> {
     const ACTION: &'static str;
@@ -47,9 +45,10 @@ impl<Capability: Role> ApplicationCapabilityRequest<DocumentRetentionSchema, Cap
     > {
         Ok(ApplicationCapabilityRequestProjection::new(
             ApplicationCapabilityEntitySelector::new(
-                DocumentIdentityField::reference(),
+                DocumentIdentityField::at("DocumentIdentityField"),
                 text(&self.identity),
-            ),
+            )
+            .unwrap(),
             text(Capability::ACTION),
             encoded(),
             ApplicationCapabilityRequestContext::new(WorkflowReadContext::reference()),
@@ -81,9 +80,10 @@ where
             ApplicationCapabilityDisclosureRule::permit([
                 ApplicationCapabilityScopeGuard::requiring([
                     ApplicationCapabilityAcceptedValues::one_of(
-                        WorkflowGrantPurposeField::reference(),
+                        WorkflowGrantPurposeField::at("WorkflowGrantPurposeField"),
                         [encoded()],
-                    ),
+                    )
+                    .unwrap(),
                 ]),
             ]),
         ),
@@ -95,38 +95,51 @@ where
     )
     .target(ApplicationCapabilityTargetDefinition::new(
         ApplicationCapabilityValueBinding::new(
-            WorkflowGrantActionField::reference(),
+            WorkflowGrantActionField::at("WorkflowGrantActionField"),
             text(C::ACTION),
-        ),
+        )
+        .unwrap(),
         ApplicationCapabilityRelationBinding::from_reference(WorkflowGrantResource::reference()),
         ApplicationCapabilityRelationDimension::not_applicable(),
-        ApplicationCapabilityFieldDimension::bound(WorkflowGrantPurposeField::reference()),
-        ApplicationCapabilityValueBinding::new(WorkflowGrantPurposeField::reference(), encoded()),
+        ApplicationCapabilityFieldDimension::bound(WorkflowGrantPurposeField::at(
+            "WorkflowGrantPurposeField",
+        ))
+        .unwrap(),
+        ApplicationCapabilityValueBinding::new(
+            WorkflowGrantPurposeField::at("WorkflowGrantPurposeField"),
+            encoded(),
+        )
+        .unwrap(),
     ))
     .constraints(ApplicationCapabilityConstraintDefinition::new(
         ApplicationCapabilityMagnitudeDimension::not_applicable(),
         ApplicationCapabilityCardinalityDimension::One,
         ApplicationCapabilityCurrentnessDefinition::new(
             ApplicationCapabilityValueBinding::new(
-                WorkflowGrantStatusField::reference(),
+                WorkflowGrantStatusField::at("WorkflowGrantStatusField"),
                 text("active"),
-            ),
+            )
+            .unwrap(),
             ApplicationCapabilityWorkflowDefinition::new(
-                ApplicationCapabilityFieldBinding::from_reference(
-                    WorkflowGrantWorkflowField::reference(),
-                ),
-                ApplicationCapabilityFieldBinding::from_reference(
-                    DocumentIdentityField::reference(),
-                ),
+                ApplicationCapabilityFieldBinding::from_reference(WorkflowGrantWorkflowField::at(
+                    "WorkflowGrantWorkflowField",
+                ))
+                .unwrap(),
+                ApplicationCapabilityFieldBinding::from_reference(DocumentIdentityField::at(
+                    "DocumentIdentityField",
+                ))
+                .unwrap(),
             ),
             ApplicationCapabilityValidityDefinition::new(
                 ApplicationCapabilityValidityTimeline::UnixEpochSeconds,
-                ApplicationCapabilityFieldBinding::from_reference(
-                    WorkflowGrantNotBeforeField::reference(),
-                ),
-                ApplicationCapabilityFieldBinding::from_reference(
-                    WorkflowGrantNotAfterField::reference(),
-                ),
+                ApplicationCapabilityFieldBinding::from_reference(WorkflowGrantNotBeforeField::at(
+                    "WorkflowGrantNotBeforeField",
+                ))
+                .unwrap(),
+                ApplicationCapabilityFieldBinding::from_reference(WorkflowGrantNotAfterField::at(
+                    "WorkflowGrantNotAfterField",
+                ))
+                .unwrap(),
             ),
         ),
         WorkflowReadContext::reference(),
@@ -135,9 +148,10 @@ where
         ApplicationCapabilityRelationBinding::from_reference(WorkflowGrantParent::reference()),
         ApplicationCapabilityRelationBinding::from_reference(WorkflowGrantGrantor::reference()),
         ApplicationCapabilityRelationBinding::from_reference(WorkflowGrantGrantee::reference()),
-        ApplicationCapabilityFieldBinding::from_reference(
-            WorkflowGrantDelegationLimitField::reference(),
-        ),
+        ApplicationCapabilityFieldBinding::from_reference(WorkflowGrantDelegationLimitField::at(
+            "WorkflowGrantDelegationLimitField",
+        ))
+        .unwrap(),
         WorkflowReadProvenance::reference(),
     ))
     .composition(composition)
@@ -158,7 +172,7 @@ pub fn declare(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_read_field(payload, DocumentIdentityField::reference())
+        .operation_read_field(payload, DocumentIdentityField::at("DocumentIdentityField"))
         .capability(contract(PayloadCapability::reference(), payload))
         .operation(
             metadata
@@ -167,6 +181,6 @@ pub fn declare(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_read_field(metadata, DocumentIdentityField::reference())
+        .operation_read_field(metadata, DocumentIdentityField::at("DocumentIdentityField"))
         .capability(contract(MetadataCapability::reference(), metadata))
 }

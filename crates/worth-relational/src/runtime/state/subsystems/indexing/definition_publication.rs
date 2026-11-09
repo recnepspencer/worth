@@ -8,7 +8,7 @@ pub(crate) struct IndexDefinitionPublication<'owner> {
 }
 
 impl IndexDefinitionReadBinding {
-    pub(crate) fn prepare_publication(
+    pub(crate) fn prepare_definition_publication(
         &self,
         prepared: Arc<PreparedRelationalIndexDefinitions>,
     ) -> Result<IndexDefinitionPublication<'_>, crate::mvcc::RelationalPublicationDenial> {

@@ -42,7 +42,7 @@ impl FieldCandidate {
         source: &worth_foundational::facade::PortableRecordAspectPatch,
     ) -> Result<Self, Cause> {
         let bytes = source
-            .clone_allocation_bytes()
+            .clone_retained_storage_bytes()
             .ok_or(Cause::ChargedBytesOverflow)?;
         let funding = request.reserve_retained_memory(
             u64::try_from(bytes).map_err(|_| Cause::ChargedBytesOverflow)?,

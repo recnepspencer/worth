@@ -4,57 +4,31 @@ use super::{
     ApplicationOperationBodyCreatedField as Step, ApplicationOperationBodyCreationBuilder,
 };
 use crate::application_schema::{
-    ApplicationFieldPresence, ApplicationFieldRef, ApplicationFieldUnit,
-    ApplicationOperationBodyCreation, ApplicationSigningProvenanceEncoding as Encoding,
-    DeclaredApplicationFieldValue, OperationReads, OperationWrites, OptionalApplicationFieldValue,
+    ApplicationFieldPresence, ApplicationOperationBodyCreation,
+    ApplicationSigningProvenanceEncoding as Encoding,
 };
 
 impl<Schema, Operation, Input, Entity>
     ApplicationOperationBodyCreationBuilder<Schema, Operation, Input, Entity>
 {
-    pub fn capture_from_scope<
-        SourceEntity,
-        SourceAspect,
-        SourceField,
-        SourceWrite,
-        SourceEquality,
-        TargetAspect,
-        TargetField,
-        TargetWrite,
-        TargetEquality,
-        Value,
-        Unit,
-    >(
+    pub fn capture_from_scope<Source, Field>(
         self,
-        source: ApplicationFieldRef<
-            Schema,
-            SourceEntity,
-            SourceAspect,
-            SourceField,
-            Value,
-            SourceWrite,
-            SourceEquality,
-            Unit,
-        >,
-        field: ApplicationFieldRef<
-            Schema,
-            Entity,
-            TargetAspect,
-            TargetField,
-            Value,
-            TargetWrite,
-            TargetEquality,
-            Unit,
-        >,
+        source: Source,
+        field: Field,
         role: Role,
     ) -> Result<Self, Denial>
     where
-        SourceField: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        TargetField: OperationWrites<Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
+        Source: crate::application_schema::fragment::RecordSelection,
+        Field: crate::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Value = Source::Value,
+            Binding = Source::Binding,
+        >,
     {
-        if TargetField::PRESENCE != ApplicationFieldPresence::Required
-            || SourceField::PRESENCE != ApplicationFieldPresence::Required
+        if super::record_authoring::resolve(source)?.presence()
+            != ApplicationFieldPresence::Required
+            || super::record_authoring::resolve(field)?.presence()
+                != ApplicationFieldPresence::Required
         {
             return Err(Denial::IncompatibleSourceBinding);
         }
@@ -62,47 +36,19 @@ impl<Schema, Operation, Input, Entity>
             .initialize_from_scope(source, field)?
             .classify_last_capture(role))
     }
-
-    pub fn capture_from_present_scope<
-        SourceEntity,
-        SourceAspect,
-        SourceField,
-        SourceWrite,
-        SourceEquality,
-        TargetAspect,
-        TargetField,
-        TargetWrite,
-        TargetEquality,
-        Value,
-        Unit,
-    >(
+    pub fn capture_from_present_scope<Source, Field>(
         self,
-        source: ApplicationFieldRef<
-            Schema,
-            SourceEntity,
-            SourceAspect,
-            SourceField,
-            Value,
-            SourceWrite,
-            SourceEquality,
-            Unit,
-        >,
-        target: ApplicationFieldRef<
-            Schema,
-            Entity,
-            TargetAspect,
-            TargetField,
-            Value,
-            TargetWrite,
-            TargetEquality,
-            Unit,
-        >,
+        source: Source,
+        target: Field,
         role: Role,
     ) -> Result<Self, Denial>
     where
-        SourceField: OperationReads<Operation> + OptionalApplicationFieldValue<Value = Value>,
-        TargetField: OperationWrites<Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
+        Source: crate::application_schema::fragment::RecordSelection,
+        Field: crate::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Value = Source::Value,
+            Binding = Source::Binding,
+        >,
     {
         Ok(self
             .initialize_from_present_scope(source, target)?

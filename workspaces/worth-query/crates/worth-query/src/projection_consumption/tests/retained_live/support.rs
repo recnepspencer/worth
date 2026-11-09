@@ -39,6 +39,7 @@ pub(super) fn test_result_shape_identity(label: &str) -> WorthQueryEvidenceIdent
     crate::identity::canonical_result_shape_evidence_identity(
         test_result_shape_artifact(label).result_shape_identity(),
     )
+    .expect("fixture digest must fit")
 }
 
 pub(super) fn test_result_shape_artifact(
@@ -70,6 +71,7 @@ fn test_live_installation_identity(label: &str) -> WorthQueryEvidenceIdentity {
         )
         .field_shape(WorthQueryEvidenceTag::new("installation"), label)
         .seal()
+        .expect("fixture digest must fit")
 }
 pub(super) fn authorized_projection(
     query_digest: &str,
@@ -131,7 +133,8 @@ pub(super) fn retained_binding() -> crate::runtime::WorthQueryDerivedArtifactBin
                 ),
             ),
         ]),
-    );
+    )
+    .expect("fixture digest must fit");
 
     bundle
         .bind_retained_artifact("retained.binding", [first.clone(), second.clone()])
@@ -150,11 +153,13 @@ pub(super) fn live_binding() -> crate::runtime::WorthQueryLiveArtifactBinding {
                 WorthQueryLiveReadResult::test_only(
                     vec![
                         WorthQueryEntity::from_native_field_values(
-                            crate::memory_workspace::admit_authored_entity_label("entity-1"),
+                            crate::memory_workspace::admit_authored_entity_label("entity-1")
+                                .expect("fixture digest must fit"),
                             projection_values([("profile.display_name", text_value("First"))]),
                         ),
                         WorthQueryEntity::from_native_field_values(
-                            crate::memory_workspace::admit_authored_entity_label("entity-2"),
+                            crate::memory_workspace::admit_authored_entity_label("entity-2")
+                                .expect("fixture digest must fit"),
                             projection_values([("profile.display_name", text_value("Second"))]),
                         ),
                     ],
@@ -168,14 +173,16 @@ pub(super) fn live_binding() -> crate::runtime::WorthQueryLiveArtifactBinding {
                         "result:first",
                         live_snapshot.clone(),
                         2,
-                    ),
+                    )
+                    .expect("fixture digest must fit"),
                 ),
             ),
             (
                 second.clone(),
                 WorthQueryLiveReadResult::test_only(
                     vec![WorthQueryEntity::from_native_field_values(
-                        crate::memory_workspace::admit_authored_entity_label("entity-3"),
+                        crate::memory_workspace::admit_authored_entity_label("entity-3")
+                            .expect("fixture digest must fit"),
                         projection_values([("profile.display_name", text_value("Third"))]),
                     )],
                     WorthQueryLiveReadReceipt::test_only(
@@ -188,11 +195,13 @@ pub(super) fn live_binding() -> crate::runtime::WorthQueryLiveArtifactBinding {
                         "result:second",
                         live_snapshot.clone(),
                         1,
-                    ),
+                    )
+                    .expect("fixture digest must fit"),
                 ),
             ),
         ]),
-    );
+    )
+    .expect("fixture digest must fit");
 
     bundle
         .bind_live_artifact("live.binding", [first.clone(), second.clone()])
@@ -220,7 +229,8 @@ pub(super) fn retained_struct_binding() -> crate::runtime::WorthQueryDerivedArti
                 ),
             ),
         )]),
-    );
+    )
+    .expect("fixture digest must fit");
     bundle
         .bind_retained_artifact("retained.struct.binding", [target])
         .unwrap()
@@ -230,7 +240,8 @@ pub(super) fn live_struct_binding() -> crate::runtime::WorthQueryLiveArtifactBin
     let snapshot = retained_live_snapshot_identity("snapshot-live-struct");
     let target = WorthQueryLiveArtifactTarget::test_only("live.struct");
     let row = WorthQueryEntity::from_aspect_projection(
-        crate::memory_workspace::admit_authored_entity_label("entity-struct"),
+        crate::memory_workspace::admit_authored_entity_label("entity-struct")
+            .expect("fixture digest must fit"),
         BTreeMap::new(),
         BTreeMap::from([(AspectKey::new("profile").unwrap(), profile_struct_value())]),
         BTreeMap::new(),
@@ -251,10 +262,12 @@ pub(super) fn live_struct_binding() -> crate::runtime::WorthQueryLiveArtifactBin
                     "result:struct",
                     snapshot,
                     1,
-                ),
+                )
+                .expect("fixture digest must fit"),
             ),
         )]),
-    );
+    )
+    .expect("fixture digest must fit");
     bundle
         .bind_live_artifact("live.struct.binding", [target])
         .unwrap()

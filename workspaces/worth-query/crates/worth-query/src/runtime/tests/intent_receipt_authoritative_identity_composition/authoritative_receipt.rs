@@ -84,7 +84,9 @@ fn compose_authoritative_intent_receipt_identity_with_effect_trigger(
         )
         .optional_evidence_identity(
             WorthQueryEvidenceTag::new("effect_trigger_digest"),
-            effect_trigger_identity.as_ref(),
+            effect_trigger_identity
+                .as_ref()
+                .map(|value| value.as_ref().expect("fixture digest must fit")),
         )
         .field_evidence_identity(
             WorthQueryEvidenceTag::new("commit_evidence_identity"),
@@ -169,6 +171,7 @@ fn compose_authoritative_intent_receipt_identity_with_effect_trigger(
             receipt.decision_trace_envelope().trace_digest(),
         )
         .seal()
+        .expect("fixture digest must fit")
 }
 
 pub(in crate::runtime::tests) fn compose_intent_execution_provenance_chain_identity(
@@ -209,6 +212,7 @@ pub(in crate::runtime::tests) fn compose_intent_execution_provenance_chain_ident
             receipt.snapshot_evidence_identity(),
         )
         .seal()
+        .expect("fixture digest must fit")
 }
 
 fn receipt_value_identities(
@@ -223,5 +227,6 @@ fn receipt_value_identities(
                 .field_value(WorthQueryEvidenceTag::new("value"), value)
                 .seal()
         })
-        .collect()
+        .collect::<Result<_, _>>()
+        .expect("fixture digests must fit")
 }

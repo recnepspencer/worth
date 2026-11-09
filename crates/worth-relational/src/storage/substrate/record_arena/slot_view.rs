@@ -20,6 +20,16 @@ impl<'a, K: RecordKind> SlotView<'a, K> {
         }
     }
 
+    pub(crate) fn record_id(&self) -> crate::identity::data::RecordId<K::Domain> {
+        crate::identity::data::RecordId::new(
+            self.partition_id(),
+            self.arena.slots.slots()[self.physical],
+            self.generation(),
+        )
+    }
+    pub(crate) fn created_at_version(&self) -> VersionId {
+        self.arena.created_at[self.physical]
+    }
     pub(crate) fn generation(&self) -> u32 {
         self.arena.generations[self.physical]
     }

@@ -30,7 +30,7 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Rer
         account: &Root,
     ) -> Result<WorthQueryComputationPartitionPlan<Number>, WorthQueryComputationInputDenial<u32>>
     {
-        reader.field(account, AccountStatus::reference())?;
+        reader.field(account, AccountStatus::at("AccountStatus"))?;
         let entries = self.entries.lock().unwrap().clone();
         Ok(WorthQueryComputationPartitionPlan::keyed(
             entries.into_iter().rev().map(|(id, entry)| item(id, entry)),
@@ -44,7 +44,7 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Rer
         account: &Root,
         item: &Number,
     ) -> Result<Parity, WorthQueryComputationInputDenial<u32>> {
-        reader.field(account, AccountLabel::reference())?;
+        reader.field(account, AccountLabel::at("AccountLabel"))?;
         self.keyed.lock().unwrap().push(item.0 / 1_000_000);
         Ok(Parity(item.0 / 1_000 % 1_000))
     }
@@ -56,7 +56,7 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Rer
         partition: WorthQueryComputationPartitionMembers<'_, Parity, Number>,
     ) -> Result<u64, WorthQueryComputationInputDenial<u32>> {
         if !*self.key_only.lock().unwrap() {
-            reader.field(account, AccountLabel::reference())?;
+            reader.field(account, AccountLabel::at("AccountLabel"))?;
         }
         self.gathered.lock().unwrap().push(partition.key().0);
         let key_value = if *self.key_only.lock().unwrap() {

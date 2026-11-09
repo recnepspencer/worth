@@ -1,3 +1,4 @@
+use crate::facade::certification::granular_invalidation::financial_runtime_world::schema as stored;
 pub use std::collections::BTreeMap;
 
 pub use worth_foundational::facade::{
@@ -161,15 +162,24 @@ pub fn unrelated_portfolio_rows(
                 foundation::WorthQueryEntityIdentity::from_bridge_record_projection(record),
                 BTreeMap::from([
                     (
-                        path("PortfolioFacts", "PortfolioValueField")?,
+                        path(
+                            stored::PortfolioFacts::reference().name(),
+                            "PortfolioValueField",
+                        )?,
                         AspectValue::UInt64(1_000 + offset as u64),
                     ),
                     (
-                        path("PortfolioFacts", "PortfolioDeskField")?,
+                        path(
+                            stored::PortfolioFacts::reference().name(),
+                            "PortfolioDeskField",
+                        )?,
                         AspectValue::String("rates".into()),
                     ),
                     (
-                        path("PortfolioFacts", "PortfolioRankField")?,
+                        path(
+                            stored::PortfolioFacts::reference().name(),
+                            "PortfolioRankField",
+                        )?,
                         AspectValue::UInt64(if offset == 0 {
                             2
                         } else {
@@ -275,12 +285,12 @@ pub fn project_financial_aspect_state(
         }));
     }
     if derive_risk_from_curve {
-        let curve_path = path("CurveFacts", "CurveZeroRateField")?;
+        let curve_path = path(stored::CurveFacts::reference().name(), "CurveZeroRateField")?;
         let AspectValue::UInt64(curve_rate) = fields.get(&curve_path)? else {
             return None;
         };
         fields.insert(
-            path("RiskFacts", "RiskValueField")?,
+            path(stored::RiskFacts::reference().name(), "RiskValueField")?,
             AspectValue::UInt64(5_100 + curve_rate.saturating_sub(4_250) * 2),
         );
     }

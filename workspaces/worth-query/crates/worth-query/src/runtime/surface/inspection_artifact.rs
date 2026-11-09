@@ -1,5 +1,6 @@
 use super::super::{WorthQueryAuthorityLane, WorthQueryRuntimeInspectionEvidence};
 use super::mutation::WorthQueryWriteReceipt;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -43,8 +44,11 @@ impl<'a> WorthQueryArtifactInspector<'a> {
         &self.runtime_evidence
     }
 
-    pub fn live_patch_artifacts(&self) -> Vec<WorthQueryEvidenceIdentity> {
-        self.receipt
+    pub fn live_patch_artifacts(
+        &self,
+    ) -> Result<Vec<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
+        Ok(self
+            .receipt
             .deltas()
             .iter()
             .map(|delta| {
@@ -59,7 +63,7 @@ impl<'a> WorthQueryArtifactInspector<'a> {
                 )
                 .seal()
             })
-            .collect()
+            .collect::<Result<Vec<_>, _>>()?)
     }
 }
 

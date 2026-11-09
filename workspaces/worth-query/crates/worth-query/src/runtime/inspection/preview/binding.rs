@@ -2,6 +2,7 @@ use super::super::super::{
     WorthQueryAuthorityLane, WorthQueryEffectPolicy, WorthQueryPreviewHandleBindingEvidence,
     WorthQueryPreviewHandleBindingFamily,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -28,7 +29,7 @@ pub struct WorthQueryPreviewBindingInspection {
 impl WorthQueryPreviewBindingInspection {
     pub(in crate::runtime) fn from_binding(
         binding: &WorthQueryPreviewHandleBindingEvidence,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let basis_evidence = binding.basis_evidence().to_vec();
         let basis_digest = worth_query_evidence_identity(
             WorthQueryEvidenceScope::PreviewBindingInspectionArtifact,
@@ -46,7 +47,7 @@ impl WorthQueryPreviewBindingInspection {
             WorthQueryEvidenceTag::new("basis_evidence"),
             basis_evidence.iter().map(String::as_str),
         )
-        .seal()
+        .seal()?
         .as_str()
         .to_string();
         let effect_disposition = binding
@@ -97,7 +98,7 @@ impl WorthQueryPreviewBindingInspection {
             WorthQueryEvidenceTag::new("authoritative_side_effect_admitted"),
             binding.authoritative_side_effect_admitted(),
         )
-        .seal()
+        .seal()?
         .as_str()
         .to_string();
         let inspection_digest = worth_query_evidence_identity(
@@ -108,11 +109,11 @@ impl WorthQueryPreviewBindingInspection {
             WorthQueryEvidenceTag::new("admission_digest"),
             &admission_digest,
         )
-        .seal()
+        .seal()?
         .as_str()
         .to_string();
 
-        Self {
+        Ok(Self {
             label: binding.session_label().clone(),
             handle_name: binding.handle_name().to_string(),
             family: binding.family(),
@@ -127,7 +128,7 @@ impl WorthQueryPreviewBindingInspection {
             authoritative_side_effect_admitted: binding.authoritative_side_effect_admitted(),
             admission_digest,
             inspection_digest,
-        }
+        })
     }
 
     pub fn label(&self) -> &str {

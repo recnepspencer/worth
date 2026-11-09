@@ -1,7 +1,5 @@
 use serde_json::{Map, Number, Value};
-use worth_foundational::{
-    AspectValue, ContractValidatedAspectValueView, InternedString, StructAspectValue,
-};
+use worth_foundational::{AspectValue, ContractValidatedAspectValueView, StructAspectValue};
 
 use crate::{
     StoreAspectBoundaryFact, StoreAspectIdentity, StoreTerminalProjectionDenial,
@@ -145,12 +143,14 @@ fn aspect_value_to_terminal_json(
             value.numerator.as_str(),
             value.denominator.as_str()
         ))),
-        AspectValue::String(InternedString::Raw(value)) => Ok(Value::String(value.clone())),
-        AspectValue::String(InternedString::Symbol(_)) => Err(
-            StoreTerminalProjectionDenial::UnsupportedTerminalProjectionValue(
-                "symbolic string requires explicit symbol table projection",
+        AspectValue::String(value) => value
+            .raw_text()
+            .map(|text| Value::String(text.to_owned()))
+            .ok_or(
+                StoreTerminalProjectionDenial::UnsupportedTerminalProjectionValue(
+                    "symbolic string requires explicit symbol table projection",
+                ),
             ),
-        ),
         AspectValue::Uuid(value) => Ok(Value::Array(
             value
                 .iter()
@@ -193,4 +193,28 @@ fn entity_ref_to_terminal_json(value: &worth_foundational::EntityId) -> Value {
         Number::from(value.generation.0).into(),
     );
     Value::Object(object)
+}
+
+#[cfg(test)]
+mod textual_projection_tests {
+    use super::*;
+    use worth_foundational::{InternedString, Symbol};
+
+    #[test]
+    fn decoded_stored_text_keeps_raw_text_projection_and_symbols_still_refuse() {
+        let raw = InternedString::Raw("kept text".into());
+        let restored: InternedString =
+            serde_json::from_value(serde_json::to_value(&raw).unwrap()).unwrap();
+        assert!(matches!(&restored, InternedString::Stored(_)));
+        for text in [raw, restored] {
+            assert_eq!(
+                aspect_value_to_terminal_json(&AspectValue::String(text)).unwrap(),
+                Value::String("kept text".into())
+            );
+        }
+        assert!(matches!(
+            aspect_value_to_terminal_json(&AspectValue::String(InternedString::Symbol(Symbol(7)))),
+            Err(StoreTerminalProjectionDenial::UnsupportedTerminalProjectionValue(_))
+        ));
+    }
 }

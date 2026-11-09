@@ -1,4 +1,5 @@
 use super::super::performance::QueryContextCounters;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum QueryContextFamily {
@@ -80,6 +81,7 @@ impl QueryContextDriftOutcome {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum QueryContextAdmissionFailureClass {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     UnsupportedHistoricalBasis,
     InvalidBasisPairing,
     PreviewProvenanceRequired,
@@ -105,6 +107,16 @@ pub struct QueryContextAdmissionError {
 }
 
 impl QueryContextAdmissionError {
+    pub(crate) fn identity_refused(
+        cause: IdentityDerivationDenial,
+        counters: QueryContextCounters,
+    ) -> Self {
+        Self::new(
+            QueryContextAdmissionFailureClass::EvidenceIdentityDerivationDenied(cause),
+            "query context evidence identity exceeded its digest bounds",
+            counters,
+        )
+    }
     pub fn failure_class(&self) -> &QueryContextAdmissionFailureClass {
         &self.failure_class
     }

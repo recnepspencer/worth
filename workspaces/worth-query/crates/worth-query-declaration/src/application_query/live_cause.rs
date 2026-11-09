@@ -1,6 +1,5 @@
 use crate::application_schema::{
-    ApplicationEffectRef, ApplicationFieldUnit, ApplicationScalarValueBinding,
-    ApplicationStructuredValueBinding, EqualityPredicate, ReadOnly,
+    ApplicationEffectRef, ApplicationScalarValueBinding, ApplicationStructuredValueBinding,
 };
 use crate::portable_identity::{WorthQueryPortableType, WorthQueryPortableTypeIdentity};
 
@@ -160,51 +159,30 @@ impl ApplicationQueryLiveCauseContract {
         ScopeSlot,
         ScopeAspect,
         ScopeField,
-        ScopeUnit,
         TargetSlot,
         TargetAspect,
         TargetField,
-        TargetUnit,
     >(
-        scope_identity: ApplicationQueryResultFieldRef<
-            Query,
-            ScopeSlot,
-            Schema,
-            Scope,
-            ScopeAspect,
-            ScopeField,
-            <Binding::ScopeIdentityBinding as ApplicationScalarValueBinding>::Value,
-            ReadOnly,
-            EqualityPredicate,
-            ScopeUnit,
-        >,
-        target_identity: ApplicationQueryResultFieldRef<
-            Query,
-            TargetSlot,
-            Schema,
-            Target,
-            TargetAspect,
-            TargetField,
-            <Binding::TargetIdentityBinding as ApplicationScalarValueBinding>::Value,
-            ReadOnly,
-            EqualityPredicate,
-            TargetUnit,
-        >,
+        scope_identity: ApplicationQueryResultFieldRef<Query, ScopeSlot, Schema, ScopeField>,
+        target_identity: ApplicationQueryResultFieldRef<Query, TargetSlot, Schema, TargetField>,
 
         target_mode: ApplicationQueryLiveTargetMode,
+        _: std::marker::PhantomData<Binding>,
     ) -> Self
     where
         Binding: ApplicationQueryLiveCauseBinding<Schema, Query, Scope, Target>,
-        ScopeField: crate::application_schema::RequiredApplicationFieldValue<
+        ScopeField: crate::application_schema::fragment::RecordSelection<
+            Entity = Scope,
+            Aspect = ScopeAspect,
             Value = <Binding::ScopeIdentityBinding as ApplicationScalarValueBinding>::Value,
             Binding = Binding::ScopeIdentityBinding,
         >,
-        TargetField: crate::application_schema::RequiredApplicationFieldValue<
+        TargetField: crate::application_schema::fragment::RecordSelection<
+            Entity = Target,
+            Aspect = TargetAspect,
             Value = <Binding::TargetIdentityBinding as ApplicationScalarValueBinding>::Value,
             Binding = Binding::TargetIdentityBinding,
         >,
-        ScopeUnit: ApplicationFieldUnit,
-        TargetUnit: ApplicationFieldUnit,
         Query: ApplicationQueryMarkerIdentity<Schema>,
         ScopeSlot: WorthQueryPortableType,
         TargetSlot: WorthQueryPortableType,

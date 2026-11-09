@@ -31,7 +31,7 @@ fn governed_original_intent_read_uses_fresh_subject_and_independent_audit_at_ret
                 runtime
                     .release_equality_index_generations_for_test(
                         &phase,
-                        DocumentRetentionField::reference()
+                        DocumentRetentionField::at("DocumentRetentionField")
                     )
                     .unwrap()
                     > 0
@@ -40,7 +40,7 @@ fn governed_original_intent_read_uses_fresh_subject_and_independent_audit_at_ret
                 .has_equality_index_generation_for_test(
                     &phase,
                     runtime.current_world(),
-                    DocumentRetentionField::reference()
+                    DocumentRetentionField::at("DocumentRetentionField")
                 )
                 .unwrap());
         })
@@ -132,7 +132,7 @@ fn governed_original_intent_read_uses_fresh_subject_and_independent_audit_at_ret
                     .has_equality_index_generation_for_test(
                         &phase,
                         runtime.current_world(),
-                        DocumentRetentionField::reference()
+                        DocumentRetentionField::at("DocumentRetentionField")
                     )
                     .unwrap(),
                 "subject/audit/exact lookup must leave the unrelated cold index unpublished"

@@ -14,7 +14,7 @@ pub fn assert_projection(world: &World<Logical>, expected: &operation::Checked) 
                 .project(
                     &phase,
                     |reader| {
-                        let face = reader.resolve_entity(NodeKey::reference(), 0).unwrap();
+                        let face = reader.resolve_entity(node_key::<GraphSchema<Logical>>(), 0).unwrap();
                         // compiled-example: begin
                         let root = reader.entity_member(&face).unwrap();
                         let cases = reader
@@ -91,7 +91,9 @@ pub fn assert_projection(world: &World<Logical>, expected: &operation::Checked) 
                             denied.kind(),
                             WorthQueryInvariantProjectionTraversalDenialKind::ForeignIdentity
                         );
-                        let face = reader.resolve_entity(NodeKey::reference(), 0).unwrap();
+                        let face = reader
+                            .resolve_entity(node_key::<GraphSchema<Logical>>(), 0)
+                            .unwrap();
                         let root = reader.entity_member(&face).unwrap();
                         let cases = reader
                             .derived_member_relations_from(RootUses::reference(), &root)

@@ -108,13 +108,16 @@ fn compose_graph_supports_verified_existing_target_lifecycle() {
         .expect("graph composition receipt should expose composition program");
     let lifecycle = receipt
         .graph_composition_lifecycle_outcomes()
-        .expect("graph composition receipt should expose lifecycle outcomes");
+        .expect("graph composition receipt should expose lifecycle outcomes")
+        .expect("fixture digest must fit");
     let evidence = receipt
         .graph_composition_evidence()
-        .expect("graph composition receipt should expose composition evidence");
+        .expect("graph composition receipt should expose composition evidence")
+        .expect("fixture digest must fit");
     let assumptions = receipt
         .graph_composition_assumption_summary()
-        .expect("verified graph composition should expose assumption summary");
+        .expect("verified graph composition should expose assumption summary")
+        .expect("fixture digest must fit");
 
     assert_eq!(program.component_count(), 3);
     assert_eq!(

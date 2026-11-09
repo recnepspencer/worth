@@ -23,26 +23,6 @@ impl WorkingState {
             .insert(slot);
     }
 
-    pub(crate) fn mark_adjacency_slot_touched(&mut self, partition_id: PartitionId, slot: usize) {
-        self.mutation_journal
-            .entry(partition_id)
-            .or_default()
-            .adjacency_slots
-            .insert(slot);
-    }
-
-    pub(crate) fn mark_reverse_adjacency_slot_touched(
-        &mut self,
-        partition_id: PartitionId,
-        slot: usize,
-    ) {
-        self.mutation_journal
-            .entry(partition_id)
-            .or_default()
-            .reverse_adjacency_slots
-            .insert(slot);
-    }
-
     pub(crate) fn mutation_journal(
         &self,
     ) -> &SharedMap<PartitionId, super::super::PartitionMutationJournal> {

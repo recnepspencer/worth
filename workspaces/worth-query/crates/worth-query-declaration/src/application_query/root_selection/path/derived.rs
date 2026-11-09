@@ -20,6 +20,7 @@ impl<S, Start, Current> ApplicationQueryRootPath<S, Start, Current> {
             current_entity: relation.to(),
             steps: self.steps,
             guards: self.guards,
+            field_expectations: self.field_expectations,
             _marker: PhantomData,
         }
     }
@@ -41,6 +42,7 @@ impl<S, Start, Current> ApplicationQueryRootPath<S, Start, Current> {
             current_entity: relation.from(),
             steps: self.steps,
             guards: self.guards,
+            field_expectations: self.field_expectations,
             _marker: PhantomData,
         }
     }

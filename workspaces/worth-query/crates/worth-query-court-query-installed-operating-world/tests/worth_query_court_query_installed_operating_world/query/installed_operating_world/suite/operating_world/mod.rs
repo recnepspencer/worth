@@ -8,7 +8,9 @@ fn required_domain_is_resolved_and_retained_by_the_bound_capability() {
     let workspace = required_domain_runtime(true)
         .workspace(request_execution, "operating-world-required-domain")
         .unwrap();
-    let rebuild = workspace.verify_domain_execution_index_rebuild();
+    let rebuild = workspace
+        .verify_domain_execution_index_rebuild()
+        .expect("fixture digest must fit");
     assert!(rebuild.is_equivalent());
     assert_eq!(rebuild.operation_required_domain_count(), 1);
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
@@ -132,6 +134,7 @@ fn read_only_operation_does_not_claim_or_contact_adapter_commit_authority() {
     assert_eq!(
         workspace
             .verify_domain_execution_index_rebuild()
+            .expect("fixture digest must fit")
             .operation_graph_participation_count(),
         2
     );

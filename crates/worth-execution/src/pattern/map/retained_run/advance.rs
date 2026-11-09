@@ -112,8 +112,9 @@ impl<R: Send + Sync> ExecutionRetainedRun<R> {
             -> Result<BatchOutcome<ExecutionRetainedResult<R>, E>, RetainedRunDenial>,
     ) -> Result<RetainedRunOutcome<R, E>, RetainedRunDenial> {
         let operation = |lease: Option<&ExecutionResourceLease<'_>>| {
-            // Re-admit cached incoming backing under the fresh request;
-            // original node/result grants remain alive independently.
+            // Existing accounted node/result cells retain their original grants.
+            // New nodes and evaluations fund only their own allocations under
+            // this request; carrying a view does not allocate the prior tree.
             let accounted = !native || crate::backend::RunLimits::native_accounting(lease);
             if accounted
                 && !self.accounted
@@ -123,16 +124,6 @@ impl<R: Send + Sync> ExecutionRetainedRun<R> {
                     RetainedMapDenial::RequiresExecution(id),
                 ));
             }
-            let _prior_hold = if accounted {
-                Some(crate::ExecutionMemoryReservation::reserve_in_scope(
-                    lease,
-                    self.tree.bytes(),
-                )?)
-            } else {
-                None
-            };
-            let _prior_activity =
-                accounted.then(|| crate::backend::enter_retained_memory(self.tree.bytes()));
             let mut tree = self.tree.clone();
             let mut metrics = RetainedRunMetrics {
                 supplied_inputs: changes.len() as u64,

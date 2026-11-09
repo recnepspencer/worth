@@ -3,8 +3,7 @@ use std::marker::PhantomData;
 use worth_query_consumer_values::{PlanarAdjustmentResult, PlanarMutationDenial};
 use worth_query_decl::facade::{
     application_operation::*, application_schema::*, worth_query_operation,
-    worth_query_operation_reads, worth_query_operation_writes,
-    worth_query_structured_value_binding,
+    worth_query_operation_reads, worth_query_structured_value_binding,
 };
 use worth_query_host::facade::application_contribution;
 use worth_query_host::facade::{
@@ -44,8 +43,7 @@ worth_query_structured_value_binding!(pub AlternatePlanarOutputDenialBinding for
     identity: "worth.query.certification.alternate-planar-output-denial.v1"
 });
 worth_query_operation!(pub PublishAlternatePlanarOutput for Schema: TopologySchemaBinding, input AlternatePlanarOutputInputBinding);
-worth_query_operation_reads!(PublishAlternatePlanarOutput => [Body, BodyKey, PositionY, Length]);
-worth_query_operation_writes!(PublishAlternatePlanarOutput => [PositionY, Length]);
+worth_query_operation_reads!(PublishAlternatePlanarOutput => [Body]);
 
 pub struct AlternatePlanarOutputBinding<Schema>(PhantomData<fn() -> Schema>);
 
@@ -68,7 +66,7 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     type Denial = PlanarMutationDenial;
     type DenialBinding = AlternatePlanarOutputDenialBinding;
     type Output = PlanarOutputs;
-    type ScopeBinding = PlanarMutationScope<Schema>;
+    type ScopeBinding = PlanarMutationScope;
     type PrincipalBinding = ConsumerPrincipalBinding;
     type Mapping = ExternalPrincipalMapping;
     type Principal = Principal;
@@ -82,17 +80,8 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.alternate-planar-output-command.v1";
 
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Body,
-        PlanarPosition,
-        BodyKey,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        BodyKey::reference()
+    fn scope_field() -> BodyKey {
+        BodyKey::at("BodyKey")
     }
 
     fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -114,8 +103,8 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationIntent<Schema> for Altern
         self
     }
 
-    fn scope_binding(&self) -> PlanarMutationScope<Schema> {
-        PlanarMutationScope::new(BodyKey::reference(), self.scope_key.clone())
+    fn scope_binding(&self) -> PlanarMutationScope {
+        PlanarMutationScope::new(BodyKey::at("BodyKey"), self.scope_key.clone())
     }
 }
 
@@ -151,11 +140,11 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, AlternatePlanarOutp
         input: &AlternatePlanarOutput,
         reader: &mut DecisionReader<'_, '_, '_, Schema, AlternatePlanarOutputBinding<Schema>>,
     ) -> HandlerResult<worth_query_consumer_values::PositiveLength, PlanarMutationDenial> {
-        let anchor = match reader.resolve_entity(BodyKey::reference(), input.output_key.clone()) {
+        let anchor = match reader.resolve_entity(BodyKey::at("BodyKey"), input.output_key.clone()) {
             Ok(anchor) => anchor,
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };
-        let y = match reader.field(&anchor, PositionY::reference()) {
+        let y = match reader.field(&anchor, PositionY::at("PositionY")) {
             Ok(Some(y)) => y,
             Ok(None) => {
                 return HandlerResult::DomainDenied(PlanarMutationDenial::MissingCoordinate)
@@ -165,7 +154,7 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, AlternatePlanarOutp
         if input.output_key.starts_with(SURVEYED_OUTPUT_KEY_PREFIX) {
             // The length the commit replaces is the basis of that write.
             let surveyed = reader
-                .field(&anchor, Length::reference())
+                .field(&anchor, Length::at("Length"))
                 .and_then(|_| super::handler::survey_standing_length(reader, above(y)));
             if let Err(error) = surveyed {
                 return HandlerResult::ExecutionDenied(error);
@@ -180,14 +169,14 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, AlternatePlanarOutp
         y: worth_query_consumer_values::PositiveLength,
         writer: &mut CandidateWriter<'_, Schema, AlternatePlanarOutputBinding<Schema>>,
     ) -> HandlerResult<PlanarAdjustmentResult, PlanarMutationDenial> {
-        let anchor = match writer.resolve_entity(BodyKey::reference(), input.output_key.clone()) {
+        let anchor = match writer.resolve_entity(BodyKey::at("BodyKey"), input.output_key.clone()) {
             Ok(anchor) => anchor,
             Err(error) => {
                 return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error))
             }
         };
         if input.output_key.starts_with(SURVEYED_OUTPUT_KEY_PREFIX)
-            && let Err(error) = writer.write_field(&anchor, Length::reference(), above(y))
+            && let Err(error) = writer.write_field(&anchor, Length::at("Length"), above(y))
         {
             return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
         }
@@ -196,7 +185,7 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, AlternatePlanarOutp
         } else {
             y
         };
-        if let Err(error) = writer.write_field(&anchor, PositionY::reference(), y) {
+        if let Err(error) = writer.write_field(&anchor, PositionY::at("PositionY"), y) {
             return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
         }
         match writer.preserve_output::<PlanarAnchorOutput<Schema>>(&anchor) {
@@ -265,11 +254,11 @@ pub(crate) fn declare_alternate_output<Schema: TopologySchemaBinding>(
         )
         .operation_projection_work_budget(operation, 8)
         .operation_read_entity(operation, Body::reference())
-        .operation_read_field(operation, BodyKey::reference())
-        .operation_read_field(operation, PositionY::reference())
-        .operation_read_field(operation, Length::reference())
-        .operation_write(operation, PositionY::reference())
-        .operation_write(operation, Length::reference())
+        .operation_read_field(operation, BodyKey::at("BodyKey"))
+        .operation_read_field(operation, PositionY::at("PositionY"))
+        .operation_read_field(operation, Length::at("Length"))
+        .operation_write(operation, PositionY::at("PositionY"))
+        .operation_write(operation, Length::at("Length"))
         .application_mutation_binding::<AlternatePlanarOutputBinding<Schema>>()
 }
 
@@ -288,7 +277,13 @@ worth_query_host::facade::worth_query_conditional_node!(
 pub struct AlternatePlanarReadiness<Schema>(PhantomData<fn() -> Schema>);
 
 impl<Schema: TopologySchemaBinding> AlternatePlanarReadiness<Schema> {
-    fn conditional_binding() -> domain::WorthQueryApplicationConditionalOperationBinding<
+    fn conditional_binding(
+        definition: &domain::WorthQueryDomainOperationDefinition<
+            AlternateReadinessDomain,
+            AlternateReadinessOperation,
+            AlternateReadinessFamily,
+        >,
+    ) -> domain::WorthQueryApplicationConditionalOperationBinding<
         Schema,
         PublishAlternatePlanarOutput,
         AlternatePlanarOutput,
@@ -298,7 +293,7 @@ impl<Schema: TopologySchemaBinding> AlternatePlanarReadiness<Schema> {
     > {
         domain::WorthQueryApplicationConditionalOperationBinding::declare(
             PublishAlternatePlanarOutput::reference::<Schema>(),
-            alternate_readiness_definition().reference(),
+            definition.reference(),
         )
     }
 }
@@ -316,18 +311,14 @@ impl<Schema: TopologySchemaBinding>
         &["worth.query.certification.alternate-planar-producer.v1"];
 
     fn package_contract(
-        _declaration: &worth_query_host::facade::declaration::application_schema::ErasedApplicationSchemaDeclaration,
+        declaration: &worth_query_host::facade::declaration::application_schema::ErasedApplicationSchemaDeclaration,
     ) -> Result<
         application_contribution::WorthQueryApplicationConditionalPackageContract,
         worth_query_host::facade::application_contribution::WorthQueryOutputReadinessContractDenial,
     > {
-        Ok({
-            application_contribution::WorthQueryApplicationConditionalPackageContract::new(
-                alternate_readiness_definition().into_portable(),
-                Self::conditional_binding().portable().clone(),
-                AlternatePlanarReadyNode::reference().node_identity(),
-            )
-        })
+        let contract = operation_contract(declaration)?;
+        let binding = Self::conditional_binding(contract.definition());
+        Ok(contract.into_package_contract(binding.portable().clone()))
     }
 
     fn install(
@@ -338,13 +329,16 @@ impl<Schema: TopologySchemaBinding>
         (),
         worth_query_host::facade::primary_graph::WorthQueryConditionalRuntimeInstallationDenial,
     > {
+        let contract = operation_contract(installation.installed_schema().installed_declaration())?;
+        let binding = Self::conditional_binding(contract.definition());
+
         let operation = installation
             .installed_schema()
             .installed_operation(PublishAlternatePlanarOutput::reference::<Schema>())
             .unwrap();
         let node = installation
             .installed_packages()
-            .bind_conditional_application_operation(operation, &Self::conditional_binding())
+            .bind_conditional_application_operation(operation, &binding)
             .unwrap()
             .bind_node(AlternatePlanarReadyNode::reference())
             .unwrap();
@@ -355,24 +349,24 @@ impl<Schema: TopologySchemaBinding>
     }
 }
 
-fn alternate_readiness_definition() -> domain::WorthQueryDomainOperationDefinition<
-    AlternateReadinessDomain,
-    AlternateReadinessOperation,
-    AlternateReadinessFamily,
+fn operation_contract(
+    declaration: &worth_query_decl::facade::application_schema::ErasedApplicationSchemaDeclaration,
+) -> Result<
+    worth_query_host::facade::application_contribution::WorthQueryOutputReadinessContract<
+        AlternateReadinessDomain,
+        AlternateReadinessOperation,
+        AlternateReadinessFamily,
+    >,
+    worth_query_host::facade::application_contribution::WorthQueryOutputReadinessContractDenial,
 > {
-    let dependency = super::readiness::output_change_dependency();
-    application_contribution::WorthQueryOutputReadinessContractBuilder::new(
-        domain::WorthQueryDomainOperationIdentity::new("alternate-planar-output-readiness", 1),
-        "alternate-planar-output-ready",
-        super::readiness::output_change_projection(),
-        super::readiness::canonical_query(),
-        domain::WorthQueryOperationProjectionRole::new("anchor").unwrap(),
-        domain::WorthQueryExecutionStrategyName::new("alternate-planar-readiness").unwrap(),
-        "alternate-planar-readiness-v1",
-    )
-    .semantic_reads([super::readiness::output_change_projection()])
-    .dependencies([dependency.clone()])
-    .readiness_dependencies([dependency])
-    .build()
-    .expect("alternate planar readiness declaration is canonical")
+    worth_query_host::facade::application_contribution::WorthQueryOutputReadinessContractBuilder::for_field(declaration,
+super::readiness::delivery_field(),
+domain::WorthQueryDomainOperationIdentity::new("alternate-planar-output-readiness", 1),
+"alternate-planar-output-ready",
+super::readiness::canonical_query(),
+domain::WorthQueryOperationProjectionRole::new("anchor").unwrap(),
+domain::WorthQueryExecutionStrategyName::new("alternate-planar-readiness").unwrap(),
+"alternate-planar-readiness-v1")?
+.field_dependency(declaration, super::readiness::delivery_field(), worth_query_host::facade::application_contribution::WorthQueryReadinessFieldUse::DeliveryAndEligibility)?
+.build_typed()
 }

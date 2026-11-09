@@ -20,7 +20,9 @@ fn composed_orchestration_matches_explicit_declaration_bound_support_pipeline() 
         Ok(value) => value,
         Err(_) => panic!("expected progressed declaration"),
     };
-    let target = handle.contribution_target(progressed.canonical_declaration());
+    let target = handle
+        .contribution_target(progressed.canonical_declaration())
+        .expect("fixture digest must fit");
     let envelope = match handle.orchestrate_envelope_from_progressed(progressed) {
         Ok(value) => value,
         Err(_) => panic!("expected envelope"),
@@ -29,7 +31,9 @@ fn composed_orchestration_matches_explicit_declaration_bound_support_pipeline() 
         "domain.traceability.face",
         "face selection remains traceable through declaration entry",
     )
-    .bind_to_installed_target(target);
+    .expect("fixture digest must fit")
+    .bind_to_installed_target(target)
+    .expect("fixture digest must fit");
     let eligible = match evaluate_requested_domain_capability_contribution(requested) {
         worth_proof::TransitionOutcome::Success(value) => value,
         _ => panic!("expected eligible support contribution"),
@@ -38,11 +42,15 @@ fn composed_orchestration_matches_explicit_declaration_bound_support_pipeline() 
         worth_proof::TransitionOutcome::Success(value) => value,
         _ => panic!("expected admitted support contribution"),
     };
-    let evidence_digest = admitted.admitted_for_reporting();
+    let evidence_digest = admitted
+        .admitted_for_reporting()
+        .expect("fixture digest must fit");
     let ready = match prepare_admitted_domain_capability_contribution_for_materialization(
         admitted,
         target_for_envelope(&handle, "face-a"),
-    ) {
+    )
+    .expect("fixture digest must fit")
+    {
         worth_proof::TransitionOutcome::Success(value) => value,
         _ => panic!("expected ready contribution"),
     };
@@ -55,7 +63,8 @@ fn composed_orchestration_matches_explicit_declaration_bound_support_pipeline() 
                 WorthQuerySupportContributionAuthoring::declaration_traceability(
                     "domain.traceability.face",
                     "face selection remains traceable through declaration entry",
-                ),
+                )
+                .expect("fixture digest must fit"),
             ))
             .materialize_summaries_with_profile(standard_profile()),
     ) {
@@ -119,24 +128,34 @@ fn composed_request_digest_changes_with_declaration_and_contribution_meaning() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let handle = admitted_handle(request_execution);
-    let first = handle.orchestrate_declaration_with_contributions_proof(
-        WorthQueryContributionComposedOrchestrationInput::new(ContributionInput::new("face-d1"))
+    let first = handle
+        .orchestrate_declaration_with_contributions_proof(
+            WorthQueryContributionComposedOrchestrationInput::new(ContributionInput::new(
+                "face-d1",
+            ))
             .with_contribution(WorthQueryContributionIntent::support(
                 WorthQuerySupportContributionAuthoring::declaration_traceability(
                     "domain.traceability.face",
                     "detail-one",
-                ),
+                )
+                .expect("fixture digest must fit"),
             )),
-    );
-    let second = handle.orchestrate_declaration_with_contributions_proof(
-        WorthQueryContributionComposedOrchestrationInput::new(ContributionInput::new("face-d2"))
+        )
+        .expect("fixture digest must fit");
+    let second = handle
+        .orchestrate_declaration_with_contributions_proof(
+            WorthQueryContributionComposedOrchestrationInput::new(ContributionInput::new(
+                "face-d2",
+            ))
             .with_contribution(WorthQueryContributionIntent::support(
                 WorthQuerySupportContributionAuthoring::declaration_traceability(
                     "domain.traceability.face",
                     "detail-two",
-                ),
+                )
+                .expect("fixture digest must fit"),
             )),
-    );
+        )
+        .expect("fixture digest must fit");
 
     assert_ne!(first.request_digest(), second.request_digest());
 }
@@ -154,13 +173,15 @@ fn equivalent_intent_orderings_share_the_same_composition_digest() {
                     WorthQuerySupportContributionAuthoring::declaration_traceability(
                         "domain.traceability.face",
                         "support detail",
-                    ),
+                    )
+                    .expect("fixture digest must fit"),
                 ))
                 .with_contribution(WorthQueryContributionIntent::support(
                     WorthQuerySupportContributionAuthoring::declaration_traceability(
                         "domain.traceability.edge",
                         "secondary support detail",
-                    ),
+                    )
+                    .expect("fixture digest must fit"),
                 )),
         )
         .unwrap_or_else(|_| panic!("expected left composition"));
@@ -171,13 +192,15 @@ fn equivalent_intent_orderings_share_the_same_composition_digest() {
                     WorthQuerySupportContributionAuthoring::declaration_traceability(
                         "domain.traceability.edge",
                         "secondary support detail",
-                    ),
+                    )
+                    .expect("fixture digest must fit"),
                 ))
                 .with_contribution(WorthQueryContributionIntent::support(
                     WorthQuerySupportContributionAuthoring::declaration_traceability(
                         "domain.traceability.face",
                         "support detail",
-                    ),
+                    )
+                    .expect("fixture digest must fit"),
                 )),
         )
         .unwrap_or_else(|_| panic!("expected right composition"));

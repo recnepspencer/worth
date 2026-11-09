@@ -4,7 +4,6 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::instance::facts::visit_instance_birth_facts;
 use std::collections::BTreeMap;
 use worth_query_declaration::facade::application_program::ApplicationWorkflowComponentLimits;
-use worth_query_declaration::facade::application_schema::ApplicationEntityMarkerIdentity;
 use worth_query_installation::facade::WorthQueryApplicationWorkflowResourceCeiling;
 use worth_relational::facade::symbols::ClientKey;
 
@@ -43,7 +42,7 @@ fn birth_subject_provenance_and_start_actor_remain_readable() {
         actor.entity_for_test().partition_id,
     );
     let subject_kind = (*graph.layout_for_test())
-        .entity_kind_for_test(Account::IDENTIFIER)
+        .entity_kind_for_test(<Account as worth_query_declaration::facade::application_schema::fragment::Entity>::NAME)
         .unwrap();
     let before = selected(&world, &execution);
     let inventories = graph

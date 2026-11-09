@@ -48,6 +48,24 @@ impl CustomInvariantCompilationQuote {
             &mut retained,
             tree::<(CustomInvariantRuleId, InvariantExecutionPoint), usize>(registrations.len())?,
         )?;
+        add(
+            &mut retained,
+            arc::<[Vec<usize>; InvariantExecutionPoint::COUNT]>()?,
+        )?;
+        for point in 0..InvariantExecutionPoint::COUNT {
+            let mut count = 0usize;
+            for registration in registrations {
+                control.checkpoint().map_err(Denial::Execution)?;
+                let actual = registration.execution_point();
+                if point == actual as usize
+                    || (point == InvariantExecutionPoint::ProposedState as usize
+                        && InvariantExecutionPoint::ProposedState.includes(actual))
+                {
+                    count = checked(count.checked_add(1))?;
+                }
+            }
+            add(&mut retained, array::<usize>(count)?)?;
+        }
         let mut programs = public.len();
         let mut entity_occurrences = 0usize;
         let mut relation_occurrences = 0usize;

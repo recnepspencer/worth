@@ -10,8 +10,8 @@ pub mod correction;
 pub use correction::RestoreReviewedRetention;
 
 worth_query_operation!(pub CorrectableRetention for DocumentRetentionSchema, input SetRetentionInputBinding; access {
-    read_fields: [DocumentIdentityField, DocumentRetentionField];
-    writes: [DocumentRetentionField];
+ read_fields: [DocumentIdentityField::at("DocumentIdentityField"), DocumentRetentionField::at("DocumentRetentionField")];
+ writes: [DocumentRetentionField::at("DocumentRetentionField")];
 });
 
 pub struct CorrectableRetentionBinding;
@@ -47,17 +47,8 @@ impl ApplicationMutationBinding<Schema> for CorrectableRetentionBinding {
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         Reviewed::workflow_execution_requirements()
     }
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         Schema,

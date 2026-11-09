@@ -19,6 +19,19 @@ pub(super) struct WorthQueryApplicationAttemptCompletion {
     identity: u64,
 }
 
+impl WorthQueryApplicationAttemptCompletion {
+    pub(super) fn new(
+        attempts: Arc<Mutex<WorthQueryPrimaryGraphApplicationAttemptStore>>,
+        key: WorthQueryApplicationAttemptLookupKey,
+        identity: u64,
+    ) -> Self {
+        Self {
+            attempts,
+            key,
+            identity,
+        }
+    }
+}
 impl WorthQueryPreparedProviderApplicationAttempt {
     pub(super) fn new(
         attempt: WorthQueryPrimaryGraphApplicationAttempt,

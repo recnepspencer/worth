@@ -9,13 +9,10 @@ use worth_query_declaration::facade::application_aftermath::{
     DeclaredPreImageLocus, DeclaredRecordedInverse,
 };
 use worth_query_declaration::facade::application_schema::{
-    ApplicationAspectMarkerIdentity, ApplicationAspectRef, ApplicationEntityMarkerIdentity,
-    ApplicationEntityRef, ApplicationExternalEffectProtocol, ApplicationFieldMarkerIdentity,
-    ApplicationFieldPresence, ApplicationFieldRef, ApplicationOperationDecisionReadTarget,
+    ApplicationExternalEffectProtocol, ApplicationOperationDecisionReadTarget,
     ApplicationOperationMarkerIdentity, ApplicationOperationProgramTarget, ApplicationOperationRef,
     ApplicationSchema, ApplicationSchemaBindingIdentity, ApplicationSchemaDeclaration,
-    ApplicationSchemaDeclarationBuilder, ApplicationSchemaMember, DeclaredApplicationFieldValue,
-    RequiredApplicationFieldValue, U64ApplicationValueBinding,
+    ApplicationSchemaDeclarationBuilder, ApplicationSchemaMember,
     WorthQueryExternalEffectCorrelationFamily,
 };
 use worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity;
@@ -28,10 +25,9 @@ use crate::application_operation::{
 
 mod portable_source_seam;
 
+use super::aftermath_install_fixture::{AftermathFields, Balance};
+
 struct Schema;
-struct Entity;
-struct Aspect;
-struct Field;
 struct CompilationOperation;
 worth_query_declaration::worth_query_structured_value_binding!(
     CompilationInputBinding for () { identity: "worth.rust.unit" }
@@ -52,48 +48,9 @@ impl ApplicationSchema for Schema {
         ApplicationSchemaDeclaration<Self>,
         worth_query_declaration::facade::application_schema::ApplicationSchemaDeclarationDenial,
     > {
-        ApplicationSchemaDeclarationBuilder::<Self>::for_schema()
-            .entity(
-                ApplicationEntityRef::<Self, Entity>::from_schema_identifier(Entity::IDENTIFIER),
-            )
-            .aspect(
-                ApplicationEntityRef::<Self, Entity>::from_schema_identifier(Entity::IDENTIFIER),
-                ApplicationAspectRef::<Self, Entity, Aspect>::from_schema_identifier(
-                    Aspect::IDENTIFIER,
-                ),
-            )
-            .field(
-                ApplicationEntityRef::<Self, Entity>::from_schema_identifier(Entity::IDENTIFIER),
-                ApplicationFieldRef::<Self, Entity, Aspect, Field, u64>::from_schema_types(),
-            )
-            .build()
+        ApplicationSchemaDeclarationBuilder::<Self>::from_fragment(AftermathFields)?.build()
     }
 }
-
-impl ApplicationEntityMarkerIdentity<Schema> for Entity {
-    const IDENTIFIER: &'static str = "Account";
-}
-
-impl ApplicationAspectMarkerIdentity<Schema, Entity> for Aspect {
-    const IDENTIFIER: &'static str = "State";
-    const ASPECT_IDENTITY: worth_query_declaration::facade::application_schema::AspectIdentity =
-        worth_query_declaration::facade::application_schema::AspectIdentity(0x9161200b);
-    const CONTRACT_REVISION:
-        worth_query_declaration::facade::application_schema::AspectContractRevision =
-        worth_query_declaration::facade::application_schema::AspectContractRevision(1);
-}
-
-impl ApplicationFieldMarkerIdentity<Schema, Entity, Aspect> for Field {
-    const IDENTIFIER: &'static str = "balance";
-}
-
-impl DeclaredApplicationFieldValue for Field {
-    type Value = u64;
-    type Binding = U64ApplicationValueBinding;
-    const PRESENCE: ApplicationFieldPresence = ApplicationFieldPresence::Required;
-}
-
-impl RequiredApplicationFieldValue for Field {}
 
 #[test]
 fn initial_installation_cannot_borrow_a_sibling_operations_exact_read() {
@@ -133,7 +90,7 @@ fn contract_compilation_is_order_independent() {
             operation: "freeze".to_owned(),
             target: ApplicationOperationProgramTarget::Write {
                 entity: "Account".to_owned(),
-                aspect: "State".to_owned(),
+                aspect: Balance::at("balance").aspect().to_owned(),
                 field: "balance".to_owned(),
             },
         },
@@ -253,7 +210,7 @@ fn compile_with_portable_members(
         crate::application_schema::compile_native_contract_catalog(&binding, &native, schema_work)
             .expect("fixture native catalog compiles");
     let portable = crate::application_operation::compile_portable_operation_contract_record(
-        Schema::NAME,
+        <Schema as ApplicationSchema>::NAME,
         portable_members,
         &native,
         "freeze",
@@ -289,7 +246,7 @@ fn members(
             operation: read_owner.to_owned(),
             target: ApplicationOperationDecisionReadTarget::Field {
                 entity: "Account".to_owned(),
-                aspect: "State".to_owned(),
+                aspect: Balance::at("balance").aspect().to_owned(),
                 field: "balance".to_owned(),
             },
         },
@@ -309,14 +266,13 @@ fn operation(operation: &str) -> ApplicationSchemaMember {
 }
 
 fn recorded_inverse_member(operation: &'static str, bound: usize) -> ApplicationSchemaMember {
-    let field = ApplicationFieldRef::<Schema, Entity, Aspect, Field, u64>::from_schema_types();
+    let field = Balance::at("balance");
     let inverse = DeclaredRecordedInverse::new(
         "unfreeze",
-        DeclaredLoweringCorrespondenceRef::new("inverse").unwrap(),
+        DeclaredLoweringCorrespondenceRef::new("inverse"),
         DeclaredAftermathPostcondition::ExactPriorTruth,
-        DeclaredPreImageDemand::new([DeclaredPreImageLocus::from_field(field)], bound).unwrap(),
-    )
-    .unwrap();
+        DeclaredPreImageDemand::new([DeclaredPreImageLocus::from_field(field)], bound),
+    );
     let contract = DeclaredApplicationAftermathContract::runtime_alone(
         DeclaredCorrectionMechanism::RecordedInverse(inverse),
     );
@@ -326,7 +282,8 @@ fn recorded_inverse_member(operation: &'static str, bound: usize) -> Application
             .no_external_effect()
             .aftermath(contract)
             .finish();
-    let declaration = ApplicationSchemaDeclarationBuilder::<Schema>::for_schema()
+    let declaration = ApplicationSchemaDeclarationBuilder::<Schema>::from_fragment(AftermathFields)
+        .expect("the actual inverse fields lower")
         .operation(definition)
         .build()
         .expect("the matching operation builder associates the aftermath");

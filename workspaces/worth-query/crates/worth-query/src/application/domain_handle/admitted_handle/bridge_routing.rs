@@ -11,6 +11,7 @@ use crate::application::{
     WorthQueryDomainEntryMarker, WorthQueryDomainOperatingContext,
     WorthQueryInstalledDomainDeclarationContext,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
     WorthQueryInstalledDomainDeclarationContext<D, C>
@@ -22,7 +23,7 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         WorthQueryDeclarationBridgeRouting<D, I>,
         WorthQueryDeclarationBridgeRoutingTerminalError<D, I>,
     > {
-        match self.route_bridge_continuation_checked(subject) {
+        match self.route_bridge_continuation_checked(subject)? {
             WorthQueryDeclarationBridgeRoutingChecked::Routed(routing) => Ok(routing),
             WorthQueryDeclarationBridgeRoutingChecked::Deferred(routing) => Err(
                 WorthQueryDeclarationBridgeRoutingTerminalError::Deferred(routing),
@@ -39,7 +40,7 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
     pub fn route_bridge_continuation_checked<I: WorthQueryDeclarationInput<D>>(
         &self,
         subject: WorthQueryDeclarationBridgeRoutingInput<D, I>,
-    ) -> WorthQueryDeclarationBridgeRoutingChecked<D, I> {
+    ) -> Result<WorthQueryDeclarationBridgeRoutingChecked<D, I>, IdentityDerivationDenial> {
         let support_status = self
             .bridge_continuation_support::<I>()
             .rows()
@@ -66,12 +67,12 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
                 }
             })
             .unwrap_or(WorthQueryDeclarationBridgeRoutingSupportStatus::Unsupported);
-        worth_query_checked_declaration_bridge_routing_on_handle(
+        Ok(worth_query_checked_declaration_bridge_routing_on_handle(
             self.handle_identity_digest(),
             self.operating_context_identity_digest(),
             support_status,
             subject,
-        )
+        )?)
     }
 
     pub fn bridge_continuation_support<I: WorthQueryDeclarationInput<D>>(
@@ -133,7 +134,7 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         );
         match self.route_bridge_continuation_checked(
             WorthQueryDeclarationBridgeRoutingInput::envelope_checked(envelope_checked),
-        ) {
+        )? {
             WorthQueryDeclarationBridgeRoutingChecked::Routed(routing) => Ok(routing),
             WorthQueryDeclarationBridgeRoutingChecked::Deferred(routing) => Err(
                 WorthQueryDeclarationBridgeRoutingTerminalError::Deferred(routing),

@@ -3,6 +3,7 @@ mod construction;
 mod filtering;
 mod preparation_control;
 mod relation_integrity_scopes;
+mod scope_admission;
 mod scope_types;
 #[cfg(test)]
 mod test_support;
@@ -42,6 +43,7 @@ struct RelationScopeRequirement {
 
 pub(crate) struct InvariantExecutionRequest<'runtime> {
     observation: InvariantObservation<'runtime>,
+    applied_declaration_view: Option<InvariantObservation<'runtime>>,
     version_id: crate::identity::data::VersionId,
     current_version_id: crate::identity::data::VersionId,
     checkpoint: InvariantExecutionPoint,
@@ -59,6 +61,34 @@ impl<'runtime> InvariantExecutionRequest<'runtime> {
         &self.observation
     }
 
+    pub(crate) fn observation_for(
+        &self,
+        point: InvariantExecutionPoint,
+    ) -> &InvariantObservation<'runtime> {
+        if matches!(
+            point,
+            InvariantExecutionPoint::MutationSensitive
+                | InvariantExecutionPoint::SnapshotPublication
+        ) {
+            self.applied_declaration_view
+                .as_ref()
+                .unwrap_or(&self.observation)
+        } else {
+            &self.observation
+        }
+    }
+    pub(crate) fn version_for(
+        &self,
+        point: InvariantExecutionPoint,
+    ) -> crate::identity::data::VersionId {
+        if self.checkpoint == InvariantExecutionPoint::ProposedState
+            && point == InvariantExecutionPoint::CommitBoundary
+        {
+            self.current_version_id
+        } else {
+            self.version_id
+        }
+    }
     pub(crate) fn version_id(&self) -> crate::identity::data::VersionId {
         self.version_id
     }
@@ -105,9 +135,35 @@ impl<'runtime> InvariantExecutionRequest<'runtime> {
         self.semantic_plan.is_none() || !self.applicable_groups.is_empty()
     }
 
+    fn includes_family_groups(
+        &self,
+        point: InvariantExecutionPoint,
+        groups: InvariantGroupSet,
+    ) -> bool {
+        if self.checkpoint != InvariantExecutionPoint::ProposedState {
+            return true;
+        }
+        use super::InvariantRequestProfile as Profile;
+        let consumed = match point {
+            InvariantExecutionPoint::CommitBoundary => Profile::CommitBoundary.consumed_groups(),
+            InvariantExecutionPoint::MutationSensitive => {
+                Profile::MutationSensitive.consumed_groups()
+            }
+            InvariantExecutionPoint::SnapshotPublication => {
+                Profile::SnapshotPublication.consumed_groups()
+            }
+            _ => return false,
+        };
+        let applicable = self.plan_contract.map_or(consumed, |plan| {
+            plan.selected_groups().intersection(consumed)
+        });
+        consumed.intersects(groups) && applicable.intersects(groups)
+    }
+
     pub(crate) fn includes_registration(&self, registration: &InvariantRegistration) -> bool {
         let rule_groups = registration.groups();
-        self.runtime_policy.should_run(rule_groups, self.checkpoint)
+        self.includes_family_groups(registration.execution_point, rule_groups)
+            && self.runtime_policy.should_run(rule_groups, self.checkpoint)
             && (self.applicable_groups.is_empty() || self.applicable_groups.intersects(rule_groups))
             && self
                 .plan_contract
@@ -121,12 +177,13 @@ impl<'runtime> InvariantExecutionRequest<'runtime> {
         registration: &CustomInvariantRegistration,
     ) -> bool {
         let rule_groups = registration.groups();
-        registration.execution_point() == self.checkpoint
+        self.checkpoint.includes(registration.execution_point())
+            && self.includes_family_groups(registration.execution_point(), rule_groups)
             && self.runtime_policy.should_run(rule_groups, self.checkpoint)
             && (self.applicable_groups.is_empty() || self.applicable_groups.intersects(rule_groups))
             && admission::for_failure_effect(
                 &self.runtime_policy,
-                self.checkpoint,
+                registration.execution_point(),
                 registration.failure_effect(),
                 registration.cost_class(),
             )
@@ -139,7 +196,7 @@ impl<'runtime> InvariantExecutionRequest<'runtime> {
     ) -> InvariantRegistrationAdmission {
         admission::for_failure_effect(
             &self.runtime_policy,
-            self.checkpoint,
+            registration.execution_point,
             registration.failure_effect,
             registration.cost(),
         )
@@ -216,7 +273,8 @@ fn relation_scope_requirement(rule: &InvariantRule) -> Option<(KindId, RelationS
             scan_full_on_create: true,
             ..RelationScopeRequirement::default()
         },
-        InvariantRule::ConnectivityMinimumContract(_) => RelationScopeRequirement {
+        InvariantRule::ConnectivityMinimumContract(contract) => RelationScopeRequirement {
+            minimum_candidate_kinds: contract.source_kind_ids.iter().copied().collect(),
             requires_global_evaluation: true,
             requires_visible_successors: true,
             scan_existing_source_on_create: true,

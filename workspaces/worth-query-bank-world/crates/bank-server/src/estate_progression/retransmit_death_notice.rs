@@ -44,7 +44,10 @@ pub(crate) fn project_retransmit(
 ) -> Result<(), BankDeathNotificationProjectionDenial> {
     let notice = exact_notice(reader, estate, command.notice)?;
     let status = reader
-        .decision_field(&notice, DeathNoticeStatusField::reference())?
+        .decision_field(
+            &notice,
+            DeathNoticeStatusField::at("DeathNoticeStatusField"),
+        )?
         .ok_or(BankDeathNotificationProjectionDenial::MissingNoticeStatus)?;
     if status != DeathNoticeStatus::NotificationRequested {
         return Err(BankDeathNotificationProjectionDenial::NoticeNotReported);
@@ -70,7 +73,10 @@ fn exact_notice(
     };
     let notice = relation.to().clone();
     let observed = reader
-        .decision_field(&notice, DeathNoticeIdentityField::reference())?
+        .decision_field(
+            &notice,
+            DeathNoticeIdentityField::at("DeathNoticeIdentityField"),
+        )?
         .ok_or(BankDeathNotificationProjectionDenial::MissingNoticeIdentity)?;
     if observed != expected {
         return Err(BankDeathNotificationProjectionDenial::NoticeMismatch);
@@ -91,7 +97,10 @@ fn require_notice_subject(
         return Err(relation_cardinality("DeathNoticeSubject", relations.len()));
     };
     let observed = reader
-        .decision_field(relation.to(), PrincipalIdentityField::reference())?
+        .decision_field(
+            relation.to(),
+            PrincipalIdentityField::at("PrincipalIdentityField"),
+        )?
         .ok_or(BankDeathNotificationProjectionDenial::MissingSubjectIdentity("death notice"))?;
     if observed != expected {
         return Err(BankDeathNotificationProjectionDenial::NoticeSubjectMismatch);
@@ -112,7 +121,10 @@ fn require_estate_subject(
         return Err(relation_cardinality("EstateDeceased", relations.len()));
     };
     let observed = reader
-        .decision_field(relation.to(), PrincipalIdentityField::reference())?
+        .decision_field(
+            relation.to(),
+            PrincipalIdentityField::at("PrincipalIdentityField"),
+        )?
         .ok_or(BankDeathNotificationProjectionDenial::MissingSubjectIdentity("estate"))?;
     if observed != expected {
         return Err(BankDeathNotificationProjectionDenial::EstateSubjectMismatch);

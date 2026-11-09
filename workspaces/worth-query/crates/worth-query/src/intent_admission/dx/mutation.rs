@@ -95,7 +95,7 @@ impl<'a> WorthQueryRuntimeWriteIntentAdmissionReview<'a> {
             .resolve_reviewed_admitted_authoritative_write_handoff(self.review.clone())?;
         let execution_binding = self
             .runtime
-            .prepare_authoritative_mutation_execution_binding(handoff.clone());
+            .prepare_authoritative_mutation_execution_binding(handoff.clone())?;
         Ok(WorthQueryAdmittedRuntimeWriteIntent {
             runtime: self.runtime,
             review: self.review,

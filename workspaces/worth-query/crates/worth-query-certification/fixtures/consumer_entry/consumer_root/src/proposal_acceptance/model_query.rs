@@ -29,47 +29,15 @@ pub struct DaysSlot;
 worth_query_portable_type!(ModelNameSlot => "proposal-application.model-name-slot.v1");
 worth_query_portable_type!(TargetNameSlot => "proposal-application.target-name-slot.v1");
 worth_query_portable_type!(DaysSlot => "proposal-application.days-slot.v1");
-fn model_name() -> ApplicationQueryResultFieldRef<
-    ModelQuery,
-    ModelNameSlot,
-    Schema,
-    Model,
-    ModelFacts,
-    ModelName,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("name", ModelName::reference())
+fn model_name() -> ApplicationQueryResultFieldRef<ModelQuery, ModelNameSlot, Schema, ModelName> {
+    ApplicationQueryResultFieldRef::new("name", ModelName::at("ModelName"))
 }
-fn target_name() -> ApplicationQueryResultFieldRef<
-    TargetQuery,
-    TargetNameSlot,
-    Schema,
-    Target,
-    TargetFacts,
-    TargetName,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("name", TargetName::reference())
+fn target_name() -> ApplicationQueryResultFieldRef<TargetQuery, TargetNameSlot, Schema, TargetName>
+{
+    ApplicationQueryResultFieldRef::new("name", TargetName::at("TargetName"))
 }
-fn days() -> ApplicationQueryResultFieldRef<
-    TargetQuery,
-    DaysSlot,
-    Schema,
-    Target,
-    TargetFacts,
-    Retention,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("days", Retention::reference())
+fn days() -> ApplicationQueryResultFieldRef<TargetQuery, DaysSlot, Schema, Retention> {
+    ApplicationQueryResultFieldRef::new("days", Retention::at("Retention"))
 }
 impl WorthQueryApplicationProjection<Schema, ModelQuery> for ModelRow {
     fn project(
@@ -123,15 +91,15 @@ worth_query_query_binding!(pub ModelBinding for ReadModel, schema Schema,
     query ModelQuery, parameters ParametersBinding => |_| ApplicationQueryParameterSet::new(), result ModelRowBinding,
     principal PrincipalBinding, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Model,ModelFacts,ModelName,String,ReadOnly,NoApplicationUnit,
-    field ModelName::reference(), value model_scope, limits results 1);
+    scope ModelName,
+    field ModelName::at("ModelName"), value model_scope, limits results 1);
 worth_query_query_binding!(pub TargetBinding for ReadTarget, schema Schema,
     identity "proposal-application.target-binding.v1", input ReadTargetInput,
     query TargetQuery, parameters ParametersBinding => |_| ApplicationQueryParameterSet::new(), result TargetRowBinding,
     principal PrincipalBinding, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Model,ModelFacts,ModelName,String,ReadOnly,NoApplicationUnit,
-    field ModelName::reference(), value target_scope, limits results 1);
+    scope ModelName,
+    field ModelName::at("ModelName"), value target_scope, limits results 1);
 
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
@@ -154,9 +122,7 @@ pub fn declare(
         .disclosure(disclosure::model())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
-        .requires_ability(super::access::ReadModels::reference())
-        .build()
-        .unwrap();
+        .requires_ability(super::access::ReadModels::reference());
     let target = ApplicationQueryDefinitionBuilder::declare(TargetQuery::reference())
         .root(Target::reference())
         .scope(Model::reference())
@@ -179,9 +145,7 @@ pub fn declare(
         .requires_ability(super::access::ReadModels::reference())
         .root_path(
             ApplicationQueryRootPath::from(Model::reference()).forward(ModelTarget::reference()),
-        )
-        .build()
-        .unwrap();
+        );
     schema
         .application_query(model)
         .application_query(target)

@@ -12,11 +12,9 @@ use crate::schema::data::RelationalSchemaRegistry;
 use crate::storage::overlay::PartitionAccess;
 use crate::transactions::data::RecordRef;
 use crate::visibility::materialization::read_records::ProjectionRecordSource;
-use crate::visibility::snapshot_states::VisibilitySnapshotBasis;
 
 pub(in crate::visibility::materialization::read_records::reader) fn execute_leased_explicit_fragment(
     reader: &RelationalPinnedRead,
-    basis: &VisibilitySnapshotBasis,
     state_access: &(dyn PartitionAccess + Sync),
     registry: &RelationalSchemaRegistry,
     version_id: VersionId,
@@ -48,7 +46,7 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_leas
             )?;
             touched_partitions.insert(partition_id);
         }
-        let Some(partition) = basis.root().get_partition(partition_id) else {
+        let Some(partition) = state_access.get_partition(partition_id) else {
             continue;
         };
         match target {

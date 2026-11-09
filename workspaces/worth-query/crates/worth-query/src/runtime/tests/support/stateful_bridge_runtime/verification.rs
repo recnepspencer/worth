@@ -109,7 +109,14 @@ pub(super) fn probe_existing_truth(
             aspect_touch.clone(),
             value.clone(),
         );
-        fields.push(field);
+        fields.push(field.map_err(|cause| {
+            WorthQueryExistingTruthProbeDenial::new(
+                request.binding(),
+                WorthQueryExistingTruthProbeDenialKind::EvidenceIdentityDerivationDenied(cause),
+                None,
+                "canonical digest refused probe field",
+            )
+        })?);
     }
     WorthQueryExistingTruthProbe::backend_verified(request, fields)
 }

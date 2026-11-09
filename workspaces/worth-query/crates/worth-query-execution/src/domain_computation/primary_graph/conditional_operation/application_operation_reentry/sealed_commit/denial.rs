@@ -92,6 +92,7 @@ pub fn classify_denial(denial: &Denial) -> Outcome {
                     }
                     | Session::ProjectionContract { .. }
                     | Session::HistoricalVisibility { .. }
+                    | Session::OutputCorrespondenceMismatch { .. }
                     | Session::ContentInconsistency
                     | Session::Content(_)
                     | Session::StorageUnavailable(_)

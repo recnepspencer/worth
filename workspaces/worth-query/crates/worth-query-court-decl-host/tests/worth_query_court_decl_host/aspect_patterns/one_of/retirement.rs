@@ -7,7 +7,7 @@ pub struct Retire {
 }
 worth_query_structured_value_binding!(pub Input for Retire { identity: "native-record-patterns.retire-input.v1" });
 worth_query_operation!(pub RetireRecord for Schema, input Input);
-worth_query_operation_reads!(RetireRecord => [Record, Key, Class, FirstValue, SecondValue, SecondRequired, ThirdValue]);
+worth_query_operation_reads!(RetireRecord => [Record]);
 impl OperationDeletes<RetireRecord> for Record {}
 pub struct Outputs;
 pub struct Retired;
@@ -34,8 +34,8 @@ worth_query_mutation_binding!(pub Binding for Retire, schema Schema,
     program required, outputs Outputs,
     principal Actor, mapping Mapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Record, Identity, Key, String, ReadOnly, NoApplicationUnit,
-    field Key::reference(), value key,
+    scope Key,
+    field Key::at("Key"), value key,
 );
 impl ApplicationDeclaredOperation<Schema> for RetireRecord {
     fn declare_access(
@@ -44,12 +44,11 @@ impl ApplicationDeclaredOperation<Schema> for RetireRecord {
         schema
             .operation_projection_work_budget(Self::reference(), 32)
             .operation_read_entity(Self::reference(), Record::reference())
-            .operation_read_field(Self::reference(), Key::reference())
-            .operation_read_field(Self::reference(), Class::reference())
-            .operation_read_field(Self::reference(), FirstValue::reference())
-            .operation_read_field(Self::reference(), SecondValue::reference())
-            .operation_read_field(Self::reference(), SecondRequired::reference())
-            .operation_read_field(Self::reference(), ThirdValue::reference())
+            .operation_read_field(Self::reference(), Key::at("Key"))
+            .operation_read_field(Self::reference(), FirstValue::at("FirstValue"))
+            .operation_read_field(Self::reference(), SecondValue::at("SecondValue"))
+            .operation_read_field(Self::reference(), SecondRequired::at("SecondRequired"))
+            .operation_read_field(Self::reference(), ThirdValue::at("ThirdValue"))
             .operation_delete(Self::reference(), Record::reference())
     }
 }
@@ -74,14 +73,13 @@ impl OperationHandler<Schema, Binding> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<Schema, Record>, authoring::Denial> {
         let result = (|| {
-            let root = reader.resolve_entity(Key::reference(), input.key.clone())?;
+            let root = reader.resolve_entity(Key::at("Key"), input.key.clone())?;
             reader.entity(&root, Record::reference())?;
-            reader.field(&root, Key::reference())?;
-            reader.field(&root, Class::reference())?;
-            reader.field(&root, FirstValue::reference())?;
-            reader.field(&root, SecondValue::reference())?;
-            reader.field(&root, SecondRequired::reference())?;
-            reader.field(&root, ThirdValue::reference())?;
+            reader.field(&root, Key::at("Key"))?;
+            reader.field(&root, FirstValue::at("FirstValue"))?;
+            reader.field(&root, SecondValue::at("SecondValue"))?;
+            reader.field(&root, SecondRequired::at("SecondRequired"))?;
+            reader.field(&root, ThirdValue::at("ThirdValue"))?;
             reader.mutation_target(&root)
         })();
         match result {

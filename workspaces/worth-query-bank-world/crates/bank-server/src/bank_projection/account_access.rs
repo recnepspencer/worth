@@ -14,7 +14,7 @@ pub(crate) fn project_account_authorization_grant(
 ) -> Result<BankSnapshot, BankProjectionDenial> {
     let mut state = BoundedProjectionState::for_capability_projection(reader)?;
     state.project_admitted_account(reader, account, input.account)?;
-    reader.require_decision_field(account, AccountIdentity::reference())?;
+    reader.require_decision_field(account, AccountIdentity::at("AccountIdentity"))?;
     let principal = state.project_principal(reader, input.principal)?;
     state.project_matching_authorization(reader, &principal, input.account)?;
     state

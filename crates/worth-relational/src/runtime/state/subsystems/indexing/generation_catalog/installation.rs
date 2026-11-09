@@ -29,7 +29,7 @@ impl GenerationCatalog {
             self.remove_bindings(&previous);
         }
         let mut branch = Some(generation.applicability.branch_id.clone());
-        self.insert_with_branch(generation, &mut branch);
+        self.insert_with_branch(generation, &mut branch, CatalogArtifactVisibility::Settled);
     }
 
     /// The borrowed cutover keeps any unused owned lookup key in its payload.
@@ -37,21 +37,29 @@ impl GenerationCatalog {
         &mut self,
         generation: DerivedIndexGeneration,
         branch: &mut Option<BranchId>,
+        visibility: CatalogArtifactVisibility,
     ) {
         assert!(
             /* Proof: The same checked owner issuer reserves the batch's fresh identities before admission; the generation gate excludes every other publisher until this consuming installation. */
             !self.entries.contains_key(&generation.generation_id),
             "a prepared generation identity is fresh"
         );
+        assert_eq!(
+            generation.source_branch_id, generation.applicability.branch_id,
+            "prepared generation source and applicability share the admitted branch"
+        );
         self.generation_high_water = self.generation_high_water.max(generation.generation_id.0);
-        self.insert_with_branch(generation, branch);
+        self.insert_with_branch(generation, branch, visibility);
     }
 
     fn insert_with_branch(
         &mut self,
         generation: DerivedIndexGeneration,
         branch: &mut Option<BranchId>,
+        visibility: CatalogArtifactVisibility,
     ) {
+        self.artifact_visibility
+            .insert(generation.generation_id, visibility);
         let branches = self.scopes.entry(generation.index_id).or_default();
         branches.entry(None).or_default().insert(&generation);
         if let Some(scope) = branches.get_mut(branch) {
@@ -75,6 +83,7 @@ impl GenerationCatalog {
     }
 
     pub(super) fn remove_bindings(&mut self, generation: &DerivedIndexGeneration) {
+        self.artifact_visibility.remove(&generation.generation_id);
         if let Some(branches) = self.scopes.get_mut(&generation.index_id) {
             for branch in [None, Some(generation.applicability.branch_id.clone())] {
                 if let Some(scope) = branches.get_mut(&branch) {

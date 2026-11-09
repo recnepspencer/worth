@@ -144,6 +144,15 @@ dependencies = [
 
 [[package]]
 name = "block-buffer"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4152116fd6e9dadb291ae18fc1ec3575ed6d84c29642d97890f4b4a3417297e4"
+dependencies = [
+ "generic-array",
+]
+
+[[package]]
+name = "block-buffer"
 version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3078c7629b62d3f0439517fa394996acacc5cbc91c5a20d8c658e77abd503a71"
@@ -365,11 +374,20 @@ dependencies = [
 
 [[package]]
 name = "digest"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d3dd60d1080a57a05ab032377049e0591415d2b31afd7028356dbf3cc6dcb066"
+dependencies = [
+ "generic-array",
+]
+
+[[package]]
+name = "digest"
 version = "0.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ed9a281f7bc9b7576e61468ba615a66a5c8cfdff42420a70aa82701a3b1e292"
 dependencies = [
- "block-buffer",
+ "block-buffer 0.10.4",
  "crypto-common",
  "subtle",
 ]
@@ -536,7 +554,7 @@ version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c49c37c09c17a53d937dfbb742eb3a961d65a994e6bcdcf37e7399d0cc8ab5e"
 dependencies = [
- "digest",
+ "digest 0.10.7",
 ]
 
 [[package]]
@@ -808,6 +826,12 @@ name = "once_cell"
 version = "1.21.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
+
+[[package]]
+name = "opaque-debug"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c08d65885ee38876c4f86fa503fb49d7b507c2b62552df7c70b2fce627e06381"
 
 [[package]]
 name = "parking_lot_core"
@@ -1198,13 +1222,36 @@ dependencies = [
 
 [[package]]
 name = "sha2"
+version = "0.9.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4d58a1e1bf39749807d89cf2d98ac2dfa0ff1cb3faa38fbb64dd88ac8013d800"
+dependencies = [
+ "block-buffer 0.9.0",
+ "cfg-if",
+ "cpufeatures 0.2.17",
+ "digest 0.9.0",
+ "opaque-debug",
+]
+
+[[package]]
+name = "sha2"
 version = "0.10.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a7507d819769d01a365ab707794a4084392c824f54a7a6a7862f8c3d0892b283"
 dependencies = [
  "cfg-if",
  "cpufeatures 0.2.17",
- "digest",
+ "digest 0.10.7",
+ "sha2-asm",
+]
+
+[[package]]
+name = "sha2-asm"
+version = "0.6.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b845214d6175804686b2bd482bcffe96651bb2d1200742b712003504a2dac1ab"
+dependencies = [
+ "cc",
 ]
 
 [[package]]
@@ -1881,7 +1928,7 @@ version = "0.1.0"
 dependencies = [
  "rmp-serde",
  "serde",
- "sha2",
+ "sha2 0.10.9",
  "stats_alloc",
  "worth-execution",
  "worth-foundational",
@@ -1898,7 +1945,8 @@ dependencies = [
  "rmp-serde",
  "serde",
  "serde_json",
- "sha2",
+ "sha2 0.10.9",
+ "sha2 0.9.9",
  "worth-execution",
  "worth-foundational",
  "worth-proof",
@@ -1921,7 +1969,7 @@ dependencies = [
 name = "worth-court-runtime-world"
 version = "0.1.0"
 dependencies = [
- "sha2",
+ "sha2 0.10.9",
  "worth-execution",
  "worth-foundational",
  "worth-proof",
@@ -1960,7 +2008,7 @@ dependencies = [
  "flate2",
  "serde",
  "serde_json",
- "sha2",
+ "sha2 0.10.9",
  "tokio",
  "tower",
  "worth-execution",
@@ -2044,12 +2092,14 @@ dependencies = [
 name = "worth-foundational"
 version = "0.1.0"
 dependencies = [
+ "im",
  "rmp-serde",
  "serde",
  "serde_json",
  "serde_stacker",
- "sha2",
+ "sha2 0.10.9",
  "stacker",
+ "tracking-allocator",
  "worth-proof",
  "worth-value-shape-derive",
 ]
@@ -2073,7 +2123,7 @@ dependencies = [
  "arc-swap",
  "serde",
  "serde_json",
- "sha2",
+ "sha2 0.10.9",
  "worth-execution",
  "worth-foundational",
  "worth-proof",
@@ -2093,7 +2143,7 @@ name = "worth-query-admission"
 version = "0.1.0"
 dependencies = [
  "getrandom",
- "sha2",
+ "sha2 0.10.9",
  "worth-execution",
  "worth-foundational",
  "worth-query-declaration",
@@ -2113,7 +2163,7 @@ version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
- "sha2",
+ "sha2 0.10.9",
  "worth-foundational",
 ]
 
@@ -2124,7 +2174,7 @@ dependencies = [
  "im",
  "serde",
  "serde_json",
- "sha2",
+ "sha2 0.10.9",
  "worth-execution",
  "worth-foundational",
  "worth-proof",
@@ -2141,7 +2191,7 @@ dependencies = [
 name = "worth-query-host"
 version = "0.1.0"
 dependencies = [
- "sha2",
+ "sha2 0.10.9",
  "worth-execution",
  "worth-foundational",
  "worth-proof",
@@ -2163,7 +2213,7 @@ dependencies = [
  "getrandom",
  "hmac",
  "serde",
- "sha2",
+ "sha2 0.10.9",
  "subtle",
  "worth-foundational",
  "worth-proof",
@@ -2176,7 +2226,7 @@ name = "worth-query-publication"
 version = "0.1.0"
 dependencies = [
  "serde",
- "sha2",
+ "sha2 0.10.9",
  "worth-execution",
  "worth-foundational",
  "worth-proof",
@@ -2216,7 +2266,7 @@ dependencies = [
  "rmp-serde",
  "serde",
  "serde_json",
- "sha2",
+ "sha2 0.10.9",
  "sized-chunks",
  "smallvec",
  "stats_alloc",
@@ -2233,7 +2283,7 @@ version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
- "sha2",
+ "sha2 0.10.9",
  "worth-execution",
  "worth-foundational",
  "worth-harness",
@@ -2248,7 +2298,7 @@ version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
- "sha2",
+ "sha2 0.10.9",
  "worth-execution",
  "worth-foundational",
  "worth-proof",
@@ -2271,7 +2321,7 @@ dependencies = [
  "schemars",
  "serde",
  "serde_json",
- "sha2",
+ "sha2 0.10.9",
  "tokio",
  "worth-execution",
  "worth-foundational",
@@ -2296,7 +2346,7 @@ dependencies = [
  "js-sys",
  "serde",
  "serde_json",
- "sha2",
+ "sha2 0.10.9",
  "smallvec",
  "stats_alloc",
  "tracking-allocator",
@@ -2318,7 +2368,7 @@ dependencies = [
  "serde",
  "serde-wasm-bindgen",
  "serde_json",
- "sha2",
+ "sha2 0.10.9",
  "wasm-bindgen",
  "worth-execution",
  "worth-foundational",
@@ -2332,7 +2382,7 @@ version = "0.1.0"
 dependencies = [
  "getrandom",
  "serde_json",
- "sha2",
+ "sha2 0.10.9",
  "tracking-allocator",
  "worth-execution",
  "worth-foundational",
@@ -2359,7 +2409,7 @@ dependencies = [
 name = "worth-store-application"
 version = "0.1.0"
 dependencies = [
- "sha2",
+ "sha2 0.10.9",
  "worth-execution",
  "worth-foundational",
  "worth-proof",
@@ -2381,7 +2431,7 @@ name = "worth-store-aspect-native"
 version = "0.1.0"
 dependencies = [
  "serde_json",
- "sha2",
+ "sha2 0.10.9",
  "worth-foundational",
  "worth-proof",
  "worth-store-contracts",
@@ -2391,7 +2441,7 @@ dependencies = [
 name = "worth-store-authority"
 version = "0.1.0"
 dependencies = [
- "sha2",
+ "sha2 0.10.9",
  "worth-proof",
  "worth-store-aspect-native",
  "worth-store-contracts",
@@ -2401,7 +2451,7 @@ dependencies = [
 name = "worth-store-blob-chunks"
 version = "0.1.0"
 dependencies = [
- "sha2",
+ "sha2 0.10.9",
  "worth-foundational",
  "worth-proof",
  "worth-store-aspect-native",
@@ -2461,7 +2511,7 @@ dependencies = [
 name = "worth-store-layout-indexes"
 version = "0.1.0"
 dependencies = [
- "sha2",
+ "sha2 0.10.9",
  "worth-foundational",
  "worth-proof",
  "worth-store-authority",
@@ -2482,7 +2532,7 @@ dependencies = [
 name = "worth-store-lsm-authority"
 version = "0.1.0"
 dependencies = [
- "sha2",
+ "sha2 0.10.9",
  "worth-store-authority",
  "worth-store-physical-isolation",
  "worth-store-recovery-physics",
@@ -2510,7 +2560,7 @@ dependencies = [
  "getrandom",
  "maybe-owned",
  "same-file",
- "sha2",
+ "sha2 0.10.9",
  "sysinfo",
  "tempfile",
  "winapi-util",
@@ -2528,7 +2578,7 @@ dependencies = [
 name = "worth-store-physical-format"
 version = "0.1.0"
 dependencies = [
- "sha2",
+ "sha2 0.10.9",
  "worth-foundational",
  "worth-proof",
  "worth-store-aspect-native",
@@ -2550,7 +2600,7 @@ name = "worth-store-physical-isolation"
 version = "0.1.0"
 dependencies = [
  "fs4",
- "sha2",
+ "sha2 0.10.9",
  "worth-foundational",
  "worth-proof",
  "worth-store-authority",
@@ -2577,7 +2627,7 @@ dependencies = [
 name = "worth-store-recovery-physics"
 version = "0.1.0"
 dependencies = [
- "sha2",
+ "sha2 0.10.9",
  "worth-foundational",
  "worth-store-physical-format",
  "worth-store-physical-integrity",
@@ -2588,7 +2638,7 @@ dependencies = [
 name = "worth-store-recovery-runtime"
 version = "0.1.0"
 dependencies = [
- "sha2",
+ "sha2 0.10.9",
  "worth-foundational",
  "worth-proof",
  "worth-store",
@@ -2601,7 +2651,7 @@ dependencies = [
 name = "worth-store-relational"
 version = "0.1.0"
 dependencies = [
- "sha2",
+ "sha2 0.10.9",
  "worth-execution",
  "worth-foundational",
  "worth-proof",
@@ -2624,7 +2674,7 @@ dependencies = [
 name = "worth-store-security"
 version = "0.1.0"
 dependencies = [
- "sha2",
+ "sha2 0.10.9",
  "worth-foundational",
  "worth-proof",
  "worth-store-aspect-native",
@@ -2647,7 +2697,7 @@ dependencies = [
 name = "worth-store-wal"
 version = "0.1.0"
 dependencies = [
- "sha2",
+ "sha2 0.10.9",
  "worth-store-authority",
  "worth-store-contracts",
  "worth-store-modes",
@@ -2676,7 +2726,7 @@ dependencies = [
 name = "worth-testkit-relational"
 version = "0.1.0"
 dependencies = [
- "sha2",
+ "sha2 0.10.9",
  "worth-execution",
  "worth-foundational",
  "worth-relational",

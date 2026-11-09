@@ -8,29 +8,49 @@ pub use worth_query_installation::facade::{
     WorthQueryPortableDomainIdentity, WorthQueryPortableDomainPackage,
 };
 
-worth_query_declaration::worth_query_application_schema! {
-    pub schema BindingSchema {
-        owner: "worth.tests.value-binding-installation",
-        version: (1, 0),
-        members: |schema| {
-            schema
-                .entity(Component::reference())
-                .aspect(Component::reference(), Measurement::reference())
-                .field(Component::reference(), Count::reference())
-        }
+pub use worth_query_declaration::facade::application_schema::fragment::{
+    record_field, RecordField,
+};
+use worth_query_declaration::facade::application_schema::{fragment::*, *};
+
+pub struct BindingSchema;
+impl Fragment for BindingSchema {
+    const NAME: &'static str = "BindingSchema";
+    type Bindings = Bindings;
+    type Members = (Component,);
+}
+impl ApplicationSchema for BindingSchema {
+    const OWNER: &'static str = "worth.tests.value-binding-installation";
+    const NAME: &'static str = <Self as Fragment>::NAME;
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        declare(Self)
     }
 }
-worth_query_declaration::worth_query_entity!(Component for BindingSchema);
-worth_query_declaration::worth_query_aspect!(
-    Measurement for BindingSchema, Component;
-    identity = AspectIdentity(0x9174_0001),
-    revision = AspectContractRevision(1),
-);
-worth_query_declaration::worth_query_field!(
-    Count for BindingSchema, Component, Measurement:
-    u64 => worth_query_declaration::facade::application_schema::U64ApplicationValueBinding,
-    read_write, equality
-);
+pub struct Bindings;
+impl BindingSet for Bindings {
+    type Work<'a> = ValueDecodeAdmission<'a>;
+    fn with_admission<T>(
+        work: &mut Self::Work<'_>,
+        use_admission: impl FnOnce(&mut ValueDecodeAdmission<'_>) -> T,
+    ) -> T {
+        use_admission(work)
+    }
+}
+impl Scalar<u64> for Bindings {
+    type Binding = U64ApplicationValueBinding;
+}
+pub struct Component;
+impl Entity for Component {
+    const NAME: &'static str = "Component";
+    type Aspects = (Measurement,);
+    type Relations = ();
+}
+pub struct Measurement;
+impl Aspect for Measurement {
+    const NAME: &'static str = "Measurement";
+    type Row = IdentityRow;
+}
 
 pub fn installed_index() -> WorthQueryInstalledPackageIndex {
     let package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
@@ -50,4 +70,15 @@ pub fn installed_index() -> WorthQueryInstalledPackageIndex {
         [admitted],
     )
     .unwrap()
+}
+
+pub struct IdentityRow(u64);
+impl fragment::Record<IdentityRow> for Bindings {
+    fn record() -> impl fragment::Shape<IdentityRow, Self> {
+        fragment::field("value", |row: &IdentityRow| row.0)
+            .equality_queryable(true)
+            .build(|value, _: &mut ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(IdentityRow(value))
+            })
+    }
 }

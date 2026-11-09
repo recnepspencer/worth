@@ -124,7 +124,7 @@ impl ApplicationScalarValueBinding for WorthQueryExternalPrincipalIdentityBindin
 
 impl ApplicationReadableScalarValueBinding for WorthQueryExternalPrincipalIdentityBinding {
     fn decode(value: &AspectValue) -> Result<Self::Value, ApplicationValueDecodeDenial> {
-        let AspectValue::String(InternedString::Raw(encoded)) = value else {
+        let Some(encoded) = (value).raw_text() else {
             return Err(ApplicationValueDecodeDenial::ScalarFamilyMismatch {
                 binding_identity: Self::IDENTITY,
                 expected: Self::SCALAR_FAMILY,
@@ -253,13 +253,13 @@ mod tests {
         let identity = WorthQueryExternalPrincipalIdentity::new(issuer, subject).unwrap();
         let (bytes, work) = identity.index_encoding_copy_requirements();
         let encoded = WorthQueryExternalPrincipalIdentityBinding::encode(&identity).unwrap();
-        let AspectValue::String(InternedString::Raw(encoded)) = encoded else {
+        let Some(encoded) = (encoded).raw_text() else {
             panic!("the installed identity binding must encode a raw String");
         };
-        assert_eq!(encoded.capacity(), identity.encoded_index_len());
+        assert_eq!(encoded.len(), identity.encoded_index_len());
         assert_eq!(
             bytes,
-            identity.issuer().len() + identity.subject().len() + encoded.capacity()
+            identity.issuer().len() + identity.subject().len() + encoded.len()
         );
         assert_eq!(work, bytes);
         assert!(bytes < 512);

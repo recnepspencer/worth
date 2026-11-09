@@ -26,19 +26,19 @@ impl OperationHandler<Schema, Binding> for Handler {
             return HandlerResult::DomainDenied(Denial::ModelOccurrence);
         }
         let observed = (|| -> Result<_, HandlerExecutionDenial> {
-            reader.field(&model, ModelName::reference())?;
+            reader.field(&model, ModelName::at("ModelName"))?;
             for relation in reader
                 .relations_from(ModelTarget::reference(), &model)
                 .map_err(HandlerExecutionDenial::new)?
             {
                 let target = relation.to();
                 if coordinates(target) == input.target.occurrence {
-                    if reader.field(target, TargetName::reference())?
+                    if reader.field(target, TargetName::at("TargetName"))?
                         != Some(input.target.label.clone())
                     {
                         return Ok(None);
                     }
-                    reader.field(target, Retention::reference())?;
+                    reader.field(target, Retention::at("Retention"))?;
                     return reader.mutation_target(target).map(Some);
                 }
             }
@@ -61,7 +61,7 @@ impl OperationHandler<Schema, Binding> for Handler {
             .map_err(HandlerExecutionDenial::new)
             .and_then(|target| {
                 writer
-                    .write_field(&target, Retention::reference(), input.days)
+                    .write_field(&target, Retention::at("Retention"), input.days)
                     .map_err(HandlerExecutionDenial::new)
             });
         match effect {

@@ -135,7 +135,8 @@ fn evaluate_query_bound_support(
         .workspace_provider()
         .bind_workspace(&binding_request)
         .map_err(binding_error_reason)?;
-    let snapshot = project_workspace_support_snapshot(&workspace);
+    let snapshot = project_workspace_support_snapshot(&workspace)
+        .map_err(|cause| format!("support-snapshot-identity-refused: {cause:?}"))?;
     let mut builder = support_pinning_contract(path.row_id)
         .against_snapshot(&snapshot)
         .map_err(|error| format!("support-pinning-contract-error: {error:?}"))?;

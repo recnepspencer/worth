@@ -48,7 +48,10 @@ fn patch_local_field_maintenance_matches_independent_rebuild_and_preserves_prior
         .indexes
         .generation(initial.generations[0].generation_id)
         .unwrap();
-    let second = update_entity(execution, &runtime, entity, "after");
+    let candidate =
+        candidate_index_publication::candidate_for_update(execution, &runtime, entity, "after");
+    let native_work = candidate.prepared_index_maintenance_work().unwrap();
+    let second = candidate_index_publication::publish_native(execution, &runtime, candidate);
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
@@ -64,8 +67,8 @@ fn patch_local_field_maintenance_matches_independent_rebuild_and_preserves_prior
         .unwrap();
     assert_eq!(refreshed.work.cold_record_slots, 0);
     assert_eq!(refreshed.work.patch_records, 1);
-    assert_eq!(refreshed.work.record_reads, 2);
-    assert_eq!(refreshed.work.entry_edits, 2);
+    assert_eq!(native_work.record_reads, 2);
+    assert_eq!(native_work.entry_edits, 2);
     let rebuilt = runtime.index_authority().build_for_basis(
         execution,
         request(second.commit.commit_id),
@@ -96,7 +99,7 @@ fn patch_local_field_maintenance_matches_independent_rebuild_and_preserves_prior
 }
 
 #[test]
-fn exhausted_refresh_and_wrong_before_root_publish_nothing() {
+fn exhausted_refresh_and_wrong_before_root_preserve_native_publication() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -152,7 +155,7 @@ fn exhausted_refresh_and_wrong_before_root_publish_nothing() {
             second.commit.commit_id,
             second.commit.version_id
         )
-        .is_none());
+        .is_some());
     let denied = runtime
         .index_authority()
         .refresh_for_basis(
@@ -246,7 +249,10 @@ fn ordering_join_and_relation_field_updates_match_rebuild_after_local_changes() 
         .failed_indexes
         .is_empty());
 
-    let changed = update_entity(execution, &runtime, alpha, "zeta");
+    let candidate =
+        candidate_index_publication::candidate_for_update(execution, &runtime, alpha, "zeta");
+    let native_work = candidate.prepared_index_maintenance_work().unwrap();
+    let changed = candidate_index_publication::publish_native(execution, &runtime, candidate);
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
@@ -261,7 +267,7 @@ fn ordering_join_and_relation_field_updates_match_rebuild_after_local_changes() 
         )
         .unwrap();
     assert_eq!(refreshed.work.cold_record_slots, 0);
-    assert!(refreshed.work.adjacency_work_units > 0);
+    assert!(native_work.adjacency_work_units > 0);
     let rebuilt = runtime.index_authority().build_for_basis(
         execution,
         request(changed.commit.commit_id),

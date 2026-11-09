@@ -111,16 +111,18 @@ fn view_restricted_estate_is_capability_only_and_has_no_aftermath_contract() {
         .installed_operation_for_capability(&view_capability)
         .expect("ViewRestrictedEstate installs through capability");
     assert_eq!(view.graph_obligations().rows().len(), 1);
-    assert!(!BankSchema::declaration()
-        .unwrap()
-        .erased()
-        .members()
-        .iter()
-        .any(|member| matches!(
-            member,
-            ApplicationSchemaMember::OperationAftermath { operation, .. }
-                if operation == "ViewRestrictedEstate"
-        )));
+    assert!(
+        !worth_query_decl::facade::application_schema::fragment::declare(BankSchema)
+            .unwrap()
+            .erased()
+            .members()
+            .iter()
+            .any(|member| matches!(
+                member,
+                ApplicationSchemaMember::OperationAftermath { operation, .. }
+                    if operation == "ViewRestrictedEstate"
+            ))
+    );
 }
 
 #[test]

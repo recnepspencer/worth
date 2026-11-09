@@ -19,10 +19,7 @@ use worth_query_declaration::facade::{
     application_schema::{ApplicationScalarValueBinding, ApplicationSchema},
     portable_identity::WorthQueryPortableType,
 };
-use worth_query_installation::facade::{
-    ApplicationFieldUnit, ApplicationReadableScalarValueBinding, RequiredApplicationFieldValue,
-    WritePosture,
-};
+use worth_query_installation::facade::ApplicationReadableScalarValueBinding;
 
 type Query<S, I> =
     <<I as ApplicationManagedIndexBinding<S>>::SourceBinding as ApplicationQueryBinding<S>>::Query;
@@ -81,29 +78,21 @@ impl<'a, S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>
         }
     }
 
-    /// Lend an admitted decoded String without copying or allowing its storage
+    /// Lend admitted decoded text without copying or allowing its storage
     /// to escape the original invocation's parse reservation.
-    pub fn with_text<FieldSlot, Entity, Aspect, Field, Write, Equality, Unit, Output>(
+    pub fn with_text<FieldSlot, Entity, Aspect, Field, Output>(
         &self,
-        selector: ApplicationQueryResultFieldRef<
-            Query<S, I>,
-            FieldSlot,
-            S,
-            Entity,
-            Aspect,
-            Field,
-            String,
-            Write,
-            Equality,
-            Unit,
-        >,
+        selector: ApplicationQueryResultFieldRef<Query<S, I>, FieldSlot, S, Field>,
         body: impl FnOnce(&str) -> Output,
     ) -> Result<Output, WorthQueryManagedIndexTextReadDenial>
     where
-        Field: RequiredApplicationFieldValue<Value = String>,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+        >,
         Field::Binding: ApplicationReadableScalarValueBinding,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
+        Field::Value: Into<String>,
+
         FieldSlot: WorthQueryPortableType,
     {
         self.check()?;
@@ -150,6 +139,7 @@ impl<'a, S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>
             || {
                 self.decode
                     .decode_installed::<Field::Binding>(&binding, projected.value())
+                    .map(Into::into)
                     .ok_or_else(|| self.decode_stop())
             },
         )?;

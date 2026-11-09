@@ -77,23 +77,10 @@ fn bulk_commit(rows_per_key: usize) {
     transaction
         .push_batch(batch, execution.allocation_policy())
         .unwrap();
-    let mut candidate = runtime
+    let candidate = runtime
         .prepare_branch_transaction(&execution, transaction)
         .unwrap();
-    let work = runtime
-        .index_authority()
-        .prepare_for_candidate(
-            &mut candidate,
-            &[index],
-            Some(&first.snapshot),
-            crate::facade::indexes::DerivedIndexMaintenanceBudget {
-                maximum_work_units: Some(4_000_000),
-                maximum_cold_record_slots: Some(0),
-                maximum_derived_rows: Some(100_000),
-            },
-            &execution,
-        )
-        .unwrap();
+    let work = candidate.prepared_index_maintenance_work().unwrap();
     assert_eq!(work.entry_edits, 4000);
     let crate::mvcc::RelationalPublicationOutcome::Performed(performed) = runtime
         .publication_port()

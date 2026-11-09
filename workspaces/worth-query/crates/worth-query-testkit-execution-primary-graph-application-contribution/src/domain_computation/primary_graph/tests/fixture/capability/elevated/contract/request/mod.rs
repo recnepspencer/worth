@@ -36,7 +36,7 @@ pub fn install(
         .operation_projection_work_budget(RequestCapabilityElevationOperation::reference(), 32)
         .operation_read_field(
             RequestCapabilityElevationOperation::reference(),
-            AccountLabel::reference(),
+            AccountLabel::at("AccountLabel"),
         )
         .operation_create(
             RequestCapabilityElevationOperation::reference(),
@@ -48,35 +48,35 @@ pub fn install(
         )
         .operation_write(
             RequestCapabilityElevationOperation::reference(),
-            CapabilityElevationIdentity::reference(),
+            CapabilityElevationIdentity::at("CapabilityElevationIdentity"),
         )
         .operation_write(
             RequestCapabilityElevationOperation::reference(),
-            CapabilityElevationReason::reference(),
+            CapabilityElevationReason::at("CapabilityElevationReason"),
         )
         .operation_write(
             RequestCapabilityElevationOperation::reference(),
-            CapabilityElevationStatusField::reference(),
+            CapabilityElevationStatusField::at("CapabilityElevationStatusField"),
         )
         .operation_write(
             RequestCapabilityElevationOperation::reference(),
-            CapabilityElevationNotBefore::reference(),
+            CapabilityElevationNotBefore::at("CapabilityElevationNotBefore"),
         )
         .operation_write(
             RequestCapabilityElevationOperation::reference(),
-            CapabilityElevationNotAfter::reference(),
+            CapabilityElevationNotAfter::at("CapabilityElevationNotAfter"),
         )
         .operation_write(
             RequestCapabilityElevationOperation::reference(),
-            CapabilityReviewIdentity::reference(),
+            CapabilityReviewIdentity::at("CapabilityReviewIdentity"),
         )
         .operation_write(
             RequestCapabilityElevationOperation::reference(),
-            CapabilityReviewKindField::reference(),
+            CapabilityReviewKindField::at("CapabilityReviewKindField"),
         )
         .operation_write(
             RequestCapabilityElevationOperation::reference(),
-            CapabilityReviewStatusField::reference(),
+            CapabilityReviewStatusField::at("CapabilityReviewStatusField"),
         )
         .operation_link(
             RequestCapabilityElevationOperation::reference(),

@@ -40,6 +40,7 @@ pub(super) fn read(
     let publication = match tag {
         0 => RequiredOutputRoutePosition::Published(commit),
         1 => RequiredOutputRoutePosition::CodecRetired(commit),
+        2 => RequiredOutputRoutePosition::HistoricalAbsence(commit),
         _ => return Err(Refusal::InvalidProjectedMeaning),
     };
     let route_memory = context.reserve::<PublicationRoute>(family.len())?;

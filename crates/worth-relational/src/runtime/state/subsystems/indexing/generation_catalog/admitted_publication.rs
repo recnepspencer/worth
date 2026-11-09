@@ -7,23 +7,6 @@ use crate::indexes::data::{
 use std::{collections::BTreeMap, mem::size_of};
 
 impl GenerationCatalog {
-    pub(in crate::runtime::state::subsystems::indexing) fn publish_batch_admitted<Stop>(
-        &mut self,
-        generations: &[DerivedIndexGeneration],
-        prepare: &mut impl FnMut(u64, u64) -> Result<(), Stop>,
-    ) -> Result<(), SelectedIndexGenerationAdmissionStop<Stop>> {
-        let scopes = self
-            .publication_scopes(generations.len())
-            .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?;
-        Self::quote_batch(generations, scopes, true, prepare)?;
-        // The guard and all preparations above remain in the same write lock.
-        // Once one edit begins, this batch has no remaining fallible step.
-        prepare(0, 0).map_err(SelectedIndexGenerationAdmissionStop::Admission)?;
-        for generation in generations {
-            self.publish(generation.clone());
-        }
-        Ok(())
-    }
     /// Capture actual owner geometry while the generation publication gate is
     /// held. The returned quote borrows the exact batch, not the state lock.
     pub(in crate::runtime::state::subsystems::indexing) fn deferred_quote<'batch>(
@@ -44,7 +27,6 @@ impl GenerationCatalog {
     fn quote_batch<Stop>(
         generations: &[DerivedIndexGeneration],
         scopes: usize,
-        clone_payload: bool,
         prepare: &mut impl FnMut(u64, u64) -> Result<(), Stop>,
     ) -> Result<(), SelectedIndexGenerationAdmissionStop<Stop>> {
         use super::insertion_quote::{add, insertion, path_nodes};
@@ -78,14 +60,16 @@ impl GenerationCatalog {
                 &mut total,
                 insertion::<DerivedIndexGenerationId, Arc<DerivedIndexGeneration>>(scopes, 1)?,
             )?;
+            add(
+                &mut total,
+                insertion::<DerivedIndexGenerationId, super::CatalogArtifactVisibility>(scopes, 1)?,
+            )?;
             // Immediate publication checks freshness then removes the absent
             // identity. The prepared cutover only checks freshness. Neither
             // search allocates; entries insertion is already quoted above.
             let lookup_work =
                 u64::try_from(path_nodes(scopes).checked_mul(11)?.checked_add(1)?).ok()?;
-            total.0 = total
-                .0
-                .checked_add(lookup_work.checked_mul(if clone_payload { 2 } else { 1 })?)?;
+            total.0 = total.0.checked_add(lookup_work)?;
             Some(total)
         };
         let scalar =
@@ -94,18 +78,8 @@ impl GenerationCatalog {
             .map_err(SelectedIndexGenerationAdmissionStop::Admission)?;
         for generation in generations {
             let width = generation.applicability.branch_id.0.len();
-            // Deferred publication moves its carried generation. Immediate
-            // publication clones both generation branch strings as well.
-            let copies = if clone_payload {
-                generation.source_branch_id.0.len().checked_add(
-                    width
-                        .checked_mul(2)
-                        .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?,
-                )
-            } else {
-                Some(width)
-            }
-            .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?;
+            // Installation moves its carried payload; the branch-scope key copies once.
+            let copies = width;
             let index_scope =
                 insertion::<DerivedIndexId, BTreeMap<Option<BranchId>, GenerationScope>>(scopes, 1)
                     .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?;
@@ -172,7 +146,7 @@ impl DeferredGenerationPublicationQuote<'_> {
             .and_then(|layout| u64::try_from(layout.size()).ok())
             .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?;
         prepare(keys, keys).map_err(SelectedIndexGenerationAdmissionStop::Admission)?;
-        GenerationCatalog::quote_batch(self.generations, self.scopes, false, prepare)?;
+        GenerationCatalog::quote_batch(self.generations, self.scopes, prepare)?;
         prepare(0, 0).map_err(SelectedIndexGenerationAdmissionStop::Admission)
     }
 }

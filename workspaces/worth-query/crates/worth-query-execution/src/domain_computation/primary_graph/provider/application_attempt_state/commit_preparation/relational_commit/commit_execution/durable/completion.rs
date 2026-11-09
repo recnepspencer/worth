@@ -92,6 +92,10 @@ fn into_managed(retained: RetainedQueryDurablePreparation) -> ManagedUnpublished
         _completion: query.completion,
         publication_mode: managed_unpublished::ManagedUnpublishedPublicationMode::Ordinary,
         attempt: query.attempt,
+        members: query.members,
+        prepared_group_publications: query.prepared_group_publications,
+        group_evidence: query.group_evidence,
+        group_emissions: query.group_emissions,
         predicate: query.predicate,
         work: query.work,
         index_maintenance_work: query

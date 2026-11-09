@@ -24,15 +24,7 @@ impl ApplicationMutationBinding<Schema> for BumpBinding {
     type Denial = WorthQueryOperationBodyDenial;
     type DenialBinding = DenialBinding;
     type Output = NoApplicationMutationOutputs;
-    type ScopeBinding = ApplicationMutationFieldScope<
-        Schema,
-        Row,
-        RowFacts,
-        RowIdentity,
-        String,
-        ReadOnly,
-        NoApplicationUnit,
-    >;
+    type ScopeBinding = ApplicationMutationFieldScope<RowIdentity>;
     type PrincipalBinding = PrincipalBinding;
     type Mapping = Mapping;
     type Principal = Principal;
@@ -43,17 +35,8 @@ impl ApplicationMutationBinding<Schema> for BumpBinding {
     const HANDLER_IDENTITY: &'static str = "worth.query.path-value.body.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.path-value.request.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Row,
-        RowFacts,
-        RowIdentity,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        RowIdentity::reference()
+    fn scope_field() -> RowIdentity {
+        RowIdentity::at("RowIdentity")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         Schema,
@@ -75,6 +58,6 @@ impl ApplicationMutationIntent<Schema> for BumpRow {
         self
     }
     fn scope_binding(&self) -> <BumpBinding as ApplicationMutationBinding<Schema>>::ScopeBinding {
-        ApplicationMutationFieldScope::new(RowIdentity::reference(), self.row.clone())
+        ApplicationMutationFieldScope::new(RowIdentity::at("RowIdentity"), self.row.clone())
     }
 }

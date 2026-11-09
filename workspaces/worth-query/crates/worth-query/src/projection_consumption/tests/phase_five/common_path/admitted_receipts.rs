@@ -170,6 +170,10 @@ fn completed_common_path_exposes_receipt_first_inspection_helpers() {
     );
     assert_eq!(
         completed.transition_rules().rules_digest(),
-        completed.receipt().transition_rules().rules_digest()
+        completed
+            .receipt()
+            .transition_rules()
+            .expect("fixture digest must fit")
+            .rules_digest()
     );
 }

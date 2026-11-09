@@ -77,7 +77,7 @@ pub fn retain_revocation<'a>(
                         |reader, document| -> Result<(), String> {
                             let grant = reader
                                 .resolve_entity(
-                                    GrantIdentity::reference(),
+                                    GrantIdentity::at("GrantIdentity"),
                                     "source-child".to_owned(),
                                 )
                                 .map_err(|cause| format!("{cause:?}"))?;
@@ -89,7 +89,7 @@ pub fn retain_revocation<'a>(
                                 )
                                 .map_err(|cause| format!("{cause:?}"))?;
                             let status = reader
-                                .decision_field(&grant, GrantStatus::reference())
+                                .decision_field(&grant, GrantStatus::at("GrantStatus"))
                                 .map_err(|cause| format!("{cause:?}"))?;
                             if status != Some(1) {
                                 return Err("target grant is not active".into());
@@ -112,7 +112,11 @@ pub fn retain_revocation<'a>(
                     )
                     .map_err(|cause| format!("{cause:?}"))?;
                 let grant = reads
-                    .resolve_entity(phase, GrantIdentity::reference(), "source-child".to_owned())
+                    .resolve_entity(
+                        phase,
+                        GrantIdentity::at("GrantIdentity"),
+                        "source-child".to_owned(),
+                    )
                     .map_err(|cause| format!("{cause:?}"))?;
                 reads
                     .complete_projected_dependencies(phase, SystemAllocation)

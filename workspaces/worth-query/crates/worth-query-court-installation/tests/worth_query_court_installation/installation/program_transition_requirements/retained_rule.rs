@@ -1,4 +1,5 @@
 //! Distinct genuine schema declarations retain a rule key with different scope.
+use worth_query_declaration::facade::application_schema::fragment::{self, Fragment, NoBindings};
 use worth_query_declaration::facade::{application_program::*, application_schema::*};
 use worth_query_installation::facade::*;
 
@@ -11,17 +12,25 @@ struct Feature;
 struct ChangedProgram;
 struct MatchingProgram;
 
-impl ApplicationEntityMarkerIdentity<ChangedSchema> for Record {
-    const IDENTIFIER: &'static str = "Record";
+impl fragment::Entity for Record {
+    const NAME: &'static str = "Record";
+    type Aspects = ();
+    type Relations = ();
 }
-impl ApplicationEntityMarkerIdentity<MatchingSchema> for Record {
-    const IDENTIFIER: &'static str = "Record";
+impl fragment::Entity for ExtraRecord {
+    const NAME: &'static str = "EarlierRecord";
+    type Aspects = ();
+    type Relations = ();
 }
-impl ApplicationEntityMarkerIdentity<ChangedSchema> for ExtraRecord {
-    const IDENTIFIER: &'static str = "EarlierRecord";
+impl Fragment for ChangedSchema {
+    const NAME: &'static str = "Changed";
+    type Bindings = NoBindings;
+    type Members = (Record, ExtraRecord);
 }
-impl ApplicationEntityMarkerIdentity<MatchingSchema> for ExtraRecord {
-    const IDENTIFIER: &'static str = "EarlierRecord";
+impl Fragment for MatchingSchema {
+    const NAME: &'static str = "Matching";
+    type Bindings = NoBindings;
+    type Members = (Record, ExtraRecord);
 }
 impl ApplicationInvariantMarkerIdentity<ChangedSchema> for RetainedRule {
     const IDENTIFIER: &'static str = "TargetRule";
@@ -40,7 +49,7 @@ impl ApplicationSchema for ChangedSchema {
     const MINOR: u32 = 0;
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
-        declaration::<Self>("EarlierRecord")
+        declaration(Self, "EarlierRecord")
     }
 }
 impl ApplicationSchema for MatchingSchema {
@@ -50,23 +59,20 @@ impl ApplicationSchema for MatchingSchema {
     const MINOR: u32 = 0;
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
-        declaration::<Self>("Record")
+        declaration(Self, "Record")
     }
 }
 
-fn declaration<S: ApplicationSchema>(
+fn declaration<
+    S: ApplicationSchema + Fragment<Bindings = NoBindings, Members = (Record, ExtraRecord)>,
+>(
+    root: S,
     scope: &str,
 ) -> Result<ApplicationSchemaDeclaration<S>, ApplicationSchemaDeclarationDenial>
 where
-    Record: ApplicationEntityMarkerIdentity<S>,
-    ExtraRecord: ApplicationEntityMarkerIdentity<S>,
     RetainedRule: ApplicationInvariantMarkerIdentity<S>,
 {
-    ApplicationSchemaDeclarationBuilder::<S>::for_schema()
-        .entity(ApplicationEntityRef::<S, Record>::from_schema_identifier(
-            "Record",
-        ))
-        .entity(ApplicationEntityRef::<S, ExtraRecord>::from_schema_identifier("EarlierRecord"))
+    ApplicationSchemaDeclarationBuilder::<S>::from_fragment(root)?
         .invariant(ApplicationInvariantDefinition::new(
             RetainedRule::reference(),
             ApplicationInvariantExecutionPoint::CommitBoundary,

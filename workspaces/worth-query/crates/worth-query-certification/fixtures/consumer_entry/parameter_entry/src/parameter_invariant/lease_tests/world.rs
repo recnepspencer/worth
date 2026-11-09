@@ -42,7 +42,7 @@ pub(super) fn install() -> World {
         SignalConditionalEvaluationBudget::development(),
     );
     let application = in_memory(
-        LeaseSchema::declaration().unwrap(),
+        <LeaseSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap(),
         (Arc::clone(&calls), ()),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         limits,
@@ -62,7 +62,7 @@ pub(super) fn install() -> World {
                     Parameter::reference(),
                     WorthQueryApplicationEntityKey::new("parameter-1").unwrap(),
                 )
-                .field(Count::reference(), PositiveCount::new(7).unwrap()),
+                .field(Count::at("value"), PositiveCount::new(7).unwrap()),
             )?;
             bootstrap.bind_relation(WorthQueryApplicationRelationSeed::new(
                 ParameterOwner::reference(),

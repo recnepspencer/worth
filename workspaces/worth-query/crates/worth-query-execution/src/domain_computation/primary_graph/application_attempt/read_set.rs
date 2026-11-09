@@ -3,10 +3,7 @@ use std::collections::BTreeMap;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
-use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationScalarValueBinding, ApplicationSchema,
-    DeclaredApplicationFieldValue, EqualityPredicate, OperationReads, WritePosture,
-};
+use worth_query_installation::facade::{ApplicationScalarValueBinding, ApplicationSchema};
 
 use super::fact::{WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact};
 use super::read_phase::{
@@ -63,6 +60,7 @@ pub(crate) mod aggregate;
 mod components;
 mod observation_admission;
 mod observations;
+mod projected_admission;
 mod projected_completion;
 mod projected_extension;
 mod relation_observation;
@@ -71,6 +69,7 @@ pub(crate) mod structural_walk;
 pub(crate) mod unique_write_dependencies;
 
 pub(super) use binding_proof::{MutationHandlerBindingProof, WorkflowOperationBindingProof};
+pub(super) use relation_observation::matching_relations;
 pub use relation_observation::WorthQueryObservedApplicationRelation;
 use source_facts::{merge_source_facts, validate_source_facts, SourceFacts};
 

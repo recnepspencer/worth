@@ -35,7 +35,7 @@ fn generation(id: u64) -> DerivedIndexGeneration {
 fn deferred_admission_prices_the_catalog_after_intervening_publication() {
     let empty = IndexingSubsystem::default();
     let mut small = empty
-        .prepare_generation_batch(vec![generation(200)], |_, _| Ok::<_, ()>(()))
+        .prepare_generation_batch(vec![generation(200)], None, |_, _| Ok::<_, ()>(()))
         .unwrap();
     let mut small_work = 0;
     small
@@ -47,7 +47,7 @@ fn deferred_admission_prices_the_catalog_after_intervening_publication() {
     drop(small);
     let grown = IndexingSubsystem::default();
     let mut batch = grown
-        .prepare_generation_batch(vec![generation(200)], |_, _| Ok::<_, ()>(()))
+        .prepare_generation_batch(vec![generation(200)], None, |_, _| Ok::<_, ()>(()))
         .unwrap();
     for id in 1..128 {
         grown.publish_generation(generation(id));
@@ -78,11 +78,11 @@ fn deferred_admission_prices_the_catalog_after_intervening_publication() {
 fn cancelled_catalog_wait_keeps_the_unpublished_payload_and_releases_no_foreign_permit() {
     let owner = IndexingSubsystem::default();
     let mut first = owner
-        .prepare_generation_batch(vec![generation(1)], |_, _| Ok::<_, ()>(()))
+        .prepare_generation_batch(vec![generation(1)], None, |_, _| Ok::<_, ()>(()))
         .unwrap();
     first.admit_actual_geometry(|_, _| Ok::<_, ()>(())).unwrap();
     let mut second = owner
-        .prepare_generation_batch(vec![generation(2)], |_, _| Ok::<_, ()>(()))
+        .prepare_generation_batch(vec![generation(2)], None, |_, _| Ok::<_, ()>(()))
         .unwrap();
     let mut polls = 0;
     let denied = second.admit_actual_geometry(|_, _| {
@@ -142,7 +142,7 @@ fn cancelled_catalog_wait_keeps_the_unpublished_payload_and_releases_no_foreign_
 fn an_empty_admitted_batch_completes_without_installing_a_generation() {
     let owner = IndexingSubsystem::default();
     let mut batch = owner
-        .prepare_generation_batch(Vec::new(), |_, _| Ok::<_, ()>(()))
+        .prepare_generation_batch(Vec::new(), None, |_, _| Ok::<_, ()>(()))
         .unwrap();
     batch.admit_actual_geometry(|_, _| Ok::<_, ()>(())).unwrap();
     batch.publish_admitted();
@@ -160,7 +160,7 @@ fn admitted_installation_retains_payload_backing_and_unused_keys_until_retiremen
     let owner = IndexingSubsystem::default();
     owner.publish_generation(generation(1));
     let mut batch = owner
-        .prepare_generation_batch(vec![generation(2)], |_, _| Ok::<_, ()>(()))
+        .prepare_generation_batch(vec![generation(2)], None, |_, _| Ok::<_, ()>(()))
         .unwrap();
     let capacity = batch.generations.capacity();
     batch.admit_actual_geometry(|_, _| Ok::<_, ()>(())).unwrap();

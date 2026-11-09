@@ -2,7 +2,7 @@ use worth_query_host::facade::{
     admission::authenticated_principal::{
         WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
     },
-    declaration::application_query::{ApplicationQueryIntent, ApplicationQueryScopeResolution},
+    declaration::application_query::ApplicationQueryIntent,
     primary_graph::{
         WorthQueryApplicationOutputDemandSource, WorthQueryApplicationQueryAccessContext,
         WorthQueryOutputDemandDenialKind, WorthQueryPrimaryGraphApplicationRuntime,
@@ -74,10 +74,9 @@ fn source(
                 .expect("the principal resolves for the source query")
         })
         .expect("installed host call opens");
-    let (scope_field, scope_value) = intent
-        .clone()
-        .into_scope()
-        .into_field_parts(resolved_principal.principal_identity());
+    let (scope_field, scope_value) =
+        <PlanarRead as ApplicationQueryIntent<ConsumerSchema>>::into_scope(intent.clone())
+            .into_field_parts(resolved_principal.principal_identity());
     let scope = application
         .with_host_advancement(|host_phase| {
             selected

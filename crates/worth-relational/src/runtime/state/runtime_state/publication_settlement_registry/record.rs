@@ -80,11 +80,11 @@ pub(crate) struct RelationalSettlementExecution<'record> {
 }
 
 impl PendingRelationalPublicationSettlement {
-    pub(super) fn publish_prepared_indexes(&self) {
+    pub(super) fn install_prepared_indexes(&self) {
         let mut state = self.state();
         match &mut *state {
             PendingRelationalSettlementState::Reserved(reserved) => {
-                reserved.completion.publish_prepared_indexes();
+                reserved.completion.install_prepared_indexes();
             }
             PendingRelationalSettlementState::Performed(_)
             | PendingRelationalSettlementState::Executing

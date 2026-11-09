@@ -35,7 +35,10 @@ fn cert_reexecution_and_live_maintenance_converge_without_replay_authority_promo
         .unwrap();
     let original_delivery = subject.drain(&mut workspace).unwrap();
     let _original_peer = candidate.drain(&mut workspace).unwrap();
-    let original_impact = original_delivery.impact().semantic_projection();
+    let original_impact = original_delivery
+        .impact()
+        .semantic_projection()
+        .expect("fixture digest must fit");
     let original_observation = observe_delivery(&subject, original_delivery, &workspace);
 
     let replay = certification::replay_installed_workflow(

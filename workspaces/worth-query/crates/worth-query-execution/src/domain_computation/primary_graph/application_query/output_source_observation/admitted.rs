@@ -23,9 +23,9 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
                 )
                 .map_err(SourceQueryObservationStop::Read)
         };
-        let completed = result.map_err(|stop| self.record_history_refusal(stop))?;
+        let completed = result.map_err(|stop| self.record_control_refusal(stop))?;
         self.confirm_control(execution, native, completed)
-            .map_err(|stop| self.record_history_refusal(stop))
+            .map_err(|stop| self.record_control_refusal(stop))
     }
     /// Only the completed public read crosses into producer re-admission.
     pub(in crate::domain_computation::primary_graph) fn read_admitted_result<B>(

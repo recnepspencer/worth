@@ -10,13 +10,14 @@ pub(super) enum RelationalProposalSource {
         strategy: Option<StrategyProposalDecoration>,
     },
     RetainedEntitySelection(PreparedRetainedEntityPayload),
+    OwnedGraphSelection(crate::mvcc::owned_graph_selection::PreparedOwnedGraphSelection),
 }
 
 impl RelationalProposalSource {
     pub(super) fn into_strategy(self) -> Option<StrategyProposalDecoration> {
         match self {
             Self::Transaction { strategy, .. } => strategy,
-            Self::RetainedEntitySelection(_) => None,
+            Self::RetainedEntitySelection(_) | Self::OwnedGraphSelection(_) => None,
         }
     }
 }

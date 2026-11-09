@@ -186,7 +186,7 @@ fn ordinary_authored_complete_retirement_reissues_only_through_exact_warm_and_co
             "authored retirement keeps Birth closed"
         );
         let previous = runtime
-            .readmit_authored_output_retirement_successor(execution, installed, &basis, &meaning)
+            .readmit_native_output_transition_successor(execution, installed, &basis, &meaning)
             .unwrap()
             .unwrap();
         let (batch, targets) = creates(["reissued-left", "reissued-right"]);

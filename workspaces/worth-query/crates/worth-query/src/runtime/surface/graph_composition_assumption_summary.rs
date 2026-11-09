@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -17,7 +18,9 @@ pub struct WorthQueryGraphCompositionAssumptionSummary {
 }
 
 impl WorthQueryGraphCompositionAssumptionSummary {
-    pub(in crate::runtime) fn derive(write_receipts: &[WorthQueryWriteReceipt]) -> Option<Self> {
+    pub(in crate::runtime) fn derive(
+        write_receipts: &[WorthQueryWriteReceipt],
+    ) -> Result<Option<Self>, IdentityDerivationDenial> {
         let assumption_sets = write_receipts
             .iter()
             .filter_map(|receipt| {
@@ -27,7 +30,7 @@ impl WorthQueryGraphCompositionAssumptionSummary {
             })
             .collect::<Vec<_>>();
         if assumption_sets.is_empty() {
-            return None;
+            return Ok(None);
         }
 
         let assumption_snapshot_digests = assumption_sets
@@ -72,11 +75,11 @@ impl WorthQueryGraphCompositionAssumptionSummary {
         let aggregate_assumption_snapshot_digest = aggregate_digest(
             "worth_query_graph_composition_assumption_snapshot_digest_v1",
             &assumption_snapshot_digests,
-        );
+        )?;
         let aggregate_verified_precondition_digest = aggregate_digest(
             "worth_query_graph_composition_verified_precondition_digest_v1",
             &verified_precondition_digests,
-        );
+        )?;
         let assumption_summary_digest =
             worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
                 .field_shape(
@@ -113,9 +116,9 @@ impl WorthQueryGraphCompositionAssumptionSummary {
                         .iter()
                         .map(|touch| touch.admitted_touch_digest_part()),
                 )
-                .seal();
+                .seal()?;
 
-        Some(Self {
+        Ok(Some(Self {
             assumption_snapshot_digests,
             verified_precondition_digests,
             verified_step_count,
@@ -124,7 +127,7 @@ impl WorthQueryGraphCompositionAssumptionSummary {
             aggregate_assumption_snapshot_digest,
             aggregate_verified_precondition_digest,
             assumption_summary_digest,
-        })
+        }))
     }
 
     pub fn assumption_snapshot_digests(&self) -> Vec<&str> {
@@ -203,9 +206,11 @@ fn diagnostic_counter_snapshot(fields: &[(&str, usize)]) -> String {
 fn aggregate_digest(
     label: &str,
     digests: &[WorthQueryEvidenceIdentity],
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
-        .field_shape(WorthQueryEvidenceTag::new("role"), label)
-        .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("digest"), digests.iter())
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
+            .field_shape(WorthQueryEvidenceTag::new("role"), label)
+            .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("digest"), digests.iter())
+            .seal()?,
+    )
 }

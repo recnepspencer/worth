@@ -48,9 +48,9 @@ pub(super) fn decide<Schema: TopologyModelBinding>(
     let Some(write) = *OWN_WRITE.lock().unwrap_or_else(PoisonError::into_inner) else {
         return Ok(None);
     };
-    let entry = reader.resolve_entity(EntryNumber::reference(), write.number)?;
+    let entry = reader.resolve_entity(EntryNumber::at("EntryNumber"), write.number)?;
     if write.read == OwnWriteRead::Observed {
-        reader.field(&entry, EntryValueBits::reference())?;
+        reader.field(&entry, EntryValueBits::at("EntryValueBits"))?;
     }
     Ok(Some((reader.mutation_target(&entry)?, write.bits)))
 }

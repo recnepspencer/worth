@@ -1,4 +1,5 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 mod stop_class;
 mod stop_classify;
@@ -13,6 +14,7 @@ pub use stop_class::{WorthQueryRuntimeMissingComponent, WorthQueryStopClass};
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum WorthQueryRuntimeError {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     Advancement(
         worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
     ),
@@ -119,6 +121,7 @@ pub enum WorthQueryRuntimeError {
 impl std::fmt::Display for WorthQueryRuntimeError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::EvidenceIdentityDerivationDenied(cause) => write!(f, "evidence identity {} refused: {:?}", cause.scope.as_str(), cause.cause),
             Self::Advancement(cause) => write!(f, "{cause}"),
             Self::ForeignPhase(error) => write!(f, "foreign advancement phase: {error:?}"),
             Self::MissingBackend => {
@@ -383,3 +386,9 @@ impl
 #[cfg(test)]
 #[path = "error_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
+
+impl From<IdentityDerivationDenial> for WorthQueryRuntimeError {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
+    }
+}

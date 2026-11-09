@@ -33,10 +33,8 @@ worth_query_query_binding!(
     result IntentQueryResultBinding,
     principal TemporalPrincipalBinding, mapping ExternalMapping, principal_entity Principal,
         principal_identity u64, identity_binding worth_query_decl::facade::application_schema::U64ApplicationValueBinding,
-    scope TemporalIntent, IntentFacts, IntentIdentityField, String,
-        worth_query_decl::facade::application_schema::ReadOnly,
-        worth_query_decl::facade::application_schema::NoApplicationUnit,
-    field IntentIdentityField::reference(),
+    scope IntentIdentityField,
+    field IntentIdentityField::at("IntentIdentityField"),
     value TemporalIntentReadRequest::into_identity,
     limits results 1
 );

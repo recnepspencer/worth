@@ -77,7 +77,7 @@ mod tests {
     use super::readmit_exact_release;
 
     const GOLDEN_ENVELOPE_HEX: &str = include_str!(
-        "../../../workspaces/worth-query/crates/worth-query-package-archive/tests/archive_protocol/release_envelope/release_envelope_v1.hex"
+        "../../../workspaces/worth-query/crates/worth-query-testkit-package-archive/src/package_archive/archive_protocol/release_envelope/release_envelope_v1_record_v18.hex"
     );
 
     #[test]
@@ -133,7 +133,9 @@ mod tests {
     fn decode_hex(encoded: &str) -> Vec<u8> {
         encoded
             .as_bytes()
-            .chunks_exact(2)
+            .as_chunks::<2>()
+            .0
+            .iter()
             .map(|pair| {
                 let text = std::str::from_utf8(pair).unwrap();
                 u8::from_str_radix(text, 16).unwrap()

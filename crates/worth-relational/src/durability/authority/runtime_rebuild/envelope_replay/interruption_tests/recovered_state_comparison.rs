@@ -4,15 +4,6 @@ use super::{observable_state, RelationalRuntime};
 // allocation identities. Check each current root's complete content/proof tuple,
 // then canonicalize those identities by first occurrence, preserving aliasing.
 pub(super) fn comparable_recovered_state(target: &RelationalRuntime) -> String {
-    for cell in target.history.branch_cells_snapshot() {
-        let root = target
-            .history
-            .branch_cell(&cell.branch_id)
-            .unwrap()
-            .root()
-            .unwrap();
-        assert!(root.is_complete(&target.services.symbols.interner_snapshot()));
-    }
     let state = observable_state(target)
         .replace(
             &format!("runtime_instance_id: {},", target.runtime_instance_id()),

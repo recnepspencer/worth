@@ -114,7 +114,14 @@ pub fn admit_active_subscription_lane(
         budget.allocation_scope_width() as usize,
         performance_receipt.performance_receipt_identity(),
         &counters.evidence_identity(),
-    );
+    )
+    .map_err(|cause| {
+        ActiveSubscriptionLifecycleError::identity_refused(
+            cause,
+            activation.evidence_identity().clone(),
+            counters.clone(),
+        )
+    })?;
     let lane_digest = ActiveSubscriptionLaneDigest::new(lane_identity);
 
     Ok(ActiveSubscriptionLaneAdmission {

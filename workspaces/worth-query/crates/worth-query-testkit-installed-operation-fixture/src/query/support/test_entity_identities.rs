@@ -13,6 +13,7 @@ pub fn relational_test_entity_identity(label: &str) -> WorthQueryEntityIdentity 
                     std::sync::Arc::from(label),
                 ),
             )
+            .expect("positive fixture entity label fits digest bounds")
         })
 }
 

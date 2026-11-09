@@ -10,6 +10,7 @@ use super::WorthQueryInstalledApplicationValueBinding;
 /// Immutable installed bindings indexed by their exact field locus.
 #[derive(Clone, Debug, Default)]
 pub struct WorthQueryInstalledApplicationValueBindingCatalog {
+    fragments: Arc<worth_query_declaration::facade::application_schema::fragment::FragmentCatalog>,
     content_formats: Arc<super::content::Formats>,
     bindings: Arc<
         BTreeMap<ApplicationFieldBindingLocus, Arc<WorthQueryInstalledApplicationValueBinding>>,
@@ -31,6 +32,7 @@ impl WorthQueryInstalledApplicationValueBindingCatalog {
     pub fn same_installation_as(&self, other: &Self) -> bool {
         Arc::ptr_eq(&self.bindings, &other.bindings)
             && Arc::ptr_eq(&self.content_formats, &other.content_formats)
+            && Arc::ptr_eq(&self.fragments, &other.fragments)
     }
 
     pub(crate) fn new(
@@ -39,8 +41,10 @@ impl WorthQueryInstalledApplicationValueBindingCatalog {
             ApplicationFieldBindingLocus,
             WorthQueryInstalledApplicationValueBinding,
         >,
+        fragments: worth_query_declaration::facade::application_schema::fragment::FragmentCatalog,
     ) -> Self {
         Self {
+            fragments: Arc::new(fragments),
             content_formats: Arc::new(content_formats),
             bindings: Arc::new(
                 bindings
@@ -49,6 +53,20 @@ impl WorthQueryInstalledApplicationValueBindingCatalog {
                     .collect(),
             ),
         }
+    }
+
+    pub fn fragment<F: worth_query_declaration::facade::application_schema::fragment::Fragment>(
+        &self,
+        marker: F,
+    ) -> Option<&worth_query_declaration::facade::application_schema::fragment::FragmentDefinition>
+    {
+        self.fragments.fragment(marker)
+    }
+
+    pub fn fragments(
+        &self,
+    ) -> &worth_query_declaration::facade::application_schema::fragment::FragmentCatalog {
+        &self.fragments
     }
 
     pub fn field(

@@ -51,7 +51,7 @@ fn production_write_footprints_report_exact_records_and_local_publication_cost()
             .snapshots()
             .release_snapshot(&committed.snapshot)
             .unwrap();
-        let cost = world.runtime.observe_mvcc_cost(&scope).unwrap();
+        let cost = world.runtime.observe_mvcc_cost(execution, &scope).unwrap();
         let delta = cost.sharing_cost_delta();
         assert_eq!(delta.transaction_validation_attempts, 1);
         assert_eq!(delta.candidate_preparations, 1);

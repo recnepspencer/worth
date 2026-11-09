@@ -4,7 +4,7 @@
 //! one with identical contracts under a different version label, is refused
 //! before service: only a durable schema transition changes what it serves.
 
-use crate::capabilities::{primary_schema_version_id_for_registry, SchemaVersionSource};
+use crate::capabilities::SchemaVersionSource;
 use crate::durability::data::{
     DurabilityError, RecoveryAuthorityContinuityMismatch, RecoveryFailureClass,
 };
@@ -46,9 +46,7 @@ pub(super) fn require_declared_schema_of_recovered_main(
     )
     .with_authority_continuity_mismatch(
         RecoveryAuthorityContinuityMismatch::SchemaRegistryShape {
-            expected_primary_schema_version: primary_schema_version_id_for_registry(
-                recorded_registry,
-            ),
+            expected_primary_schema_version: recorded_registry.primary_schema_version_id(),
             found_primary_schema_version: rebuilt.primary_schema_version_id(),
             expected_entity_kind_count: recorded_snapshot.entity_kinds.len(),
             found_entity_kind_count: declared.entity_kinds.len(),

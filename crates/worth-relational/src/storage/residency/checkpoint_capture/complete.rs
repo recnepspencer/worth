@@ -1,6 +1,7 @@
 //! Complete captures only original Full DATA; ACK retains displaced SDK nodes.
 use super::*;
 use crate::durability::data::RelationalRecoveryStop;
+use crate::storage::overlay::PartitionContentDigestError;
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
 
 #[derive(Debug)]
@@ -55,28 +56,9 @@ impl RelationalCheckpointRegionPublication {
     }
 }
 impl RelationalRegionResidency {
-    pub(crate) fn capture_complete_for_request(
+    pub(super) fn capture_full_contents_for_request(
         self: &Arc<Self>,
-        request: &ExecutionRequest<'_, '_>,
-        schema: &RelationalBranchRootSchemaAuthority,
-        schema_digest: [u8; 32],
-        symbols: &dyn crate::symbols::data::SymbolTextLookup,
-    ) -> Result<CapturedCompleteRegion, RelationalRecoveryStop> {
-        request
-            .consult()
-            .map_err(|cause| RelationalRecoveryStop::Request(cause.into()))?;
-        let lease = match self.lease_resident_full()? {
-            Some(lease) => lease,
-            None => self.demand_full(
-                request,
-                super::super::history_capture_bound::FULL_HISTORY_READ_LIMIT,
-                None,
-            )?,
-        };
-        lease.capture_checkpoint_data_for_request(request, schema, schema_digest, symbols)
-    }
-    fn capture_full_contents_for_request(
-        self: &Arc<Self>,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         lease: &super::super::RelationalResidencyLease<super::super::Full>,
         request: &ExecutionRequest<'_, '_>,
         schema: &RelationalBranchRootSchemaAuthority,
@@ -88,36 +70,35 @@ impl RelationalRegionResidency {
         let commitment = match region.commitment.as_ref() {
             Some(commitment) => commitment,
             None => {
-                computed = PartitionContentCommitment::capture_full_for_request(
-                    &region.partition,
-                    symbols,
-                    request,
-                )
-                .map_err(|cause| match cause {
-                    PartitionContentDigestError::Request(cause) => {
-                        RelationalRecoveryStop::Request(cause)
-                    }
-                    PartitionContentDigestError::UnresolvedContentSymbol(symbol) => {
-                        RelationalStorageUnavailable {
-                            subject: RelationalStorageSubject::Symbols {
-                                first: symbol,
-                                last: symbol,
-                            },
-                            cause: Cause::SourceUnavailable,
-                        }
-                        .into()
-                    }
-                    PartitionContentDigestError::InvalidHistoryCoverage
-                    | PartitionContentDigestError::Encoding
-                    | PartitionContentDigestError::AllocationAccountingOverflow => {
-                        self.capture_failure(Cause::IntegrityMismatch).into()
-                    }
-                })?
-                .0;
+                computed =
+                    PartitionContentCommitment::capture(lane, request, &region.partition, symbols)
+                        .map_err(|cause| match cause {
+                            PartitionContentDigestError::Request(cause)
+                            | PartitionContentDigestError::Execution(cause) => {
+                                RelationalRecoveryStop::Request(cause)
+                            }
+                            PartitionContentDigestError::UnresolvedContentSymbol(symbol) => {
+                                RelationalStorageUnavailable {
+                                    subject: RelationalStorageSubject::Symbols {
+                                        first: symbol,
+                                        last: symbol,
+                                    },
+                                    cause: Cause::SourceUnavailable,
+                                }
+                                .into()
+                            }
+                            PartitionContentDigestError::InvalidHistoryCoverage
+                            | PartitionContentDigestError::Encoding
+                            | PartitionContentDigestError::AllocationAccountingOverflow => {
+                                self.capture_failure(Cause::IntegrityMismatch).into()
+                            }
+                        })?
+                        .0;
                 &computed
             }
         };
         let captured = super::super::region_capture::complete::capture(
+            lane,
             &region.partition,
             commitment,
             schema,
@@ -130,6 +111,8 @@ impl RelationalRegionResidency {
             kind_authority: captured.kind_authority,
             partition_id: partition.partition_id,
             content_digest: commitment.digest(partition.partition_id),
+            directory: captured.directory,
+            live_counts: super::super::LiveRecordCounts::from_partition(partition),
             entity_slots: partition.entity_arena.slot_count(),
             relation_slots: partition.relation_arena.slot_count(),
             unavailable_records: partition.entity_arena.lifecycle_counts().unavailable
@@ -159,19 +142,6 @@ impl RelationalRegionResidency {
                 recorded,
             },
         })
-    }
-}
-/// DATA projection consumes the actual same-cell counted Full observation.
-impl super::super::RelationalResidencyLease<super::super::Full> {
-    pub(crate) fn capture_checkpoint_data_for_request(
-        &self,
-        request: &ExecutionRequest<'_, '_>,
-        schema: &RelationalBranchRootSchemaAuthority,
-        schema_digest: [u8; 32],
-        symbols: &dyn crate::symbols::data::SymbolTextLookup,
-    ) -> Result<CapturedCompleteRegion, RelationalRecoveryStop> {
-        self.cell()
-            .capture_full_contents_for_request(self, request, schema, schema_digest, symbols)
     }
 }
 #[cfg(test)]

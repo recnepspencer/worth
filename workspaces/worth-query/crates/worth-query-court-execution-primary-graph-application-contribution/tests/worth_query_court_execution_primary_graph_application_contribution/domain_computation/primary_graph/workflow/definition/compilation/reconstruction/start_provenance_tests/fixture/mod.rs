@@ -99,8 +99,8 @@ pub fn text_at(
         .read_truth()
         .pin_read_capability(snapshot, &[], execution)
         .unwrap();
-    let text = pin
-        .symbols()
+    let symbols = pin.symbols();
+    let text = symbols
         .retained_text(worth_relational::facade::symbols::Symbol(symbol.0))
         .unwrap();
     if require_charge {

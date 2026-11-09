@@ -19,6 +19,15 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
     pub fn build(
         mut self,
     ) -> Result<ApplicationSchemaDeclaration<Schema>, ApplicationSchemaDeclarationDenial> {
+        if let Some(denial) = self.refusal {
+            return Err(denial);
+        }
+        crate::application_schema::fragment::expand_record_access(
+            &self.member_provenance.fragments.catalog,
+            &self.member_provenance.fragments.access,
+            &mut self.members,
+            &mut self.contributions,
+        )?;
         validate_schema_header(self.owner, self.name)?;
         validate_member_identifiers(&self.members)?;
         crate::application_schema::relation_integrity::validate_relation_integrity(&self.members)?;
@@ -28,6 +37,14 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
         validate_operation_contract_cardinality(&self.members)?;
         self.members.sort();
         self.member_provenance.normalize();
+        self.mutation_references.validate(&self.member_provenance)?;
+        self.correction_fields
+            .validate(&self.member_provenance.fragments.catalog)?;
+        self.principal_fields
+            .validate(&self.member_provenance, &self.members)?;
+        self.member_provenance
+            .fragments
+            .validate(self.member_provenance.field_bindings())?;
         if self.member_provenance.has_conflicting_field_binding()
             || !self.member_provenance.field_bindings_match(&self.members)
         {

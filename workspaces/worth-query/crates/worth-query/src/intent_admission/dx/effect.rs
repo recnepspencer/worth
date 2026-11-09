@@ -132,7 +132,7 @@ impl<'a> WorthQueryRuntimeEffectWriteIntentAdmissionReview<'a> {
             })?;
         let execution_binding = self
             .runtime
-            .prepare_effect_intent_execution_binding(handoff.clone(), &self.pending_delivery);
+            .prepare_effect_intent_execution_binding(handoff.clone(), &self.pending_delivery)?;
         Ok(WorthQueryAdmittedRuntimeEffectWriteIntent {
             runtime: self.runtime,
             review: self.review,

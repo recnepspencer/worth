@@ -11,7 +11,6 @@ impl RuntimeSymbolResidency {
             .reserve_retained_memory(arc_size::<Self>()? as u64)
             .map_err(|cause| Stop::Request(cause.into()))?;
         Ok(Arc::new(Self {
-            regions: Default::default(),
             by_id: directory.manifest.symbols.clone(),
             by_value: directory.manifest.symbol_buckets.clone(),
             pages: std::sync::Mutex::new(SymbolPageState {

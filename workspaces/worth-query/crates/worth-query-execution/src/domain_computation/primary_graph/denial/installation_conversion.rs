@@ -23,5 +23,6 @@ impl From<worth_relational::facade::runtime::RelationalRuntimeConstructionDenial
             WorthQueryPrimaryGraphInstallationDenialKind::RelationalSchemaRejected,
             cause.to_string(),
         )
+        .with_runtime_construction_cause(cause)
     }
 }

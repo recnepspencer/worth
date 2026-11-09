@@ -159,12 +159,12 @@ impl WorldSelectionReplay {
                     .commit_evidence()
                     .ok_or_else(|| corrupt("World source has no actual Native evidence"))?
                 {
-                    RelationalRootCommitEvidence::Original(envelope) => {
+                    RelationalRootCommitEvidence::Original(original) => {
                         let index = self.tails.get(&entry.commit.commit_id).ok_or_else(|| {
                             corrupt("World source original is absent from the admitted Native tail")
                         })?;
                         if !crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::matches_positioned_payload_for_request(
-                            plan.tail_log[*index].positioned(), envelope, request,
+                            plan.tail_log[*index].positioned(), original.envelope(), request,
                         )? { return Err(corrupt("World source root is not its actual Native original")); }
                     }
                     RelationalRootCommitEvidence::Checkpoint(commit) => {

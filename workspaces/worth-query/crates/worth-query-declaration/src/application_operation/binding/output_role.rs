@@ -41,7 +41,7 @@ pub use name::WorthQueryApplicationOutputRoleNameDenial;
 ///     WorthQueryApplicationOutputRole, WorthQueryAtMostOneOutput, WorthQueryCreateOutput,
 /// };
 /// use worth_query_declaration::facade::application_schema::{
-///     ApplicationEntityMarkerIdentity, ApplicationSchema, ApplicationSchemaDeclaration,
+///     ApplicationSchema, ApplicationSchemaDeclaration,
 ///     ApplicationSchemaDeclarationDenial,
 /// };
 ///
@@ -56,8 +56,10 @@ pub use name::WorthQueryApplicationOutputRoleNameDenial;
 ///     }
 /// }
 /// struct Account;
-/// impl ApplicationEntityMarkerIdentity<Ledger> for Account {
-///     const IDENTIFIER: &'static str = "Account";
+/// impl worth_query_declaration::facade::application_schema::fragment::Entity for Account {
+///     const NAME: &'static str = "Account";
+///     type Aspects = ();
+///     type Relations = ();
 /// }
 ///
 /// struct OpenOutputs;

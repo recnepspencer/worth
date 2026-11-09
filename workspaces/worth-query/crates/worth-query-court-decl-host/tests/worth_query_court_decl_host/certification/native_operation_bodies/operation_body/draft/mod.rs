@@ -4,10 +4,8 @@ pub(crate) use worth_query_testkit_certification_operation::facade::certificatio
 fn native_optional_draft_set_empty_text_clear_and_replay() {
     let app = super::install::<20>();
     assert_eq!(super::draft_query::read_note(&app), None);
-    assert!(matches!(
-        invoke::<SetDraftNote>(&app, 300, ""),
-        Outcome::Committed { .. }
-    ));
+    let first = invoke::<SetDraftNote>(&app, 300, "");
+    assert!(matches!(first, Outcome::Committed { .. }), "{first:?}");
     assert_eq!(super::draft_query::read_note(&app), Some(String::new()));
     assert!(matches!(
         invoke::<SetDraftNote>(&app, 300, ""),

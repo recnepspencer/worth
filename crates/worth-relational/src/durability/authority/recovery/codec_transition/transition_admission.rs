@@ -170,15 +170,33 @@ impl DurabilityRecoveryAuthority<'_> {
             )
             .map_err(|error| deny(Kind::TransactionAdmission, format!("{error:?}")))?;
         transaction.schema_authority_input = Some(
-            crate::schema::SchemaContinuityAuthorityInput::from_registry(
-                target.clone(),
+            crate::schema::SchemaContinuityAuthorityInput::copy_registry_for_request(
+                target,
                 source_authority.descriptor_semantics_version(),
                 self.runtime
                     .config()
                     .schema
                     .descriptor_canonical_basis_policy
                     .current_write_version(),
-            ),
+                execution,
+            )
+            .map_err(|cause| {
+                use crate::mvcc::PublicationPreparationDenial as Stop;
+                if cause
+                    == crate::branch::RelationalBranchRootCaptureDenial::AllocationLayoutOverflow
+                {
+                    return Denial::request(
+                        crate::execution::RelationalExecutionDenialCause::MemoryOverflow,
+                    );
+                }
+                match Stop::from(cause) {
+                    Stop::Execution(cause) => Denial::request(cause),
+                    Stop::StorageUnavailable(cause) => {
+                        deny(Kind::InvalidTargetRegistry, format!("{cause:?}"))
+                    }
+                    Stop::Invalid(detail) => deny(Kind::InvalidTargetRegistry, detail),
+                }
+            })?,
         );
         let mut batch = WorkerIntentBatch::new("recovered-derived-codec-retirement");
         for relation_id in &retirement.relations {

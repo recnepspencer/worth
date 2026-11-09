@@ -60,7 +60,7 @@ fn filters_siblings_before_child_projection() {
                 .unwrap()
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -115,7 +115,8 @@ fn filters_siblings_before_child_projection() {
     assert!(
         (*source.aspects_for_test()).iter().any(|aspect| {
             (*aspect.entity_for_test()) == account.entity_id_for_test()
-                && (*aspect.aspect_for_test()).as_str() == AccountStatus::reference().aspect()
+                && (*aspect.aspect_for_test()).as_str()
+                    == AccountStatus::at("AccountStatus").aspect()
         }),
         "the root predicate is a source dependency even when its field is not projected"
     );

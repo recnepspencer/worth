@@ -6,7 +6,9 @@ mod allocation;
 mod carrier;
 #[cfg(test)]
 mod carrier_tests;
+mod checkpoint;
 mod ids;
+mod kind_delta;
 mod kind_memberships;
 mod request;
 pub(crate) use ids::AdjacencyIds;
@@ -33,31 +35,6 @@ pub(crate) struct AdjacencyEntries {
 }
 
 impl AdjacencySet {
-    pub(crate) fn index_historical_kind_for_request(
-        &mut self,
-        kind: KindId,
-        relation: RelationId,
-        request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
-        let kinds = self
-            .entries_mut()
-            .historical_by_kind
-            .get_or_insert_with(SharedMap::new);
-        if !kinds.contains_key(&kind) {
-            let mut ids = RelationSet::new();
-            ids.insert_for_request(relation, (), request)?;
-            kinds.insert_for_request(kind, ids, request)?;
-        } else {
-            let ids = kinds
-                .get_mut_for_request(&kind, request)?
-                .expect("the same private map still contains its selected kind");
-            if !ids.contains_key(&relation) {
-                ids.insert_for_request(relation, (), request)?;
-            }
-        }
-        Ok(())
-    }
-
     pub(crate) fn selected_kind_navigation_work_bound(
         &self,
         basis: super::AdjacencyKindBasis,
@@ -107,6 +84,7 @@ impl AdjacencySet {
     }
 
     pub(crate) fn compressed_from_checkpoint(
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         current: Vec<RelationId>,
         structural_revisions: Vec<(KindId, VersionId)>,
     ) -> Self {
@@ -120,6 +98,7 @@ impl AdjacencySet {
         })
     }
 
+    #[cfg(test)]
     pub(crate) fn insert(&mut self, kind_id: KindId, relation_id: RelationId) {
         let entries = self.entries_mut();
         insert_sorted(&mut entries.current, relation_id);
@@ -127,6 +106,7 @@ impl AdjacencySet {
         insert_kind_relation(&mut entries.historical_by_kind, kind_id, relation_id);
     }
 
+    #[cfg(test)]
     pub(crate) fn insert_at(
         &mut self,
         kind_id: KindId,
@@ -151,6 +131,10 @@ impl AdjacencySet {
         let entries = self.entries_mut();
         entries.historical_by_kind = None;
         entries.historical_kind_custody = custody;
+    }
+
+    pub(crate) fn set_historical_kind_custody(&mut self, custody: Option<HistoricalKindCustody>) {
+        self.entries_mut().historical_kind_custody = custody;
     }
 
     pub(crate) fn historical_kind_custody(&self) -> Option<&HistoricalKindCustody> {
@@ -191,15 +175,17 @@ impl AdjacencySet {
         );
     }
 
+    #[cfg(test)]
     pub(crate) fn index_structural_revision(&mut self, kind_id: KindId, version_id: VersionId) {
         let revisions = self
             .entries_mut()
             .structural_revision_by_kind
             .get_or_insert_with(SharedMap::new);
-        let revision = revisions.entry(kind_id).or_insert(version_id);
+        let revision = revisions.entry(kind_id).or_insert_with(|| version_id);
         *revision = (*revision).max(version_id);
     }
 
+    #[cfg(test)]
     pub(crate) fn remove(&mut self, kind_id: KindId, relation_id: &RelationId) {
         let entries = self.entries_mut();
         remove_sorted(&mut entries.current, relation_id);
@@ -212,6 +198,7 @@ impl AdjacencySet {
         }
     }
 
+    #[cfg(test)]
     pub(crate) fn remove_at(
         &mut self,
         kind_id: KindId,
@@ -268,6 +255,8 @@ impl AdjacencySet {
                 .and_then(|kinds| kinds.get(&kind_id)),
         )
     }
+
+    /// Borrow memberships one at a time; the receiver owns admission per item.
 
     pub(crate) fn historical_kind_ids(&self, kind_id: KindId) -> AdjacencyIds<'_> {
         AdjacencyIds::new(
@@ -352,32 +341,10 @@ fn insert_sorted(relations: &mut RelationSet, relation_id: RelationId) {
     }
 }
 
+#[cfg(test)]
 fn remove_sorted(relations: &mut RelationSet, relation_id: &RelationId) {
     relations.remove(relation_id);
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::identity::data::PartitionId;
-
-    #[test]
-    fn kind_buckets_isolate_current_work_and_retain_historical_membership() {
-        let policy = AdjacencyPolicy {
-            backend: AdjacencyBackend::InlineSmallDegreeAdjacency,
-            small_degree_inline_capacity: 4,
-        };
-        let first = RelationId::new(PartitionId::main(), 1, 1);
-        let unrelated = RelationId::new(PartitionId::main(), 2, 1);
-        let mut adjacency = AdjacencySet::new(&policy);
-        adjacency.insert(KindId(7), first);
-        adjacency.insert(KindId(8), unrelated);
-
-        assert_eq!(adjacency.current_kind_ids(KindId(7)), [first]);
-        assert_eq!(adjacency.current_kind_ids(KindId(8)), [unrelated]);
-
-        adjacency.remove(KindId(7), &first);
-        assert!(adjacency.current_kind_ids(KindId(7)).is_empty());
-        assert_eq!(adjacency.historical_kind_ids(KindId(7)), [first]);
-    }
-}
+mod tests;

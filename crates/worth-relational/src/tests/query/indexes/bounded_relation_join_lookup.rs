@@ -132,6 +132,12 @@ fn relation_join_requires_an_exact_generation_and_reports_bounded_overflow() {
         .visibility_authority()
         .snapshot()
         .expect("current snapshot fixture is admitted");
+    runtime
+        .index_authority()
+        .discard_generations(crate::indexes::data::DerivedIndexDiscardRequest::all_bases(
+            index.index_id,
+        ))
+        .unwrap();
     let missing = runtime
         .index_access()
         .execute_bounded_relation_join_lookup(
@@ -281,18 +287,15 @@ fn exact_relation_join_uses_one_branch_root_after_both_heads_diverge() {
         assert_eq!(outcome.candidate_entity_ids(), &[selected]);
     }
 
-    let sibling_denial = runtime
+    let sibling = runtime
         .index_access()
         .execute_bounded_relation_join_lookup(
             join_request(sibling_snapshot, index.index_id, left, right, 2),
             BoundedIndexParityMode::Certification,
             execution,
         )
-        .unwrap_err();
-    assert_eq!(
-        sibling_denial.kind(),
-        BoundedRelationJoinLookupDenialKind::ExactGenerationUnavailable
-    );
+        .unwrap();
+    assert_eq!(sibling.candidate_entity_ids(), &[selected]);
 }
 
 fn register_relation_join(runtime: &RelationalRuntime, id: u64) -> DerivedIndexDefinition {

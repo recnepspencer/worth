@@ -56,12 +56,10 @@ fn canonical_fields_keep_lookup_clone_and_retained_capacity_meaning() {
     ]
     .into_boxed_slice();
     let nested = nested + fields[1].0.owned_allocation_capacity_bytes();
-    let original = fields.as_ptr();
     let value = StructAspectValue::from_sorted_fields(fields).unwrap();
-    assert_eq!(value.fields.as_ptr(), original);
     assert_eq!(
         value.owned_allocation_capacity_bytes(),
-        2 * size_of::<(FieldKey, AspectValue)>() + nested
+        StructAspectValue::sorted_construction_storage_bytes(2).unwrap() + nested
     );
     assert_eq!(
         value.get(&FieldKey::new("z").unwrap()),
@@ -70,7 +68,17 @@ fn canonical_fields_keep_lookup_clone_and_retained_capacity_meaning() {
     assert_eq!(value.get(&FieldKey::new("b").unwrap()), None);
     let cloned = value.clone();
     assert_eq!(cloned, value);
-    assert_ne!(cloned.fields.as_ptr(), original);
+    // c65d042399 / 6df49ed086 retire deep-copy backing: the immutable
+    // value is shared, and the successor still owns it after its predecessor.
+    assert!(std::ptr::eq(
+        cloned.get(&FieldKey::new("a").unwrap()).unwrap(),
+        value.get(&FieldKey::new("a").unwrap()).unwrap()
+    ));
+    drop(value);
+    assert_eq!(
+        cloned.get(&FieldKey::new("z").unwrap()),
+        Some(&AspectValue::UInt64(9))
+    );
     assert_eq!(
         cloned
             .fields()
@@ -134,7 +142,7 @@ fn decode_bounds_cover_backing_growth_and_reject_layout_overflow() {
         );
         let decoded: StructAspectValue = serde_json::from_str(&wire).unwrap();
         assert_eq!(
-            decoded.fields.len() * size_of::<(FieldKey, AspectValue)>(),
+            StructAspectValue::sorted_construction_storage_bytes(decoded.len()).unwrap(),
             bounds.retained_fields_bytes
         );
         prior = peak;

@@ -1,11 +1,12 @@
 //! Real separately admitted predecessor and successor schema/program meanings.
 use std::num::NonZeroU64;
+use worth_query_declaration::facade::application_schema::fragment::{self, Fragment, NoBindings};
 use worth_query_declaration::facade::{application_program::*, application_schema::*};
 use worth_query_installation::facade::*;
 
 pub(super) struct Before;
 pub(super) struct After;
-struct Record;
+pub(super) struct Record;
 struct SourceFeature;
 struct TargetFeature;
 struct TargetRule;
@@ -13,11 +14,20 @@ struct SourceProgram;
 struct TargetProgram;
 struct CurrentProgram;
 
-impl ApplicationEntityMarkerIdentity<Before> for Record {
-    const IDENTIFIER: &'static str = "Record";
+impl fragment::Entity for Record {
+    const NAME: &'static str = "Record";
+    type Aspects = ();
+    type Relations = ();
 }
-impl ApplicationEntityMarkerIdentity<After> for Record {
-    const IDENTIFIER: &'static str = "Record";
+impl Fragment for Before {
+    const NAME: &'static str = "Before";
+    type Bindings = NoBindings;
+    type Members = (Record,);
+}
+impl Fragment for After {
+    const NAME: &'static str = "After";
+    type Bindings = NoBindings;
+    type Members = (Record,);
 }
 impl ApplicationSchema for Before {
     const OWNER: &'static str = "transition-requirements";
@@ -26,9 +36,7 @@ impl ApplicationSchema for Before {
     const MINOR: u32 = 0;
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
-        ApplicationSchemaDeclarationBuilder::<Self>::for_schema()
-            .entity(ApplicationEntityRef::<Self, Record>::from_schema_identifier("Record"))
-            .build()
+        fragment::declare(Self)
     }
 }
 impl ApplicationSchema for After {
@@ -38,8 +46,7 @@ impl ApplicationSchema for After {
     const MINOR: u32 = 0;
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
-        ApplicationSchemaDeclarationBuilder::<Self>::for_schema()
-            .entity(ApplicationEntityRef::<Self, Record>::from_schema_identifier("Record"))
+        fragment::declaration_builder(Self)?
             .invariant(ApplicationInvariantDefinition::new(
                 TargetRule::reference(),
                 ApplicationInvariantExecutionPoint::CommitBoundary,

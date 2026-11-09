@@ -9,7 +9,7 @@
 //! construction, not bulk FromIterator's separate staging/sorting allocation.
 use std::alloc::Layout;
 
-use crate::branch::RelationalBranchRootCaptureDenial as Denial;
+use super::quote_denial::SchemaCompilationQuoteDenial as Denial;
 
 pub(crate) fn retained_tree_bytes<K, V>(entries: usize) -> Result<u64, Denial> {
     retained_tree_layout_bytes(entries, Layout::new::<K>(), Layout::new::<V>())

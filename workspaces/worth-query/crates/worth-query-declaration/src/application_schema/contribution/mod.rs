@@ -14,10 +14,7 @@ pub(in crate::application_schema) use closure::{
 mod tests;
 
 pub use definition::{ApplicationSchemaContributionIdentity, ApplicationSchemaContributionRef};
-pub use membership::{
-    ApplicationSchemaContributionAuthoring, ApplicationSchemaContributionDenial,
-    ApplicationSchemaContributionMembership,
-};
+pub use membership::ApplicationSchemaContributionDenial;
 pub use provenance::ApplicationSchemaContributionProvenance;
 pub use schema_binding::ApplicationSchemaContribution;
 

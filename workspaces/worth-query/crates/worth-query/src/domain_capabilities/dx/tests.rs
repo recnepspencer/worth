@@ -41,7 +41,9 @@ fn common_intent_support_lane_matches_proof_lane_materialization() {
         "worth.spatial.graph.face_inner_loop_insertion",
         "topology substrate is available",
     )
-    .bind_to_installed_target(target);
+    .expect("fixture digest must fit")
+    .bind_to_installed_target(target)
+    .expect("fixture digest must fit");
     let proof_admitted = success(admit_eligible_domain_capability_contribution(success(
         evaluate_requested_domain_capability_contribution(proof_requested),
     )));
@@ -50,8 +52,10 @@ fn common_intent_support_lane_matches_proof_lane_materialization() {
         prepare_admitted_domain_capability_contribution_for_materialization(
             proof_admitted,
             proof_target,
-        ),
-    ));
+        )
+        .expect("fixture digest must fit"),
+    ))
+    .expect("fixture digest must fit");
 
     assert_eq!(common, success(proof));
 }
@@ -80,7 +84,9 @@ fn common_intent_advisory_lane_matches_proof_lane_materialization() {
         "worth.spatial.arbitration.requires_clarification",
         "multiple spatial candidates remain admissible",
     )
-    .bind_to_installed_target(target);
+    .expect("fixture digest must fit")
+    .bind_to_installed_target(target)
+    .expect("fixture digest must fit");
     let proof_admitted = success(admit_eligible_domain_capability_contribution(success(
         evaluate_requested_domain_capability_contribution(proof_requested),
     )));
@@ -89,8 +95,10 @@ fn common_intent_advisory_lane_matches_proof_lane_materialization() {
         prepare_admitted_domain_capability_contribution_for_materialization(
             proof_admitted,
             proof_target,
-        ),
-    ));
+        )
+        .expect("fixture digest must fit"),
+    ))
+    .expect("fixture digest must fit");
 
     assert_eq!(common.canonical_family(), proof.canonical_family());
     assert_eq!(
@@ -127,7 +135,9 @@ fn common_admission_lane_matches_proof_lane_materialization() {
         "worth.spatial.arbitration.requires_clarification",
         "multiple spatial candidates remain admissible",
     )
-    .bind_to_installed_target(target);
+    .expect("fixture digest must fit")
+    .bind_to_installed_target(target)
+    .expect("fixture digest must fit");
     let proof_admitted = success(admit_eligible_domain_capability_contribution(success(
         evaluate_requested_domain_capability_contribution(proof_requested),
     )));
@@ -136,7 +146,8 @@ fn common_admission_lane_matches_proof_lane_materialization() {
         prepare_admitted_domain_capability_contribution_for_materialization(
             proof_admitted,
             proof_target,
-        ),
+        )
+        .expect("fixture digest must fit"),
     ));
 
     assert_eq!(common, success(proof));
@@ -174,7 +185,9 @@ fn common_intent_preview_inspection_lane_matches_proof_lane_materialization() {
             "preview-session:42",
         ),
     )
-    .bind_to_installed_target(target);
+    .expect("fixture digest must fit")
+    .bind_to_installed_target(target)
+    .expect("fixture digest must fit");
     let proof_admitted = success(admit_eligible_domain_capability_contribution(success(
         evaluate_requested_domain_capability_contribution(proof_requested),
     )));
@@ -183,7 +196,8 @@ fn common_intent_preview_inspection_lane_matches_proof_lane_materialization() {
         prepare_admitted_domain_capability_contribution_for_materialization(
             proof_admitted,
             proof_target,
-        ),
+        )
+        .expect("fixture digest must fit"),
     ));
 
     assert_eq!(common, success(proof));
@@ -218,7 +232,9 @@ fn common_continuity_lane_matches_proof_lane_materialization() {
         "worth.spatial.identity.edge_split",
         "edge split replaces one edge with one canonical successor",
     )
-    .bind_to_installed_target(target);
+    .expect("fixture digest must fit")
+    .bind_to_installed_target(target)
+    .expect("fixture digest must fit");
     let proof_admitted = success(admit_eligible_domain_capability_contribution(success(
         evaluate_requested_domain_capability_contribution(proof_requested),
     )));
@@ -227,8 +243,10 @@ fn common_continuity_lane_matches_proof_lane_materialization() {
         prepare_admitted_domain_capability_contribution_for_materialization(
             proof_admitted,
             proof_target,
-        ),
-    ));
+        )
+        .expect("fixture digest must fit"),
+    ))
+    .expect("fixture digest must fit");
 
     assert_eq!(common, success(proof));
 }
@@ -260,7 +278,9 @@ fn common_invariant_registration_lane_matches_proof_lane_materialization() {
             "worth.spatial.spatial.non_manifold_edge_split",
             "geometry kernel must reject non-manifold edge splits",
         )
-        .bind_to_installed_target(target);
+        .expect("fixture digest must fit")
+        .bind_to_installed_target(target)
+        .expect("fixture digest must fit");
     let proof_admitted = success(admit_eligible_domain_capability_contribution(success(
         evaluate_requested_domain_capability_contribution(proof_requested),
     )));
@@ -269,8 +289,10 @@ fn common_invariant_registration_lane_matches_proof_lane_materialization() {
         prepare_admitted_domain_capability_contribution_for_materialization(
             proof_admitted,
             proof_target,
-        ),
-    ));
+        )
+        .expect("fixture digest must fit"),
+    ))
+    .expect("fixture digest must fit");
 
     assert_eq!(common, success(proof));
 }
@@ -288,7 +310,8 @@ fn checked_lane_preserves_denied_outcome_metadata_and_typed_error() {
         .expect("installed contribution authority must remain current")
         .supports_capability("graph.face_inner_loop_insertion")
         .because("")
-        .try_materialize();
+        .try_materialize()
+        .expect("fixture digest must fit");
 
     assert_eq!(
         checked.kind(),
@@ -329,7 +352,8 @@ fn checked_intent_admission_lane_preserves_declaration_bound_metadata() {
         .expect("installed contribution authority must remain current")
         .advises("arbitration.requires_clarification")
         .because("")
-        .try_materialize();
+        .try_materialize()
+        .expect("fixture digest must fit");
 
     assert_eq!(
         checked.kind(),
@@ -361,15 +385,6 @@ fn intent_declaration(name: &str) -> WorthQueryIntentDeclaration {
     )
 }
 
-fn admitted_basis_observation_plan() -> crate::runtime::WorthQueryAdmittedIntentPlan {
-    let request =
-        crate::intent_admission::WorthQueryRawIntentAdmissionRequest::basis_observation_lane(
-            crate::basis_lifecycle::RawBasisIntent::CurrentHead,
-        )
-        .expect("basis-observation request should build");
-
-    match crate::intent_admission::admit_runtime_intent_request(request) {
-        crate::intent_admission::WorthQueryIntentAdmissionDecision::Admitted(plan) => plan,
-        other => panic!("expected admitted basis-observation plan, got {other:?}"),
-    }
-}
+#[path = "tests/admitted_basis_observation_plan.rs"]
+mod admitted_basis_observation_plan;
+use admitted_basis_observation_plan::admitted_basis_observation_plan;

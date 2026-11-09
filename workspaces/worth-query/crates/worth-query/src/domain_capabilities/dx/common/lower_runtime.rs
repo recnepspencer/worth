@@ -21,12 +21,14 @@ use crate::domain_capabilities::payloads::{
 use crate::domain_capabilities::{
     WorthQueryDomainCapabilityTargetKind, WorthQueryInstalledLowerRuntimeContributionTarget,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::runtime::QueryCausalInspectionArtifact;
 
 use super::lower_runtime_explanation_request::{
     WorthQueryLowerRuntimeExplanationRequest, WorthQueryLowerRuntimeExplanationRequestKind,
 };
-use super::shared::{materialize_common_lane, qualify_semantic_code};
+use super::materialization::materialize_common_lane;
+use super::semantic_code::qualify_semantic_code;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryLowerRuntimeDomainContributionSurface {
@@ -95,17 +97,20 @@ pub struct WorthQueryLowerRuntimeSupportContribution {
 impl WorthQueryLowerRuntimeSupportContribution {
     pub fn try_materialize(
         self,
-    ) -> WorthQueryCheckedDomainCapabilityOutcome<
-        WorthQueryLowerRuntimeBoundarySupportTraceabilityArtifact,
+    ) -> Result<
+        WorthQueryCheckedDomainCapabilityOutcome<
+            WorthQueryLowerRuntimeBoundarySupportTraceabilityArtifact,
+        >,
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
     > {
         let target = self.target.clone();
         let requested = WorthQuerySupportContributionAuthoring::narrowed_support(
             qualify_semantic_code(self.target.authority(), &self.semantic_code),
             self.detail,
-        )
-        .bind_to_installed_target(self.target);
+        )?
+        .bind_to_installed_target(self.target)?;
 
-        materialize_common_lane(
+        Ok(materialize_common_lane(
             "support-traceability",
             WorthQueryDomainCapabilityTargetKind::LowerRuntimeBoundaryEnvelope,
             WorthQuerySupportContributionPosture::NarrowedSupport.as_str(),
@@ -118,7 +123,7 @@ impl WorthQueryLowerRuntimeSupportContribution {
                 )
             },
             materialize_lower_runtime_support_traceability_artifact,
-        )
+        )?)
     }
 
     pub fn materialize(
@@ -127,7 +132,7 @@ impl WorthQueryLowerRuntimeSupportContribution {
         WorthQueryLowerRuntimeBoundarySupportTraceabilityArtifact,
         WorthQueryDomainCapabilityMaterializationError,
     > {
-        self.try_materialize().into_result()
+        self.try_materialize()?.into_result()
     }
 }
 
@@ -175,12 +180,15 @@ pub struct WorthQueryLowerRuntimeExplanationContribution {
 impl WorthQueryLowerRuntimeExplanationContribution {
     pub fn try_review(
         self,
-    ) -> WorthQueryCheckedDomainCapabilityOutcome<WorthQueryExplanationInspectionReview> {
+    ) -> Result<
+        WorthQueryCheckedDomainCapabilityOutcome<WorthQueryExplanationInspectionReview>,
+        IdentityDerivationDenial,
+    > {
         let posture = self.posture();
         let target = self.target.clone();
-        let requested = self.into_requested();
+        let requested = self.into_requested()?;
 
-        materialize_common_lane(
+        Ok(materialize_common_lane(
             "explanation-inspection",
             WorthQueryDomainCapabilityTargetKind::LowerRuntimeBoundaryEnvelope,
             posture.as_str(),
@@ -193,24 +201,27 @@ impl WorthQueryLowerRuntimeExplanationContribution {
                 )
             },
             materialize_query_causal_inspection_review,
-        )
+        )?)
     }
 
     pub fn review(
         self,
     ) -> Result<WorthQueryExplanationInspectionReview, WorthQueryDomainCapabilityMaterializationError>
     {
-        self.try_review().into_result()
+        self.try_review()?.into_result()
     }
 
     pub fn try_materialize_artifact(
         self,
-    ) -> WorthQueryCheckedDomainCapabilityOutcome<QueryCausalInspectionArtifact> {
+    ) -> Result<
+        WorthQueryCheckedDomainCapabilityOutcome<QueryCausalInspectionArtifact>,
+        IdentityDerivationDenial,
+    > {
         let posture = self.posture();
         let target = self.target.clone();
-        let requested = self.into_requested();
+        let requested = self.into_requested()?;
 
-        materialize_common_lane(
+        Ok(materialize_common_lane(
             "explanation-inspection",
             WorthQueryDomainCapabilityTargetKind::LowerRuntimeBoundaryEnvelope,
             posture.as_str(),
@@ -223,13 +234,13 @@ impl WorthQueryLowerRuntimeExplanationContribution {
                 )
             },
             materialize_query_causal_inspection_artifact,
-        )
+        )?)
     }
 
     pub fn materialize_artifact(
         self,
     ) -> Result<QueryCausalInspectionArtifact, WorthQueryDomainCapabilityMaterializationError> {
-        self.try_materialize_artifact().into_result()
+        self.try_materialize_artifact()?.into_result()
     }
 
     fn posture(&self) -> WorthQueryExplanationContributionPosture {
@@ -248,11 +259,14 @@ impl WorthQueryLowerRuntimeExplanationContribution {
 
     fn into_requested(
         self,
-    ) -> crate::domain_capabilities::WorthQueryRequestedExplanationContribution<
-        WorthQueryInstalledLowerRuntimeContributionTarget,
+    ) -> Result<
+        crate::domain_capabilities::WorthQueryRequestedExplanationContribution<
+            WorthQueryInstalledLowerRuntimeContributionTarget,
+        >,
+        IdentityDerivationDenial,
     > {
         let semantic_code = qualify_semantic_code(self.target.authority(), &self.semantic_code);
-        match self.kind {
+        Ok(match self.kind {
             WorthQueryLowerRuntimeExplanationRequestKind::CrossRuntimeContext {
                 reference_set,
                 target,
@@ -269,8 +283,8 @@ impl WorthQueryLowerRuntimeExplanationContribution {
                 bridge_envelope,
                 redaction_policy,
                 materialization_policy,
-            )
-            .bind_to_installed_target(self.target),
+            )?
+            .bind_to_installed_target(self.target)?,
             WorthQueryLowerRuntimeExplanationRequestKind::CrossRuntimeFallback {
                 reference_set,
                 target,
@@ -287,8 +301,8 @@ impl WorthQueryLowerRuntimeExplanationContribution {
                 bridge_envelope,
                 redaction_policy,
                 materialization_policy,
-            )
-            .bind_to_installed_target(self.target),
+            )?
+            .bind_to_installed_target(self.target)?,
             WorthQueryLowerRuntimeExplanationRequestKind::StoreBackedReplayGap {
                 reference_set,
                 target,
@@ -303,8 +317,8 @@ impl WorthQueryLowerRuntimeExplanationContribution {
                 requested_evidence_families,
                 redaction_policy,
                 materialization_policy,
-            )
-            .bind_to_installed_target(self.target),
-        }
+            )?
+            .bind_to_installed_target(self.target)?,
+        })
     }
 }

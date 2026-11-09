@@ -20,21 +20,17 @@ impl RelationalBranchRootSchemaAuthority {
             .content_formats
             .bind_recorded(available)
             .map_err(Denial::Content)?;
-        let expected = self
-            .registry
-            .snapshot_for_compilation(control)
-            .map_err(Denial::Request)?;
+        let expected = self.continuity_authority.clone();
         // Registry cloning preserves the actual registered recipe/domain Arcs,
         // including Source program bindings installed by the shared compiler.
+        let funding = Arc::new(compiled_retention::SchemaCompilationFunding { _memory: memory });
         let bound = Self::compile_owned(
             self.allocation_id,
             registry,
             &expected,
             self.descriptor_semantics_version,
             compilation::RetainedContracts::Extend(Some(self)),
-            Some(Arc::new(compiled_retention::SchemaCompilationFunding {
-                _memory: memory,
-            })),
+            Some(funding.clone()),
             control,
         )
         .map_err(Denial::Request)?;
@@ -44,6 +40,7 @@ impl RelationalBranchRootSchemaAuthority {
         }
         drop(expected);
         drop(temporary);
+        drop(funding);
         Ok(bound)
     }
 }

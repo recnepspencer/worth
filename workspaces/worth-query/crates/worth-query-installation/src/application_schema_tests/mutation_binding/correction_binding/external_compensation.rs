@@ -55,20 +55,17 @@ fn external_correction_requires_compensation_reconciliation_and_exact_action() {
         ),
     ] {
         let mechanism = if compensation {
-            PortableCorrectionMechanism::Compensation(
-                DeclaredCompensation::new(
-                    slot,
-                    DeclaredAftermathPostcondition::BusinessPostcondition {
-                        identity: "completed-journal-compensated".to_owned(),
-                    },
-                )
-                .unwrap(),
-            )
+            PortableCorrectionMechanism::Compensation(DeclaredCompensation::new(
+                slot,
+                DeclaredAftermathPostcondition::BusinessPostcondition {
+                    identity: "completed-journal-compensated".to_owned(),
+                },
+            ))
         } else {
             PortableCorrectionMechanism::RecordedInverse(
                 PortableRecordedInverse::from_untrusted_fields(
                     slot.to_owned(),
-                    DeclaredLoweringCorrespondenceRef::new("fixture.restore.v1").unwrap(),
+                    DeclaredLoweringCorrespondenceRef::new("fixture.restore.v1"),
                     DeclaredAftermathPostcondition::ExactPriorTruth,
                     PortablePreImageDemand::from_untrusted_fields(Vec::new(), 0),
                 ),
@@ -81,13 +78,12 @@ fn external_correction_requires_compensation_reconciliation_and_exact_action() {
         ] {
             let mut association = parts(&source);
             association.completed_external_reconciliation =
-                opt_in.map(|procedure| DeclaredReconciliationProcedure::new(procedure).unwrap());
+                opt_in.map(DeclaredReconciliationProcedure::new);
             let contract = PortableApplicationAftermathContract::from_untrusted_fields(
                 authority,
                 Some(mechanism.clone()),
-                reconciliation.then(|| {
-                    DeclaredReconciliationProcedure::new("confirm-original-settlement").unwrap()
-                }),
+                reconciliation
+                    .then(|| DeclaredReconciliationProcedure::new("confirm-original-settlement")),
             )
             .with_untrusted_correction_binding(
                 DeclaredCorrectionBinding::from_untrusted_parts(association),

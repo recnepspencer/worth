@@ -66,9 +66,14 @@ inline!(
     bool,
     crate::identity::data::PartitionId,
     crate::identity::data::VersionId,
+    (crate::identity::data::KindId, u64),
     Option<crate::identity::data::KindId>,
     Option<crate::identity::data::VersionId>,
     crate::storage::data::RecordLifecycleState,
+    Result<
+        crate::storage::data::SymbolPageShape,
+        crate::storage::data::RelationalStorageUnavailable,
+    >,
 );
 
 impl<T: StoredValue> sealed::Sealed for super::SharedColumn<T> {}

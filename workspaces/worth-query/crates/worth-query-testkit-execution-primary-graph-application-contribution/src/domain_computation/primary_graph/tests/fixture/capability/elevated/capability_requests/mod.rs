@@ -1,4 +1,4 @@
-//! The elevated fixture's capability requests: touch, request elevation and approve elevation.
+//! Native selectors retain actual capability request meaning.
 use super::*;
 
 impl ApplicationCapabilityRequest<IdentityExecutionSchema, ElevatedTouchAccountCapability>
@@ -19,12 +19,13 @@ impl ApplicationCapabilityRequest<IdentityExecutionSchema, ElevatedTouchAccountC
     > {
         let projection = ApplicationCapabilityRequestProjection::new(
             ApplicationCapabilityEntitySelector::new(
-                AccountIdentity::reference(),
+                AccountIdentity::at("AccountIdentity"),
                 ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
                     self.account.clone(),
                 )
                 .expect("fixture account identity must encode"),
-            ),
+            )
+            .unwrap(),
             ApplicationEncodedScalarValue::<CapabilityActionBinding>::try_new(self.action)
                 .expect("fixture capability action must encode"),
             ApplicationEncodedScalarValue::<CapabilityPurposeBinding>::try_new(self.purpose)
@@ -33,20 +34,18 @@ impl ApplicationCapabilityRequest<IdentityExecutionSchema, ElevatedTouchAccountC
         );
         let projection = match (&self.elevation, self.substitute_resource_selector) {
             (Some(_), true) => projection.elevation(ApplicationCapabilityEntitySelector::new(
-                AccountIdentity::reference(),
+                AccountIdentity::at("AccountIdentity"),
                 ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
                     self.account.clone(),
                 )
                 .expect("fixture account identity must encode"),
-            )),
+            ).unwrap()),
             (Some(elevation), false) => {
                 projection.elevation(ApplicationCapabilityEntitySelector::new(
-                    CapabilityElevationIdentity::reference(),
-                    ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
-                        elevation.clone(),
-                    )
+                    CapabilityElevationIdentity::at("CapabilityElevationIdentity"),
+                    ApplicationEncodedScalarValue::<<CapabilityElevationIdentity as worth_query_declaration::facade::application_schema::fragment::RecordSelection>::Binding>::try_new(elevation.clone().into())
                     .expect("fixture elevation identity must encode"),
-                ))
+                ).unwrap())
             }
             (None, _) => projection,
         };
@@ -102,12 +101,12 @@ impl ApplicationCapabilityRequest<IdentityExecutionSchema, ApproveElevationCapab
     > {
         Ok(ApplicationCapabilityRequestProjection::new(
             ApplicationCapabilityEntitySelector::new(
-                AccountIdentity::reference(),
+                AccountIdentity::at("AccountIdentity"),
                 ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
                     self.account.clone(),
                 )
                 .expect("fixture account identity must encode"),
-            ),
+            ).unwrap(),
             ApplicationEncodedScalarValue::<CapabilityActionBinding>::try_new(
                 CapabilityAction::ApproveElevation,
             )
@@ -119,12 +118,10 @@ impl ApplicationCapabilityRequest<IdentityExecutionSchema, ApproveElevationCapab
             ApplicationCapabilityRequestContext::new(CapabilityRequestContext::reference()).entity(
                 CapabilityElevationSlot::reference(),
                 ApplicationCapabilityEntitySelector::new(
-                    CapabilityElevationIdentity::reference(),
-                    ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
-                        self.elevation.clone(),
-                    )
+                    CapabilityElevationIdentity::at("CapabilityElevationIdentity"),
+                    ApplicationEncodedScalarValue::<<CapabilityElevationIdentity as worth_query_declaration::facade::application_schema::fragment::RecordSelection>::Binding>::try_new(self.elevation.clone().into())
                     .expect("fixture elevation identity must encode"),
-                ),
+                ).unwrap(),
             ),
         ))
     }

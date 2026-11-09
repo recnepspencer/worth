@@ -43,7 +43,7 @@ impl PreviewSubscriptionDiscardCloseout {
             performance_receipt.performance_receipt_identity(),
             PreviewSubscriptionLifecycleState::PreviewDiscarded.as_str(),
             &counters.evidence_identity(),
-        );
+        ).expect("bounded performed receipt: closed enum labels, primitive counts and sealed identity digests");
         Self {
             active_lane_digest: isolation.active_lane_digest().clone(),
             attachment_digest: isolation.attachment_digest().clone(),

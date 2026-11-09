@@ -224,7 +224,7 @@ pub fn test_mutation_receipt(
             }),
             kind,
             command.declared_aspect_touches(),
-        )],
+        ).expect("fixture digest must fit")],
     )
 }
 

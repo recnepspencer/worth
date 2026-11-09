@@ -1,7 +1,7 @@
 use worth_query_decl::facade::application_query::{
-    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
-    ApplicationQueryLaneEligibility, ApplicationQueryParameterSet,
+    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
+    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
+    ApplicationQueryParameterSet,
 };
 use worth_query_decl::facade::{worth_query_application_query, worth_query_query_binding};
 use worth_query_host::facade::primary_graph::{
@@ -12,8 +12,8 @@ use worth_query_host::facade::primary_graph::{
 use crate::authorization::ViewAccount;
 use crate::model::AccountId;
 use crate::reads::AccountSummary;
+use crate::schema::AccountIdentity;
 use crate::schema::{Account, BankSchema};
-use crate::schema::{AccountIdentity, Identity};
 
 use super::account_summary_projection::{account_summary_shape, project_account_summary};
 
@@ -59,16 +59,14 @@ worth_query_query_binding!(
     result AccountSummaryQueryResultBinding,
     principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
         principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
-    scope Account, Identity, AccountIdentity, AccountId,
-        worth_query_decl::facade::application_schema::ReadOnly,
-        worth_query_decl::facade::application_schema::NoApplicationUnit,
-    field AccountIdentity::reference(),
+    scope AccountIdentity,
+    field AccountIdentity::at("AccountIdentity"),
     value AccountSummaryRequest::account,
     limits results 1_024
 
 );
 
-pub fn account_summary_definition() -> ApplicationQueryDefinition<
+pub fn account_summary_definition() -> ApplicationQueryDefinitionBuilder<
     BankSchema,
     AccountSummaryQuery,
     AccountSummaryQueryParameters,
@@ -91,8 +89,6 @@ pub fn account_summary_definition() -> ApplicationQueryDefinition<
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .requires_ability(ViewAccount::reference())
-        .build()
-        .expect("bank account summary query is statically canonical")
 }
 
 impl WorthQueryApplicationProjection<BankSchema, AccountSummaryQuery> for AccountSummary {

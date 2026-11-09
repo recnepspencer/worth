@@ -1,13 +1,12 @@
 //! Diagnostic reads have their own installed rule and frozen admission frame.
+use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantError;
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_walks::observation::Entity;
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_walks::schema::*;
 use worth_relational::facade::runtime::CustomInvariantLeaseBudget;
 use worth_foundational::facade::RelationDirection;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantContext;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantEntityBinding;
-use worth_relational::facade::runtime::CustomInvariantExecutionError as WorthQueryApplicationInvariantExecutionError;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantFieldBinding;
-use worth_relational::facade::runtime::CustomInvariantPreparationError as WorthQueryApplicationInvariantPreparationError;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantReadView;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantRelationBinding;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantRule;
@@ -15,7 +14,6 @@ use worth_query_execution::facade::application_invariants::WorthQueryApplication
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantScopePlanner;
 use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantVerdict;
 use worth_query_execution::facade::application_invariants::WorthQueryEmptyInvariantRefusal;
-use worth_query_execution::facade::application_invariants::WorthQueryInvariantAccessDenial;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
@@ -126,7 +124,7 @@ pub fn resolve(
             .typed_entity(Node::reference())
             .ok_or("node kind missing")?,
         key: resolver
-            .typed_field(NodeKey::reference())
+            .typed_field(NodeKey::at("NodeKey"))
             .ok_or("node key missing")?,
         membership: resolver
             .typed_relation(GroupRoot::reference())
@@ -147,27 +145,25 @@ impl WorthQueryApplicationInvariantRule<WalkSchema> for Rule {
     fn prepare_scope(
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, WalkSchema>,
-    ) -> Result<Scope, WorthQueryApplicationInvariantPreparationError> {
+    ) -> Result<Scope, WorthQueryApplicationInvariantError> {
         self.prepare(planner, None)
     }
     fn prepare_scope_checked(
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, WalkSchema>,
         budget: &dyn CustomInvariantLeaseBudget,
-    ) -> Option<Result<Scope, WorthQueryApplicationInvariantPreparationError>> {
+    ) -> Option<Result<Scope, WorthQueryApplicationInvariantError>> {
         Some(self.prepare(planner, Some(budget)))
     }
     fn evaluate(
         &self,
         context: &WorthQueryApplicationInvariantContext<'_, '_, WalkSchema>,
         scope: &Scope,
-    ) -> Result<
-        WorthQueryApplicationInvariantVerdict<()>,
-        WorthQueryApplicationInvariantExecutionError,
-    > {
+    ) -> Result<WorthQueryApplicationInvariantVerdict<()>, WorthQueryApplicationInvariantError>
+    {
         context
             .check_live()
-            .map_err(|e| WorthQueryApplicationInvariantExecutionError::new(format!("{e:?}")))?;
+            .map_err(WorthQueryApplicationInvariantError::from)?;
         if self.probe.enabled && self.probe.armed.load(Ordering::SeqCst) {
             (self.probe.callback)(context, scope, self);
         }
@@ -179,15 +175,10 @@ impl WorthQueryApplicationInvariantRule<WalkSchema> for Rule {
         scope: &Scope,
         budget: &dyn CustomInvariantLeaseBudget,
     ) -> Option<
-        Result<
-            WorthQueryApplicationInvariantVerdict<()>,
-            WorthQueryApplicationInvariantExecutionError,
-        >,
+        Result<WorthQueryApplicationInvariantVerdict<()>, WorthQueryApplicationInvariantError>,
     > {
         if !budget.checkpoint(0) {
-            return Some(Err(WorthQueryApplicationInvariantExecutionError::new(
-                "probe stopped",
-            )));
+            return Some(Err(WorthQueryApplicationInvariantError::Stopped));
         }
         Some(self.evaluate(context, scope))
     }

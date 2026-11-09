@@ -80,6 +80,10 @@ pub(super) fn decode_fields(
 
 fn raw_string(value: AspectValue) -> Result<String, Denial> {
     match value {
+        AspectValue::String(InternedString::Stored(value)) => {
+            let value = value.as_string();
+            Ok(value.to_owned())
+        }
         AspectValue::String(InternedString::Raw(value)) => Ok(value),
         _ => Err(Denial::Malformed),
     }

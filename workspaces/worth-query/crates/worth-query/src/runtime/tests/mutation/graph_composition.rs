@@ -78,8 +78,20 @@ fn compose_graph_preserves_symbolic_resolution_and_mixed_edge_meaning() {
         .expect("receipt should inspect");
 
     assert_eq!(receipt.write_receipts().len(), 2);
-    assert_eq!(receipt.batch_mutation_evidence().component_count(), 2);
-    assert_eq!(receipt.batch_mutation_evidence().resolved_target_count(), 2);
+    assert_eq!(
+        receipt
+            .batch_mutation_evidence()
+            .expect("fixture digest must fit")
+            .component_count(),
+        2
+    );
+    assert_eq!(
+        receipt
+            .batch_mutation_evidence()
+            .expect("fixture digest must fit")
+            .resolved_target_count(),
+        2
+    );
     assert_eq!(receipt.graph_composition_breadth().component_count(), 2);
     assert_eq!(
         receipt
@@ -96,12 +108,14 @@ fn compose_graph_preserves_symbolic_resolution_and_mixed_edge_meaning() {
     assert_eq!(
         receipt
             .batch_mutation_evidence()
+            .expect("fixture digest must fit")
             .symbolic_resolution_count(),
         1
     );
     assert_eq!(
         receipt
             .batch_mutation_evidence()
+            .expect("fixture digest must fit")
             .symbolic_target_reference_count(),
         0
     );
@@ -110,11 +124,13 @@ fn compose_graph_preserves_symbolic_resolution_and_mixed_edge_meaning() {
         .expect("graph composition receipt should expose composition program");
     let lifecycle = receipt
         .graph_composition_lifecycle_outcomes()
-        .expect("graph composition receipt should expose lifecycle outcomes");
+        .expect("graph composition receipt should expose lifecycle outcomes")
+        .expect("fixture digest must fit");
     let resolution_map = receipt.graph_composition_resolution_map();
     let composition_evidence = receipt
         .graph_composition_evidence()
-        .expect("graph composition receipt should expose composition evidence");
+        .expect("graph composition receipt should expose composition evidence")
+        .expect("fixture digest must fit");
     assert_eq!(program.component_count(), 2);
     assert_eq!(
         program.steps()[0].kind(),

@@ -164,7 +164,10 @@ fn installed_lineage_is_executed_by_the_existing_identity_evolution_authority() 
                     ),
                 _ => continue,
             };
-            let admission = trace.admit_persistent_name(0, intent).unwrap();
+            let admission = trace
+                .admit_persistent_name(0, intent)
+                .expect("fixture digest must fit")
+                .unwrap();
             assert_eq!(admission.lineage_report_identity(), report.identity());
         }
     }
@@ -207,6 +210,7 @@ fn generated_identity_naming_requires_the_exact_generated_target() {
                 target,
             ),
         )
+        .expect("fixture digest must fit")
         .unwrap();
     assert_eq!(
         admitted.lineage_report_identity(),
@@ -268,13 +272,15 @@ fn executor_lineage_must_exist_and_match_an_executable_installed_contract() {
         workflow_workspace(request_execution, "lineage-detached-trace").unwrap();
     let detached = execute(&mut detached_workspace);
     assert!(matches!(
-        detached.admit_persistent_name(
-            0,
-            domain::WorthQueryPersistentNameIntent::from_executed_naming_attachment(
-                mutation_authority("detached-attachment"),
-                mutation_authority("detached-target"),
-            ),
-        ),
+        detached
+            .admit_persistent_name(
+                0,
+                domain::WorthQueryPersistentNameIntent::from_executed_naming_attachment(
+                    mutation_authority("detached-attachment"),
+                    mutation_authority("detached-target"),
+                ),
+            )
+            .expect("fixture digest must fit"),
         TransitionOutcome::Denied(domain::WorthQueryPersistentNameDenial::LineageMissing)
     ));
 }
@@ -306,23 +312,27 @@ fn persistent_naming_rejects_a_wrong_attachment_or_lineage_target() {
     let exact_target = naming.target_authoritative_identity().unwrap().clone();
 
     assert!(matches!(
-        trace.admit_persistent_name(
-            0,
-            domain::WorthQueryPersistentNameIntent::from_executed_naming_attachment(
-                mutation_authority("wrong-attachment"),
-                exact_target,
-            ),
-        ),
+        trace
+            .admit_persistent_name(
+                0,
+                domain::WorthQueryPersistentNameIntent::from_executed_naming_attachment(
+                    mutation_authority("wrong-attachment"),
+                    exact_target,
+                ),
+            )
+            .expect("fixture digest must fit"),
         TransitionOutcome::Denied(domain::WorthQueryPersistentNameDenial::NamingAttachmentMismatch)
     ));
     assert!(matches!(
-        trace.admit_persistent_name(
-            0,
-            domain::WorthQueryPersistentNameIntent::from_executed_naming_attachment(
-                naming.attachment_identity().clone(),
-                mutation_authority("wrong-lineage-target"),
-            ),
-        ),
+        trace
+            .admit_persistent_name(
+                0,
+                domain::WorthQueryPersistentNameIntent::from_executed_naming_attachment(
+                    naming.attachment_identity().clone(),
+                    mutation_authority("wrong-lineage-target"),
+                ),
+            )
+            .expect("fixture digest must fit"),
         TransitionOutcome::Denied(
             domain::WorthQueryPersistentNameDenial::TargetNotEstablishedByEvidence
         )

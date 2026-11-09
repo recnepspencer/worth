@@ -114,9 +114,9 @@ pub(crate) fn partition_ids(
     crate::storage::overlay::partition_ids_in_result_memory(state, Some(memory))
 }
 
-/// Settle the original ticket using the same owner-accounted payload measure
-/// before and after Clone. This measure excludes allocator/BTree structural
-/// backing; source spare payload capacity is released only after construction.
+/// Settle the original ticket against new clone allocations. Shared aspect
+/// backing stays with its source owner; destination inline references and copied
+/// schema text retain their existing charge. Release unused payload capacity.
 pub(crate) fn settle_clone(
     memory: &mut ExecutionResultMemory<'_>,
     quoted: u64,

@@ -33,3 +33,6 @@ pub(crate) use commit_texts::visit_required_commit_symbols;
 
 #[cfg(test)]
 pub(crate) use commit_texts::required_commit_symbols;
+
+mod snapshot_observation;
+pub use snapshot_observation::observe_symbol_snapshot_materialization;

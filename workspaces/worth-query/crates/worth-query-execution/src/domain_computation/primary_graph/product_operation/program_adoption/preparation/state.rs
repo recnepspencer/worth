@@ -191,7 +191,7 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
     );
     let target_rendering = program_revision_rendering(target);
     admission.validate_current_authority().map_err(|cause| WorthQueryBranchAdoptionPreparationDenial::Authorization(super::super::authorization::WorthQueryProgramAdoptionAuthorizationDenial::Authorization(cause)))?;
-    let mut candidate = graph.with_runtime(execution, |runtime| {
+    let candidate = graph.with_runtime(execution, |runtime| {
         let mut batch =
             WorkerIntentBatch::new("application-program-adoption").push(MutationIntent::Entity(
                 EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
@@ -237,11 +237,6 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
             .prepare_branch_transaction(execution, transaction)
             .map_err(map_relational_preparation_denial)
     })?;
-    super::super::super::candidate_selectors::prepare(execution, selected, &mut candidate)
-        .map_err(|cause| match cause {
-            super::super::super::candidate_selectors::CandidateSelectorMaintenanceDenial::Snapshot(cause) => WorthQueryBranchAdoptionPreparationDenial::SelectorSnapshot(cause),
-            super::super::super::candidate_selectors::CandidateSelectorMaintenanceDenial::Maintenance(cause) => WorthQueryBranchAdoptionPreparationDenial::SelectorMaintenance(cause),
-        })?;
     let successor_observation_requested = false;
     let recovery = selected.product().publication_binding().recovery();
     let disposition = selected

@@ -32,11 +32,17 @@ pub(super) fn input(
             if purpose == PortablePatchReadmissionPurpose::RecordCreation {
                 add(
                     &mut retained,
-                    backing::<(FieldKey, AspectValue)>(group.len())?,
+                    u64::try_from(
+                        StructAspectValue::sorted_construction_storage_bytes(group.len())
+                            .ok_or(Cause::ChargedBytesOverflow)?,
+                    )
+                    .map_err(|_| Cause::ChargedBytesOverflow)?,
                 )?;
                 add(
                     &mut transient,
-                    backing::<(FieldKey, AspectValue)>(group.len())?,
+                    backing::<(FieldKey, AspectValue)>(group.len())?
+                        .checked_mul(2)
+                        .ok_or(Cause::ChargedBytesOverflow)?,
                 )?;
             } else {
                 add(&mut retained, backing::<FieldKey>(group.len())?)?;
@@ -50,7 +56,7 @@ pub(super) fn input(
             nested(
                 &mut retained,
                 row.value
-                    .clone_allocation_bytes()
+                    .clone_retained_storage_bytes()
                     .ok_or(Cause::ChargedBytesOverflow)?,
             )?;
             if !row.scalar {
@@ -126,9 +132,15 @@ pub(in crate::authority::mutation::intents) fn readmission_bytes(
                 .clone_allocation_bytes()
                 .ok_or(Cause::ChargedBytesOverflow)?;
             lookup_peak = lookup_peak.max(owned);
-            nested(&mut bytes, owned)?;
+            // The lookup shares its contract; the independently retained patch
+            // still keeps that definition alive after the lookup/source retires.
+            nested(&mut bytes, contract.owned_allocation_capacity_bytes())?;
             if matches!(operation, PortableAspectPatchOperation::SetWhole { .. }) {
-                nested(&mut bytes, contract.key().as_str().len())?;
+                nested(
+                    &mut bytes,
+                    ContractValidatedAspectValue::admission_storage_bytes(contract)
+                        .ok_or(Cause::ChargedBytesOverflow)?,
+                )?;
             }
         }
         if let PortableAspectPatchOperation::PatchFields {

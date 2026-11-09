@@ -24,7 +24,6 @@ pub struct ProgramAdoptionInput {
 worth_query_portable_type!(ProgramAdoptionInput => "worth.query.certification.program-adoption-input.v1");
 worth_query_structured_value_binding!(pub ProgramAdoptionInputBinding for ProgramAdoptionInput { identity: "worth.query.certification.program-adoption-input.v1" });
 worth_query_operation!(pub ProgramAdoptionOperation for DocumentRetentionSchema, input ProgramAdoptionInputBinding);
-worth_query_operation_reads!(ProgramAdoptionOperation => [DocumentIdentityField]);
 
 pub struct ProgramAdoptionBinding;
 impl ApplicationProgramAdoptionBinding<DocumentRetentionSchema> for ProgramAdoptionBinding {
@@ -68,9 +67,10 @@ impl ApplicationCapabilityRequest<DocumentRetentionSchema, ProgramAdoptionCapabi
     > {
         Ok(ApplicationCapabilityRequestProjection::new(
             ApplicationCapabilityEntitySelector::new(
-                DocumentIdentityField::reference(),
+                DocumentIdentityField::at("DocumentIdentityField"),
                 encoded(DOCUMENT_IDENTITY),
-            ),
+            )
+            .unwrap(),
             encoded("adopt-program"),
             encoded("reviewed-document"),
             ApplicationCapabilityRequestContext::new(
@@ -80,9 +80,10 @@ impl ApplicationCapabilityRequest<DocumentRetentionSchema, ProgramAdoptionCapabi
         .related_entity(ApplicationCapabilityRelatedEntitySelector::new(
             WorkflowGrantRelated::reference(),
             ApplicationCapabilityEntitySelector::new(
-                DocumentIdentityField::reference(),
+                DocumentIdentityField::at("DocumentIdentityField"),
                 encoded(RELATED_DOCUMENT_IDENTITY),
-            ),
+            )
+            .unwrap(),
         )))
     }
 }
@@ -103,7 +104,7 @@ pub fn declare(
         .operation_projection_work_budget(ProgramAdoptionOperation::reference(), 512)
         .operation_read_field(
             ProgramAdoptionOperation::reference(),
-            DocumentIdentityField::reference(),
+            DocumentIdentityField::at("DocumentIdentityField"),
         )
         .capability(contract::contract())
 }

@@ -40,7 +40,7 @@ pub(super) fn contract(
 ) -> Result<Contract, WorthQueryOutputReadinessContractDenial> {
     WorthQueryOutputReadinessContractBuilder::for_field(
         declaration,
-        ItemName::reference(),
+        ItemName::at("ItemName"),
         domain::WorthQueryDomainOperationIdentity::new("generated-catalog-readiness", 1),
         "generated-catalog-ready",
         canonical_query(),
@@ -50,7 +50,7 @@ pub(super) fn contract(
     )?
     .field_dependency(
         declaration,
-        ItemName::reference(),
+        ItemName::at("ItemName"),
         WorthQueryReadinessFieldUse::DeliveryAndEligibility,
     )?
     .build_typed()
@@ -95,7 +95,7 @@ impl WorthQueryApplicationConditionalBinding<Catalog> for Readiness {
             .delivery_ordinal(
                 installation.installed_schema(),
                 node.declaration(),
-                ItemName::reference(),
+                ItemName::at("ItemName"),
             )
             .unwrap();
         installation.bind_output_readiness::<Producer, _, _, _, _, _, _>(node, ordinal)

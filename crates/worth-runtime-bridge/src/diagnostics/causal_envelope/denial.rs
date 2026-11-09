@@ -66,7 +66,7 @@ impl BridgeCausalEnvelopeDenial {
         expected_owner: BridgeCausalEvidenceOwner,
         reference_identity: BridgeIdentityEvidence,
         counters: BridgeCausalEnvelopeCounters,
-    ) -> Self {
+    ) -> Result<Self, crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal> {
         let kind_text = format!("{kind:?}");
         let failure_digest = compose_bridge_causal_envelope_evidence_identity(
             BridgeCausalEnvelopeDigestArtifact::Denial,
@@ -78,8 +78,8 @@ impl BridgeCausalEnvelopeDenial {
                 evidence_part(&reference_identity),
                 evidence_part(counters.counter_evidence_identity()),
             ],
-        );
-        Self {
+        )?;
+        Ok(Self {
             kind,
             family,
             supplied_owner,
@@ -87,7 +87,7 @@ impl BridgeCausalEnvelopeDenial {
             reference_identity,
             counters,
             failure_digest,
-        }
+        })
     }
 
     pub fn kind(&self) -> BridgeCausalEnvelopeDenialKind {

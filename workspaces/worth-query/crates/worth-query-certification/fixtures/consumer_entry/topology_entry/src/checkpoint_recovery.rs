@@ -8,7 +8,6 @@ use worth_query_decl::facade::application_program::{
     ApplicationSharedRuleRef,
 };
 use worth_query_decl::facade::application_schema::ApplicationSchemaComposition;
-use worth_query_decl::facade::worth_query_application;
 use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 use worth_query_host::facade::{
     admission::authenticated_principal as authentication,
@@ -49,19 +48,47 @@ mod support;
 use support::{authenticate, install, length};
 
 mod observation_scope;
-mod output_availability;
+pub(crate) mod output_availability;
 mod provider_contact_custody;
 use observation_scope::checkpoint_recovery_test_guard;
 
-worth_query_application! {
-    CheckpointSchema {
-        owner: "worth.query.certification.checkpoint",
-        version: (1, 0),
-        contributions: [contribution::CheckpointContribution],
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct CheckpointSchema;
+impl worth_query_decl::facade::application_schema::fragment::Fragment for CheckpointSchema {
+    const NAME: &'static str = "CheckpointSchema";
+    type Bindings = worth_query_decl::facade::application_schema::fragment::NoBindings;
+    type Members = (contribution::CheckpointContribution,);
+}
+impl worth_query_decl::facade::application_schema::ApplicationSchema for CheckpointSchema {
+    const OWNER: &'static str = "worth.query.certification.checkpoint";
+    const NAME: &'static str = "CheckpointSchema";
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration() -> Result<
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclaration<Self>,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationDenial,
+    > {
+        worth_query_decl::facade::application_schema::fragment::declare(Self)
     }
+    fn visit_correction<
+        V: worth_query_decl::facade::application_aftermath::ApplicationCorrectionVisitor<Self>,
+    >(
+        source: std::any::TypeId,
+        visitor: V,
+    ) -> V::Output {
+        worth_query_decl::facade::application_schema::fragment::visit_correction(
+            Self, source, visitor,
+        )
+    }
+}
+impl worth_query_decl::facade::application_schema::ApplicationSchemaComposition
+    for CheckpointSchema
+{
+    type Contributions = (contribution::CheckpointContribution,);
 }
 
 impl TopologySchemaBinding for CheckpointSchema {
+    type PrincipalFragment = crate::PrincipalRecords;
     const PLANAR_EDIT_PROJECTION_WORK: Option<usize> = None;
 
     // Bootstrap validates every newly authored ring. Its population is not a

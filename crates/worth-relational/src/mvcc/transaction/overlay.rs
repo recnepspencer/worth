@@ -3,17 +3,17 @@ use super::{
     staging_storage::{Author, OrderedStore},
     RelationalTransactionFootprint, RelationalTransactionStagingDenial as Denial,
 };
-use crate::identity::data::{EntityId, RelationId};
 use crate::symbols::data::ClientKey;
 use crate::transactions::data::{
-    CreateIntent, CreatedEntityRef, CreatedRelationRef, EntityMutationIntent, EntityReference,
-    MutationIntent, RelationMutationIntent, WorkerIntentBatch,
+    CreateIntent, CreatedEntityRef, CreatedRelationRef, EntityReference, MutationIntent,
+    WorkerIntentBatch,
 };
 use worth_execution::ExecutionAllocationPolicy;
 mod copy;
 
 #[derive(Debug, Default)]
 pub(crate) struct DetachedRelationalTransactionOverlay {
+    pub(super) effective_records: super::effective_records::EffectiveRecords,
     // Input batch/header storage remains System and outside the new backing claim.
     pub(super) batches: Vec<WorkerIntentBatch>,
     pub(super) index: OrderedStore<IndexRow>,
@@ -45,6 +45,7 @@ impl DetachedRelationalTransactionOverlay {
             .map_err(|_| Denial::InputDirectoryAllocationDenied { requested_batches })
     }
     pub(super) fn stage(&mut self, batch: WorkerIntentBatch, index: OrderedStore<IndexRow>) {
+        self.effective_records.stage(&batch);
         self.batches.push(batch); // System capacity was reserved before publication
         self.index = index;
     }
@@ -70,35 +71,6 @@ impl DetachedRelationalTransactionOverlay {
         let drained = self.batches.split_off(batch_len);
         self.index = index;
         drained
-    }
-    pub(crate) fn entity_mutations(
-        &self,
-        entity: EntityId,
-    ) -> impl Iterator<Item = &EntityMutationIntent> {
-        self.index
-            .range_by(|row| match &row.key {
-                IndexKey::Entity(key) => key.cmp(&entity),
-                _ => std::cmp::Ordering::Greater,
-            })
-            .map(|row| match self.intent(row.location) {
-                MutationIntent::Entity(intent) => intent,
-                _ => unreachable!(/* Proof: The private mutation index is populated only in the corresponding entity/relation/create insertion branch; its immutable index points to that discriminant. */ "entity index points only to entity mutations"),
-            })
-    }
-    pub(crate) fn relation_mutations(
-        &self,
-        relation: RelationId,
-    ) -> impl Iterator<Item = &RelationMutationIntent> {
-        self.index
-            .range_by(|row| match &row.key {
-                IndexKey::Entity(_) => std::cmp::Ordering::Less,
-                IndexKey::Relation(key) => key.cmp(&relation),
-                _ => std::cmp::Ordering::Greater,
-            })
-            .map(|row| match self.intent(row.location) {
-                MutationIntent::Relation(intent) => intent,
-                _ => unreachable!(/* Proof: The private mutation index is populated only in the corresponding entity/relation/create insertion branch; its immutable index points to that discriminant. */ "relation index points only to relation mutations"),
-            })
     }
     fn entity_creates(
         &self,

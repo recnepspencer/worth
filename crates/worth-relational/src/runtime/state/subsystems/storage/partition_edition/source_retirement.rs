@@ -15,11 +15,13 @@ impl PartitionEdition {
         PartitionId,
         Arc<crate::storage::residency::RelationalRegionResidency>,
     )> {
-        use std::ops::Bound::{Excluded, Unbounded};
-        let next = match after {
-            None => self.partitions.first_key_value(),
-            Some(key) => self.partitions.range((Excluded(key), Unbounded)).next(),
+        // PartitionId has a native u32 ordering. Advancing its scalar key
+        // preserves exclusive cursor semantics without allocating a traversal.
+        let first = match after {
+            None => PartitionId(u32::MIN),
+            Some(key) => PartitionId(key.as_u32().checked_add(1)?),
         };
+        let next = self.partitions.lower_bound(&first);
         next.map(|(&id, region)| {
             if retire_native {
                 region.retire_native_leases();

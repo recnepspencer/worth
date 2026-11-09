@@ -4,6 +4,7 @@ use super::{
     readback::{observe_head, read_retention},
     schema::*,
 };
+
 use worth_query_host::facade::{
     application_entry::*,
     primary_graph::{
@@ -29,7 +30,7 @@ fn public_unobserved_write_keeps_exact_target_and_observed_twin_commits() {
                 .unwrap()
                 .resolve_entity(
                     &phase,
-                    DocumentIdentityField::reference(),
+                    DocumentIdentityField::at("DocumentIdentityField"),
                     DOCUMENT_IDENTITY.to_owned(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -69,7 +70,7 @@ fn public_unobserved_write_keeps_exact_target_and_observed_twin_commits() {
     assert_eq!(cause.entity_id().generation_value(), target.generation());
     assert_eq!(
         cause.locator().aspect().aspect_key().as_str(),
-        "DocumentFacts"
+        DocumentRetentionField::at("DocumentRetentionField").aspect()
     );
     assert_eq!(
         cause.locator().field_path().fields()[0].as_str(),

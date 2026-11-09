@@ -6,16 +6,19 @@
 
 mod compensation;
 mod portable_recorded_inverse;
+mod preimage_demand;
+mod preimage_locus;
+mod preimage_relation;
 mod recorded_inverse;
+pub use preimage_demand::{DeclaredPreImageDemand, DeclaredPreImageDemandDenial};
+pub use preimage_locus::DeclaredPreImageLocus;
+pub use preimage_relation::{DeclaredPreImageRelationLocus, PortablePreImageRelationLocus};
 
 pub use compensation::DeclaredCompensation;
 pub use portable_recorded_inverse::{
     PortablePreImageDemand, PortablePreImageLocus, PortableRecordedInverse,
 };
-pub use recorded_inverse::{
-    DeclaredLoweringCorrespondenceRef, DeclaredPreImageDemand, DeclaredPreImageDemandDenial,
-    DeclaredPreImageLocus, DeclaredRecordedInverse,
-};
+pub use recorded_inverse::{DeclaredLoweringCorrespondenceRef, DeclaredRecordedInverse};
 
 /// How the corrected state is produced when correction authority permits it.
 pub enum DeclaredCorrectionMechanism<Schema> {
@@ -42,10 +45,13 @@ impl<Schema: crate::application_schema::ApplicationSchema> DeclaredCorrectionMec
     /// Derives the actual compensating operation from its concrete mutation binding.
     pub fn compensation_binding<C: super::ApplicationCorrectionBinding<Schema>>(
         postcondition: super::DeclaredAftermathPostcondition,
-    ) -> Result<Self, &'static str> {
+    ) -> Self {
         use crate::application_operation::ApplicationMutationBinding;
         let action = super::ApplicationInverseBinding::<Schema, C>::descriptor();
-        DeclaredCompensation::new(action.operation_name(), postcondition).map(Self::Compensation)
+        Self::Compensation(DeclaredCompensation::new(
+            action.operation_name(),
+            postcondition,
+        ))
     }
 }
 
@@ -120,4 +126,16 @@ impl<Schema> DeclaredCorrectionMechanism<Schema> {
 pub enum PortableCorrectionMechanism {
     RecordedInverse(PortableRecordedInverse),
     Compensation(DeclaredCompensation),
+}
+
+/// Invalid correction expression refused when associated with its operation.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum DeclaredCorrectionMechanismDenial {
+    EmptyReconciliationProcedure,
+    EmptyInverseOperation,
+    EmptyLoweringCorrespondence,
+    RecordedInverseRequiresExactPriorTruth,
+    EmptyCompensatingOperation,
+    CompensationRejectsExactPriorTruth,
+    EmptyCompensationPostcondition,
 }

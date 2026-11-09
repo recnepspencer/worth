@@ -84,7 +84,7 @@ pub(super) fn read_original(
     let binding = super::original_binding::read(&row, context.layout)?;
     let outbox = context
         .provider
-        .original_dispatch_outbox(execution, &publication)
+        .original_dispatch_outbox(execution, &publication, binding.outcome)
         .map_err(|cause| {
             if let super::super::super::committed_dispatch_outbox::WorthQueryCommittedDispatchOutboxReadDenial::ReadExecution(cause) = cause {
                 Denial::ExecutionDenied(cause)
@@ -108,7 +108,7 @@ pub(super) fn read_original(
     }
     let causality = context
         .provider
-        .original_aftermath_causality(execution, context.runtime, &publication, owner)
+        .original_aftermath_causality(execution, context.runtime, &publication, owner, binding.outcome)
         .map_err(|cause| {
             if let super::super::super::aftermath_causality::WorthQueryAftermathCausalityReadDenial::ExecutionDenied(cause) = cause {
                 Denial::ExecutionDenied(cause)

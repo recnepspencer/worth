@@ -26,14 +26,13 @@ worth_query_structured_value_binding!(pub InputBinding for Input {identity:"matr
 worth_query_structured_value_binding!(pub ResultBinding for Outcome {identity:"matrix.edit.member.result"});
 worth_query_structured_value_binding!(pub DenialBinding for Denied {identity:"matrix.edit.member.denial"});
 worth_query_operation!(pub Edit for Schema:SchemaBinding,input InputBinding);
-worth_query_operation_reads!(Edit=>[Node,NodeKey,Revision]);
-worth_query_operation_writes!(Edit=>[Revision]);
+worth_query_operation_reads!(Edit => [Node, NodeKey, Revision]);
+worth_query_operation_writes!(Edit => [Revision]);
 pub struct Binding<S>(PhantomData<fn() -> S>);
 impl<S: SchemaBinding> ApplicationMutationAdmissionBinding<S> for Binding<S> {
     type Admission = ApplicationConventionalAdmission;
 }
-pub type Scope<S> =
-    ApplicationMutationFieldScope<S, Node, NodeFacts, NodeKey, String, ReadOnly, NoApplicationUnit>;
+pub type Scope = ApplicationMutationFieldScope<NodeKey>;
 pub struct Decision<S> {
     target: WorthQueryInvariantMutationTarget<S, Node>,
     revision: u64,
@@ -55,7 +54,7 @@ impl<S: SchemaBinding> ApplicationMutationBinding<S> for Binding<S> {
     type Denial = Denied;
     type DenialBinding = DenialBinding;
     type Output = NoApplicationMutationOutputs;
-    type ScopeBinding = Scope<S>;
+    type ScopeBinding = Scope;
     type PrincipalBinding = ConsumerPrincipalBinding;
     type Mapping = ExternalPrincipalMapping;
     type Principal = Principal;
@@ -66,17 +65,8 @@ impl<S: SchemaBinding> ApplicationMutationBinding<S> for Binding<S> {
     const HANDLER_IDENTITY: &'static str = "matrix.edit.apply.handler";
     const IDEMPOTENCY_IDENTITY: &'static str = "matrix.edit.apply.command";
 
-    fn scope_field() -> ApplicationFieldRef<
-        S,
-        Node,
-        NodeFacts,
-        NodeKey,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        NodeKey::reference()
+    fn scope_field() -> NodeKey {
+        NodeKey::at("NodeKey")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         S,
@@ -94,8 +84,8 @@ impl<S: SchemaBinding> ApplicationMutationIntent<S> for Input {
     fn input(&self) -> &Self {
         self
     }
-    fn scope_binding(&self) -> Scope<S> {
-        Scope::new(NodeKey::reference(), format!("member-{:03}", self.key))
+    fn scope_binding(&self) -> Scope {
+        Scope::new(NodeKey::at("NodeKey"), format!("member-{:03}", self.key))
     }
 }
 
@@ -107,9 +97,9 @@ impl OperationHandler<Schema, Binding<Schema>> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, Schema, Binding<Schema>>,
     ) -> HandlerResult<Decision<Schema>, Denied> {
         let node = reader
-            .resolve_entity(NodeKey::reference(), format!("member-{:03}", input.key))
+            .resolve_entity(NodeKey::at("NodeKey"), format!("member-{:03}", input.key))
             .unwrap();
-        let _previous = reader.field(&node, Revision::reference()).unwrap();
+        let _previous = reader.field(&node, Revision::at("Revision")).unwrap();
         HandlerResult::Completed(Decision {
             target: reader.mutation_target(&node).unwrap(),
             revision: input.revision,
@@ -124,7 +114,7 @@ impl OperationHandler<Schema, Binding<Schema>> for Handler {
     ) -> HandlerResult<Outcome, Denied> {
         let node = writer.projected_entity(&decision.target).unwrap();
         writer
-            .write_field(&node, Revision::reference(), decision.revision)
+            .write_field(&node, Revision::at("Revision"), decision.revision)
             .unwrap();
         HandlerResult::Completed(Outcome {
             revision: decision.revision,
@@ -139,8 +129,8 @@ pub fn declare<S: SchemaBinding>(
         .operation(op.definition().no_external_effect().no_aftermath().finish())
         .operation_projection_work_budget(op, 4096)
         .operation_read_entity(op, Node::reference())
-        .operation_read_field(op, NodeKey::reference())
-        .operation_read_field(op, Revision::reference())
-        .operation_write(op, Revision::reference())
+        .operation_read_field(op, NodeKey::at("NodeKey"))
+        .operation_read_field(op, Revision::at("Revision"))
+        .operation_write(op, Revision::at("Revision"))
         .application_mutation_binding::<Binding<S>>()
 }

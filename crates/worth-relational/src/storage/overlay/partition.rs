@@ -241,6 +241,8 @@ impl PartitionState {
 
 #[derive(Debug, Clone, Default)]
 pub(crate) struct PartitionMutationJournal {
+    /// The predecessor graph was omitted by the selected clone mode.
+    pub(crate) adjacency_omitted: bool,
     pub(crate) entity_slots: TouchedSlots,
     pub(crate) relation_slots: TouchedSlots,
     pub(crate) adjacency_slots: TouchedSlots,

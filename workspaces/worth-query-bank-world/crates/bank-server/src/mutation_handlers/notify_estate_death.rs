@@ -44,16 +44,18 @@ impl OperationHandler<BankSchema, NotifyEstateDeathMutationBinding> for NotifyEs
             Ok(command) => command,
             Err(_) => return HandlerResult::DomainDenied(EstateMutationDenial::InputVariant),
         };
-        let notice =
-            match candidate.resolve_entity(DeathNoticeIdentityField::reference(), command.notice) {
-                Ok(notice) => notice,
-                Err(denial) => {
-                    return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(denial))
-                }
-            };
+        let notice = match candidate.resolve_entity(
+            DeathNoticeIdentityField::at("DeathNoticeIdentityField"),
+            command.notice,
+        ) {
+            Ok(notice) => notice,
+            Err(denial) => {
+                return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(denial))
+            }
+        };
         if let Err(denial) = candidate.write_field(
             &notice,
-            DeathNoticeStatusField::reference(),
+            DeathNoticeStatusField::at("DeathNoticeStatusField"),
             DeathNoticeStatus::NotificationRequested,
         ) {
             return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(denial));

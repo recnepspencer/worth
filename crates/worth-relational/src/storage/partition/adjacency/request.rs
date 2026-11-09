@@ -4,7 +4,33 @@ use crate::execution::RelationalExecutionDenialCause as Cause;
 use worth_execution::ExecutionRequest;
 
 impl AdjacencySet {
+    pub(crate) fn index_historical_kind_for_request(
+        &mut self,
+        kind: KindId,
+        relation: RelationId,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+        let kinds = self
+            .entries_mut()
+            .historical_by_kind
+            .get_or_insert_with(SharedMap::new);
+        if !kinds.contains_key(&kind) {
+            let mut ids = RelationSet::new();
+            ids.insert_for_request(relation, (), request)?;
+            kinds.insert_for_request(kind, ids, request)?;
+        } else {
+            let ids = kinds
+                .get_mut_for_request(&kind, request)?
+                .expect("the same private map still contains its selected kind");
+            if !ids.contains_key(&relation) {
+                ids.insert_for_request(relation, (), request)?;
+            }
+        }
+        Ok(())
+    }
+
     pub(crate) fn checkpoint_for_request(
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         relations: Vec<RelationId>,
         structural_revisions: Vec<(KindId, VersionId)>,
         request: &ExecutionRequest<'_, '_>,

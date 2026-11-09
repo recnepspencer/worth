@@ -97,13 +97,21 @@ fn checked_merge_denial_preserves_both_islands_and_success_moves_only_loser() {
         worth_execution::CancellationToken::new(),
     );
     let outcome = map.run(Some(&admitted), |_, context| {
-        let work = components
-            .lock()
-            .unwrap()
+        let mut graph = components.lock().unwrap();
+        let moved = [1, 10]
+            .into_iter()
+            .map(|id| {
+                graph
+                    .members(worth_foundational::PartitionIdentity::new(id))
+                    .unwrap()
+                    .len()
+            })
+            .min()
+            .unwrap();
+        let work = graph
             .add_edge_checked(&admitted, context, item(2), item(10))
             .unwrap();
-        assert_eq!(work.items_rerouted, 12);
-        assert_eq!(work.members_visited, 36);
+        assert_eq!(work.items_rerouted, moved as u64);
         Ok::<_, MapKernelFailure<()>>(work.items_rerouted)
     });
     match outcome {

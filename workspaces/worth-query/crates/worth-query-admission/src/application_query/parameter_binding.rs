@@ -1,9 +1,11 @@
 mod layout_validation;
 use layout_validation::validate_parameter_layout;
 mod preparation;
+mod source_request;
 pub use preparation::{
     admit_application_query_parameters_admitted, WorthQueryParameterPreparationStop,
 };
+pub use source_request::WorthQueryCanonicalSourceRequest;
 use worth_foundational::facade::{AspectValue, CanonicalDigestDerivationDenial, CanonicalDigestId};
 use worth_query_declaration::facade::application_query::ApplicationQueryParameterSet;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
@@ -338,6 +340,7 @@ fn basis_copy_and_comparison_visits(
     use worth_foundational::facade::{CanonicalBasisLocus, CanonicalBasisValue, InternedString};
     let text = |value: &InternedString| match value {
         InternedString::Raw(value) => value.len(),
+        InternedString::Stored(value) => value.as_str().len(),
         InternedString::Symbol(_) => 1,
     };
     let mut initialized = basis.version().as_str().len();

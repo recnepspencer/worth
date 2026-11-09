@@ -48,10 +48,10 @@ fn checkpoint_transition_target_rule_rejects_retained_predecessor_only_value() {
                     primary_graph::WorthQueryApplicationEntityKey::new("migration-probe").unwrap(),
                 )
                 .field(
-                    DocumentIdentityField::reference(),
+                    DocumentIdentityField::at("DocumentIdentityField"),
                     "migration-probe".to_owned(),
                 )
-                .field(DocumentRetentionField::reference(), 7_u64),
+                .field(DocumentRetentionField::at("DocumentRetentionField"), 7_u64),
             )
         },
     )
@@ -115,10 +115,10 @@ fn checkpoint_transition_target_rule_accepts_complete_retained_and_created_state
                         .unwrap(),
                 )
                 .field(
-                    DocumentIdentityField::reference(),
+                    DocumentIdentityField::at("DocumentIdentityField"),
                     "migration-positive".to_owned(),
                 )
-                .field(DocumentRetentionField::reference(), 7_u64),
+                .field(DocumentRetentionField::at("DocumentRetentionField"), 7_u64),
             )
         },
     )
@@ -140,7 +140,7 @@ fn checkpoint_transition_target_rule_accepts_complete_retained_and_created_state
         .with_host_advancement(|host_phase| selected
             .resolve_entity(
                 &host_phase,
-                DocumentIdentityField::reference(),
+                DocumentIdentityField::at("DocumentIdentityField"),
                 "migration-positive".to_owned(),
                 &worth_query_testkit_document_retention::facade::document_retention_model::operator_identity::request_scope(),
                 primary_graph::WorthQueryPrincipalResolutionMode::Ordinary

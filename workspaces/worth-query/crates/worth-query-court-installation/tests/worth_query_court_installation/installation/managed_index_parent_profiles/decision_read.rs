@@ -8,7 +8,6 @@ impl<S: ModelSchema> ApplicationOperationMarkerIdentity<S> for DecisionOperation
     type InputBinding = ParametersBinding;
     const IDENTIFIER: &'static str = "DecisionOperation";
 }
-impl OperationReads<DecisionOperation> for PrincipalIdentity {}
 
 macro_rules! decision {
     ($name:ident, $scope:ident, $identity:literal) => {
@@ -27,18 +26,10 @@ macro_rules! decision {
             type Denial = ();
             type DenialBinding = ParametersBinding;
             type Output = NoApplicationMutationOutputs;
-            type ScopeBinding = $scope<
-                S,
-                Principal,
-                PrincipalFacts,
-                PrincipalIdentity,
-                u64,
-                ReadOnly,
-                NoApplicationUnit,
-            >;
+            type ScopeBinding = $scope<PrincipalIdentity<S>>;
             type PrincipalBinding = PrincipalBinding;
-            type Mapping = Mapping;
-            type Principal = Principal;
+            type Mapping = Mapping<S>;
+            type Principal = Principal<S>;
             type PrincipalIdentity = u64;
             type PrincipalIdentityBinding = U64ApplicationValueBinding;
             type SourceExpectation = NoApplicationMutationSource;
@@ -50,23 +41,14 @@ macro_rules! decision {
             fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
                 ApplicationWorkflowExecutionRequirements::not_applicable()
             }
-            fn scope_field() -> ApplicationFieldRef<
-                S,
-                Principal,
-                PrincipalFacts,
-                PrincipalIdentity,
-                u64,
-                ReadOnly,
-                EqualityPredicate,
-                NoApplicationUnit,
-            > {
-                PrincipalIdentity::reference::<S>()
+            fn scope_field() -> PrincipalIdentity<S> {
+                principal_identity::<S>()
             }
             fn principal_binding() -> ApplicationPrincipalBindingRef<
                 S,
                 PrincipalBinding,
-                Mapping,
-                Principal,
+                Mapping<S>,
+                Principal<S>,
                 u64,
                 U64ApplicationValueBinding,
             > {
@@ -98,7 +80,7 @@ pub(super) fn declare<S: ModelSchema>(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_read_field(operation, PrincipalIdentity::reference::<S>())
+        .operation_read_field(operation, principal_identity::<S>())
         .operation_managed_index_read::<ParentBinding<S>, _, _>(operation);
     if S::MODE == 4 {
         schema.application_mutation_binding::<FieldDecision<S>>()

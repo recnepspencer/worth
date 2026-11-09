@@ -53,12 +53,12 @@ pub fn temporal_wake_post_commit_snapshot_recovery_preserves_its_product_commit(
     );
     assert_authoritative_value(
         &world,
-        IntentEffectField::reference(),
+        IntentEffectField::at("IntentEffectField"),
         "payload".to_string(),
     );
     assert_authoritative_value(
         &world,
-        IntentLifecycleField::reference(),
+        IntentLifecycleField::at("IntentLifecycleField"),
         "completed".to_string(),
     );
 

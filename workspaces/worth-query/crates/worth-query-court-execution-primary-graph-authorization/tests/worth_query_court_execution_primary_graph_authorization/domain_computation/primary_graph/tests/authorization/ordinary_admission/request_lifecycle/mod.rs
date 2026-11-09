@@ -49,7 +49,7 @@ fn cancelled_request_cannot_reuse_otherwise_current_authority() {
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_string(),
                     &live_request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -146,7 +146,7 @@ fn admitted_operation_retains_expiry_and_cancellation_authority() {
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_string(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

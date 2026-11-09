@@ -290,8 +290,8 @@ pub(in crate::storage::residency) fn ordered(
     }
 }
 
-pub(in crate::storage::residency) use super::{at_region, content, scalars};
-pub(in crate::storage::residency) use current_image::{current, layered_commitment};
+pub(in crate::storage::residency) use super::admission::{at_region, content, scalars};
+pub(in crate::storage::residency) use current_image::current;
 
 pub(in crate::storage::residency) fn image(
     cause: crate::durability::data::RelationalRecoveryStop,

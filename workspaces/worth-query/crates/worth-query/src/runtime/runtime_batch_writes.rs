@@ -70,7 +70,7 @@ impl WorthQueryRuntime {
             let verified_existing_truth_assertion =
                 self.verified_existing_assertion_for_command(execution, &command)?;
             let declared_aspect_operations = command.declared_aspect_operations();
-            let declared_aspect_value_digest = command_declared_aspect_value_identity(&command);
+            let declared_aspect_value_digest = command_declared_aspect_value_identity(&command)?;
             let mutation_metadata = command.mutation_metadata();
             let symbolic_target_reference = command.symbolic_target_reference().cloned();
             let naming_intent = command.naming_intent().cloned();
@@ -103,7 +103,7 @@ impl WorthQueryRuntime {
                         | WorthQueryWriteCommand::VerifyExistingAspects { .. }
                 )
             {
-                record_planned_same_batch_symbolic_target(&mut planned_symbolic_targets, &command);
+                record_planned_same_batch_symbolic_target(&mut planned_symbolic_targets, &command)?;
                 deferred_backend_commands.push(self.admit_backend_write_command(command)?);
                 command_summaries.push(summary);
                 resolved_receipts.push(None);
@@ -115,14 +115,14 @@ impl WorthQueryRuntime {
                         &binding,
                         &self.current_snapshot_identity_with_request(execution),
                         declared_aspect_value_digest.as_ref(),
-                    )
+                    )?
                 }
                 WorthQueryWriteCommand::VerifyExistingAspects { binding, .. } => {
                     synthetic_existing_assertion_receipt(
                         &binding,
                         &self.current_snapshot_identity_with_request(execution),
                         declared_aspect_value_digest.as_ref(),
-                    )
+                    )?
                 }
                 WorthQueryWriteCommand::InsertAspects {
                     collection,
@@ -339,7 +339,8 @@ impl WorthQueryRuntime {
             &combined_receipt,
             &WorthQueryMutationMetadata::default(),
         )?;
-        let write_receipts = self.build_batch_component_write_receipts(receipts, command_summaries);
+        let write_receipts =
+            self.build_batch_component_write_receipts(receipts, command_summaries)?;
         let mut touched_aspects = std::collections::BTreeSet::new();
         for touch in combined_receipt
             .deltas
@@ -350,7 +351,7 @@ impl WorthQueryRuntime {
         }
         let batch_request_detail = format!("batch-write:{}", write_receipts.len());
         let execution_provenance =
-            batch_execution_provenance(shared_admission.as_ref(), &combined_receipt);
+            batch_execution_provenance(shared_admission.as_ref(), &combined_receipt)?;
         let decision_trace_envelope = batch_decision_trace_envelope(
             shared_admission.as_ref(),
             &combined_receipt,

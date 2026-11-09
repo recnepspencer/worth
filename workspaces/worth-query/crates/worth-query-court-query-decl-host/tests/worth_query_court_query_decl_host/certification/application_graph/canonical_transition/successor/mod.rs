@@ -1,4 +1,5 @@
 pub(crate) use worth_query_testkit_certification_canonical::facade::certification::canonical_transition::successor::*;
+use worth_query_decl::facade::application_schema::ApplicationSchema;
 
 #[test]
 fn actual_v2_installation_produces_and_reads_its_supported_incompatible_output() {
@@ -55,6 +56,63 @@ fn actual_v2_installation_produces_and_reads_its_supported_incompatible_output()
 }
 
 #[test]
+fn actual_codec_binding_change_derives_a_new_aspect_revision() {
+    use worth_query_decl::facade::application_schema::ApplicationSchemaMember;
+    let previous = super::schema::CanonicalSchema::declaration().unwrap();
+    let current = schema::CanonicalSchema::declaration().unwrap();
+    let aspect = |members: &[ApplicationSchemaMember], owner: &str| {
+        members
+            .iter()
+            .find_map(|member| match member {
+                ApplicationSchemaMember::Aspect {
+                    entity,
+                    identity,
+                    revision,
+                    ..
+                } if entity == owner => Some((*identity, *revision)),
+                _ => None,
+            })
+            .expect("the actual fragment declares one aspect on this entity")
+    };
+    let codec = |members: &[ApplicationSchemaMember]| {
+        members
+            .iter()
+            .find_map(|member| match member {
+                ApplicationSchemaMember::Field {
+                    entity,
+                    field,
+                    value_type,
+                    canonical,
+                    ..
+                } if entity == "Derived" && field == "DerivedValueField" => {
+                    Some((value_type.clone(), canonical.clone()))
+                }
+                _ => None,
+            })
+            .expect("the actual record declares its canonical derived field")
+    };
+    let old = previous.erased().members();
+    let new = current.erased().members();
+    assert_ne!(
+        codec(old),
+        codec(new),
+        "the mounted V1/V2 fixtures declare distinct actual codecs"
+    );
+    let (old_identity, old_revision) = aspect(old, "Derived");
+    let (new_identity, new_revision) = aspect(new, "Derived");
+    assert_eq!(
+        old_identity, new_identity,
+        "the persistent aspect locus remains the same"
+    );
+    assert_ne!(old_revision, new_revision, "fragment lowering derives revision from codec meaning; authors cannot pin the old revision");
+    assert_eq!(
+        aspect(old, "Document"),
+        aspect(new, "Document"),
+        "unchanged authored source meaning retains its actual revision"
+    );
+}
+
+#[test]
 fn exact_v2_restore_requires_explicit_transition_before_any_derived_decode() {
     let checkpoint = predecessor_checkpoint();
     output::reset_decodes();
@@ -83,7 +141,6 @@ fn exact_v2_restore_requires_explicit_transition_before_any_derived_decode() {
             .contains("recovered derived codec requires authenticated native transition admission"),
         "unexpected recovery fence: {denial:?}"
     );
-    unchanged_revision::assert_missing_revision_refused(checkpoint);
 }
 
 pub(crate) mod acknowledged_capture;

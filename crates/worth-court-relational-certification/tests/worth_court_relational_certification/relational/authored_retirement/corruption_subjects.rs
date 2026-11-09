@@ -9,10 +9,7 @@ fn authored_cascade_corruption_names_the_mismatching_publications_source() {
         None,
     );
     let execution = &ExecutionRequest::serial(&request);
-    let mut runtime = AspectSchemaFixture::with_default_declared_aspects(
-        worth_relational::facade::config::CascadeDeletePolicy::RetainDanglingForAudit,
-    )
-    .build_runtime();
+    let mut runtime = registration::runtime();
     let receipt = runtime
         .prepare_initial_schema_installation()
         .unwrap()

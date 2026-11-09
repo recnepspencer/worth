@@ -5,12 +5,14 @@ use crate::domain_computation::primary_graph::application_checkpoint::Checkpoint
 #[derive(Debug, Default)]
 pub(super) struct CorrespondenceStorage {
     pub(super) optional_roles: Vec<String>,
+    pub(super) closure_evidence: Vec<(String, CommittedOutputBinding)>,
     pub(super) roles: Vec<(String, CommittedOutputBinding)>,
     // Last to drop: the rows and their strings retain their actual admission.
     pub(super) _funding: Option<CheckpointMetadataFunding>,
 }
 impl PartialEq for CorrespondenceStorage {
     fn eq(&self, other: &Self) -> bool {
+        // Closure describes one host's performed admission, not durable roles.
         self.optional_roles == other.optional_roles && self.roles == other.roles
     }
 }
@@ -23,6 +25,7 @@ impl CorrespondenceStorage {
     ) -> Self {
         Self {
             optional_roles,
+            closure_evidence: Vec::new(),
             roles,
             _funding: None,
         }

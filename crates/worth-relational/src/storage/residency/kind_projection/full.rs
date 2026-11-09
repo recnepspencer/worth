@@ -6,6 +6,8 @@ use crate::storage::residency::RegionContentFailure as Failure;
 use crate::storage::substrate::{RelationEndpoints, SharedMap};
 use worth_execution::ExecutionRequest;
 
+mod commitment;
+
 type Incidence = (RelationId, bool, usize);
 
 #[derive(Debug, Default)]
@@ -45,6 +47,7 @@ impl FullKindProjection {
     }
 
     pub(in crate::storage::residency) fn capture(
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         partition: &PartitionState,
         basis: AdjacencyKindBasis,
         request: &ExecutionRequest<'_, '_>,
@@ -67,12 +70,13 @@ impl FullKindProjection {
     }
 
     pub(in crate::storage::residency) fn normalize(
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         partition: &mut PartitionState,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, Failure> {
         // Validate ALL supplied kind claims before discarding owned history,
         // exactly as ordinary canonical_history does before its peer filter.
-        let supplied = Self::capture(partition, AdjacencyKindBasis::Historical, request)?;
+        let supplied = Self::capture(lane, partition, AdjacencyKindBasis::Historical, request)?;
         let mut expected = Self::default();
         for (&(relation, incoming, slot), &kind) in supplied.rows.iter() {
             if relation.partition_id != partition.partition_id {

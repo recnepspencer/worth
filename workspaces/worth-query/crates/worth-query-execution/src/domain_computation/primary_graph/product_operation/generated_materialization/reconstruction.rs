@@ -4,8 +4,7 @@ use std::sync::Arc;
 
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use worth_query_installation::facade::{
-    ApplicationEntityRef, ApplicationFieldRef, ApplicationFieldUnit, ApplicationScalarValueBinding,
-    ApplicationSchema, DeclaredApplicationFieldValue,
+    ApplicationEntityRef, ApplicationScalarValueBinding, ApplicationSchema,
 };
 use worth_relational::facade::{
     branch::{
@@ -285,15 +284,18 @@ where
         })
     }
 
-    pub fn field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn field<Entity, Aspect, Field, Value>(
         &mut self,
         entity: &WorthQueryGeneratedEntity<Schema, Entity>,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+        field: Field,
         value: Value,
     ) -> Result<(), WorthQueryGeneratedOutputReconstructionDenial>
     where
-        Field: DeclaredApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
     {
         self.validate_handle(entity)?;
         let locator = self

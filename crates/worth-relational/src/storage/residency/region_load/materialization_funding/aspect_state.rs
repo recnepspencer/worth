@@ -2,27 +2,10 @@
 use super::*;
 use crate::durability::data::*;
 use crate::storage::substrate::*;
-use worth_foundational::facade::{
-    AspectKey, AspectValue, ContractValidatedAspectValue, FieldKey, PortableRecordAspectState,
-    PortableRecordAspectStateEntry, StructAspectValue,
-};
+use worth_foundational::facade::{PortableRecordAspectState, StructAspectValue};
 
-fn state_roots(count: usize, contract: u64) -> Result<Quote> {
-    // Candidate entries, validation Vec, admission tree and final boxed values
-    // can coexist. Nested keys/values and cloned contracts are separate below.
-    let wire = sum(
-        vector::<PortableRecordAspectStateEntry>(count)?,
-        sum(
-            vector::<ContractValidatedAspectValue>(count)?,
-            tree::<AspectKey, ContractValidatedAspectValue>(count)?,
-        )?,
-    )?;
-    let native = sum(
-        array::<ContractValidatedAspectValue>(count)?,
-        times(contract, count)?,
-    )?;
-    Ok(Quote::bytes(sum(wire, times(contract, count)?)?, native))
-}
+mod admission_roots;
+use admission_roots::state_roots;
 pub(in crate::storage::residency) fn wire(
     raw: Raw<'_>,
     contract: u64,
@@ -33,6 +16,7 @@ pub(in crate::storage::residency) fn wire(
     }
     let mut quote = Quote::default();
     record(raw, &["entries"], request, |_, entries| {
+        let mut maximum_key_width = 0usize;
         let count = sequence(entries, request, |entry| {
             record(entry, &["basis", "value"], request, |index, value| {
                 if index == 0 {
@@ -43,7 +27,11 @@ pub(in crate::storage::residency) fn wire(
                         |index, value| {
                             if index == 0 {
                                 let key = text(value, request)?;
-                                quote.add(Quote::bytes(times(key, 2)?, key))?;
+                                maximum_key_width = maximum_key_width
+                                    .max(usize::try_from(key).map_err(|_| overflow())?);
+                                // Basis and construction key copies are temporary;
+                                // admitted value + map each retain a key spelling.
+                                quote.add(Quote::bytes(times(key, 3)?, times(key, 2)?))?;
                             }
                             Ok(())
                         },
@@ -53,7 +41,7 @@ pub(in crate::storage::residency) fn wire(
                 }
             })
         })?;
-        quote.add(state_roots(count, contract)?)
+        quote.add(state_roots(count, maximum_key_width, contract)?)
     })?;
     Ok(quote)
 }
@@ -91,7 +79,14 @@ fn scalar(raw: Raw<'_>, request: &ExecutionRequest<'_, '_>) -> Result<Quote> {
             .map_err(to_wire_stop)?,
             "String" => value.fields(request, |kind, value| {
                 if kind == "Raw" {
-                    bytes = text(value, request).map_err(to_wire_stop)?;
+                    let capacity = usize::try_from(text(value, request).map_err(to_wire_stop)?)
+                        .map_err(|_| to_wire_stop(overflow()))?;
+                    bytes =
+                        worth_foundational::facade::StoredValueText::fresh_decode_allocation_bytes(
+                            capacity,
+                        )
+                        .and_then(|n| u64::try_from(n).ok())
+                        .ok_or_else(|| to_wire_stop(overflow()))?;
                 }
                 Ok(())
             })?,
@@ -129,7 +124,10 @@ fn structure(raw: Raw<'_>, request: &ExecutionRequest<'_, '_>) -> Result<Quote> 
                 bounds.transient_decode_bytes as u64,
             )?,
         )?;
-        quote.native = sum(quote.native, array::<(FieldKey, AspectValue)>(count)?)?;
+        quote.native = sum(
+            quote.native,
+            u64::try_from(bounds.retained_fields_bytes).map_err(|_| overflow())?,
+        )?;
         Ok(())
     })?;
     Ok(quote)
@@ -141,14 +139,21 @@ pub(in crate::storage::residency) fn owned(
     let Some(state) = state else {
         return Ok(Quote::default());
     };
-    let mut quote = state_roots(state.entries().len(), contract)?;
+    let maximum_key_width = state
+        .entries()
+        .iter()
+        .map(|entry| entry.basis().key().as_str().len())
+        .max()
+        .unwrap_or(0);
+    let mut quote = state_roots(state.entries().len(), maximum_key_width, contract)?;
     for entry in state.entries() {
         let mut bytes = entry.basis().owned_allocation_capacity_bytes() as u64;
         bytes = sum(
             bytes,
             entry.value().owned_allocation_capacity_bytes() as u64,
         )?;
-        // Owned clones need no Serde growth; readmission roots are separate.
+        // Independently retained source/readmission holders include reachable
+        // shared backing; this is not a physical Clone invoice.
         quote.add(Quote::bytes(bytes, bytes))?;
     }
     Ok(quote)
@@ -336,9 +341,16 @@ pub(in crate::storage::residency) fn contracts(
             contract, request,
         )
         .map_err(Failure::Request)?;
-        largest = largest.max(nested);
+        largest = largest.max(
+            u64::try_from(contract.owned_allocation_capacity_bytes()).map_err(|_| overflow())?,
+        );
         // Original-to-portable and portable-to-catalog copies coexist.
         bytes = sum(bytes, times(nested, 2)?)?;
+        // Readmission also constructs the immutable contract-definition Arc.
+        bytes = sum(
+            bytes,
+            u64::try_from(contract.owned_allocation_capacity_bytes()).map_err(|_| overflow())?,
+        )?;
     }
     work(request, bytes)?;
     Ok((Funding::reserve(bytes, request)?, largest))

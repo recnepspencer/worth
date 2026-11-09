@@ -287,7 +287,8 @@ impl WorthQueryRuntimeSourceAdapter for CountCollectionSourceAdapter {
 
 fn identity_row(label: &'static str) -> WorthQueryEntity {
     WorthQueryEntity::from_native_field_values(
-        crate::memory_workspace::admit_authored_entity_label(label),
+        crate::memory_workspace::admit_authored_entity_label(label)
+            .expect("fixture digest must fit"),
         BTreeMap::from([(
             native_field_path("identity.id"),
             crate::runtime::WorthQueryAuthoredAspectMutation::native_string_value(
@@ -299,7 +300,8 @@ fn identity_row(label: &'static str) -> WorthQueryEntity {
 
 fn profile_row(label: &'static str, display_name: &'static str) -> WorthQueryEntity {
     WorthQueryEntity::from_native_field_values(
-        crate::memory_workspace::admit_authored_entity_label(label),
+        crate::memory_workspace::admit_authored_entity_label(label)
+            .expect("fixture digest must fit"),
         BTreeMap::from([
             (
                 native_field_path("identity.id"),

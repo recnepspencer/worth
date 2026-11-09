@@ -4,8 +4,7 @@ use worth_query_consumer_values::{PlanarAdjustmentResult, PlanarMutationDenial};
 
 use worth_query_decl::facade::{
     application_operation::*, application_schema::*, worth_query_operation,
-    worth_query_operation_reads, worth_query_operation_writes,
-    worth_query_structured_value_binding,
+    worth_query_operation_reads, worth_query_structured_value_binding,
 };
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
@@ -79,8 +78,7 @@ worth_query_structured_value_binding!(pub(super) ChainInputBinding for ChainInpu
     identity: "worth.query.certification.consumed-chain-input.v1"
 });
 worth_query_operation!(pub(super) PublishChain for Schema: TopologySchemaBinding, input ChainInputBinding);
-worth_query_operation_reads!(PublishChain => [Body, BodyKey, Length, PositionY]);
-worth_query_operation_writes!(PublishChain => [Length]);
+worth_query_operation_reads!(PublishChain => [Body]);
 
 pub(super) struct ChainBinding<Schema>(PhantomData<fn() -> Schema>);
 impl<Schema: TopologySchemaBinding> ApplicationMutationIntent<Schema> for ChainInput {
@@ -88,8 +86,8 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationIntent<Schema> for ChainI
     fn input(&self) -> &Self {
         self
     }
-    fn scope_binding(&self) -> PlanarMutationScope<Schema> {
-        PlanarMutationScope::new(BodyKey::reference(), self.scope_key.clone())
+    fn scope_binding(&self) -> PlanarMutationScope {
+        PlanarMutationScope::new(BodyKey::at("BodyKey"), self.scope_key.clone())
     }
 }
 impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema> for ChainBinding<Schema> {
@@ -109,7 +107,7 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema> for Chain
     type Denial = PlanarMutationDenial;
     type DenialBinding = PlanarMutationDenialBinding;
     type Output = PlanarOutputs;
-    type ScopeBinding = PlanarMutationScope<Schema>;
+    type ScopeBinding = PlanarMutationScope;
     type PrincipalBinding = ConsumerPrincipalBinding;
     type Mapping = ExternalPrincipalMapping;
     type Principal = Principal;
@@ -121,17 +119,8 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema> for Chain
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.consumed-chain-command.v1";
 
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Body,
-        PlanarPosition,
-        BodyKey,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        BodyKey::reference()
+    fn scope_field() -> BodyKey {
+        BodyKey::at("BodyKey")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         Schema,
@@ -156,11 +145,11 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, ChainBinding<Schema
     ) -> HandlerResult<(), PlanarMutationDenial> {
         // The target's actual decision read establishes effect selection for
         // the candidate; each upstream read below establishes a consumed edge.
-        let target = match reader.resolve_entity(BodyKey::reference(), input.scope_key.clone()) {
+        let target = match reader.resolve_entity(BodyKey::at("BodyKey"), input.scope_key.clone()) {
             Ok(entity) => entity,
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };
-        match reader.field(&target, Length::reference()) {
+        match reader.field(&target, Length::at("Length")) {
             Ok(Some(value)) if value == input.value => {}
             Ok(_) => return HandlerResult::DomainDenied(PlanarMutationDenial::MissingCoordinate),
             Err(error) => return HandlerResult::ExecutionDenied(error),
@@ -168,7 +157,7 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, ChainBinding<Schema
         // A real decision fact, absent from the source projection and prepared
         // input key, can remove the previously consumed diamond edges.
         let drop_upstreams = if input.scope_key == "diamond-join" {
-            match reader.field(&target, PositionY::reference()) {
+            match reader.field(&target, PositionY::at("PositionY")) {
                 Ok(Some(value)) => value == length(105),
                 Ok(None) => {
                     return HandlerResult::DomainDenied(PlanarMutationDenial::MissingCoordinate)
@@ -215,13 +204,13 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, ChainBinding<Schema
     ) -> HandlerResult<PlanarAdjustmentResult, PlanarMutationDenial> {
         let result = (|| {
             let entity = writer
-                .resolve_entity(BodyKey::reference(), input.scope_key.clone())
+                .resolve_entity(BodyKey::at("BodyKey"), input.scope_key.clone())
                 .map_err(HandlerExecutionDenial::new)?;
             writer
                 .preserve_output::<PlanarAnchorOutput<Schema>>(&entity)
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .write_field(&entity, Length::reference(), input.value)
+                .write_field(&entity, Length::at("Length"), input.value)
                 .map_err(HandlerExecutionDenial::new)?;
             Ok::<_, HandlerExecutionDenial>(PlanarAdjustmentResult {
                 changed_vertices: 1,
@@ -240,7 +229,7 @@ fn consumed_length<Schema: TopologySchemaBinding>(
     upstream: &ChainUpstream,
     reader: &mut DecisionReader<'_, '_, '_, Schema, ChainBinding<Schema>>,
 ) -> HandlerResult<PositiveLength, PlanarMutationDenial> {
-    let entity = match reader.resolve_entity(BodyKey::reference(), upstream.key.clone()) {
+    let entity = match reader.resolve_entity(BodyKey::at("BodyKey"), upstream.key.clone()) {
         Ok(entity) => entity,
         Err(error) => return HandlerResult::ExecutionDenied(error),
     };
@@ -254,12 +243,12 @@ fn consumed_length<Schema: TopologySchemaBinding>(
         Ok(_) => return HandlerResult::DomainDenied(PlanarMutationDenial::CurrentOutputMissing),
         Err(error) => return HandlerResult::ExecutionDenied(error),
     };
-    match reader.field(&output, BodyKey::reference()) {
+    match reader.field(&output, BodyKey::at("BodyKey")) {
         Ok(Some(key)) if key == upstream.key => {}
         Ok(_) => return HandlerResult::DomainDenied(PlanarMutationDenial::UnexpectedCurrentOutput),
         Err(error) => return HandlerResult::ExecutionDenied(error),
     }
-    match reader.field(&output, Length::reference()) {
+    match reader.field(&output, Length::at("Length")) {
         Ok(Some(value)) => HandlerResult::Completed(value),
         Ok(None) => HandlerResult::DomainDenied(PlanarMutationDenial::CurrentOutputMissing),
         Err(error) => HandlerResult::ExecutionDenied(error),
@@ -282,9 +271,9 @@ pub(super) fn declare<Schema: TopologySchemaBinding>(
         // currentness inside the handler's projection allowance.
         .operation_projection_work_budget(operation, 4_096)
         .operation_read_entity(operation, Body::reference())
-        .operation_read_field(operation, BodyKey::reference())
-        .operation_read_field(operation, Length::reference())
-        .operation_read_field(operation, PositionY::reference())
-        .operation_write(operation, Length::reference())
+        .operation_read_field(operation, BodyKey::at("BodyKey"))
+        .operation_read_field(operation, Length::at("Length"))
+        .operation_read_field(operation, PositionY::at("PositionY"))
+        .operation_write(operation, Length::at("Length"))
         .application_mutation_binding::<ChainBinding<Schema>>()
 }

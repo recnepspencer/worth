@@ -7,14 +7,54 @@ use crate::application_schema::{
 pub(in crate::application_schema) struct AuthoredApplicationSchemaContribution {
     identity: ApplicationSchemaContributionIdentity,
     members: Vec<ApplicationSchemaMember>,
+    access: Vec<crate::application_schema::fragment::RecordAccess>,
 }
 
 impl AuthoredApplicationSchemaContribution {
     pub(in crate::application_schema) fn new(
         identity: ApplicationSchemaContributionIdentity,
         members: Vec<ApplicationSchemaMember>,
+        access: Vec<crate::application_schema::fragment::RecordAccess>,
     ) -> Self {
-        Self { identity, members }
+        Self {
+            identity,
+            members,
+            access,
+        }
+    }
+    pub(in crate::application_schema) fn extend_closure(
+        &mut self,
+        identity: &ApplicationSchemaContributionIdentity,
+        members: &[ApplicationSchemaMember],
+    ) {
+        if &self.identity == identity {
+            self.retain_derived(members);
+        }
+    }
+    pub(in crate::application_schema) fn expand_record(
+        &mut self,
+        source: &crate::application_schema::fragment::RecordAccess,
+        derived: &[ApplicationSchemaMember],
+    ) {
+        if self.access.contains(source) {
+            self.retain_derived(derived);
+        }
+    }
+    pub(in crate::application_schema) fn expand_member(
+        &mut self,
+        source: &ApplicationSchemaMember,
+        derived: &ApplicationSchemaMember,
+    ) {
+        if self.members.contains(source) {
+            self.retain_derived(std::slice::from_ref(derived));
+        }
+    }
+    fn retain_derived(&mut self, derived: &[ApplicationSchemaMember]) {
+        for member in derived {
+            if !self.members.contains(member) {
+                self.members.push(member.clone());
+            }
+        }
     }
 }
 

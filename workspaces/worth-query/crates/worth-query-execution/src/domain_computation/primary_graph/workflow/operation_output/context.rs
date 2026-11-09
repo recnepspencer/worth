@@ -14,6 +14,17 @@ pub(in crate::domain_computation::primary_graph) fn decode_transition_output_con
         (Some(AspectValue::UInt64(WORKFLOW_FACT_PROTOCOL_VERSION)), None, None) => Ok(None),
         (
             Some(AspectValue::UInt64(WORKFLOW_OPERATION_OUTPUT_PROTOCOL_VERSION)),
+            Some(AspectValue::String(InternedString::Stored(binding))),
+            Some(AspectValue::UInt64(count)),
+        ) if !binding.is_empty() => {
+            let binding = binding.as_string();
+            Ok(Some((
+                binding.to_owned(),
+                usize::try_from(count).map_err(|_| ())?,
+            )))
+        }
+        (
+            Some(AspectValue::UInt64(WORKFLOW_OPERATION_OUTPUT_PROTOCOL_VERSION)),
             Some(AspectValue::String(InternedString::Raw(binding))),
             Some(AspectValue::UInt64(count)),
         ) if !binding.is_empty() => Ok(Some((binding, usize::try_from(count).map_err(|_| ())?))),

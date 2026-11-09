@@ -38,45 +38,15 @@ where
             <Source<S, R> as ApplicationQueryBinding<S>>::PrincipalIdentity,
         >,
     {
-        use WorthQueryHistoryOutputDenial as Denial;
-        if !std::ptr::eq(self.owner.application(), request.application)
-            || !std::ptr::eq(application.runtime(), request.application)
-        {
-            return Err((self, Denial::ForeignSource));
-        }
-        let current = WorthQueryApplicationRequest {
-            application: request.application,
-            principal: request.principal,
-            scope: request.scope,
-            branch: self.owner.branch(),
-        };
-        let profile = current
-            .query(demand.source_intent())
-            .with_admitted_query(phase, |runtime, binding, _, plan| {
-                Ok(runtime
-                    .capture_history_output_intent(
-                        phase,
-                        &program_publication_access(),
-                        &self.owner,
-                        binding,
-                        plan,
-                    )
-                    .map_err(Denial::Source)
-                    .and_then(|intent| {
-                        application
-                            .bind_history_output_profile::<H, R, Demand<S, R>>(
-                                phase,
-                                &program_publication_access(),
-                                &self.owner,
-                                intent,
-                            )
-                            .map_err(Denial::Navigation)
-                    }))
-            })
-            .map_err(Denial::Query)
-            .and_then(|result| result);
-        let profile = match profile {
-            Ok(profile) => profile,
+        let outputs = match capture_tree::<S, H, P, R>(
+            &self.owner,
+            phase,
+            request,
+            application,
+            demand,
+            controls,
+        ) {
+            Ok(outputs) => outputs,
             Err(cause) => return Err((self, cause)),
         };
         let Self {
@@ -89,13 +59,79 @@ where
             owner,
             access,
             payload,
-            outputs: WorthQueryHistoryWithOutputs {
-                application: application.clone(),
-                profile,
-                demand,
-                controls,
-                slots: std::sync::Mutex::new(std::collections::BTreeMap::new()),
-            },
+            outputs,
         })
     }
+}
+
+/// One source-intent capture owner serves fixed and collected tree modes.
+pub(super) fn capture_tree<S, H, P, R>(
+    document: &WorthQueryDocumentHistory<'_, S, H>,
+    phase: &WorthQueryAdvancementPhase<'_>,
+    request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    application: &WorthQueryProgramApplicationRuntime<S, P>,
+    demand: Demand<S, R>,
+    controls: crate::application_entry::WorthQueryOutputDemandControls,
+) -> Result<WorthQueryHistoryWithOutputs<S, P, R>, WorthQueryHistoryOutputDenial>
+where
+    S: ApplicationSchema + 'static,
+    H: ApplicationHistoryBinding<S>,
+    P: ApplicationProgramDefinition<S>,
+    R: ApplicationOutputGraphShape<S> + ApplicationFixedOutputRoot,
+    Connection<S, R>: WorthQueryApplicationRequiredOutputConnection<S>,
+    <Source<S, R> as ApplicationQueryBinding<S>>::Input:
+        ApplicationQueryIntent<S, Binding = Source<S, R>>,
+    <Source<S, R> as ApplicationQueryBinding<S>>::ScopeBinding: ApplicationQueryScopeResolution<
+        S,
+        <Source<S, R> as ApplicationQueryBinding<S>>::PrincipalIdentity,
+    >,
+{
+    use WorthQueryHistoryOutputDenial as Denial;
+    if !std::ptr::eq(document.application(), request.application)
+        || !std::ptr::eq(application.runtime(), request.application)
+    {
+        return Err(Denial::ForeignSource);
+    }
+    let current = WorthQueryApplicationRequest {
+        application: request.application,
+        principal: request.principal,
+        scope: request.scope,
+        branch: document.branch(),
+    };
+    let profile = current
+        .query(demand.source_intent())
+        .with_admitted_query(phase, |runtime, binding, _, plan| {
+            Ok(runtime
+                .capture_history_output_intent(
+                    phase,
+                    &program_publication_access(),
+                    document,
+                    binding,
+                    plan,
+                )
+                .map_err(Denial::Source)
+                .and_then(|intent| {
+                    application
+                        .bind_history_output_profile::<H, R, Demand<S, R>>(
+                            phase,
+                            &program_publication_access(),
+                            document,
+                            intent,
+                        )
+                        .map_err(Denial::Navigation)
+                }))
+        })
+        .map_err(Denial::Query)
+        .and_then(|result| result);
+    let profile = match profile {
+        Ok(profile) => profile,
+        Err(cause) => return Err(cause),
+    };
+    Ok(WorthQueryHistoryWithOutputs {
+        application: application.clone(),
+        profile,
+        demand,
+        controls,
+        slots: std::sync::Mutex::new(std::collections::BTreeMap::new()),
+    })
 }

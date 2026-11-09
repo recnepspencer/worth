@@ -34,7 +34,9 @@ fn common_intent_preview_mutation_lane_matches_proof_lane_materialization() {
                 "preview-session:77",
             ),
         )
-        .bind_to_installed_target(target);
+        .expect("fixture digest must fit")
+        .bind_to_installed_target(target)
+        .expect("fixture digest must fit");
     let proof_admitted = success(admit_eligible_domain_capability_contribution(success(
         evaluate_requested_domain_capability_contribution(proof_requested),
     )));
@@ -43,8 +45,10 @@ fn common_intent_preview_mutation_lane_matches_proof_lane_materialization() {
         prepare_admitted_domain_capability_contribution_for_materialization(
             proof_admitted,
             proof_target,
-        ),
-    ));
+        )
+        .expect("fixture digest must fit"),
+    ))
+    .expect("fixture digest must fit");
 
     assert_eq!(common.workflow_declaration(), &success(proof));
 }

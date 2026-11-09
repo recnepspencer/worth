@@ -1,7 +1,8 @@
-//! Independent prior BTreeMap grammar controls for canonical boxed state.
+//! Independent prior BTreeMap grammar controls for canonical shared state.
 use super::*;
 use crate::aspects::*;
 use crate::values::{AspectValue, ScalarAspectType};
+use std::collections::BTreeMap;
 use worth_proof::TransitionOutcome;
 
 #[derive(Serialize)]
@@ -100,10 +101,10 @@ fn canonical_boxed_state_preserves_prior_map_wire_named_compact_json_and_clone()
         );
         for key in legacy.aspects.entries.keys() {
             assert_eq!(cloned.get(key), state.get(key));
-            assert_ne!(
+            assert_eq!(
                 cloned.get(key).unwrap().key().as_str().as_ptr(),
                 state.get(key).unwrap().key().as_str().as_ptr(),
-                "clone owns independent key data"
+                "c65d042399: immutable admitted key data is shared"
             );
         }
     }

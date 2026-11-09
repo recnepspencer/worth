@@ -27,15 +27,7 @@ impl<const DESTINATION: u64> ApplicationMutationBinding<DocumentRetentionSchema<
     type Denial = WorthQueryOperationBodyDenial;
     type DenialBinding = BodyDenialBinding;
     type Output = NoApplicationMutationOutputs;
-    type ScopeBinding = ApplicationMutationFieldScope<
-        DocumentRetentionSchema<DESTINATION>,
-        Audit,
-        AuditFacts,
-        AuditIdentityField,
-        String,
-        ReadOnly,
-        NoApplicationUnit,
-    >;
+    type ScopeBinding = ApplicationMutationFieldScope<AuditIdentityField>;
     type PrincipalBinding = DocumentPrincipalBinding;
     type Mapping = ExternalMapping;
     type Principal = Principal;
@@ -47,17 +39,8 @@ impl<const DESTINATION: u64> ApplicationMutationBinding<DocumentRetentionSchema<
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.body-court.replace-command.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
 
-    fn scope_field() -> ApplicationFieldRef<
-        DocumentRetentionSchema<DESTINATION>,
-        Audit,
-        AuditFacts,
-        AuditIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        AuditIdentityField::reference()
+    fn scope_field() -> AuditIdentityField {
+        AuditIdentityField::at("AuditIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         DocumentRetentionSchema<DESTINATION>,
@@ -85,6 +68,9 @@ impl<const DESTINATION: u64> ApplicationMutationIntent<DocumentRetentionSchema<D
     ) -> <ReplaceBinding<DESTINATION> as ApplicationMutationBinding<
         DocumentRetentionSchema<DESTINATION>,
     >>::ScopeBinding {
-        ApplicationMutationFieldScope::new(AuditIdentityField::reference(), self.0.identity.clone())
+        ApplicationMutationFieldScope::new(
+            AuditIdentityField::at("AuditIdentityField"),
+            self.0.identity.clone(),
+        )
     }
 }

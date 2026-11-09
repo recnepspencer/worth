@@ -15,6 +15,8 @@ use crate::transactions::data::{
 };
 use std::collections::{BTreeMap, BTreeSet};
 use std::time::Instant;
+#[path = "prepare/owned_graph_selection.rs"]
+pub(crate) mod owned_graph_selection;
 #[path = "prepare/retained_entity_selection.rs"]
 pub(crate) mod retained_entity_selection;
 
@@ -168,16 +170,22 @@ pub(crate) fn prepare_working_state_scope(
     selected: SelectedRelationalBranchRead<'_>,
     request: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<PreparedWorkingStateScope, TransactionCommitError> {
+    let execution = request;
     let allocation_policy = request.allocation_policy();
     let mut phase_timing = CommitPhaseTiming::default();
     let normalization_started = Instant::now();
     let intents = transaction.normalized_intents_for_merge(runtime, request)?;
+    crate::aggregate_identity::guard::current_relation_creations(
+        execution,
+        runtime.commit_work_budget.as_ref(),
+        transaction.schema_authority.registry(),
+        &intents.plan().merged_intents,
+    )?;
     phase_timing.draft_intent_normalization_micros =
         normalization_started.elapsed().as_micros() as u64;
     let merge_plan_started = Instant::now();
     let (merged_plan, merged_plan_timing) = transaction
-        .build_merged_plan_for_state_with_timing(runtime, &selected, intents)
-        .map_err(TransactionCommitError::conflict)?;
+        .build_merged_plan_for_state_with_timing(runtime, &selected, intents, request)?;
     phase_timing.draft_merge_plan_micros = merge_plan_started.elapsed().as_micros() as u64;
     phase_timing.draft_intent_validation_micros = merged_plan_timing.validation_micros;
     phase_timing.draft_intent_sort_micros = merged_plan_timing.sort_micros;

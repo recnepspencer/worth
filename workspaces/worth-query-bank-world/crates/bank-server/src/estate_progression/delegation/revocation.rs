@@ -178,7 +178,7 @@ fn materialize_capability_revocation(
     let grant = reads
         .resolve_entity(
             phase,
-            CapabilityGrantIdentityField::reference(),
+            CapabilityGrantIdentityField::at("CapabilityGrantIdentityField"),
             expected_grant,
         )
         .map_err(BankEstateProgressionDenial::from_attempt)?;
@@ -211,16 +211,25 @@ fn project_active_estate_grant(
     estate: &WorthQueryInvariantEntityIdentity<BankSchema, EstateCase>,
     expected_grant: CapabilityGrantId,
 ) -> Result<(), BankCapabilityRevocationProjectionDenial> {
-    let grant = reader.resolve_entity(CapabilityGrantIdentityField::reference(), expected_grant)?;
+    let grant = reader.resolve_entity(
+        CapabilityGrantIdentityField::at("CapabilityGrantIdentityField"),
+        expected_grant,
+    )?;
     let observed_grant = reader
-        .decision_field(&grant, CapabilityGrantIdentityField::reference())?
+        .decision_field(
+            &grant,
+            CapabilityGrantIdentityField::at("CapabilityGrantIdentityField"),
+        )?
         .ok_or(BankCapabilityRevocationProjectionDenial::MissingGrantIdentity)?;
     if observed_grant != expected_grant {
         return Err(BankCapabilityRevocationProjectionDenial::GrantIdentityMismatch);
     }
     reader.require_decision_relation(CapabilityEstate::reference(), &grant, estate)?;
     let status = reader
-        .decision_field(&grant, CapabilityGrantStatusField::reference())?
+        .decision_field(
+            &grant,
+            CapabilityGrantStatusField::at("CapabilityGrantStatusField"),
+        )?
         .ok_or(BankCapabilityRevocationProjectionDenial::MissingGrantStatus)?;
     if status != CapabilityGrantStatus::Active {
         return Err(BankCapabilityRevocationProjectionDenial::GrantNotActive);

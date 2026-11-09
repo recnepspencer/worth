@@ -1,5 +1,5 @@
 //! A member can execute only on its group's original candidate and exact intent.
-use super::super::source_evidence::HistorySourceEvidence;
+use super::super::source_evidence::WorthQueryHistorySourceEvidence;
 use super::*;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitReceipt, WorthQueryCompletedRequiredOutputs,
@@ -7,7 +7,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 enum MemberCompletion<'a> {
-    Source(HistorySourceEvidence<'a>),
+    Source(WorthQueryHistorySourceEvidence<'a>),
     RequiredOutputs {
         receipt: &'a WorthQueryApplicationCommitReceipt,
         completed: &'a WorthQueryCompletedRequiredOutputs,
@@ -64,7 +64,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             return Err(Denial::HeadDiverged);
         }
         Ok(WorthQueryDocumentHistoryOperationConstraint::for_group(
-            self.model.clone(),
+            group.scopes[member].clone(),
             candidate.retained_expected_source(),
             candidate.branch(),
             meaning,
@@ -86,7 +86,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             phase,
             group,
             candidate,
-            MemberCompletion::Source(HistorySourceEvidence::Live(receipt)),
+            MemberCompletion::Source(WorthQueryHistorySourceEvidence::Live(receipt)),
         )
     }
 
@@ -103,7 +103,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             phase,
             group,
             candidate,
-            MemberCompletion::Source(HistorySourceEvidence::Recorded(receipt)),
+            MemberCompletion::Source(WorthQueryHistorySourceEvidence::Recorded(receipt)),
         )
     }
 
@@ -142,10 +142,10 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         let source = match &completion {
             MemberCompletion::Source(source) => *source,
             MemberCompletion::RequiredOutputs { receipt, .. } => {
-                HistorySourceEvidence::Live(receipt)
+                WorthQueryHistorySourceEvidence::Live(receipt)
             }
         };
-        if !source.matches(&self.model, *expected) {
+        if !source.matches(&group.scopes[group.completed.len()], *expected) {
             return Err(Denial::ReceiptMismatch);
         }
         if !std::ptr::eq(self.application(), candidate.application())

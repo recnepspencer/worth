@@ -69,7 +69,8 @@ impl<const N: usize> WorthQueryRuntimePreviewBasisAdapter for HostilePreviewBasi
             effect_policy,
             WorthQueryBasisAdmissionEvidenceRow::rows_from_values(
                 self.basis_evidence.iter().copied(),
-            ),
-        ))
+            )?,
+        )
+        .expect("fixture digest must fit"))
     }
 }

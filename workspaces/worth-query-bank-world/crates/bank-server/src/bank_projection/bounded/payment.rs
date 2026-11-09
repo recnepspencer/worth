@@ -43,26 +43,17 @@ impl BoundedProjectionState {
         id: PaymentId,
     ) -> Result<ProjectedPaymentAccounts, BankProjectionDenial>
     where
-        PaymentIdentityField: OperationReads<Operation>,
-        PaymentAmount: OperationReads<Operation>,
-        PaymentStatusField: OperationReads<Operation>,
         PaymentSource: OperationReads<Operation>,
         PaymentDestination: OperationReads<Operation>,
         PaymentBusiness: OperationReads<Operation>,
         PaymentInitiator: OperationReads<Operation>,
         PaymentApproval: OperationReads<Operation>,
         ApprovalPrincipal: OperationReads<Operation>,
-        AccountIdentity: OperationReads<Operation>,
-        AccountingRevision: OperationReads<Operation>,
+
         InstitutionAccount: OperationReads<Operation>,
-        InstitutionIdentityField: OperationReads<Operation>,
-        Kind: OperationReads<Operation>,
+
         PersonalOwner: OperationReads<Operation>,
         BusinessAccount: OperationReads<Operation>,
-        PrincipalIdentityField: OperationReads<Operation>,
-        BusinessIdentityField: OperationReads<Operation>,
-        Status: OperationReads<Operation>,
-        AccountDisplayName: OperationReads<Operation>,
     {
         self.project_payment(reader, payment, id)
     }
@@ -74,26 +65,17 @@ impl BoundedProjectionState {
         id: PaymentId,
     ) -> Result<ProjectedPaymentAccounts, BankProjectionDenial>
     where
-        PaymentIdentityField: OperationReads<Operation>,
-        PaymentAmount: OperationReads<Operation>,
-        PaymentStatusField: OperationReads<Operation>,
         PaymentSource: OperationReads<Operation>,
         PaymentDestination: OperationReads<Operation>,
         PaymentBusiness: OperationReads<Operation>,
         PaymentInitiator: OperationReads<Operation>,
         PaymentApproval: OperationReads<Operation>,
         ApprovalPrincipal: OperationReads<Operation>,
-        AccountIdentity: OperationReads<Operation>,
-        AccountingRevision: OperationReads<Operation>,
+
         InstitutionAccount: OperationReads<Operation>,
-        InstitutionIdentityField: OperationReads<Operation>,
-        Kind: OperationReads<Operation>,
+
         PersonalOwner: OperationReads<Operation>,
         BusinessAccount: OperationReads<Operation>,
-        PrincipalIdentityField: OperationReads<Operation>,
-        BusinessIdentityField: OperationReads<Operation>,
-        Status: OperationReads<Operation>,
-        AccountDisplayName: OperationReads<Operation>,
     {
         self.validate_payment_identity(reader, payment, id)?;
         let accounts = self.project_payment_accounts(reader, payment)?;
@@ -102,11 +84,11 @@ impl BoundedProjectionState {
         let deciding_principal = self.project_payment_decision(reader, payment)?;
 
         let amount = missing_field(
-            reader.decision_field(payment, PaymentAmount::reference())?,
+            reader.decision_field(payment, PaymentAmount::at("PaymentAmount"))?,
             "PaymentAmount",
         )?;
         let status = missing_field(
-            reader.decision_field(payment, PaymentStatusField::reference())?,
+            reader.decision_field(payment, PaymentStatusField::at("PaymentStatusField"))?,
             "PaymentStatusField",
         )?;
         self.update_builder(|builder| {
@@ -138,17 +120,11 @@ impl BoundedProjectionState {
     where
         PaymentSource: OperationReads<Operation>,
         PaymentDestination: OperationReads<Operation>,
-        AccountIdentity: OperationReads<Operation>,
-        AccountingRevision: OperationReads<Operation>,
+
         InstitutionAccount: OperationReads<Operation>,
-        InstitutionIdentityField: OperationReads<Operation>,
-        Kind: OperationReads<Operation>,
+
         PersonalOwner: OperationReads<Operation>,
         BusinessAccount: OperationReads<Operation>,
-        PrincipalIdentityField: OperationReads<Operation>,
-        BusinessIdentityField: OperationReads<Operation>,
-        Status: OperationReads<Operation>,
-        AccountDisplayName: OperationReads<Operation>,
     {
         let source = exactly_one(
             &reader.decision_relations_from(PaymentSource::reference(), payment)?,
@@ -181,12 +157,11 @@ impl BoundedProjectionState {
     ) -> Result<bank_domain::model::BusinessId, BankProjectionDenial>
     where
         PaymentBusiness: OperationReads<Operation>,
-        BusinessIdentityField: OperationReads<Operation>,
     {
         let relations = reader.decision_relations_from(PaymentBusiness::reference(), payment)?;
         let business = exactly_one(&relations, "PaymentBusiness")?.to();
         let id = missing_field(
-            reader.decision_field(business, BusinessIdentityField::reference())?,
+            reader.decision_field(business, BusinessIdentityField::at("BusinessIdentityField"))?,
             "BusinessIdentityField",
         )?;
         self.project_business(reader, id)?;
@@ -200,12 +175,14 @@ impl BoundedProjectionState {
     ) -> Result<bank_domain::model::BankPrincipalId, BankProjectionDenial>
     where
         PaymentInitiator: OperationReads<Operation>,
-        PrincipalIdentityField: OperationReads<Operation>,
     {
         let relations = reader.decision_relations_to(PaymentInitiator::reference(), payment)?;
         let initiator = exactly_one(&relations, "PaymentInitiator")?.from();
         let id = missing_field(
-            reader.decision_field(initiator, PrincipalIdentityField::reference())?,
+            reader.decision_field(
+                initiator,
+                PrincipalIdentityField::at("PrincipalIdentityField"),
+            )?,
             "PrincipalIdentityField",
         )?;
         self.project_principal(reader, id)?;
@@ -218,11 +195,9 @@ impl BoundedProjectionState {
         payment: &PaymentEntity,
         expected: PaymentId,
     ) -> Result<(), BankProjectionDenial>
-    where
-        PaymentIdentityField: OperationReads<Operation>,
-    {
+where {
         let actual = missing_field(
-            reader.decision_field(payment, PaymentIdentityField::reference())?,
+            reader.decision_field(payment, PaymentIdentityField::at("PaymentIdentityField"))?,
             "PaymentIdentityField",
         )?;
         if actual == expected {
@@ -242,7 +217,6 @@ impl BoundedProjectionState {
     where
         PaymentApproval: OperationReads<Operation>,
         ApprovalPrincipal: OperationReads<Operation>,
-        PrincipalIdentityField: OperationReads<Operation>,
     {
         let approvals = reader.decision_relations_from(PaymentApproval::reference(), payment)?;
         let approval = match approvals.as_slice() {
@@ -255,7 +229,10 @@ impl BoundedProjectionState {
             reader.decision_relations_from(ApprovalPrincipal::reference(), approval)?;
         let principal = exactly_one(&principal_relations, "ApprovalPrincipal")?.to();
         let principal_id = missing_field(
-            reader.decision_field(principal, PrincipalIdentityField::reference())?,
+            reader.decision_field(
+                principal,
+                PrincipalIdentityField::at("PrincipalIdentityField"),
+            )?,
             "PrincipalIdentityField",
         )?;
         self.project_principal(reader, principal_id)?;
@@ -284,10 +261,9 @@ fn required_account_id<Operation>(
     account: &AccountEntity,
 ) -> Result<AccountId, BankProjectionDenial>
 where
-    AccountIdentity: OperationReads<Operation>,
 {
     missing_field(
-        reader.decision_field(account, AccountIdentity::reference())?,
+        reader.decision_field(account, AccountIdentity::at("AccountIdentity"))?,
         "AccountIdentity",
     )
 }

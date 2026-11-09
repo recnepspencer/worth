@@ -99,6 +99,10 @@ pub fn order_values(
         .map(|row| {
             let value = collection.native_value(row, key).unwrap();
             match value.value().scalar() {
+                Some(AspectValue::String(InternedString::Stored(value))) => {
+                    let value = value.as_string();
+                    value.clone()
+                }
                 Some(AspectValue::String(InternedString::Raw(value))) => value.clone(),
                 other => panic!("unexpected order value: {other:?}"),
             }

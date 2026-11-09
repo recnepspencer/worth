@@ -4,7 +4,7 @@ use super::*;
 use worth_query_decl::facade::{
     application_capability::*, application_program::*, worth_query_capability,
     worth_query_capability_context, worth_query_capability_provenance, worth_query_operation,
-    worth_query_operation_reads, worth_query_portable_type, worth_query_structured_value_binding,
+    worth_query_portable_type, worth_query_structured_value_binding,
 };
 use worth_query_topology_entry::{ConsumerPrincipalBinding, ExternalPrincipalMapping};
 worth_query_capability!(pub DeployConsumerProgram in ConsumerSchema, identity "worth.query.certification.consumer.program-deployment-capability.v1");
@@ -18,7 +18,7 @@ pub struct ProgramDeploymentInput {
 worth_query_portable_type!(ProgramDeploymentInput => "worth.query.certification.consumer.program-deployment-input.v1");
 worth_query_structured_value_binding!(pub ProgramDeploymentInputBinding for ProgramDeploymentInput { identity: "worth.query.certification.consumer.program-deployment-input.v1" });
 worth_query_operation!(pub DeployConsumerProgramOperation for ConsumerSchema, input ProgramDeploymentInputBinding);
-worth_query_operation_reads!(DeployConsumerProgramOperation => [ProgramDeploymentSourceRevision]);
+
 pub struct ConsumerProgramDeploymentBinding;
 impl ApplicationProgramAdoptionBinding<ConsumerSchema> for ConsumerProgramDeploymentBinding {
     const IDENTITY: &'static str =
@@ -62,9 +62,10 @@ impl ApplicationCapabilityRequest<ConsumerSchema, DeployConsumerProgram>
     > {
         Ok(ApplicationCapabilityRequestProjection::new(
             ApplicationCapabilityEntitySelector::new(
-                ProgramDeploymentSourceRevision::reference(),
+                ProgramDeploymentSourceRevision::at("ProgramDeploymentSourceRevision"),
                 encoded(self.source.clone()),
-            ),
+            )
+            .unwrap(),
             encoded("deploy-consumer-program".to_owned()),
             encoded("program-deployment".to_owned()),
             ApplicationCapabilityRequestContext::new(ProgramDeploymentContext::reference()),

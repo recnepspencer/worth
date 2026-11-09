@@ -237,4 +237,5 @@ fn evidence_identity(value: &str) -> WorthQueryEvidenceIdentity {
     WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::RuntimePublicSupportMatrixRow)
         .field_value(WorthQueryEvidenceTag::new("value"), value)
         .seal()
+        .expect("fixture digest must fit")
 }

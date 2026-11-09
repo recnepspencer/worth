@@ -223,13 +223,16 @@ where
         }
     }
     fn recording_source<'a>(completed: &'a C<S, I, P, R, A>, phase:&WorthQueryAdvancementPhase<'_>, request:&WorthQueryApplicationRequest<'_, '_, '_, S>) -> Result<Option<HistoryRecordingSource<'a>>,WorthQueryHistoryEditDenial> {
+        Self::recording_source_at(completed, phase, request, completed.settlement().observation())
+    }
+    fn recording_source_at<'a>(completed: &'a C<S, I, P, R, A>, phase:&WorthQueryAdvancementPhase<'_>, request:&WorthQueryApplicationRequest<'_, '_, '_, S>, observation:&crate::application_entry::WorthQueryApplicationReadObservation) -> Result<Option<HistoryRecordingSource<'a>>,WorthQueryHistoryEditDenial> {
         let settlement=completed.settlement();
         let Some(source)=settlement.performed_source() else {return Ok(None)};
         let current=WorthQueryApplicationRequest {application:request.application,principal:request.principal,scope:request.scope,branch:completed.branch()};
         // The original completed observation proposes a basis. Only Native's
         // complete-set validation can qualify it; neither ordinal nor latest
         // candidate selection supplies that evidence.
-        let retained=current.at(settlement.observation());
+        let retained=current.at(observation);
         let selected=completed.delivery.selected_action_at(&retained,phase)
             .map_err(WorthQueryHistoryEditDenial::Delivery)?;
         let qualified=selected.qualify_completed_required_outputs(phase,&worth_query_execution::publication_boundary::program_publication_access(),request.scope,

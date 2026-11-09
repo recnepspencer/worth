@@ -19,6 +19,7 @@ use crate::transactions::data::{
 
 use super::ValidatedMutationFootprint;
 
+mod relation_births;
 mod variant_matrix;
 
 #[test]

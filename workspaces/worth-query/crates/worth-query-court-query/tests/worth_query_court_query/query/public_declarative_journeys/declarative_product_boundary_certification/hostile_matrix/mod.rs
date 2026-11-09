@@ -96,7 +96,8 @@ fn cross_basis_denies_before_execution() {
         .unwrap()
         .retained_snapshot()
         .using(at(request_execution, &left))
-        .run(request_execution, &mut right);
+        .run(request_execution, &mut right)
+        .expect("fixture digest must fit");
     let stop = outcome.stop().expect("foreign basis must stop");
     assert_eq!(stop.source(), WorthQueryHistoricalStopSource::StaleContext);
     assert_eq!(stop.journey_counters().planning_attempt_count(), 0);
@@ -120,7 +121,8 @@ fn stale_context_denies_before_execution() {
         .unwrap()
         .retained_snapshot()
         .using(context)
-        .run(request_execution, &mut workspace);
+        .run(request_execution, &mut workspace)
+        .expect("fixture digest must fit");
     let stop = outcome.stop().expect("stale basis must stop");
     assert_eq!(stop.source(), WorthQueryHistoricalStopSource::StaleContext);
     assert_eq!(stop.journey_counters().planning_attempt_count(), 0);
@@ -248,7 +250,8 @@ fn preview_workflow_cross_session_denies() {
         .expect("foreign context itself should admit");
     let outcome = declare(declared, fixture::mutation("cross-session"))
         .using(context)
-        .run(request_execution, &mut workspace);
+        .run(request_execution, &mut workspace)
+        .expect("fixture digest must fit");
     let stop = outcome.stop().expect("cross-session workflow must stop");
     assert_eq!(stop.source(), WorthQueryWorkflowStopSource::CrossSession);
     assert_eq!(stop.counters().lower_runtime_execution_attempt_count(), 0);
@@ -271,11 +274,13 @@ fn diagnostic_policy_preserves_operational_truth() {
     let basis = fixture::inspection_basis("diagnostic-policy");
     let operational = declare(&completion)
         .using(inspection_basis(basis.clone()))
-        .run(&workspace);
+        .run(&workspace)
+        .expect("fixture digest must fit");
     let rich = declare(&completion)
         .with_rich_inspection()
         .using(inspection_basis(basis))
-        .run(&workspace);
+        .run(&workspace)
+        .expect("fixture digest must fit");
     let operational = operational
         .settled()
         .expect("operational inspection should settle");

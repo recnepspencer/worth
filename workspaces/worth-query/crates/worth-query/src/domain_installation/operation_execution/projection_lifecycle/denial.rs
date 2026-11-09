@@ -1,9 +1,11 @@
 use crate::basis_lifecycle::BasisOperationLane;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::{WorthQueryCurrentDomainProjection, WorthQueryProjectionPromotionCounters};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProjectionPromotionDenialKind {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     ExecutionRequest(
         worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
     ),

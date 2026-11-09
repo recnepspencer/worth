@@ -35,6 +35,14 @@ pub(crate) struct InvariantRuntimeView<'a> {
 impl<'a> InvariantRuntimeView<'a> {
     pub(crate) fn from_runtime(runtime: &'a RelationalRuntime) -> Self {
         let configuration = runtime.operation_configuration();
+        let (entity_count, relation_count) = runtime
+            .history
+            .branch_cell(runtime.main_branch_identity().branch_id())
+            .and_then(|cell| {
+                cell.root()
+                    .map(|root| (root.entity_slot_count(), root.relation_slot_count()))
+            })
+            .unwrap_or_default();
         Self {
             selected_registry: crate::schema::SchemaRegistryCustody::Runtime(configuration.clone()),
             prior_registry: None,
@@ -48,8 +56,8 @@ impl<'a> InvariantRuntimeView<'a> {
             shared_candidate_inputs: None,
             #[cfg(test)]
             current_version_id: runtime.current_version_id(),
-            entity_count: runtime.storage_access().entity_slot_count(),
-            relation_count: runtime.storage_access().relation_slot_count(),
+            entity_count,
+            relation_count,
             version_depth: runtime.history().commit_count(),
             snapshot_pressure: runtime.visibility.active_snapshot_count() > 10,
         }

@@ -1,6 +1,5 @@
-//! The aftermath fixture's principal binding.
+//! Native principal fields retain their exact declared bindings.
 use super::*;
-
 pub fn fixture_principal_binding() -> ApplicationPrincipalBindingRef<
     AftermathFixtureSchema,
     PrincipalBinding,
@@ -9,34 +8,10 @@ pub fn fixture_principal_binding() -> ApplicationPrincipalBindingRef<
     u64,
     U64ApplicationValueBinding,
 > {
-    let identity = ApplicationFieldRef::<
-        AftermathFixtureSchema,
-        FixtureEntity,
-        IdentityAspect,
-        ExternalIdentityField,
-        WorthQueryExternalPrincipalIdentity,
-        ReadOnly,
-        EqualityPredicate,
-    >::from_schema_types();
-    let status = ApplicationFieldRef::<
-        AftermathFixtureSchema,
-        FixtureEntity,
-        IdentityAspect,
-        MappingStatusField,
-        WorthQueryPrincipalMappingStatus,
-        ReadWrite,
-        NoEqualityPredicate,
-    >::from_schema_types();
+    let identity = ExternalIdentityField::at("ExternalIdentityField");
+    let status = MappingStatusField::at("MappingStatusField");
     let target = mapping_target();
-    let principal_identity = ApplicationFieldRef::<
-        AftermathFixtureSchema,
-        FixtureEntity,
-        IdentityAspect,
-        PrincipalIdentityField,
-        u64,
-        ReadOnly,
-        EqualityPredicate,
-    >::from_schema_types();
+    let principal_identity = PrincipalIdentityField::at("PrincipalIdentityField");
     ApplicationPrincipalBindingRef::from_requirements(
         "PrincipalBinding",
         ApplicationPrincipalBindingRequirements {

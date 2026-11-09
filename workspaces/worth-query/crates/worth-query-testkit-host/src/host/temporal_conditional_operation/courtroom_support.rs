@@ -45,26 +45,13 @@ pub fn raw_observe(
     world.conditional_clock().observe(request_execution)
 }
 
-pub fn assert_authoritative_value<Entity, Aspect, Field, Value, Write, Unit>(
+pub fn assert_authoritative_value<
+    Field: worth_query_decl::facade::application_schema::fragment::RecordSelection,
+>(
     world: &CourtroomWorld,
-    field: worth_query_host::facade::declaration::application_schema::ApplicationFieldRef<
-        super::schema::TemporalHostSchema,
-        Entity,
-        Aspect,
-        Field,
-        Value,
-        Write,
-        worth_query_host::facade::declaration::application_schema::EqualityPredicate,
-        Unit,
-    >,
-    value: Value,
-) where
-    Field: worth_query_host::facade::declaration::application_schema::DeclaredApplicationFieldValue<
-        Value = Value,
-    >,
-    Write: worth_query_host::facade::declaration::application_schema::WritePosture,
-    Unit: worth_query_host::facade::declaration::application_schema::ApplicationFieldUnit,
-{
+    field: Field,
+    value: Field::Value,
+) {
     world
         .application
         .with_host_advancement(|phase| {

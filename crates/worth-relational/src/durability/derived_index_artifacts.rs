@@ -10,6 +10,7 @@ use crate::indexes::data::DerivedIndexArtifacts;
 use crate::runtime::RelationalRuntime;
 
 pub(crate) fn restore_checkpoint_derived_index_artifacts(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     indexes: &mut crate::runtime::IndexingState,
     history: &crate::runtime::HistorySubsystem,
     legacy: &DerivedIndexArtifacts,
@@ -24,12 +25,13 @@ pub(crate) fn restore_checkpoint_derived_index_artifacts(
         if !legacy.is_empty() {
             return Err(corrupt("checkpoint mixes legacy and delta index artifacts"));
         }
-        checkpoint.readmit()?
+        checkpoint.readmit(lane)?
     } else {
         legacy.generations().to_vec()
     };
     for generation in &generations {
         validate_checkpoint_generation(
+            lane,
             generation,
             indexes.definition(generation.index_id).map(AsRef::as_ref),
             history,
@@ -40,10 +42,26 @@ pub(crate) fn restore_checkpoint_derived_index_artifacts(
         indexes.restore_generation(generation);
         work.index_generations_readmitted += 1;
     }
+    if let Some(checkpoint) = checkpoint {
+        for basis in checkpoint.bases() {
+            history
+                .validate_recovered_scoped_index_basis(
+                    &basis.branch,
+                    basis.commit,
+                    basis.version,
+                    basis.schema,
+                )
+                .map_err(|detail| corrupt(&detail))?;
+            indexes
+                .restore_basis_selection(lane, basis)
+                .map_err(corrupt)?;
+        }
+    }
     Ok(())
 }
 
 pub(crate) fn validate_checkpoint_generation(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     generation: &crate::indexes::data::DerivedIndexGeneration,
     definition: Option<&crate::indexes::data::DerivedIndexDefinition>,
     history: &crate::runtime::HistorySubsystem,
@@ -82,6 +100,13 @@ pub(crate) fn validate_checkpoint_generation(
         return Err(corrupt(
             "checkpoint index generation kind mismatches definition",
         ));
+    }
+    if let Entries::RelationJoin(index) = &generation.entries {
+        if !index.consistent_legs(lane) {
+            return Err(corrupt(
+                "checkpoint join leg state is missing or inconsistent",
+            ));
+        }
     }
     let source = history
         .commit_artifact(generation.source_commit_id)

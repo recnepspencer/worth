@@ -187,7 +187,7 @@ impl DecisionReadWorld {
             .selected(host)
             .resolve_entity(
                 &phase,
-                worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::fixture::decision_read_world::schema::PrincipalIdentity::reference(),
+                worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::fixture::decision_read_world::schema::PrincipalIdentity::at("PrincipalIdentity"),
                 PRINCIPAL,
                 request,
                 WorthQueryPrincipalResolutionMode::Ordinary,

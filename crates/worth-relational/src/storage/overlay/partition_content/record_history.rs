@@ -1,37 +1,11 @@
 //! Reuse a record's history tree only while its omitted prefix is unchanged.
-use super::{digest_index::DigestIndex, hash_value, PartitionContentDigestError};
+use super::{hash_value, PartitionContentDigestError};
+use crate::storage::substrate::DigestIndex;
 use crate::storage::substrate::{RecordArena, RecordHistoryPrefix, RecordKind, SharedColumn};
-
-pub(super) fn capture_full<K: RecordKind>(
-    arena: &RecordArena<K>,
-    slot: usize,
-    request: super::full::Request<'_, '_, '_>,
-) -> Result<(DigestIndex, u64), PartitionContentDigestError>
-where
-    K::Meta: serde::Serialize,
-{
-    let physical = arena
-        .physical_index(slot)
-        .ok_or(PartitionContentDigestError::InvalidHistoryCoverage)?;
-    if arena.history_prefixes[physical].is_some() {
-        return Err(PartitionContentDigestError::InvalidHistoryCoverage);
-    }
-    let history = &arena.metadata_history[physical];
-    let _memory = super::full::rows_memory(history.len(), request)?;
-    let mut entries = Vec::with_capacity(history.len());
-    for (index, value) in history.iter().enumerate() {
-        super::full::poll(request)?;
-        entries.push((index as u128, hash_value(b"metadata", value)?));
-    }
-    Ok((
-        DigestIndex::from_sorted_entries_for_request(&entries, request)?,
-        history.len() as u64,
-    ))
-}
 
 pub(super) fn update<K: RecordKind>(
     arena: &RecordArena<K>,
-    previous: Option<&RecordArena<K>>,
+    previous: &RecordArena<K>,
     slot: usize,
     cached: &DigestIndex,
 ) -> Result<(DigestIndex, u64), PartitionContentDigestError>
@@ -42,15 +16,11 @@ where
         .physical_index(slot)
         .ok_or(PartitionContentDigestError::InvalidHistoryCoverage)?;
     let prefix = arena.history_prefixes[physical].as_ref();
-    let old_physical = previous.and_then(|old| old.physical_index(slot));
-    let old_prefix = previous
-        .zip(old_physical)
-        .and_then(|(old, physical)| old.history_prefixes[physical].as_ref());
+    let old_physical = previous.physical_index(slot);
+    let old_prefix = old_physical.and_then(|physical| previous.history_prefixes[physical].as_ref());
     let empty = SharedColumn::default();
-    let (mut history, old, offset) = if previous.is_some() && same_basis(prefix, old_prefix) {
-        let old = previous
-            .and_then(|old| old.metadata_history_at(slot))
-            .unwrap_or(&empty);
+    let (mut history, old, offset) = if same_basis(prefix, old_prefix) {
+        let old = previous.metadata_history_at(slot).unwrap_or(&empty);
         let offset = cached
             .next_history_index()
             .ok_or(PartitionContentDigestError::InvalidHistoryCoverage)?
@@ -93,7 +63,7 @@ where
             }
         };
         if let Err(denial) = history.set(offset + index as u128, digest) {
-            failure = Some(denial);
+            failure = Some(denial.into());
         }
         hashed += u64::from(value.is_some());
     });
@@ -116,4 +86,81 @@ fn same_basis(current: Option<&RecordHistoryPrefix>, old: Option<&RecordHistoryP
         }
         _ => false,
     }
+}
+
+/// Rebuild a record history only inside explicit cold admission.
+pub(super) fn rebuild<K: RecordKind>(
+    lane: &super::ReconstructionLane<'_>,
+    work: &mut super::ReconstructionWork<'_, '_>,
+    request: super::request_admission::Request<'_, '_, '_>,
+    arena: &RecordArena<K>,
+    slot: usize,
+) -> Result<(DigestIndex, u64), PartitionContentDigestError>
+where
+    K::Meta: serde::Serialize,
+{
+    let physical = arena
+        .physical_index(slot)
+        .ok_or(PartitionContentDigestError::InvalidHistoryCoverage)?;
+    let prefix = arena.history_prefixes[physical].as_ref();
+    let current = &arena.metadata_history[physical];
+    if prefix.is_none() {
+        work.prepare(
+            current.len() as u64,
+            (current.len() * size_of::<(u128, [u8; 32])>()) as u64,
+        )?;
+        let mut entries = Vec::with_capacity(current.len());
+        for (index, value) in current.iter().enumerate() {
+            entries.push((
+                index as u128,
+                super::admission::hash_controlled(b"metadata", value, work)?,
+            ));
+        }
+        let (units, _) = DigestIndex::construction_quote(entries.len())
+            .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
+        work.prepare(units, 0)?;
+        return Ok((
+            DigestIndex::from_sorted_entries_for_request(lane, &entries, request)?,
+            current.len() as u64,
+        ));
+    }
+    let (mut history, offset) = if let Some(prefix) = prefix {
+        let (units, _) = DigestIndex::construction_quote(
+            prefix
+                .history_opening
+                .frontier
+                .siblings
+                .len()
+                .checked_add(current.len())
+                .and_then(|n| n.checked_add(1))
+                .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?,
+        )
+        .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
+        work.prepare(units, 0)?;
+        let history =
+            DigestIndex::from_append_frontier_using(&prefix.history_opening.frontier, request)?;
+        let offset = history
+            .next_history_index()
+            .and_then(|n| n.checked_sub(1))
+            .ok_or(PartitionContentDigestError::InvalidHistoryCoverage)?;
+        (history, offset)
+    } else {
+        (DigestIndex::default(), 0)
+    };
+    offset
+        .checked_add(current.len() as u128)
+        .ok_or(PartitionContentDigestError::InvalidHistoryCoverage)?;
+    if prefix.is_some() && current.is_empty() {
+        return Err(PartitionContentDigestError::InvalidHistoryCoverage);
+    }
+    let mut hashed = 0;
+    for (index, value) in current.iter().enumerate() {
+        let key = offset + index as u128;
+        let (units, _) = history.edit_quote(key);
+        work.prepare(units, 0)?;
+        let digest = super::admission::hash_controlled(b"metadata", value, work)?;
+        history.set(key, Some(digest))?;
+        hashed += 1;
+    }
+    Ok((history, hashed))
 }

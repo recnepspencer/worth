@@ -5,10 +5,10 @@ use worth_query_host::facade::declaration::{
 };
 pub struct RecordIssued;
 pub fn key_field() -> ApplicationCorrectionOutputField<NumericSchema> {
-    ApplicationCorrectionOutput::<IssueBinding, Actual>::field(Key::reference())
+    ApplicationCorrectionOutput::<IssueBinding, Actual>::field(Key::at("Key"))
 }
 pub fn payload_field() -> ApplicationCorrectionOutputField<NumericSchema> {
-    ApplicationCorrectionOutput::<IssueBinding, Actual>::field(Primary::reference())
+    ApplicationCorrectionOutput::<IssueBinding, Actual>::field(Primary::at("Primary"))
 }
 pub static DERIVATIONS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
 pub fn derivations() -> usize {
@@ -38,7 +38,6 @@ impl ApplicationCorrectionBinding<NumericSchema> for RecordIssued {
                 identity: "original-issued-value-recorded".to_owned(),
             },
         )
-        .unwrap()
     }
     fn source_output_fields() -> Vec<ApplicationCorrectionOutputField<NumericSchema>> {
         vec![key_field(), payload_field()]
@@ -63,7 +62,8 @@ impl ApplicationCorrectionBinding<NumericSchema> for RecordIssued {
                 .field(&payload_field())
                 .map_err(|_| UnsupportedSourceMeaning)?,
         )
-        .map_err(|_| UnsupportedSourceMeaning)?;
+        .map_err(|_| UnsupportedSourceMeaning)?
+        .0;
         Ok(Record {
             key: original.key.clone(),
             original_key: key,

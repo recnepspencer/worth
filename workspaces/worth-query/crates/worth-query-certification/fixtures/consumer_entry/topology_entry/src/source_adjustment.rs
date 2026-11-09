@@ -31,7 +31,7 @@ worth_query_structured_value_binding!(pub PlanarSourceAdjustmentDenialBinding fo
     identity: "worth.query.certification.planar-source-adjustment-denial.v1"
 });
 worth_query_operation!(pub AdjustPlanarSource for Schema: TopologySchemaBinding, input PlanarSourceAdjustmentInputBinding;
-    access { read_entities: [Body]; read_fields: [BodyKey, PositionY]; writes: [PositionY]; expects_fact: [BodyKey]; }
+    access { read_entities: [Body]; read_fields: [BodyKey::at("BodyKey"), PositionY::at("PositionY")]; writes: [PositionY::at("PositionY")]; expects_fact: [BodyKey::at("BodyKey")]; }
 );
 mod feature;
 pub use feature::{PlanarSourceFeatureDefinition, PlanarSourceFeatureRoot, PlanarSourceRuntime};
@@ -57,7 +57,7 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     type Denial = PlanarMutationDenial;
     type DenialBinding = PlanarSourceAdjustmentDenialBinding;
     type Output = NoApplicationMutationOutputs;
-    type ScopeBinding = PlanarMutationScope<Schema>;
+    type ScopeBinding = PlanarMutationScope;
     type PrincipalBinding = ConsumerPrincipalBinding;
     type Mapping = ExternalPrincipalMapping;
     type Principal = Principal;
@@ -72,17 +72,8 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
         "worth.query.certification.planar-source-adjustment-command.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
 
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Body,
-        PlanarPosition,
-        BodyKey,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        BodyKey::reference()
+    fn scope_field() -> BodyKey {
+        BodyKey::at("BodyKey")
     }
 
     fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -104,8 +95,8 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationIntent<Schema> for Planar
         self
     }
 
-    fn scope_binding(&self) -> PlanarMutationScope<Schema> {
-        PlanarMutationScope::new(BodyKey::reference(), self.scope_key.clone())
+    fn scope_binding(&self) -> PlanarMutationScope {
+        PlanarMutationScope::new(BodyKey::at("BodyKey"), self.scope_key.clone())
     }
 }
 
@@ -120,11 +111,11 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, PlanarSourceAdjustm
         reader: &mut DecisionReader<'_, '_, '_, Schema, PlanarSourceAdjustmentBinding<Schema>>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<Schema, Body>, PlanarMutationDenial> {
         contacts::decision(input);
-        let entity = match reader.resolve_entity(BodyKey::reference(), input.scope_key.clone()) {
+        let entity = match reader.resolve_entity(BodyKey::at("BodyKey"), input.scope_key.clone()) {
             Ok(entity) => entity,
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };
-        match reader.field(&entity, PositionY::reference()) {
+        match reader.field(&entity, PositionY::at("PositionY")) {
             Ok(Some(_)) => {}
             Ok(None) => {
                 return HandlerResult::DomainDenied(PlanarMutationDenial::MissingCoordinate)
@@ -150,7 +141,7 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, PlanarSourceAdjustm
                 return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error))
             }
         };
-        match writer.write_field(&entity, PositionY::reference(), input.replacement_y) {
+        match writer.write_field(&entity, PositionY::at("PositionY"), input.replacement_y) {
             Ok(()) => HandlerResult::Completed(PlanarAdjustmentResult {
                 changed_vertices: 1,
             }),

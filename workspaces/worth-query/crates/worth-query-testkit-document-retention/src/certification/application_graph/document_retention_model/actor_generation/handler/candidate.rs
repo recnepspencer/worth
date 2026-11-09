@@ -43,7 +43,7 @@ pub fn apply(
         writer
             .write_field(
                 &mapping,
-                MappingStatusField::reference(),
+                MappingStatusField::at("MappingStatusField"),
                 WorthQueryPrincipalMappingStatus::Disabled,
             )
             .map_err(HandlerExecutionDenial::new)?;
@@ -60,7 +60,11 @@ pub fn apply(
             )
             .map_err(HandlerExecutionDenial::new)?;
         writer
-            .initialize_field(&actor, PrincipalIdentityField::reference(), 1_u64)
+            .initialize_field(
+                &actor,
+                PrincipalIdentityField::at("PrincipalIdentityField"),
+                1_u64,
+            )
             .map_err(HandlerExecutionDenial::new)?;
         writer
             .link(
@@ -99,7 +103,7 @@ pub fn apply(
         writer
             .write_field(
                 &mapping,
-                MappingStatusField::reference(),
+                MappingStatusField::at("MappingStatusField"),
                 WorthQueryPrincipalMappingStatus::Enabled,
             )
             .map_err(HandlerExecutionDenial::new)?;

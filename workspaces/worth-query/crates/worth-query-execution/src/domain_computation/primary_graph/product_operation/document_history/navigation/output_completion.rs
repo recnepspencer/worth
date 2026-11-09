@@ -1,4 +1,7 @@
 //! Original SDK qualification preserves typed root/model provenance through adoption.
+mod denial;
+pub use denial::WorthQueryHistoryOutputQualificationDenial;
+mod forest;
 use super::*;
 use crate::domain_computation::primary_graph::{
     application_installation::{WorthQueryProgramApplicationRuntime, WorthQueryProgramOwner},
@@ -10,6 +13,7 @@ use crate::publication_boundary::{
     discovery_currentness::WorthQueryRetainedQueryDependencies,
     original_read_outputs::WorthQueryOriginalReadOutputDenial,
 };
+pub use forest::WorthQueryRetainedHistoryOutputTree;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_program::{
     ApplicationOutputGraphShape, ApplicationProgramDefinition,
@@ -20,7 +24,8 @@ use worth_query_installation::facade::ApplicationSchema;
 /// admission. This is neither a selectable observation nor current permission.
 pub struct WorthQueryCompletedHistoryOutputs {
     pub(super) profile: WorthQueryHistoryOutputProfile,
-    pub(super) original: WorthQueryCompletedOriginalReadOutputs,
+    pub(super) original: HistoryCompletedOutputBasis,
+    forest: Option<forest::HistoryForestCompletion>,
 }
 
 impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
@@ -43,7 +48,9 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
                 "history output root/profile correspondence",
             ))
         };
-        if source.profile.root != crate::equality_type_id::EqualityTypeId::of::<R>().into_external()
+        if source.profile.is_output_forest()
+            || source.profile.root
+                != crate::equality_type_id::EqualityTypeId::of::<R>().into_external()
             || source.profile.program_type
                 != crate::equality_type_id::EqualityTypeId::of::<P>().into_external()
             || source.profile.program != *self.owned_revision()
@@ -77,7 +84,8 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         drop(selected);
         Ok(WorthQueryCompletedHistoryOutputs {
             profile: source.profile.clone(),
-            original,
+            original: HistoryCompletedOutputBasis::Original(original),
+            forest: None,
         })
     }
 }
@@ -93,9 +101,10 @@ impl<S: ApplicationSchema> NavigationProgress<'_, S> {
         let NavigationPhase::AwaitingOutputs { exact, .. } = &self.phase else {
             return Err(Denial::IntentDrift);
         };
-        let source = outputs.original.original_source();
-        let endpoint = outputs.original.original_endpoint();
-        if !outputs.profile.same_custody(profile)
+        let source = outputs.original.source();
+        let endpoint = outputs.original.endpoint();
+        if outputs.forest.is_some() != profile.is_output_forest()
+            || !outputs.profile.same_custody(profile)
             || profile.model != self.model
             || source
                 .product_observation()
@@ -146,5 +155,33 @@ impl<S: ApplicationSchema> NavigationProgress<'_, S> {
         };
         drop(exact);
         Ok(())
+    }
+}
+
+/// A verified root never acquires an original-root settlement or receipt.
+pub(super) enum HistoryCompletedOutputBasis {
+    Original(WorthQueryCompletedOriginalReadOutputs),
+    Verified {
+        source: Arc<crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation>,
+        endpoint:
+            Arc<crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation>,
+    },
+}
+impl HistoryCompletedOutputBasis {
+    pub(super) fn source(
+        &self,
+    ) -> &crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation {
+        match self {
+            Self::Original(value) => value.original_source(),
+            Self::Verified { source, .. } => source,
+        }
+    }
+    pub(super) fn endpoint(
+        &self,
+    ) -> &crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation {
+        match self {
+            Self::Original(value) => value.original_endpoint(),
+            Self::Verified { endpoint, .. } => endpoint,
+        }
     }
 }

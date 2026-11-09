@@ -57,13 +57,16 @@ pub(crate) fn project_case_opening(
     command: CaseOpeningCommand,
 ) -> Result<(), BankEstateCaseOpeningProjectionDenial> {
     let observed_estate = reader
-        .decision_field(estate, EstateCaseIdentityField::reference())?
+        .decision_field(
+            estate,
+            EstateCaseIdentityField::at("EstateCaseIdentityField"),
+        )?
         .ok_or(BankEstateCaseOpeningProjectionDenial::MissingEstateIdentity)?;
     if observed_estate != command.estate {
         return Err(BankEstateCaseOpeningProjectionDenial::EstateMismatch);
     }
     let status = reader
-        .decision_field(estate, EstateCaseStatusField::reference())?
+        .decision_field(estate, EstateCaseStatusField::at("EstateCaseStatusField"))?
         .ok_or(BankEstateCaseOpeningProjectionDenial::MissingCaseStatus)?;
     if status != EstateCaseStatus::PendingOpening {
         return Err(BankEstateCaseOpeningProjectionDenial::CaseNotPendingOpening);
@@ -79,13 +82,16 @@ pub(crate) fn project_case_opening(
     };
     let notice = relation.to();
     let observed_notice = reader
-        .decision_field(notice, DeathNoticeIdentityField::reference())?
+        .decision_field(
+            notice,
+            DeathNoticeIdentityField::at("DeathNoticeIdentityField"),
+        )?
         .ok_or(BankEstateCaseOpeningProjectionDenial::MissingNoticeIdentity)?;
     if observed_notice != command.notice {
         return Err(BankEstateCaseOpeningProjectionDenial::NoticeMismatch);
     }
     let notice_status = reader
-        .decision_field(notice, DeathNoticeStatusField::reference())?
+        .decision_field(notice, DeathNoticeStatusField::at("DeathNoticeStatusField"))?
         .ok_or(BankEstateCaseOpeningProjectionDenial::MissingNoticeStatus)?;
     if notice_status != DeathNoticeStatus::Verified {
         return Err(BankEstateCaseOpeningProjectionDenial::NoticeNotVerified);

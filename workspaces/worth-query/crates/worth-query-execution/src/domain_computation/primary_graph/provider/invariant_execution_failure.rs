@@ -209,11 +209,13 @@ fn map_custom_invariant_failure(
             identity,
             phase,
             failure,
+            cause,
             ..
         } => WorthQueryCustomInvariantDenial::Failure {
             identity,
             phase,
             failure,
+            cause,
         },
         _ => return None,
     };

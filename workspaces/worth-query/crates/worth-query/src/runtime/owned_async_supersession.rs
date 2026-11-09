@@ -69,8 +69,8 @@ impl WorthQueryRuntime {
         if current == Some(WorthQueryRuntimeAsyncResultStateKind::Superseded) {
             return retained_terminal_batch(runtime_provenance, view, state);
         }
-        let basis = binding.current_basis_identity();
-        let checkpoint = binding.current_generation_identity();
+        let basis = binding.current_basis_identity()?;
+        let checkpoint = binding.current_generation_identity()?;
         let binding_identity = binding.binding_identity().clone();
         let causality =
             worth_query_evidence_identity(WorthQueryEvidenceScope::RuntimeStateSnapshot)
@@ -87,7 +87,7 @@ impl WorthQueryRuntime {
                     WorthQueryEvidenceTag::new("displacing_request"),
                     displacing_request.request_identity_for_reporting(),
                 )
-                .seal();
+                .seal()?;
         let superseded = WorthQueryRuntimeAsyncResultState::new(
             WorthQueryRuntimeAsyncResultStateKind::Superseded,
             &causality,
@@ -187,8 +187,8 @@ impl WorthQueryRuntime {
                 format!("live view `{}` is no longer pending", view.name()),
             ));
         }
-        let basis = binding.current_basis_identity();
-        let checkpoint = binding.current_generation_identity();
+        let basis = binding.current_basis_identity()?;
+        let checkpoint = binding.current_generation_identity()?;
         let binding_identity = binding.binding_identity().clone();
         let causality =
             worth_query_evidence_identity(WorthQueryEvidenceScope::RuntimeStateSnapshot)
@@ -201,7 +201,7 @@ impl WorthQueryRuntime {
                     WorthQueryEvidenceTag::new(request_field),
                     admitted.request_identity_for_reporting(),
                 )
-                .seal();
+                .seal()?;
         let terminal =
             WorthQueryRuntimeAsyncResultState::new(terminal_kind, &causality, &basis, &checkpoint);
         state.async_result_state = Some(terminal.clone());
@@ -247,8 +247,8 @@ fn retained_terminal_batch<T>(
         runtime_provenance,
         view.name(),
         binding.binding_identity().clone(),
-        binding.current_basis_identity(),
-        binding.current_generation_identity(),
+        binding.current_basis_identity()?,
+        binding.current_generation_identity()?,
         state.remask_posture.clone(),
         vec![retained],
         0,

@@ -83,7 +83,9 @@ pub fn try_install(
 pub(super) fn install_configuration(
     configuration: Configuration,
 ) -> Result<Host<Catalog, Program>, WorthQueryApplicationPreparationDenial> {
-    let declaration = Catalog::declaration().unwrap();
+    let declaration =
+        <Catalog as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration()
+            .unwrap();
     Host::install(declaration, (configuration,), |_, graph, installed| {
         graph.bind_principal(
             &installed
@@ -107,7 +109,10 @@ pub(super) fn install_configuration(
                     Directory::reference(),
                     directory_key(directory),
                 )
-                .field(DirectoryIdentity::reference(), directory.to_owned()),
+                .field(
+                    DirectoryIdentity::at("DirectoryIdentity"),
+                    directory.to_owned(),
+                ),
             )?;
         }
         for (identity, name, enabled) in [
@@ -125,12 +130,12 @@ pub(super) fn install_configuration(
                     Item::reference(),
                     WorthQueryApplicationEntityKey::new(identity).unwrap(),
                 )
-                .field(ItemIdentity::reference(), identity.to_owned())
-                .field(ItemName::reference(), name.to_owned())
-                .field(ItemEnabled::reference(), enabled)
+                .field(ItemIdentity::at("ItemIdentity"), identity.to_owned())
+                .field(ItemName::at("ItemName"), name.into())
+                .field(ItemEnabled::at("ItemEnabled"), enabled)
                 // Name-only rows still populate every required ItemFacts field.
                 .field(
-                    boxes::ItemBounds::reference(),
+                    boxes::ItemBounds::at("ItemBounds"),
                     boxes::Coordinates::new(0, 0, 0, 0),
                 ),
             )?;

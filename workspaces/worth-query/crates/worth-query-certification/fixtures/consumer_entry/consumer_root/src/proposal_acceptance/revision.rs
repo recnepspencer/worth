@@ -27,8 +27,8 @@ worth_query_structured_value_binding!(pub InputBinding for ReviseProposal {ident
 worth_query_structured_value_binding!(pub ResultBinding for Revised {identity:"proposal-application.revise.result.v1"});
 worth_query_structured_value_binding!(pub DenialBinding for Denial {identity:"proposal-application.revise.denial.v1"});
 worth_query_operation!(pub Revise for Schema,input InputBinding);
-worth_query_operation_reads!(Revise=>[ModelName,ModelProposal,ProposalName,ProposalData]);
-worth_query_operation_writes!(Revise=>[ProposalData]);
+worth_query_operation_reads!(Revise => [ModelProposal]);
+
 fn model(input: &ReviseProposal) -> String {
     input.reference.model.label.clone()
 }
@@ -39,7 +39,7 @@ worth_query_mutation_binding!(pub Binding for ReviseProposal,schema Schema,
     workflow_requirements ApplicationWorkflowExecutionRequirements::not_applicable(),outputs NoApplicationMutationOutputs,
     principal PrincipalBinding,mapping ExternalMapping,principal_entity Principal,
     principal_identity u64,identity_binding U64ApplicationValueBinding,
-    scope Model,ModelFacts,ModelName,String,ReadOnly,NoApplicationUnit,field ModelName::reference(),value model,
+    scope ModelName, field ModelName::at("ModelName"),value model,
 );
 pub struct Handler;
 impl OperationHandler<Schema, Binding> for Handler {
@@ -61,7 +61,7 @@ impl OperationHandler<Schema, Binding> for Handler {
             return HandlerResult::DomainDenied(Denial::ModelMismatch);
         }
         let observed = (|| -> Result<_, HandlerExecutionDenial> {
-            if reader.field(&model, ModelName::reference())?
+            if reader.field(&model, ModelName::at("ModelName"))?
                 != Some(input.reference.model.label.clone())
             {
                 return Ok(Err(Denial::ModelMismatch));
@@ -84,8 +84,9 @@ impl OperationHandler<Schema, Binding> for Handler {
                 if selected.is_some() {
                     return Ok(Err(Denial::ProposalChanged));
                 }
-                let name = reader.field(proposal, ProposalName::reference())?;
-                let Some(mut next) = reader.field(proposal, ProposalData::reference())? else {
+                let name = reader.field(proposal, ProposalName::at("ProposalName"))?;
+                let Some(mut next) = reader.field(proposal, ProposalData::at("ProposalData"))?
+                else {
                     return Ok(Err(Denial::ProposalChanged));
                 };
                 if name != Some(input.reference.key.clone())
@@ -127,7 +128,7 @@ impl OperationHandler<Schema, Binding> for Handler {
                 .map_err(HandlerExecutionDenial::new)?;
             let revision = decision.next.revision;
             writer
-                .write_field(&target, ProposalData::reference(), decision.next)
+                .write_field(&target, ProposalData::at("ProposalData"), decision.next)
                 .map_err(HandlerExecutionDenial::new)?;
             Ok(Revised { revision })
         })();
@@ -144,10 +145,10 @@ pub fn declare(
     schema
         .operation(op.definition().no_external_effect().no_aftermath().finish())
         .operation_projection_work_budget(op, 16)
-        .operation_read_field(op, ModelName::reference())
-        .operation_read_field(op, ProposalName::reference())
-        .operation_read_field(op, ProposalData::reference())
+        .operation_read_field(op, ModelName::at("ModelName"))
+        .operation_read_field(op, ProposalName::at("ProposalName"))
+        .operation_read_field(op, ProposalData::at("ProposalData"))
         .operation_read_relation(op, ModelProposal::reference())
-        .operation_write(op, ProposalData::reference())
+        .operation_write(op, ProposalData::at("ProposalData"))
         .application_mutation_binding::<Binding>()
 }

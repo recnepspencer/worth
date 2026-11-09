@@ -2,6 +2,7 @@
 
 use crate::basis::ExecutionPreflightBundle;
 use crate::collection::MaterializationBreadthClass;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::CollectionPlanDigest;
 use crate::preview::workflow_context_identity;
 
@@ -15,13 +16,16 @@ pub(in crate::preview) struct PreviewComparisonShapeContract {
 }
 
 impl PreviewComparisonShapeContract {
-    pub(in crate::preview) fn from_preflight(preflight: &ExecutionPreflightBundle) -> Self {
+    pub(in crate::preview) fn from_preflight(
+        preflight: &ExecutionPreflightBundle,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let collection = preflight.plan().collection();
-        let ordering_digest = workflow_context_identity::compose_preview_comparison_ordering_digest(
-            &collection
-                .map(|collection| collection.ordering_basis().digest_parts())
-                .unwrap_or_else(|| vec!["detail_ordering:root_entity_identity".to_string()]),
-        );
+        let ordering_digest =
+            workflow_context_identity::compose_preview_comparison_ordering_digest(
+                &collection
+                    .map(|collection| collection.ordering_basis().digest_parts())
+                    .unwrap_or_else(|| vec!["detail_ordering:root_entity_identity".to_string()]),
+            )?;
         let materialization_boundary_digest =
             workflow_context_identity::compose_preview_comparison_materialization_boundary_digest(
                 &collection
@@ -42,7 +46,7 @@ impl PreviewComparisonShapeContract {
                             "detail_result_family:detail".to_string(),
                         ]
                     }),
-            );
+            )?;
         let shape_check_width = collection
             .map(|collection| {
                 collection.ordering_basis().entries().len()
@@ -59,12 +63,12 @@ impl PreviewComparisonShapeContract {
             .unwrap_or("detail")
             .to_string();
 
-        Self {
+        Ok(Self {
             collection_digest: collection.map(|collection| collection.digest().clone()),
             result_family,
             ordering_digest,
             materialization_boundary_digest,
             shape_check_width,
-        }
+        })
     }
 }

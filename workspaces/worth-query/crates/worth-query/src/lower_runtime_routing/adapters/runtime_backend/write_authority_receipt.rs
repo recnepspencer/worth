@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::lower_runtime_routing::{
     WorthQueryLowerRuntimeAuthorityOwner, WorthQueryLowerRuntimeBoundaryEnvelope,
     WorthQueryLowerRuntimeBoundaryExecutionReceipt, WorthQueryLowerRuntimeCapabilityEligibility,
@@ -51,24 +52,24 @@ impl WriteAuthorityExecutionReceipt {
             WorthQueryLowerRuntimeAuthorityOwner::Query,
             WRITE_AUTHORITY_CAPABILITY_LABEL,
             subject_identity,
-        );
+        ).expect("write boundary uses fixed capability and role labels with sealed subject or commit identities");
         let commit_evidence_identity = mutation_receipt.commit_identity.evidence_identity();
         let retained_evidence_identity =
             WorthQueryLowerRuntimeRetainedEvidenceIdentity::from_evidence_identity(
                 "write-authority-commit",
                 &commit_evidence_identity,
-            );
+            ).expect("write boundary uses fixed capability and role labels with sealed subject or commit identities");
         let eligibility =
             WorthQueryLowerRuntimeCapabilityEligibility::admitted_with_evidence_identity(
                 capability_request,
                 &commit_evidence_identity,
-            );
+            ).expect("write boundary uses fixed capability and role labels with sealed subject or commit identities");
         let route_plan = WorthQueryLowerRuntimeRoutePlan::new(
             eligibility,
             WorthQueryLowerRuntimeRouteSubjectIdentity::from_evidence_identity(
                 "write-authority-route",
                 &commit_evidence_identity,
-            ),
+            ).expect("write boundary uses fixed capability and role labels with sealed subject or commit identities"),
         );
         let boundary_execution_receipt =
             WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan_with_retained_evidence_identity(
@@ -109,14 +110,15 @@ impl WriteAuthorityExecutionReceipt {
     pub(crate) fn drift_from_backend_admissible_mutation(
         &self,
         mutation: &WorthQueryBackendAdmissibleMutation,
-    ) -> Option<String> {
-        self.drift_from_subject_identity(backend_admissible_mutation_subject_identity(mutation))
+    ) -> Result<Option<String>, IdentityDerivationDenial> {
+        Ok(self
+            .drift_from_subject_identity(backend_admissible_mutation_subject_identity(mutation))?)
     }
 
     fn drift_from_subject_identity(
         &self,
         expected_subject: WorthQueryLowerRuntimeSubjectIdentity,
-    ) -> Option<String> {
+    ) -> Result<Option<String>, IdentityDerivationDenial> {
         if let Some(message) = self.route_plan.eligibility().request().drift_from_contract(
             WorthQueryLowerRuntimeSeamKey::WriteAuthorityBackendExecution,
             WorthQueryLowerRuntimeRouteKind::RoutePlanning,
@@ -124,18 +126,19 @@ impl WriteAuthorityExecutionReceipt {
             WRITE_AUTHORITY_CAPABILITY_LABEL,
             &expected_subject,
         ) {
-            return Some(message);
+            return Ok(Some(message));
         }
         let commit_evidence_identity = self.mutation_receipt.commit_identity.evidence_identity();
         let retained_evidence_identity =
             WorthQueryLowerRuntimeRetainedEvidenceIdentity::from_evidence_identity(
                 "write-authority-commit",
                 &commit_evidence_identity,
-            );
-        self.boundary_execution_receipt
+            )?;
+        Ok(self
+            .boundary_execution_receipt
             .drift_from_route_plan_with_retained_evidence_identity(
                 &self.route_plan,
                 &retained_evidence_identity,
-            )
+            ))
     }
 }

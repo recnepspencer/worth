@@ -25,7 +25,7 @@ pub fn complete_serial_trace(
         )
         .unwrap()
         .start_workflow(&mut workspace)
-        .unwrap()
+        .unwrap().unwrap()
         .advance(
             "start",
             domain::WorthQueryWorkflowValue::NotRequired,

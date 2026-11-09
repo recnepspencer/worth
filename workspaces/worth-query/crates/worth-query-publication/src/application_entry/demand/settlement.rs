@@ -55,6 +55,19 @@ impl<Query> WorthQueryApplicationOutputDemandSettlement<Query> {
         self.retained.outputs_of()
     }
 
+    /// Admission-only retired descendants, separate from canonical output roles.
+    pub fn closure_evidence_of<Contract: 'static>(
+        &self,
+    ) -> Result<
+        worth_query_execution::facade::primary_graph::WorthQueryApplicationTypedClosureEvidence<
+            '_,
+            Contract,
+        >,
+        WorthQueryApplicationOutputProjectionDenial,
+    > {
+        self.retained.closure_evidence_of()
+    }
+
     pub(in crate::application_entry) fn retained(&self) -> &WorthQueryOutputDemandSettlement {
         self.retained.as_ref()
     }

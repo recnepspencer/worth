@@ -46,7 +46,7 @@ pub(super) fn preview_certification_evidence(
                     &[validation_shape_role_evidence_identity(
                         "closeout_kind",
                         lifecycle_closeout.closeout_kind().as_str(),
-                    )],
+                    )?],
                 ));
             }
 
@@ -61,7 +61,7 @@ pub(super) fn preview_certification_evidence(
                     crate::evidence_identity::WorthQueryEvidenceTag::new("identity_family"),
                     "subscription_preview_support_absent_v1",
                 )
-                .seal()],
+                .seal()?],
                 performance_receipt_identity: lifecycle_absent_performance_receipt_identity(),
             })
         }
@@ -111,7 +111,7 @@ pub(super) fn preview_certification_evidence(
                         validation_shape_role_evidence_identity(
                             "closeout_kind",
                             lifecycle_closeout.closeout_kind().as_str(),
-                        ),
+                        )?,
                         validation_role_evidence_identity(
                             "lane",
                             active_lane_handle.lane_digest().evidence_identity(),
@@ -143,11 +143,11 @@ pub(super) fn preview_certification_evidence(
                     lifecycle_labeled_counter_identity(
                         "preview_isolation",
                         &isolation.counters().evidence_identity(),
-                    ),
+                    )?,
                     lifecycle_labeled_counter_identity(
                         "preview_discard",
                         &discard_closeout.counters().evidence_identity(),
-                    ),
+                    )?,
                 ],
                 support_identities: vec![
                     WorthQueryEvidenceIdentity::compose(
@@ -161,7 +161,7 @@ pub(super) fn preview_certification_evidence(
                         crate::evidence_identity::WorthQueryEvidenceTag::new("isolation"),
                         isolation.isolation_identity(),
                     )
-                    .seal(),
+                    .seal()?,
                     WorthQueryEvidenceIdentity::compose(
                         crate::evidence_identity::WorthQueryEvidenceScope::SubscriptionActivationReceipt,
                     )
@@ -173,7 +173,7 @@ pub(super) fn preview_certification_evidence(
                         crate::evidence_identity::WorthQueryEvidenceTag::new("residue"),
                         residue_report.report_identity(),
                     )
-                    .seal(),
+                    .seal()?,
                     WorthQueryEvidenceIdentity::compose(
                         crate::evidence_identity::WorthQueryEvidenceScope::SubscriptionActivationReceipt,
                     )
@@ -185,7 +185,7 @@ pub(super) fn preview_certification_evidence(
                         crate::evidence_identity::WorthQueryEvidenceTag::new("discard"),
                         discard_closeout.closeout_identity(),
                     )
-                    .seal(),
+                    .seal()?,
                 ],
                 performance_receipt_identity: discard_closeout
                     .performance_receipt()
@@ -239,7 +239,7 @@ pub(super) fn preview_certification_evidence(
                         validation_shape_role_evidence_identity(
                             "closeout_kind",
                             lifecycle_closeout.closeout_kind().as_str(),
-                        ),
+                        )?,
                         validation_role_evidence_identity(
                             "lane",
                             active_lane_handle.lane_digest().evidence_identity(),
@@ -269,11 +269,11 @@ pub(super) fn preview_certification_evidence(
                     lifecycle_labeled_counter_identity(
                         "preview_isolation",
                         &isolation.counters().evidence_identity(),
-                    ),
+                    )?,
                     lifecycle_labeled_counter_identity(
                         "preview_promotion",
                         &promotion_handoff.counters().evidence_identity(),
-                    ),
+                    )?,
                 ],
                 support_identities: vec![
                     WorthQueryEvidenceIdentity::compose(
@@ -287,7 +287,7 @@ pub(super) fn preview_certification_evidence(
                         crate::evidence_identity::WorthQueryEvidenceTag::new("isolation"),
                         isolation.isolation_identity(),
                     )
-                    .seal(),
+                    .seal()?,
                     WorthQueryEvidenceIdentity::compose(
                         crate::evidence_identity::WorthQueryEvidenceScope::SubscriptionActivationReceipt,
                     )
@@ -299,7 +299,7 @@ pub(super) fn preview_certification_evidence(
                         crate::evidence_identity::WorthQueryEvidenceTag::new("residue"),
                         residue_report.report_identity(),
                     )
-                    .seal(),
+                    .seal()?,
                     WorthQueryEvidenceIdentity::compose(
                         crate::evidence_identity::WorthQueryEvidenceScope::SubscriptionActivationReceipt,
                     )
@@ -311,7 +311,7 @@ pub(super) fn preview_certification_evidence(
                         crate::evidence_identity::WorthQueryEvidenceTag::new("promotion"),
                         promotion_handoff.handoff_identity(),
                     )
-                    .seal(),
+                    .seal()?,
                 ],
                 performance_receipt_identity: promotion_handoff
                     .performance_receipt()

@@ -36,7 +36,7 @@ mod portable_markers;
 mod residue;
 
 use axis::Axis;
-use field_references::{field, field_binding, resource_field, resource_field_binding};
+use field_references::{field_binding, CapabilityFields};
 use portable_markers::*;
 
 pub(crate) mod delegation_activation_fixture;
@@ -157,7 +157,8 @@ fn target_with_resource_name(
         1
     };
     ApplicationCapabilityTargetDefinition::new(
-        ApplicationCapabilityValueBinding::new(field::<Action>(), encoded_u64(action_value)),
+        ApplicationCapabilityValueBinding::new(Action::at("Action"), encoded_u64(action_value))
+            .unwrap(),
         relation::<ResourceRelation, Grant, Resource>(resource_name, "Grant", "Resource"),
         if matches!(axis, Some(Axis::Relation)) {
             ApplicationCapabilityRelationDimension::not_applicable()
@@ -169,9 +170,10 @@ fn target_with_resource_name(
         if matches!(axis, Some(Axis::Field)) {
             ApplicationCapabilityFieldDimension::not_applicable()
         } else {
-            ApplicationCapabilityFieldDimension::bound(field::<Field>())
+            ApplicationCapabilityFieldDimension::bound(Field::at("Field")).unwrap()
         },
-        ApplicationCapabilityValueBinding::new(field::<Purpose>(), encoded_u64(purpose_value)),
+        ApplicationCapabilityValueBinding::new(Purpose::at("Purpose"), encoded_u64(purpose_value))
+            .unwrap(),
     )
 }
 
@@ -180,19 +182,19 @@ fn constraints<ContextMarker>(
     context: ApplicationCapabilityContextRef<Schema, ContextMarker>,
 ) -> ApplicationCapabilityConstraintDefinition {
     let workflow = if matches!(axis, Some(Axis::Workflow)) {
-        field_binding::<ChangedWorkflow>()
+        field_binding(ChangedWorkflow::at("ChangedWorkflow"))
     } else {
-        field_binding::<Workflow>()
+        field_binding(Workflow::at("Workflow"))
     };
     let resource_workflow = if matches!(axis, Some(Axis::ResourceWorkflow)) {
-        resource_field_binding::<ChangedResourceWorkflow>()
+        field_binding(ChangedResourceWorkflow::at("ChangedResourceWorkflow"))
     } else {
-        resource_field_binding::<ResourceWorkflow>()
+        field_binding(ResourceWorkflow::at("ResourceWorkflow"))
     };
     let valid_from = if matches!(axis, Some(Axis::Validity)) {
-        field_binding::<ChangedValidFrom>()
+        field_binding(ChangedValidFrom::at("ChangedValidFrom"))
     } else {
-        field_binding::<ValidFrom>()
+        field_binding(ValidFrom::at("ValidFrom"))
     };
     let status_value = if matches!(axis, Some(Axis::Status)) {
         2
@@ -208,7 +210,7 @@ fn constraints<ContextMarker>(
         if matches!(axis, Some(Axis::Magnitude)) {
             ApplicationCapabilityFieldDimension::not_applicable()
         } else {
-            ApplicationCapabilityFieldDimension::bound(field::<Amount>())
+            ApplicationCapabilityFieldDimension::bound(Amount::at("Amount")).unwrap()
         },
         if matches!(axis, Some(Axis::Cardinality)) {
             ApplicationCapabilityCardinalityDimension::Bounded(2)
@@ -216,12 +218,13 @@ fn constraints<ContextMarker>(
             ApplicationCapabilityCardinalityDimension::One
         },
         ApplicationCapabilityCurrentnessDefinition::new(
-            ApplicationCapabilityValueBinding::new(field::<Status>(), encoded_u64(status_value)),
+            ApplicationCapabilityValueBinding::new(Status::at("Status"), encoded_u64(status_value))
+                .unwrap(),
             ApplicationCapabilityWorkflowDefinition::new(workflow, resource_workflow),
             ApplicationCapabilityValidityDefinition::new(
                 validity_timeline,
                 valid_from,
-                field_binding::<ValidThrough>(),
+                field_binding(ValidThrough::at("ValidThrough")),
             ),
         ),
         context,
@@ -237,7 +240,7 @@ fn delegation<ProvenanceMarker>(
         relation::<Parent, Grant, Grant>(parent, "Grant", "Grant"),
         relation::<Grantor, Principal, Grant>("Grantor", "Principal", "Grant"),
         relation::<Grantee, Principal, Grant>("Grantee", "Principal", "Grant"),
-        field_binding::<DelegationLimit>(),
+        field_binding(DelegationLimit::at("DelegationLimit")),
         provenance,
     )
 }
@@ -294,9 +297,9 @@ fn composition(axis: Option<Axis>) -> ApplicationCapabilityComposition {
             ApplicationCapabilityDisclosureRule::permit([
                 ApplicationCapabilityScopeGuard::requiring([
                     ApplicationCapabilityAcceptedValues::one_of(
-                        field::<Field>(),
+                        Field::at("Field"),
                         [encoded_u64(if changed(6) { 2_u64 } else { 1_u64 })],
-                    ),
+                    ).unwrap(),
                 ]),
             ]),
         ),

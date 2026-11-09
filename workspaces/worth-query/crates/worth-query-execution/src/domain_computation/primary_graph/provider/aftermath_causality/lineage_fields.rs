@@ -23,7 +23,7 @@ pub(super) fn selector_matches<Stop>(
     mut admit: impl FnMut(u64) -> Result<(), Stop>,
 ) -> Result<bool, Stop> {
     use std::fmt::Write;
-    let Some(AspectValue::String(InternedString::Raw(value))) = value else {
+    let Some(value) = (value).as_ref().and_then(|value| value.raw_text()) else {
         return Ok(false);
     };
     // Four u64 decimal conversions have bounded stack output. Pay both actual

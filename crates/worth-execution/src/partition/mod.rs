@@ -11,7 +11,7 @@ mod keyed;
 
 pub use bisection::{Bisection, BisectionDenial, BisectionQuality, WeightedEdge, WeightedItem};
 pub use components::{ComponentDenial, ComponentEdit, ComponentPartitioner};
-pub use keyed::{KeyedDenial, KeyedEditDenial, KeyedItem, KeyedPartitioner};
+pub use keyed::{KeyedDenial, KeyedEditDenial, KeyedItem, KeyedPartitioner, PartitionMembers};
 
 use crate::{
     authority::LeaseDenial,
@@ -40,6 +40,8 @@ impl crate::ChargedBytes for PartitionItemId {
 /// Structural work in one update. Counts exclude BTree lookup comparisons.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct PartitionWork {
+    /// Physical member routing entries changed. A component name may change
+    /// once at its owner while the larger group retains all of its entries.
     pub items_rerouted: u64,
     pub members_visited: u64,
     pub edges_visited: u64,

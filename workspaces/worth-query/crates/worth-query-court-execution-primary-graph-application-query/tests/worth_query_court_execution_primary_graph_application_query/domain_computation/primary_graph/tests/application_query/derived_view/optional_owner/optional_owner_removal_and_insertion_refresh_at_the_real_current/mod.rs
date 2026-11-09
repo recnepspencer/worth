@@ -30,7 +30,7 @@ fn optional_owner_removal_and_insertion_refresh_at_the_real_current_product() {
             let scope = selected
                 .resolve_entity(
                     &host_custody.phase_for_application_for_test(&world.application),
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

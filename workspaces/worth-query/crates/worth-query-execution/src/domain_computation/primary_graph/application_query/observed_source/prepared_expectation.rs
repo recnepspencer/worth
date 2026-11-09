@@ -1,5 +1,6 @@
 mod admission;
 mod affinity;
+mod applied;
 mod pending;
 pub(super) use affinity::parameter_denial;
 pub use pending::WorthQueryPendingSourceExpectation;

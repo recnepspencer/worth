@@ -19,7 +19,7 @@ impl BankIdentityRuntime {
                 self.admit_notification_operation(&phase, principal, action, request).map(drop)
             }
         }).map_err(|cause| BankEstateProgressionDenial::ApplicationEntry(
-            worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause),
+            Box::new(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)),
         ))?
     }
 }

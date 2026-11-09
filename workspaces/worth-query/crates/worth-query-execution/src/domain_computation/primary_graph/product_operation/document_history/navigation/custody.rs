@@ -67,15 +67,19 @@ pub(super) struct NavigationProgress<'runtime, S> {
     pub(super) application: &'runtime WorthQueryPrimaryGraphApplicationRuntime<S>,
     pub(super) meaning: WorthQueryApplicationIdempotencyBinding,
     pub(super) output_profile: Option<WorthQueryHistoryOutputProfile>,
-    pub(super) output_source:
-        Option<Arc<crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation>>,
+    pub(super) output_source: Option<super::output_authority::HistoryRestoredOutputBasis>,
+    pub(super) output_basis_memory: Option<ExecutionMemoryReservation>,
     pub(super) output_source_memory: Option<ExecutionMemoryReservation>,
     pub(super) expected: WorthQueryHistorySelection,
     pub(super) model: super::super::HistoryModelIdentity,
+    pub(super) ownership:
+        Option<&'runtime worth_relational::facade::branch::RelationalModelOwnership>,
     pub(super) source: Option<super::super::WorthQueryHistoryPreview>,
     pub(super) requested: super::super::WorthQueryHistoryNodeId,
     pub(super) intent: WorthQueryHistoryNavigationIntent,
     pub(super) phase: NavigationPhase<'runtime, S>,
+    /// Restored producer custody and its rows, from preparation until World.
+    pub(super) output_transport: Option<super::output_custody::HistoryOutputTransport>,
     // Preallocated in the attempt before fork; filled in the adoption transition.
     pub(super) head_slot: Option<u64>,
     pub(super) prior_cleanup:

@@ -61,7 +61,7 @@ use worth_query_host::facade::{
 | `…host::facade` | `WorthQueryApplicationHomeRequest`, `WorthQueryApplicationHomeLocation`, `WorthQueryApplicationHome`, owning opening and close refusals |
 | `â€¦decl::facade::application_program` | `ApplicationFeature`, `ApplicationFeatureSpec`, `ApplicationProgramDefinition`, `ApplicationProgramAuthoring`, `ValidatedApplicationProgram`, ports and connections, `ApplicationWorkflowSpec`, `ApplicationWorkflowDefinitionBuilder` |
 | `â€¦decl::facade::application_operation` | `ApplicationMutationBinding`, `ApplicationMutationIntent`, `ApplicationCapabilityMutationBinding` |
-| `â€¦host::facade::application_installation` | `WorthQueryApplicationProgramRoster`, `WorthQueryApplicationLimits`, `WorthQueryProgramApplicationRuntime`, `WorthQueryProgramOwner` (a trait: import it to call `owned_revision()`) |
+| `â€¦host::facade::application_installation` | `in_memory_program`, `in_memory_rostered_program`, `WorthQueryApplicationProgramRoster`, `WorthQueryApplicationLimits`, `WorthQueryProgramApplicationRuntime`, `WorthQueryProgramOwner` (a trait: import it to call `owned_revision()`) |
 | `â€¦host::facade::application_entry` | `WorthQueryApplicationRequestExt`, `WorthQueryOperationBuilder`, `WorthQueryOperationDescription`, `WorthQueryOperationAdvance`, `WorthQuerySettledFixedOperation`, `WorthQueryTerminalFixedOperation`, `WorthQueryWorkflowOperation`, `WorthQueryApplicationMutationOutcome`, `WorthQueryBranchAdoptionPublicationOutcome`, `Workflow*Outcome`, `Published*Ref` |
 | `â€¦host::facade::application_discovery` | `WorthQueryWorkflowDefinitionDiscovery`, `WorthQueryWorkflowInstanceRead`, `WorthQueryWorkflowInstancePage`, `WorthQueryWorkflowHistoryPage`, `WorthQueryWorkflowHistoryMark` |
 | `â€¦host::facade::domain` | `WorthQueryApplicationWorkflowSpecInstallation`, `WorthQueryApplicationWorkflowResourceCeiling`, `WorthQueryInstalledApplicationSchema` |
@@ -236,6 +236,45 @@ impl WorthQueryApplicationContribution<TemporalHostSchema> for TemporalHostContr
 The schema and contribution APIs are covered in depth by the
 [`worth-query-host` README](../workspaces/worth-query/crates/worth-query-host/README.md)
 and the [`worth-query-decl` README](../workspaces/worth-query/crates/worth-query-decl/README.md).
+### Add optional aspects to a shared entity
+
+The model fragment declares `Feature` once. Independent features can extend it
+without making the model depend on those features:
+
+<!-- illustrative -->
+```rust,ignore
+use worth_query_decl::facade::application_schema::fragment::*;
+
+impl Entity for Feature {
+    const NAME: &'static str = "feature";
+    type Aspects = (Identity,);
+    type Relations = ();
+}
+impl Fragment for Naming {
+    const NAME: &'static str = "naming";
+    type Bindings = FeatureBindings;
+    type Members = (Extend<Feature, (Option<Label>,), (WithAspects<Related, (Option<Weight>,)>,)>,);
+}
+impl Fragment for Coloring {
+    const NAME: &'static str = "coloring";
+    type Bindings = FeatureBindings;
+    type Members = (Extend<Feature, (Option<Color>,)>,);
+}
+// The root includes Model (whose Members contains Feature), Naming and Coloring.
+let label = aspect(Naming, Feature, Label);
+let color = aspect(Coloring, Feature, Color);
+let related = relation::<App, _, _, _, _, _>(Naming, Feature, Related);
+```
+
+`Extend` accepts only `Option<A>` and `Option<Exclusive<G>>` (including nested
+tuples). The entity must be declared by another fragment in the same schema;
+member order does not matter. Duplicate member names are refused with both paths.
+The third parameter adds outgoing relations with the usual payloads and policies, with no positive source minimum and positive target/pair minimums only for targets declared by the extending fragment or its nested fragments.
+Only the extending fragment, or its nested tuple path, can select its additions.
+Selections use the ordinary fields and `View` reads/writes; optional additions
+leave creation by the model complete. The executable counterpart is the
+[extension court](../workspaces/worth-query/crates/worth-query-court-decl-host-native-fragments/tests/worth_query_court_decl_host_native_fragments/native_fragments/extensions.rs).
+
 ### 2.1 Declare operation access once
 
 For a native handler on a concrete application schema, put its complete access set in
@@ -709,7 +748,13 @@ worth_query_host::facade::worth_query_application_contribution! {
 }
 ```
 
-`ApplicationFeatureDefinition<Schema>` exposes `declare_members`, `feature_specs`
+Query definitions in a feature's schema block remain unfinished builders:
+`schema.application_query(query_definition())`. Composition builds the query and
+retains its feature owner, query name and typed cause on refusal; callers do not
+unwrap a query builder. Correction `mechanism()` callbacks likewise construct
+retention demands directly, without `expect`; association checks the complete demand.
+
+`ApplicationFeatureDefinition<Schema>` exposes the owner-scoped `declare_members` entry, an infallible `members` callback, `feature_specs`
 and its actual typed `Outputs`. `WorthQueryFeatureDefinition<Schema>` supplies
 `Configuration`, `contracts` and `configure` through the existing installation
 owners. A tuple composes these definitions, so an application selects each family
@@ -718,6 +763,18 @@ role operations are generated from their members.
 
 An ordinary member uses `action name(Binding, Delivery, HandlerType)` with its
 explicit completed `operation:` definition and the normal action clauses.
+When another member already declares an action's operation and mutation
+binding, use `action_ref name(Binding, Delivery, HandlerType) { ... };` with the
+normal action clauses and no `operation:` clause. The feature retains its action,
+delivery roots and handler configuration while that member remains the sole
+operation owner. The owner may be a correction or an ordinary member. A missing
+operation or binding returns `MissingReferencedMutation` at schema composition,
+naming both; declaring either twice still returns `DuplicateMember`.
+
+```rust,ignore
+action_ref create(CreateBinding<Schema>, SourceDelivery<Schema>, CreateHandler) {};
+```
+
 The generated runtime constructor accepts actual handler values in action order,
 then two-role runtimes in pair order. Supply each runtime's domain configuration
 explicitly.
@@ -1394,15 +1451,15 @@ fixture keeps its existing ordinary intent and adds these two associations:
 impl ApplicationMutationInputScope<CheckpointSchema, InitialBinding<CheckpointSchema>>
     for RegionOutputInput
 {
-    fn scope_for_binding(&self) -> PlanarMutationScope<CheckpointSchema> {
-        PlanarMutationScope::new(BodyKey::reference(), self.scope_key.clone())
+    fn scope_for_binding(&self) -> PlanarMutationScope {
+        PlanarMutationScope::new(BodyKey::at("BodyKey"), self.scope_key.clone())
     }
 }
 impl ApplicationMutationInputScope<CheckpointSchema, PreserveBinding<CheckpointSchema>>
     for RegionOutputInput
 {
-    fn scope_for_binding(&self) -> PlanarMutationScope<CheckpointSchema> {
-        PlanarMutationScope::new(BodyKey::reference(), self.scope_key.clone())
+    fn scope_for_binding(&self) -> PlanarMutationScope {
+        PlanarMutationScope::new(BodyKey::at("BodyKey"), self.scope_key.clone())
     }
 }
 ```
@@ -1776,8 +1833,8 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, RegionTotalsDemandB
         reader: &mut Decision<'_, '_, '_, Schema>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<Schema, Body>, PlanarMutationDenial> {
         let decided = (|| {
-            let scope = reader.resolve_entity(BodyKey::reference(), input.scope_key.clone())?;
-            if reader.field(&scope, PositionY::reference())?.is_none() {
+            let scope = reader.resolve_entity(BodyKey::at("BodyKey"), input.scope_key.clone())?;
+            if reader.field(&scope, PositionY::at("PositionY"))?.is_none() {
                 return Ok(None);
             }
             reader.mutation_target(&scope).map(Some)
@@ -1796,7 +1853,9 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, RegionTotalsDemandB
     ) -> WorthQueryDecisionPlan<WorthQueryInvariantMutationTarget<Schema, Body>, PlanarMutationDenial>
     {
         let plan = if let Some(run) = &self.0 {
-            let set = match reader.resolve_entity(EntrySetKey::reference(), input.entries.clone()) {
+            let set = match reader
+                .resolve_entity(EntrySetKey::at("EntrySetKey"), input.entries.clone())
+            {
                 Ok(set) => set,
                 Err(error) => {
                     return WorthQueryDecisionPlan::immediate(HandlerResult::ExecutionDenied(error))
@@ -1821,7 +1880,7 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, RegionTotalsDemandB
         writer: &mut CandidateWriter<'_, Schema, RegionTotalsDemandBinding<Schema>>,
     ) -> HandlerResult<PlanarAdjustmentResult, PlanarMutationDenial> {
         let written = writer.projected_entity(&target).and_then(|entity| {
-            writer.write_field(&entity, PositionY::reference(), input.replacement_y)
+            writer.write_field(&entity, PositionY::at("PositionY"), input.replacement_y)
         });
         match written {
             Ok(()) => HandlerResult::Completed(PlanarAdjustmentResult {
@@ -1844,17 +1903,19 @@ the supported durable Relational-only lane, or `MemoryOnly` for process-local
 installation. Keep the returned Home while borrowing `home.runtime()` to serve
 requests. Applications do not open Store or reconstruct lower owners themselves.
 
-Installation derives each operation's graph-obligation identity under a fixed
-4,096-entry / 1 MiB canonical-work limit. Each distinct aspect contract costs
-its full canonical fields once, plus table framing; each read projection or
-touch costs a contract reference. Projection masks, selected field paths,
-schema/entity bindings, relations and other scopes also count. Writing many
-fields in one aspect does not repeatedly charge its whole contract. This limit
-is separate from the program revision budget and application runtime resource
-profile. An operation refusal's `canonical_denial()` retains `maximum` and the
-requested `actual` entries or `attempted` bytes. Entry admission stops at the
-first excess append. See the
-[installation contract](../workspaces/worth-query/crates/worth-query-installation/README.md#canonicality).
+Installation derives graph-obligation, query and authorization identities with an
+internal allowance of 16 times the admitted declaration's canonical entries and
+bytes. Package validation admits declaration meaning under the shared 64 MiB
+ceiling and byte-derived entry-storage bound; a size refusal occurs there with
+its typed kind and requested/maximum counts. There is no smaller fixed identity
+ceiling for an application resource profile to tune. Distinct aspect contracts
+count once, references count per occurrence, and a complete explicit field mask
+counts once per projection. Partial masks, touches and bindings retain exact
+meaning. See the factor proof in the
+[installation contract](../workspaces/worth-query/crates/worth-query-installation/README.md#derived-identity-bound).
+Canonical derivation refusals retain their typed cause and requested/maximum
+counts through query, operation, resource and schema-binding installation
+denials' `canonical_denial()` accessors.
 
 ### Application build identity
 
@@ -2147,6 +2208,46 @@ head or recreated model refuses. Close with
 `document.close(&phase)` and retain any live-document or retired-cleanup failure.
 See [attach a model and read its owned head](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#attach-a-model-and-read-its-owned-head).
 
+To include operations scoped to owned entities, declare `.owns(relation)` on the
+history and enroll `.owned_operation::<Binding>(label)`. Native proves instance
+membership from the stored full-generation ownership edges at the current head;
+registered source-scope-owned publication members participate through the same
+current-custody owner. Installation enforces one document owner, including
+custody first installed in the prospective publication. See the
+[generic owned-model example](history-owned-models.md). The explicit
+`OwnedModelGraph` navigation path remains under qualification. Its transfer
+policy restores the selected owner of a live transferred member at its original
+identity, while preserving the outside owner's other state. Missing owner
+sources, second ownership and current invariant violations refuse typed; undo
+and redo never silently retire a selected live member.
+
+A configured producer source may exist only in the private restored candidate.
+In that case navigation uses its retained original description to check current
+principal, permission, capability and request facts at the current head first.
+It then validates the source's full generation, liveness and owned-domain
+membership at that exact candidate. Restored grants never authorize the call;
+a refusal leaves selection unchanged. When a new discovery or child-source
+intent resolves only at the candidate, a denied current audience receives the
+ordinary current scope refusal, without additional historical identity details.
+The same admission applies below a verified parent and a genuinely regenerated
+historical parent. The installed discovery query computes the child set,
+including empty sets; a restored stale child can regenerate while its healthy
+model root stays unopened. Give a changed discovery implementation a new build
+identity: the selected parent then takes its actual fallback and the installed
+query computes the new child set. Corrupt parent/publication lineage refuses
+before producer work. A healthy discovered child also verifies without projecting its producer
+source, whether its parent was verified or genuinely regenerated. It keeps
+read-only parent custody for further discovery, with no synthetic settlement;
+closed traversal reauthorizes each source at C. The final currentness pass
+checks all restored routes at the one endpoint. A fallback can create a child
+source at a later private candidate. Its identity and liveness are checked at
+that exact candidate, and declared ownership or current publication custody must
+connect it to the selected domain. A matching business key at C can name a
+different generation; that older entity cannot supply its permission. Every
+grant still comes from C. A transferred member authorizes its selected subset,
+including new publication children, without authorizing the outside owner's
+unrelated members. All-tree edit recording remains under qualification.
+
 To bound selectable history across all futures, declare separate
 `ApplicationHistoryWindowBinding` and `ApplicationHistoryBookmarkBinding`
 recipes and install them with `.window_policy::<Window>()` and
@@ -2296,6 +2397,43 @@ the complete example with
 `cargo run --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml -p worth-query-consumer-root -- --document-history`.
 Its renderer descriptions carry no historical payload lease and cannot reopen a
 document after process loss.
+
+Owned graph navigation can retain a runtime-length set of original typed
+output trees with `with_output_trees::<Program, FirstRoot>(..)` followed by
+`with_output_tree::<Program, OtherRoot>(..)`. Each entry retains its actual
+program continuation and disposal custody. One navigation qualifies the complete
+collection at the endpoint derived from all original publication movements; a
+later fallback cannot leave an earlier family stale. Native supplies the selected
+publication routes independently of the configured collection. Healthy restored snapshots verify every Native route through the existing
+currentness owner before opening any original root or disclosing a producer
+source. They need no fallback driver. An actual fallback still freshly admits
+its source at C. A healthy leaf family remains unopened while a stale sibling falls back;
+the existing currentness owner checks skipped routes again at the one derived
+endpoint. The same-build cold-checkpoint path reconstructs original expected
+output versions from recorded facts; verification still checks those versions
+against the selected sources and current Native custody. A changed build falls
+back only for the affected family. Query role metadata that disagrees with the
+selected Native publication refuses as `OutputPublicationCorrespondence`; its
+`WorthQueryHistoryPublicationCorrespondenceMismatch` names producer, family and
+source, plus the original publication coordinate. The refusal holds diagnostic
+data without retaining Native publication or historical-basis custody. For non-leaf trees, a healthy parent can discover children from its restored
+output without running its root producer. Discovery runs the installed query
+with current C permission, including for empty results; the publication roster
+never supplies the child list. Each recorded step retains the canonical discovery
+request recipe with its source intent. Navigation runs discovery with that frozen
+input, even if the caller's retained demand has since changed. A new live edit
+records its new input. Principals, permissions and request scope stay current;
+installed discovery meaning is never frozen. Missing, corrupt or foreign-document
+recipes refuse typed with the selected step, without adopting a partial head.
+Pre-recipe steps are never backfilled from a live demand. A parent matches its family, full-generation scope
+and admitted parameter partition. Discovery can read an output scope restored
+only at the exact private candidate D: current C still supplies every principal,
+permission and request fact. A denied audience receives no additional historical
+existence information. The same rule covers sources created by a real fallback
+at a progressed private candidate, including a new generation of C's business
+key. Corrupt lineage refuses typed; changed discovery meaning takes the real
+parent fallback. For isolated source or fixed edits, the configured trees also complete on the private candidate before adoption of the single recorded step. Healthy leaves verify before opening their original roots. Recording after checkout can retain a healthy non-leaf parent without inventing a settlement or reopening its source: installed discovery and dependent reads use fresh current document control. A completed ordinary fixed action keeps its genuine original execution and discovery posture. A configured source that the edit retired or moved outside the document has a distinct Native-backed completion. Final qualification checks every whole tree, rechecks these completions and verifies Native’s independent current obligations. An omitted stale family or a later tree invalidating an earlier result refuses before adoption. Configure the exact declared fixed root when retaining a fixed action, alongside its other families. Group recording and codec-retired selection remain under qualification. See the
+[owned-model plan](../plans/WORTH-query/history-owned-models.md).
 
 To record an isolated edit, consume the attached document with
 `document.edit(intent).idempotency_owned(&request, key)?`, then
@@ -2488,6 +2626,15 @@ publishes a new inverse, compensation or reapplication under its own contract.
 For a gesture containing several ordinary actions, use an
 owning group. It keeps the original model selected until all members complete,
 then records one history edge:
+
+For a runtime-length mix of action types, open
+`document.gesture(host, request, key)` and add each entry with
+`push::<Intent, Action>(request, intent, member_key)`. The first advancement
+freezes the member list. The same group owner advances and completes it at one
+endpoint, and `finish` returns each original completion for typed recovery with
+`original::<Intent, Action>()`. Installed member and retained-result limits apply.
+The [mixed Model/Member gesture](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_model/gesture.rs)
+shows runtime membership, atomic adoption and refused partial work.
 
 <!-- compiled: document_history_group_open.rs -->
 ```rust
@@ -2820,6 +2967,8 @@ A stopped read is not a missing record or a stale index. Entity resolution
 separates `Stopped(cause)` from `Refused(kind)`; handle the typed stop instead
 of retrying it as absence. A pinned read checks the live request when the pin
 is acquired and holds the selected root and index payload for later reads.
+Later reads check the original request and admit only their reached regions; a
+cold-source failure remains a typed read refusal.
 
 Zero memory reports a policy `MemoryLimit { requested, admitted: 0, level }`
 at every placement, including its requested bytes.
@@ -4053,6 +4202,21 @@ principal scopes refuse with `ProducerOwnershipRequiresEntitySourceScope`, namin
 the producer. Initial and Preserve producers in one family must agree on ownership.
 The ownership rule participates in installed producer identity.
 
+Native retains each live owned publication's members, edges, route and generation
+as private current records. Current custody checks use those facts through cold
+reopen and ordinary source edits; they do not require historical envelopes.
+Only the publication commit path maintains the records. Document checkout must
+restore them together with the producer outputs; their ordinary owned relations
+let the same closure selection include them. Direct metadata writes refuse
+`OrdinaryMetadataWrite`. Older stores without the current roster require the
+new format and refuse readmission; no migration is supplied.
+
+Deleting a member, unlinking an owned edge or changing its endpoints requires
+that exact route's current succession or an admitted cascade covering it.
+Another route's Preserve grants no custody, even when both publications share
+one commit ID. The refusal retains the current publication and actual record
+and owner subjects.
+
 An authored `retire_created` or `restore_retired` binding supplies the exact source
 identity. Native admits an ordinary authored Create as the distinguished anchor
 and independently computes every live opted-in publication scoped by that source,
@@ -4065,6 +4229,97 @@ its original `authored_retirement_refusal()` and `context.affected_records`.
 publication in one transaction, preserving each producer's provenance and route
 while allocating fresh native generations and remapping owned relation endpoints.
 A restoration supplies historical output association, not producer readiness.
+
+A correction may explicitly carry co-anchors with
+`retire_created::<C, Family, Source, Inverse>()`
+`.co_retire_created::<C, CoFamily, CoSource, CoInverse>()`. For a Retire-to-Create
+inverse, use `restore_retired` followed by `co_restore_retired` instead. Each
+co-role declares its own family and Create/Retire correspondence, with matching
+exactly-one or zero-or-one cardinality. An absent optional role remains absent.
+Every present co-anchor must be genuinely authored and belong to no live
+publication. Native selects one closure from all anchors together; an undeclared
+extra Retire role is still an extra. Each restored anchor comes from its own
+inverse Create, retaining its logical key and receiving a fresh native ID.
+Declare and observe the demanded pre-image fields for each present anchor and
+set the pre-image byte bound for their total payload.
+The demand may include different entity kinds, such as a Feature and its
+co-born Body, when every kind is a declared authored anchor of that operation.
+Installation refuses an unrelated entity kind with that kind as its subject.
+Read a particular co-anchor with
+`preimage.field_for_output(&CoRole::DESCRIPTOR, &locus)`; equal field loci on
+different anchors retain their own original values.
+
+If a retired authored source is still linked by a surviving source-owned
+publication, declare that owner's root through the program's existing output
+connection. The mutation binding implements
+`WorthQueryApplicationRequiredOutputSource<Schema, BodyRoot>` and lists the
+connection in its mutation declaration. Coupled demands implement `Send` so the
+mutation request can move between execution workers:
+
+```rust,ignore
+coupled_outputs |visitor| {
+    visitor.required::<BodyRoot>();
+},
+```
+
+`demand_from_source` derives the typed demand from the original input;
+`demand_from_preimage` can also use the retained correction material. For example,
+a stage retirement can derive its body demand from that stage's body key.
+`ApplicationCorrectionBinding::visit_coupled_outputs` declares the correction's
+roots and defaults to the source binding's declaration. Install those same roots
+and connections in the program output graph.
+
+Query runs the declared owners' Preserve producers against the unpublished
+candidate. Each producer removes and replaces its own records and edges. Native
+independently determines the required owner set; missing, repeated, extra or
+foreign participants refuse with typed causes and affected records. The authored
+retirement and every admitted Preserve publish in one atomic commit. A required
+coupling with no declaration refuses before any effect. Declarations remain
+inert when no surviving owner is required; a closed owner already covered by the
+retirement closure does not run a producer.
+
+Correction derives the same declared coupling with fresh source IDs. Native
+restores closed publications, while surviving owners run their own Preserves.
+A subsequent demand for a recreated owner follows ordinary Preserve and reuse
+rules using the actual producer antecedent, including after repeated Native-only
+restore/retire cycles. Restoration grants no producer readiness or replayable
+producer-input contract.
+
+For an authored splice that changes relations, add typed relation loci to the
+recorded inverse's pre-image demand:
+
+```rust,ignore
+let demand = DeclaredPreImageDemand::new(field_loci, maximum_encoded_bytes)
+    .with_relations([
+        DeclaredPreImageRelationLocus::from_relation(PreviousStage::reference()),
+    ]);
+```
+
+Use `relations_only` when the inverse needs no field material. The original
+operation must declare and perform the relation reads, including absence at a
+new endpoint pair. Correction material distinguishes an authenticated empty
+locus from unavailable material with `relation_count`; `relation_at` supplies
+each original/performed endpoint pair. `output_entity` supplies the original
+role coordinate. These coordinates describe history and grant no current write
+access: reacquire a surviving endpoint with `reader.resolve_historical_entity`,
+and use each inverse Create for a restored authored anchor. Remove the original
+replacement links and recreate exactly the prior endpoint pairs. A changed,
+missing, extra or foreign inverse refuses before effect with
+`relation_preimage_failure()` and its actual `affected_records`. Audit-retained
+relation deletion currently refuses `UnsupportedVisibility` before the source
+edit because the existing correction support rules cannot reverse that visibility.
+Explicit Unlink supports a true deletion and exact restoration.
+
+A tracked orbit whose aggregate and complete walk are wholly within the actual
+admitted producer's own predecessor publication supplies output reads. On succession Query retains the
+actual committed postcondition, so replacing an owned edge does not cause a
+second publication. A real upstream change still re-runs the producer, and a
+read of another publication remains a source observation. The original raw reads
+still participate in candidate admission and complete-candidate support checks.
+
+Native derives private aggregate membership deletion and recreation through its
+existing aggregate consequence owner. Applications supply the exact changes for
+application-visible owned edges; they never supply private membership records.
 
 An owned publication cannot use the independent single-publication retirement
 path, including a warm publication capsule. It refuses with
@@ -4092,13 +4347,77 @@ old derived generations. Whole-source authored restoration retains its existing
 in for a producer-created source to join the authored root's cascade.
 An owned publication cannot be
 restored or republished without its live source (`PublicationOwnerUnavailable`).
-These checks govern required-output publication custody; an unbound Native
-transaction remains governed by its ordinary schema and cascade-delete policy.
+Commit admission also fences ordinary Delete and Unlink operations against
+current opted-in publication membership and owned edges, including calls with
+no output roles. Only that publication's authentic succession or an admitted
+cascade covering it can discharge custody. A refusal names the exact entity or
+relation and its owner, before any effect. Deleting an external endpoint also
+requires its live owning publications to participate; it does not adopt the
+endpoint as an owned member.
 
 An input dependency or a reference never implies ownership. Two independent
 producers may read the same source without entering its cascade. Opting in does
 not make an external endpoint of a producer-owned relation an owned entity.
 See the [custody contract](../plans/WORTH-query/authored-retirement-custody.md).
+
+#### Declared predecessor reads
+
+An owned producer can read its inputs as its exact predecessor publication
+consumed them. Declare its installed read-only operations beside `OWNERSHIP`:
+
+```rust,ignore
+const PREDECESSOR_READS: Option<WorthQueryPredecessorReadContract<Schema>> =
+    Some(WorthQueryPredecessorReadContract::new(&[
+        WorthQueryPredecessorReadOperation::new(ReadInputs::reference()),
+    ]));
+```
+
+These declaration types live in `host::application_contribution`. Installation
+requires `SourceScopeCascade`, no duplicate operation, and actual installed
+operations with no mutation touches, emissions, external effects or executable
+body. The contract participates in producer equality and edition identity.
+A declaration grants nothing. Each read independently authorizes that read
+operation's installed authorization and abilities **at the current control basis
+C**, using the producer's current principal and original source scope. It never
+borrows a historical grant or substitutes the producer operation's permission.
+
+Inside the producer handler, use the sealed decision-reader door:
+
+```rust,ignore
+let source = reader.scope().clone();
+let previous = reader.predecessor_observation(ReadInputs::reference(), |old| {
+    let source = old.entity(Source::reference(), &source)
+        .map_err(HandlerExecutionDenial::new)?;
+    old.field(&source, InputValue::at("InputValue"))
+        .map_err(HandlerExecutionDenial::new)
+});
+```
+
+The outer result describes observation admission; the closure's result describes
+its read. The restricted reader exposes tracked entity, field and relation
+reads. Its `PredecessorEntity` and `PredecessorRelation` handles are distinct from
+current projection identities and cannot mint mutation targets. There is no raw
+reader, nested query, computation or publication access. Reads use the existing
+Native loan, request checks and projection limits. Current control contention
+returns `CurrentControlBusy` without waiting on an earlier lock from that loan.
+Admission and control loss veto publication even when a handler catches them.
+
+Native chooses exactly the predecessor checked by the ordinary succession fence.
+Its decision root is retained by reference under the live head/candidate lifecycle;
+succession replaces the hold and retirement releases it. Historical keys and
+publication/basis provenance remain separate from current dependencies. Current
+READ authorization support remains a current dependency. No old value is
+substituted with a current value, and no old root is retained by Query evidence.
+
+A first publication or cold reopen refuses `PredecessorBasisUnavailable`; a
+producer can then choose full computation. Undeclared reads refuse
+`UndeclaredPredecessorRead`, and conflicting predecessor coordinates refuse
+`PredecessorMismatch`. HistoricalSelection and authored-restoration publications
+refuse `PredecessorBasisUnavailableForOrigin`, naming the origin kind. Their
+navigation precommit basis is not the producer's consumed input basis; follow-up
+#94 owns that restoration contract. No durable format change is introduced.
+The `host::primary_graph` audience exposes `RelationalPredecessorBasisDenial`
+and `RelationalPredecessorBasisOrigin` for matching that original typed cause.
 
 #### Typed producer domain denial
 
@@ -4787,11 +5106,16 @@ encoding; no domain-value clone, alternate codec or platform trait on the pure
 domain type is needed.
 
 Evaluation returns `WorthQueryApplicationInvariantVerdict::Pass` or
-`Violation(refusal)`. `WorthQueryApplicationInvariantExecutionError` means that
-the rule could not evaluate, including a refusal that exceeds its declared wire
-maximum; it is not a domain violation. Cancellation and deadlines retain the
-original request's control outcome. The adapter admits the maximum retained refusal bytes against the original
-evaluation meter before encoding, including ordinary serial rule hooks.
+`Violation(refusal)`. Preparation and evaluation errors use
+`WorthQueryApplicationInvariantError<Self::Refusal>`. Return `Cause(value)` when
+application arithmetic or another domain prerequisite prevents evaluation. The
+same `RefusalBinding` encodes both outcomes; there is no second cause codec or
+message that owns the application's meaning. SDK access, interruption and
+allocation failures have named error variants. A cause that exceeds its declared
+wire maximum remains an encoding failure rather than a domain violation. Cancellation
+and deadlines retain the original request's control outcome. The adapter admits the
+maximum retained refusal bytes against the original evaluation meter before encoding,
+including ordinary serial rule hooks.
 
 Under a multiworker policy, rules at the same execution point may evaluate
 concurrently and finish in any order. The original publication result carries
@@ -4802,6 +5126,22 @@ completion order. Its `WorthQueryApplicationCommitDenial` exposes
 unchanged canonical bytes are also available through `invariant_refusal_bytes()`.
 Relational retains that same payload in the transaction conflict and diagnostic
 history. Neither reading the denial nor decoding it reruns the rejected candidate.
+
+At installation, seed refusals use `WorthQueryApplicationPreparationDenial::Publication`;
+conditional publication uses `ConditionalPublication` and
+`WorthQueryConditionalRuntimeInstallationDenialKind::PrimaryGraphPublication`.
+Inspect the enclosed graph denial's `custom_invariant_denial()`. Both installation and commit retain
+`WorthQueryCustomInvariantDenial::{Violation, Failure}` with the original invariant
+identity. `Failure` also retains its phase, failure kind and typed SDK cause.
+`decode_refusal::<Binding>()` decodes the original application value in either
+case; commit's `decode_invariant_refusal::<Binding>()` and byte accessor do the
+same. A closed application enum can distinguish, for example, a membership
+violation from `Capacity { field, maximum, observed }` without parsing a message.
+
+Checkpoint recovery callers use `primary_graph::{RelationalRecoveryStop,
+RecoveryFailureClass, DurabilityError}`. The installation denial's
+`native_recovery_cause()` retains every original Native stop, including
+`Durability(error)` with `CorruptCheckpoint` or `UnsupportedLegacySemantics`.
 
 Native recovery checkpoints retain symbol meanings from installation configuration,
 published canonical envelopes, retained roots and the historical mirror, including
@@ -6391,48 +6731,108 @@ The Query guides use names exported through the two application facades.
 
 ### Whole-aspect absence
 
-`aspect()` declares a Required whole aspect. `optional_aspect()` explicitly permits
-that aspect to be absent. Field presence is independent: Required fields must be
-supplied when their struct aspect is present, even in an Optional aspect. An
-Optional field does not make its enclosing aspect Optional. Changing this law
-requires an explicit aspect contract revision advance.
+An aspect listed directly in `Entity::Aspects` is required. `Option<A>` permits
+whole-aspect absence. A fieldâ€™s `Option<T>` permits that field to be absent;
+it does not make its aspect optional. The SDK derives the contract revision
+from these laws and the record shape.
 
 <!-- compiled: optional_aspects.rs -->
 ```rust
-use worth_query_decl::facade::{
-    application_schema::*, worth_query_aspect, worth_query_entity, worth_query_field,
+use worth_query_decl::facade::application_schema::{
+    fragment::{self, *},
+    *,
 };
-pub trait OptionalAspectSchema: ApplicationSchema {}
-worth_query_entity!(pub Component for Schema: OptionalAspectSchema);
-worth_query_aspect!(pub Identity for Schema: OptionalAspectSchema, Component;
-    identity = AspectIdentity(0x9174_2101), revision = AspectContractRevision(1));
-worth_query_aspect!(pub Annotation for Schema: OptionalAspectSchema, Component;
-    identity = AspectIdentity(0x9174_2102), revision = AspectContractRevision(1));
-worth_query_field!(pub Identifier for Schema: OptionalAspectSchema, Component, Identity:
-    optional String => StringApplicationValueBinding, read_only, equality);
-worth_query_field!(pub Text for Schema: OptionalAspectSchema, Component, Annotation:
-    String => StringApplicationValueBinding, read_only, no_equality);
-
-pub fn declare<Schema: OptionalAspectSchema>(
-    schema: ApplicationSchemaDeclarationBuilder<Schema>,
-) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    schema
-        .entity(Component::reference())
-        // Required whole aspect, despite its optional field.
-        .aspect(Component::reference(), Identity::reference())
-        .field(Component::reference(), Identifier::reference())
-        // Whole absence is legal; a tracked Text read yields None and retains
-        // whole-aspect absence. Materializing Annotation invalidates that read.
-        // When Annotation is present, Text is required.
-        .optional_aspect(Component::reference(), Annotation::reference())
-        .field(Component::reference(), Text::reference())
+pub struct OptionalRecords;
+impl Fragment for OptionalRecords {
+    const NAME: &'static str = "optional_records";
+    type Bindings = OptionalBindings;
+    type Members = (Component,);
 }
+pub struct OptionalBindings;
+impl BindingSet for OptionalBindings {
+    type Work<'a> = ValueDecodeAdmission<'a>;
+    fn with_admission<T>(
+        work: &mut Self::Work<'_>,
+        run: impl FnOnce(&mut ValueDecodeAdmission<'_>) -> T,
+    ) -> T {
+        run(work)
+    }
+}
+impl Scalar<ComponentIdentifier> for OptionalBindings {
+    type Binding = ComponentIdentifierBinding;
+    const WRITABLE: bool = false;
+}
+impl Scalar<String> for OptionalBindings {
+    type Binding = StringApplicationValueBinding;
+    const WRITABLE: bool = false;
+}
+pub struct Component;
+impl Entity for Component {
+    const NAME: &'static str = "Component";
+    type Aspects = (Identity, Option<Annotation>);
+    type Relations = ();
+}
+impl Component {
+    pub fn reference<Schema: ApplicationSchema>() -> ApplicationEntityRef<Schema, Self> {
+        entity(OptionalRecords, Self)
+    }
+}
+pub struct Identity;
+impl Aspect for Identity {
+    const NAME: &'static str = "Identity";
+    type Row = ComponentIdentity;
+}
+pub struct Annotation;
+impl Aspect for Annotation {
+    const NAME: &'static str = "Annotation";
+    type Row = ComponentAnnotation;
+}
+pub struct ComponentIdentity {
+    pub identifier: Option<ComponentIdentifier>,
+}
+pub struct ComponentAnnotation {
+    pub text: String,
+}
+impl fragment::Record<ComponentIdentity> for OptionalBindings {
+    fn record() -> impl Shape<ComponentIdentity, Self> {
+        field("Identifier", |row: &ComponentIdentity| {
+            row.identifier.clone()
+        })
+        .equality_queryable(true)
+        .build(|identifier, _: &mut ValueDecodeAdmission<'_>| {
+            Ok::<_, std::convert::Infallible>(ComponentIdentity { identifier })
+        })
+    }
+}
+impl fragment::Record<ComponentAnnotation> for OptionalBindings {
+    fn record() -> impl Shape<ComponentAnnotation, Self> {
+        field("Text", |row: &ComponentAnnotation| row.text.clone()).build(
+            |text, _: &mut ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(ComponentAnnotation { text })
+            },
+        )
+    }
+}
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ComponentIdentifier(String);
+impl ComponentIdentifier {
+    fn text(&self) -> worth_foundational::facade::InternedString {
+        self.0.clone().into()
+    }
+    fn checked(value: worth_foundational::facade::InternedString) -> Option<Self> {
+        value.into_raw_text().map(Self)
+    }
+}
+impl From<String> for ComponentIdentifier {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+worth_query_decl::facade::worth_query_value_binding!(pub ComponentIdentifierBinding for ComponentIdentifier { identity: "worth.query.fixture.component-identifier.v1", scalar: String, encode: ComponentIdentifier::text, decode: ComponentIdentifier::checked, });
+pub type Identifier =
+    FieldSelection<OptionalRecords, Component, Identity, Option<ComponentIdentifier>>;
+pub type Text = FieldSelection<OptionalRecords, Component, Annotation, String>;
 ```
-
-Application schema identity uses the current v18 preimage; package archive record
-protocol8 preserves the declared whole-aspect law in both schema and native
-contracts. Older record protocols are unsupported and are refused before
-reconstruction effects. This support does not convert older installed schemas.
 
 ### Runtime World policy ceilings
 
@@ -6682,9 +7082,13 @@ The maintained exact-name Parent selects that explicit access mode:
 
 <!-- compiled: managed_exact_refinement.rs -->
 ```rust
-pub fn definition(
-) -> ApplicationQueryDefinition<Catalog, ExactQuery, source::Parameters, source::ItemRow, Directory>
-{
+pub fn definition() -> ApplicationQueryDefinitionBuilder<
+    Catalog,
+    ExactQuery,
+    source::Parameters,
+    source::ItemRow,
+    Directory,
+> {
     source::base(
         ExactQuery::reference(),
         ApplicationQueryLaneEligibility::one_shot().with_live(),
@@ -6694,8 +7098,6 @@ pub fn definition(
         source::identity(),
         ApplicationQueryOrderingDirection::Ascending,
     )
-    .build()
-    .unwrap()
 }
 ```
 
@@ -7044,9 +7446,7 @@ request. A retained preparation from another observation cannot supply this loan
 
 <!-- compiled: managed_prefix_invariant.rs -->
 ```rust
-        let pair = context
-            .managed_index(scope)
-            .map_err(|cause| execution(format!("{cause:?}")))?;
+        let pair = context.managed_index(scope).map_err(execution)?;
         let probe = query::Probe {
             prefix: "taken".into(),
         };
@@ -7549,3 +7949,9 @@ an equal-head retained basis. The managed Parent preserves the original result
 limit and cancellation controls. Pending-payments, activity ranking and cursor
 receivers keep their existing contracts; their behavior is covered by their
 ordinary Bank courts and is not supplied by this all-accounts index.
+
+### Published roles and cascade closure evidence
+
+A settled producer's `outputs_of::<Contract>()` reports the roles in that route's canonical Native publication. A shrink may also require Retire witnesses for publications owned by the deleted children. Those witnesses are admission evidence, and are exposed separately through `root_settlement().closure_evidence_of::<Contract>()` and its typed `family_entries::<Family>()`. A closure entry describes a retired identity; it is not an output-role entity and grants no current identity or producer custody. Only the canonical roles participate in producer correspondence and cold readmission. The closure evidence describes this host's performed admission and adds no durable replay obligation. A program may refresh a producer again before it delivers its final root settlement. Each publication has its own correspondence and evidence; the final settlement does not accumulate witnesses from earlier publications in that wave.
+
+Source-scope-owned output cannot be physically suspended independently. The ordinary suspension door refuses `OwnedPublicationRequiresCascade` before publication; the output remains readable and its producer remains settled. Independent output retains the ordinary suspension and exact rematerialization path.

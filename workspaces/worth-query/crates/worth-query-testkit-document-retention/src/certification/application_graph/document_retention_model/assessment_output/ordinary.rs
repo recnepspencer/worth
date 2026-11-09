@@ -2,7 +2,7 @@
 pub use super::*;
 
 worth_query_operation!(pub PublishOrdinaryRetentionAssessment for DocumentRetentionSchema, input RetentionAssessmentInputBinding);
-worth_query_operation_reads!(PublishOrdinaryRetentionAssessment => [Document, DocumentIdentityField, DocumentRetentionField]);
+worth_query_operation_reads!(PublishOrdinaryRetentionAssessment => [Document]);
 
 pub struct OrdinaryRetentionAssessmentBinding;
 impl ApplicationMutationBinding<DocumentRetentionSchema> for OrdinaryRetentionAssessmentBinding {
@@ -37,17 +37,8 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for OrdinaryRetentionAs
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.ordinary-retention-assessment.command.v1";
 
-    fn scope_field() -> ApplicationFieldRef<
-        DocumentRetentionSchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
 
     fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -70,7 +61,10 @@ impl ApplicationMutationIntent<DocumentRetentionSchema> for OrdinaryRetentionAss
         &self.0
     }
     fn scope_binding(&self) -> RetentionAssessmentScope {
-        RetentionAssessmentScope::new(DocumentIdentityField::reference(), self.0.identity.clone())
+        RetentionAssessmentScope::new(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            self.0.identity.clone(),
+        )
     }
 }
 
@@ -93,13 +87,17 @@ impl OperationHandler<DocumentRetentionSchema, OrdinaryRetentionAssessmentBindin
         WorthQueryInvariantMutationTarget<DocumentRetentionSchema, Document>,
         RetentionAssessmentDenial,
     > {
-        let document = match reader
-            .resolve_entity(DocumentIdentityField::reference(), input.identity.clone())
-        {
+        let document = match reader.resolve_entity(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            input.identity.clone(),
+        ) {
             Ok(document) => document,
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };
-        match reader.field(&document, DocumentRetentionField::reference()) {
+        match reader.field(
+            &document,
+            DocumentRetentionField::at("DocumentRetentionField"),
+        ) {
             Ok(Some(retention_days)) if retention_days == input.retention_days => {}
             Ok(_) => return HandlerResult::DomainDenied(RetentionAssessmentDenial::SourceChanged),
             Err(error) => return HandlerResult::ExecutionDenied(error),
@@ -149,11 +147,11 @@ pub fn declare(
         .operation_projection_work_budget(PublishOrdinaryRetentionAssessment::reference(), 8)
         .operation_read_field(
             PublishOrdinaryRetentionAssessment::reference(),
-            DocumentIdentityField::reference(),
+            DocumentIdentityField::at("DocumentIdentityField"),
         )
         .operation_read_field(
             PublishOrdinaryRetentionAssessment::reference(),
-            DocumentRetentionField::reference(),
+            DocumentRetentionField::at("DocumentRetentionField"),
         )
         .application_mutation_binding::<OrdinaryRetentionAssessmentBinding>()
 }

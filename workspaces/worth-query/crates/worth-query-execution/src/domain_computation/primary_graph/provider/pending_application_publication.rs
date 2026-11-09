@@ -13,6 +13,7 @@ use worth_runtime_world::facade::CompositeCommitIdentity;
 
 mod aftermath;
 pub(crate) mod registry;
+mod settlement;
 mod stops;
 pub(in crate::domain_computation::primary_graph) use registry::WorthQueryApplicationPublicationRecoveryReservation;
 use registry::WorthQueryPendingApplicationIdempotency;
@@ -164,22 +165,7 @@ fn publish_with_snapshot(
             "application commit basis does not select the published commit",
         ));
     }
-    // Custody is already registered in pending publication. Report the exact
-    // read stop once; recovery keeps the evidence and can verify its source.
-    if let Some(cause) = pending.source_read_stop.take() {
-        return Err(WorthQueryProviderSessionFailure::checked_read_stopped(
-            super::relational_execution_denial::relational_execution_kind(cause, None),
-            WorthQueryProviderSessionProtocolStage::Commit,
-            "postcommit source read stopped",
-        )
-        .with_recovery_posture(WorthQueryProviderSessionRecoveryPosture::RecoveryRequired));
-    }
-    let committed_product_publication = pending
-        .application
-        .as_ref()
-        .expect("pending application retains its performed World publication")
-        .committed_product_publication()
-        .clone();
+    prepare_writer(execution, provider, runtime, pending, after)?;
     if pending.receipt_basis_lease.is_none() {
         pending.receipt_basis_lease = Some(
             runtime
@@ -192,118 +178,72 @@ fn publish_with_snapshot(
         .graph
         .bind_truth_head_basis_in_runtime(runtime, &pending.next_basis)
         .map_err(bridge_head_failure)?;
-    aftermath::seal(execution, provider, runtime, pending, after)?;
+    let dispatch_claims = usize::from(
+        pending
+            .attempt
+            .as_ref()
+            .expect("root writer")
+            .dispatch_outbox()
+            .is_some(),
+    ) + pending
+        .members
+        .iter()
+        .filter(|member| {
+            member
+                .pending
+                .as_ref()
+                .expect("member pending custody")
+                .attempt
+                .as_ref()
+                .expect("member writer")
+                .dispatch_outbox()
+                .is_some()
+        })
+        .count();
+    for member in &mut pending.members {
+        prepare_writer(
+            execution,
+            provider,
+            runtime,
+            member.pending.as_mut().expect("performed writer"),
+            after,
+        )?;
+    }
     if provider.take_panicked_pending_application_publication() {
         panic!("injected unwind after performed World publication reached terminal cutover");
     }
-    let mut attempt = pending
-        .attempt
-        .take()
-        .expect("pending application publication retains causality until final cutover");
-    // The output's lineage record and its settlement row hold the consumed
-    // outputs; the completed receipt evidence never does.
-    let original_completion = attempt.affinity().take_original_completion_publisher();
-    let consumed_outputs = attempt.retain_consumed_outputs();
-    let outstanding = attempt.take_outstanding_dispatch_reservation();
-    let predicate = pending.predicate.as_ref().map(|owner| {
-        owner.publication_for(
-            attempt.affinity().product_publication().observation(),
-            &committed_product_publication,
-        )
-    });
-    let causality = attempt.publish_causality(provider, committed_product_publication, predicate);
-    assert_eq!(
-        causality.emitted_effect_count(),
-        pending.emitted_effect_count
-    );
-    assert_eq!(causality.outcome_identity(), pending.outcome_identity);
     provider
         .receipt_basis_retention
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner())
-        .retain(
+        .retain_group(
             commit_id,
             pending
                 .receipt_basis_lease
                 .take()
-                .expect("publication cutover retains its exact receipt basis"),
-            outstanding.is_some(),
+                .expect("one group receipt basis"),
+            dispatch_claims,
         );
-    if let Some(outstanding) = outstanding {
-        outstanding.commit(
-            commit_id,
-            pending
-                .application
-                .as_ref()
-                .expect("performed World publication remains in pending evidence")
-                .committed_product_publication(),
-        );
+    for (ordinal, member) in pending.members.iter_mut().enumerate() {
+        let leaf = member
+            .pending
+            .as_mut()
+            .expect("group keeps member until shared cutover");
+        let (mut completed, original_completion) =
+            settlement::finish_writer(execution, provider, runtime, leaf, after, commit_id, false);
+        // A member has a real receipt, but the root owns the one product delivery
+        // and history lifecycle. Native publication custody remains on its slot.
+        completed.detach_coupled_delivery();
+        pending
+            .application
+            .as_ref()
+            .expect("root receipt")
+            .complete_coupled_member(ordinal, completed.clone());
+        original_completion.complete(completed);
     }
-    pending.release_before(runtime);
-    let mut completed = pending
-        .application
-        .take()
-        .expect("completed publication retains exact commit evidence until cutover");
-    assert!(
-        pending.required_prerequisites.is_none() || pending.prepared_lineage_slot.is_some(),
-        "managed publication must carry a prepared output lineage slot"
+    let (completed, original_completion) = settlement::finish_writer(
+        execution, provider, runtime, pending, after, commit_id, true,
     );
-    let recorded = pending
-        .prepared_lineage_slot
-        .take()
-        .map(|slot| slot.record(&completed, Arc::clone(&consumed_outputs)));
-    let settlement_identity = recorded
-        .as_ref()
-        .map(|recorded| Arc::clone(&recorded.identity));
-    if let Some(identity) = settlement_identity.as_ref() {
-        completed.retain_exact_output_settlement(Arc::clone(identity));
-    }
-    let work_membership = pending
-        .required_prerequisites
-        .as_ref()
-        .and_then(|prerequisites| prerequisites.work_membership());
-    let superseded = pending.required_prerequisites.take().map(|prerequisites| {
-        prerequisites.publish(Arc::clone(
-            settlement_identity
-                .as_ref()
-                .expect("managed producer publication records its exact output settlement"),
-        ))
-    });
-    if let Some(identity) = settlement_identity {
-        let failure_membership = work_membership.clone();
-        let owner = &provider.graph.source_owner.invalidation_owner;
-
-        let registration_result = crate::domain_computation::primary_graph::output_lineage::invalidation::register_completed(execution, owner, &completed, recorded.as_ref().expect("performed lineage was recorded").computation_source, recorded.as_ref().expect("performed lineage was recorded").computation_registration, &consumed_outputs, runtime, after, Arc::clone(&identity), work_membership, recorded
-                .as_ref()
-                .and_then(|recorded| recorded.output_witness.as_ref())
-                .and_then(|witness| witness.get()));
-        if let Err(reason) = registration_result {
-            provider
-                .graph
-                .output_lineage
-                .lock()
-                .unwrap_or_else(|poisoned| poisoned.into_inner())
-                .require_settlement_verification(&identity, reason);
-            if let Some(membership) = failure_membership {
-                let prior = membership.mark_local_required(Arc::clone(&identity));
-                drop(prior);
-            }
-        }
-    }
-    // The newest row is registered: the generation it displaced retires,
-    // with whatever its demand supersedes when a demand manages it.
-    let owner = &provider.graph.source_owner.invalidation_owner;
-    let displaced = recorded.and_then(|recorded| recorded.displaced);
-    match (superseded, displaced) {
-        (Some(superseded), displaced) => {
-            // Committed discovery cannot refuse and orphan the displaced settlement.
-            superseded.retire(displaced, owner);
-        }
-        (None, Some(displaced)) => {
-            drop(owner.retire_released([displaced]));
-        }
-        (None, None) => {}
-    }
     let settled = completed
         .committed_product_publication()
         .composite_commit()
@@ -317,6 +257,27 @@ fn publish_with_snapshot(
         .unwrap_or_else(|poisoned| poisoned.into_inner())
         .record(indexed);
     Ok(settled)
+}
+
+fn prepare_writer(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    provider: &WorthQueryPrimaryGraphProvider,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    pending: &mut WorthQueryPendingApplicationPublication,
+    after: &worth_relational::facade::snapshots::SnapshotHandle,
+) -> Result<(), WorthQueryProviderSessionFailure> {
+    // Custody is already registered in pending publication. Report the exact
+    // read stop once; recovery keeps the evidence and can verify its source.
+    if let Some(cause) = pending.source_read_stop.take() {
+        return Err(WorthQueryProviderSessionFailure::checked_read_stopped(
+            super::relational_execution_denial::relational_execution_kind(cause, None),
+            WorthQueryProviderSessionProtocolStage::Commit,
+            "postcommit source read stopped",
+        )
+        .with_recovery_posture(WorthQueryProviderSessionRecoveryPosture::RecoveryRequired));
+    }
+    aftermath::seal(execution, provider, runtime, pending, after)?;
+    Ok(())
 }
 
 mod court_doors_for_test;

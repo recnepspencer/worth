@@ -44,8 +44,6 @@ use crate::domain_computation::primary_graph::tests::fixture::capability::contra
 pub fn install(
     schema: ApplicationSchemaDeclarationBuilder<IdentityExecutionSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<IdentityExecutionSchema> {
-    let schema = install_grant_facts(schema);
-    let schema = install_grant_relations(schema);
     install_capability_operations(schema)
 }
 
@@ -67,15 +65,15 @@ pub fn install_capability_operations(
         .operation_projection_work_budget(CapabilityTouchOperation::reference(), 32)
         .operation_read_field(
             CapabilityTouchOperation::reference(),
-            AccountIdentity::reference(),
+            AccountIdentity::at("AccountIdentity"),
         )
         .operation_read_field(
             CapabilityTouchOperation::reference(),
-            AccountLabel::reference(),
+            AccountLabel::at("AccountLabel"),
         )
         .operation_write(
             CapabilityTouchOperation::reference(),
-            AccountLabel::reference(),
+            AccountLabel::at("AccountLabel"),
         )
         .operation(
             ComposedCapabilityTouchOperation::reference()
@@ -87,19 +85,19 @@ pub fn install_capability_operations(
         .operation_projection_work_budget(ComposedCapabilityTouchOperation::reference(), 32)
         .operation_read_field(
             ComposedCapabilityTouchOperation::reference(),
-            AccountIdentity::reference(),
+            AccountIdentity::at("AccountIdentity"),
         )
         .operation_read_field(
             ComposedCapabilityTouchOperation::reference(),
-            CapabilityActionRecordIdentity::reference(),
+            CapabilityActionRecordIdentity::at("CapabilityActionRecordIdentity"),
         )
         .operation_read_field(
             ComposedCapabilityTouchOperation::reference(),
-            AccountLabel::reference(),
+            AccountLabel::at("AccountLabel"),
         )
         .operation_write(
             ComposedCapabilityTouchOperation::reference(),
-            AccountLabel::reference(),
+            AccountLabel::at("AccountLabel"),
         )
         .capability(capability_contract())
         .capability(composed_capability_contract())
@@ -146,51 +144,66 @@ pub fn composed_capability_contract() -> ApplicationCapabilityContract<
 pub fn capability_target() -> ApplicationCapabilityTargetDefinition {
     ApplicationCapabilityTargetDefinition::new(
         ApplicationCapabilityValueBinding::new(
-            CapabilityActionField::reference(),
+            CapabilityActionField::at("CapabilityActionField"),
             ApplicationEncodedScalarValue::<CapabilityActionBinding>::try_new(
                 CapabilityAction::Touch,
             )
             .unwrap(),
-        ),
+        )
+        .unwrap(),
         ApplicationCapabilityRelationBinding::from_reference(CapabilityResource::reference()),
         ApplicationCapabilityRelationDimension::bound(CapabilityRelated::reference()),
-        ApplicationCapabilityFieldDimension::bound(CapabilityDisclosureField::reference()),
+        ApplicationCapabilityFieldDimension::bound(CapabilityDisclosureField::at(
+            "CapabilityDisclosureField",
+        ))
+        .unwrap(),
         ApplicationCapabilityValueBinding::new(
-            CapabilityPurposeField::reference(),
+            CapabilityPurposeField::at("CapabilityPurposeField"),
             ApplicationEncodedScalarValue::<CapabilityPurposeBinding>::try_new(
                 CapabilityPurpose::AccountMaintenance,
             )
             .unwrap(),
-        ),
+        )
+        .unwrap(),
     )
 }
 
 pub fn capability_constraints() -> ApplicationCapabilityConstraintDefinition {
     ApplicationCapabilityConstraintDefinition::new(
-        ApplicationCapabilityMagnitudeDimension::bound(CapabilityAmountField::reference()),
+        ApplicationCapabilityMagnitudeDimension::bound(CapabilityAmountField::at(
+            "CapabilityAmountField",
+        ))
+        .expect("record field contract"),
         ApplicationCapabilityCardinalityDimension::One,
         ApplicationCapabilityCurrentnessDefinition::new(
             ApplicationCapabilityValueBinding::new(
-                CapabilityStatusField::reference(),
+                CapabilityStatusField::at("CapabilityStatusField"),
                 ApplicationEncodedScalarValue::<CapabilityStatusBinding>::try_new(
                     CapabilityStatus::Active,
                 )
                 .unwrap(),
-            ),
+            )
+            .unwrap(),
             ApplicationCapabilityWorkflowDefinition::new(
-                ApplicationCapabilityFieldBinding::from_reference(
-                    CapabilityWorkflowField::reference(),
-                ),
-                ApplicationCapabilityFieldBinding::from_reference(AccountStatus::reference()),
+                ApplicationCapabilityFieldBinding::from_reference(CapabilityWorkflowField::at(
+                    "CapabilityWorkflowField",
+                ))
+                .unwrap(),
+                ApplicationCapabilityFieldBinding::from_reference(AccountStatus::at(
+                    "AccountStatus",
+                ))
+                .unwrap(),
             ),
             ApplicationCapabilityValidityDefinition::new(
                 ApplicationCapabilityValidityTimeline::UnixEpochSeconds,
-                ApplicationCapabilityFieldBinding::from_reference(
-                    CapabilityNotBeforeField::reference(),
-                ),
-                ApplicationCapabilityFieldBinding::from_reference(
-                    CapabilityNotAfterField::reference(),
-                ),
+                ApplicationCapabilityFieldBinding::from_reference(CapabilityNotBeforeField::at(
+                    "CapabilityNotBeforeField",
+                ))
+                .unwrap(),
+                ApplicationCapabilityFieldBinding::from_reference(CapabilityNotAfterField::at(
+                    "CapabilityNotAfterField",
+                ))
+                .unwrap(),
             ),
         ),
         CapabilityRequestContext::reference(),
@@ -202,9 +215,10 @@ pub fn capability_delegation() -> ApplicationCapabilityDelegationDefinition {
         ApplicationCapabilityRelationBinding::from_reference(CapabilityParent::reference()),
         ApplicationCapabilityRelationBinding::from_reference(CapabilityGrantor::reference()),
         ApplicationCapabilityRelationBinding::from_reference(CapabilityGrantee::reference()),
-        ApplicationCapabilityFieldBinding::from_reference(
-            CapabilityDelegationLimitField::reference(),
-        ),
+        ApplicationCapabilityFieldBinding::from_reference(CapabilityDelegationLimitField::at(
+            "CapabilityDelegationLimitField",
+        ))
+        .unwrap(),
         CapabilityProvenance::reference(),
     )
 }
@@ -280,9 +294,5 @@ pub fn composed_capability_composition() -> ApplicationCapabilityComposition {
     )
 }
 
-#[path = "grant_installation/mod.rs"]
-pub mod grant_installation;
 #[path = "propagation/mod.rs"]
 pub mod propagation;
-use grant_installation::install_grant_facts;
-use grant_installation::install_grant_relations;

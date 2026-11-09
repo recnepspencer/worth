@@ -2,6 +2,7 @@ use crate::authorized_projection::{
     AuthorizedProjectionArtifact, AuthorizedProjectionCounters, MaskedProjectionArtifact,
     PolicyFieldInfluenceSet,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::projection_consumption::identity::{
     compose_certified_source_digest, compose_certified_source_receipt_digest,
 };
@@ -71,7 +72,9 @@ impl ProjectionConsumptionCertifiedLifecycle {
     }
 }
 
-pub fn control_row_set_lifecycle(row_count: usize) -> ProjectionConsumptionCertifiedLifecycle {
+pub fn control_row_set_lifecycle(
+    row_count: usize,
+) -> Result<ProjectionConsumptionCertifiedLifecycle, IdentityDerivationDenial> {
     let row_set = certification_row_set(row_count);
     let source = ProjectionConsumptionSource::from_relational_row_set(&row_set);
     let declaration = declare_projection_consumption(
@@ -94,22 +97,24 @@ pub fn control_row_set_lifecycle(row_count: usize) -> ProjectionConsumptionCerti
             ),
     )
     .expect("control declaration should author cleanly");
-    let contract = admitted_contract(&declaration);
+    let contract = admitted_contract(&declaration)?;
     let facts = contract
         .extract_from_relational_row_set(&row_set)
         .expect("control extraction should succeed");
-    let receipt = facts.issue_receipt();
-    let envelope = receipt.projection_consumption_envelope();
-    ProjectionConsumptionCertifiedLifecycle {
+    let receipt = facts.issue_receipt()?;
+    let envelope = receipt.projection_consumption_envelope()?;
+    Ok(ProjectionConsumptionCertifiedLifecycle {
         declaration,
         contract,
         facts,
         receipt,
         envelope,
-    }
+    })
 }
 
-pub fn grouped_worth_lifecycle(row_count: usize) -> ProjectionConsumptionCertifiedLifecycle {
+pub fn grouped_worth_lifecycle(
+    row_count: usize,
+) -> Result<ProjectionConsumptionCertifiedLifecycle, IdentityDerivationDenial> {
     let grouped = certification_grouped_projection(row_count);
     let source = ProjectionConsumptionSource::from_relational_grouped_projection(&grouped);
     let declaration = declare_projection_consumption(
@@ -121,22 +126,24 @@ pub fn grouped_worth_lifecycle(row_count: usize) -> ProjectionConsumptionCertifi
             .view_local_identities(),
     )
     .expect("grouped declaration should author cleanly");
-    let contract = admitted_contract(&declaration);
+    let contract = admitted_contract(&declaration)?;
     let facts = contract
         .extract_from_relational_grouped_projection(&grouped)
         .expect("grouped extraction should succeed");
-    let receipt = facts.issue_receipt();
-    let envelope = receipt.projection_consumption_envelope();
-    ProjectionConsumptionCertifiedLifecycle {
+    let receipt = facts.issue_receipt()?;
+    let envelope = receipt.projection_consumption_envelope()?;
+    Ok(ProjectionConsumptionCertifiedLifecycle {
         declaration,
         contract,
         facts,
         receipt,
         envelope,
-    }
+    })
 }
 
-pub fn parity_row_set_lifecycle(row_count: usize) -> ProjectionConsumptionCertifiedLifecycle {
+pub fn parity_row_set_lifecycle(
+    row_count: usize,
+) -> Result<ProjectionConsumptionCertifiedLifecycle, IdentityDerivationDenial> {
     let row_set = certification_row_set(row_count);
     let declaration = ProjectMaterializedFacts::declare()
         .entity_identities()
@@ -162,22 +169,22 @@ pub fn parity_row_set_lifecycle(row_count: usize) -> ProjectionConsumptionCertif
         )
         .build()
         .expect("parity declaration should author cleanly");
-    let contract = admitted_contract(&declaration);
+    let contract = admitted_contract(&declaration)?;
     let facts = contract
         .extract_from_relational_row_set(&row_set)
         .expect("parity extraction should succeed");
-    let receipt = facts.issue_receipt();
-    let envelope = receipt.projection_consumption_envelope();
-    ProjectionConsumptionCertifiedLifecycle {
+    let receipt = facts.issue_receipt()?;
+    let envelope = receipt.projection_consumption_envelope()?;
+    Ok(ProjectionConsumptionCertifiedLifecycle {
         declaration,
         contract,
         facts,
         receipt,
         envelope,
-    }
+    })
 }
 
-pub fn denied_masked_field_failure_digest() -> String {
+pub fn denied_masked_field_failure_digest() -> Result<String, IdentityDerivationDenial> {
     let row_set = certification_row_set(2);
     let source = ProjectionConsumptionSource::from_relational_row_set(&row_set);
     let declaration = declare_projection_consumption(
@@ -195,13 +202,15 @@ pub fn denied_masked_field_failure_digest() -> String {
             ),
     )
     .expect("denial declaration should author cleanly");
-    match evaluate_projection_consumption_eligibility(&declaration) {
-        ProjectionConsumptionEligibility::Denied(denied) => denied.failure_digest().to_string(),
-        other => panic!("expected denied certification failure, got {other:?}"),
-    }
+    Ok(
+        match evaluate_projection_consumption_eligibility(&declaration)? {
+            ProjectionConsumptionEligibility::Denied(denied) => denied.failure_digest().to_string(),
+            other => panic!("expected denied certification failure, got {other:?}"),
+        },
+    )
 }
 
-pub fn source_mismatch_failure_digest() -> String {
+pub fn source_mismatch_failure_digest() -> Result<String, IdentityDerivationDenial> {
     let row_set = certification_row_set(2);
     let source = ProjectionConsumptionSource::from_relational_row_set(&row_set);
     let declaration = declare_projection_consumption(
@@ -210,32 +219,43 @@ pub fn source_mismatch_failure_digest() -> String {
         ProjectMaterializedFacts::declare().source_references(),
     )
     .expect("source mismatch declaration should author cleanly");
-    match evaluate_projection_consumption_eligibility(&declaration) {
-        ProjectionConsumptionEligibility::SourceMismatch(mismatch) => {
-            mismatch.failure_digest().to_string()
-        }
-        other => panic!("expected source mismatch certification failure, got {other:?}"),
-    }
+    Ok(
+        match evaluate_projection_consumption_eligibility(&declaration)? {
+            ProjectionConsumptionEligibility::SourceMismatch(mismatch) => {
+                mismatch.failure_digest().to_string()
+            }
+            other => panic!("expected source mismatch certification failure, got {other:?}"),
+        },
+    )
 }
 
-pub fn source_digest(contract: &MaterializedProjectionContract) -> String {
-    compose_certified_source_digest(contract)
+pub fn source_digest(
+    contract: &MaterializedProjectionContract,
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(compose_certified_source_digest(contract)?)
 }
 
-pub fn source_receipt_digest(contract: &MaterializedProjectionContract) -> String {
-    compose_certified_source_receipt_digest(contract, &compose_certified_source_digest(contract))
+pub fn source_receipt_digest(
+    contract: &MaterializedProjectionContract,
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(compose_certified_source_receipt_digest(
+        contract,
+        &compose_certified_source_digest(contract)?,
+    )?)
 }
 
 fn admitted_contract(
     declaration: &ProjectionConsumptionDeclaration,
-) -> MaterializedProjectionContract {
-    match evaluate_projection_consumption_eligibility(declaration) {
-        ProjectionConsumptionEligibility::Admitted(admitted) => admitted.bind_contract(),
-        ProjectionConsumptionEligibility::AdmittedWithWarnings(admitted, _) => {
-            admitted.bind_contract()
-        }
-        other => panic!("expected admitted certification lane, got {other:?}"),
-    }
+) -> Result<MaterializedProjectionContract, IdentityDerivationDenial> {
+    Ok(
+        match evaluate_projection_consumption_eligibility(declaration)? {
+            ProjectionConsumptionEligibility::Admitted(admitted) => admitted.bind_contract()?,
+            ProjectionConsumptionEligibility::AdmittedWithWarnings(admitted, _) => {
+                admitted.bind_contract()?
+            }
+            other => panic!("expected admitted certification lane, got {other:?}"),
+        },
+    )
 }
 
 fn control_binding(visible_fields: &[&str]) -> ProjectionConsumptionBindingContext {

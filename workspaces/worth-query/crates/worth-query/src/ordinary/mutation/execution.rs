@@ -3,6 +3,7 @@ use super::{
     WorthQueryMutationCounters, WorthQueryMutationOutcome, WorthQueryMutationRequest,
     WorthQueryMutationStop, WorthQueryMutationStopSource,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::runtime::{
     WorthQueryOrdinaryAuthorityDrift, WorthQueryOrdinaryAuthorityFamily, WorthQueryWorkspace,
 };
@@ -12,7 +13,7 @@ impl WorthQueryMutationRequest {
         self,
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         workspace: &mut WorthQueryWorkspace,
-    ) -> WorthQueryMutationOutcome {
+    ) -> Result<WorthQueryMutationOutcome, IdentityDerivationDenial> {
         let counters = WorthQueryMutationCounters::context_checked();
         debug_assert_eq!(
             self.context.authority.family(),
@@ -20,15 +21,19 @@ impl WorthQueryMutationRequest {
         );
         match workspace.ordinary_authority_drift(request_execution, &self.context.authority) {
             WorthQueryOrdinaryAuthorityDrift::ForeignOwner => {
-                return WorthQueryMutationOutcome::Stopped(WorthQueryMutationStop::authority(
-                    WorthQueryMutationStopSource::ForeignAuthority,
-                    counters,
+                return Ok(WorthQueryMutationOutcome::Stopped(
+                    WorthQueryMutationStop::authority(
+                        WorthQueryMutationStopSource::ForeignAuthority,
+                        counters,
+                    ),
                 ));
             }
             WorthQueryOrdinaryAuthorityDrift::StaleSnapshot => {
-                return WorthQueryMutationOutcome::Stopped(WorthQueryMutationStop::authority(
-                    WorthQueryMutationStopSource::StaleBasis,
-                    counters,
+                return Ok(WorthQueryMutationOutcome::Stopped(
+                    WorthQueryMutationStop::authority(
+                        WorthQueryMutationStopSource::StaleBasis,
+                        counters,
+                    ),
                 ));
             }
             WorthQueryOrdinaryAuthorityDrift::Current => {}
@@ -37,9 +42,9 @@ impl WorthQueryMutationRequest {
         let (command, inspection_policy) = self.declaration.into_parts();
         let materialize_inspection = inspection_policy.materializes_rich_inspection();
         if materialize_inspection && let Err(error) = workspace.admit_ordinary_rich_inspection() {
-            return WorthQueryMutationOutcome::Stopped(
+            return Ok(WorthQueryMutationOutcome::Stopped(
                 WorthQueryMutationStop::inspection_unavailable(error, counters),
-            );
+            ));
         }
         let execution = match workspace.execute_ordinary_authoritative_mutation(
             request_execution,
@@ -56,8 +61,8 @@ impl WorthQueryMutationRequest {
                 } else {
                     counters.execution_attempted()
                 };
-                return WorthQueryMutationOutcome::Stopped(WorthQueryMutationStop::runtime(
-                    error, counters,
+                return Ok(WorthQueryMutationOutcome::Stopped(
+                    WorthQueryMutationStop::runtime(error, counters),
                 ));
             }
         };
@@ -70,12 +75,14 @@ impl WorthQueryMutationRequest {
         let inspection_identity = execution.inspection_identity().cloned();
         let receipt = execution.into_receipt();
         let aftermath =
-            WorthQueryMutationAftermath::new(&receipt, receipt_identity, inspection_identity);
-        WorthQueryMutationOutcome::Completed(WorthQueryMutationCompletion::new(
-            plan,
-            receipt,
-            aftermath,
-            counters.execution_completed(materialize_inspection),
+            WorthQueryMutationAftermath::new(&receipt, receipt_identity, inspection_identity)?;
+        Ok(WorthQueryMutationOutcome::Completed(
+            WorthQueryMutationCompletion::new(
+                plan,
+                receipt,
+                aftermath,
+                counters.execution_completed(materialize_inspection),
+            ),
         ))
     }
 }

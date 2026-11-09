@@ -232,23 +232,38 @@ pub fn bind_grant_entity_with_action(
                 CapabilityGrant::reference(),
                 WorthQueryApplicationEntityKey::new(key).unwrap(),
             )
-            .field(CapabilityIdentity::reference(), key.to_owned())
-            .field(CapabilityActionField::reference(), action)
             .field(
-                CapabilityPurposeField::reference(),
+                CapabilityIdentity::at("CapabilityIdentity"),
+                key.to_owned().into(),
+            )
+            .field(CapabilityActionField::at("CapabilityActionField"), action)
+            .field(
+                CapabilityPurposeField::at("CapabilityPurposeField"),
                 CapabilityPurpose::AccountMaintenance,
             )
             .field(
-                CapabilityDisclosureField::reference(),
+                CapabilityDisclosureField::at("CapabilityDisclosureField"),
                 CapabilityDisclosure::AccountActivity,
             )
-            .field(CapabilityStatusField::reference(), CapabilityStatus::Active)
-            .field(CapabilityWorkflowField::reference(), "open".to_owned())
-            .field(CapabilityNotBeforeField::reference(), not_before)
-            .field(CapabilityNotAfterField::reference(), not_after)
-            .field(CapabilityAmountField::reference(), amount)
             .field(
-                CapabilityDelegationLimitField::reference(),
+                CapabilityStatusField::at("CapabilityStatusField"),
+                CapabilityStatus::Active,
+            )
+            .field(
+                CapabilityWorkflowField::at("CapabilityWorkflowField"),
+                "open".to_owned(),
+            )
+            .field(
+                CapabilityNotBeforeField::at("CapabilityNotBeforeField"),
+                not_before,
+            )
+            .field(
+                CapabilityNotAfterField::at("CapabilityNotAfterField"),
+                not_after,
+            )
+            .field(CapabilityAmountField::at("CapabilityAmountField"), amount)
+            .field(
+                CapabilityDelegationLimitField::at("CapabilityDelegationLimitField"),
                 delegation_limit,
             ),
         )

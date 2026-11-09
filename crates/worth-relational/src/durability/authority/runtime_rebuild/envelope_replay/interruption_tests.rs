@@ -97,8 +97,8 @@ fn live_retry(source: &RelationalRuntime, bytes: &[u8], target: &mut RelationalR
             plan_from_bytes(source, bytes),
         )
         .unwrap();
-    let actual = comparable_recovered_state(target);
-    let expected = comparable_recovered_state(&expected);
+    let actual = comparable_recovered_state(&ExecutionRequest::serial(&host), target);
+    let expected = comparable_recovered_state(&ExecutionRequest::serial(&host), &expected);
     assert!(
         actual == expected,
         "retry changed whole state: {:?}",
@@ -323,4 +323,18 @@ fn corrupt_replay_keeps_its_durability_failure() {
 }
 
 mod recovered_state_comparison;
-use recovered_state_comparison::comparable_recovered_state;
+fn comparable_recovered_state(
+    execution: &ExecutionRequest<'_, '_>,
+    target: &RelationalRuntime,
+) -> String {
+    for cell in target.history.branch_cells_snapshot() {
+        let root = target
+            .history
+            .branch_cell(&cell.branch_id)
+            .unwrap()
+            .root()
+            .unwrap();
+        assert!(root.is_complete(execution, &target.services.symbols.interner_snapshot()));
+    }
+    recovered_state_comparison::comparable_recovered_state(target)
+}

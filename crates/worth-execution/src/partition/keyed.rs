@@ -1,10 +1,11 @@
 //! Ordered keyed grouping. Runtime edits admit only new path and group copies.
+mod members;
 mod retained;
 use super::{PartitionItemId, PartitionWork};
 use crate::{
     ChargedBytes, ExecutionAllocationPolicy, ExecutionOrderedMap, ExecutionOrderedMapDenial,
 };
-use std::collections::BTreeSet;
+pub use members::PartitionMembers;
 use std::sync::Arc;
 use worth_foundational::PartitionIdentity;
 
@@ -41,7 +42,8 @@ impl ChargedBytes for Group {
     }
 }
 fn member_bytes() -> u64 {
-    (11 * size_of::<PartitionItemId>() + 16 * size_of::<usize>()) as u64
+    crate::storage::ordered::node::cell_bytes::<PartitionItemId, ()>()
+        .expect("fixed membership cell layout is representable")
 }
 /// One routing authority. A clone shares exact ordered cells and their original
 /// grants. Owned key clones must not exceed the key's ChargedBytes bound.
@@ -81,7 +83,7 @@ impl<K: Ord + Clone + ChargedBytes> KeyedPartitioner<K> {
     pub fn key(&self, partition: PartitionIdentity) -> Option<&K> {
         self.identities.get(&partition)
     }
-    pub fn members(&self, partition: PartitionIdentity) -> Option<&BTreeSet<PartitionItemId>> {
+    pub fn members(&self, partition: PartitionIdentity) -> Option<&PartitionMembers> {
         self.key(partition)
             .and_then(|key| self.keys.get(key).map(|group| &group.members.values))
     }
@@ -138,7 +140,7 @@ impl<K: Ord + Clone + ChargedBytes> KeyedPartitioner<K> {
         let (mut items, mut groups, mut heap) = (0usize, 0usize, 0u64);
         for (key, group) in &self.keys {
             let mut first = true;
-            for item in &group.members.values {
+            for item in group.members.values.iter() {
                 if keep(*item) {
                     items = items.checked_add(1).ok_or(KeyedEditDenial::BoundOverflow)?;
                     groups = groups

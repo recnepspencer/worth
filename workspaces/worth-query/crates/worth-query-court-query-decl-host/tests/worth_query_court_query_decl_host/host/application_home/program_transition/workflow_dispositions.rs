@@ -44,7 +44,12 @@ fn home_transition_refuses_a_foreign_workflow_choice_before_intent_and_preserves
                 panic!("one actual A account");
             };
             let field = target
-                .planned_field("Account", "AccountIdentity", "Balance")
+                .planned_field(
+                    "Account",
+                    FieldSelection::<HomeRecords, Account, AccountIdentity, u64>::at("Balance")
+                        .aspect(),
+                    "Balance",
+                )
                 .unwrap();
             let mut step = body(row.entity_id, field, 8);
             step.batches.push(successor::body(target));

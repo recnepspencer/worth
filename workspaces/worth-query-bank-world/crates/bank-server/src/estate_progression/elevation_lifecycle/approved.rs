@@ -85,7 +85,9 @@ impl BankApprovedEstateElevation {
 
         self.query
             .approval_retained_preimage()
-            .and_then(|preimage| preimage.field_for(EmergencyAccessStatusField::reference()))
+            .and_then(|preimage| {
+                preimage.field_for(EmergencyAccessStatusField::at("EmergencyAccessStatusField"))
+            })
             .is_some_and(|field| {
                 field.value()
                     == &bank_domain::schema::EmergencyAccessStatusBinding::encode(

@@ -32,6 +32,9 @@ impl EffectAuthorityLane {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum EffectIntentDenialKind {
+    EvidenceIdentityDerivationDenied(
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+    ),
     WorkflowDeclarationFamilyMismatch,
     WorkflowAuthorityTargetMismatch,
     BasisWorkflowBindingMismatch,

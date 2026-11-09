@@ -29,12 +29,11 @@ worth_query_structured_value_binding!(pub InputBinding for ChangeCell {identity:
 worth_query_structured_value_binding!(pub ResultBinding for Changed {identity:"cell-history.change.result.v1"});
 worth_query_structured_value_binding!(pub DenialBinding for Denied {identity:"cell-history.change.denial.v1"});
 worth_query_operation!(pub Change for Schema,input InputBinding);
-worth_query_operation_reads!(Change=>[Feature,Cell,FeatureKey,OwnsCell,CellKey,CellValue]);
+worth_query_operation_reads!(Change=>[Feature,Cell,OwnsCell]);
 worth_query_operation_creates!(Change=>[Cell]);
 worth_query_operation_deletes!(Change=>[Cell]);
 worth_query_operation_links!(Change=>[OwnsCell]);
 worth_query_operation_unlinks!(Change=>[OwnsCell]);
-worth_query_operation_writes!(Change=>[CellKey,CellValue]);
 fn feature(input: &ChangeCell) -> u64 {
     input.feature
 }
@@ -47,8 +46,8 @@ worth_query_mutation_binding!(pub Binding for ChangeCell,schema Schema,
     workflow_requirements ApplicationWorkflowExecutionRequirements::not_applicable(),outputs NoApplicationMutationOutputs,
     principal PrincipalBinding,mapping ExternalMapping,principal_entity Principal,
     principal_identity u64,identity_binding U64ApplicationValueBinding,
-    scope Feature,FeatureFacts,FeatureKey,u64,ReadOnly,NoApplicationUnit,
-    field FeatureKey::reference(),value feature,
+    scope FeatureKey,
+    field FeatureKey::at("FeatureKey"),value feature,
 );
 
 pub fn declare(
@@ -66,16 +65,16 @@ pub fn declare(
         .operation_projection_work_budget(operation, 64)
         .operation_read_entity(operation, Feature::reference())
         .operation_read_entity(operation, Cell::reference())
-        .operation_read_field(operation, FeatureKey::reference())
+        .operation_read_field(operation, FeatureKey::at("FeatureKey"))
         .operation_read_relation(operation, OwnsCell::reference())
-        .operation_read_field(operation, CellKey::reference())
-        .operation_read_field(operation, CellValue::reference())
+        .operation_read_field(operation, CellKey::at("CellKey"))
+        .operation_read_field(operation, CellValue::at("CellValue"))
         .operation_create(operation, Cell::reference())
         .operation_delete(operation, Cell::reference())
         .operation_link(operation, OwnsCell::reference())
         .operation_unlink(operation, OwnsCell::reference())
-        .operation_write(operation, CellKey::reference())
-        .operation_write(operation, CellValue::reference())
+        .operation_write(operation, CellKey::at("CellKey"))
+        .operation_write(operation, CellValue::at("CellValue"))
         .application_mutation_binding::<Binding>()
 }
 
@@ -89,8 +88,8 @@ impl OperationHandler<Schema, Binding> for Handler {
         let feature = reader.scope().clone();
         let observe = (|| -> Result<_, HandlerExecutionDenial> {
             reader.entity(&feature, Feature::reference())?;
-            reader.field(&feature, FeatureKey::reference())?;
-            let Some(cell) = reader.resolve_optional_entity(CellKey::reference(), input.cell)?
+            reader.field(&feature, FeatureKey::at("FeatureKey"))?;
+            let Some(cell) = reader.resolve_optional_entity(CellKey::at("CellKey"), input.cell)?
             else {
                 return Ok(None);
             };
@@ -103,7 +102,7 @@ impl OperationHandler<Schema, Binding> for Handler {
                 return Ok(None);
             }
             reader.entity(&cell, Cell::reference())?;
-            reader.field(&cell, CellValue::reference())?;
+            reader.field(&cell, CellValue::at("CellValue"))?;
             Ok(Some(Decision {
                 feature: reader.mutation_target(&feature)?,
                 cell: reader.mutation_target(&cell)?,
@@ -115,7 +114,7 @@ impl OperationHandler<Schema, Binding> for Handler {
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };
         if let Some(replacement) = &input.replacement {
-            match reader.resolve_optional_entity(CellKey::reference(), replacement.key) {
+            match reader.resolve_optional_entity(CellKey::at("CellKey"), replacement.key) {
                 Ok(None) => {}
                 Ok(Some(_)) => return HandlerResult::DomainDenied(Denied::ReplacementExists),
                 Err(error) => return HandlerResult::ExecutionDenied(error),
@@ -139,8 +138,8 @@ impl OperationHandler<Schema, Binding> for Handler {
                 let key = WorthQueryApplicationEntityKey::new(format!("cell-{}", replacement.key))
                     .unwrap();
                 let cell = writer.create_entity_in_context(&feature, Cell::reference(), key)?;
-                writer.initialize_field(&cell, CellKey::reference(), replacement.key)?;
-                writer.initialize_field(&cell, CellValue::reference(), replacement.value)?;
+                writer.initialize_field(&cell, CellKey::at("CellKey"), replacement.key)?;
+                writer.initialize_field(&cell, CellValue::at("CellValue"), replacement.value)?;
                 writer.link(
                     OwnsCell::reference(),
                     format!("owns-{}", replacement.key),
@@ -154,5 +153,14 @@ impl OperationHandler<Schema, Binding> for Handler {
             Ok(()) => HandlerResult::Completed(Changed),
             Err(error) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error)),
         }
+    }
+}
+
+impl worth_query_decl::facade::application_schema::fragment::Registration<Schema> for Change {
+    fn register(
+        builder: ApplicationSchemaDeclarationBuilder<Schema>,
+    ) -> Result<ApplicationSchemaDeclarationBuilder<Schema>, ApplicationSchemaDeclarationDenial>
+    {
+        Ok(declare(builder))
     }
 }

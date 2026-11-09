@@ -19,7 +19,7 @@ fn populated_derived_index_cache_stays_outside_owner_authority_accounting() {
         .expect("owner ledger observes the selected root directly");
     let before_sharing = world
         .runtime
-        .observe_branch_sharing(std::slice::from_ref(&main_identity))
+        .observe_branch_sharing(execution, std::slice::from_ref(&main_identity))
         .expect("sharing boundary observes the selected root");
 
     let index = world
@@ -60,7 +60,7 @@ fn populated_derived_index_cache_stays_outside_owner_authority_accounting() {
         .expect("owner ledger observes the populated optional cache");
     let after_sharing = world
         .runtime
-        .observe_branch_sharing(std::slice::from_ref(&main_identity))
+        .observe_branch_sharing(execution, std::slice::from_ref(&main_identity))
         .expect("sharing boundary observes the populated optional cache");
 
     assert_eq!(

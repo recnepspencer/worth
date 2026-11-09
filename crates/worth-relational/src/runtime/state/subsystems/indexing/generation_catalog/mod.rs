@@ -4,7 +4,7 @@ mod admitted_selection;
 mod checkpoint_inputs;
 mod discard;
 mod incremental_retirement;
-mod insertion_quote;
+pub(in crate::runtime::state::subsystems::indexing) mod insertion_quote;
 mod installation;
 mod scope;
 mod selection_retention;
@@ -21,6 +21,7 @@ use crate::identity::data::VersionId;
 use crate::indexes::data::{DerivedIndexGeneration, DerivedIndexGenerationId, DerivedIndexId};
 use crate::schema::data::SchemaVersionId;
 
+use super::prepared_publication::CatalogArtifactVisibility;
 use scope::GenerationScope;
 
 /// Generation payloads have one owner. Selection tables carry identities only;
@@ -28,6 +29,7 @@ use scope::GenerationScope;
 #[derive(Debug, Clone, Default)]
 pub(super) struct GenerationCatalog {
     entries: BTreeMap<DerivedIndexGenerationId, Arc<DerivedIndexGeneration>>,
+    artifact_visibility: BTreeMap<DerivedIndexGenerationId, CatalogArtifactVisibility>,
     /// Published identities remain burned after reclamation; reservations stay private.
     generation_high_water: u64,
     scopes: BTreeMap<DerivedIndexId, BTreeMap<Option<BranchId>, GenerationScope>>,
@@ -54,8 +56,10 @@ impl GenerationCatalog {
         &mut self,
         retained: &crate::history::retention::RetainedIndexRoots,
         global_indexes: &BTreeSet<DerivedIndexId>,
+        carried: &BTreeSet<DerivedIndexGenerationId>,
     ) -> usize {
-        let live = self.retained_ids(retained, global_indexes);
+        let mut live = self.retained_ids(retained, global_indexes);
+        live.extend(carried);
         let removals = self
             .entries
             .keys()
@@ -102,6 +106,13 @@ impl GenerationCatalog {
         self.entries
             .iter()
             .filter(|(id, generation)| {
+                if self
+                    .artifact_visibility
+                    .get(id)
+                    .is_some_and(|v| v.awaits_settlement())
+                {
+                    return true;
+                }
                 let version = generation.applicability.version_id;
                 let schema = generation.applicability.schema_version;
                 let basis_retained = if global_indexes.contains(&generation.index_id) {
@@ -131,6 +142,10 @@ impl GenerationCatalog {
             })
             .map(|(id, _)| *id)
             .collect()
+    }
+
+    pub(super) fn note_payload_selection(&self) {
+        self.work.read_payload();
     }
 
     pub(super) fn generation(
@@ -201,6 +216,11 @@ impl GenerationCatalog {
             .get(&commit)
             .into_iter()
             .flatten()
+            .filter(|id| {
+                self.artifact_visibility
+                    .get(id)
+                    .is_some_and(|v| v.is_visible())
+            })
             .filter_map(|id| self.generation(*id))
             .collect()
     }
@@ -215,7 +235,16 @@ impl GenerationCatalog {
     /// Explicit cold inventory for checkpointing and forensic inspection.
     pub(super) fn all(&self) -> Vec<Arc<DerivedIndexGeneration>> {
         self.work.enumerate_inventory(self.entries.len());
-        let mut generations = self.entries.values().cloned().collect::<Vec<_>>();
+        let mut generations = self
+            .entries
+            .iter()
+            .filter(|(id, _)| {
+                self.artifact_visibility
+                    .get(id)
+                    .is_some_and(|v| v.is_visible())
+            })
+            .map(|(_, generation)| Arc::clone(generation))
+            .collect::<Vec<_>>();
         generations.sort_by_key(|generation| (generation.index_id, generation.generation_id));
         generations
     }

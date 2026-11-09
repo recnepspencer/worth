@@ -31,11 +31,13 @@ pub(crate) fn for_failure_effect(
     let enforcement_checkpoint = matches!(
         (checkpoint, failure_effect),
         (
-            crate::validation::data::InvariantExecutionPoint::CommitBoundary
+            crate::validation::data::InvariantExecutionPoint::ProposedState
+                | crate::validation::data::InvariantExecutionPoint::CommitBoundary
                 | crate::validation::data::InvariantExecutionPoint::MutationSensitive,
             InvariantFailureEffect::BlockCommit,
         ) | (
-            crate::validation::data::InvariantExecutionPoint::SnapshotPublication,
+            crate::validation::data::InvariantExecutionPoint::SnapshotPublication
+                | crate::validation::data::InvariantExecutionPoint::ProposedState,
             InvariantFailureEffect::BlockPublication,
         )
     );

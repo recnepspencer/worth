@@ -1,6 +1,7 @@
 use crate::effect_lifecycle::{
     EffectDiagnosticsMaterialization, EffectExecutionReceipt, EffectReceiptTargetEvidence,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::runtime::WorthQueryOrdinaryMergeFailureStage;
 use crate::WorthQueryEvidenceIdentity;
 
@@ -10,6 +11,7 @@ use crate::ordinary::workflow::{
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryBranchMergeStopSource {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     ForeignAuthority,
     StaleAuthority,
     MismatchedContext,
@@ -139,7 +141,8 @@ impl WorthQueryBranchMergeStop {
             WorthQueryBranchMergeStopSource::InspectionUnavailable => {
                 WorthQueryBranchMergeNextAction::UseOperationalReceipt
             }
-            WorthQueryBranchMergeStopSource::Basis
+            WorthQueryBranchMergeStopSource::EvidenceIdentityDerivationDenied(_)
+            | WorthQueryBranchMergeStopSource::Basis
             | WorthQueryBranchMergeStopSource::Intent
             | WorthQueryBranchMergeStopSource::Eligibility
             | WorthQueryBranchMergeStopSource::Lowering

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::hash_parts;
 
 use super::fixtures::{
@@ -109,12 +110,12 @@ impl WorthQueryIntentAdmissionOracleReport {
 
 pub fn worth_query_intent_admission_oracle_report(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> WorthQueryIntentAdmissionOracleReport {
-    let admitted = certified_admitted_intent_fixture(execution);
-    let advisory = certified_advisory_intent_fixture();
-    let violation = certified_violation_intent_fixture();
-    let deferred = certified_deferred_intent_fixture();
-    let unsupported = certified_unsupported_intent_fixture();
+) -> Result<WorthQueryIntentAdmissionOracleReport, IdentityDerivationDenial> {
+    let admitted = certified_admitted_intent_fixture(execution)?;
+    let advisory = certified_advisory_intent_fixture()?;
+    let violation = certified_violation_intent_fixture()?;
+    let deferred = certified_deferred_intent_fixture()?;
+    let unsupported = certified_unsupported_intent_fixture()?;
     let manifest_rows = vec![
         manifest_row(
             WorthQueryIntentAdmissionOracleLane::AdmittedControl,
@@ -187,12 +188,12 @@ pub fn worth_query_intent_admission_oracle_report(
             .chain(std::iter::once(format!("manifest:{manifest_digest}")))
             .collect::<Vec<_>>(),
     );
-    WorthQueryIntentAdmissionOracleReport {
+    Ok(WorthQueryIntentAdmissionOracleReport {
         manifest_rows,
         comparison_rows,
         manifest_digest,
         oracle_digest,
-    }
+    })
 }
 
 fn manifest_row(

@@ -52,7 +52,7 @@ pub fn capture(resource_request: worth_execution::ExecutionRequest<'_, '_>, plac
                 .publish_native_field_write_for_test(
                     world.application.current_world(),
                     world.intent_record_identity(),
-                    IntentGateField::reference(),
+                    IntentGateField::at("IntentGateField"),
                     "ready".to_string(),
                     &request_scope(),
                 )
@@ -133,7 +133,7 @@ pub fn capture(resource_request: worth_execution::ExecutionRequest<'_, '_>, plac
         }
         assert_authoritative_value(
             &world,
-            IntentEffectField::reference(),
+            IntentEffectField::at("IntentEffectField"),
             "payload".to_string(),
         );
         if matches!(placement, Placement::Leased(_)) {

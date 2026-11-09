@@ -1,5 +1,3 @@
-mod revision_input;
-pub(crate) use revision_input::write_original_revision_stamps;
 mod borrowed_evidence;
 pub(crate) use borrowed_evidence::{BorrowedAspectDeltaEvidence, BorrowedPatchOperation};
 mod aspect_trace_projection;

@@ -16,6 +16,8 @@ fn head_contains_current_metadata_and_history_contains_only_earlier_versions() {
     );
     let bytes = fixture.source.members.get(&fixture.cold.history).unwrap();
     let frame = RelationalRegionImage::decode(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &mut |_, _| Ok(()),
         bytes,
         fixture.cold.history,
         fixture.cold.partition_id,
@@ -82,14 +84,18 @@ fn a_head_append_matches_a_separately_recomputed_full_history_root() {
     );
     let mut journal = crate::storage::overlay::PartitionMutationJournal::default();
     journal.entity_slots.insert(slot);
-    let (appended, _) = PartitionContentCommitment::capture(
+    let (appended, _) = PartitionContentCommitment::maintain(
         &written_head,
         &symbols,
-        Some((head.commitment.as_ref().unwrap(), &head.partition, &journal)),
+        (head.commitment.as_ref().unwrap(), &head.partition, &journal),
     )
     .unwrap();
     let (advanced, _) = appended
-        .history_frontiers(&written_head)
+        .history_frontiers(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            execution,
+            &written_head,
+        )
         .unwrap()
         .into_arenas();
     let (_, advanced) = advanced
@@ -128,7 +134,13 @@ fn a_head_append_matches_a_separately_recomputed_full_history_root() {
         .entity_arena
         .apply_extra_update(slot, extra, version)
         .expect("fixture slot is materialized");
-    let (oracle, _) = PartitionContentCommitment::capture(&written_full, &symbols, None).unwrap();
+    let (oracle, _) = PartitionContentCommitment::capture(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &worth_execution::ExecutionRequest::serial(&crate::test_execution_policy::serial_request()),
+        &written_full,
+        &symbols,
+    )
+    .unwrap();
     assert_eq!(
         appended.digest(fixture.entity.partition_id),
         oracle.digest(fixture.entity.partition_id)
@@ -218,6 +230,8 @@ fn the_head_historical_projection_is_authenticated_without_a_history_read() {
 pub(super) fn decode_head(fixture: &RegionFixture) -> RegionHeadImage {
     let bytes = fixture.source.members.get(&fixture.cold.head).unwrap();
     let frame = RelationalRegionImage::decode(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &mut |_, _| Ok(()),
         bytes,
         fixture.cold.head,
         fixture.cold.partition_id,
@@ -234,6 +248,8 @@ fn cell_with_head(
 ) -> (Arc<RelationalRegionResidency>, Arc<CountedSource>) {
     let mut cold = fixture.cold;
     let (locator, bytes) = RelationalRegionImage::encode(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &mut |_, _| Ok(()),
         cold.partition_id,
         cold.schema_carrier_digest,
         RelationalRegionImageKind::Head,

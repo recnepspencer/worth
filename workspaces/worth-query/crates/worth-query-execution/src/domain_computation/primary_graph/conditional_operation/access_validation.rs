@@ -1,6 +1,4 @@
-use worth_query_installation::facade::{
-    ApplicationFieldUnit, ApplicationSchema, ApplicationSchemaMember, WritePosture,
-};
+use worth_query_installation::facade::{ApplicationSchema, ApplicationSchemaMember};
 
 use super::{
     installation::{
@@ -21,11 +19,8 @@ pub(super) fn validate_reconstruction_access<
     PrincipalIdentity,
     PrincipalIdentityBinding,
     Scope,
-    ScopeAspect,
     ScopeField,
     ScopeValue,
-    ScopeWrite,
-    ScopeUnit,
     PrincipalSource,
     QueryAuthorization,
 >(
@@ -38,11 +33,8 @@ pub(super) fn validate_reconstruction_access<
         PrincipalIdentity,
         PrincipalIdentityBinding,
         Scope,
-        ScopeAspect,
         ScopeField,
         ScopeValue,
-        ScopeWrite,
-        ScopeUnit,
         PrincipalSource,
         QueryAuthorization,
     >,
@@ -53,11 +45,12 @@ where
         worth_query_installation::facade::ApplicationIdentityScalarValueBinding<
             Value = PrincipalIdentity,
         >,
-    ScopeField: worth_query_installation::facade::DeclaredApplicationFieldValue<Value = ScopeValue>,
+    ScopeField: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+        Entity = Scope,
+        Value = ScopeValue,
+    >,
     ScopeField::Binding:
         worth_query_installation::facade::ApplicationScalarValueBinding<Value = ScopeValue>,
-    ScopeWrite: WritePosture,
-    ScopeUnit: ApplicationFieldUnit,
     PrincipalSource: WorthQueryTemporalPrincipalSource<Schema>,
 {
     publication

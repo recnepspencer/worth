@@ -22,15 +22,7 @@ impl ApplicationMutationBinding<Catalog> for Binding {
     type Denial = Denial;
     type DenialBinding = DenialBinding;
     type Output = Outputs;
-    type ScopeBinding = ApplicationMutationFieldScope<
-        Catalog,
-        Directory,
-        DirectoryFacts,
-        DirectoryIdentity,
-        String,
-        ReadOnly,
-        NoApplicationUnit,
-    >;
+    type ScopeBinding = ApplicationMutationFieldScope<DirectoryIdentity>;
     type PrincipalBinding = CatalogPrincipal;
     type Mapping = ExternalMapping;
     type Principal = Principal;
@@ -44,17 +36,8 @@ impl ApplicationMutationBinding<Catalog> for Binding {
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
     }
-    fn scope_field() -> ApplicationFieldRef<
-        Catalog,
-        Directory,
-        DirectoryFacts,
-        DirectoryIdentity,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DirectoryIdentity::reference()
+    fn scope_field() -> DirectoryIdentity {
+        DirectoryIdentity::at("DirectoryIdentity")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         Catalog,
@@ -83,6 +66,9 @@ impl ApplicationMutationBinding<Catalog> for Binding {
 
 impl ApplicationMutationInputScope<Catalog, Binding> for Generate {
     fn scope_for_binding(&self) -> <Binding as ApplicationMutationBinding<Catalog>>::ScopeBinding {
-        ApplicationMutationFieldScope::new(DirectoryIdentity::reference(), self.directory.clone())
+        ApplicationMutationFieldScope::new(
+            DirectoryIdentity::at("DirectoryIdentity"),
+            self.directory.clone(),
+        )
     }
 }

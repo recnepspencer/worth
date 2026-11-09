@@ -6,12 +6,13 @@
 //! candidate is not a property of this schema: it is decided by the program
 //! the occurrence is running.
 
+#[path = "schema/records.rs"]
+mod storage_model;
+pub use storage_model::*;
 pub use worth_query_host::facade::{declaration, primary_graph};
 pub use worth_query_host::facade::{
-    worth_query_application, worth_query_application_contribution, worth_query_aspect,
-    worth_query_entity, worth_query_field, worth_query_operation, worth_query_operation_reads,
-    worth_query_operation_writes, worth_query_portable_type, worth_query_principal_binding,
-    worth_query_relation, worth_query_structured_value_binding,
+    worth_query_application_contribution, worth_query_operation, worth_query_operation_reads,
+    worth_query_operation_writes, worth_query_portable_type, worth_query_structured_value_binding,
 };
 
 #[path = "schema/document_retention_invariants.rs"]
@@ -29,35 +30,74 @@ pub use document_retention_query::{
     DocumentRetentionRowBinding,
 };
 
-worth_query_application! {
-    pub DocumentRetentionSchema {
-        owner: "document_retention_courtroom",
-        version: (1, 0),
-        contributions: [DocumentRetentionContribution],
+use worth_query_decl::facade::application_schema::{
+    fragment::{self, *},
+    *,
+};
+#[derive(Clone, Copy, Debug)]
+pub struct DocumentRetentionSchema;
+impl Fragment for DocumentRetentionSchema {
+    const NAME: &'static str = "document_retention";
+    type Bindings = NoBindings;
+    type Members = (DocumentRetentionContribution,);
+}
+impl ApplicationSchema for DocumentRetentionSchema {
+    const OWNER: &'static str = "document_retention_courtroom";
+    const NAME: &'static str = <Self as Fragment>::NAME;
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        fragment::declare(Self)
+    }
+    fn visit_correction<
+        V: worth_query_decl::facade::application_aftermath::ApplicationCorrectionVisitor<Self>,
+    >(
+        source: std::any::TypeId,
+        visitor: V,
+    ) -> V::Output {
+        fragment::visit_correction(Self, source, visitor)
     }
 }
-
-worth_query_application_contribution! {
-    pub contribution DocumentRetentionContribution in DocumentRetentionSchema {
-        identity: "document_retention_courtroom.application_graph.v1",
-        corrections: [super::correctable_retention::RestoreReviewedRetention],
-        members: |schema| {
+impl DocumentRetentionSchema {
+    pub fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        <Self as ApplicationSchema>::declaration()
+    }
+}
+impl ApplicationSchemaComposition for DocumentRetentionSchema {
+    type Contributions = <Self as Fragment>::Members;
+}
+pub struct DocumentRetentionContribution;
+impl ApplicationSchemaContribution<DocumentRetentionSchema> for DocumentRetentionContribution {
+    const IDENTITY: ApplicationSchemaContributionIdentity =
+        ApplicationSchemaContributionIdentity::new(
+            "document_retention_courtroom.application_graph.v1",
+        );
+    type Members = (
+        RetentionModel,
+        DocumentPrincipalBinding,
+        super::workflow::declaration::WorkflowGrants,
+        super::document_history::control_roles::ControlGrants,
+        RetentionPrograms,
+        super::correctable_retention::RestoreReviewedRetention,
+    );
+}
+impl DocumentRetentionContribution {
+    pub const fn reference() -> ApplicationSchemaContributionRef<DocumentRetentionSchema, Self> {
+        ApplicationSchemaContributionRef::from_contribution()
+    }
+}
+pub struct RetentionPrograms;
+impl Registration<DocumentRetentionSchema> for RetentionPrograms {
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema>,
+    ) -> Result<
+        ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema>,
+        ApplicationSchemaDeclarationDenial,
+    > {
+        Ok({
             let schema = super::document_history::declare(schema);
             let schema = super::model_lifecycle::declare(schema);
             let schema = schema
-                .entity(ExternalMapping::reference())
-                .entity(Principal::reference())
-                .entity(Document::reference())
-                .aspect(ExternalMapping::reference(), ExternalIdentity::reference())
-                .aspect(Principal::reference(), PrincipalFacts::reference())
-                .aspect(Document::reference(), DocumentFacts::reference())
-                .field(ExternalMapping::reference(), ExternalIdentityField::reference())
-                .field(ExternalMapping::reference(), MappingStatusField::reference())
-                .field(Principal::reference(), PrincipalIdentityField::reference())
-                .field(Document::reference(), DocumentIdentityField::reference())
-                .field(Document::reference(), DocumentRetentionField::reference())
-                .relation(MappingTarget::reference(), ExternalMapping::reference(), Principal::reference())
-                .principal_binding(DocumentPrincipalBinding::reference())
                 .operation(
                     SetRetention::reference()
                         .definition()
@@ -65,45 +105,80 @@ worth_query_application_contribution! {
                         .no_aftermath()
                         .finish(),
                 )
-
                 .operation_projection_work_budget(SetRetention::reference(), 8)
-                .operation_read_field(SetRetention::reference(), DocumentIdentityField::reference())
-                .operation_read_field(SetRetention::reference(), DocumentRetentionField::reference())
-                .operation_expected_fact(SetRetention::reference(), DocumentRetentionField::reference())
-                .operation_write(SetRetention::reference(), DocumentRetentionField::reference())
+                .operation_read_field(
+                    SetRetention::reference(),
+                    DocumentIdentityField::at("DocumentIdentityField"),
+                )
+                .operation_read_field(
+                    SetRetention::reference(),
+                    DocumentRetentionField::at("DocumentRetentionField"),
+                )
+                .operation_expected_fact(
+                    SetRetention::reference(),
+                    DocumentRetentionField::at("DocumentRetentionField"),
+                )
+                .operation_write(
+                    SetRetention::reference(),
+                    DocumentRetentionField::at("DocumentRetentionField"),
+                )
                 .invariant(document_retention_invariants::first_definition())
                 .invariant(document_retention_invariants::second_definition())
                 .application_query(document_retention_query_definition())
                 .application_query(document_retention_condition_query_definition())
-                .application_query(super::retention_days::document_retention_days_query_definition());
-            super::record_history::declare(super::correctable_retention::declare(super::actor_generation::declare(super::program_adoption::declare(super::workflow::declare(super::assessment_output::declare(super::retention_days::declare(
-                super::retention_entry::declare(schema),
-            )))))))
-        }
+                .application_query(
+                    super::retention_days::document_retention_days_query_definition(),
+                );
+            super::record_history::declare(super::correctable_retention::declare(
+                super::actor_generation::declare(super::program_adoption::declare(
+                    super::workflow::declare(super::assessment_output::declare(
+                        super::retention_days::declare(super::retention_entry::declare(schema)),
+                    )),
+                )),
+            ))
+        })
     }
 }
 
-worth_query_entity!(pub ExternalMapping for DocumentRetentionSchema);
-worth_query_entity!(pub Principal for DocumentRetentionSchema);
-worth_query_entity!(pub Document for DocumentRetentionSchema);
-worth_query_aspect!(pub ExternalIdentity for DocumentRetentionSchema, ExternalMapping; identity = AspectIdentity(0x91750101), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub PrincipalFacts for DocumentRetentionSchema, Principal; identity = AspectIdentity(0x91750102), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub DocumentFacts for DocumentRetentionSchema, Document; identity = AspectIdentity(0x91750103), revision = AspectContractRevision(1),);
-worth_query_field!(pub ExternalIdentityField for DocumentRetentionSchema, ExternalMapping, ExternalIdentity: declaration::authentication::WorthQueryExternalPrincipalIdentity => declaration::authentication::WorthQueryExternalPrincipalIdentityBinding, read_only, equality);
-worth_query_field!(pub MappingStatusField for DocumentRetentionSchema, ExternalMapping, ExternalIdentity: declaration::authentication::WorthQueryPrincipalMappingStatus => declaration::authentication::WorthQueryPrincipalMappingStatusBinding, read_write, equality);
-worth_query_field!(pub PrincipalIdentityField for DocumentRetentionSchema, Principal, PrincipalFacts: u64 => declaration::application_schema::U64ApplicationValueBinding, read_only, equality);
-worth_query_field!(pub DocumentIdentityField for DocumentRetentionSchema, Document, DocumentFacts: String => declaration::application_schema::StringApplicationValueBinding, read_only, equality);
-worth_query_field!(pub DocumentRetentionField for DocumentRetentionSchema, Document, DocumentFacts: u64 => declaration::application_schema::U64ApplicationValueBinding, read_write, equality);
-worth_query_relation!(pub MappingTarget in DocumentRetentionSchema, ExternalMapping => Principal; integrity = same_context_unbounded_retain_dangling);
-worth_query_principal_binding!(
-    pub DocumentPrincipalBinding in DocumentRetentionSchema,
-    mapping ExternalMapping {
-        identity: ExternalIdentityField,
-        status: MappingStatusField,
-        target: MappingTarget => Principal,
-        principal_identity: PrincipalIdentityField
+pub struct DocumentPrincipalBinding;
+impl DocumentPrincipalBinding {
+    pub fn reference() -> ApplicationPrincipalBindingRef<
+        DocumentRetentionSchema,
+        Self,
+        ExternalMapping,
+        Principal,
+        u64,
+        U64ApplicationValueBinding,
+    > {
+        ApplicationPrincipalBindingRef::from_requirements(
+            "DocumentPrincipalBinding",
+            ApplicationPrincipalBindingRequirements {
+                mapping_identity: ApplicationPrincipalMappingIdentityRequirement::from_field(
+                    ExternalIdentityField::at("ExternalIdentityField"),
+                ),
+                mapping_status: ApplicationPrincipalMappingStatusRequirement::from_field(
+                    MappingStatusField::at("MappingStatusField"),
+                ),
+                target: ApplicationPrincipalTargetRequirement::from_relation(
+                    MappingTarget::reference(),
+                ),
+                principal_identity: ApplicationPrincipalIdentityRequirement::from_field(
+                    PrincipalIdentityField::at("PrincipalIdentityField"),
+                ),
+            },
+        )
     }
-);
+}
+impl Registration<DocumentRetentionSchema> for DocumentPrincipalBinding {
+    fn register(
+        builder: ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema>,
+    ) -> Result<
+        ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema>,
+        ApplicationSchemaDeclarationDenial,
+    > {
+        Ok(builder.principal_binding(Self::reference()))
+    }
+}
 
 /// The exact retention one request asks a named document to carry.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -145,12 +220,6 @@ worth_query_structured_value_binding!(pub SetRetentionInputBinding for SetRetent
     identity: "worth.query.certification.document-retention.set-input.v1"
 });
 worth_query_operation!(pub SetRetention for DocumentRetentionSchema, input SetRetentionInputBinding);
-worth_query_operation_reads!(SetRetention => [DocumentIdentityField, DocumentRetentionField]);
-worth_query_operation_writes!(SetRetention => [DocumentRetentionField]);
-impl declaration::application_schema::OperationExpectsFact<SetRetention>
-    for DocumentRetentionField
-{
-}
 
 impl primary_graph::WorthQueryApplicationProjection<DocumentRetentionSchema, DocumentRetentionQuery>
     for DocumentRetentionRow

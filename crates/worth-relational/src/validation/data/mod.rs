@@ -54,3 +54,7 @@ pub use rule_id::{
     InvariantRuleId, NativeInvariantRuleId,
 };
 pub use rules::{InvariantRule, RecordKindTag};
+
+pub use custom_rule::{
+    CustomInvariantAccessDenial, CustomInvariantAccessDenialKind, CustomInvariantFailureCause,
+};

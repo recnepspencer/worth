@@ -3,6 +3,7 @@ use super::*;
 use crate::storage::partition::RegionRelationProjection;
 
 pub(super) fn capture(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     partition: &PartitionState,
     incidences: usize,
     request: &ExecutionRequest<'_, '_>,
@@ -26,6 +27,7 @@ pub(super) fn capture(
     )?;
     let mut stopped = None;
     let projection = super::super::kind_projection::capture_controlled(
+        lane,
         partition,
         AdjacencyKindBasis::Historical,
         &mut |units, _backing| match funding::work(request, units) {

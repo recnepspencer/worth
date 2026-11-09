@@ -66,5 +66,21 @@ pub(super) fn advance(
             | Stop::ControlStopped(_),
         ) => unreachable!("lineage only refuses prerequisites or evidence"),
     }
+    let member_lineage = {
+        let retained = guard.preparation_mut();
+        let World::Prepared(prepared) = &retained.world else {
+            unreachable!()
+        };
+        coupled::prepare_lineage(
+            provider,
+            &mut retained.query.members,
+            prepared.planned_successor(),
+        )
+    };
+    if let Err(cause) = member_lineage {
+        guard.preparation_mut().query_denial = Some(Cause::Prerequisite(cause));
+        guard.preparation_mut().stage = Stage::PreparingQueryCandidate;
+        return Ok(Some(Progress::Pending(Stage::PreparingQueryCandidate)));
+    }
     Ok(None)
 }

@@ -1,3 +1,10 @@
+use worth_query_declaration::facade::application_schema::{
+    fragment::{self, *},
+    *,
+};
+#[path = "fixture/records.rs"]
+mod storage_model;
+pub use storage_model::*;
 pub use worth_query_declaration::facade::application_schema::{
     ApplicationOperationMarkerIdentity, ApplicationOperationRef, ApplicationSchema,
     ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
@@ -17,16 +24,7 @@ pub struct CompleteInput;
 worth_query_declaration::worth_query_portable_type!(
     CompleteInput => "worth.query.archive.stream.input"
 );
-worth_query_declaration::worth_query_entity!(CompleteEntity for CompleteSchema);
-worth_query_declaration::worth_query_aspect!(
-    Profile for CompleteSchema, CompleteEntity;
-    identity = AspectIdentity(0x9162_1300),
-    revision = AspectContractRevision(1),
-);
-worth_query_declaration::worth_query_field!(
-    Name for CompleteSchema, CompleteEntity, Profile:
-    String => StringApplicationValueBinding, read_only, equality
-);
+
 worth_query_declaration::worth_query_structured_value_binding!(
     pub CompleteInputBinding for CompleteInput {
         identity: "worth.query.archive.stream.input"
@@ -44,24 +42,9 @@ impl ApplicationSchema for CompleteSchema {
     const MAJOR: u32 = 1;
     const MINOR: u32 = 0;
 
-    fn declaration() -> Result<
-        ApplicationSchemaDeclaration<Self>,
-        worth_query_declaration::facade::application_schema::ApplicationSchemaDeclarationDenial,
-    > {
-        let operation =
-            ApplicationOperationRef::<Self, CompleteOperation, CompleteInput>::from_declaration();
-        ApplicationSchemaDeclarationBuilder::for_schema()
-            .entity(CompleteEntity::reference())
-            .aspect(CompleteEntity::reference(), Profile::reference())
-            .field(CompleteEntity::reference(), Name::reference())
-            .operation(
-                operation
-                    .definition()
-                    .no_external_effect()
-                    .no_aftermath()
-                    .finish(),
-            )
-            .build()
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        fragment::declare(Self)
     }
 }
 
@@ -117,7 +100,7 @@ pub fn conditional_binding(
     WorthQueryPortableApplicationConditionalOperationBinding::from_untrusted_parts(
         WorthQueryPortableApplicationConditionalOperationBindingParts {
             schema_owner: CompleteSchema::OWNER.to_owned(),
-            schema_name: CompleteSchema::NAME.to_owned(),
+            schema_name: <CompleteSchema as ApplicationSchema>::NAME.to_owned(),
             application_operation: CompleteOperation::IDENTIFIER.to_owned(),
             input_type: worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity::from_untrusted(
                 "worth.query.archive.stream.input".to_owned(),
@@ -126,4 +109,29 @@ pub fn conditional_binding(
             domain_operation_canonical_identity: operation.canonical_identity().to_owned(),
         },
     )
+}
+
+impl fragment::Fragment for CompleteSchema {
+    const NAME: &'static str = "CompleteSchema";
+    type Bindings = NoBindings;
+    type Members = (CompleteModel, Contracts);
+}
+pub struct Contracts;
+impl fragment::Registration<CompleteSchema> for Contracts {
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<CompleteSchema>,
+    ) -> Result<
+        ApplicationSchemaDeclarationBuilder<CompleteSchema>,
+        ApplicationSchemaDeclarationDenial,
+    > {
+        let operation =
+            ApplicationOperationRef::<CompleteSchema, CompleteOperation, CompleteInput>::from_declaration();
+        Ok(schema.operation(
+            operation
+                .definition()
+                .no_external_effect()
+                .no_aftermath()
+                .finish(),
+        ))
+    }
 }

@@ -25,6 +25,7 @@ pub(in crate::runtime::tests) fn causal_test_reference_digest(
             reference_label.as_ref(),
         )
         .seal()
+        .expect("fixture digest must fit")
         .into()
 }
 
@@ -67,7 +68,8 @@ pub(in crate::runtime::tests::causal_inspection) fn bridge_query_evidence(
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::CausalEvidenceReference)
             .field_shape(WorthQueryEvidenceTag::new("bridge_scope"), scope)
             .field_value(WorthQueryEvidenceTag::new("fixture_token"), token)
-            .seal();
+            .seal()
+            .expect("fixture digest must fit");
     let digest_evidence = bridge_truth_digest_identity_evidence_from_external_token(
         external_token,
         digest_identity.canonical_digest().clone(),

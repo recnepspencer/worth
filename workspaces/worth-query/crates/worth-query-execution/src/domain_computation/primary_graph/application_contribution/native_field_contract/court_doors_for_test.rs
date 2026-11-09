@@ -17,15 +17,11 @@ impl FieldExpectation {
 
 impl FieldExpectation {
     #[doc(hidden)]
-    pub fn declared_for_test<S, E, A, F, V: 'static, W, Q, U>(
+    pub fn declared_for_test<F: schema::fragment::RecordSelection>(
         declaration: &schema::ErasedApplicationSchemaDeclaration,
-        field: schema::ApplicationFieldRef<S, E, A, F, V, W, Q, U>,
-    ) -> Result<Self, NativeFieldContractDenial>
-    where
-        F: schema::DeclaredApplicationFieldValue<Value = V>,
-        U: schema::ApplicationFieldUnit,
-    {
-        Self::declared::<S, E, A, F, V, W, Q, U>(declaration, field)
+        field: F,
+    ) -> Result<Self, NativeFieldContractDenial> {
+        Self::declared(declaration, field)
     }
 }
 

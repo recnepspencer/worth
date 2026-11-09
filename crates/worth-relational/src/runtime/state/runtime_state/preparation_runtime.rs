@@ -36,6 +36,9 @@ pub(crate) struct RelationalPreparationRuntime {
     pub(crate) recovered_index_catalog: Option<crate::history::data::CanonicalIndexDefinitionDelta>,
     pub(crate) recovered_authored_index_writes:
         Option<crate::history::data::CanonicalAuthoredIndexWrites>,
+    pub(crate) current_ownership:
+        Option<Arc<crate::publication::ownership::CurrentPublicationRoster>>,
+    pub(crate) authored_coupling: Option<Arc<crate::mvcc::BoundAuthoredCoupling>>,
     pub(crate) symbol_references: Arc<std::collections::BTreeSet<crate::symbols::data::Symbol>>,
     pub(crate) commit_work_budget: Option<crate::execution::RequestWorkBudget>,
     pub(crate) config: Arc<RelationalRuntimeConfig>,
@@ -103,6 +106,8 @@ impl RelationalPreparationOwnerBinding {
             checkpoint_selection: self.checkpoint_selection.clone(),
             recovered_index_catalog: None,
             recovered_authored_index_writes: None,
+            current_ownership: None,
+            authored_coupling: None,
             symbol_references: Arc::default(),
             commit_work_budget: None,
             configuration_epoch: configuration.clone(),
@@ -131,6 +136,22 @@ impl RelationalPreparationOwnerBinding {
 }
 
 impl RelationalPreparationRuntime {
+    pub(crate) fn with_current_ownership(
+        &self,
+        current: Option<Arc<crate::publication::ownership::CurrentPublicationRoster>>,
+    ) -> Self {
+        let mut runtime = self.clone();
+        runtime.current_ownership = current;
+        runtime
+    }
+    pub(crate) fn with_authored_coupling(
+        mut self,
+        coupling: Option<Arc<crate::mvcc::BoundAuthoredCoupling>>,
+    ) -> Self {
+        self.authored_coupling = coupling;
+        self
+    }
+
     pub(crate) fn with_candidate_symbols(
         &self,
         symbols: &crate::runtime::PendingSymbolMeanings,

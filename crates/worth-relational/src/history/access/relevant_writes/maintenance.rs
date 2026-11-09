@@ -28,8 +28,10 @@ impl RelationalRuntime {
         selected: RelationalSelectedCommit,
     ) -> Result<usize, Denial> {
         require_exact(self, &selected)?;
-        self.history
-            .rebuild_authored_write_generation(execution, selected.commit_id())
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+            self.history
+                .rebuild_authored_write_generation(lane, execution, selected.commit_id())
+        })
     }
 }
 

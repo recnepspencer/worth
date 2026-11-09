@@ -73,19 +73,23 @@ impl<Schema, Operation, Input, Scope>
                 self.admission.operation(),
             )
         })?;
-        let native = expected
-            .attribution()
-            .native_refresh(
-                &self.computation_reads.1,
-                &self.admission.retain_graph_contract(),
-                self.admission.scope_entity_id(),
-                self.lease.snapshot(),
-                super::super::retained_decision_facts::StorageControl::new(
-                    allocation_policy,
-                    Some(self.admission.publication_request()),
-                ),
-            )
-            .map_err(|cause| cause.into_attempt_denial(self.admission.operation()))?;
+        let native = if self.lease.applied_projection().is_some() {
+            None
+        } else {
+            expected
+                .attribution()
+                .native_refresh(
+                    &self.computation_reads.1,
+                    &self.admission.retain_graph_contract(),
+                    self.admission.scope_entity_id(),
+                    self.lease.snapshot(),
+                    super::super::retained_decision_facts::StorageControl::new(
+                        allocation_policy,
+                        Some(self.admission.publication_request()),
+                    ),
+                )
+                .map_err(|cause| cause.into_attempt_denial(self.admission.operation()))?
+        };
         if let Some(native) = native {
             for key in expected.refresh_keys() {
                 self.admission
@@ -328,15 +332,25 @@ fn observe_scoped_dependency<Schema, Operation, Input, Scope>(
             admission.operation(),
         ));
     }
-    lease.handle().with_runtime(execution, |runtime| {
-        super::fact_observation::observe_fact(
-            execution,
-            runtime,
-            lease.snapshot(),
-            &lease.layout,
-            key,
-        )
-    })
+    lease
+        .handle()
+        .with_runtime(execution, |runtime| match lease.applied_projection() {
+            Some(pin) => super::fact_observation::observe_applied_fact(
+                execution,
+                runtime,
+                lease.snapshot(),
+                &lease.layout,
+                key,
+                pin,
+            ),
+            None => super::fact_observation::observe_fact(
+                execution,
+                runtime,
+                lease.snapshot(),
+                &lease.layout,
+                key,
+            ),
+        })
 }
 
 impl<Schema, Operation, Input, Scope>

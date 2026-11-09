@@ -250,6 +250,12 @@ fn bounded_lookup_rejects_empty_budgets_and_nonexact_generations() {
     );
 
     create_entity_outcome(execution, &runtime, "later");
+    runtime
+        .index_authority()
+        .discard_generations(crate::indexes::data::DerivedIndexDiscardRequest::all_bases(
+            index.index_id,
+        ))
+        .unwrap();
     let later_snapshot = runtime
         .visibility_authority()
         .snapshot()
@@ -298,6 +304,7 @@ fn bounded_lookup_rebuilds_exact_historical_generation_after_truth_advances() {
         })
         .expect("index fixture has identity capacity");
 
+    reconstruct_installed_at_head(execution, &runtime);
     update_entity(execution, &runtime, entity_id, "current");
     assert_ne!(historical_version_id, runtime.current_version_id());
     let historical_read = runtime

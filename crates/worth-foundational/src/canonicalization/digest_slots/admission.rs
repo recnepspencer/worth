@@ -15,7 +15,7 @@ use super::evidence::{
     CanonicalDigestBasisBundle, CanonicalDigestBasisSequence, CanonicalDigestDerivationInput,
     CanonicalDigestInputEvidence,
 };
-use super::material::canonical_digest_material;
+use super::material::stream_canonical_digest;
 use super::resource_admission::{CanonicalDigestPreparationStop, CanonicalResourceAdmission};
 use super::{CanonicalDigestWorkBudget, CanonicalDigestWorkEvidence};
 
@@ -69,22 +69,16 @@ pub fn admit_canonical_bundle_digest_derivation_with_budget(
     budget: CanonicalDigestWorkBudget,
 ) -> TransitionOutcome<CanonicalDigestDerivationReadyArtifact, CanonicalDigestDerivationDenial> {
     let (bundle, _proofs, _basis) = bundle.into_parts().into_parts();
-    let sequences = bundle
-        .sequences()
-        .iter()
-        .map(|sequence| {
-            let payload = sequence.payload();
-            CanonicalDigestBasisSequence::new(
-                payload.version().clone(),
-                payload.domain(),
-                payload.entries(),
-                payload.cost(),
-            )
+    let (version, sequences) = bundle.into_parts();
+    let sequences = sequences
+        .into_iter()
+        .map(|ready| {
+            let (sequence, _, _) = ready.into_parts().into_parts();
+            CanonicalDigestBasisSequence::from_owned_sequence(sequence)
         })
         .collect();
     let evidence = CanonicalDigestInputEvidence::DomainBundle(CanonicalDigestBasisBundle::new(
-        bundle.version().clone(),
-        sequences,
+        version, sequences,
     ));
 
     admit_canonical_digest_derivation(slot.into_metadata(), evidence, Some(budget))
@@ -107,22 +101,13 @@ pub fn admit_canonical_export_digest_derivation_with_budget(
     budget: CanonicalDigestWorkBudget,
 ) -> TransitionOutcome<CanonicalDigestDerivationReadyArtifact, CanonicalDigestDerivationDenial> {
     let (export, _proofs, _basis) = export.into_parts().into_parts();
-    let sequences = export
-        .bundle()
-        .sequences()
-        .iter()
-        .map(|sequence| {
-            CanonicalDigestBasisSequence::new(
-                sequence.version().clone(),
-                sequence.domain(),
-                sequence.entries(),
-                sequence.cost(),
-            )
-        })
+    let (version, sequences) = export.into_basis().into_parts();
+    let sequences = sequences
+        .into_iter()
+        .map(CanonicalDigestBasisSequence::from_owned_export)
         .collect();
     let evidence = CanonicalDigestInputEvidence::ExportBundle(CanonicalDigestBasisBundle::new(
-        export.bundle().version().clone(),
-        sequences,
+        version, sequences,
     ));
 
     admit_canonical_digest_derivation(slot.into_metadata(), evidence, Some(budget))
@@ -206,17 +191,13 @@ pub(super) fn prepare_canonical_digest_derivation(
             },
         ));
     }
-    let material = canonical_digest_material(
+    let material = stream_canonical_digest(
         &algorithm,
         &evidence,
         budget.map(CanonicalDigestWorkBudget::maximum_encoded_bytes),
         admission.as_deref_mut(),
     )?;
-    let work = CanonicalDigestWorkEvidence::new(
-        entry_count,
-        material.encoded_bytes(),
-        material.allocation_bytes(),
-    );
+    let work = CanonicalDigestWorkEvidence::new(entry_count, material.encoded_bytes(), 0);
 
     let authority =
         AuthorityWitness::from_authority_marker(CanonicalBasisConstructionAuthority::new());
@@ -232,7 +213,7 @@ pub(super) fn prepare_canonical_digest_derivation(
     let input = CanonicalDigestDerivationInput::new(
         admitted_algorithm_clone(&algorithm, admission)?,
         evidence,
-        material.into_bytes(),
+        material.digest(),
         work,
     );
 

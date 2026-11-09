@@ -120,7 +120,8 @@ fn execution_request_denial(
                 | Resource::ScratchCapacityExceeded,
             ..
         } => BankHttpDenial::new(Kind::ResourceExhausted, Next::NarrowRequest),
-        kind @ (Session::ProjectionContract { .. }
+        kind @ (Session::OutputCorrespondenceMismatch { .. }
+        | Session::ProjectionContract { .. }
         | Session::HistoricalVisibility { .. }
         | Session::StorageUnavailable(_)
         | Session::ExecutionResource {

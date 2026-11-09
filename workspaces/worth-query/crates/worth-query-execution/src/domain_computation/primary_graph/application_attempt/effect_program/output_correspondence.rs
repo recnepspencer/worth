@@ -7,6 +7,7 @@ use worth_relational::facade::identity::EntityId;
 pub use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture as WorthQueryApplicationOutputPosture;
 
 mod checkpoint;
+mod restoration;
 mod storage;
 use storage::CorrespondenceStorage;
 
@@ -16,6 +17,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) use candid
 mod family_entry;
 pub use family_entry::WorthQueryApplicationOutputFamilyEntry;
 
+mod native_publication;
 mod projection;
 pub use projection::WorthQueryApplicationOutputEntity;
 pub use projection::WorthQueryApplicationOutputProjectionDenial;
@@ -24,7 +26,10 @@ pub(crate) mod role_use;
 pub(in crate::domain_computation::primary_graph) use role_use::OutputRoleUse;
 
 mod typed;
-pub use typed::WorthQueryApplicationTypedOutputCorrespondence;
+pub use typed::{
+    WorthQueryApplicationClosureEvidenceEntry, WorthQueryApplicationTypedClosureEvidence,
+    WorthQueryApplicationTypedOutputCorrespondence,
+};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct CommittedOutputBinding {
@@ -138,11 +143,15 @@ impl WorthQueryApplicationOutputCorrespondence {
             })
     }
 
-    /// Only completed Retire bindings whose actual delete effects were validated.
+    /// Entities retired by validated roles or admission-only closure evidence.
+    ///
+    /// O(roles + closure witnesses) time and O(1) additional space. Rebase still
+    /// requires this commit's changed record and exact native deletion version.
     pub fn retired_entity_ids(&self) -> impl Iterator<Item = EntityId> + '_ {
         self.storage
             .roles
             .iter()
+            .chain(self.storage.closure_evidence.iter())
             .map(|(_, binding)| binding)
             .filter_map(|binding| {
                 (binding.posture == WorthQueryApplicationOutputPosture::Retire)

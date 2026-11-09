@@ -18,33 +18,11 @@ pub struct KeySlot;
 pub struct ValueSlot;
 worth_query_portable_type!(KeySlot => "cell-history.key-slot.v1");
 worth_query_portable_type!(ValueSlot => "cell-history.value-slot.v1");
-fn key() -> ApplicationQueryResultFieldRef<
-    Cells,
-    KeySlot,
-    Schema,
-    Cell,
-    CellFacts,
-    CellKey,
-    u64,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("key", CellKey::reference())
+fn key() -> ApplicationQueryResultFieldRef<Cells, KeySlot, Schema, CellKey> {
+    ApplicationQueryResultFieldRef::new("key", CellKey::at("CellKey"))
 }
-fn value() -> ApplicationQueryResultFieldRef<
-    Cells,
-    ValueSlot,
-    Schema,
-    Cell,
-    CellFacts,
-    CellValue,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("value", CellValue::reference())
+fn value() -> ApplicationQueryResultFieldRef<Cells, ValueSlot, Schema, CellValue> {
+    ApplicationQueryResultFieldRef::new("value", CellValue::at("CellValue"))
 }
 impl WorthQueryApplicationProjection<Schema, Cells> for CellRow {
     fn project(
@@ -75,8 +53,8 @@ worth_query_query_binding!(pub ReadBinding for LiveCells, schema Schema,
     query Cells, parameters ParametersBinding => |_| ApplicationQueryParameterSet::new(), result RowBinding,
     principal PrincipalBinding, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Feature,FeatureFacts,FeatureKey,u64,ReadOnly,NoApplicationUnit,
-    field FeatureKey::reference(), value feature, limits results 16_384);
+    scope FeatureKey,
+    field FeatureKey::at("FeatureKey"), value feature, limits results 16_384);
 
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
@@ -99,10 +77,17 @@ pub fn declare(
         .public()
         .root_path(
             ApplicationQueryRootPath::from(Feature::reference()).forward(OwnsCell::reference()),
-        )
-        .build()
-        .unwrap();
+        );
     schema
         .application_query(query)
         .application_query_binding::<ReadBinding>()
+}
+
+impl worth_query_decl::facade::application_schema::fragment::Registration<Schema> for Cells {
+    fn register(
+        builder: ApplicationSchemaDeclarationBuilder<Schema>,
+    ) -> Result<ApplicationSchemaDeclarationBuilder<Schema>, ApplicationSchemaDeclarationDenial>
+    {
+        Ok(declare(builder))
+    }
 }

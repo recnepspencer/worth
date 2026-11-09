@@ -8,11 +8,12 @@ pub(super) struct PreparedRefresh {
     pub(super) publication: IndexGenerationPublicationBasis,
     pub(super) entries: Vec<(DerivedIndexId, DerivedIndexEntries)>,
     pub(super) reused: Vec<DerivedIndexGeneration>,
+    pub(super) basis: Option<crate::runtime::PreparedIndexBasisSelection>,
 }
 
 impl PreparedRefresh {
     pub(super) fn publish_admitted(
-        self,
+        mut self,
         runtime: &crate::runtime::RelationalRuntime,
         work: &mut MaintenanceWork,
     ) -> Result<Vec<DerivedIndexGeneration>, Denial> {
@@ -56,15 +57,33 @@ impl PreparedRefresh {
             .and_then(|n| n.checked_mul(4))
             .ok_or(Denial::WorkBudgetExceeded)?;
         work.prepare(comparisons as u64, 0)?;
-        runtime
+        work.array::<DerivedIndexGeneration>(generations.len())?;
+        for generation in &generations {
+            let width =
+                generation.source_branch_id.0.len() + generation.applicability.branch_id.0.len();
+            work.prepare(width as u64 + 1, width as u64)?;
+        }
+        let mut publication = runtime
             .indexes
-            .publish_generations_admitted(&generations, |units, bytes| work.prepare(units, bytes))
+            .prepare_generation_batch(generations.clone(), self.basis.take(), |units, bytes| {
+                work.prepare(units, bytes)
+            })
             .map_err(|stop| match stop {
                 SelectedIndexGenerationAdmissionStop::Admission(stop) => stop,
                 SelectedIndexGenerationAdmissionStop::AccountingOverflow => {
                     Denial::WorkBudgetExceeded
                 }
             })?;
+        // All work, allocation, generation issuance and binding quotes precede effects.
+        publication
+            .admit_actual_geometry(|units, bytes| work.prepare(units, bytes))
+            .map_err(|stop| match stop {
+                SelectedIndexGenerationAdmissionStop::Admission(stop) => stop,
+                SelectedIndexGenerationAdmissionStop::AccountingOverflow => {
+                    Denial::WorkBudgetExceeded
+                }
+            })?;
+        publication.publish_admitted();
         generations.extend(self.reused);
         generations.sort_unstable_by_key(|generation| generation.index_id);
         Ok(generations)

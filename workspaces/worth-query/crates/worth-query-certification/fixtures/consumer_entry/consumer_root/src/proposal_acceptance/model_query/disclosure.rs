@@ -9,10 +9,11 @@ pub(super) fn model() -> ApplicationQueryDisclosureContract {
         access::ReadDomain::reference(),
     )
     .use_field_by(
-        ModelName::reference(),
+        ModelName::at("ModelName"),
         access::encoded(1),
         influence.clone(),
     )
+    .expect("owned record field matches its declaration")
     .disclose_field_by(model_name(), access::encoded(1), influence)
 }
 pub(super) fn target() -> ApplicationQueryDisclosureContract {
@@ -22,20 +23,23 @@ pub(super) fn target() -> ApplicationQueryDisclosureContract {
         access::ReadDomain::reference(),
     )
     .use_field_by(
-        ModelName::reference(),
+        ModelName::at("ModelName"),
         access::encoded(1),
         influence.clone(),
     )
+    .expect("owned record field matches its declaration")
     .use_field_by(
-        TargetName::reference(),
+        TargetName::at("TargetName"),
         access::encoded(1),
         influence.clone(),
     )
+    .expect("owned record field matches its declaration")
     .use_field_by(
-        Retention::reference(),
+        Retention::at("Retention"),
         access::encoded(1),
         influence.clone(),
     )
+    .expect("owned record field matches its declaration")
     .disclose_field_by(target_name(), access::encoded(1), influence.clone())
     .disclose_field_by(days(), access::encoded(1), influence)
 }

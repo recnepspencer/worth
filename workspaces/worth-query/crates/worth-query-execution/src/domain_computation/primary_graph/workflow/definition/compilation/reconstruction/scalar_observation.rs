@@ -94,9 +94,10 @@ pub(super) fn observed_optional_text(
         });
         return Ok(None);
     };
-    let AspectValue::String(InternedString::Raw(text)) = &value else {
+    let Some(text) = (&value).raw_text() else {
         return Err(denial("workflow definition field has invalid type"));
     };
+    let text = text.to_owned();
     let text = text.clone();
     facts.push(WorthQueryApplicationObservedFact::Field {
         entity_id: entity,
@@ -118,9 +119,10 @@ pub(super) fn observed_text(
 ) -> Result<String, WorthQueryApplicationAttemptDenial> {
     let value = observe_field_value(runtime, execution, snapshot, entity, kind, locator)?
         .ok_or_else(|| denial("workflow definition field is unavailable"))?;
-    let AspectValue::String(InternedString::Raw(text)) = &value else {
+    let Some(text) = (&value).raw_text() else {
         return Err(denial("workflow definition field has invalid type"));
     };
+    let text = text.to_owned();
     let text = text.clone();
     facts.push(WorthQueryApplicationObservedFact::Field {
         entity_id: entity,

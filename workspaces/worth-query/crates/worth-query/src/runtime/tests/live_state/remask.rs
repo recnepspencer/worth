@@ -78,7 +78,8 @@ fn runtime_remask_posture_projects_parity_across_state_and_inspection() {
             &WorthQueryRuntimeAsyncResultProjection::completion_state(
                 BridgeAsyncCompletionState::Admitted(BridgeAsyncCompletionClass::Fulfilled),
                 "async:remask-current",
-            ),
+            )
+            .expect("fixture digest must fit"),
             &basis_digest,
             &generation_digest,
         )
@@ -170,7 +171,8 @@ fn runtime_remask_denial_stays_typed_and_does_not_collapse_into_generic_async_fa
                 &WorthQueryRuntimeAsyncResultProjection::completion_state(
                     BridgeAsyncCompletionState::Admitted(BridgeAsyncCompletionClass::Fulfilled),
                     "async:remask-current",
-                ),
+                )
+                .expect("fixture digest must fit"),
                 &basis_digest,
                 &generation_digest,
             )

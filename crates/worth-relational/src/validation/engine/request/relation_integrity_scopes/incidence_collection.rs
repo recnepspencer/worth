@@ -1,6 +1,7 @@
 use std::collections::BTreeSet;
 
 use crate::identity::data::RelationId;
+use crate::storage::partition::AdjacencyDirection;
 use crate::transactions::data::EntityReference;
 use crate::validation::engine::request::PreparedVisibleRelationEdge;
 
@@ -14,30 +15,30 @@ impl RelationIntegrityScopeAccumulator<'_, '_, '_, '_> {
         let mut scanned_targets = BTreeSet::new();
         loop {
             self.check_live()?;
-            if let Some(entity_id) = self.touched_relation_sources.pop_first() {
-                if !scanned_sources.insert(entity_id) {
+            if let Some((kind, entity_id)) = self.touched_relation_sources.pop_first() {
+                if !scanned_sources.insert((kind, entity_id)) {
                     continue;
                 }
-                if let Some(partition) = self
-                    .partitions
-                    .get_current_partition(entity_id.partition_id)
-                {
-                    let outgoing = partition.outgoing_candidates(entity_id).to_vec();
-                    self.scan_relation_ids(outgoing)?;
-                }
+                let outgoing = self.state_view.try_kind_relation_candidates(
+                    entity_id,
+                    kind,
+                    AdjacencyDirection::Outgoing,
+                    self.admit,
+                )?;
+                self.scan_relation_ids(outgoing)?;
                 continue;
             }
-            if let Some(entity_id) = self.touched_relation_targets.pop_first() {
-                if !scanned_targets.insert(entity_id) {
+            if let Some((kind, entity_id)) = self.touched_relation_targets.pop_first() {
+                if !scanned_targets.insert((kind, entity_id)) {
                     continue;
                 }
-                if let Some(partition) = self
-                    .partitions
-                    .get_current_partition(entity_id.partition_id)
-                {
-                    let incoming = partition.incoming_candidates(entity_id).to_vec();
-                    self.scan_relation_ids(incoming)?;
-                }
+                let incoming = self.state_view.try_kind_relation_candidates(
+                    entity_id,
+                    kind,
+                    AdjacencyDirection::Incoming,
+                    self.admit,
+                )?;
+                self.scan_relation_ids(incoming)?;
                 continue;
             }
             break;
@@ -62,7 +63,9 @@ impl RelationIntegrityScopeAccumulator<'_, '_, '_, '_> {
             else {
                 continue;
             };
-            let scope = self.scopes.entry(kind_id).or_default();
+            let Some(scope) = self.scopes.get_mut(&kind_id) else {
+                continue;
+            };
             scope.visible_edges.push(PreparedVisibleRelationEdge {
                 relation_id,
                 source,
@@ -103,67 +106,10 @@ impl RelationIntegrityScopeAccumulator<'_, '_, '_, '_> {
                     .is_some_and(|kinds| !kinds.is_empty())
             }) {
                 scope.minimum_touched_entities.insert(survivor);
-                self.touched_relation_sources.insert(survivor);
-                self.touched_relation_targets.insert(survivor);
+                self.touched_relation_sources.insert((kind_id, survivor));
+                self.touched_relation_targets.insert((kind_id, survivor));
             }
             self.check_live()?;
-        }
-        Ok(())
-    }
-
-    pub(super) fn scan_required_visible_successors(
-        &mut self,
-    ) -> Result<(), crate::transactions::data::TransactionCommitError> {
-        let required_kinds = self
-            .scopes
-            .iter()
-            .filter_map(|(kind_id, scope)| {
-                (scope.requires_visible_successors && scope.should_execute()).then_some(*kind_id)
-            })
-            .collect::<BTreeSet<_>>();
-        if required_kinds.is_empty() {
-            return Ok(());
-        }
-        for partition_id in self.state_view.state().partition_ids() {
-            // Complete scope preparation keeps its existing allocation policy;
-            // the state-view owner enumerates actual logical coordinates.
-            let control = self.control;
-            let slots = self
-                .state_view
-                .try_relation_slots(partition_id, |_, _| control.check())?;
-            for slot in slots {
-                self.check_live()?;
-                let Some(metadata) = self
-                    .state_view
-                    .relation_metadata_for_slot(partition_id, slot)
-                else {
-                    continue;
-                };
-                if !required_kinds.contains(&metadata.kind_id)
-                    || self.deleted_relations.contains(&metadata.relation_id)
-                    || self.deleted_entities.contains(&metadata.source)
-                    || self.deleted_entities.contains(&metadata.target)
-                {
-                    continue;
-                }
-                self.scanned_relations.insert(metadata.relation_id);
-                self.check_live()?;
-                self.scopes
-                    .get_mut(&metadata.kind_id)
-                    .expect(/* Proof: Scope preparation inserts each required/minimum/deleted relation kind before the corresponding population pass; those private passes do not remove scope entries. */ "required relation kind scope must be prepared")
-                    .record_visible_successor(
-                        EntityReference::Existing(metadata.source),
-                        EntityReference::Existing(metadata.target),
-                    );
-            }
-        }
-        for scope in self.scopes.values_mut() {
-            self.control.check()?;
-            for successors in scope.visible_successors.values_mut() {
-                self.control.check()?;
-                successors.sort();
-                successors.dedup();
-            }
         }
         Ok(())
     }

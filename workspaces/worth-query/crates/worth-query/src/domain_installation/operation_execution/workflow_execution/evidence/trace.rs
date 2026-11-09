@@ -4,6 +4,7 @@ use crate::domain_installation::operation_authority_chain::{
     WorthQueryOperationPhaseProof,
 };
 use crate::domain_installation::operation_identity_basis::canonical_indexed_operation_material;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::hash_parts;
 
 use super::{WorthQueryWorkflowRun, WorthQueryWorkflowRunCounters, WorthQueryWorkflowStageReceipt};
@@ -94,10 +95,13 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
         }
         match crate::domain_installation::operation_lineage::bind_execution_lineage(trace) {
             Ok(trace) => TransitionOutcome::Success(trace),
-            Err((trace, _)) => {
-                TransitionOutcome::Denied(WorthQueryWorkflowCompletionDenial::from_trace(
+            Err((trace, denial)) => {
+                let kind = denial.identity_derivation_denial().map_or(
                     WorthQueryWorkflowCompletionDenialKind::LineageEvidence,
-                    &trace,
+                    WorthQueryWorkflowCompletionDenialKind::EvidenceIdentityDerivationDenied,
+                );
+                TransitionOutcome::Denied(WorthQueryWorkflowCompletionDenial::from_trace(
+                    kind, &trace,
                 ))
             }
         }
@@ -164,6 +168,7 @@ fn mint_completed_trace<D, O, F, L: BasisOperationLane>(
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowCompletionDenialKind {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     StaleInstallationGeneration,
     IncompleteStages,
     LineageEvidence,

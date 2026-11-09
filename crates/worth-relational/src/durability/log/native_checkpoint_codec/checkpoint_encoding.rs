@@ -14,16 +14,16 @@ pub(crate) use writer::{copy_bytes, count_value, encode_value, CheckpointEncodin
 
 #[cfg(test)]
 pub(crate) fn encode_checkpoint(
-    checkpoint: &DurableCheckpoint,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
+    checkpoint: &DurableCheckpoint,
     policy: ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<
     (ExecutionImmutableBytes, NativeCheckpointSectionBytes),
     RelationalNativeCheckpointCaptureDenial,
 > {
     let (bytes, sections, _) = encode_checkpoint_members(
-        checkpoint,
         execution,
+        checkpoint,
         policy,
         &RelationalCheckpointArtifactPolicy::Embedded,
     )?;
@@ -32,8 +32,8 @@ pub(crate) fn encode_checkpoint(
 
 #[cfg(test)]
 pub(crate) fn encode_checkpoint_members(
-    checkpoint: &DurableCheckpoint,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
+    checkpoint: &DurableCheckpoint,
     policy: ExecutionAllocationPolicy<'_, '_>,
     placement: &RelationalCheckpointArtifactPolicy<'_>,
 ) -> Result<
@@ -45,7 +45,10 @@ pub(crate) fn encode_checkpoint_members(
     RelationalNativeCheckpointCaptureDenial,
 > {
     policy.check_live()?;
-    let mut captured = CapturedManifest::capture(checkpoint, policy)?;
+    let mut captured =
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+            CapturedManifest::capture(lane, execution, checkpoint, policy)
+        })?;
     // These existing hostile codec fixtures deliberately encode changed DATA.
     // They are never an original-source capture or publication witness.
     let memory =

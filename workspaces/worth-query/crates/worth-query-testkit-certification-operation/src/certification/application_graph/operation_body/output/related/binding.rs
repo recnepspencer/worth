@@ -3,8 +3,8 @@
 pub use super::super::super::binding::{BodyBinding, BodyDenialBinding, BodyResultBinding};
 pub use super::*;
 pub use worth_query_host::facade::declaration::application_schema::{
-    ApplicationFieldRef, ApplicationPrincipalBindingRef, EqualityPredicate, NoApplicationUnit,
-    ReadOnly, U64ApplicationValueBinding,
+    ApplicationPrincipalBindingRef, EqualityPredicate, NoApplicationUnit, ReadOnly,
+    U64ApplicationValueBinding,
 };
 pub use worth_query_host::facade::primary_graph::WorthQueryOperationBodyDecision;
 
@@ -38,16 +38,7 @@ impl<const MODE: u64> ApplicationMutationBinding<DocumentRetentionSchema<MODE>>
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
     }
-    fn scope_field() -> ApplicationFieldRef<
-        DocumentRetentionSchema<MODE>,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
+    fn scope_field() -> DocumentIdentityField {
         BodyBinding::<MODE>::scope_field()
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -76,7 +67,7 @@ impl<const MODE: u64> ApplicationMutationIntent<DocumentRetentionSchema<MODE>>
     ) -> <Self::Binding as ApplicationMutationBinding<DocumentRetentionSchema<MODE>>>::ScopeBinding
     {
         ApplicationMutationFieldScope::new(
-            DocumentIdentityField::reference(),
+            DocumentIdentityField::at("DocumentIdentityField"),
             self.0.identity.clone(),
         )
     }

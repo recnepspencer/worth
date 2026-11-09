@@ -1,20 +1,12 @@
-use worth_query_decl::facade::{
-    application_query::{
-        ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef, ManyResults,
-        OptionalOneResult, ReverseResultTraversal,
-    },
-    application_schema::{EqualityPredicate, NoApplicationUnit, ReadOnly, ReadWrite},
+use worth_query_decl::facade::application_query::{
+    ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef, ManyResults,
+    OptionalOneResult, ReverseResultTraversal,
 };
 
-use crate::{
-    estate::{EstateCaseId, MandatoryReviewId, MandatoryReviewKind, MandatoryReviewStatus},
-    model::BankPrincipalId,
-    schema::{
-        BankSchema, EstateCase, EstateCaseIdentityField, EstateCaseRecord, MandatoryReview,
-        MandatoryReviewIdentityField, MandatoryReviewKindField, MandatoryReviewRecord,
-        MandatoryReviewStatusField, Principal, PrincipalIdentity, PrincipalIdentityField,
-        ReviewEstate, ReviewPrincipal,
-    },
+use crate::schema::{
+    BankSchema, EstateCase, EstateCaseIdentityField, MandatoryReview, MandatoryReviewIdentityField,
+    MandatoryReviewKindField, MandatoryReviewStatusField, Principal, PrincipalIdentityField,
+    ReviewEstate, ReviewPrincipal,
 };
 
 use super::mandatory_review::EstateMandatoryReviewQuery;
@@ -36,19 +28,9 @@ worth_query_decl::facade::worth_query_portable_type!(ReviewPrincipalIdentitySlot
 
 macro_rules! selector {
     ($name:ident, $slot:ty, $entity:ty, $aspect:ty, $field:ty, $value:ty, $write:ty, $alias:literal) => {
-        pub(super) fn $name() -> ApplicationQueryResultFieldRef<
-            EstateMandatoryReviewQuery,
-            $slot,
-            BankSchema,
-            $entity,
-            $aspect,
-            $field,
-            $value,
-            $write,
-            EqualityPredicate,
-            NoApplicationUnit,
-        > {
-            ApplicationQueryResultFieldRef::new($alias, <$field>::reference())
+        pub(super) fn $name(
+        ) -> ApplicationQueryResultFieldRef<EstateMandatoryReviewQuery, $slot, BankSchema, $field> {
+            ApplicationQueryResultFieldRef::new($alias, <$field>::at(stringify!($field)))
         }
     };
 }

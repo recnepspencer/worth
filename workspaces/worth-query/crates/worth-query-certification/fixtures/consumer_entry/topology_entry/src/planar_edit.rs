@@ -4,14 +4,14 @@ use worth_query_consumer_values::{PlanarAdjustmentResult, PlanarMutationDenial};
 use worth_query_decl::facade::{
     application_operation::*, application_schema::*, worth_query_operation,
     worth_query_operation_creates, worth_query_operation_links, worth_query_operation_reads,
-    worth_query_operation_unlinks, worth_query_operation_writes,
+    worth_query_operation_unlinks,
 };
 
 use super::*;
 
 worth_query_operation!(pub EditPlanar for Schema: TopologySchemaBinding, input PlanarMutationInputBinding);
-worth_query_operation_reads!(EditPlanar => [Body, BodyKey, PositionX, PositionY, Length, PlanarSuccessor]);
-worth_query_operation_writes!(EditPlanar => [BodyKey, PositionX, PositionY, Length]);
+worth_query_operation_reads!(EditPlanar => [Body, PlanarSuccessor]);
+
 worth_query_operation_creates!(EditPlanar => [Body]);
 worth_query_operation_links!(EditPlanar => [PlanarSuccessor]);
 worth_query_operation_unlinks!(EditPlanar => [PlanarSuccessor]);
@@ -46,7 +46,7 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     type Denial = PlanarMutationDenial;
     type DenialBinding = PlanarMutationDenialBinding;
     type Output = PlanarOutputs;
-    type ScopeBinding = PlanarMutationScope<Schema>;
+    type ScopeBinding = PlanarMutationScope;
     type PrincipalBinding = ConsumerPrincipalBinding;
     type Mapping = ExternalPrincipalMapping;
     type Principal = Principal;
@@ -58,17 +58,8 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     const HANDLER_IDENTITY: &'static str = "worth.query.certification.planar-edit-handler.v4";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.certification.planar-edit-command.v1";
 
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Body,
-        PlanarPosition,
-        BodyKey,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        BodyKey::reference()
+    fn scope_field() -> BodyKey {
+        BodyKey::at("BodyKey")
     }
 
     fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -90,8 +81,8 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationIntent<Schema> for Planar
         &self.0
     }
 
-    fn scope_binding(&self) -> PlanarMutationScope<Schema> {
-        PlanarMutationScope::new(BodyKey::reference(), self.0.scope_key.clone())
+    fn scope_binding(&self) -> PlanarMutationScope {
+        PlanarMutationScope::new(BodyKey::at("BodyKey"), self.0.scope_key.clone())
     }
 }
 

@@ -11,8 +11,10 @@ publish = false
 [dependencies]
 bank-domain.workspace = true
 getrandom = "0.4"
+serde.workspace = true
 worth-foundational.workspace = true
 worth-query-host.workspace = true
+worth-query-decl.workspace = true
 
 [dev-dependencies]
 worth-query-bank-testkit = { path = "../worth-query-bank-testkit" }

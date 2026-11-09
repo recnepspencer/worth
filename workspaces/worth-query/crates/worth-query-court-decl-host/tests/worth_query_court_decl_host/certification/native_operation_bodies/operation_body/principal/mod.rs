@@ -65,6 +65,15 @@ fn portable_actor_contract_refuses_missing_read_unit_codec_and_binding() {
     );
     for defect in ["read", "unit", "codec", "binding", "principal", "source"] {
         let mut parts = portable.clone().into_parts();
+        if defect == "unit"
+            && !parts.members.iter().any(
+                |member| matches!(member, ApplicationSchemaMember::Unit { unit } if unit == "days"),
+            )
+        {
+            parts.members.push(ApplicationSchemaMember::Unit {
+                unit: "days".to_owned(),
+            });
+        }
         for member in &mut parts.members {
             match member {
                 ApplicationSchemaMember::OperationDecisionRead { operation, target }
@@ -109,7 +118,8 @@ fn portable_actor_contract_refuses_missing_read_unit_codec_and_binding() {
                                 "source" => {
                                     *source = ApplicationFieldBindingLocus::new(
                                         "Document",
-                                        "DocumentFacts",
+                                        DocumentRetentionField::at("DocumentRetentionField")
+                                            .aspect(),
                                         "DocumentRetentionField",
                                     )
                                 }
@@ -133,6 +143,35 @@ fn portable_actor_contract_refuses_missing_read_unit_codec_and_binding() {
                 _ => {}
             }
         }
+        let inserted_unit = parts.members.iter().position(
+            |member| matches!(member, ApplicationSchemaMember::Unit { unit } if unit == "days"),
+        );
+        let unit_owner = parts.members.iter().position(|member| matches!(member, ApplicationSchemaMember::Field { field, .. } if field == "AuditActorField")).unwrap() as u32;
+        let mut order: Vec<_> = (0..parts.members.len()).collect();
+        order.sort_by(|left, right| parts.members[*left].cmp(&parts.members[*right]));
+        for contribution in &mut parts.contributions {
+            let mut ordinals: Vec<_> = contribution
+                .member_ordinals()
+                .iter()
+                .map(|old| {
+                    order
+                        .iter()
+                        .position(|ordinal| *ordinal == *old as usize)
+                        .unwrap() as u32
+                })
+                .collect();
+            if defect == "unit"
+                && contribution.member_ordinals().contains(&unit_owner)
+                && let Some(unit) = inserted_unit
+            {
+                let index = order.iter().position(|ordinal| *ordinal == unit).unwrap() as u32;
+                if !ordinals.contains(&index) {
+                    ordinals.push(index);
+                }
+            }
+            ordinals.sort_unstable();
+            *contribution = worth_query_host::facade::declaration::application_schema::ApplicationSchemaContributionProvenance::from_untrusted_parts(contribution.identity().as_str().to_owned(), ordinals);
+        }
         parts.members.sort();
         let denial = validate_portable_application_schema_freshly(
             WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts),
@@ -145,10 +184,13 @@ fn portable_actor_contract_refuses_missing_read_unit_codec_and_binding() {
             ));
         }
         if defect == "unit" {
-            assert!(matches!(
-                denial,
-                ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency { .. }
-            ));
+            assert!(
+                matches!(
+                    denial,
+                    ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency { .. }
+                ),
+                "{defect}: {denial:?}"
+            );
         }
     }
 }

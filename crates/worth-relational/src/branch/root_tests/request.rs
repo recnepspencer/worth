@@ -26,9 +26,10 @@ fn request_root_refusal_preserves_original_and_releases_partial_backing() {
     let execution = ExecutionRequest::serial(&host);
     let attempt = || {
         super::super::RelationalBranchRoot::readmit_unchanged_for_request(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
             &issuer,
             &original,
-            original.canonical_envelope().unwrap().clone(),
+            original.canonical_payload().unwrap(),
             original.descriptor().unwrap().clone(),
             original.retained_schema_authority(),
             original.output_publication_positions.clone(),

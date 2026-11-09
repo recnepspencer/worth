@@ -1,6 +1,8 @@
 //! Closed mutation symbol inputs: live reservation or authenticated original DATA.
 use super::{PendingSymbolMeanings, SymbolReservationDenial};
-use crate::symbols::data::{Symbol, SymbolTableSnapshot, SymbolTextLookup};
+#[cfg(test)]
+use crate::symbols::data::SymbolTableSnapshot;
+use crate::symbols::data::{Symbol, SymbolTextLookup};
 
 mod sealed {
     pub trait Sealed {}
@@ -29,10 +31,12 @@ impl MutationSymbolMeanings for PendingSymbolMeanings {
 
 /// Borrows the admitted canonical dictionary and reference roster. It cannot
 /// reserve an identity, import an interner or allocate a reservation directory.
+#[cfg(test)]
 pub(crate) struct OriginalSymbolMeanings<'a> {
     lookup: &'a dyn SymbolTextLookup,
     references: &'a [Symbol],
 }
+#[cfg(test)]
 impl<'a> OriginalSymbolMeanings<'a> {
     pub(crate) fn new(
         lookup: &'a dyn SymbolTextLookup,
@@ -53,7 +57,9 @@ impl<'a> OriginalSymbolMeanings<'a> {
         Ok(Self { lookup, references })
     }
 }
+#[cfg(test)]
 impl sealed::Sealed for OriginalSymbolMeanings<'_> {}
+#[cfg(test)]
 impl MutationSymbolMeanings for OriginalSymbolMeanings<'_> {
     fn reserve_revision_reference(
         &mut self,

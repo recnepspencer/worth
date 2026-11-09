@@ -117,7 +117,17 @@ fn close_query_derived_product_readiness(
                 format!("{}: {}", error.stage(), error.message()),
             )
         })?;
-    let downstream_delivery_contract = workspace.public_downstream_delivery_contract();
+    let downstream_delivery_contract =
+        workspace
+            .public_downstream_delivery_contract()
+            .map_err(|cause| {
+                WorthServerProductOperationSurfaceDenial::new(
+                    WorthServerProductOperationSurfaceDenialCode::EvidenceIdentityDerivationDenied(
+                        cause,
+                    ),
+                    "downstream contract identity exceeded canonical digest bounds".to_string(),
+                )
+            })?;
     let query_context = WorthServerOperationQuerySupportContext::new(
         prepared_kind,
         &operation,

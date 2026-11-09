@@ -4,8 +4,8 @@ use worth_execution::{
 use worth_foundational::{ExecutionReport, PartitionIdentity};
 
 use crate::query::data::{
-    reduce_query_fragments_checked, CanonicalQueryResult, QueryExecutionShape,
-    QueryOrderingContract, QueryWorkerFragment,
+    query_reduction_scratch_bound, reduce_query_fragments_checked, CanonicalQueryResult,
+    QueryExecutionShape, QueryOrderingContract, QueryWorkerFragment,
 };
 
 use super::QueryReadExecutionStop;
@@ -22,7 +22,7 @@ pub(super) fn complete_leased_query(
         .map_err(QueryReadExecutionStop::CompletionAdmission)?;
     let memory = execution.memory_limit();
     let captured_bytes = fragments.additional_charged_bytes();
-    let scratch_bound = captured_bytes.saturating_mul(8).saturating_add(4096);
+    let scratch_bound = query_reduction_scratch_bound(&fragments);
     let scratch_ceiling = memory.map_or(scratch_bound, |limit| scratch_bound.min(limit / 3));
     let result_bound = captured_bytes.saturating_mul(2).saturating_add(1024);
     let result_ceiling = memory.map_or(result_bound, |limit| result_bound.min(limit / 3));

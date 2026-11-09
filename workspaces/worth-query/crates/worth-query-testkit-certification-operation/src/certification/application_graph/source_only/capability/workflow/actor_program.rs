@@ -65,7 +65,7 @@ impl ApplicationMutationIntent<CapabilitySchema> for Effect {
         &self,
     ) -> <ActorBinding as ApplicationMutationBinding<CapabilitySchema>>::ScopeBinding {
         <ActorBinding as ApplicationMutationBinding<CapabilitySchema>>::ScopeBinding::new(
-            DocumentIdentityField::reference(),
+            DocumentIdentityField::at("DocumentIdentityField"),
             self.0.identity.clone(),
         )
     }

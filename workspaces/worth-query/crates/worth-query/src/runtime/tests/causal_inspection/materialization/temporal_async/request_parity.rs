@@ -22,19 +22,23 @@ fn retained_temporal_evidence_projects_same_explanation_for_all_retained_and_exp
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                     "query-inspection:temporal-request-parity",
                 ),
-            ),
+            )
+            .expect("fixture digest must fit"),
             CausalObservationEvidenceIdentity::new(
                 CausalEvidenceFamily::BridgeRoute,
                 routed.route_identity().bridge_admission_evidence(),
-            ),
+            )
+            .expect("fixture digest must fit"),
             CausalObservationEvidenceIdentity::new(
                 CausalEvidenceFamily::SignalInvalidation,
                 crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                     "signal-invalidation:temporal-request-parity",
                 ),
-            ),
+            )
+            .expect("positive fixture identity fits canonical digest bounds"),
         ],
-    );
+    )
+    .expect("fixture digest must fit");
     let all_retained_artifact =
         crate::runtime::tests::causal_inspection::inspect_fixture(receipt.clone())
             .why_changed()

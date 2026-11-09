@@ -297,11 +297,11 @@ fn extract_authorized(
     );
     let declaration = declare_projection_consumption(source, binding, requested).unwrap();
     let ProjectionConsumptionEligibility::Admitted(admitted) =
-        evaluate_projection_consumption_eligibility(&declaration)
+        evaluate_projection_consumption_eligibility(&declaration).expect("fixture digest must fit")
     else {
         panic!("native declaration should admit")
     };
-    bind_materialized_projection_contract(&admitted).extract_from_read_result(result)
+    bind_materialized_projection_contract(&admitted)?.extract_from_read_result(result)
 }
 
 pub(super) fn read_result(rows: Vec<WorthQueryEntity>) -> WorthQueryReadResult {
@@ -313,7 +313,8 @@ pub(super) fn read_result(rows: Vec<WorthQueryEntity>) -> WorthQueryReadResult {
             "basis:test",
             "result:test",
             WorthQueryReadExecutionEngine::QueryRuntimeCurrent,
-        ),
+        )
+        .expect("fixture digest must fit"),
     )
 }
 

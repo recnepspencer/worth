@@ -192,6 +192,9 @@ where
                 request,
                 self.controls,
             )?);
+            if let Some((origin, index)) = &self.recording_recipes {
+                self.continuation.as_mut().expect("constructed ordinary continuation").record_history_discovery(std::sync::Arc::clone(origin), *index);
+            }
             self.pending_root_authority = None;
         }
         let continuation = self

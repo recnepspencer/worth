@@ -16,59 +16,9 @@ use super::{
     WorthQueryInstalledGraphObligationSetIdentity,
 };
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryInstalledGraphObligationSubjectKind {
-    ApplicationInspection,
-    ApplicationManagedIndex,
-    ApplicationQuery,
-    ApplicationOperation,
-    ApplicationResource,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-enum WorthQueryInstalledGraphObligationSubject {
-    ApplicationInspection {
-        name: String,
-        purpose: String,
-    },
-    ApplicationManagedIndex {
-        name: String,
-        parent_binding: String,
-    },
-    ApplicationQuery {
-        name: String,
-        identity: WorthQueryInstalledApplicationQueryIdentity,
-    },
-    ApplicationOperation {
-        name: String,
-        input_type: String,
-    },
-    ApplicationResource {
-        name: String,
-        purpose: String,
-    },
-}
-
-impl WorthQueryInstalledGraphObligationSubject {
-    fn identity_fields(&self) -> (&'static str, &str, Option<&str>) {
-        match self {
-            Self::ApplicationInspection { name, purpose } => {
-                ("application-inspection", name, Some(purpose))
-            }
-            Self::ApplicationManagedIndex {
-                name,
-                parent_binding,
-            } => ("application-managed-index", name, Some(parent_binding)),
-            Self::ApplicationQuery { name, .. } => ("application-query", name, None),
-            Self::ApplicationOperation { name, input_type } => {
-                ("application-operation", name, Some(input_type))
-            }
-            Self::ApplicationResource { name, purpose } => {
-                ("application-resource", name, Some(purpose))
-            }
-        }
-    }
-}
+mod subject;
+use subject::WorthQueryInstalledGraphObligationSubject;
+pub use subject::WorthQueryInstalledGraphObligationSubjectKind;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryInstalledGraphObligationInstallationEvidence {
@@ -171,6 +121,7 @@ pub struct WorthQueryInstalledGraphObligationSet {
 
 impl WorthQueryInstalledGraphObligationSet {
     pub(super) fn for_inspection(
+        budget: worth_foundational::facade::CanonicalDigestWorkBudget,
         binding_identity: &ApplicationSchemaBindingIdentity,
         name: String,
         purpose: String,
@@ -179,6 +130,7 @@ impl WorthQueryInstalledGraphObligationSet {
         meaning_work: WorthQueryCanonicalWorkEvidence,
     ) -> Result<Self, CanonicalDigestDerivationDenial> {
         let mut set = Self::build(
+            budget,
             binding_identity,
             WorthQueryInstalledGraphObligationSubject::ApplicationInspection { name, purpose },
             contracts,
@@ -189,6 +141,7 @@ impl WorthQueryInstalledGraphObligationSet {
     }
 
     pub(super) fn for_query(
+        budget: worth_foundational::facade::CanonicalDigestWorkBudget,
         binding_identity: &ApplicationSchemaBindingIdentity,
         name: String,
         query_identity: WorthQueryInstalledApplicationQueryIdentity,
@@ -196,6 +149,7 @@ impl WorthQueryInstalledGraphObligationSet {
         resources: WorthQueryInstalledGraphObligationResourcePosture,
     ) -> Result<Self, CanonicalDigestDerivationDenial> {
         Self::build(
+            budget,
             binding_identity,
             WorthQueryInstalledGraphObligationSubject::ApplicationQuery {
                 name,
@@ -207,6 +161,7 @@ impl WorthQueryInstalledGraphObligationSet {
     }
 
     pub(super) fn for_operation(
+        budget: worth_foundational::facade::CanonicalDigestWorkBudget,
         binding_identity: &ApplicationSchemaBindingIdentity,
         name: String,
         input_type: String,
@@ -214,6 +169,7 @@ impl WorthQueryInstalledGraphObligationSet {
         resources: WorthQueryInstalledGraphObligationResourcePosture,
     ) -> Result<Self, CanonicalDigestDerivationDenial> {
         Self::build(
+            budget,
             binding_identity,
             WorthQueryInstalledGraphObligationSubject::ApplicationOperation { name, input_type },
             contracts,
@@ -222,6 +178,7 @@ impl WorthQueryInstalledGraphObligationSet {
     }
 
     pub(super) fn for_managed_index(
+        budget: worth_foundational::facade::CanonicalDigestWorkBudget,
         binding_identity: &ApplicationSchemaBindingIdentity,
         name: String,
         parent_binding: String,
@@ -229,6 +186,7 @@ impl WorthQueryInstalledGraphObligationSet {
         resources: WorthQueryInstalledGraphObligationResourcePosture,
     ) -> Result<Self, CanonicalDigestDerivationDenial> {
         Self::build(
+            budget,
             binding_identity,
             WorthQueryInstalledGraphObligationSubject::ApplicationManagedIndex {
                 name,
@@ -240,6 +198,7 @@ impl WorthQueryInstalledGraphObligationSet {
     }
 
     pub(super) fn for_resource(
+        budget: worth_foundational::facade::CanonicalDigestWorkBudget,
         binding_identity: &ApplicationSchemaBindingIdentity,
         name: String,
         purpose: String,
@@ -247,6 +206,7 @@ impl WorthQueryInstalledGraphObligationSet {
         resources: WorthQueryInstalledGraphObligationResourcePosture,
     ) -> Result<Self, CanonicalDigestDerivationDenial> {
         Self::build(
+            budget,
             binding_identity,
             WorthQueryInstalledGraphObligationSubject::ApplicationResource { name, purpose },
             contracts,
@@ -255,6 +215,7 @@ impl WorthQueryInstalledGraphObligationSet {
     }
 
     fn build(
+        budget: worth_foundational::facade::CanonicalDigestWorkBudget,
         binding_identity: &ApplicationSchemaBindingIdentity,
         subject: WorthQueryInstalledGraphObligationSubject,
         contracts: Vec<WorthQueryInstalledGraphObligationContract>,
@@ -262,6 +223,7 @@ impl WorthQueryInstalledGraphObligationSet {
     ) -> Result<Self, CanonicalDigestDerivationDenial> {
         let (subject_kind, subject_name, input_type) = subject.identity_fields();
         let (identity, canonical_work) = derive_set_identity(
+            budget,
             binding_identity,
             subject_kind,
             subject_name,
