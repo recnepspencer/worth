@@ -9,6 +9,7 @@ use crate::{
     config::{diagnostic, Code, Diagnostic, Files, CONFIG},
     inputs::Inputs,
 };
+use quote::ToTokens;
 use std::collections::{BTreeMap, BTreeSet};
 
 struct Registration {
@@ -37,6 +38,17 @@ fn roots(input: &Inputs) -> Result<BTreeMap<String, String>, Vec<String>> {
     let mut roots = BTreeMap::new();
     for graph in input.graphs.values() {
         for package in &graph.packages {
+            // --no-deps omits facade packages. Only actual direct dependencies
+            // authorize the existing public macro spelling; never type roots.
+            if graph.resolve.is_none() {
+                for dependency in &package.dependencies {
+                    if dependency.name == "worth-query-decl" {
+                        roots
+                            .entry("worth_query_decl".into())
+                            .or_insert_with(|| "external/decl/lib.rs".into());
+                    }
+                }
+            }
             for target in &package.targets {
                 if target.kind.iter().any(|kind| kind == "lib")
                     && (input.files.contains_key(&target.src_path)
@@ -185,8 +197,8 @@ fn check_sources(
             .collect();
         if matches.len() != 1 {
             errors.push(format!(
-                "{}::{binding}: explicit domain claim needs exactly one binding registration",
-                claim.source
+                "{}::{binding}: explicit domain claim needs exactly one binding registration (unregistered value path {})",
+                claim.source, claim.value.to_token_stream()
             ));
             continue;
         }

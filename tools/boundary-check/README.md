@@ -18,6 +18,19 @@ existing full wire names; remediation paths follow their surviving owners.
 Court category segments come from file paths, as the approved scope specifies;
 inline module nesting is not a taxonomy input.
 
+For consumer repositories, run from the Git and Cargo workspace root:
+
+```text
+boundary-check domain-values --root . --registry domain-values.toml --format json
+```
+
+This uses `cargo metadata --no-deps --offline` and the same source/type closure
+guard as SDK self-mode, without compiling the consumer or loading SDK policy.
+Registry paths may be absolute or relative to `--root`; registered source paths
+are root-relative. Additional consumer workspaces use `workspace_manifests` in
+the registry. Missing registrations and forbidden references report
+`BC9019_DOMAIN_VALUE_REFERENCE`, including the binding and offending type path.
+
 Run the in-memory suite with:
 
 ```text
@@ -27,8 +40,8 @@ cargo test --manifest-path tools/boundary-check/Cargo.toml --target-dir target/c
 ## Retained requirements and evidence
 
 The approved scope is the owner's external `orchestration/m3/boundary_triage.md`.
-Every rule has a positive and negative in-memory case; tests launch no processes
-and construct no disk repositories.
+Every rule has a positive and negative in-memory case. The consumer domain-value
+courts additionally create small Git repositories and run metadata without compilation.
 
 | Requirement | Behaviour tests |
 | --- | --- |

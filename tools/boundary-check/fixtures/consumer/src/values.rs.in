@@ -1,0 +1,3 @@
+pub struct Measurement {
+    pub magnitude: u64,
+}

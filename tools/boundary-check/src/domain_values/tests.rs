@@ -1,4 +1,5 @@
 use super::*;
+mod consumer;
 
 fn roots() -> BTreeMap<String, String> {
     BTreeMap::from([
