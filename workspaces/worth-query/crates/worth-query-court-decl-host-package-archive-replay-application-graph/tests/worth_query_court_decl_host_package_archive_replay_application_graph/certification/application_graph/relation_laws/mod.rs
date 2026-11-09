@@ -23,3 +23,5 @@ pub(crate) mod pair_laws;
 pub(crate) mod partition_isolation;
 
 pub(crate) mod payload;
+
+pub(crate) mod endpoint_deletion;
