@@ -122,6 +122,7 @@ impl WorthQueryPrimaryGraphProvider {
         if self.take_skipped_invariant_owner_execution() {
             return Err(owner_failure());
         }
+        self.validate_owned_member_rosters(execution, session)?;
         let material = self.invariant_candidate_material(session)?;
         self.validate_and_retain_candidate(
             execution,

@@ -54,6 +54,11 @@ pub(super) fn bind(
         )
         .ok_or_else(mismatch)?;
     if let Some((anchor, co_anchors)) = anchor {
+        let retiring = roles
+            .iter()
+            .filter(|role| role.posture == RequiredOutputRolePosture::Retire)
+            .cloned()
+            .collect::<Vec<_>>();
         let cascade = provider
             .graph
             .with_runtime(execution, |runtime| {
@@ -63,7 +68,7 @@ pub(super) fn bind(
                     basis,
                     anchor,
                     &co_anchors,
-                    &roles,
+                    &retiring,
                 )
             })
             .map_err(transaction_commit_stop)?;

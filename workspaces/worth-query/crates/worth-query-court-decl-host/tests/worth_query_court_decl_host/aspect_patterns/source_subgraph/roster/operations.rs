@@ -5,12 +5,16 @@ use super::*;
 pub struct Create(pub Image);
 #[derive(Clone, Debug, WorthValue)]
 #[worth_value(crate = "worth_query_decl::facade::application_schema")]
-pub struct Restore(pub Image);
+pub struct Restore {
+    pub image: Image,
+    pub remove: Option<Retire>,
+}
 #[derive(Clone, Debug, WorthValue)]
 #[worth_value(crate = "worth_query_decl::facade::application_schema")]
 pub struct Retire {
     pub key: String,
     pub members: Vec<String>,
+    pub replacement: Option<Image>,
 }
 worth_query_structured_value_binding!(pub CreateInput for Create { identity: "source-subgraph.roster-create-input.v1" });
 worth_query_structured_value_binding!(pub RestoreInput for Restore { identity: "source-subgraph.roster-restore-input.v1" });
@@ -21,14 +25,16 @@ worth_query_operation!(pub CreateGraph for Schema, input CreateInput; access {
     creates: [Source, Member]; links: [OwnedBy, Next];
 });
 worth_query_operation!(pub RestoreGraph for Schema, input RestoreInput; access {
-    read_fields: [SourceKey::at("SourceKey")];
+    read_fields: [SourceKey::at("SourceKey"), SourceValue::at("SourceValue"), MemberKey::at("MemberKey"), Value::at("MemberValue")];
+    read_entities: [Source, Member]; read_relations: [OwnedBy, Next];
     writes: [SourceKey::at("SourceKey"), SourceValue::at("SourceValue"), MemberKey::at("MemberKey"), Value::at("MemberValue")];
-    creates: [Source, Member]; links: [OwnedBy, Next];
+    creates: [Source, Member]; links: [OwnedBy, Next]; deletes: [Source, Member]; unlinks: [OwnedBy, Next];
 });
 worth_query_operation!(pub RetireGraph for Schema, input RetireInput; access {
     read_fields: [SourceKey::at("SourceKey"), SourceValue::at("SourceValue"), MemberKey::at("MemberKey"), Value::at("MemberValue")];
     read_entities: [Source, Member]; read_relations: [OwnedBy, Next];
-    deletes: [Source, Member]; unlinks: [OwnedBy, Next];
+    writes: [SourceKey::at("SourceKey"), SourceValue::at("SourceValue"), MemberKey::at("MemberKey"), Value::at("MemberValue")];
+    creates: [Source, Member]; links: [OwnedBy, Next]; deletes: [Source, Member]; unlinks: [OwnedBy, Next];
 });
 pub struct CreatedOutputs;
 pub struct RetiredOutputs;
@@ -73,19 +79,21 @@ macro_rules! member_role {
         }
     };
 }
-member_role!(CreatedMembers, CreatedOutputs, CREATE, "created-member:");
-member_role!(RetiredMembers, RetiredOutputs, RETIRE, "retired-member:");
+member_role!(CreatedMembers, CreatedOutputs, CREATE, "created-member.");
+member_role!(RetiredMembers, RetiredOutputs, RETIRE, "retired-member.");
 impl ApplicationMutationOutputContract<Schema> for CreatedOutputs {
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = &[Created::DESCRIPTOR];
     const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] =
         &[CreatedMembers::DESCRIPTOR];
 }
 impl ApplicationMutationOutputContract<Schema> for RetiredOutputs {
-    const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = &[Retired::DESCRIPTOR];
+    const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
+        &[Retired::DESCRIPTOR, ReplacementCreated::DESCRIPTOR];
     const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] =
-        &[RetiredMembers::DESCRIPTOR];
+        &[RetiredMembers::DESCRIPTOR, ReplacementMembers::DESCRIPTOR];
 }
 pub struct Retirement {
+    pub scope: AnchorTarget,
     pub root: AnchorTarget,
     pub members: Vec<(String, MemberTarget)>,
     pub links: Vec<(MemberTarget, MemberTarget)>,
@@ -117,8 +125,8 @@ mod restore {
         Restore,
         RestoreInput,
         RestoreGraph,
-        AnchorTarget,
-        CreatedOutputs,
+        Restoration,
+        RestoredOutputs,
         "source-subgraph.roster-restore.v1"
     );
 }

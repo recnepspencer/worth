@@ -35,10 +35,12 @@ pub(super) fn validate(
     let Some(PortableCorrectionMechanism::RecordedInverse(recorded)) = mechanism else {
         return Err(());
     };
+    if identity.member_owner().is_some() {
+        return Err(());
+    }
     validate_identity(members, source, inverse, identity, recorded, false)?;
     for (index, anchor) in identity.co_anchors().iter().enumerate() {
-        if anchor.parts().source_posture != identity.parts().source_posture
-            || !anchor.co_anchors().is_empty()
+        if !anchor.co_anchors().is_empty()
             || anchor.parts().source_role == identity.parts().source_role
             || anchor.parts().inverse_role == identity.parts().inverse_role
             || identity.co_anchors()[..index].iter().any(|prior| {
@@ -50,6 +52,9 @@ pub(super) fn validate(
         }
         validate_identity(members, source, inverse, anchor, recorded, true)?;
         if let Some(owner) = anchor.member_owner() {
+            if anchor.is_optional() {
+                return Err(());
+            }
             let Member::Field { entity: parent, .. } = identity.parts().logical_key.as_ref() else {
                 return Err(());
             };
@@ -153,7 +158,10 @@ fn validate_identity(
     {
         return Err(());
     }
-    if parts.source_posture == Posture::Create && !recorded.preimage_demand().loci().is_empty() {
+    if parts.source_posture == Posture::Create
+        && !co_anchor
+        && !recorded.preimage_demand().loci().is_empty()
+    {
         return Err(());
     }
     for member in members {

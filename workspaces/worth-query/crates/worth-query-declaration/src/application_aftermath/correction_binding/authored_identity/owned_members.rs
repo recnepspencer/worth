@@ -41,14 +41,23 @@ impl<S: ApplicationSchema> ApplicationAuthoredCorrection<S> {
         let member = Self::from_family::<Family>(
             Source::PREFIX,
             Inverse::PREFIX,
-            ApplicationMutationOutputPosture::Preserve,
+            if Source::POSTURES
+                == crate::application_operation::ApplicationMutationOutputPostureSet::CREATE
+            {
+                ApplicationMutationOutputPosture::Create
+            } else if Source::POSTURES
+                == crate::application_operation::ApplicationMutationOutputPostureSet::RETIRE
+            {
+                ApplicationMutationOutputPosture::Retire
+            } else {
+                ApplicationMutationOutputPosture::Preserve
+            },
         );
         self.co_recipes.push(member.binding_recipe().clone());
         let previous = self.compose;
         self.compose = Box::new(move || {
             let anchor = previous()?;
-            let mut member = (member.compose)()?;
-            member.parts.source_posture = anchor.parts.source_posture;
+            let member = (member.compose)()?;
             Ok(anchor.with_co_anchor(member.with_member_owner(owner.clone()), false))
         });
         self

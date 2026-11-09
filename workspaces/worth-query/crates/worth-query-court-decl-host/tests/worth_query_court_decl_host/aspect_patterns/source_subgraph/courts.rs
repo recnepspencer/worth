@@ -201,3 +201,5 @@ pub(crate) fn fingerprint(left: u64) -> (String, [u8; 32]) {
 }
 
 mod owned_members;
+
+mod owned_member_refusals;

@@ -18,8 +18,8 @@ pub struct AuthoredOwnedMemberKind {
 }
 
 impl RelationalRuntime {
-    /// O(A + R log R) over this anchor's incoming owner adjacency A and the
-    /// submitted member roles R. Membership has no second authoritative list.
+    /// O((A + R) K + A log A + R log R) over incoming owner adjacency A,
+    /// submitted member roles R and declared member kinds K. Membership has no second authoritative list.
     pub fn validate_authored_owned_members(
         &self,
         execution: &ExecutionRequest<'_, '_>,

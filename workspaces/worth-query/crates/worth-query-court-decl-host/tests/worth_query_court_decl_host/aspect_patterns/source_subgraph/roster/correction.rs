@@ -62,6 +62,7 @@ impl ApplicationCorrectionBinding<Schema> for UndoCreate {
                 .iter()
                 .map(|row| row.key.clone())
                 .collect(),
+            replacement: None,
         })
     }
 }
@@ -92,16 +93,13 @@ impl ApplicationCorrectionBinding<Schema> for UndoRetire {
         )
     }
     fn authored_identity() -> Option<ApplicationAuthoredCorrection<Schema>> {
-        Some(
-            ApplicationAuthoredCorrection::restore_retired::<Self, AnchorFamily, Retired, Created>(
-            )
-            .owned_members::<Self, MemberFamily, RetiredMembers, CreatedMembers, _, _>(
-                OwnedBy::reference(),
-            ),
-        )
+        Some(ApplicationAuthoredCorrection::restore_retired::<Self, AnchorFamily, Retired, Restored>()
+            .co_retire_created::<Self, AnchorFamily, ReplacementCreated, ReplacementRetired>()
+            .owned_members::<Self, MemberFamily, RetiredMembers, RestoredMembers, _, _>(OwnedBy::reference())
+            .owned_members::<Self, MemberFamily, ReplacementMembers, RemovedMembers, _, _>(OwnedBy::reference()))
     }
     fn derive_correction(
-        _: &Retire,
+        original: &Retire,
         material: ApplicationCorrectionSourceMaterial<'_, Schema>,
     ) -> Result<Restore, ApplicationCorrectionDerivationDenial> {
         use ApplicationCorrectionDerivationDenial::*;
@@ -184,10 +182,17 @@ impl ApplicationCorrectionBinding<Schema> for UndoRetire {
                     .next = Some(to.clone());
             }
         }
-        Ok(Restore(Image {
-            key,
-            value,
-            members,
-        }))
+        Ok(Restore {
+            image: Image {
+                key,
+                value,
+                members,
+            },
+            remove: original.replacement.as_ref().map(|image| Retire {
+                key: image.key.clone(),
+                members: image.members.iter().map(|row| row.key.clone()).collect(),
+                replacement: None,
+            }),
+        })
     }
 }

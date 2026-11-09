@@ -4259,6 +4259,16 @@ its complete record/kind and before/after endpoint coordinates; retained content
 also spends the same bound. A field total over the bound refuses as
 `WorthQueryPreImageRetentionDenial::ExceedsByteBound`; a relation total over it
 refuses as `WorthQueryRelationPreImageDenial::ExceedsByteBound`, before any effect.
+A whole-roster replace may retire the old anchor and create its replacement
+under the same logical key in one candidate. Declare the replacement's optional
+Create-to-Retire co-anchor with `co_retire_created` and give its members their own
+Create-to-Retire output families through `owned_members`. The retired anchor and
+members use the opposite correspondence. The existing recorded inverse then
+retires the exact replacement and restores the prior anchor, every prior member
+and the original links, including removed members. Membership always comes from
+the owner relation; the replacement intent is an ordinary typed command, not a
+stored source snapshot. Each lifecycle family has its own explicit posture.
+
 Historical member fields are read using `family_member_suffix`,
 `family_member_entity` and `field_for_family_member` on the recorded pre-image.
 These descriptive values grant no current read or mutation authority.

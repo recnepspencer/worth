@@ -8,6 +8,7 @@ pub enum Fault {
     None,
     OmitRightRole,
     CorruptInputMember,
+    ExtraAuthoredRetireMember,
 }
 pub struct Configuration {
     pub fault: Fault,
@@ -24,7 +25,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         config: Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        roster::configure(setup)?;
+        roster::configure(setup, config.fault == Fault::ExtraAuthoredRetireMember)?;
         setup.handler::<edit::source::Binding, _>(edit::source::Handler)?;
         setup.handler::<edit::generated::Binding, _>(edit::generated::Handler)?;
         setup.handler::<generation::Binding, _>(generation::Handler {

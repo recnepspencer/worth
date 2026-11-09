@@ -1,4 +1,6 @@
 //! Authored family/key correspondence uses the existing schema-field wire owner.
+#[cfg(test)]
+mod tests;
 use crate::record::application_schema::{
     member::schema,
     wire_vocabulary::{decode_optional, decode_type_identity, write_optional, write_type_identity},
