@@ -47,6 +47,7 @@ pub(super) fn install_empty(
             admission,
             RelationalAuthoredRetirement {
                 anchor: *anchor,
+                owned_members: false,
                 birth: *birth,
                 co_anchors: co_anchors.clone(),
                 roles: roles.clone(),
@@ -128,6 +129,7 @@ pub(super) fn install(
                 envelope.authored_cascade_retirement =
                     Some(Arc::new(CanonicalAuthoredRetirement {
                         anchor: *anchor,
+                        owned_members: false,
                         birth: *birth,
                         co_anchors: co_anchors.clone(),
                         publications: Vec::new(),

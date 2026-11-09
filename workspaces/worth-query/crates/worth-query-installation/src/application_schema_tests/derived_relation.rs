@@ -5,7 +5,7 @@ use worth_query_declaration::facade::application_schema::{
     ApplicationDerivedRelation, ApplicationDerivedRelationRef, ApplicationRelationGraphLaws,
 };
 
-struct DerivedSchema<const LOGICAL: bool = false>;
+pub(super) struct DerivedSchema<const LOGICAL: bool = false>;
 struct Uses;
 struct Side;
 struct TwoSteps;

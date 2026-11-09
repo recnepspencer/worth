@@ -9,6 +9,9 @@ use crate::validation::data::{InvariantClass, InvariantViolation, InvariantViola
 use super::super::context::InvariantExecutionContext;
 use super::common::{canonicalize_violations, relation_violation};
 
+#[cfg(test)]
+mod endpoint_deletion_tests;
+
 pub(super) fn evaluate_uniqueness_contract(
     context: &InvariantExecutionContext<'_, '_>,
     class: InvariantClass,

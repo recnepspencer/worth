@@ -19,6 +19,8 @@ mod scope_identity_tests;
 
 use contract_encoding::{encode_contract, encode_resources};
 
+const RULE_VERSION: &str = "worth-query-installed-graph-obligations-v3";
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryInstalledGraphObligationSetIdentity(CanonicalDigestId);
 
@@ -53,7 +55,7 @@ pub(super) fn derive_set_identity(
 > {
     let mut basis = InstallationCanonicalIdentityBasis::new(
         "worth-query.installed-graph-obligations",
-        "worth-query-installed-graph-obligations-v3",
+        RULE_VERSION,
         budget,
     );
     basis.digest("package", *binding.package_identity())?;

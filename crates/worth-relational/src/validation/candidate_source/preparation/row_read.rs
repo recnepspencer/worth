@@ -127,11 +127,13 @@ impl<'source> ManagedIndexSourceRows<'source> {
 }
 impl PreparedManagedIndexSourceRowRead<'_, '_> {
     /// Retain only content selected through this exact field and membership ticket.
+    /// The observation preserves absent aspect, absent field and present value;
+    /// Query owns required/optional interpretation and scalar decoding.
     pub fn with_field_content<T>(
         &self,
         column: usize,
         project: impl FnOnce(
-            Option<&worth_foundational::facade::AspectValue>,
+            crate::runtime::RelationalProjectedFieldObservation<'_>,
             Option<crate::content::RelationalContentFrame>,
         ) -> T,
     ) -> Result<T, super::super::ManagedIndexSourcePreparationDenial> {
@@ -153,7 +155,7 @@ impl PreparedManagedIndexSourceRowRead<'_, '_> {
     pub fn with_field<T>(
         &self,
         column: usize,
-        project: impl FnOnce(Option<&worth_foundational::facade::AspectValue>) -> T,
+        project: impl FnOnce(crate::runtime::RelationalProjectedFieldObservation<'_>) -> T,
     ) -> Result<T, ReadDenial> {
         self.rows.projection.checkpoint(0)?;
         // Construction proved membership in this immutable loan. The retained

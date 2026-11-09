@@ -43,6 +43,8 @@ mod application_schema_tests;
 #[cfg(test)]
 mod conditional_application_operation_test_fixture;
 #[cfg(test)]
+mod declaration_budget_tests;
+#[cfg(test)]
 mod domain_computation_admission_tests;
 #[cfg(test)]
 mod domain_computation_artifact_fixture;

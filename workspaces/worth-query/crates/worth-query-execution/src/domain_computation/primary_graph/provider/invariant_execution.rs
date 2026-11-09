@@ -5,6 +5,7 @@ mod authored_coupling;
 mod authored_restoration;
 mod candidate_admission;
 mod material;
+mod owned_members;
 mod receipt_closure;
 use candidate_admission::CandidateInvariantJudgment;
 pub(in crate::domain_computation::primary_graph) use receipt_closure::ClosedCoupledInvariantReceipts;
@@ -110,6 +111,7 @@ impl WorthQueryPrimaryGraphProvider {
         if self.take_skipped_invariant_owner_execution() {
             return Err(owner_failure());
         }
+        self.validate_owned_member_rosters(execution, session)?;
         // This controls receipt omission, not write authority. History and
         // coupled candidates retain the receipt because their commit owner
         // does not have the ordinary executed-adoption posture.
@@ -130,6 +132,7 @@ impl WorthQueryPrimaryGraphProvider {
         if self.take_skipped_invariant_owner_execution() {
             return Err(owner_failure());
         }
+        self.validate_owned_member_rosters(execution, session)?;
         let material = self.invariant_candidate_material(session, None)?;
         self.validate_and_retain_candidate(
             execution,

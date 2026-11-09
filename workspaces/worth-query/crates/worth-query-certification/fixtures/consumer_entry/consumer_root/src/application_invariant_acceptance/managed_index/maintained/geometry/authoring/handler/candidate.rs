@@ -129,6 +129,17 @@ pub(super) fn apply(
                 )
                 .map_err(HandlerExecutionDenial::new)?;
         }
+        (Edit::Unshare { .. }, Decision::Unshare { directory, edge }) => {
+            let directory = writer
+                .projected_entity(&directory)
+                .map_err(HandlerExecutionDenial::new)?;
+            let edge = writer
+                .projected_entity(&edge)
+                .map_err(HandlerExecutionDenial::new)?;
+            writer
+                .unlink(ContainsEdge::reference(), &directory, &edge)
+                .map_err(HandlerExecutionDenial::new)?;
+        }
         (Edit::RewireEnd { edge: key, .. }, Decision::Rewire { edge, old, new }) => {
             let edge = writer
                 .projected_entity(&edge)

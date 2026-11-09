@@ -9,6 +9,8 @@ use crate::{
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 mod current_retirement;
+mod owned_members;
+pub use owned_members::AuthoredOwnedMemberKind;
 
 impl RelationalRuntime {
     /// Reconstruct the selected complete publication behind real ordinary Retire

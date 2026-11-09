@@ -30,7 +30,7 @@ use worth_query_declaration::facade::{
 use super::canonical_basis::prepare_capability_basis;
 
 mod axis;
-mod budgets;
+pub(crate) mod budgets;
 mod field_references;
 mod portable_markers;
 mod residue;
@@ -41,7 +41,7 @@ use portable_markers::*;
 
 pub(crate) mod delegation_activation_fixture;
 mod identity_axes;
-mod warm_lookup;
+pub(crate) mod warm_lookup;
 
 fn contract(axis: Option<Axis>) -> ErasedApplicationCapabilityContract {
     match axis {

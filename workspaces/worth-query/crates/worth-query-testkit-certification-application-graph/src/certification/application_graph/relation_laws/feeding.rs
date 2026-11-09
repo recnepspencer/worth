@@ -14,6 +14,7 @@ pub enum FeedsChange {
     Replace { first_leaf: u64, count: u32 },
     DeleteSource,
     DeleteLeaf { key: u64 },
+    UnlinkAndDeleteLeaf { key: u64 },
 }
 #[derive(Clone, Debug, serde::Serialize)]
 pub struct FeedsEditInput {
@@ -106,7 +107,10 @@ pub enum FeedDecision<L: LawPolicy> {
         count: u32,
     },
     DeleteSource(NodeTarget<L>),
-    DeleteLeaf(LeafTarget<L>),
+    DeleteLeaf {
+        leaf: LeafTarget<L>,
+        unlink_from: Option<NodeTarget<L>>,
+    },
 }
 pub struct FeedsHandler;
 impl<L: LawPolicy> OperationHandler<GraphSchema<L>, FeedsBinding<L>> for FeedsHandler {
@@ -142,10 +146,22 @@ pub fn decide_feeds<L: LawPolicy>(
             reader.entity(&source, node::<GraphSchema<L>>())?;
             FeedDecision::DeleteSource(reader.mutation_target(&source)?)
         }
-        FeedsChange::DeleteLeaf { key } => {
+        FeedsChange::DeleteLeaf { key } | FeedsChange::UnlinkAndDeleteLeaf { key } => {
             let leaf = reader.resolve_entity(LeafKey::at("LeafKey"), key)?;
             reader.entity(&leaf, Leaf::reference())?;
-            FeedDecision::DeleteLeaf(reader.mutation_target(&leaf)?)
+            let unlink_from = match input.change {
+                FeedsChange::UnlinkAndDeleteLeaf { .. } => {
+                    reader
+                        .relations_from(feeds::<GraphSchema<L>>(), &source)
+                        .map_err(HandlerExecutionDenial::new)?;
+                    Some(reader.mutation_target(&source)?)
+                }
+                _ => None,
+            };
+            FeedDecision::DeleteLeaf {
+                leaf: reader.mutation_target(&leaf)?,
+                unlink_from,
+            }
         }
         FeedsChange::Replace { first_leaf, count } => {
             let observed = reader
@@ -176,8 +192,12 @@ pub fn write_feeds<L: LawPolicy>(
             let source = writer.projected_entity(&source)?;
             writer.delete_entity(node::<GraphSchema<L>>(), &source)?;
         }
-        FeedDecision::DeleteLeaf(leaf) => {
+        FeedDecision::DeleteLeaf { leaf, unlink_from } => {
             let leaf = writer.projected_entity(&leaf)?;
+            if let Some(source) = unlink_from {
+                let source = writer.projected_entity(&source)?;
+                writer.unlink(feeds::<GraphSchema<L>>(), &source, &leaf)?;
+            }
             writer.delete_entity(Leaf::reference(), &leaf)?;
         }
         FeedDecision::Replace {

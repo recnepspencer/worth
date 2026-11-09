@@ -1,7 +1,10 @@
 //! Finite build scratch and isolated edits of immutable retained node pages.
 use super::{WorthQueryManagedIndexControl, WorthQueryManagedIndexStop as Stop};
 use crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity;
-use std::{cell::Cell, sync::Arc};
+use std::{
+    cell::{Ref, RefCell},
+    sync::Arc,
+};
 use worth_execution::{
     ExecutionArray, ExecutionOrderedMap, ExecutionRequest, ExecutionRequestArrayBuilder,
 };
@@ -18,7 +21,7 @@ pub struct WorthQueryManagedIndexNodeId {
 }
 
 /// Mutable finite build storage. Only the initialized prefix can be sealed.
-pub struct WorthQueryManagedIndexNodeWriter<'a, Node: Copy> {
+pub struct WorthQueryManagedIndexNodeWriter<'a, Node: Clone> {
     owner: WorthQueryGraphWorkSessionIdentity,
     lineage: Arc<NodeLineage>,
     storage: Writing<'a, Node>,
@@ -31,8 +34,22 @@ pub struct WorthQueryManagedIndexNodeWriter<'a, Node: Copy> {
     control: &'a WorthQueryManagedIndexControl<'a>,
 }
 
+pub(super) enum NodeRead<'a, Node> {
+    Scratch(Ref<'a, Node>),
+    Retained(&'a Node),
+}
+impl<Node> std::ops::Deref for NodeRead<'_, Node> {
+    type Target = Node;
+    fn deref(&self) -> &Node {
+        match self {
+            Self::Scratch(node) => node,
+            Self::Retained(node) => node,
+        }
+    }
+}
+
 enum Writing<'a, Node> {
-    Build(ExecutionArray<Cell<Option<Node>>>),
+    Build(ExecutionArray<RefCell<Option<Node>>>),
     Edit { pages: PageEdit<'a, Node> },
 }
 
@@ -47,7 +64,7 @@ pub struct WorthQueryManagedIndexNodes<Node> {
     changed: Option<ExecutionOrderedMap<usize, ()>>,
 }
 
-impl<'a, Node: Copy> WorthQueryManagedIndexNodeWriter<'a, Node> {
+impl<'a, Node: Clone> WorthQueryManagedIndexNodeWriter<'a, Node> {
     pub(super) fn allocate(
         execution: &ExecutionRequest<'_, '_>,
         owner: WorthQueryGraphWorkSessionIdentity,
@@ -61,7 +78,7 @@ impl<'a, Node: Copy> WorthQueryManagedIndexNodeWriter<'a, Node> {
         for _ in 0..capacity {
             control.checkpoint(1)?;
             storage
-                .push(Cell::new(None))
+                .push(RefCell::new(None))
                 .map_err(|cause| control.refuse(Stop::Storage(cause)))?;
         }
         let scratch = storage
@@ -104,11 +121,20 @@ impl<'a, Node: Copy> WorthQueryManagedIndexNodeWriter<'a, Node> {
             ordinal,
         })
     }
-    pub fn get(&self, id: WorthQueryManagedIndexNodeId) -> Result<Node, Stop> {
+    /// Borrow a live node without cloning its payload. Release the guard before
+    /// editing the writer; create an owned value only when preparing a replacement.
+    pub fn get(
+        &self,
+        id: WorthQueryManagedIndexNodeId,
+    ) -> Result<impl std::ops::Deref<Target = Node> + '_, Stop> {
         self.control.checkpoint(1)?;
         self.validate(id)?;
         match &self.storage {
-            Writing::Build(scratch) => scratch.get(id.ordinal).and_then(Cell::get),
+            Writing::Build(scratch) => scratch.get(id.ordinal).and_then(|cell| {
+                Ref::filter_map(cell.borrow(), Option::as_ref)
+                    .ok()
+                    .map(NodeRead::Scratch)
+            }),
             Writing::Edit { pages } => pages.get(id.ordinal, self.control)?,
         }
         .ok_or_else(|| self.control.refuse(Stop::UnwrittenNode))
@@ -171,7 +197,7 @@ impl<'a, Node: Copy> WorthQueryManagedIndexNodeWriter<'a, Node> {
                 let cell = scratch
                     .get(ordinal)
                     .ok_or_else(|| self.control.refuse(Stop::NodeCapacityExceeded))?;
-                cell.set(value);
+                *cell.borrow_mut() = value;
                 Ok(())
             }
             Writing::Edit { pages } => pages.replace(ordinal, value, self.control),
@@ -220,7 +246,7 @@ impl<'a, Node: Copy> WorthQueryManagedIndexNodeWriter<'a, Node> {
     }
 }
 
-impl<Node: Copy> WorthQueryManagedIndexNodes<Node> {
+impl<Node: Clone> WorthQueryManagedIndexNodes<Node> {
     pub(super) fn frontier(&self) -> usize {
         self.frontier
     }

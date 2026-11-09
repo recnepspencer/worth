@@ -10,10 +10,10 @@ impl<P, R, S: Summary> PredicateTree<P, R, S> {
             right.map_or(id, |r| self.node(r).extrema[1]),
         ];
         let aggregate = S::merge(
-            node.own,
+            &node.own,
             [
-                left.map(|l| self.node(l).aggregate),
-                right.map(|r| self.node(r).aggregate),
+                left.map(|l| &self.node(l).aggregate),
+                right.map(|r| &self.node(r).aggregate),
             ],
         );
         let node = self.node_mut(id);

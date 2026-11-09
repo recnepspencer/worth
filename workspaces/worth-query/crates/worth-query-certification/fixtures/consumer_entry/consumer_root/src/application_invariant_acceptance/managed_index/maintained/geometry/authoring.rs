@@ -37,6 +37,10 @@ pub enum Edit {
         directory: String,
         edge: String,
     },
+    Unshare {
+        directory: String,
+        edge: String,
+    },
     RewireEnd {
         directory: String,
         edge: String,
@@ -55,6 +59,7 @@ impl Edit {
             | Self::Edge { directory, .. }
             | Self::Move { directory, .. }
             | Self::Share { directory, .. }
+            | Self::Unshare { directory, .. }
             | Self::RewireEnd { directory, .. }
             | Self::DuplicateEnd { directory, .. } => directory,
         }
@@ -81,6 +86,10 @@ pub enum Decision {
         directory: Target<Directory>,
         edge: Target<Edge>,
     },
+    Unshare {
+        directory: Target<Directory>,
+        edge: Target<Edge>,
+    },
     Rewire {
         edge: Target<Edge>,
         old: Target<Vertex>,
@@ -98,7 +107,7 @@ worth_query_operation!(pub EditGeometry for Catalog, input InputBinding);
 worth_query_operation_reads!(EditGeometry => [Directory,Edge,Vertex,Starts,Ends,ContainsEdge]);
 worth_query_operation_creates!(EditGeometry => [Vertex, Edge]);
 worth_query_operation_links!(EditGeometry => [ContainsEdge, Starts, Ends]);
-worth_query_operation_unlinks!(EditGeometry => [Ends]);
+worth_query_operation_unlinks!(EditGeometry => [ContainsEdge, Ends]);
 
 fn scope(input: &Edit) -> String {
     input.directory().to_owned()
@@ -133,6 +142,7 @@ pub(super) fn declare(
         .operation_link(op, ContainsEdge::reference())
         .operation_link(op, Starts::reference())
         .operation_link(op, Ends::reference())
+        .operation_unlink(op, ContainsEdge::reference())
         .operation_unlink(op, Ends::reference())
         .operation_write(op, VertexIdentity::at("VertexIdentity"))
         .operation_write(op, VertexRegion::at("VertexRegion"))

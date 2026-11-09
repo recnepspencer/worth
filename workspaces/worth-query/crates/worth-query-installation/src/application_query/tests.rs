@@ -213,6 +213,13 @@ fn installed_schema() -> crate::facade::WorthQueryInstalledApplicationSchema<Que
         .unwrap()
 }
 
+#[test]
+fn admitted_query_budget_counts_every_declared_family() {
+    let families =
+        crate::declaration_budget_tests::assert_complete_source_budget(&installed_schema());
+    assert!(families.contains("application-query"));
+}
+
 fn installed_index() -> WorthQueryInstalledPackageIndex {
     installed_index_with(WorthQueryInstallationRuntimeIdentity::fresh(), false)
 }

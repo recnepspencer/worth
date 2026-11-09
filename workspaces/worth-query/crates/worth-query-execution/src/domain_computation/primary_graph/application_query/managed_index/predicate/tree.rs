@@ -138,8 +138,8 @@ impl<P, R, S: Summary> PredicateTree<P, R, S> {
             Record {
                 probe,
                 receiver,
+                aggregate: own.clone(),
                 own,
-                aggregate: own,
                 parent: None,
                 children: [None; 2],
                 extrema: [slot; 2],
@@ -192,7 +192,7 @@ impl<P, R, S: Summary> PredicateTree<P, R, S> {
     pub(super) fn visit<E: From<Stop>>(
         &self,
         control: &Control<'_>,
-        region: &mut impl FnMut(S, [&P; 2]) -> Result<bool, E>,
+        region: &mut impl FnMut(&S, [&P; 2]) -> Result<bool, E>,
         receive: &mut impl FnMut(WatchSlot, &P, &R) -> Result<(), E>,
     ) -> Result<(), E> {
         self.walk(
@@ -207,7 +207,7 @@ impl<P, R, S: Summary> PredicateTree<P, R, S> {
         &self,
         id: Option<WatchSlot>,
         checkpoint: &mut impl FnMut(u64) -> Result<(), E>,
-        region: &mut impl FnMut(S, [&P; 2]) -> Result<bool, E>,
+        region: &mut impl FnMut(&S, [&P; 2]) -> Result<bool, E>,
         receive: &mut impl FnMut(WatchSlot, &P, &R) -> Result<(), E>,
     ) -> Result<(), E> {
         let Some(id) = id else {
@@ -217,7 +217,7 @@ impl<P, R, S: Summary> PredicateTree<P, R, S> {
         checkpoint(44 * levels)?;
         let node = self.node(id);
         if !region(
-            node.aggregate,
+            &node.aggregate,
             [
                 &self.node(node.extrema[0]).probe,
                 &self.node(node.extrema[1]).probe,

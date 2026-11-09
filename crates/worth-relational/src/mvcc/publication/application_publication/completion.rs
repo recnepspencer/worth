@@ -132,7 +132,10 @@ impl RequiredOutputPublication {
                 admission,
                 restoration,
             } => {
-                admission.publication_count() == restoration.publications.len()
+                installed
+                    .authority
+                    .admits_authored_retirement_issuer(admission)
+                    && admission.publication_count() == restoration.publications.len()
                     && restoration.publications.iter().all(|prior| {
                         installed
                             .authority
@@ -144,7 +147,10 @@ impl RequiredOutputPublication {
                 predecessor,
                 ..
             } => {
-                admission.publication_count() == predecessor.publications.len()
+                installed
+                    .authority
+                    .admits_authored_retirement_issuer(admission)
+                    && admission.publication_count() == predecessor.publications.len()
                     && predecessor.publications.iter().all(|prior| {
                         installed
                             .authority

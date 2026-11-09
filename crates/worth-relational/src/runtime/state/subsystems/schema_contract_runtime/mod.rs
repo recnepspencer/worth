@@ -32,7 +32,7 @@ impl RuntimeSubsystem for SchemaContractRuntimeSubsystem {
             .flat_map(crate::validation::data::relation_integrity_registrations_for_plan)
             .collect();
         let invariant_points = std::sync::Arc::new(std::array::from_fn(|point| {
-            config
+            let mut registrations: Vec<_> = config
                 .schema
                 .invariant_catalog
                 .registrations
@@ -47,7 +47,12 @@ impl RuntimeSubsystem for SchemaContractRuntimeSubsystem {
                                 .includes(r.execution_point))
                 })
                 .cloned()
-                .collect()
+                .collect();
+            // A rejected deletion owns its refusal before minimum cardinality
+            // observes the incident edges that deletion would remove. Stable
+            // ordering preserves every other policy's existing precedence.
+            registrations.sort_by_key(|registration| !rejects_live_endpoint_deletion(registration));
+            registrations
         }));
         Self {
             schema_authority_digest: config.schema.registry.authority_digest_bytes(),
@@ -65,4 +70,13 @@ impl RuntimeSubsystem for SchemaContractRuntimeSubsystem {
     fn fork(&self) -> Self {
         self.clone()
     }
+}
+
+fn rejects_live_endpoint_deletion(registration: &InvariantRegistration) -> bool {
+    matches!(
+        &registration.rule,
+        crate::validation::data::InvariantRule::EndpointDeletionIntegrityContract(contract)
+            if contract.mode
+                == crate::schema::data::EndpointDeletionIntegrityMode::RejectDeleteWithLiveRelations
+    )
 }

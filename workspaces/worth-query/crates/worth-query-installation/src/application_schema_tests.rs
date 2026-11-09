@@ -40,6 +40,48 @@ mod read_only_operations;
 mod schema_affinity;
 mod value_bindings;
 
+#[test]
+fn admitted_operation_budget_counts_every_declared_family() {
+    let schema = installed_index()
+        .bind_application_schema(TestSchema::declaration().unwrap())
+        .unwrap();
+    let families = crate::declaration_budget_tests::assert_complete_source_budget(&schema);
+    for family in ["field", "ability-policy", "operation-program"] {
+        assert!(
+            families.contains(family),
+            "the real fixture must exercise {family}"
+        );
+    }
+}
+
+#[test]
+fn admitted_schema_budget_covers_every_declaration_family() {
+    let declaration = crate::declaration_budget_tests::all_families_declaration();
+    let package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
+        "worth.budget-fixture",
+        1,
+        0,
+    ))
+    .application_schema_erased(declaration.clone())
+    .validate()
+    .expect("real portable package admission");
+    assert_eq!(package.application_schemas(), &[declaration]);
+    let admitted = WorthQueryInstallationAdmissionProfile::new("support", "configuration")
+        .admit(package)
+        .expect("real installation admission");
+    let index = WorthQueryInstalledPackageIndex::build(
+        WorthQueryInstallationRuntimeIdentity::fresh(),
+        WorthQueryInstallationGeneration::initial(),
+        [admitted],
+    )
+    .expect("the complete schema must install through the real index owner");
+    assert_eq!(
+        index.assert_admitted_declaration_budgets(),
+        crate::declaration_budget_tests::required_families(),
+        "every compiler-enumerated declaration family must reach this real schema"
+    );
+}
+
 use effect_fixture::{TestEffect, TestPayload, TestPayloadBinding};
 use field_references::*;
 use principal_binding::test_principal_binding;
@@ -293,4 +335,23 @@ fn installed_index_with(
         [admitted],
     )
     .unwrap()
+}
+
+/// Reuse the actual admitted operation/derived declarations in the budget court.
+pub(crate) fn budget_declarations(
+) -> Vec<worth_query_declaration::facade::application_schema::ErasedApplicationSchemaDeclaration> {
+    vec![
+        mutation_binding::MutationSchema::declaration()
+            .unwrap()
+            .erased()
+            .clone(),
+        aftermath_coverage::CoveredAftermathSchema::declaration()
+            .unwrap()
+            .erased()
+            .clone(),
+        derived_relation::DerivedSchema::<true>::declaration()
+            .unwrap()
+            .erased()
+            .clone(),
+    ]
 }

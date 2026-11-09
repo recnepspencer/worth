@@ -132,14 +132,16 @@ fn original_law_payload_survives_all_query_refusal_translations() {
         WorthQueryProviderSessionDenialKind, WorthQueryProviderSessionFailure,
         WorthQueryProviderSessionProtocolStage, WorthQueryRelationLawDenial,
     };
+    use worth_relational::facade::config::CascadeDeletePolicy;
     use worth_relational::facade::identity::{EntityId, KindId, PartitionId};
-    use worth_relational::facade::schema::ContractId;
+    use worth_relational::facade::schema::{ContractId, EndpointDeletionIntegrityMode};
     use worth_relational::facade::transactions::{CreatedEntityRef, EntityReference};
 
     // Payload transport only: these coordinates make no claim of graph admission.
     // The installed public graph court proves actual law/identity derivation.
     let contract_id = ContractId::new("original-law-payload");
-    let source = EntityReference::Existing(EntityId::new(PartitionId(2), 5, 3));
+    let deleted = EntityId::new(PartitionId(2), 5, 3);
+    let source = EntityReference::Existing(deleted);
     let target = EntityReference::Created(CreatedEntityRef {
         partition_id: PartitionId(2),
         kind_id: KindId(11),
@@ -147,6 +149,24 @@ fn original_law_payload_survives_all_query_refusal_translations() {
     });
     // A deliberately false self-edge flag proves transport does not infer it from endpoint equality.
     for (fields, expected) in [
+        (
+            InvariantViolationFields::RelationEndpointDeletionIntegrity {
+                contract_id: contract_id.clone(),
+                relation_kind_id: KindId(77),
+                entity_id: deleted,
+                remaining_relation_endpoint_count: 3,
+                mode: EndpointDeletionIntegrityMode::RejectDeleteWithLiveRelations,
+                cascade_delete_policy: Some(CascadeDeletePolicy::RetainDanglingForAudit),
+            },
+            Some(WorthQueryRelationLawDenial::EndpointDeletion {
+                contract_id: &contract_id,
+                relation_kind_id: KindId(77),
+                entity_id: &deleted,
+                remaining_relation_endpoint_count: 3,
+                mode: EndpointDeletionIntegrityMode::RejectDeleteWithLiveRelations,
+                cascade_delete_policy: Some(CascadeDeletePolicy::RetainDanglingForAudit),
+            }),
+        ),
         (
             InvariantViolationFields::RelationEndpointKindSelfEdge {
                 contract_id: contract_id.clone(),

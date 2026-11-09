@@ -56,17 +56,36 @@ pub(super) fn bind(
         )
         .ok_or_else(mismatch)?;
     if let Some((anchor, co_anchors)) = anchor {
+        let retiring = roles
+            .iter()
+            .filter(|role| role.posture == RequiredOutputRolePosture::Retire)
+            .cloned()
+            .collect::<Vec<_>>();
+        let kinds = attempt
+            .authored_member_kinds(&provider.graph.layout)
+            .map_err(|_| mismatch())?;
         let cascade = provider
             .graph
             .with_runtime(execution, |runtime| {
-                runtime.readmit_authored_source_retirement_with_co_anchors(
-                    execution,
-                    &publisher.native,
-                    basis,
-                    anchor,
-                    &co_anchors,
-                    &roles,
-                )
+                if kinds.is_empty() {
+                    runtime.readmit_authored_source_retirement_with_co_anchors(
+                        execution,
+                        &publisher.native,
+                        basis,
+                        anchor,
+                        &co_anchors,
+                        &retiring,
+                    )
+                } else {
+                    runtime.readmit_authored_owned_member_retirement(
+                        execution,
+                        &publisher.native,
+                        basis,
+                        (anchor, &co_anchors),
+                        &retiring,
+                        &kinds,
+                    )
+                }
             })
             .map_err(transaction_commit_stop)?;
         if let Some(predecessor) = cascade {
@@ -86,7 +105,7 @@ pub(super) fn bind(
         }
     }
     // A mixed roster cannot bypass an opted-in cascade. If Native found no
-    // cascade, the independent legacy path retains its original posture rule.
+    // cascade for a non-roster anchor, the independent publication path retains its posture rule.
     if !all_retire {
         let retiring = roles
             .into_iter()

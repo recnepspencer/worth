@@ -194,6 +194,15 @@ impl WorthQueryPreparedCorrectionSource {
             .and_then(|identity| identity.retirement_anchor())
     }
 
+    pub(in crate::domain_computation::primary_graph) fn authored_declaration(
+        &self,
+    ) -> Option<&worth_query_declaration::facade::application_aftermath::DeclaredAuthoredCorrection>
+    {
+        self.authored_identity
+            .as_ref()
+            .map(|identity| identity.declaration())
+    }
+
     pub(in crate::domain_computation::primary_graph) fn authored_retirement_co_anchors(
         &self,
     ) -> Vec<EntityId> {

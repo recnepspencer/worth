@@ -17,6 +17,9 @@ pub(super) fn map_compilation_denial(
         ApplicationSchemaCompilationDenial::Query(denial) => denial.canonical_denial().copied(),
         ApplicationSchemaCompilationDenial::Operation(denial) => denial.canonical_denial().copied(),
         ApplicationSchemaCompilationDenial::Resource(denial) => denial.canonical_denial().copied(),
+        ApplicationSchemaCompilationDenial::Capability(denial) => {
+            denial.canonical_denial().copied()
+        }
         _ => None,
     };
     let (kind, subject) = match denial {
@@ -258,6 +261,26 @@ mod tests {
     use crate::installed_index::WorthQueryInstalledPackageIndexDenialKind as IndexKind;
 
     use super::map_catalog_denial_to_index_denial;
+
+    #[test]
+    fn real_capability_budget_refusals_keep_their_cause_through_schema_mapping() {
+        use crate::application_schema::ApplicationSchemaCompilationDenial;
+        for (expected_kind, denial) in
+            crate::application_capability::tests::budgets::over_limit_denials()
+        {
+            assert_eq!(denial.kind(), expected_kind);
+            let cause = *denial
+                .canonical_denial()
+                .expect("real canonical budget cause");
+            let subject = denial.subject().to_owned();
+            let mapped = super::map_compilation_denial(
+                "capability-budget-schema",
+                ApplicationSchemaCompilationDenial::Capability(denial),
+            );
+            assert_eq!(mapped.canonical_denial(), Some(&cause));
+            assert_eq!(mapped.subject(), subject);
+        }
+    }
 
     #[test]
     fn canonical_catalog_budget_denials_keep_their_exact_public_kind() {

@@ -6,7 +6,8 @@ pub use crate::domain_computation::primary_graph::{
 };
 mod managed_index;
 pub use crate::domain_computation::application_aftermath::{
-    WorthQueryRelationPreImageDenial, WorthQueryRelationPreImageFailure,
+    WorthQueryPreImageRetentionDenial, WorthQueryRelationPreImageDenial,
+    WorthQueryRelationPreImageFailure,
 };
 pub use crate::domain_computation::primary_graph::application_attempt::WorthQuerySignedCreationPreparationDenial;
 pub use crate::domain_computation::primary_graph::application_resource::{

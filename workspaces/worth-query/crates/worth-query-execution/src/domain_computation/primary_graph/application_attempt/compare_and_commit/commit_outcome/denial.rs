@@ -12,6 +12,7 @@ mod execution;
 mod invariant_execution;
 mod invariant_refusal;
 mod lane;
+mod preimage_retention;
 mod program_binding;
 mod recorded_idempotency;
 mod relation_law;

@@ -170,7 +170,7 @@ where
                             let summary = provider_result(
                                 execution,
                                 control,
-                                self.provider.node_summary(*node, control),
+                                self.provider.node_summary(node, control),
                             )?;
                             let sources =
                                 WorthQueryManagedIndexSummarySources::new(&context, ordinal);

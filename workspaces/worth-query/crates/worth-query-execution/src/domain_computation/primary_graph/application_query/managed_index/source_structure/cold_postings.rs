@@ -3,10 +3,10 @@ use super::*;
 use crate::domain_computation::primary_graph::application_query::read_execution::fallible_heap::{
     self, Heap,
 };
-use std::{cell::Cell, cmp::Ordering};
+use std::{cell::RefCell, cmp::Ordering};
 
 struct Pairs<'a, 'control> {
-    values: &'a [Cell<Option<(Slot, usize)>>],
+    values: &'a [RefCell<Option<(Slot, usize)>>],
     control: &'a Control<'control>,
 }
 impl Heap for Pairs<'_, '_> {
@@ -17,10 +17,10 @@ impl Heap for Pairs<'_, '_> {
     fn compare(&mut self, left: usize, right: usize) -> Result<Ordering, Stop> {
         self.control.checkpoint((2 * size_of::<Slot>()) as u64)?;
         Ok(self.values[left]
-            .get()
+            .borrow()
             .expect("captured pair")
             .0
-            .cmp(&self.values[right].get().expect("captured pair").0))
+            .cmp(&self.values[right].borrow().expect("captured pair").0))
     }
     fn swap(&mut self, left: usize, right: usize) -> Result<(), Stop> {
         self.control
@@ -45,7 +45,7 @@ pub(super) fn capture(
     for edit in edits {
         control.checkpoint(1)?;
         if let Some(slot) = edit.region.and_then(|region| region.source) {
-            values.elements()[next].set(Some((slot, edit.ordinal)));
+            *values.elements()[next].borrow_mut() = Some((slot, edit.ordinal));
             next += 1;
         }
     }
@@ -66,7 +66,7 @@ pub(super) fn capture(
         values
             .elements()
             .iter()
-            .map(|pair| pair.get().expect("captured pair")),
+            .map(|pair| pair.borrow_mut().take().expect("captured pair")),
         *execution,
     )
     .map_err(|cause| control.refuse(cause.into()))?

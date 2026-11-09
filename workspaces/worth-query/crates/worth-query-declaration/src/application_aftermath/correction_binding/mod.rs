@@ -9,6 +9,8 @@ pub use authored_identity::{
 pub(crate) use declaration::{ComposedCorrectionBinding, CorrectionBindingDeclaration};
 mod dispatch;
 mod inverse;
+mod preimage;
+pub use preimage::ApplicationCorrectionPreImage;
 mod reapplication;
 pub use reapplication::{
     dispatch_application_reapplication, ApplicationReapplicationDispatch,
@@ -30,8 +32,7 @@ pub use disclosure::{DeclaredCorrectionDisclosure, DeclaredCorrectionDisclosureP
 pub use dispatch::{dispatch_application_correction, ApplicationCorrectionDispatch};
 
 pub use inverse::{
-    ApplicationCorrectionBinding, ApplicationCorrectionDerivationDenial,
-    ApplicationCorrectionPreImage, ApplicationInverseBinding, DeclaredCorrectionBinding,
-    DeclaredCorrectionBindingParts,
+    ApplicationCorrectionBinding, ApplicationCorrectionDerivationDenial, ApplicationInverseBinding,
+    DeclaredCorrectionBinding, DeclaredCorrectionBindingParts,
 };
 pub use visitor::ApplicationCorrectionVisitor;

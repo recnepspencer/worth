@@ -8,7 +8,7 @@ pub(super) struct Batch<'pages, 'control, 'call, 'request, Node> {
     pub(super) control: &'control WorthQueryManagedIndexControl<'call>,
     pub(super) allocations: &'control Cell<usize>,
 }
-impl<Node: Copy> Batch<'_, '_, '_, '_, Node> {
+impl<Node: Clone> Batch<'_, '_, '_, '_, Node> {
     fn key_at(&self, rank: usize) -> Result<usize, Stop> {
         self.control.checkpoint(size_of::<usize>() as u64)?;
         Ok(self.pages[rank].0)

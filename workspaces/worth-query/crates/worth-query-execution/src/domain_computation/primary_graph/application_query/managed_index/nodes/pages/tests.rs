@@ -47,7 +47,7 @@ fn isolated_node_pages_share_unchanged_backing_and_release_staged_edits() {
     let execution = ExecutionRequest::serial(&backing);
     controlled(&execution, |control| {
         let values = (0..4 * PAGE_SIZE)
-            .map(|index| Cell::new(Some(index as u64)))
+            .map(|index| RefCell::new(Some(index as u64)))
             .collect::<Vec<_>>();
         let original = NodePages::from_scratch(&execution, &values, control)?;
         let original_page = Arc::downgrade(leaf_at(&original, 0));
@@ -55,12 +55,15 @@ fn isolated_node_pages_share_unchanged_backing_and_release_staged_edits() {
         candidate.replace(2, Some(999), control)?;
         candidate.replace(PAGE_SIZE + 7, None, control)?;
         assert_eq!(original.get(2, control)?, Some(&2));
-        assert_eq!(candidate.get(2, control)?, Some(999));
+        assert_eq!(candidate.get(2, control)?.map(|node| *node), Some(999));
         assert_eq!(
             original.get(PAGE_SIZE + 7, control)?,
             Some(&((PAGE_SIZE + 7) as u64))
         );
-        assert_eq!(candidate.get(PAGE_SIZE + 7, control)?, None);
+        assert_eq!(
+            candidate.get(PAGE_SIZE + 7, control)?.map(|node| *node),
+            None
+        );
         let candidate = candidate.seal(control)?;
         assert!(!Arc::ptr_eq(leaf_at(&original, 0), leaf_at(&candidate, 0)));
         assert!(Arc::ptr_eq(leaf_at(&original, 3), leaf_at(&candidate, 3)));
@@ -90,7 +93,7 @@ fn original_request_stop_refuses_node_page_handoff_and_releases_staged_pages() {
     let first_backing = request(&first_cancel);
     let first = ExecutionRequest::serial(&first_backing);
     let original = controlled(&first, |control| {
-        NodePages::from_scratch(&first, &[Cell::new(Some(5_u64))], control).map_err(Into::into)
+        NodePages::from_scratch(&first, &[RefCell::new(Some(5_u64))], control).map_err(Into::into)
     })
     .unwrap();
     // Retained backing survives its construction request; the edit borrows a new one.
@@ -119,7 +122,7 @@ fn original_request_stop_refuses_node_page_handoff_and_releases_staged_pages() {
         assert_eq!(original.get(0, control)?, Some(&5));
         let mut retry = PageEdit::new(original.clone(), fresh);
         retry.replace(0, Some(8), control)?;
-        assert_eq!(retry.get(0, control)?, Some(8));
+        assert_eq!(retry.get(0, control)?.map(|node| *node), Some(8));
         Ok(())
     })
     .unwrap();
@@ -134,9 +137,9 @@ fn empty_inserted_page_is_pruned(
     let mut edited = PageEdit::new(original.clone(), *execution);
     edited.replace(ordinal, Some(1), control)?;
     edited.replace(ordinal, None, control)?;
-    assert_eq!(edited.get(ordinal, control)?, None);
+    assert_eq!(edited.get(ordinal, control)?.map(|node| *node), None);
     let edited = edited.seal(control)?;
-    assert_eq!(edited.get(ordinal, control)?, None);
+    assert_eq!(edited.get(ordinal, control)?.map(|node| *node), None);
     assert!(
         Arc::ptr_eq(leaf_at(original, 3), leaf_at(&edited, 3)),
         "untouched page stays shared"

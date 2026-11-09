@@ -44,6 +44,7 @@ pub struct AdmittedRequiredOutputSuccession {
 /// This is not a running producer and carries no producer dependency claim.
 #[derive(Debug)]
 pub struct AdmittedAuthoredOutputRetirement {
+    occurrence: Arc<()>,
     predecessors: Vec<RequiredOutputPublicationAuthority>,
 }
 
@@ -69,6 +70,7 @@ impl InstalledApplicationPublicationOwner {
     ) -> Option<AdmittedAuthoredOutputRetirement> {
         Arc::ptr_eq(&self.occurrence, &predecessor.occurrence).then(|| {
             AdmittedAuthoredOutputRetirement {
+                occurrence: Arc::clone(&self.occurrence),
                 predecessors: vec![predecessor.clone()],
             }
         })
@@ -78,17 +80,18 @@ impl InstalledApplicationPublicationOwner {
         predecessors: impl IntoIterator<Item = &'a RequiredOutputPublicationAuthority>,
     ) -> Option<AdmittedAuthoredOutputRetirement> {
         let predecessors: Vec<_> = predecessors.into_iter().cloned().collect();
-        if predecessors.is_empty()
-            || predecessors.iter().enumerate().any(|(index, prior)| {
-                !Arc::ptr_eq(&self.occurrence, &prior.occurrence)
-                    || predecessors[..index].iter().any(|other| {
-                        other.publication == prior.publication && other.ordinal == prior.ordinal
-                    })
-            })
-        {
+        if predecessors.iter().enumerate().any(|(index, prior)| {
+            !Arc::ptr_eq(&self.occurrence, &prior.occurrence)
+                || predecessors[..index].iter().any(|other| {
+                    other.publication == prior.publication && other.ordinal == prior.ordinal
+                })
+        }) {
             return None;
         }
-        Some(AdmittedAuthoredOutputRetirement { predecessors })
+        Some(AdmittedAuthoredOutputRetirement {
+            occurrence: Arc::clone(&self.occurrence),
+            predecessors,
+        })
     }
     pub fn admit_required_output_succession(
         &self,
@@ -153,6 +156,7 @@ impl AdmittedAuthoredOutputRetirement {
                     && prior.ordinal == publication.ordinal
             })
             .then(|| Self {
+                occurrence: Arc::clone(&self.occurrence),
                 predecessors: vec![publication.clone()],
             })
     }
@@ -165,12 +169,19 @@ impl AdmittedCheckpointProgramActivation {
 }
 
 impl InstalledApplicationPublicationAuthority {
+    pub fn admits_authored_retirement_issuer(
+        &self,
+        proof: &AdmittedAuthoredOutputRetirement,
+    ) -> bool {
+        Arc::ptr_eq(&self.occurrence, &proof.occurrence)
+    }
     pub fn admits_authored_output_retirement(
         &self,
         proof: &AdmittedAuthoredOutputRetirement,
         predecessor: &RequiredOutputPublicationAuthority,
     ) -> bool {
-        Arc::ptr_eq(&self.occurrence, &predecessor.occurrence)
+        self.admits_authored_retirement_issuer(proof)
+            && Arc::ptr_eq(&self.occurrence, &predecessor.occurrence)
             && proof.predecessors.iter().any(|prior| {
                 Arc::ptr_eq(&self.occurrence, &prior.occurrence)
                     && predecessor.publication == prior.publication
@@ -259,9 +270,16 @@ mod tests {
         let stranger = foreign
             .authority()
             .seal_required_output_publication_at(9, 1);
-        assert!(owner
+        let empty = owner
             .admit_authored_output_retirements(std::iter::empty())
-            .is_none());
+            .unwrap();
+        assert!(owner.authority().admits_authored_retirement_issuer(&empty));
+        assert!(!foreign
+            .authority()
+            .admits_authored_retirement_issuer(&empty));
+        assert!(!owner
+            .authority()
+            .admits_authored_output_retirement(&empty, &first));
         assert!(owner
             .admit_authored_output_retirements([&first, &first])
             .is_none());

@@ -22,7 +22,7 @@ impl<I: PrefixSourceIndex> WorthQueryManagedIndexPredicateProvider<Catalog, I> f
     }
     fn predicate_region_may_match(
         &self,
-        _: (),
+        _: &(),
         extrema: [&query::Probe; 2],
         row: WorthQueryManagedIndexSourceRow<'_, Catalog, I>,
         control: &WorthQueryManagedIndexControl<'_>,

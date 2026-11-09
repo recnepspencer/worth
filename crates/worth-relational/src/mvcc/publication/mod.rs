@@ -6,7 +6,7 @@ mod preparation_denial;
 pub use application_publication::RelationalInstalledApplicationPublicationAuthority;
 pub(crate) use application_publication::{origin_denial, RequiredOutputPublicationAdmission};
 pub use application_publication::{
-    RecordedRequiredOutputRole, RelationalAuthoredCoupledCandidate,
+    AuthoredOwnedMemberKind, RecordedRequiredOutputRole, RelationalAuthoredCoupledCandidate,
     RelationalAuthoredCoupledOwners, RelationalAuthoredCoupledProducerAssembly,
     RelationalAuthoredCoupledTransaction, RelationalAuthoredRestoration,
     RelationalAuthoredRetirement, RelationalCoupledAssemblyFailure,

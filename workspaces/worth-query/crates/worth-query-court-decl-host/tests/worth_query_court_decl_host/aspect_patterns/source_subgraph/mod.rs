@@ -23,5 +23,6 @@ mod generation;
 mod producer;
 mod program;
 mod readiness;
+mod roster;
 mod world;
 type Hashes = Arc<Mutex<Vec<[u8; 32]>>>;

@@ -223,13 +223,14 @@ impl ManagedIndexSourceRows<'_> {
     }
 
     /// The nested endpoint retains its actual route, parent lineage and field.
+    /// Aspect absence and optional child absence remain distinct observations.
     pub fn with_projected_field_content<T>(
         &self,
         read: &PreparedManagedIndexProjectionRead,
         occurrence: &ManagedIndexSourceProjectionOccurrence,
         column: usize,
         project: impl FnOnce(
-            Option<&worth_foundational::facade::AspectValue>,
+            crate::runtime::RelationalProjectedFieldObservation<'_>,
             Option<crate::content::RelationalContentFrame>,
         ) -> T,
     ) -> Result<T, super::super::ManagedIndexSourcePreparationDenial> {
@@ -251,7 +252,7 @@ impl ManagedIndexSourceRows<'_> {
         read: &PreparedManagedIndexProjectionRead,
         occurrence: &ManagedIndexSourceProjectionOccurrence,
         column: usize,
-        project: impl FnOnce(Option<&worth_foundational::facade::AspectValue>) -> T,
+        project: impl FnOnce(crate::runtime::RelationalProjectedFieldObservation<'_>) -> T,
     ) -> Result<T, ReadDenial> {
         self.admit_projection_occurrence(read, occurrence)?;
         let route = &self.projection.program.projection_routes()[read.route];

@@ -4240,6 +4240,65 @@ Read a particular co-anchor with
 `preimage.field_for_output(&CoRole::DESCRIPTOR, &locus)`; equal field loci on
 different anchors retain their own original values.
 
+An authored anchor may also own a variable number of independently keyed
+members. Extend its existing authored correction declaration:
+
+```rust
+ApplicationAuthoredCorrection::restore_retired::<C, AnchorFamily, Retired, Created>()
+    .owned_members::<C, MemberFamily, RetiredMembers, CreatedMembers, _, _>(
+        MemberOf::reference(),
+    )
+```
+
+`RetiredMembers` and `CreatedMembers` are ordinary output-role families with
+minimum zero and the respective single lifecycle posture. `MemberFamily`
+declares the member's native logical-key field. Installation requires the named
+owner relation to run from that member kind to the anchor kind, with exactly
+one target per live member (`source_min = source_max = 1`). The roster is
+exactly the live sources of that relation into the anchor; there is no stored
+roster list and no implied ownership from another relation.
+
+The ordinary candidate binds every retiring member, unlinks its owner and
+intra-roster relations, and deletes the anchor and members in the same commit.
+Native compares the actual owner adjacency with those roles before relation-law
+validation. `MissingOwnedMember`, `ForeignOwnedMember`, `RepeatedOwnedMember`,
+`ExtraOwnedMember` and `DanglingOwnedMember` retain their affected records through
+`authored_retirement_error()`. A member cannot substitute for its typed anchor.
+Restoration creates that anchor and all original members with their logical keys
+and fresh Native IDs. Declare and observe the member key and every field to
+restore in the existing `DeclaredPreImageDemand`, and add the owner and changed
+intra-roster relation loci with `with_relations`. The recorded inverse compares
+relations after remapping the original anchor and member endpoints to those
+fresh IDs. Exactly-one owner cardinality still refuses a restored member without
+its anchor. An outside relation into a member remains outside the closure;
+`RejectDeleteWithLiveRelations` still produces the typed `EndpointDeletion` denial.
+
+The demand's `maximum_encoded_bytes` bounds the total logical retained payload,
+across the anchor and every member. Fields charge their native scalar semantic
+width, including the scalar tag. Each relation transition charges 86 bytes for
+its complete record/kind and before/after endpoint coordinates; retained content
+also spends the same bound. A field total over the bound refuses as
+`WorthQueryPreImageRetentionDenial::ExceedsByteBound`; a relation total over it
+refuses as `WorthQueryRelationPreImageDenial::ExceedsByteBound`, before any effect.
+A whole-roster replace may retire the old anchor and create its replacement
+under the same logical key in one candidate. Declare the replacement's optional
+Create-to-Retire co-anchor with `co_retire_created` and give its members their own
+Create-to-Retire output families through `owned_members`. The retired anchor and
+members use the opposite correspondence. The existing recorded inverse then
+retires the exact replacement and restores the prior anchor, every prior member
+and the original links, including removed members. Membership always comes from
+the owner relation; the replacement intent is an ordinary typed command, not a
+stored source snapshot. Each lifecycle family has its own explicit posture.
+The unique-field owner admits a replacement key only when that same sealed
+batch deletes its exact observed holder. The original indexed selection stays
+in decision support; deleting another holder or claiming the value twice still
+refuses. An empty roster retains its intra-member empty loci from the genuinely
+observed empty owner adjacency, rather than inventing a member to read.
+
+Historical member fields are read using `family_member_suffix`,
+`family_member_entity` and `field_for_family_member` on the recorded pre-image.
+These descriptive values grant no current read or mutation authority.
+
 If a retired authored source is still linked by a surviving source-owned
 publication, declare that owner's root through the program's existing output
 connection. The mutation binding implements
@@ -6945,6 +7004,13 @@ query with `.managed_index(Index::reference(), probe_parameter)`. The contributi
 installs the matching pure provider with `setup.managed_index::<Index, _>(provider)`.
 Providers borrow disclosed, query-bound Source rows and finite node/candidate
 writers; they receive no mutation handle or reusable read permission.
+`Node` and `Summary` require `Clone`, so summaries may be owned exact values,
+including heap-backed rational bounds. `node_summary` borrows the node and returns
+its summary by reference; `merge_summaries` borrows its parts, and summary and
+predicate evaluation borrow their inputs. Probes do not clone visited summaries.
+Writer `get` returns a borrow guard; copy or clone only when an edit needs an owned
+node. Query moves cold nodes into sealed pages and clones touched warm pages to
+preserve the retained predecessor. `Denial` stays `Copy`.
 
 For repeated required String reads, use
 `row.with_text(name_selector, |name| name.starts_with("al"))`. Nested callbacks
@@ -7327,9 +7393,13 @@ child collections. Native parent-occurrence custody supplies the projected field
 entity coordinates and caller-owned DTOs cannot issue them. Complete projected
 candidate influence includes every declared descendant, even for rejected candidates.
 Original work, memory and cancellation controls apply to acquisition, comparison
-and nested Entry content. Child predicates and OptionalAspect Source fields remain
-unsupported. Existing one-hop Entry content retains its v1 bytes; the compiled
-nested profile uses framed v2 content, including currently empty children.
+and nested Entry content. OptionalAspect Source fields are supported at the root
+and in nested shapes, using ordinary `optional_aspect_field` projection and row
+reading. Native distinguishes absent aspects, absent optional children and present
+fields. Child predicates remain unsupported. Entry content includes the present
+field-slot roster, so aspect addition and removal affect comparison. One-hop
+entries use v1 framing; the compiled nested profile uses v2 framing, including
+currently empty children.
 See the executable [nested shape](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/nested/shape.rs)
 and [ordinary integration courts](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/nested/court.rs).
 This qualifies the finite nested Source profile, not arbitrary payload traversal,
@@ -7487,8 +7557,12 @@ The Source must use `SameAdmittedScope` with `NoParameters`, public disclosure,
 physical scalar fields and supported stored/reverse/composed/union membership
 paths. Direct endpoint result relations may project scalar fields from the
 related entity. Their actual relation occurrences preserve cardinality: two
-physical links to the same endpoint are still two results. Child predicates,
-deeper nested shapes, optional parent-aspect result fields and child-field ordering remain unsupported; ordering may
+physical links to the same endpoint are still two results. Finite nesting of
+these direct relations, including root to child to grandchild, is supported.
+Optional parent-aspect result fields are supported at every level through
+`optional_aspect_field`; optional children use `optional_field`. Aspect addition
+and removal change Source rows even when all surviving values stay equal.
+Child predicates and child-field ordering remain unsupported; ordering may
 refer to root fields. Unsupported shapes return `UnsupportedInvariantSource`
 during installation.
 Source result limits remain enforced; unavailable material is not an empty set.

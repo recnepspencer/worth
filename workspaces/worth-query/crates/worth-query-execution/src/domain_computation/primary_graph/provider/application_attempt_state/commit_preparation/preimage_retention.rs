@@ -1,6 +1,7 @@
 //! Fail-closed retention from the admitted decision read-set.
 
 mod authored_anchors;
+mod owned_relations;
 mod relations;
 pub(crate) mod selection;
 pub(crate) use relations::WorthQueryRetainedRelationPreImageSeal;
@@ -82,6 +83,7 @@ pub(super) fn retain_attempt_preimage(
     let (mut retained, candidates_materialized) = selected.map_err(retention_failure)?.into_parts();
     if !demand.relations().is_empty() {
         retained = relations::retain(
+            attempt,
             execution,
             layout,
             demand,
