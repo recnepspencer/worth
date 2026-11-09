@@ -161,3 +161,16 @@ pub use source_observation::{
 
 #[doc(hidden)]
 pub use band::__band_guard_package_matches_any_prefix;
+
+pub use home_recovery::SignalReadmitted;
+
+mod branch_program_source;
+pub use branch_program_source::{
+    AdmittedBranchProgramSource, BranchProgramSourceAdmissionDenial,
+    InstalledBranchProgramSourceAuthority, InstalledBranchProgramSourceOwner,
+};
+
+mod bridge_program_installation;
+pub use bridge_program_installation::{
+    BridgeProgramInstallationBinding, BridgeProgramInstallationDenial, InstalledBridgeProgramOwner,
+};
