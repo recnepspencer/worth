@@ -4268,6 +4268,11 @@ retires the exact replacement and restores the prior anchor, every prior member
 and the original links, including removed members. Membership always comes from
 the owner relation; the replacement intent is an ordinary typed command, not a
 stored source snapshot. Each lifecycle family has its own explicit posture.
+The unique-field owner admits a replacement key only when that same sealed
+batch deletes its exact observed holder. The original indexed selection stays
+in decision support; deleting another holder or claiming the value twice still
+refuses. An empty roster retains its intra-member empty loci from the genuinely
+observed empty owner adjacency, rather than inventing a member to read.
 
 Historical member fields are read using `family_member_suffix`,
 `family_member_entity` and `field_for_family_member` on the recorded pre-image.

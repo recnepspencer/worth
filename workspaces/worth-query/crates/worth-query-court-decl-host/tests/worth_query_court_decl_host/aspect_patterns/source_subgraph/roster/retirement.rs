@@ -25,13 +25,21 @@ where
     let mut observed = std::collections::BTreeSet::new();
     for key in &input.members {
         let member = reader.resolve_entity(MemberKey::at("MemberKey"), key.clone())?;
+        let mut owner = None;
         if observed.insert(key) {
             reader.entity(&member, Member::reference())?;
             reader.field(&member, MemberKey::at("MemberKey"))?;
             reader.field(&member, Value::at("MemberValue"))?;
-            reader
+            let owners = reader
                 .relations_from(OwnedBy::reference(), &member)
                 .map_err(HandlerExecutionDenial::new)?;
+            let actual = owners.iter().next().ok_or_else(|| {
+                HandlerExecutionDenial::new(WorthQueryApplicationAttemptDenial::new(
+                    WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
+                    "OwnedBy",
+                ))
+            })?;
+            owner = Some(reader.mutation_target(actual.to())?);
             for edge in reader
                 .relations_from(Next::reference(), &member)
                 .map_err(HandlerExecutionDenial::new)?
@@ -42,7 +50,7 @@ where
                 ));
             }
         }
-        members.push((key.clone(), reader.mutation_target(&member)?));
+        members.push((key.clone(), reader.mutation_target(&member)?, owner));
     }
     Ok(Retirement {
         scope: creation::scope(reader)?,
@@ -80,10 +88,13 @@ where
         writer.unlink(Next::reference(), &from, &to)?;
     }
     let mut seen = std::collections::BTreeSet::new();
-    for (index, (key, target)) in decision.members.into_iter().enumerate() {
+    for (index, (key, target, owner)) in decision.members.into_iter().enumerate() {
         let member = writer.projected_entity(&target)?;
         if seen.insert(key.clone()) {
-            writer.unlink(OwnedBy::reference(), &member, &root)?;
+            let owner = writer.projected_entity(
+                &owner.expect("first member occurrence retains its actual observed owner"),
+            )?;
+            writer.unlink(OwnedBy::reference(), &member, &owner)?;
             writer.delete_entity(Member::reference(), &member)?;
             writer.retire_member::<Members>(&key, &member)?;
         } else {

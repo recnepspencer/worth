@@ -8,8 +8,8 @@ Here `decl::` means `worth_query_decl::facade::` and `host::` means
 `worth_query_host::facade::`. The
 [small public fixture](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/aspect_patterns/source_subgraph/mod.rs)
 uses these two application facades. Its source is a root with two named members.
-Its generated result is another root with two members. Both topologies are fixed;
-ordinary installed operations can change values, but cannot change membership.
+Its generated result is another root with two members. The initial field-edit and producer courts use fixed topologies. The additional
+authored-roster courts below exercise topology-changing lifecycle operations.
 
 ## Declare and observe the complete source
 

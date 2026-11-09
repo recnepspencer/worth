@@ -69,6 +69,30 @@ impl WorthQueryStagedApplicationAttempt<'_> {
             .chain(identity.co_anchors())
             .filter(|anchor| anchor.member_owner().is_none())
         {
+            let ApplicationSchemaMember::Field {
+                entity: anchor_entity,
+                ..
+            } = anchor.parts().logical_key.as_ref()
+            else {
+                return Err(failure());
+            };
+            let anchor_kinds = kinds
+                .iter()
+                .filter(|kind| {
+                    identity.co_anchors().iter().any(|member| {
+                        member.member_owner().is_some_and(|owner| {
+                            owner.to() == anchor_entity
+                                && layout
+                                    .relation(owner.relation())
+                                    .is_some_and(|relation| relation.kind == kind.owner_relation)
+                        })
+                    })
+                })
+                .copied()
+                .collect::<Vec<_>>();
+            if anchor_kinds.is_empty() {
+                continue;
+            }
             let name = if inverse {
                 &anchor.parts().inverse_role
             } else {
@@ -80,7 +104,7 @@ impl WorthQueryStagedApplicationAttempt<'_> {
                 .filter(|(role, _, _, _)| role == name)
             {
                 if let (Posture::Retire, EntityReference::Existing(id)) = (posture, target) {
-                    rosters.push((*id, kinds.clone(), roles.clone()));
+                    rosters.push((*id, anchor_kinds.clone(), roles.clone()));
                 }
             }
         }

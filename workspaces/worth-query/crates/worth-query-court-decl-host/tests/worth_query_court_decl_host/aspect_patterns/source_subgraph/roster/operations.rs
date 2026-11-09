@@ -95,7 +95,7 @@ impl ApplicationMutationOutputContract<Schema> for RetiredOutputs {
 pub struct Retirement {
     pub scope: AnchorTarget,
     pub root: AnchorTarget,
-    pub members: Vec<(String, MemberTarget)>,
+    pub members: Vec<(String, MemberTarget, Option<AnchorTarget>)>,
     pub links: Vec<(MemberTarget, MemberTarget)>,
 }
 macro_rules! binding { ($binding:ident, $input:ident, $codec:ident, $operation:ident, $decision:ty, $outputs:ident, $id:literal) => {

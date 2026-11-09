@@ -232,9 +232,22 @@ fn member_fields_alone_can_exceed_the_roster_preimage_bound_before_effects() {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.runtime().request(&principal, &scope);
-    created(&host, &request, image(100));
+    let mut graph = image(10);
+    let keys = (0..10)
+        .map(|index| format!("part-{index}-{}", "k".repeat(120)))
+        .collect::<Vec<_>>();
+    for (index, row) in graph.members.iter_mut().enumerate() {
+        row.key = keys[index].clone();
+        row.next = keys.get(index + 1).cloned();
+    }
+    let input = Retire {
+        key: graph.key.clone(),
+        members: keys,
+        replacement: None,
+    };
+    created(&host, &request, graph);
     let before = request.retain_current_read().unwrap();
-    let denial = denied(retire(&host, &request, command(100)));
+    let denial = denied(retire(&host, &request, input));
     assert_eq!(
         denial.preimage_retention_denial(),
         Some(WorthQueryPreImageRetentionDenial::ExceedsByteBound)

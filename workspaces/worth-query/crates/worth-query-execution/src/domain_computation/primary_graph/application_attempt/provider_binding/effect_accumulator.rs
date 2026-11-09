@@ -72,7 +72,7 @@ impl<'facts, 'layout, Facts: FactSequence + ?Sized>
         Self {
             facts: ObservedFactIndex::completed(facts, routes),
             contracts,
-            unique: UniqueValueWrites::new(unique_fields),
+            unique: UniqueValueWrites::new(unique_fields, effects),
             mutation_partition,
             created: CreatedEffectReferences::new(effects, mutation_partition),
             lowered: Vec::with_capacity(effects.len()),

@@ -11,7 +11,14 @@ pub(super) fn select(
         && let Some(anchor) = prepared.authored_retirement_anchor()
     {
         let co = prepared.authored_retirement_co_anchors();
-        if !co.is_empty() {
+        if !co.is_empty()
+            || prepared.authored_declaration().is_some_and(|identity| {
+                identity
+                    .co_anchors()
+                    .iter()
+                    .any(|member| member.member_owner().is_some())
+            })
+        {
             let mut anchors = Vec::with_capacity(co.len() + 1);
             for id in std::iter::once(anchor).chain(co) {
                 let entity = attempt
