@@ -14,7 +14,7 @@ pub use crate::durability::{
     WorldCheckpointReadView, WorldCheckpointSelection, WorldCheckpointSubject,
     WorldDurableArtifact, WorldDurableFrameDenial, WorldDurableHomeBinding,
     WorldDurableMediumDenial, WorldHomeProgramLineage, WorldOriginalObservation,
-    WorldOriginalObservationDenial, WorldProgramActivationHistory,
+    WorldOriginalObservationDenial, WorldOriginalStateObservation, WorldProgramActivationHistory,
     WorldProgramActivationHistoryEntry, WorldPublicationCompletion, WorldPublicationObservation,
     WorldPublicationTaskPosture, WorldReadmissionDenial, WORLD_ARTIFACT_PROTOCOL,
     WORLD_ARTIFACT_VERSION, WORLD_CHECKPOINT_PROTOCOL, WORLD_CHECKPOINT_VERSION,

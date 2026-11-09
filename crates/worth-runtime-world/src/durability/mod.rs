@@ -10,8 +10,9 @@ pub use checkpoint::{
     PreparedWorldCheckpoint, WorldCheckpointJournalRecord, WorldCheckpointOriginRetirement,
     WorldCheckpointOriginRetirementDenial, WorldCheckpointPort, WorldCheckpointReadSource,
     WorldCheckpointReadView, WorldCheckpointSelection, WorldCheckpointSubject,
-    WorldOriginalObservation, WorldOriginalObservationDenial, WorldProgramActivationHistory,
-    WorldProgramActivationHistoryEntry, WORLD_CHECKPOINT_PROTOCOL, WORLD_CHECKPOINT_VERSION,
+    WorldOriginalObservation, WorldOriginalObservationDenial, WorldOriginalStateObservation,
+    WorldProgramActivationHistory, WorldProgramActivationHistoryEntry, WORLD_CHECKPOINT_PROTOCOL,
+    WORLD_CHECKPOINT_VERSION,
 };
 pub(crate) use codec::DecodedWorldRecord;
 mod prepared_home_source;
