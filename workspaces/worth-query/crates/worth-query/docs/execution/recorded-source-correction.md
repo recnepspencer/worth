@@ -70,6 +70,11 @@ identity. A decoding or identity refusal remains typed as
 `OriginalInputDecode`; replacement input is never substituted. These factories
 construct DATA; fresh action admission governs its use.
 
+Bindings with `RETAIN_CANONICAL_INPUT` enabled share the stream captured by the
+original identity pass. Otherwise retention explicitly encodes the held value
+again and verifies its original identity. Request identity and its derivation
+work evidence remain unchanged.
+
 ## Select, prepare and publish
 
 Import the runtime API from `worth_query_host::facade::application_entry`:
