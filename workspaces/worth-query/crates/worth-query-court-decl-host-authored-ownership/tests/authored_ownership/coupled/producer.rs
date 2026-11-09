@@ -50,7 +50,7 @@ impl<S: Scenario> WorthQueryApplicationOutputRole for RetiredCell<S> {
 impl<S: Scenario> ApplicationMutationOutputContract<S> for Outputs {
     const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] = if matches!(
         S::MODE,
-        69
+        69 | 72
     ) {
         &[<sheet_boundary::SurvivingNodes<S> as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR, <sheet_boundary::RetiredNodes<S> as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR]
     } else if S::MODE == 70 {

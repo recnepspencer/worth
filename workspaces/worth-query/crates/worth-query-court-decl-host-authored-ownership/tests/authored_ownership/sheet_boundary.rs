@@ -240,6 +240,19 @@ pub trait Profile: Sized + 'static {
     fn declaration<S: Scenario<Boundary = Self>>(
     ) -> Result<ApplicationSchemaDeclaration<S>, ApplicationSchemaDeclarationDenial>;
     type Decision<S: Scenario>;
+    fn read_retirement<S: Scenario>(
+        _: &mut DecisionReader<'_, '_, '_, S, lifecycle::RetireBinding<S>>,
+        _: u64,
+    ) -> Result<Vec<coupled::creation_inverse::wire::Member<S>>, HandlerExecutionDenial> {
+        Ok(Vec::new())
+    }
+    fn retire_created<S: Scenario>(
+        _: &mut CandidateWriter<'_, S, lifecycle::RetireBinding<S>>,
+        members: Vec<coupled::creation_inverse::wire::Member<S>>,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        assert!(members.is_empty());
+        Ok(())
+    }
     fn initial<S: Scenario>(
         _: &mut CandidateWriter<'_, S, producer::Binding<S>>,
         _: &WorthQueryApplicationEffectEntity<S, Node<S>>,

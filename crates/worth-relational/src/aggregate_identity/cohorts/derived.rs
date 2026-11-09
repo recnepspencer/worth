@@ -21,35 +21,41 @@ pub(in crate::aggregate_identity::cohorts) fn collect(
         contract.source,
         AggregateIdentitySource::DerivedComponents { .. }
     );
-    let prepared = super::super::derived_source::with_views(before, after, work, |old, new| {
-        let affected = crate::derived_relation::affected::collect(
-            registry,
-            &handle,
-            &effect.adjacency,
-            &effect.records,
-            old,
-            new,
-        )?;
-        let mut seeds = affected.roots;
-        for member in affected.targets {
-            discovery::insert(&mut seeds, member, new)?;
-        }
-        if seeds.is_empty() {
-            return Ok(None);
-        }
-        let prior = discovery::collect(registry, &handle, &seeds, components, old)?;
-        // Every retained before cohort participates after severing; direct
-        // source endpoints alone are insufficient for the detached fragment.
-        for group in &prior.groups {
-            for member in group {
-                discovery::insert(&mut seeds, member.clone(), new)?;
+    let prepared = super::super::derived_source::with_views(
+        before,
+        after,
+        effect.has_entity_deletions,
+        work,
+        |old, new| {
+            let affected = crate::derived_relation::affected::collect(
+                registry,
+                &handle,
+                &effect.adjacency,
+                &effect.records,
+                old,
+                new,
+            )?;
+            let mut seeds = affected.roots;
+            for member in affected.targets {
+                discovery::insert(&mut seeds, member, new)?;
             }
-        }
-        let proposed = discovery::collect(registry, &handle, &seeds, components, new)?;
-        // Prefix support remains alive with both source discoveries through
-        // this complete candidate acquisition, before any identity transition.
-        Ok(Some((prior, proposed, affected.support)))
-    })?;
+            if seeds.is_empty() {
+                return Ok(None);
+            }
+            let prior = discovery::collect(registry, &handle, &seeds, components, old)?;
+            // Every retained before cohort participates after severing; direct
+            // source endpoints alone are insufficient for the detached fragment.
+            for group in &prior.groups {
+                for member in group {
+                    discovery::insert(&mut seeds, member.clone(), new)?;
+                }
+            }
+            let proposed = discovery::collect(registry, &handle, &seeds, components, new)?;
+            // Prefix support remains alive with both source discoveries through
+            // this complete candidate acquisition, before any identity transition.
+            Ok(Some((prior, proposed, affected.support)))
+        },
+    )?;
     let Some((prior, proposed, _prefix_support)) = prepared else {
         return Ok(None);
     };
@@ -97,7 +103,7 @@ pub(in crate::aggregate_identity) fn groups(
         contract.source,
         AggregateIdentitySource::DerivedComponents { .. }
     );
-    super::super::derived_source::with_views(view, view, work, |source, _| {
+    super::super::derived_source::with_views(view, view, false, work, |source, _| {
         discovery::collect(registry, &handle, seeds, components, source)
             .map(|discovery| discovery.groups)
     })

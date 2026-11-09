@@ -4325,6 +4325,15 @@ coupling with no declaration refuses before any effect. Declarations remain
 inert when no surviving owner is required; a closed owner already covered by the
 retirement closure does not run a producer.
 
+A recorded creation inverse may retire a producer, its owned publication and
+its generated roster while retained owners perform their own cleanup. Aggregate
+preparation treats paths incident to an entity retired by this same candidate as
+retired paths, including while a coupled writer still holds its deferred edges.
+Native compares the actual before and candidate images; an endpoint already
+unavailable before this candidate still refuses with `RecordUnavailable`.
+Commits that delete no entities carry only a constant-size deletion summary and
+perform no additional endpoint acquisitions.
+
 Correction derives the same declared coupling with fresh source IDs. Native
 restores closed publications, while surviving owners run their own Preserves.
 A subsequent demand for a recreated owner follows ordinary Preserve and reuse

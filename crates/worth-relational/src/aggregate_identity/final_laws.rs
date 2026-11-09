@@ -41,6 +41,7 @@ pub(crate) fn validate_final_derived_laws(
                     &after,
                     &effect.adjacency.deltas,
                     &effect.publication.changed_records,
+                    effect.publication.has_entity_deletions,
                     LawStage::FinalMetadata,
                     work,
                 )?;

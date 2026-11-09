@@ -48,6 +48,7 @@ mod history_seams;
 mod owner_set_history;
 
 mod append;
+pub(super) mod creation_inverse;
 
 impl<S: Scenario> WorthQueryApplicationRequiredOutputSource<S, program::Start>
     for lifecycle::CreateBinding<S>
