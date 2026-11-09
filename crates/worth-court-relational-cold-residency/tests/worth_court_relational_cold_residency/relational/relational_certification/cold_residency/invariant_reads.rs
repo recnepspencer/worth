@@ -1,46 +1,13 @@
-//! Real cold recovery crosses the invariant orchestrator, including telemetry.
-use super::*;
-use crate::execution::RelationalExecutionDenialCause;
-use crate::transactions::data::{CommitExecutionDenialKind, TransactionCommitError};
-use crate::validation::data::{
-    InvariantCatalog, InvariantRegistration, InvariantRule, RecordKindTag,
+//! Native invariant reads preserve public results and storage failure semantics.
+use super::invariant_source::recovered;
+use std::sync::atomic::Ordering;
+use worth_relational::facade::{
+    durability::*,
+    storage::RelationalStorageUnavailableCause as Cause,
+    transactions::{
+        CommitExecutionDenialKind, RelationalExecutionDenialCause, TransactionCommitError,
+    },
 };
-
-fn recovered(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    damaged: bool,
-) -> (
-    crate::runtime::RelationalRuntime,
-    Arc<MemberSource>,
-    crate::identity::data::EntityId,
-) {
-    let (source, counter, entity) = fixture_with_history(execution, false, 3);
-    counter.damaged.store(damaged, Ordering::Relaxed);
-    let mut runtime = RelationalRuntimeApi::builder()
-        .profile(RelationalRuntimeProfile::CertificationCore)
-        .schema_registry(test_schema_registry())
-        .invariant_catalog(InvariantCatalog {
-            registrations: vec![InvariantRegistration::mutation_sensitive_blocking(
-                InvariantRule::LiveRecordRequiresSidecar(RecordKindTag::Entity),
-            )],
-        })
-        .build_durable(TestDurableMedium::new().attachment())
-        .expect("valid native runtime configuration");
-    let plan = runtime
-        .durability()
-        .recovery_plan_from_source(
-            execution,
-            source,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap();
-    runtime
-        .durability_recovery()
-        .recover(execution, plan)
-        .unwrap();
-    (runtime, counter, entity)
-}
-
 fn storage_cause(error: TransactionCommitError) -> RelationalExecutionDenialCause {
     let TransactionCommitError::Execution { denial, .. } = error else {
         panic!("invariant read preserves its execution storage failure: {error:?}")
@@ -50,11 +17,10 @@ fn storage_cause(error: TransactionCommitError) -> RelationalExecutionDenialCaus
 }
 
 #[test]
-fn invariant_storage_refusal_is_sticky_and_does_not_settle_provisional_counts() {
-    let host = crate::test_execution_policy::serial_request();
+fn invariant_storage_refusal_is_sticky_and_preserves_publication() {
+    let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
-    let (runtime, counter, entity) = recovered(execution, true);
-    let before = runtime.performance_access().counters();
+    let (runtime, counter, entity, medium) = recovered(execution, true);
     let frontier = runtime.history().latest_patch_stream_position();
     let first = storage_cause(
         runtime
@@ -65,8 +31,8 @@ fn invariant_storage_refusal_is_sticky_and_does_not_settle_provisional_counts() 
     assert_eq!(
         first,
         RelationalExecutionDenialCause::StorageUnavailable(
-            crate::storage::data::RelationalStorageUnavailable {
-                subject: crate::storage::data::RelationalStorageSubject::Region(
+            worth_relational::facade::storage::RelationalStorageUnavailable {
+                subject: worth_relational::facade::storage::RelationalStorageSubject::Region(
                     entity.partition_id
                 ),
                 cause: Cause::IntegrityMismatch,
@@ -86,29 +52,15 @@ fn invariant_storage_refusal_is_sticky_and_does_not_settle_provisional_counts() 
         first
     );
     assert_eq!(counter.reads.load(Ordering::Relaxed), reads);
-    let after = runtime.performance_access().counters();
-    assert_eq!(
-        after.preparation_packet_count,
-        before.preparation_packet_count
-    );
-    assert_eq!(
-        after.invariant_entity_slot_scans,
-        before.invariant_entity_slot_scans
-    );
-    assert_eq!(
-        after.invariant_authoritative_entity_records_materialized,
-        before.invariant_authoritative_entity_records_materialized
-    );
     assert_eq!(runtime.history().latest_patch_stream_position(), frontier);
-    assert!(attached_test_medium(&runtime).offered().is_empty());
+    assert!(medium.offered().is_empty());
 }
 
 #[test]
-fn cold_and_warm_invariant_reads_settle_one_round_of_evidence() {
-    let host = crate::test_execution_policy::serial_request();
+fn cold_and_warm_invariant_reads_preserve_results_without_reloading() {
+    let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
-    let (runtime, counter, _) = recovered(execution, false);
-    let before = runtime.performance_access().counters();
+    let (runtime, counter, _, _) = recovered(execution, false);
     let cold = runtime
         .validation()
         .mutation_sensitive_state(execution)
@@ -117,7 +69,6 @@ fn cold_and_warm_invariant_reads_settle_one_round_of_evidence() {
         !cold.results().is_empty(),
         "the fixture must execute a real native rule"
     );
-    let after_cold = runtime.performance_access().counters();
     let reads = counter.reads.load(Ordering::Relaxed);
     assert!(reads > 0);
     let warm = runtime
@@ -125,26 +76,14 @@ fn cold_and_warm_invariant_reads_settle_one_round_of_evidence() {
         .mutation_sensitive_state(execution)
         .unwrap();
     assert_eq!(cold.results(), warm.results());
-    let after_warm = runtime.performance_access().counters();
     assert_eq!(counter.reads.load(Ordering::Relaxed), reads);
-    let cold_packets = after_cold.preparation_packet_count - before.preparation_packet_count;
-    let warm_packets = after_warm.preparation_packet_count - after_cold.preparation_packet_count;
-    assert!(cold_packets > 0);
-    assert_eq!(
-        cold_packets, warm_packets,
-        "a discarded round must not publish its counters"
-    );
-    assert_eq!(
-        after_cold.invariant_entity_slot_scans - before.invariant_entity_slot_scans,
-        after_warm.invariant_entity_slot_scans - after_cold.invariant_entity_slot_scans,
-    );
 }
 
 #[test]
 fn the_invariant_orchestrator_uses_head_while_full_history_failure_stays_typed() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
-    let (runtime, counter, entity) = recovered(execution, false);
+    let (runtime, counter, entity, medium) = recovered(execution, false);
     let current_members = counter.members.keys().copied().collect::<Vec<_>>();
     let checkpoint = runtime
         .durability_authority()
@@ -157,18 +96,17 @@ fn the_invariant_orchestrator_uses_head_while_full_history_failure_stays_typed()
             },
         )
         .unwrap();
-    #[derive(serde::Deserialize)]
-    struct Input {
-        manifest: crate::durability::data::RelationalCheckpointManifest,
-    }
-    let manifest = rmp_serde::from_slice::<Input>(
-        checkpoint
-            .bytes()
-            .strip_prefix(crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC)
-            .unwrap(),
-    )
-    .unwrap()
-    .manifest;
+    let input = RelationalDurableRecoverySource::new(
+        Some(RelationalDurableCheckpointSource::new(
+            checkpoint.covered_position().unwrap(),
+            checkpoint.covered_branch_transitions().unwrap(),
+            checkpoint,
+        )),
+        vec![],
+        vec![],
+        counter.clone(),
+    );
+    let manifest = super::selected_directory::read(&input);
     let history = manifest
         .mirror
         .iter()
@@ -199,8 +137,8 @@ fn the_invariant_orchestrator_uses_head_while_full_history_failure_stays_typed()
     assert_eq!(
         full,
         RelationalExecutionDenialCause::StorageUnavailable(
-            crate::storage::data::RelationalStorageUnavailable {
-                subject: crate::storage::data::RelationalStorageSubject::Region(
+            worth_relational::facade::storage::RelationalStorageUnavailable {
+                subject: worth_relational::facade::storage::RelationalStorageSubject::Region(
                     entity.partition_id
                 ),
                 cause: Cause::Damaged,
@@ -218,5 +156,5 @@ fn the_invariant_orchestrator_uses_head_while_full_history_failure_stays_typed()
     );
     assert_eq!(counter.reads.load(Ordering::Relaxed), reads);
     assert_eq!(runtime.history().latest_patch_stream_position(), position);
-    assert!(attached_test_medium(&runtime).offered().is_empty());
+    assert!(medium.offered().is_empty());
 }

@@ -6,12 +6,6 @@ mod cold_source;
 use cold_source::MemberSource;
 #[path = "cold_candidates.rs"]
 mod cold_candidates;
-#[path = "cold_envelope_lifetime.rs"]
-mod cold_envelope_lifetime;
-#[path = "cold_envelope_matrix.rs"]
-mod cold_envelope_matrix;
-#[path = "cold_envelopes.rs"]
-mod cold_envelopes;
 #[path = "cold_historical_index_matrix.rs"]
 mod cold_historical_index_matrix;
 #[path = "cold_index_build_door.rs"]
@@ -26,8 +20,6 @@ mod cold_index_fixture;
 mod cold_index_frontier;
 #[path = "cold_index_matrix.rs"]
 mod cold_index_matrix;
-#[path = "cold_invariants.rs"]
-mod cold_invariants;
 #[path = "cold_merge_history_matrix.rs"]
 mod cold_merge_history_matrix;
 #[path = "cold_merges.rs"]
@@ -69,140 +61,3 @@ mod cold_recovery_fixture;
 use cold_recovery_fixture::{
     checkpoint_fixture, fixture, fixture_from_runtime, fixture_with_history,
 };
-
-#[test]
-fn a_cold_point_read_keeps_cross_partition_kind_authority_after_an_unrelated_write() {
-    use crate::identity::data::PartitionId;
-    let host = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host);
-    let runtime = durable_runtime_with_test_schema();
-    let source_entity =
-        create_entity_in_partition(execution, &runtime, "cross-source", PartitionId(2));
-    let target_entity =
-        create_entity_in_partition(execution, &runtime, "cross-target", PartitionId(3));
-    let relation = create_relation_outcome(
-        execution,
-        &runtime,
-        source_entity,
-        target_entity,
-        "cross-edge",
-    );
-    release_test_commit_snapshot(&runtime, &relation);
-    let native = runtime
-        .durability_authority()
-        .native_checkpoint_with_policy(
-            execution,
-            execution.allocation_policy(),
-            RelationalCheckpointArtifactPolicy::ExternalMembers {
-                current_members: &[],
-                source: None,
-            },
-        )
-        .unwrap();
-    let covered = native.covered_position().unwrap();
-    let transitions = native.covered_branch_transitions().unwrap();
-    let artifacts = attached_test_medium(&runtime).offered();
-    let source = Arc::new(MemberSource {
-        members: native
-            .members()
-            .iter()
-            .map(|member| match member {
-                RelationalCheckpointMember::New { locator, bytes } => (*locator, bytes.clone()),
-                _ => panic!("first capture owns all members"),
-            })
-            .collect(),
-        commits: artifacts
-            .iter()
-            .map(|artifact| (artifact.position(), artifact.as_bytes().to_vec()))
-            .collect(),
-        canonical_members: artifacts
-            .iter()
-            .map(|artifact| {
-                (
-                    crate::durability::log::native_checkpoint_codec::member_frame::locator(
-                        artifact.as_bytes(),
-                    ),
-                    artifact.position(),
-                )
-            })
-            .collect(),
-        canonical_member_reads: Default::default(),
-        journal_reads: Default::default(),
-        damaged: AtomicBool::new(false),
-        reads: AtomicUsize::new(0),
-        member_reads: std::sync::Mutex::new(Vec::new()),
-        commit_reads: std::sync::Mutex::new(Vec::new()),
-        commits_damaged: AtomicBool::new(false),
-        failed_member: std::sync::Mutex::new(None),
-        failures: std::sync::Mutex::new(Default::default()),
-    });
-    let recovery = RelationalDurableRecoverySource::new(
-        Some(RelationalDurableCheckpointSource::new(
-            covered,
-            transitions,
-            native,
-        )),
-        Vec::new(),
-        Vec::new(),
-        source.clone(),
-    );
-    let mut receiving = durable_runtime_with_test_schema();
-    receiving
-        .unshared_state_mut()
-        .expect("fresh receiver is unshared")
-        .durability
-        .attach_recovered_medium(runtime.durability.detach_medium().unwrap());
-    let plan = receiving
-        .durability()
-        .recovery_plan_from_source(
-            execution,
-            recovery,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap();
-    receiving
-        .durability_recovery()
-        .recover(execution, plan)
-        .unwrap();
-    let current_members = source.members.keys().copied().collect::<Vec<_>>();
-    // Only the relation's owning partition changes. Its endpoints stay cold.
-    create_entity_in_partition(
-        execution,
-        &receiving,
-        "unrelated-record",
-        PartitionId::main(),
-    );
-    receiving
-        .durability_authority()
-        .native_checkpoint_with_policy(
-            execution,
-            execution.allocation_policy(),
-            RelationalCheckpointArtifactPolicy::ExternalMembers {
-                current_members: &current_members,
-                source: None,
-            },
-        )
-        .unwrap();
-    let mut reader = test_owner_begin_transaction_for_main(&receiving);
-    assert!(reader
-        .read_entity(execution, source_entity)
-        .unwrap()
-        .effective()
-        .is_some());
-    let lease = reader
-        .basis
-        .inner
-        .root
-        .demand_region_head(execution, source_entity.partition_id)
-        .unwrap()
-        .unwrap();
-    assert_eq!(
-        lease
-            .head_view()
-            .outgoing(source_entity)
-            .iter()
-            .copied()
-            .collect::<Vec<_>>(),
-        changed_relations(&relation)
-    );
-}

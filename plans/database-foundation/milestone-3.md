@@ -124,6 +124,44 @@ each invariant is enforced and where each new type lives.
   Restore its cfg(test) `LineageSubsystem::node` only with the actual resident
   assertions above; the shipping counted semantic node read remains unchanged.
 
+
+- C2: exact Weak canonical-body lifetimes, resident envelope/payload census and
+  private reclamation setup in the three mixed envelope-lifetime courts:
+  `restore from 1403ddb275:crates/worth-relational/src/tests/durability/medium/cold_envelope_lifetime.rs`.
+  Originals: `settled_live_nonhead_envelopes_release_only_when_a_durable_copy_exists`,
+  `released_live_history_remains_in_external_capture_and_retained_recovery`,
+  `recovered_nonhead_tail_envelopes_release_their_actual_journal_backed_bodies`.
+  Public counterparts retain original patch readability in memory/durable cases,
+  all original commit identities after both recovery routes, the <32 source-read
+  bound, zero initial tail-source reads and receipt equality. Public reclamation
+  and the original <4 retired-root observation stay in the happy tree.
+- C2: provisional packet/slot-scan/materialization counter snapshots and exact
+  accepted-round equality in `invariant_storage_refusal_is_sticky_and_does_not_settle_provisional_counts`
+  and `cold_and_warm_invariant_reads_settle_one_round_of_evidence`:
+  `restore from 1403ddb275:crates/worth-relational/src/tests/durability/medium/cold_invariants.rs`.
+  The paired public invariant courts keep every nonempty/result-equality,
+  typed-refusal, first/warm/sticky I/O, selected-History noninterference and
+  no-publication assertion, including the unchanged third Head/Full court.
+- C2: exact private dictionary snapshot and provisional packet/scan counters in
+  `candidate_invariant_discovery_refuses_stickily_without_publishing_round_effects`,
+  Main-Full/remote-Cold probes and arena-slot floor in the candidate fixture,
+  plus exact abandoned-allocation slot comparisons/headroom/settled counters in
+  `a_region_retry_spends_the_applied_draft_identity_and_settles_one_round`:
+  `restore from 1403ddb275:crates/worth-relational/src/tests/durability/medium/cold_candidates.rs`.
+  Its paired failure court preserves Validation/Candidate/Commit refusals,
+  sticky I/O and original diagnostic Vec equality through the public owner;
+  its paired successful court preserves both changed-entity observations,
+  actual created record values and <24 source reads. Public diagnostic contents
+  are not moved to C2. Source recipe remains mounted for its remaining callers.
+- C2: exact Cold/Resident Head probes and physical occupied-slot/generation
+  enumeration in `head_probes_admit_each_forks_shared_region_without_reading_history`
+  and `cold_forks_edit_existing_ring_records_in_both_orders_and_checkpoint`:
+  `restore from 1403ddb275:crates/worth-relational/src/tests/durability/medium/cold_fork_edits.rs`.
+  Public paired courts keep missing-History Head name reads in both fork orders,
+  both edit orders, exact updated/deleted entity values, real relation creation,
+  standalone checkpoint/recovery, partition4 relation count>=2 and per-ID
+  effective relation equality. These private subclaims move, not retire.
+
 ## Phase map
 
 | Phase | Name | Depends on | Lands |

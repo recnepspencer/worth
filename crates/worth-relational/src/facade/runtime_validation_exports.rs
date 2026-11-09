@@ -25,7 +25,7 @@ pub use crate::validation::data::{
     InvariantEntityIds, InvariantExecutionPoint, InvariantFailureEffect, InvariantGroup,
     InvariantGroupSet, InvariantPartitionIds, InvariantRegistration, InvariantRelationIds,
     InvariantReportedRule, InvariantRule, InvariantVerdict, PlannedRelationEndpointUpdate,
-    StructuralAspectStateView, StructuralReadError, StructuralRelationRecord,
+    RecordKindTag, StructuralAspectStateView, StructuralReadError, StructuralRelationRecord,
     StructuralRelationView, StructuralWalkDenial, StructuralWalkDenialKind, StructuralWalkReads,
     StructuralWalkStep,
 };

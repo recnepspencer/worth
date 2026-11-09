@@ -1,9 +1,12 @@
 //! Shipping node consumers share the actual page refusal contract.
-use super::lineage_node_source::NodeFixture;
+use super::{
+    checkpoint_read_refusal::{memory_stop, native_stop},
+    lineage_node_source::NodeFixture,
+};
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::{
-    change_source::RelationalObservationReadDenial as Observation, durability::*,
-    history::BranchId, lineage::RelationalLineageDiscoveryDenial as Discovery,
+    change_source::RelationalObservationReadDenial as Observation, history::BranchId,
+    lineage::RelationalLineageDiscoveryDenial as Discovery,
     transactions::RelationalExecutionDenialCause as Execution,
 };
 #[derive(Clone, Copy, Debug)]
@@ -129,49 +132,6 @@ fn discovery(denial: Discovery) -> Execution {
         Discovery::PublicationInFlight => panic!("fixture has no writer"),
         Discovery::PerformedPublicationRequiresSettlement(commit) => {
             panic!("fixture settled {commit:?}")
-        }
-    }
-}
-fn memory_stop(stop: RelationalRecoveryStop) -> Execution {
-    match stop {
-        RelationalRecoveryStop::Durability(error) => {
-            Execution::StorageUnavailable(error.storage_unavailable.expect("typed image refusal"))
-        }
-        RelationalRecoveryStop::AdmissionImage(cause) => panic!("original image: {cause:?}"),
-        RelationalRecoveryStop::Request(cause) => panic!("funded request: {cause:?}"),
-        RelationalRecoveryStop::Allocation(cause) => panic!("funded allocation: {cause:?}"),
-        RelationalRecoveryStop::Content(cause) => panic!("original content: {cause:?}"),
-    }
-}
-fn native_stop(stop: RelationalNativeCheckpointCaptureDenial) -> Execution {
-    match stop {
-        RelationalNativeCheckpointCaptureDenial::Durability(error) => {
-            Execution::StorageUnavailable(error.storage_unavailable.expect("typed export refusal"))
-        }
-        RelationalNativeCheckpointCaptureDenial::AdmissionImage(cause) => {
-            panic!("original image: {cause:?}")
-        }
-        RelationalNativeCheckpointCaptureDenial::Request(cause) => {
-            panic!("funded request: {cause:?}")
-        }
-        RelationalNativeCheckpointCaptureDenial::Allocation(cause) => {
-            panic!("funded allocation: {cause:?}")
-        }
-        RelationalNativeCheckpointCaptureDenial::Content(cause) => {
-            panic!("original content: {cause:?}")
-        }
-        RelationalNativeCheckpointCaptureDenial::ArtifactFrame(cause) => {
-            panic!("original frame: {cause:?}")
-        }
-        RelationalNativeCheckpointCaptureDenial::OwnerUnavailable => panic!("live owner"),
-        RelationalNativeCheckpointCaptureDenial::OriginalAuthorityUnavailable => {
-            panic!("standalone original export")
-        }
-        RelationalNativeCheckpointCaptureDenial::RetentionCapacityExhausted => {
-            panic!("fixture has retention headroom")
-        }
-        RelationalNativeCheckpointCaptureDenial::RetentionIdentityExhausted => {
-            panic!("fixture has identity headroom")
         }
     }
 }

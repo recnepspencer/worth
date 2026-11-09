@@ -55,3 +55,33 @@ pub(super) fn create_relation(
     let result = txn.commit(request, runtime).unwrap();
     release_test_commit_snapshot(runtime, &result);
 }
+
+/// Publish one actual relation in the explicitly selected owning partition.
+pub(super) fn create_relation_in_partition(
+    request: &ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    source: EntityId,
+    target: EntityId,
+    key: &str,
+    partition_id: PartitionId,
+) -> RelationId {
+    let mut txn = begin_main_transaction(runtime);
+    txn.push_batch(
+        WorkerIntentBatch::new(key).push(MutationIntent::Create(CreateIntent::Relation(
+            RelationSpec {
+                partition_id,
+                kind_id: KindId(2),
+                client_key: key.into(),
+                source: EntityReference::Existing(source),
+                target: EntityReference::Existing(target),
+                fields: field_patch("label", "label", key),
+            },
+        ))),
+        request.allocation_policy(),
+    )
+    .unwrap();
+    let result = txn.commit(request, runtime).unwrap();
+    let relation = super::current_publications::changed_relations(&result)[0];
+    release_test_commit_snapshot(runtime, &result);
+    relation
+}

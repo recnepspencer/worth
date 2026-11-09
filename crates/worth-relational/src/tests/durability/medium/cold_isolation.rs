@@ -177,9 +177,6 @@ fn recover_shape_inner(
     }
 }
 
-#[path = "cold_fork_edits.rs"]
-mod fork_edits;
-
 #[path = "cold_projection_adjacency_matrix.rs"]
 mod projection_adjacency_matrix;
 

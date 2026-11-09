@@ -1,0 +1,21 @@
+command: python scripts/quality/scrutinize_rust_functions.py --dirty .
+HEAD: 1403ddb27562606546c925524d5156cf35ed69a0
+git_status_short_empty: false
+start_utc: 2026-11-09T21:13:45.270785+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+crates/worth-court-relational-cold-residency/tests/worth_court_relational_cold_residency/relational/relational_certification/cold_residency/envelope_doors.rs:21: read: 95 lines, 4 parameters [long-function]
+crates/worth-court-relational-cold-residency/tests/worth_court_relational_cold_residency/relational/relational_certification/cold_residency/envelope_failure_matrix.rs:13: residency_failure_matrix_envelope_doors_preserve_every_failure_class: 110 lines, 0 parameters [long-function]
+crates/worth-court-relational-cold-residency/tests/worth_court_relational_cold_residency/relational/relational_certification/cold_residency/envelope_roundtrips.rs:50: live_history_remains_in_external_capture_and_retained_recovery: 73 lines, 0 parameters [long-function]
+crates/worth-court-relational-cold-residency/tests/worth_court_relational_cold_residency/relational/relational_certification/cold_residency/invariant_reads.rs:83: the_invariant_orchestrator_uses_head_while_full_history_failure_stays_typed: 78 lines, 0 parameters [long-function]
+crates/worth-court-relational-cold-residency/tests/worth_court_relational_cold_residency/relational/relational_certification/cold_residency/lineage_node_doors.rs:32: read: 89 lines, 2 parameters [long-function]
+crates/worth-court-relational-cold-residency/tests/worth_court_relational_cold_residency/relational/relational_certification/cold_residency/region_fork_roundtrips.rs:38: cold_forks_edit_existing_ring_records_in_both_orders_and_checkpoint: 84 lines, 0 parameters [long-function]
+crates/worth-court-relational-cold-residency/tests/worth_court_relational_cold_residency/relational/relational_certification/cold_residency/region_publications.rs:60: create_relation_in_partition: 28 lines, 6 parameters [many-parameters]
+crates/worth-relational/src/tests/durability/medium/cold_candidates.rs:32: recovered: 84 lines, 1 parameters [long-function]
+crates/worth-relational/src/tests/durability/medium/cold_isolation.rs:21: recover_shape_inner: 158 lines, 5 parameters [long-function, many-parameters]
+scrutinized 19 Rust files; 9 candidate functions; 0 scan errors
+
+end_utc: 2026-11-09T21:13:53.214687+00:00
+exit_code: 0
+tests_passed: 0
+tests_failed: 0
+tests_ignored: 0

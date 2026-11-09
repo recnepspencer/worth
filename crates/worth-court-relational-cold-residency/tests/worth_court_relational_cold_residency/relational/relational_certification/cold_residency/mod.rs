@@ -37,3 +37,19 @@ mod region_isolation;
 mod region_publications;
 mod region_source;
 mod region_visibility;
+
+mod checkpoint_read_refusal;
+mod envelope_doors;
+mod envelope_failure_matrix;
+mod envelope_source;
+
+mod envelope_roundtrips;
+
+mod candidate_reads;
+mod candidate_source;
+mod invariant_reads;
+mod invariant_source;
+
+mod cross_partition_kind;
+mod record_field_values;
+mod region_fork_roundtrips;
