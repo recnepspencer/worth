@@ -138,7 +138,7 @@ def observed_unit(row, declaration):
             'mode': row['mode'], 'features': row['features'],
             'platform': row['platform'], 'declared_target': row['target'],
             'dependency_units': row['dependency_units'], 'declared_profile': row['profile'],
-            'compiler_inputs': declaration['compiler_inputs']}
+            'compiler_inputs': row.get('compiler_inputs', declaration['compiler_inputs'])}
 
 
 def failed_unit(event, declaration):

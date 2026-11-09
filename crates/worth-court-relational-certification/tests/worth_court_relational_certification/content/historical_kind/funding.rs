@@ -56,7 +56,7 @@ fn kind_publication_preserves_original_stops_and_releases_scratch() {
     // A fresh identical state must refuse an insufficient original budget,
     // publish nothing and release all proposal scratch. A sufficient budget
     // must produce identical work, independent of its unused headroom.
-    for (ceiling, succeeds) in [(required / 2, false), (required * 2, true)] {
+    for (ceiling, succeeds) in [(required - 1, false), (required, true)] {
         let world = seeded();
         let request = request(ceiling);
         let execution = ExecutionRequest::serial(&request);

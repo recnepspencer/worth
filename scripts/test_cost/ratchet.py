@@ -20,7 +20,9 @@ def build_violations(lane, budget):
     counts = Counter()
     directories, units, compiler_inputs = {}, {}, {}
     violations = list(lane.get('compiler_attempt_refusals', []))
-    for artifact in lane['artifacts'] + lane.get('failed_compiler_attempts', []):
+    compiled = lane['artifacts'] + lane.get('failed_compiler_attempts', [])
+    reused = lane.get('reused_artifacts', [])
+    for index, artifact in enumerate(compiled + reused):
         # Identity is declared from Cargo inputs before rustc executes. Output
         # hashes and target directories never mint an additional budget unit.
         declared = budget.get('declared_cargo_profiles')
@@ -33,13 +35,15 @@ def build_violations(lane, budget):
                                'target': artifact['target'], 'reason': artifact.get('unit_refusal')})
             continue
         key = unit['identity']
-        counts[key] += 1
+        if index < len(compiled):
+            counts[key] += 1
         units[key] = artifact
         directories.setdefault(key, set()).add(artifact['target_dir'])
         compiler_inputs.setdefault(key, set()).add(unit['compiler_inputs'])
-    for key, count in sorted(counts.items()):
+    for key, inputs in sorted(compiler_inputs.items()):
+        count = counts[key]
         artifact = units[key]
-        if len(compiler_inputs[key]) > 1:
+        if len(inputs) > 1:
             violations.append({'kind': 'unplanned-compiler-input-drift', 'unit': key,
                                'package': artifact['package'], 'target': artifact['target']})
         if count > budget['max_compiles_per_unit']:
@@ -57,7 +61,7 @@ def compiler_observations(lanes, log):
     lanes = list(lanes)
     return {'build_observation': 'json' if any(lane['build_observation'] == 'json' for lane in lanes) else 'unmeasured',
             'log': str(log), **{field: [row for lane in lanes for row in lane.get(field, [])]
-                for field in ('artifacts', 'failed_compiler_attempts', 'compiler_attempt_refusals')}}
+                for field in ('artifacts', 'reused_artifacts', 'failed_compiler_attempts', 'compiler_attempt_refusals')}}
 
 
 def source_violations(sites):

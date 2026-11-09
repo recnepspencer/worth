@@ -1,7 +1,7 @@
 error[E0308]: mismatched types
- --> tests/ui/bridge_truth_identity/external_token_cannot_satisfy_truth_authority.rs:8:74
+ --> tests/ui/bridge_truth_identity/external_token_cannot_satisfy_truth_authority.rs:6:74
   |
-8 |     let _evidence = BridgeIdentityEvidence::from_query_evidence_identity(token, todo!());
+6 |     let _evidence = BridgeIdentityEvidence::from_query_evidence_identity(token, supplied());
   |                     ---------------------------------------------------- ^^^^^ expected `FoundationalProjectionIdentity<_, _>`, found `FoundationalExternalIdentityToken<_, _>`
   |                     |
   |                     arguments to this function are incorrect
@@ -13,13 +13,3 @@ note: associated function defined here
   |
   |     pub fn from_query_evidence_identity(
   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: unreachable call
- --> tests/ui/bridge_truth_identity/external_token_cannot_satisfy_truth_authority.rs:8:21
-  |
-8 |     let _evidence = BridgeIdentityEvidence::from_query_evidence_identity(token, todo!());
-  |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^        ------- any code following this expression is unreachable
-  |                     |
-  |                     unreachable call
-  |
-  = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default

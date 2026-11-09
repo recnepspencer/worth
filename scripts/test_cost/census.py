@@ -51,7 +51,8 @@ def collect(manifest, repository, lane_logs=(), discovered=None, selections=None
         lane = read_lane(path)
         lanes[name] = {'log': str(path), 'headers': lane['headers'],
                        'build_observation': lane['build_observation'],
-                       'artifacts': lane['artifacts'], 'duplicate_graphs': lane['duplicates'],
+                       'artifacts': lane['artifacts'], 'reused_artifacts': lane['reused_artifacts'],
+                       'duplicate_graphs': lane['duplicates'],
                        'failed_compiler_attempts': lane['failed_compiler_attempts'],
                        'compiler_attempt_refusals': lane['compiler_attempt_refusals'],
                        'compiler_attempt_groups': lane['compiler_attempt_groups'],

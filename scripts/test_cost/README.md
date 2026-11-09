@@ -95,6 +95,10 @@ mutation before accepting its new snapshot.
 
 ## Ownership and enforcement
 
+Fresh Cargo artifacts are retained as `reused_artifacts` for compiler-input validation. They do not consume a compilation allowance. Native and prebuild uses of a shared unit must agree even when both are cache hits; the retained invocation unit plan identifies the command flags and configuration behind a drift refusal.
+
+Input fingerprints follow Cargo's unit scope: trailing `cargo rustc` arguments belong to its selected roots, and incremental mode is carried by each unit's resolved profile. The complete invocation contract is still checked before execution. An incremental override without resolved profile evidence refuses rather than discarding an unknown input.
+
 * `source_scan.py` and `ratchet.source_violations` refuse Cargo, cargo_metadata
   and trybuild calls in tests, courts and testkits. This check belongs here
   pending the coordinator's replacement boundary checker; this task does not

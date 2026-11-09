@@ -1,11 +1,11 @@
 use worth_store_physical_integrity::{
     IntegrityValidatedCheckpointBinding, IntegrityValidatedCheckpointBindingCompaction,
     IntegrityValidatedCheckpointDirtyBasis, IntegrityValidatedCheckpointFooter,
-    IntegrityValidatedCheckpointStreamHeader,
-    IntegrityValidatedCurrentRootSelector, IntegrityValidatedPreviousRootSelector,
+    IntegrityValidatedCheckpointStreamHeader, IntegrityValidatedCurrentRootSelector,
     IntegrityValidatedExtentChunkFrame, IntegrityValidatedExtentManifest,
     IntegrityValidatedPageFrame, IntegrityValidatedPhysicalWorkObligation,
-    IntegrityValidatedRootManifest, IntegrityValidatedWalFrame, PhysicalArtifactScope,
+    IntegrityValidatedPreviousRootSelector, IntegrityValidatedRootManifest,
+    IntegrityValidatedWalFrame, PhysicalArtifactScope,
 };
 
 fn forge_checkpoint_views(scope: PhysicalArtifactScope) {
@@ -19,57 +19,62 @@ fn forge_checkpoint_views(scope: PhysicalArtifactScope) {
 fn forge_current(scope: PhysicalArtifactScope) {
     let _forged = IntegrityValidatedCurrentRootSelector {
         scope,
-        inspected: todo!(),
+        inspected: supplied(),
     };
 }
 
 fn forge_previous(scope: PhysicalArtifactScope) {
     let _forged = IntegrityValidatedPreviousRootSelector {
         scope,
-        inspected: todo!(),
+        inspected: supplied(),
     };
 }
 
 fn forge_manifest(scope: PhysicalArtifactScope) {
     let _forged = IntegrityValidatedRootManifest {
         scope,
-        inspected: todo!(),
+        inspected: supplied(),
     };
 }
 
 fn forge_physical_work(scope: PhysicalArtifactScope) {
     let _forged = IntegrityValidatedPhysicalWorkObligation {
         scope,
-        inspected: todo!(),
+        inspected: supplied(),
     };
 }
 
 fn forge_extent_manifest(scope: PhysicalArtifactScope) {
     let _forged = IntegrityValidatedExtentManifest {
         scope,
-        inspected: todo!(),
+        inspected: supplied(),
     };
 }
 
 fn forge_page(scope: PhysicalArtifactScope) {
     let _forged = IntegrityValidatedPageFrame {
         scope,
-        inspected: todo!(),
+        inspected: supplied(),
     };
 }
 
 fn forge_wal(scope: PhysicalArtifactScope) {
     let _forged = IntegrityValidatedWalFrame {
         scope,
-        inspected: todo!(),
+        inspected: supplied(),
     };
 }
 
 fn forge_extent_chunk(scope: PhysicalArtifactScope) {
     let _forged = IntegrityValidatedExtentChunkFrame {
         scope,
-        inspected: todo!(),
+        inspected: supplied(),
     };
 }
 
 fn main() {}
+
+// Type-check the forbidden action without a divergent argument lint.
+fn supplied<T>() -> T {
+    loop {}
+}
