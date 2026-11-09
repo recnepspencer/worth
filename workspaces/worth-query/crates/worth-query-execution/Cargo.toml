@@ -28,5 +28,7 @@ worth-testkit-relational = { path = "../../../../crates/worth-testkit-relational
 worth-relational = { path = "../../../../crates/worth-relational" }
 worth-query-installation = { path = "../worth-query-installation" }
 
+worth-query-testkit-installation = { path = "../worth-query-testkit-installation" }
+
 [lints]
 workspace = true

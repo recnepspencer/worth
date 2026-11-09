@@ -117,6 +117,7 @@ use std::sync::Mutex;
 pub struct WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) managed_cleanup_control: Arc<managed_cleanup_control::ManagedCleanupControl>,
     pub(crate) graph: WorthQueryPrimaryGraphIntegrationHandle,
+    installed_operations: Arc<worth_query_installation::facade::InstalledOperationCatalog>,
     resource_support: resource_support::WorthQueryPrimaryGraphResourceSupport,
     branch_commit_coordination:
         branch_commit_coordination::WorthQueryApplicationBranchCommitCoordinator,

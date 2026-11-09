@@ -67,6 +67,7 @@ pub(in crate::domain_computation::primary_graph) fn preflight_home_application<
             .application_query_resource_profile()
             .maximum_concurrent_graph_work(),
         bootstrap.resource_support.clone(),
+        installed.installed_view().retain_operation_catalog(),
     );
     provider
         .graph

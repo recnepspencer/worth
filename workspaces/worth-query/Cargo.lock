@@ -1718,6 +1718,7 @@ dependencies = [
  "worth-query-admission",
  "worth-query-declaration",
  "worth-query-installation",
+ "worth-query-testkit-installation",
  "worth-relational",
  "worth-runtime-bridge",
  "worth-runtime-world",

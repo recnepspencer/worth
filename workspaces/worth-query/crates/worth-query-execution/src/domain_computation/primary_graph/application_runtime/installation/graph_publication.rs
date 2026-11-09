@@ -114,6 +114,7 @@ pub(super) fn install_bridge<S: ApplicationSchema>(
         fault_port,
         maximum_concurrent_graph_work,
         resource_support,
+        installed_schema.installed_view().retain_operation_catalog(),
     );
     primary_provider
         .graph

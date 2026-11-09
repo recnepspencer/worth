@@ -4,3 +4,5 @@
 pub mod installation_contracts;
 
 pub mod application_home_binding;
+
+pub mod outbox_contract_installation;

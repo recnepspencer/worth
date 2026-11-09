@@ -167,3 +167,49 @@ fn original_lookup_scope_uses_only_the_validated_correction_slot() {
         .is_err()
     );
 }
+
+#[test]
+fn current_recorded_operation_definition_is_stable_descriptive_meaning() {
+    let request = mutation_request(3);
+    assert_eq!(
+        WorthQueryApplicationIdempotencyBinding::recorded_operation_definition(
+            &request.intent_text()
+        ),
+        Ok(Some(worth_foundational::facade::CanonicalDigestId::new(
+            DEFINITION
+        ))),
+    );
+}
+
+#[test]
+fn installation_seals_and_absent_operations_do_not_readmit_a_definition() {
+    let request = mutation_request(3);
+    let legacy = first_encoding(request, "000000000000000100000000000000010000000000000001");
+    assert_eq!(
+        WorthQueryApplicationIdempotencyBinding::recorded_operation_definition(&legacy),
+        Ok(None)
+    );
+    let mut absent = request;
+    absent.operation_identity = None;
+    assert_eq!(
+        WorthQueryApplicationIdempotencyBinding::recorded_operation_definition(
+            &absent.intent_text()
+        ),
+        Ok(None)
+    );
+}
+
+#[test]
+fn recorded_operation_readmission_validates_the_complete_intent_grammar() {
+    let valid = mutation_request(3).intent_text();
+    for malformed in [
+        valid.replace(":source=", ":unknown="),
+        format!("{valid}:operation={}", "0d".repeat(32)),
+        valid.replace(&"0d".repeat(32), &"zz".repeat(32)),
+    ] {
+        assert!(
+            WorthQueryApplicationIdempotencyBinding::recorded_operation_definition(&malformed)
+                .is_err()
+        );
+    }
+}

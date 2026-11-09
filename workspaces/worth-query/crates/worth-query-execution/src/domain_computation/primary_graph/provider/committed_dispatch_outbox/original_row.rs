@@ -6,7 +6,7 @@ impl WorthQueryPrimaryGraphProvider {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         publication: &super::super::OriginalPublication,
-    ) -> Result<Option<(RecordRef, WorthQueryDispatchOutboxRecord)>, Denial> {
+    ) -> Result<Option<(RecordRef, WorthQueryDispatchOutboxRestoredFields)>, Denial> {
         execution.consult().map_err(|cause| {
             Denial::ReadExecution(
                 super::super::relational_execution_denial::relational_execution_kind(
@@ -47,9 +47,9 @@ impl WorthQueryPrimaryGraphProvider {
             .map(|field| row.field(&aspect, field).cloned())
             .collect::<Option<Vec<_>>>()
             .ok_or(Denial::Malformed)?;
-        let record = restore_record(values)?;
-        if u64::try_from(record.payload().len()).map_err(|_| Denial::Malformed)?
-            > record.maximum_payload_bytes()
+        let record = decode_fields(values)?;
+        if u64::try_from(record.payload.len()).map_err(|_| Denial::Malformed)?
+            > record.maximum_payload_bytes
         {
             return Err(Denial::Malformed);
         }

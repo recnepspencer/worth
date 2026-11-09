@@ -92,7 +92,7 @@ pub(super) fn read_original(
         })?;
     if outbox
         .as_ref()
-        .is_some_and(|(_, row)| row.outcome_identity() != binding.outcome.get())
+        .is_some_and(|(_, row)| row.outcome_identity != binding.outcome.get())
     {
         return Err(Denial::Unavailable);
     }
@@ -139,6 +139,14 @@ pub(super) fn read_original(
     let (before_component, after_component) = publication
         .recorded_components(execution, &port)
         .map_err(super::source_denial::component)?;
+    let outbox = outbox.map(|(record_ref, fields)| {
+        super::original_receipt::WorthQueryRecoveredDispatchOutbox::from_source_row(
+            record_ref,
+            fields,
+            &binding.intent,
+            &context.provider.installed_operations,
+        )
+    });
     let rows = OriginalReceiptRows {
         binding,
         before_component,
