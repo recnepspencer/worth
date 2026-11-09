@@ -55,7 +55,8 @@ impl<Schema: TopologySchemaBinding> ApplicationQueryMarkerIdentity<Schema> for P
     const SCOPE_TYPE_NAME: &'static str = "Body";
 }
 
-pub fn planar_output_query_definition<Schema: TopologySchemaBinding>() -> ApplicationQueryDefinition<
+pub fn planar_output_query_definition<Schema: TopologySchemaBinding>(
+) -> ApplicationQueryDefinitionBuilder<
     Schema,
     PlanarOutputQuery,
     PlanarOutputReadParameters,
@@ -96,38 +97,16 @@ pub fn planar_output_query_definition<Schema: TopologySchemaBinding>() -> Applic
     .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
     .lanes(ApplicationQueryLaneEligibility::one_shot())
     .public()
-    .build()
-    .expect("planar output query is canonical")
 }
 
-fn body_key_result<Schema: TopologySchemaBinding>() -> ApplicationQueryResultFieldRef<
-    PlanarOutputQuery,
-    PlanarOutputBodyKeySlot,
-    Schema,
-    Body,
-    PlanarPosition,
-    BodyKey,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("body_key", BodyKey::reference())
+fn body_key_result<Schema: TopologySchemaBinding>(
+) -> ApplicationQueryResultFieldRef<PlanarOutputQuery, PlanarOutputBodyKeySlot, Schema, BodyKey> {
+    ApplicationQueryResultFieldRef::new("body_key", BodyKey::at("BodyKey"))
 }
 
-fn output_value_result<Schema: TopologySchemaBinding>() -> ApplicationQueryResultFieldRef<
-    PlanarOutputQuery,
-    PlanarOutputValueSlot,
-    Schema,
-    Body,
-    Geometry,
-    Length,
-    PositiveLength,
-    ReadWrite,
-    EqualityPredicate,
-    DeclaredApplicationUnit<Metre, <TopologyLengthBinding as ApplicationScalarValueBinding>::Unit>,
-> {
-    ApplicationQueryResultFieldRef::new("value", Length::reference())
+fn output_value_result<Schema: TopologySchemaBinding>(
+) -> ApplicationQueryResultFieldRef<PlanarOutputQuery, PlanarOutputValueSlot, Schema, Length> {
+    ApplicationQueryResultFieldRef::new("value", Length::at("Length"))
 }
 
 fn output_successor_result<Schema: TopologySchemaBinding>() -> ApplicationQueryResultRelationRef<
@@ -147,15 +126,9 @@ fn successor_body_key_result<Schema: TopologySchemaBinding>() -> ApplicationQuer
     PlanarOutputQuery,
     PlanarOutputSuccessorBodyKeySlot,
     Schema,
-    Body,
-    PlanarPosition,
     BodyKey,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("successor_body_key", BodyKey::reference())
+    ApplicationQueryResultFieldRef::new("successor_body_key", BodyKey::at("BodyKey"))
 }
 
 impl<Schema: TopologySchemaBinding> WorthQueryApplicationProjection<Schema, PlanarOutputQuery>
@@ -175,15 +148,7 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProjection<Schema, Plan
 }
 
 pub struct PlanarOutputReadBinding<Schema>(PhantomData<fn() -> Schema>);
-pub type PlanarOutputReadScope<Schema> = ApplicationQueryFieldScope<
-    Schema,
-    Body,
-    PlanarPosition,
-    BodyKey,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type PlanarOutputReadScope = ApplicationQueryFieldScope<BodyKey>;
 
 impl<Schema: TopologySchemaBinding> ApplicationQueryBinding<Schema>
     for PlanarOutputReadBinding<Schema>
@@ -193,7 +158,7 @@ impl<Schema: TopologySchemaBinding> ApplicationQueryBinding<Schema>
     type Query = PlanarOutputQuery;
     type ParameterBinding = PlanarOutputReadParametersBinding;
     type ResultBinding = PlanarOutputReadResultBinding;
-    type ScopeBinding = PlanarOutputReadScope<Schema>;
+    type ScopeBinding = PlanarOutputReadScope;
     type PrincipalBinding = ConsumerPrincipalBinding;
     type Mapping = ExternalPrincipalMapping;
     type Principal = Principal;
@@ -203,17 +168,8 @@ impl<Schema: TopologySchemaBinding> ApplicationQueryBinding<Schema>
     const IDENTITY: &'static str = "worth.query.certification.planar-output-read.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
 
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Body,
-        PlanarPosition,
-        BodyKey,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        BodyKey::reference()
+    fn scope_field() -> BodyKey {
+        BodyKey::at("BodyKey")
     }
 
     fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -235,7 +191,7 @@ impl<Schema: TopologySchemaBinding> ApplicationQueryIntent<Schema> for PlanarOut
         ApplicationQueryParameterSet::new()
     }
 
-    fn into_scope(self) -> PlanarOutputReadScope<Schema> {
-        PlanarOutputReadScope::new(BodyKey::reference(), self.body_key)
+    fn into_scope(self) -> PlanarOutputReadScope {
+        PlanarOutputReadScope::new(BodyKey::at("BodyKey"), self.body_key)
     }
 }

@@ -1,5 +1,5 @@
 //! Original data is compared under fresh history admission and actual selection.
-use super::model::HistoryModelIdentity;
+use super::HistoryOperationScope;
 use crate::basis::WorthQueryProductBranchReadIdentity;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitReceipt, WorthQueryApplicationIdempotencyBinding,
@@ -9,21 +9,21 @@ use worth_foundational::facade::RecordedProductBranchReference;
 use worth_runtime_world::facade::ProductBranchObservation;
 
 #[derive(Clone, Copy)]
-pub(super) enum HistorySourceEvidence<'a> {
+pub enum WorthQueryHistorySourceEvidence<'a> {
     Live(&'a WorthQueryApplicationCommitReceipt),
     Recorded(&'a WorthQueryRecoveredApplicationCommitReceipt),
 }
-impl HistorySourceEvidence<'_> {
+impl WorthQueryHistorySourceEvidence<'_> {
     /// Reservation meaning has already been bound to the freshly admitted model,
     /// operation, schema, principal, preconditions and governed input.
     pub(super) fn matches(
         self,
-        model: &HistoryModelIdentity,
+        scope: &HistoryOperationScope,
         meaning: WorthQueryApplicationIdempotencyBinding,
     ) -> bool {
         match self {
             Self::Live(receipt) => {
-                model.matches_receipt(receipt)
+                scope.matches_receipt(receipt)
                     && receipt.idempotency_binding().canonical_key() == meaning.canonical_key()
                     && receipt.idempotency_binding().has_same_intent(meaning)
             }

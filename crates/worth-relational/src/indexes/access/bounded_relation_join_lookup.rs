@@ -281,10 +281,12 @@ fn certify_storage_parity(
     request: &BoundedRelationJoinLookupRequest,
     indexed: &BoundedRelationJoinLookupOutcome,
 ) -> Result<(), BoundedRelationJoinLookupDenial> {
-    let expected = super::super::projected_field_values::build_relation_join_index(
+    let expected = super::super::projected_field_values::joined_rows_for_pair(
         execution,
         source,
         verification.join,
+        request.left_entity_id(),
+        request.right_entity_id(),
     )
     .map_err(|cause| {
         denial(
@@ -292,8 +294,6 @@ fn certify_storage_parity(
             request,
         )
     })?;
-    let key = RelationJoinKey::new(request.left_entity_id(), request.right_entity_id());
-    let expected = expected.get(&key).map(Vec::as_slice).unwrap_or(&[]);
     let expected_overflowed = expected.len() > request.candidate_limit();
     let expected_ids = expected
         .iter()

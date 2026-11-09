@@ -1,0 +1,16 @@
+COMMAND: ["python", "target/lane-evidence/principal_finish.py"]
+HEAD: dbe3280daa804f95a9ec6375f85ae78d1cbcc6dd
+CLEAN: false
+START: 2026-11-08T19:52:45.907875+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+principal-fmt: exit=0 log=C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\principal-fmt.log
+RESULT principal-fmt 0
+principal-line-caps: exit=0 log=C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\principal-line-caps.log
+RESULT principal-line-caps 0
+principal-boundary-driver: exit=1 log=C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\principal-boundary-driver.log
+RESULT principal-boundary-driver 1
+principal-context-driver: exit=0 log=C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\principal-context-driver.log
+RESULT principal-context-driver 0
+
+END: 2026-11-08T19:53:52.787640+00:00
+EXIT: 0

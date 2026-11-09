@@ -27,6 +27,10 @@ pub(super) fn admission(
         | Query::ForeignScope
         | Query::StalePrincipal
         | Query::StaleScope
+        | Query::HistoricalSourceNotLive { .. }
+        | Query::HistoricalSourceKindMismatch { .. }
+        | Query::HistoricalSourceOutsideDomain { .. }
+        | Query::HistoricalSourceOwnershipUnavailable { .. }
         | Query::ScopeTypeMismatch
         | Query::BasisUnsupported
         | Query::ForeignBasis

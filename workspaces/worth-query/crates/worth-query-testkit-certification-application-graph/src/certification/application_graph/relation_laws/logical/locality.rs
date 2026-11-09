@@ -6,6 +6,13 @@ pub use worth_query_host::facade::application_invariants::WorthQueryInvariantPro
 #[derive(Clone, Debug)]
 pub struct LocalLogical;
 impl LawPolicy for LocalLogical {
+    type Model = LocalLogicalRecords;
+    fn schema_declaration(
+    ) -> Result<ApplicationSchemaDeclaration<GraphSchema<Self>>, ApplicationSchemaDeclarationDenial>
+    {
+        fragment::declare(GraphSchema::<Self>(PhantomData))
+    }
+
     const INTEGRITY: ApplicationRelationIntegrity =
         ApplicationRelationIntegrity::same_context_unbounded_retain_dangling().orbit();
     const LOGICAL_RELATIONS: bool = true;

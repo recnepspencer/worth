@@ -150,12 +150,26 @@ pub(super) fn region_with_history() -> RegionFixture {
         .expect("fixture root has admitted Full custody")
         .unwrap();
     let symbols = Arc::new(runtime.services.symbols.interner_snapshot());
-    let (commitment, _) = PartitionContentCommitment::capture(partition, &symbols, None).unwrap();
+    let (commitment, _) = PartitionContentCommitment::capture(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &worth_execution::ExecutionRequest::serial(&crate::test_execution_policy::serial_request()),
+        partition,
+        symbols.as_ref(),
+    )
+    .unwrap();
     let schema = Arc::new(root.schema_authority().clone());
     let schema_digest = crate::durability::data::DurableBranchRootSchemaImage::capture(&schema)
         .unwrap()
         .carrier_digest();
-    let members = capture_region_members(partition, &commitment, &schema, schema_digest).unwrap();
+    let members = capture_region_members(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        execution,
+        partition,
+        &commitment,
+        &schema,
+        schema_digest,
+    )
+    .unwrap();
     let source = Arc::new(CountedSource {
         history: members.history.0,
         members: BTreeMap::from([members.head.clone(), members.history.clone()]),
@@ -176,6 +190,15 @@ pub(super) fn region_with_history() -> RegionFixture {
     let symbol_authority = crate::runtime::RuntimeSymbolTable::default();
     symbol_authority.replace((*symbols).clone());
     let cold = RelationalColdRegion {
+        directory: members
+            .directory
+            .portable(
+                &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+                &worth_execution::ExecutionRequest::serial(
+                    &crate::test_execution_policy::serial_request(),
+                ),
+            )
+            .unwrap(),
         history_members: members.history_members,
         kind_authority: members.kind_authority,
         source: Some(source.clone()),
@@ -186,6 +209,7 @@ pub(super) fn region_with_history() -> RegionFixture {
         schema_carrier_digest: schema_digest,
         symbols: symbol_authority,
         content_digest: expected_digest,
+        live_counts: super::LiveRecordCounts::from_partition(&partition),
         entity_slots: partition.entity_arena.slot_count(),
         relation_slots: partition.relation_arena.slot_count(),
         unavailable_records: partition.entity_arena.lifecycle_counts().unavailable

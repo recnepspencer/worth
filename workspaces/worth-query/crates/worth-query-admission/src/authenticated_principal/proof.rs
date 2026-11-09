@@ -58,6 +58,26 @@ pub struct WorthQueryAuthenticatedExternalPrincipal<Schema> {
     _schema: PhantomData<fn() -> Schema>,
 }
 
+// Retention preserves the original adapter proof and expiry. It grants no
+// operation authority and never refreshes authentication.
+impl<Schema> Clone for WorthQueryAuthenticatedExternalPrincipal<Schema> {
+    fn clone(&self) -> Self {
+        Self {
+            identity: self.identity.clone(),
+            audience: self.audience.clone(),
+            method: self.method.clone(),
+            validated_at: self.validated_at,
+            expires_at: self.expires_at,
+            valid_until: self.valid_until,
+            clock: self.clock.clone(),
+            adapter_identity: self.adapter_identity.clone(),
+            binding_identity: self.binding_identity.clone(),
+            attributes: self.attributes.clone(),
+            _schema: PhantomData,
+        }
+    }
+}
+
 impl<Schema> WorthQueryAuthenticatedExternalPrincipal<Schema> {
     #[allow(clippy::too_many_arguments)]
     pub(super) fn mint(

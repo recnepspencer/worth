@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::projection_consumption::identity::{
     compose_certification_row_digest, compose_digest_sequence,
 };
@@ -80,7 +81,8 @@ impl ProjectionConsumptionPublicBoundaryAudit {
     }
 }
 
-pub fn projection_consumption_public_boundary_audit() -> ProjectionConsumptionPublicBoundaryAudit {
+pub fn projection_consumption_public_boundary_audit(
+) -> Result<ProjectionConsumptionPublicBoundaryAudit, IdentityDerivationDenial> {
     use ProjectionConsumptionPublicBoundarySurface::*;
     let rows = vec![
         row(
@@ -88,62 +90,62 @@ pub fn projection_consumption_public_boundary_audit() -> ProjectionConsumptionPu
             "ProjectionConsumptionDeclaration construction",
             "Query-owned authoring surface",
             ProjectionConsumptionCompileFailProof::DeclarationConstructorPrivate,
-        ),
+        )?,
         row(
             ContractMinting,
             "MaterializedProjectionContract construction",
             "AdmittedProjectionConsumption::bind_contract()",
             ProjectionConsumptionCompileFailProof::ContractConstructorPrivate,
-        ),
+        )?,
         row(
             FactSetMinting,
             "ConsumedProjectionFactSet construction",
             "MaterializedProjectionContract::extract_from_*",
             ProjectionConsumptionCompileFailProof::FactSetConstructorPrivate,
-        ),
+        )?,
         row(
             ReceiptMinting,
             "ProjectionConsumptionReceipt construction",
             "ConsumedProjectionFactSet::issue_receipt()",
             ProjectionConsumptionCompileFailProof::ReceiptConstructorPrivate,
-        ),
+        )?,
         row(
             EnvelopeMinting,
             "SelfDescribingProjectionConsumptionEnvelope construction",
             "ProjectionConsumptionReceipt::projection_consumption_envelope()",
             ProjectionConsumptionCompileFailProof::EnvelopeConstructorPrivate,
-        ),
+        )?,
         row(
             CertificationMinting,
             "ProjectionConsumptionCertificationBundle construction",
             "certify_projection_consumption_closeout_core()",
             ProjectionConsumptionCompileFailProof::CertificationBundleConstructorPrivate,
-        ),
+        )?,
         row(
             RawRowConsumptionShortcut,
             "raw row-like materialization promoted to consumed facts",
             "admitted contract then typed extraction",
             ProjectionConsumptionCompileFailProof::RawSourceHasNoConsumedFactAccessors,
-        ),
+        )?,
         row(
             GenericExtractionShortcut,
             "generic extract() bypass over source-specific extraction",
             "explicit source-aware extract_from_* methods",
             ProjectionConsumptionCompileFailProof::ContractHasNoGenericExtract,
-        ),
+        )?,
         row(
             NonAdmittedPromotion,
             "denied/deferred/source-mismatch promoted to contract binding",
             "AdmittedProjectionConsumption only",
             ProjectionConsumptionCompileFailProof::NonAdmittedCannotBindContract,
-        ),
+        )?,
     ];
     let audit_digest = compose_digest_sequence(
         "projection_consumption_public_boundary_audit_v1",
         "row",
         rows.iter().map(|row| row.row_digest().to_string()),
-    );
-    ProjectionConsumptionPublicBoundaryAudit { rows, audit_digest }
+    )?;
+    Ok(ProjectionConsumptionPublicBoundaryAudit { rows, audit_digest })
 }
 
 fn row(
@@ -151,7 +153,7 @@ fn row(
     blocked_entrypoint: &'static str,
     required_artifact: &'static str,
     enforcement_proof: ProjectionConsumptionCompileFailProof,
-) -> ProjectionConsumptionPublicBoundaryAuditRow {
+) -> Result<ProjectionConsumptionPublicBoundaryAuditRow, IdentityDerivationDenial> {
     let row_digest = compose_certification_row_digest(
         "projection_consumption_public_boundary_row_v1",
         &[
@@ -160,14 +162,14 @@ fn row(
             ("required", required_artifact),
             ("proof", enforcement_proof.as_str()),
         ],
-    );
-    ProjectionConsumptionPublicBoundaryAuditRow {
+    )?;
+    Ok(ProjectionConsumptionPublicBoundaryAuditRow {
         surface,
         blocked_entrypoint,
         required_artifact,
         enforcement_proof,
         row_digest,
-    }
+    })
 }
 
 #[cfg(test)]
@@ -175,10 +177,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn public_boundary_audit_names_all_projection_shortcuts() {
-        let audit = projection_consumption_public_boundary_audit();
+    fn public_boundary_audit_names_all_projection_shortcuts() -> Result<(), IdentityDerivationDenial>
+    {
+        let audit = projection_consumption_public_boundary_audit()?;
         assert_eq!(audit.rows().len(), 9);
         assert!(audit.rows().iter().all(|row| !row.row_digest().is_empty()));
         assert!(!audit.audit_digest().is_empty());
+
+        Ok(())
     }
 }

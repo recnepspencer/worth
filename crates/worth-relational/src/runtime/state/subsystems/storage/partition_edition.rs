@@ -12,9 +12,11 @@ pub(crate) use resident::ResidentPartitionEdition;
 
 /// The authoritative record substrate keyed by partition.
 ///
-/// The map is the spine only: every partition behind it is structurally shared,
-/// so copying the map copies pointers, never records.
-pub(crate) type PartitionMap = BTreeMap<PartitionId, RelationalRegionRetention>;
+/// The persistent spine shares untouched paths as well as partition payloads.
+pub(crate) type PartitionMap = crate::storage::substrate::SharedMap<
+    PartitionId,
+    crate::storage::substrate::StorageAllocation<RelationalRegionRetention>,
+>;
 
 /// One immutable, structurally shared edition of the authoritative record
 /// substrate.
@@ -239,14 +241,10 @@ impl PartitionEdition {
         Ok(self.resident_full()?.partitions().cloned().collect())
     }
 
-    /// Exclusive access to the map spine, copying it only when another edition
-    /// of the same map is still outstanding.
-    ///
-    /// Returns whether the spine had to be copied so the caller can charge that
-    /// copy to its declared lane. Never call this without accounting for it.
-    pub(super) fn map_mut(&mut self) -> (&mut PartitionMap, bool) {
-        let copied = Arc::get_mut(&mut self.partitions).is_none();
-        (Arc::make_mut(&mut self.partitions), copied)
+    /// Retain the observed persistent root in O(1); edits copy only changed
+    /// paths, bounded by the map's node granule times logarithmic navigation.
+    pub(super) fn map_mut(&mut self) -> &mut PartitionMap {
+        Arc::make_mut(&mut self.partitions)
     }
 
     /// Explicit try-maintenance never copies a spine observed by a live edition.
@@ -255,6 +253,9 @@ impl PartitionEdition {
         Arc::get_mut(&mut self.partitions)
     }
 }
+
+#[cfg(test)]
+mod cost;
 
 impl crate::storage::overlay::CurrentPartitionAccess for PartitionEdition {
     fn get_current_partition(

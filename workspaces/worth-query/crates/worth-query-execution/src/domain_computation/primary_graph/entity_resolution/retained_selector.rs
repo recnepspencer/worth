@@ -1,16 +1,33 @@
 //! Descriptive scope retained from native entity resolution, never read authority.
-use super::WorthQueryApplicationEntityIdentity;
+use super::{WorthQueryApplicationEntityIdentity, WorthQueryResolvedEntity};
 use std::sync::Arc;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use worth_relational::facade::identity::EntityId;
 mod funding;
 
 pub struct WorthQueryObservedScopeSelector {
-    locator: AspectFieldLocator,
-    value: AspectValue,
-    subject: EntityId,
+    description: ScopeDescription,
     // Last to drop: the original request remains charged through the final share.
     _funding: Option<worth_execution::ExecutionMemoryReservation>,
+}
+
+enum ScopeDescription {
+    Resolved(WorthQueryResolvedEntity),
+    Recorded {
+        locator: AspectFieldLocator,
+        value: AspectValue,
+        subject: EntityId,
+    },
+}
+impl ScopeDescription {
+    fn retained_capacity_bytes(&self) -> Option<usize> {
+        match self {
+            Self::Resolved(value) => value.retained_capacity_bytes(),
+            Self::Recorded { locator, value, .. } => locator
+                .owned_allocation_capacity_bytes()
+                .checked_add(value.owned_allocation_capacity_bytes()),
+        }
+    }
 }
 
 impl WorthQueryObservedScopeSelector {
@@ -55,20 +72,51 @@ impl WorthQueryObservedScopeSelector {
         execution.consult()?;
         let funding = execution.reserve_retained_memory(bytes)?;
         Ok(Arc::new(Self {
-            locator,
-            value,
-            subject,
+            description: ScopeDescription::Recorded {
+                locator,
+                value,
+                subject,
+            },
             _funding: funding,
         }))
     }
+    /// The original owner-sealed description is sufficient to request current
+    /// authorization; it proves neither presence nor permission at a new basis.
+    fn describe<Schema, Entity>(
+        &self,
+    ) -> Option<WorthQueryApplicationEntityIdentity<Schema, Entity>> {
+        match &self.description {
+            ScopeDescription::Resolved(value) => Some(value.clone().into_application_identity()),
+            ScopeDescription::Recorded { .. } => None,
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn matches_source<Q>(
+        &self,
+        source: &super::super::WorthQueryObservedSource<Q>,
+    ) -> bool {
+        match &self.description {
+            ScopeDescription::Resolved(value) => value.matches_source(source),
+            ScopeDescription::Recorded { .. } => false,
+        }
+    }
     pub(in crate::domain_computation::primary_graph) fn locator(&self) -> &AspectFieldLocator {
-        &self.locator
+        match &self.description {
+            ScopeDescription::Resolved(value) => value.locator(),
+            ScopeDescription::Recorded { locator, .. } => locator,
+        }
     }
     pub(in crate::domain_computation::primary_graph) fn value(&self) -> &AspectValue {
-        &self.value
+        match &self.description {
+            ScopeDescription::Resolved(value) => value.value(),
+            ScopeDescription::Recorded { value, .. } => value,
+        }
     }
     pub(in crate::domain_computation) fn subject(&self) -> EntityId {
-        self.subject
+        match &self.description {
+            ScopeDescription::Resolved(value) => value.entity_id(),
+            ScopeDescription::Recorded { subject, .. } => *subject,
+        }
     }
 }
 
@@ -77,9 +125,7 @@ impl<Schema, Entity> WorthQueryApplicationEntityIdentity<Schema, Entity> {
         &self,
     ) -> Arc<WorthQueryObservedScopeSelector> {
         Arc::new(WorthQueryObservedScopeSelector {
-            locator: self.identity_locator().clone(),
-            value: self.identity_value().clone(),
-            subject: self.entity_id(),
+            description: ScopeDescription::Resolved(self.retain_description()),
             _funding: None,
         })
     }

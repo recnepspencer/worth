@@ -35,7 +35,8 @@ fn unsupported_bridge_family_slice_and_basis_deny_before_lowering_plan_exists() 
         None,
         QuerySubscriptionConstructionSource::FacadeLive,
         QuerySubscriptionBasisPosture::RuntimeHistoricalSnapshot,
-    );
+    )
+    .expect("fixture digest must fit");
     let historical_selection =
         select_query_subscription_family(historical_input, roomy_budget()).unwrap();
     let historical_declaration =

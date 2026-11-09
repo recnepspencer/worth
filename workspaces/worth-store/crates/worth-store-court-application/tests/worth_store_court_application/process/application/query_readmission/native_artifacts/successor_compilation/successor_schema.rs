@@ -1,13 +1,28 @@
 //! A genuinely distinct declared B schema and program, never A with edited meaning.
-use worth_query_host::facade::declaration::{application_program::*, application_schema::*};
+use worth_query_host::facade::declaration::{
+    application_program::*,
+    application_schema::{
+        fragment::{self, Fragment, NoBindings},
+        *,
+    },
+};
 pub(super) struct SuccessorSchema;
-struct Account;
-struct LaterRecord;
-impl ApplicationEntityMarkerIdentity<SuccessorSchema> for Account {
-    const IDENTIFIER: &'static str = "Account";
+pub(super) struct Account;
+pub(super) struct LaterRecord;
+impl fragment::Entity for Account {
+    const NAME: &'static str = "Account";
+    type Aspects = ();
+    type Relations = ();
 }
-impl ApplicationEntityMarkerIdentity<SuccessorSchema> for LaterRecord {
-    const IDENTIFIER: &'static str = "LaterRecord";
+impl fragment::Entity for LaterRecord {
+    const NAME: &'static str = "LaterRecord";
+    type Aspects = ();
+    type Relations = ();
+}
+impl Fragment for SuccessorSchema {
+    const NAME: &'static str = "SuccessorSchema";
+    type Bindings = NoBindings;
+    type Members = (SuccessorSurface,);
 }
 impl ApplicationSchema for SuccessorSchema {
     const OWNER: &'static str = "host_home_successor_test";
@@ -16,10 +31,7 @@ impl ApplicationSchema for SuccessorSchema {
     const MINOR: u32 = 0;
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
-        ApplicationSchemaDeclarationBuilder::<Self>::for_schema()
-            .contributions()
-            .register::<SuccessorSurface>()?
-            .build()
+        fragment::declare(Self)
     }
 }
 impl ApplicationSchemaComposition for SuccessorSchema {
@@ -47,19 +59,7 @@ pub(super) struct SuccessorSurface;
 impl ApplicationSchemaContribution<SuccessorSchema> for SuccessorSurface {
     const IDENTITY: ApplicationSchemaContributionIdentity =
         ApplicationSchemaContributionIdentity::new("worth.query.home-successor.surface.v1");
-    fn register_members(
-        builder: ApplicationSchemaDeclarationBuilder<SuccessorSchema>,
-    ) -> ApplicationSchemaDeclarationBuilder<SuccessorSchema> {
-        builder
-            .entity(
-                ApplicationEntityRef::<SuccessorSchema, Account>::from_schema_identifier("Account"),
-            )
-            .entity(
-                ApplicationEntityRef::<SuccessorSchema, LaterRecord>::from_schema_identifier(
-                    "LaterRecord",
-                ),
-            )
-    }
+    type Members = (Account, LaterRecord);
 }
 impl
     worth_query_host::facade::application_contribution::WorthQueryApplicationContribution<

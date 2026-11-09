@@ -2,7 +2,7 @@ use worth_foundational::facade::{
     canonicalization, prepare_canonical_basis_sequence, CanonicalBasisDomain, CanonicalBasisEntry,
     CanonicalBasisEntryKind, CanonicalBasisLocus, CanonicalBasisReadyArtifact, CanonicalBasisValue,
     CanonicalDigestAlgorithmId, CanonicalDigestDerivationDenial, CanonicalDigestId,
-    CanonicalDigestWorkBudget, CanonicalIntegerWidth, CanonicalizationRuleVersion, InternedString,
+    CanonicalDigestWorkBudget, CanonicalIntegerWidth, CanonicalizationRuleVersion,
 };
 
 use crate::canonical_work::WorthQueryCanonicalWorkEvidence;
@@ -93,10 +93,10 @@ impl InstallationCanonicalIdentityBasis {
         basis: &CanonicalBasisReadyArtifact,
     ) -> Result<(), CanonicalDigestDerivationDenial> {
         for entry in basis.payload().entries() {
-            let name = match entry.locus() {
-                CanonicalBasisLocus::Named(InternedString::Raw(name)) => name,
-                _ => unreachable!("Query declaration canonical artifacts use only named raw loci"),
+            let CanonicalBasisLocus::Named(name) = entry.locus() else {
+                unreachable!("declaration loci are named")
             };
+            let name = name.raw_text().expect("declaration loci use raw text");
             self.push(format!("{locus_prefix}.{name}"), entry.value().clone())?;
         }
         Ok(())

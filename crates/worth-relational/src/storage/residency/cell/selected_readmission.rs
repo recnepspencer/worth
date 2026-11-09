@@ -32,6 +32,8 @@ impl RelationalRegionResidency {
                         kind_authority: cold.kind_authority,
                         partition_id: cold.partition_id,
                         content_digest: cold.content_digest,
+                        directory: cold.directory.clone(),
+                        live_counts: cold.live_counts,
                         entity_slots: cold.entity_slots,
                         relation_slots: cold.relation_slots,
                         unavailable_records: cold.unavailable_records,
@@ -58,6 +60,8 @@ impl RelationalRegionResidency {
             raw_full: Mutex::new(None),
             state: Mutex::new(RegionState::new(ResidencyState::Cold, Some(physical))),
             damage: OnceLock::new(),
+            symbol_aliases: OnceLock::new(),
+            symbol_inheritance: OnceLock::new(),
             leases: AtomicUsize::new(0),
             _control_memory: memory,
         }))

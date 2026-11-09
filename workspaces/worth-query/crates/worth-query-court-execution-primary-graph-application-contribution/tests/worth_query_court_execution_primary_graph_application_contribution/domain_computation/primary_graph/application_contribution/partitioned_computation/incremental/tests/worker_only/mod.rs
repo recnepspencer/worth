@@ -40,7 +40,7 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Pol
         let sum = partition.items().map(|(_, item)| item.0).sum::<u64>();
         let extra = if partition.key().0 == 1 {
             reader
-                .field(input, AccountLabel::reference())?
+                .field(input, AccountLabel::at("AccountLabel"))?
                 .expect("seeded label")
                 .len()
         } else {
@@ -273,7 +273,7 @@ fn worker_only_partition_run_retains_facts_reuses_and_observes_a_real_source_edi
             }
         })
         .unwrap();
-    let field = AccountLabel::reference();
+    let field = AccountLabel::at("AccountLabel");
     let locator = (*(*(*(*world.application.runtime_for_test()).primary_provider_for_test())
         .graph_for_test())
     .layout_for_test())

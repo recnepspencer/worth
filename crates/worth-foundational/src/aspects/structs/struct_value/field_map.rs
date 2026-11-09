@@ -1,9 +1,8 @@
-//! The legacy Serde map grammar over canonical boxed field storage.
+//! Contiguous staging preserves the legacy map grammar before tree admission.
 use super::{AspectValue, FieldKey};
 use serde::{
     de::{Error, MapAccess, Visitor},
-    ser::SerializeMap,
-    Deserializer, Serializer,
+    Deserializer,
 };
 use std::fmt;
 #[cfg(test)]
@@ -13,17 +12,6 @@ pub(super) struct DecodedField {
     key: FieldKey,
     value: AspectValue,
     ordinal: usize,
-}
-
-pub(super) fn serialize<S: Serializer>(
-    fields: &[(FieldKey, AspectValue)],
-    serializer: S,
-) -> Result<S::Ok, S::Error> {
-    let mut map = serializer.serialize_map(Some(fields.len()))?;
-    for (key, value) in fields {
-        map.serialize_entry(key, value)?;
-    }
-    map.end()
 }
 
 pub(super) fn deserialize<'de, D: Deserializer<'de>>(

@@ -19,8 +19,7 @@ worth_query_structured_value_binding!(pub InputBinding for Edit { identity: "con
 worth_query_structured_value_binding!(pub ResultBinding for Edited { identity: "content-door.result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "content-door.denial.v1" });
 worth_query_operation!(pub Change for Schema, input InputBinding);
-worth_query_operation_reads!(Change => [UnboundValues, Key, Values, OptionalValues, OtherValues, VersionedValues]);
-worth_query_operation_writes!(Change => [UnboundValues, Key, Values, OptionalValues, OtherValues, VersionedValues]);
+
 worth_query_operation_creates!(Change => [Record]);
 worth_query_operation_removes_aspects!(Change => [Samples]);
 worth_query_operation_links!(Change=>[ContainsSamples]);
@@ -32,7 +31,7 @@ worth_query_mutation_binding!(pub Binding for Edit, schema Schema,
     idempotency String, identity "content-door.idempotency.v1", decision Decision,
     denial DenialBinding, handler identity "content-door.handler.v1", program required, outputs NoApplicationMutationOutputs,
     principal Actor, mapping Mapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Record, Identity, Key, String, ReadOnly, NoApplicationUnit, field Key::reference(), value key,
+    scope Key, field Key::at("Key"), value key,
 );
 pub struct Decision {
     target: WorthQueryInvariantMutationTarget<Schema, Record>,
@@ -60,19 +59,19 @@ impl ApplicationDeclaredOperation<Schema> for Change {
     ) -> ApplicationSchemaDeclarationBuilder<Schema> {
         schema
             .operation_projection_work_budget(Change::reference(), 32)
-            .operation_read_field(Change::reference(), Key::reference())
-            .operation_read_field(Change::reference(), Values::reference())
-            .operation_read_field(Change::reference(), UnboundValues::reference())
-            .operation_read_field(Change::reference(), OptionalValues::reference())
-            .operation_write(Change::reference(), OptionalValues::reference())
+            .operation_read_field(Change::reference(), Key::at("Key"))
+            .operation_read_field(Change::reference(), Values::at("Values"))
+            .operation_read_field(Change::reference(), UnboundValues::at("UnboundValues"))
+            .operation_read_field(Change::reference(), OptionalValues::at("OptionalValues"))
+            .operation_write(Change::reference(), OptionalValues::at("OptionalValues"))
             .operation_remove_aspect(Change::reference(), Samples::reference())
-            .operation_read_field(Change::reference(), OtherValues::reference())
-            .operation_read_field(Change::reference(), VersionedValues::reference())
-            .operation_write(Change::reference(), OtherValues::reference())
-            .operation_write(Change::reference(), VersionedValues::reference())
-            .operation_write(Change::reference(), Key::reference())
-            .operation_write(Change::reference(), Values::reference())
-            .operation_write(Change::reference(), UnboundValues::reference())
+            .operation_read_field(Change::reference(), OtherValues::at("OtherValues"))
+            .operation_read_field(Change::reference(), VersionedValues::at("VersionedValues"))
+            .operation_write(Change::reference(), OtherValues::at("OtherValues"))
+            .operation_write(Change::reference(), VersionedValues::at("VersionedValues"))
+            .operation_write(Change::reference(), Key::at("Key"))
+            .operation_write(Change::reference(), Values::at("Values"))
+            .operation_write(Change::reference(), UnboundValues::at("UnboundValues"))
             .operation_create(Change::reference(), Record::reference())
             .operation_link(Change::reference(), ContainsSamples::reference())
     }
@@ -91,7 +90,7 @@ impl OperationHandler<Schema, Binding> for Handler {
     ) -> HandlerResult<Decision, Denial> {
         let result = (|| {
             let root = reader.resolve_entity(
-                Key::reference(),
+                Key::at("Key"),
                 if input.mode == 19 {
                     String::from_utf8(input.reference.clone()).unwrap()
                 } else if input.mode == 16 {
@@ -121,16 +120,20 @@ impl OperationHandler<Schema, Binding> for Handler {
             let optional = reader
                 .content(
                     &root,
-                    content_field(OptionalValues::reference(), codec::GridFormat),
+                    content_field(OptionalValues::at("OptionalValues"), codec::GridFormat),
                 )
                 .map_err(HandlerExecutionDenial::new)?
                 .map(|content| content.identity());
-            let _unbound = reader.field(&root, UnboundValues::reference())?;
-            let other = reader.field(&root, OtherValues::reference())?;
-            let version = reader.field(&root, VersionedValues::reference())?;
+            let _unbound = reader.field(&root, UnboundValues::at("UnboundValues"))?;
+            let other = reader
+                .field(&root, OtherValues::at("OtherValues"))?
+                .map(|value| value.0);
+            let version = reader
+                .field(&root, VersionedValues::at("VersionedValues"))?
+                .map(|value| value.0);
             if input.mode == 6 {
                 let _refused =
-                    reader.content(&root, content_field(Values::reference(), codec::Impostor));
+                    reader.content(&root, content_field(Values::at("Values"), codec::Impostor));
             }
             Ok(Decision {
                 target: reader.mutation_target(&root)?,
@@ -193,7 +196,7 @@ impl OperationHandler<Schema, Binding> for Handler {
                         )
                         .map_err(HandlerExecutionDenial::new)?;
                     writer
-                        .initialize_field(&child, Key::reference(), key.clone())
+                        .initialize_field(&child, Key::at("Key"), key.clone())
                         .map_err(HandlerExecutionDenial::new)?;
                     writer
                         .initialize_content(&child, samples(), &grid)
@@ -210,7 +213,7 @@ impl OperationHandler<Schema, Binding> for Handler {
                         )
                         .map_err(HandlerExecutionDenial::new)?;
                     writer
-                        .initialize_field(&new, Key::reference(), "created".to_owned())
+                        .initialize_field(&new, Key::at("Key"), "created".to_owned())
                         .map_err(HandlerExecutionDenial::new)?;
                     writer
                         .initialize_content(&new, samples(), &grid)
@@ -228,13 +231,17 @@ impl OperationHandler<Schema, Binding> for Handler {
                         writer
                             .write_optional_field(
                                 &target,
-                                UnboundValues::reference(),
+                                UnboundValues::at("UnboundValues"),
                                 Some(identity),
                             )
                             .map_err(HandlerExecutionDenial::new)?;
                     } else {
                         writer
-                            .write_field(&target, Values::reference(), identity)
+                            .write_field(
+                                &target,
+                                Values::at("Values"),
+                                BoundReference::new(identity),
+                            )
                             .map_err(HandlerExecutionDenial::new)?;
                     }
                 }
@@ -244,21 +251,21 @@ impl OperationHandler<Schema, Binding> for Handler {
                 4 => writer
                     .write_content(
                         &target,
-                        content_field(OtherValues::reference(), codec::OtherGrid),
+                        content_field(OtherValues::at("OtherValues"), codec::OtherGrid),
                         &grid,
                     )
                     .map_err(HandlerExecutionDenial::new)?,
                 5 => writer
                     .write_content(
                         &target,
-                        content_field(VersionedValues::reference(), codec::GridV2),
+                        content_field(VersionedValues::at("VersionedValues"), codec::GridV2),
                         &grid,
                     )
                     .map_err(HandlerExecutionDenial::new)?,
                 7 => {
                     let _refused = writer.write_content(
                         &target,
-                        content_field(Values::reference(), codec::Impostor),
+                        content_field(Values::at("Values"), codec::Impostor),
                         &grid,
                     );
                 }
@@ -268,12 +275,12 @@ impl OperationHandler<Schema, Binding> for Handler {
                 12 => writer
                     .write_content(
                         &target,
-                        content_field(OptionalValues::reference(), codec::GridFormat),
+                        content_field(OptionalValues::at("OptionalValues"), codec::GridFormat),
                         &grid,
                     )
                     .map_err(HandlerExecutionDenial::new)?,
                 13 => writer
-                    .write_optional_field(&target, OptionalValues::reference(), None)
+                    .write_optional_field(&target, OptionalValues::at("OptionalValues"), None)
                     .map_err(HandlerExecutionDenial::new)?,
                 _ => return Ok(()),
             }

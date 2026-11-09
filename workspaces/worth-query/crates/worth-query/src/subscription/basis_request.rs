@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::declaration::QuerySubscriptionDeclarationArtifact;
 use super::evidence_identities::basis_binding_request_identity;
@@ -34,7 +35,9 @@ pub struct QuerySubscriptionBasisBindingRequest {
 }
 
 impl QuerySubscriptionBasisBindingRequest {
-    pub(super) fn from_declaration(declaration: &QuerySubscriptionDeclarationArtifact) -> Self {
+    pub(super) fn from_declaration(
+        declaration: &QuerySubscriptionDeclarationArtifact,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let request_kind = match declaration.basis_posture() {
             QuerySubscriptionBasisPosture::CurrentHead => {
                 QuerySubscriptionBasisBindingRequestKind::CurrentHead
@@ -63,13 +66,13 @@ impl QuerySubscriptionBasisBindingRequest {
             &source_declaration_identity,
             declaration.equivalence_identity(),
             &scoped_declaration_basis_digest,
-        );
-        Self {
+        )?;
+        Ok(Self {
             request_kind,
             source_declaration_identity,
             scoped_declaration_basis_digest,
             evidence_identity,
-        }
+        })
     }
 
     pub fn request_kind(&self) -> &QuerySubscriptionBasisBindingRequestKind {

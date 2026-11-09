@@ -69,7 +69,7 @@ where
         |_, graph, installed| {
             let binding = installed.principal_binding(DocumentPrincipalBinding::reference()).unwrap();
             graph.bind_principal(&binding, WorthQueryApplicationPrincipalKey::new("source-only-operator").unwrap(), 1_u64, worth_query_testkit_document_retention::facade::document_retention_model::operator_identity::operator_identity(), worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatus::Enabled)?;
-            graph.bind_entity(WorthQueryApplicationEntitySeed::new(Document::reference(), WorthQueryApplicationEntityKey::new("document-row-1").unwrap()).field(DocumentIdentityField::reference(), DOCUMENT_IDENTITY.to_owned()).field(DocumentRetentionField::reference(), 7_u64))?;
+            graph.bind_entity(WorthQueryApplicationEntitySeed::new(Document::reference(), WorthQueryApplicationEntityKey::new("document-row-1").unwrap()).field(DocumentIdentityField::at("DocumentIdentityField"), DOCUMENT_IDENTITY.to_owned()).field(DocumentRetentionField::at("DocumentRetentionField"), 7_u64))?;
             Ok(())
         },
     ).unwrap();

@@ -92,7 +92,7 @@ fn materialize_current_read_input(
         materialize_read_rows(execution, runtime, read_graph)?.into_parts();
     graph_read_access_recorder.record_materialized_rows(rows.len());
     let fact_posture =
-        materialized_fact_posture_for_read_graph(runtime, read_graph, &snapshot_evidence_identity);
+        materialized_fact_posture_for_read_graph(runtime, read_graph, &snapshot_evidence_identity)?;
     Ok(WorthQueryCurrentReadMaterialization {
         snapshot_identity: admitted.snapshot_identity,
         execution: admitted.execution,
@@ -190,6 +190,9 @@ fn runtime_basis_intent() -> ExecutionBasisIntent {
 
 fn basis_resolution_error_message(error: BasisResolutionError) -> String {
     match error {
+        BasisResolutionError::EvidenceIdentityDerivationDenied(cause) => {
+            format!("evidence identity refused: {cause:?}")
+        }
         BasisResolutionError::UnsupportedBasisKind => "unsupported basis kind".to_string(),
         BasisResolutionError::ResolutionIdentityMismatch => {
             "resolution identity mismatch".to_string()

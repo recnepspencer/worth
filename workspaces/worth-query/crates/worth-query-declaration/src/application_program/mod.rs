@@ -11,6 +11,7 @@ pub use adoption_authorization::{
 mod action_correspondence;
 mod change_shape;
 mod connection;
+mod coupled_output;
 mod derived_artifact;
 mod derived_collection;
 mod evaluated_requirement;
@@ -24,6 +25,15 @@ mod managed_computation;
 mod manifest;
 mod operation_body_encoding;
 mod output_graph;
+mod required_output;
+pub(crate) use coupled_output::DescribeCoupledOutputs;
+pub use coupled_output::{ApplicationCoupledOutputVisitor, DeclaredCoupledOutputConnection};
+pub use required_output::{
+    WorthQueryApplicationOutputDemand, WorthQueryApplicationRequiredOutputConnection,
+    WorthQueryApplicationRequiredOutputSource, WorthQueryProducerApplicability,
+    WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
+    WorthQueryRequiredOutputConnectionDenial,
+};
 mod output_posture;
 mod program;
 mod program_outputs;

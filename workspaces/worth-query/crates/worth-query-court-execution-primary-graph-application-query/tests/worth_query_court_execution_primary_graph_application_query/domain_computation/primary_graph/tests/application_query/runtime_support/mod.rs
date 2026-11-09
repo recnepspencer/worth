@@ -343,56 +343,6 @@ pub fn lower_layout<Schema: ApplicationSchema>(
     .0
 }
 
-macro_rules! hostile_live_index_schema {
-    ($module:ident, $schema:ident, $owner:ident, $scope_equality:ident, $target_equality:ident) => {
-        mod $module {
-            use worth_query_declaration::worth_query_application_schema;
-            use worth_query_declaration::worth_query_aspect;
-            use worth_query_declaration::worth_query_entity;
-            use worth_query_declaration::worth_query_field;
-
-            worth_query_application_schema! {
-                pub schema $schema {
-                    owner: $owner,
-                    version: (1, 0),
-                    members: |schema| {
-                        schema
-                            .entity(Account::reference())
-                            .entity(Activity::reference())
-                            .aspect(Account::reference(), AccountPolicy::reference())
-                            .field(Account::reference(), AccountIdentity::reference())
-                            .aspect(Activity::reference(), ActivityFacts::reference())
-                            .field(Activity::reference(), ActivityIdentity::reference())
-                    }
-                }
-            }
-            worth_query_entity!(pub Account for $schema);
-            worth_query_entity!(pub Activity for $schema);
-            worth_query_aspect!(pub AccountPolicy for $schema, Account; identity = AspectIdentity(0x91611034), revision = AspectContractRevision(1),);
-            worth_query_field!(
-                pub AccountIdentity for $schema, Account, AccountPolicy:
-                String => worth_query_declaration::facade::application_schema::StringApplicationValueBinding, read_only, $scope_equality
-            );
-            worth_query_aspect!(pub ActivityFacts for $schema, Activity; identity = AspectIdentity(0x91611035), revision = AspectContractRevision(1),);
-            worth_query_field!(
-                pub ActivityIdentity for $schema, Activity, ActivityFacts:
-                String => worth_query_declaration::facade::application_schema::StringApplicationValueBinding, read_only, $target_equality
-            );
-        }
-    };
-}
-
-hostile_live_index_schema!(
-    missing_scope_index,
-    MissingScopeIndexSchema,
-    missing_scope_index_fixture,
-    no_equality,
-    equality
-);
-hostile_live_index_schema!(
-    missing_target_index,
-    MissingTargetIndexSchema,
-    missing_target_index_fixture,
-    equality,
-    no_equality
-);
+#[path = "index_schemas.rs"]
+mod index_schemas;
+use index_schemas::{missing_scope_index, missing_target_index};

@@ -27,7 +27,9 @@ pub(in crate::application_entry::mutation) fn request_stop(denial: &Request) -> 
                 History::CandidateSelection(Product::Stopped(cause)) => execution_stop(*cause),
                 History::Recording(cause) => execution_stop(worth_query_execution::facade::primary_graph::relational_execution_kind(*cause, None)),
                 History::NativeBasis(_) => cause.native_basis_interruption().map(Denial::Interrupted),
+                History::Ownership(_) => cause.ownership_interruption().map(Denial::Interrupted),
                 History::ForeignPhase | History::ForeignRuntime | History::InstalledBindingMismatch
+                | History::UnownedOperationScope { .. }
                 | History::UnsupportedReadMode | History::ForeignModel | History::ForeignHistoryNode | History::HistoryNodeUnavailable | History::OperationNotDeclared
                 | History::HeadDiverged | History::RecordingIdentityExhausted | History::AttemptInFlight
                 | History::IntentDrift | History::ForeignRecording | History::UnsupportedOperation
@@ -165,6 +167,7 @@ fn execution_stop(cause: Result<Execution, Control>) -> Option<Denial> {
         | Ok(Execution::ProviderGenerationMismatch)
         | Ok(Execution::SessionProtocolUnsupported)
         | Ok(Execution::AllocationDenied)
+        | Ok(Execution::OutputCorrespondenceMismatch { .. })
         | Ok(Execution::ProviderRejected)
         | Ok(Execution::ProviderPanicked)
         | Ok(Execution::TokenNotMintedForPlan)

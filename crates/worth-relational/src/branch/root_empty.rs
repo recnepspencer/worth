@@ -1,16 +1,14 @@
 //! Empty roots carry schema DATA without claiming an admitted Home executor.
 use super::*;
-use std::collections::BTreeMap;
 
 impl RelationalBranchRoot {
     #[cfg(test)]
     pub(crate) fn empty() -> Arc<Self> {
-        let issuer = RelationalBranchRootIdentityIssuer::default();
         Arc::new(Self {
+            publication_bases: Default::default(),
             id: 0,
             content: Default::default(),
-            regions: RelationalPersistentRegionSet::initial(0, BTreeMap::new(), &issuer)
-                .expect("empty test root has reachability capacity"),
+            regions: RelationalPersistentRegionSet::empty(0),
             entity_slot_count: 0,
             relation_slot_count: 0,
             content_accumulator: [0; 32],
@@ -41,12 +39,11 @@ impl RelationalBranchRoot {
     pub(crate) fn empty_with_schema_authority(
         schema: Arc<RelationalBranchRootSchemaAuthority>,
     ) -> Arc<Self> {
-        let issuer = RelationalBranchRootIdentityIssuer::default();
         Arc::new(Self {
+            publication_bases: Default::default(),
             id: 0,
             content: Default::default(),
-            regions: RelationalPersistentRegionSet::initial(0, BTreeMap::new(), &issuer)
-                .expect(/* Proof: Each empty root creates a fresh issuer at its initial frontier; these first schema and empty-reachability allocations cannot exhaust it. */ "empty root has reachability capacity"),
+            regions: RelationalPersistentRegionSet::empty(0),
             entity_slot_count: 0,
             relation_slot_count: 0,
             content_accumulator: [0; 32],

@@ -53,7 +53,7 @@ fn foreign_scope_and_missing_disclosure_governance_open_no_plan_authority() {
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_string(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -103,7 +103,7 @@ fn foreign_scope_and_missing_disclosure_governance_open_no_plan_authority() {
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_string(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

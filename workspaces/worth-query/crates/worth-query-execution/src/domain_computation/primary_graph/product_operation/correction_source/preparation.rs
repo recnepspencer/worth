@@ -3,6 +3,7 @@ use super::*;
 mod custody;
 mod home;
 mod recovery;
+mod relation_inverse;
 mod workflow;
 use crate::basis::WorthQueryProductBranchReadIdentity;
 use crate::domain_computation::application_aftermath::{
@@ -28,6 +29,7 @@ use worth_relational::facade::{
 /// Owning close durably discharges unperformed preparations; they never become
 /// first use after reopen. This value grants no standalone mutation authority.
 pub struct WorthQueryPreparedCorrectionSource {
+    coupled_capture: Option<fn(&super::occurrence::CorrectionOccurrence, &worth_execution::ExecutionRequest<'_, '_>) -> crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemands>,
     content: worth_relational::facade::content::RelationalContentAttachments,
     authored_identity: Option<super::authored_identity::PreparedAuthoredIdentity>,
     workflow: Option<PreparedWorkflowCorrection>,
@@ -187,6 +189,8 @@ impl WorthQueryPreparedCorrectionSource {
             },
         };
         Ok(Self {
+            coupled_capture: (lineage.role() == WorthQueryAftermathCausalRole::RecordedReverse)
+                .then_some(super::material::capture_coupled::<Schema, C>),
             content,
             authored_identity,
             workflow,
@@ -204,6 +208,13 @@ impl WorthQueryPreparedCorrectionSource {
             target_branch: basis.identity().branch_id().clone(),
             intent,
         })
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn capture_coupled_outputs(
+        &self, execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Option<crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemands>{
+        self.coupled_capture
+            .map(|capture| capture(&self.custody.occurrence(), execution))
     }
 
     pub(in crate::domain_computation::primary_graph) fn content(
@@ -230,7 +241,7 @@ impl WorthQueryPreparedCorrectionSource {
     }
     pub(in crate::domain_computation::primary_graph) fn validate_authored_candidate<'a>(
         &self,
-        roles: impl Iterator<Item = (&'a str, worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture, &'a str, &'a worth_relational::facade::transactions::EntityReference)>,
+        roles: impl Iterator<Item = (&'a str, worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture, &'a str, &'a worth_relational::facade::transactions::EntityReference)> + Clone,
         batch: &worth_relational::facade::transactions::WorkerIntentBatch,
         request: &WorthQueryRequestScope,
     ) -> Result<(), super::AuthoredCorrectionCandidateDenial> {
@@ -246,6 +257,25 @@ impl WorthQueryPreparedCorrectionSource {
         self.authored_identity
             .as_ref()
             .and_then(|identity| identity.retirement_anchor())
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn authored_retirement_co_anchors(
+        &self,
+    ) -> Vec<EntityId> {
+        self.authored_identity
+            .as_ref()
+            .map_or_else(Vec::new, |identity| identity.retirement_co_anchors())
+    }
+    pub(in crate::domain_computation::primary_graph) fn authored_restoration_co_anchors<'a>(
+        &self,
+        roles: impl Iterator<Item = (&'a str, worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture, &'a str, &'a worth_relational::facade::transactions::EntityReference)> + Clone,
+    ) -> Vec<(
+        EntityId,
+        worth_relational::facade::transactions::CreatedEntityRef,
+    )> {
+        self.authored_identity
+            .as_ref()
+            .map_or_else(Vec::new, |identity| identity.restoration_co_anchors(roles))
     }
 
     pub(in crate::domain_computation::primary_graph) fn authored_restoration_anchor<'a>(

@@ -1,0 +1,16 @@
+COMMAND: ["python", "target/lane-evidence/h8_outbox_fixture_finish.py"]
+HEAD: 5d41be299030a2e9d90dae61dfc36da9a86cb385
+CLEAN: false
+START: 2026-11-09T00:00:30.009457+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+h8-outbox-fixture-fmt: exit=0 log=C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\h8-outbox-fixture-fmt.log
+RESULT h8-outbox-fixture-fmt 0
+h8-outbox-fixture-line-caps: exit=0 log=C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\h8-outbox-fixture-line-caps.log
+RESULT h8-outbox-fixture-line-caps 0
+h8-outbox-fixture-boundary-driver: exit=1 log=C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\h8-outbox-fixture-boundary-driver.log
+RESULT h8-outbox-fixture-boundary-driver 1
+h8-outbox-fixture-context-driver: exit=0 log=C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\h8-outbox-fixture-context-driver.log
+RESULT h8-outbox-fixture-context-driver 0
+
+END: 2026-11-09T00:01:42.716796+00:00
+EXIT: 1

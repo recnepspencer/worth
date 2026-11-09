@@ -70,9 +70,6 @@ impl SymbolTextLookup for OriginalSymbolDictionary<'_> {
     fn resolve(&self, symbol: Symbol) -> Option<&str> {
         self.by_symbol.get(&symbol).map(|text| text.as_str())
     }
-    fn retained_text(&self, symbol: Symbol) -> Option<&StoredSymbolText> {
-        self.by_symbol.get(&symbol).copied()
-    }
 }
 fn map_stop(cause: worth_execution::ExecutionOrderedMapDenial) -> Denial {
     crate::durability::checkpoint_history::capture::capture_stop(

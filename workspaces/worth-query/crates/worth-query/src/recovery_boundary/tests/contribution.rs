@@ -149,7 +149,8 @@ fn denied_traceability_input() -> WorthQueryContributionComposedOrchestrationInp
         WorthQuerySupportContributionAuthoring::declaration_traceability(
             "domain.traceability.face",
             "",
-        ),
+        )
+        .expect("fixture digest must fit"),
     ))
 }
 
@@ -159,12 +160,14 @@ fn contribution_proof_preserves_intent_level_aspect_context_for_contribution_den
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let handle = contribution_handle(request_execution);
-    let proof =
-        handle.orchestrate_declaration_with_contributions_proof(denied_traceability_input());
+    let proof = handle
+        .orchestrate_declaration_with_contributions_proof(denied_traceability_input())
+        .expect("fixture digest must fit");
 
     let brief = handle
         .recover_from_contribution_composed_proof(proof)
-        .expect("contribution denial proof should recover");
+        .expect("contribution denial proof should recover")
+        .expect("fixture digest must fit");
 
     assert_eq!(
         brief.source_family(),
@@ -196,17 +199,21 @@ fn contribution_checked_and_proof_recovery_stay_aligned_for_same_denial() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let handle = contribution_handle(request_execution);
-    let checked =
-        handle.orchestrate_declaration_with_contributions_checked(denied_traceability_input());
-    let proof =
-        handle.orchestrate_declaration_with_contributions_proof(denied_traceability_input());
+    let checked = handle
+        .orchestrate_declaration_with_contributions_checked(denied_traceability_input())
+        .expect("fixture digest must fit");
+    let proof = handle
+        .orchestrate_declaration_with_contributions_proof(denied_traceability_input())
+        .expect("fixture digest must fit");
 
     let checked_brief = handle
         .recover_from_contribution_composed_checked(checked)
-        .expect("checked contribution denial should recover");
+        .expect("checked contribution denial should recover")
+        .expect("fixture digest must fit");
     let proof_brief = handle
         .recover_from_contribution_composed_proof(proof)
-        .expect("proof contribution denial should recover");
+        .expect("proof contribution denial should recover")
+        .expect("fixture digest must fit");
 
     assert_eq!(checked_brief.stop_family(), proof_brief.stop_family());
     assert_eq!(checked_brief.stop_kind(), proof_brief.stop_kind());

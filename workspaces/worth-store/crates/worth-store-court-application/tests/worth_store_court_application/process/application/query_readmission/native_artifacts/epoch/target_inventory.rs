@@ -35,7 +35,7 @@ fn real_home_target_refuses_old_receiver_epoch_and_executes_fresh_inventory() {
         assert_eq!(old.catalog_digest(), fresh.catalog_digest());
         let rows = administration::rows(native, &execution, "Account");
         let [row] = rows.as_slice() else { panic!("actual nonempty account"); };
-        let original = administration::field(row, "AccountIdentity", "Balance").clone();
+        let original = administration::field(row, FieldSelection::<HomeRecords, Account, AccountIdentity, u64>::at("Balance").aspect(), "Balance").clone();
         let pinned = administration::view(native);
         let proposed = target_schema::transition(native);
         let change = RelationalTransactionIntent::ordinary().with_schema_transition(proposed.clone(), None);
@@ -74,7 +74,9 @@ fn real_home_target_refuses_old_receiver_epoch_and_executes_fresh_inventory() {
         let begin = |contracts| native.begin_home_program_step(&execution,
             source.basis().relational_basis(), RelationalHomeProgramStepContracts::Target { contracts, transition: Some((proposed.clone(), None)) },
             grant.plan(), HomeProgramTransitionStepAssociation::from_recorded(grant.plan().identity(), 0),
-            grant.original(), &association, grant.admission());
+            grant.original(), &association, grant.admission(),
+worth_relational::facade::indexes::DerivedIndexMaintenanceBudget { maximum_work_units: None, maximum_cold_record_slots: None, maximum_derived_rows: None },
+);
         assert!(matches!(begin(&old), Err(RelationalHomeProgramContractDenial::SourceContractChanged)));
         assert_eq!(calls.load(Ordering::SeqCst), 0);
         assert_eq!(home.world().observation_port().observe_root_product_branch().unwrap(), source);
@@ -105,8 +107,8 @@ fn real_home_target_refuses_old_receiver_epoch_and_executes_fresh_inventory() {
         assert!(old_pin.schema().entity_registration(worth_relational::facade::identity::KindId(2000)).is_err());
         drop((current_pin, old_pin, current_view));
         let historical = pinned.bounded_entities_of_kind(&execution, row.kind.kind_id, 1024).unwrap().unwrap().into_records();
-        assert_eq!(administration::field(&historical[0], "AccountIdentity", "Balance"), &original);
-        assert_eq!(administration::field(&administration::rows(native, &execution, "Account")[0], "AccountIdentity", "Balance"), &AspectValue::UInt64(29));
+        assert_eq!(administration::field(&historical[0], FieldSelection::<HomeRecords, Account, AccountIdentity, u64>::at("Balance").aspect(), "Balance"), &original);
+        assert_eq!(administration::field(&administration::rows(native, &execution, "Account")[0], FieldSelection::<HomeRecords, Account, AccountIdentity, u64>::at("Balance").aspect(), "Balance"), &AspectValue::UInt64(29));
         drop((query, source_owner, source, before, pinned, old, fresh, grant, home));
     }).unwrap();
 }

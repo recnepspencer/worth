@@ -186,8 +186,8 @@ fn a_republished_stable_alias_holds_the_performed_sequence() {
         stage.retain(
             suspended_generation,
             |row| {
-                let mut row = { let __producing_implementation = None; let __required_publication = None; let __native_prior_checkpoint = None; let __computation_source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false); let __performed_origin = Some(Arc::clone(&origin)); let __consumed_outputs = Arc::clone(&consumed); let __prepared_input_reuse_key = Some(input_key(&selection, ALIAS_INPUT)); let mut __base = row; *__base.producing_implementation_mut_for_test() = __producing_implementation; *__base.required_publication_mut_for_test() = __required_publication; *__base.native_prior_checkpoint_mut_for_test() = __native_prior_checkpoint; *__base.computation_source_mut_for_test() = __computation_source; *__base.performed_origin_mut_for_test() = __performed_origin; *__base.consumed_outputs_mut_for_test() = __consumed_outputs; *__base.prepared_input_reuse_key_mut_for_test() = __prepared_input_reuse_key; __base };
-                let spans = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_cutoff::stable_publication::fact_spans::StableFactSpans::new_for_test(
+                let mut row = { let __coupled_completion = None; let __producing_implementation = None; let __required_publication = None; let __native_prior_checkpoint = None; let __computation_source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false); let __performed_origin = Some(Arc::clone(&origin)); let __consumed_outputs = Arc::clone(&consumed); let __prepared_input_reuse_key = Some(input_key(&selection, ALIAS_INPUT)); let mut __base = row; *__base.coupled_completion_mut_for_test() = __coupled_completion; *__base.producing_implementation_mut_for_test() = __producing_implementation; *__base.required_publication_mut_for_test() = __required_publication; *__base.native_prior_checkpoint_mut_for_test() = __native_prior_checkpoint; *__base.computation_source_mut_for_test() = __computation_source; *__base.performed_origin_mut_for_test() = __performed_origin; *__base.consumed_outputs_mut_for_test() = __consumed_outputs; *__base.prepared_input_reuse_key_mut_for_test() = __prepared_input_reuse_key; __base };
+                let spans = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_cutoff::stable_publication::StableFactSpans::new_for_test(
                     alias_facts.clone().into(), 1, alias_facts.len() - 2).unwrap();
                 let mutable = (*row.mutable_mut_for_test()).get_mut().unwrap();
                 // Local representation proof: real witness projection above,
@@ -247,22 +247,7 @@ fn a_stable_alias_is_compared_by_the_witness_of_its_origin() {
         let alias_facts: Arc<[Fact]> = Arc::from([source_entity(1), source_entity(3)]);
         stage.retain(
             alias_generation,
-            |row| {
-                // The update's field values first, in written order, then its base.
-                let computation_source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false);
-                let performed_origin = Some(Arc::clone(&origin));
-                let consumed_outputs = Arc::clone(&consumed);
-                let prepared_input_reuse_key = Some(input_key(&selection, ALIAS_INPUT));
-                let mut row = row;
-                (*row.producing_implementation_mut_for_test()) = None;
-                (*row.required_publication_mut_for_test()) = None;
-                (*row.native_prior_checkpoint_mut_for_test()) = None;
-                (*row.computation_source_mut_for_test()) = computation_source;
-                (*row.performed_origin_mut_for_test()) = performed_origin;
-                (*row.consumed_outputs_mut_for_test()) = consumed_outputs;
-                (*row.prepared_input_reuse_key_mut_for_test()) = prepared_input_reuse_key;
-                row
-            },
+            |row| { let __coupled_completion = None; let __producing_implementation = None; let __required_publication = None; let __native_prior_checkpoint = None; let __computation_source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false); let __performed_origin = Some(Arc::clone(&origin)); let __consumed_outputs = Arc::clone(&consumed); let __prepared_input_reuse_key = Some(input_key(&selection, ALIAS_INPUT)); let mut __base = row; *__base.coupled_completion_mut_for_test() = __coupled_completion; *__base.producing_implementation_mut_for_test() = __producing_implementation; *__base.required_publication_mut_for_test() = __required_publication; *__base.native_prior_checkpoint_mut_for_test() = __native_prior_checkpoint; *__base.computation_source_mut_for_test() = __computation_source; *__base.performed_origin_mut_for_test() = __performed_origin; *__base.consumed_outputs_mut_for_test() = __consumed_outputs; *__base.prepared_input_reuse_key_mut_for_test() = __prepared_input_reuse_key; __base },
             &alias_facts,
         );
 

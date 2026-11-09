@@ -2,7 +2,8 @@
 use super::*;
 use crate::domain_computation::primary_graph::{
     SharedSelectedProductOperation, WorthQueryAdmittedApplicationOperation,
-    WorthQueryAuthenticatedPrincipal, WorthQuerySelectedProductOperation,
+    WorthQueryApplicationEntityIdentity, WorthQueryAuthenticatedPrincipal,
+    WorthQuerySelectedProductOperation,
 };
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationScopeBinding,
@@ -30,6 +31,10 @@ pub(super) fn prepare<'runtime, Schema, Binding>(
         SharedSelectedProductOperation<'runtime, Schema>,
         Principal<Schema, Binding>,
         Admission<Schema, Binding>,
+        WorthQueryApplicationEntityIdentity<
+            Schema,
+            <<Operation<Schema, Binding> as ApplicationMutationBinding<Schema>>::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
+        >,
     ),
     ProducerExecutionStop,
 >
@@ -83,5 +88,5 @@ where
     let shared = selected
         .prepare_shared_query_basis()
         .map_err(|(_, stop)| source_readmission::ready_resource_denial(Binding::IDENTITY, stop))?;
-    Ok((shared, principal, admission))
+    Ok((shared, principal, admission, scope))
 }

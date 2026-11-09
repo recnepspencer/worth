@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_runtime_bridge::facade::BridgeCausalExplanationEnvelope;
 
 use crate::domain_capabilities::identity::domain_capability_scope_encoder;
@@ -53,7 +54,7 @@ fn compose_explanation_runtime_semantics_identity(
     bridge_envelope: Option<&BridgeCausalExplanationEnvelope>,
     redaction_policy: CausalInspectionRedactionPolicy,
     materialization_policy: CausalInspectionMaterializationPolicy,
-) -> WorthQueryEvidenceIdentity {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let mut identity = domain_capability_scope_encoder(
         "worth_query_domain_capability_explanation_runtime_semantics_v1",
     )
@@ -94,7 +95,7 @@ fn compose_explanation_runtime_semantics_identity(
         ),
         None => identity.field_shape(WorthQueryEvidenceTag::new("bridge_envelope"), "none"),
     };
-    identity.seal()
+    Ok(identity.seal()?)
 }
 
 fn compose_explanation_payload_identity(
@@ -102,7 +103,7 @@ fn compose_explanation_payload_identity(
     semantic_code: &str,
     detail: &str,
     runtime_semantics: Option<&WorthQueryExplanationRuntimeSemantics>,
-) -> WorthQueryEvidenceIdentity {
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let mut identity = domain_capability_scope_encoder("worth_query_domain_capability_payload_v2")
         .field_shape(
             WorthQueryEvidenceTag::new("category"),
@@ -118,7 +119,7 @@ fn compose_explanation_payload_identity(
         ),
         None => identity.field_shape(WorthQueryEvidenceTag::new("runtime_semantics"), "none"),
     };
-    identity.seal()
+    Ok(identity.seal()?)
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -144,7 +145,7 @@ impl WorthQueryExplanationRuntimeSemantics {
         bridge_envelope: Option<BridgeCausalExplanationEnvelope>,
         redaction_policy: CausalInspectionRedactionPolicy,
         materialization_policy: CausalInspectionMaterializationPolicy,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let semantics_identity = compose_explanation_runtime_semantics_identity(
             &reference_set,
             &target,
@@ -154,8 +155,8 @@ impl WorthQueryExplanationRuntimeSemantics {
             bridge_envelope.as_ref(),
             redaction_policy,
             materialization_policy,
-        );
-        Self {
+        )?;
+        Ok(Self {
             reference_set,
             target,
             explanation_family,
@@ -165,7 +166,7 @@ impl WorthQueryExplanationRuntimeSemantics {
             redaction_policy,
             materialization_policy,
             semantics_identity,
-        }
+        })
     }
 
     pub fn reference_set(&self) -> &CausalEvidenceReferenceSet {
@@ -219,8 +220,13 @@ impl WorthQueryExplanationContributionPayload {
         posture: WorthQueryExplanationContributionPosture,
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
-    ) -> Self {
-        Self::with_runtime_semantics(posture, semantic_code, detail, None)
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_runtime_semantics(
+            posture,
+            semantic_code,
+            detail,
+            None,
+        )?)
     }
 
     pub fn with_runtime_semantics(
@@ -228,7 +234,7 @@ impl WorthQueryExplanationContributionPayload {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
         runtime_semantics: Option<WorthQueryExplanationRuntimeSemantics>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let semantic_code = semantic_code.into();
         let detail = detail.into();
         let payload_identity = compose_explanation_payload_identity(
@@ -236,14 +242,14 @@ impl WorthQueryExplanationContributionPayload {
             &semantic_code,
             &detail,
             runtime_semantics.as_ref(),
-        );
-        Self {
+        )?;
+        Ok(Self {
             posture,
             semantic_code,
             detail,
             runtime_semantics,
             payload_identity,
-        }
+        })
     }
 
     pub fn category(&self) -> WorthQueryDomainCapabilityCategory {

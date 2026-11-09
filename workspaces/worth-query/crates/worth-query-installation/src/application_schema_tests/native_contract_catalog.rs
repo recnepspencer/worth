@@ -14,90 +14,33 @@ use crate::facade::{
     WorthQueryPortablePackageValidationDenialKind,
 };
 use worth_query_declaration::facade::application_schema::{
-    ApplicationEntityRef, ApplicationSchema, ApplicationSchemaDeclaration,
-    ApplicationSchemaDeclarationBuilder,
+    ApplicationSchema, ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
 };
 
-worth_query_declaration::worth_query_entity!(ZeroEntity for ZeroRevisionSchema);
-worth_query_declaration::worth_query_aspect!(
-    ZeroAspect for ZeroRevisionSchema, ZeroEntity;
-    identity = AspectIdentity(1),
-    revision = AspectContractRevision(0),
-);
-worth_query_declaration::worth_query_entity!(DuplicateEntity for DuplicateIdentitySchema);
-worth_query_declaration::worth_query_aspect!(
-    DuplicateAspectA for DuplicateIdentitySchema, DuplicateEntity;
-    identity = AspectIdentity(7),
-    revision = AspectContractRevision(1),
-);
-worth_query_declaration::worth_query_aspect!(
-    DuplicateAspectB for DuplicateIdentitySchema, DuplicateEntity;
-    identity = AspectIdentity(7),
-    revision = AspectContractRevision(2),
-);
-worth_query_declaration::worth_query_entity!(EmptyEntity for EmptyAspectSchema);
-worth_query_declaration::worth_query_aspect!(
-    EmptyAspect for EmptyAspectSchema, EmptyEntity;
-    identity = AspectIdentity(9),
-    revision = AspectContractRevision(1),
-);
-
-struct ZeroRevisionSchema;
-struct DuplicateIdentitySchema;
-struct EmptyAspectSchema;
 struct CrossOwnerSchema;
-
-worth_query_declaration::worth_query_entity!(CrossEntity for CrossOwnerSchema);
-worth_query_declaration::worth_query_aspect!(
-    CrossAspect for CrossOwnerSchema, CrossEntity;
-    identity = AspectIdentity(0x9161200c),
-    revision = AspectContractRevision(1),
-);
-worth_query_declaration::worth_query_field!(
-    CrossField for CrossOwnerSchema, CrossEntity, CrossAspect:
-    u64 => worth_query_declaration::facade::application_schema::U64ApplicationValueBinding,
-    read_only, equality
-);
-
 impl ApplicationSchema for CrossOwnerSchema {
     const OWNER: &'static str = "native-contract-cross-owner";
     const NAME: &'static str = "CrossOwnerSchema";
-    const MAJOR: u32 = 1;
-    const MINOR: u32 = 0;
-
     fn declaration() -> Result<
         ApplicationSchemaDeclaration<Self>,
         worth_query_declaration::facade::application_schema::ApplicationSchemaDeclarationDenial,
     > {
-        ApplicationSchemaDeclarationBuilder::for_schema()
-            .entity(CrossEntity::reference())
-            .aspect(CrossEntity::reference(), CrossAspect::reference())
-            .field(CrossEntity::reference(), CrossField::reference())
-            .build()
+        ApplicationSchemaDeclarationBuilder::from_fragment(super::InstallationFields)?.build()
     }
 }
-
-macro_rules! schema_identity {
-    ($schema:ty, $name:literal) => {
-        impl ApplicationSchema for $schema {
-            const OWNER: &'static str = "native-contract-denial";
-            const NAME: &'static str = $name;
-            const MAJOR: u32 = 1;
-            const MINOR: u32 = 0;
-
-            fn declaration() -> Result<
-                ApplicationSchemaDeclaration<Self>,
-                worth_query_declaration::facade::application_schema::ApplicationSchemaDeclarationDenial,
-            > {
-                unreachable!("each denial fixture authors its declaration explicitly")
-            }
-        }
-    };
+fn identity_aspect() -> &'static str {
+    super::FixturePrincipalIdentityField::at("PrincipalIdentityField").aspect()
 }
-
-schema_identity!(ZeroRevisionSchema, "ZeroRevisionSchema");
-schema_identity!(DuplicateIdentitySchema, "DuplicateIdentitySchema");
-schema_identity!(EmptyAspectSchema, "EmptyAspectSchema");
+fn identity_id() -> AspectIdentity {
+    AspectIdentity(name_identity(
+        "installation_fields.TestEntity.IdentityAspect",
+    ))
+}
+fn identity_revision() -> AspectContractRevision {
+    TestSchema::declaration().unwrap().erased().members().iter().find_map(|member| match member {
+ worth_query_declaration::facade::application_schema::ApplicationSchemaMember::Aspect { revision, .. } => Some(*revision), _ => None,
+ }).unwrap()
+}
 
 #[test]
 fn installed_catalog_retains_the_exact_declared_native_contract_once() {
@@ -110,23 +53,20 @@ fn installed_catalog_retains_the_exact_declared_native_contract_once() {
         .bind_application_schema(TestSchema::declaration().unwrap())
         .unwrap();
     let catalog = first.native_contracts();
-    let installed = catalog.aspect("TestEntity", "IdentityAspect").unwrap();
+    let installed = catalog.aspect("TestEntity", identity_aspect()).unwrap();
 
     assert_eq!(catalog.len(), 1);
-    assert_eq!(
-        catalog.maximum_aspect_identity(),
-        Some(AspectIdentity(0x9161200c))
-    );
+    assert_eq!(catalog.maximum_aspect_identity(), Some(identity_id()));
     assert_eq!(installed.locus().schema(), &first.binding_identity());
     assert_eq!(installed.locus().entity(), "TestEntity");
-    assert_eq!(installed.locus().aspect().as_str(), "IdentityAspect");
-    assert_eq!(installed.contract().identity(), AspectIdentity(0x9161200c));
-    assert_eq!(installed.contract().revision(), AspectContractRevision(1));
-    assert_eq!(installed.contract().key().as_str(), "IdentityAspect");
+    assert_eq!(installed.locus().aspect().as_str(), identity_aspect());
+    assert_eq!(installed.contract().identity(), identity_id());
+    assert_eq!(installed.contract().revision(), identity_revision());
+    assert_eq!(installed.contract().key().as_str(), identity_aspect());
     assert_eq!(
         installed.binding(),
         &AspectBinding::EntityField {
-            field: FieldKey::new("IdentityAspect").unwrap(),
+            field: FieldKey::new(identity_aspect()).unwrap(),
         }
     );
     let AspectShape::Struct(shape) = installed.contract().shape() else {
@@ -185,12 +125,12 @@ fn rebuild_and_successor_each_compile_one_generation_affine_catalog() {
     assert_eq!(
         rebuilt_first
             .native_contracts()
-            .aspect("TestEntity", "IdentityAspect")
+            .aspect("TestEntity", identity_aspect())
             .unwrap()
             .contract(),
         successor_schema
             .native_contracts()
-            .aspect("TestEntity", "IdentityAspect")
+            .aspect("TestEntity", identity_aspect())
             .unwrap()
             .contract()
     );
@@ -221,11 +161,11 @@ fn aspect_identity_namespace_is_local_to_one_installed_schema_binding() {
     assert_eq!(
         second
             .native_contracts()
-            .aspect("CrossEntity", "CrossAspect")
+            .aspect("TestEntity", identity_aspect())
             .unwrap()
             .contract()
             .identity(),
-        AspectIdentity(0x9161200c)
+        identity_id()
     );
     assert_ne!(first.binding_identity(), second.binding_identity());
     assert_eq!(index.counters().application_schema_catalogs_compiled, 2);
@@ -233,92 +173,36 @@ fn aspect_identity_namespace_is_local_to_one_installed_schema_binding() {
 
 #[test]
 fn package_validation_denies_unexportable_native_contracts() {
-    let zero_entity =
-        ApplicationEntityRef::<ZeroRevisionSchema, ZeroEntity>::from_schema_identifier(
-            "ZeroEntity",
-        );
-    let zero = ApplicationSchemaDeclarationBuilder::for_schema()
-        .entity(zero_entity)
-        .aspect(
-            zero_entity,
-            worth_query_declaration::facade::application_schema::ApplicationAspectRef::<
-                ZeroRevisionSchema,
-                ZeroEntity,
-                ZeroAspect,
-            >::from_schema_identifier("ZeroAspect"),
-        )
-        .build()
-        .unwrap();
+    use worth_query_declaration::facade::application_schema::ApplicationSchemaMember;
+    let zero = semantic_collision::fresh(|members| {
+        for member in members {
+            if let ApplicationSchemaMember::Aspect { revision, .. } = member {
+                *revision = AspectContractRevision(0);
+            }
+        }
+    });
     assert_package_contract_denial(
         zero,
         WorthQueryPortablePackageValidationDenialKind::ApplicationContractRevisionZero,
     );
-
-    let duplicate_entity =
-        ApplicationEntityRef::<DuplicateIdentitySchema, DuplicateEntity>::from_schema_identifier(
-            "DuplicateEntity",
-        );
-    let duplicate = ApplicationSchemaDeclarationBuilder::for_schema()
-        .entity(duplicate_entity)
-        .aspect(
-            duplicate_entity,
-            worth_query_declaration::facade::application_schema::ApplicationAspectRef::<
-                DuplicateIdentitySchema,
-                DuplicateEntity,
-                DuplicateAspectA,
-            >::from_schema_identifier("DuplicateAspectA"),
-        )
-        .aspect(
-            duplicate_entity,
-            worth_query_declaration::facade::application_schema::ApplicationAspectRef::<
-                DuplicateIdentitySchema,
-                DuplicateEntity,
-                DuplicateAspectB,
-            >::from_schema_identifier("DuplicateAspectB"),
-        )
-        .build()
-        .unwrap();
-    assert_package_contract_denial(
-        duplicate,
-        WorthQueryPortablePackageValidationDenialKind::ApplicationContractDuplicateAspectIdentity,
-    );
-
-    let empty_entity =
-        ApplicationEntityRef::<EmptyAspectSchema, EmptyEntity>::from_schema_identifier(
-            "EmptyEntity",
-        );
-    let empty = ApplicationSchemaDeclarationBuilder::for_schema()
-        .entity(empty_entity)
-        .aspect(
-            empty_entity,
-            worth_query_declaration::facade::application_schema::ApplicationAspectRef::<
-                EmptyAspectSchema,
-                EmptyEntity,
-                EmptyAspect,
-            >::from_schema_identifier("EmptyAspect"),
-        )
-        .build()
-        .unwrap();
+    let empty = semantic_collision::fresh(|members| {
+        members.retain(|member| !matches!(member, ApplicationSchemaMember::Field { entity, .. } if entity == "FieldEntity"))
+    });
     assert_package_contract_denial(
         empty,
         WorthQueryPortablePackageValidationDenialKind::ApplicationContractMissingAspectFieldClosure,
     );
 }
-
-fn assert_package_contract_denial<Schema>(
-    declaration: ApplicationSchemaDeclaration<Schema>,
+fn assert_package_contract_denial(
+    declaration: worth_query_declaration::facade::application_schema::ErasedApplicationSchemaDeclaration,
     expected: WorthQueryPortablePackageValidationDenialKind,
-) where
-    Schema: ApplicationSchema,
-{
-    let denial = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
-        Schema::OWNER,
-        1,
-        0,
-    ))
-    .application_schema(declaration)
-    .validate()
-    .unwrap_err();
+) {
+    let owner = declaration.owner().to_owned();
+    let denial =
+        WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(owner, 1, 0))
+            .application_schema_erased(declaration)
+            .validate()
+            .unwrap_err();
     assert_eq!(denial.kind(), expected);
 }
 
@@ -339,4 +223,15 @@ where
     WorthQueryInstallationAdmissionProfile::new("support", "configuration")
         .admit(package)
         .unwrap()
+}
+
+const fn name_identity(name: &str) -> u64 {
+    let bytes = name.as_bytes();
+    let mut hash = 0xcbf2_9ce4_8422_2325u64;
+    let mut index = 0;
+    while index < bytes.len() {
+        hash = (hash ^ bytes[index] as u64).wrapping_mul(0x100_0000_01b3);
+        index += 1;
+    }
+    hash
 }

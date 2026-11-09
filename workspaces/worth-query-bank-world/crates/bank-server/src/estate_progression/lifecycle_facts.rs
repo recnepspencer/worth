@@ -55,7 +55,10 @@ pub(super) fn seal_close_lifecycle_facts(
     access: EmergencyAccessId,
     estate: &EstateIdentity,
 ) -> Result<(), BankEstateLifecycleProjectionDenial> {
-    let elevation = reader.resolve_entity(EmergencyAccessIdentityField::reference(), access)?;
+    let elevation = reader.resolve_entity(
+        EmergencyAccessIdentityField::at("EmergencyAccessIdentityField"),
+        access,
+    )?;
     let review_relations =
         reader.decision_relations_from(EmergencyReview::reference(), &elevation)?;
     let [review_relation] = review_relations.as_slice() else {
@@ -67,7 +70,10 @@ pub(super) fn seal_close_lifecycle_facts(
     };
     let review = review_relation.to().clone();
     seal_lifecycle_fields(reader, &elevation, &review)?;
-    reader.require_decision_field(&elevation, EmergencyAccessClosedAtField::reference())?;
+    reader.require_decision_field(
+        &elevation,
+        EmergencyAccessClosedAtField::at("EmergencyAccessClosedAtField"),
+    )?;
     seal_remaining_lifecycle_relations(reader, &elevation, &review, estate)
 }
 
@@ -81,8 +87,14 @@ pub(super) fn seal_review_lifecycle_facts(
     estate: &EstateIdentity,
 ) -> Result<(), BankEstateLifecycleProjectionDenial> {
     seal_selected_lifecycle_facts(reader, access, review, estate)?;
-    let review = reader.resolve_entity(MandatoryReviewIdentityField::reference(), review)?;
-    reader.require_decision_field(&review, MandatoryReviewReviewedAtField::reference())?;
+    let review = reader.resolve_entity(
+        MandatoryReviewIdentityField::at("MandatoryReviewIdentityField"),
+        review,
+    )?;
+    reader.require_decision_field(
+        &review,
+        MandatoryReviewReviewedAtField::at("MandatoryReviewReviewedAtField"),
+    )?;
     Ok(())
 }
 
@@ -93,14 +105,6 @@ fn seal_selected_lifecycle_facts<Operation>(
     estate: &EstateIdentity,
 ) -> Result<(), BankEstateLifecycleProjectionDenial>
 where
-    EmergencyAccessIdentityField: OperationReads<Operation>,
-    EmergencyAccessReasonField: OperationReads<Operation>,
-    EmergencyAccessStatusField: OperationReads<Operation>,
-    EmergencyAccessIssuedAtField: OperationReads<Operation>,
-    EmergencyAccessExpiresAtField: OperationReads<Operation>,
-    MandatoryReviewIdentityField: OperationReads<Operation>,
-    MandatoryReviewKindField: OperationReads<Operation>,
-    MandatoryReviewStatusField: OperationReads<Operation>,
     EmergencyRequester: OperationReads<Operation>,
     EmergencyApprover: OperationReads<Operation>,
     EmergencyGrant: OperationReads<Operation>,
@@ -109,8 +113,14 @@ where
     ReviewEstate: OperationReads<Operation>,
     ReviewPrincipal: OperationReads<Operation>,
 {
-    let elevation = reader.resolve_entity(EmergencyAccessIdentityField::reference(), access)?;
-    let review = reader.resolve_entity(MandatoryReviewIdentityField::reference(), review)?;
+    let elevation = reader.resolve_entity(
+        EmergencyAccessIdentityField::at("EmergencyAccessIdentityField"),
+        access,
+    )?;
+    let review = reader.resolve_entity(
+        MandatoryReviewIdentityField::at("MandatoryReviewIdentityField"),
+        review,
+    )?;
     seal_lifecycle_fields(reader, &elevation, &review)?;
     reader.decision_relations_from(EmergencyReview::reference(), &elevation)?;
     seal_remaining_lifecycle_relations(reader, &elevation, &review, estate)
@@ -122,23 +132,39 @@ fn seal_lifecycle_fields<Operation>(
     review: &ReviewIdentity,
 ) -> Result<(), BankEstateLifecycleProjectionDenial>
 where
-    EmergencyAccessIdentityField: OperationReads<Operation>,
-    EmergencyAccessReasonField: OperationReads<Operation>,
-    EmergencyAccessStatusField: OperationReads<Operation>,
-    EmergencyAccessIssuedAtField: OperationReads<Operation>,
-    EmergencyAccessExpiresAtField: OperationReads<Operation>,
-    MandatoryReviewIdentityField: OperationReads<Operation>,
-    MandatoryReviewKindField: OperationReads<Operation>,
-    MandatoryReviewStatusField: OperationReads<Operation>,
 {
-    reader.require_decision_field(elevation, EmergencyAccessIdentityField::reference())?;
-    reader.require_decision_field(elevation, EmergencyAccessReasonField::reference())?;
-    reader.require_decision_field(elevation, EmergencyAccessStatusField::reference())?;
-    reader.require_decision_field(elevation, EmergencyAccessIssuedAtField::reference())?;
-    reader.require_decision_field(elevation, EmergencyAccessExpiresAtField::reference())?;
-    reader.require_decision_field(review, MandatoryReviewIdentityField::reference())?;
-    reader.require_decision_field(review, MandatoryReviewKindField::reference())?;
-    reader.require_decision_field(review, MandatoryReviewStatusField::reference())?;
+    reader.require_decision_field(
+        elevation,
+        EmergencyAccessIdentityField::at("EmergencyAccessIdentityField"),
+    )?;
+    reader.require_decision_field(
+        elevation,
+        EmergencyAccessReasonField::at("EmergencyAccessReasonField"),
+    )?;
+    reader.require_decision_field(
+        elevation,
+        EmergencyAccessStatusField::at("EmergencyAccessStatusField"),
+    )?;
+    reader.require_decision_field(
+        elevation,
+        EmergencyAccessIssuedAtField::at("EmergencyAccessIssuedAtField"),
+    )?;
+    reader.require_decision_field(
+        elevation,
+        EmergencyAccessExpiresAtField::at("EmergencyAccessExpiresAtField"),
+    )?;
+    reader.require_decision_field(
+        review,
+        MandatoryReviewIdentityField::at("MandatoryReviewIdentityField"),
+    )?;
+    reader.require_decision_field(
+        review,
+        MandatoryReviewKindField::at("MandatoryReviewKindField"),
+    )?;
+    reader.require_decision_field(
+        review,
+        MandatoryReviewStatusField::at("MandatoryReviewStatusField"),
+    )?;
     Ok(())
 }
 

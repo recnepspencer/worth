@@ -139,6 +139,7 @@ fn field_path_token(path: &worth_foundational::CanonicalFieldPath) -> String {
 fn interned_token(prefix: &'static str, value: &InternedString) -> String {
     match value {
         InternedString::Raw(raw) => format!("{prefix}.{raw}"),
+        InternedString::Stored(raw) => format!("{prefix}.{}", raw.as_str()),
         InternedString::Symbol(symbol) => format!("{prefix}.symbol.{}", symbol.0),
     }
 }
@@ -163,5 +164,23 @@ fn authority_scope_token(scope: PhysicalAuthorityScope) -> &'static str {
         PhysicalAuthorityScope::PhysicalFoundationVocabulary => "physical-foundation",
         PhysicalAuthorityScope::PhysicalEvidenceExport => "physical-evidence-export",
         PhysicalAuthorityScope::PhysicalSubstrateReadiness => "physical-substrate-readiness",
+    }
+}
+
+#[cfg(test)]
+mod textual_basis_tests {
+    use super::*;
+
+    #[test]
+    fn decoded_stored_text_preserves_the_established_basis_token() {
+        let raw = InternedString::Raw("same token".into());
+        let restored: InternedString =
+            serde_json::from_value(serde_json::to_value(&raw).unwrap()).unwrap();
+        assert!(matches!(&restored, InternedString::Stored(_)));
+        assert_eq!(interned_token("named", &raw), "named.same token");
+        assert_eq!(
+            interned_token("named", &restored),
+            interned_token("named", &raw)
+        );
     }
 }

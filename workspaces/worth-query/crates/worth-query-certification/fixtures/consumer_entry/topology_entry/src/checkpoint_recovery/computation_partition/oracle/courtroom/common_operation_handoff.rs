@@ -51,10 +51,15 @@ mod serial {
                 expected: None,
             }))
             .without_source()
-            .preconditions(TypedMutationPreconditions::new().expect_fact(
-                BodyKey::reference::<CheckpointSchema>(),
-                ApplicationEncodedScalarValue::try_new("wrong-original-fact".to_owned()).unwrap(),
-            ))
+            .preconditions(
+                TypedMutationPreconditions::new()
+                    .expect_fact(
+                        BodyKey::at("BodyKey"),
+                        ApplicationEncodedScalarValue::try_new("wrong-original-fact".to_owned())
+                            .unwrap(),
+                    )
+                    .expect("declared original body-key precondition"),
+            )
             .idempotency_owned(0x9176_4003)
             .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
             .retain_operation::<OracleProgram, CorrectEntryAction>(&application)
@@ -138,10 +143,14 @@ mod serial {
                 expected: None,
             }))
             .without_source()
-            .preconditions(TypedMutationPreconditions::new().expect_fact(
-                BodyKey::reference::<CheckpointSchema>(),
-                ApplicationEncodedScalarValue::try_new(SCOPE.to_owned()).unwrap(),
-            ))
+            .preconditions(
+                TypedMutationPreconditions::new()
+                    .expect_fact(
+                        BodyKey::at("BodyKey"),
+                        ApplicationEncodedScalarValue::try_new(SCOPE.to_owned()).unwrap(),
+                    )
+                    .expect("declared retained body-key precondition"),
+            )
             .idempotency_owned(0x9176_4004)
             .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
             .retain_operation::<OracleProgram, CorrectEntryAction>(&application)

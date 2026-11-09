@@ -149,8 +149,8 @@ impl crate::storage::overlay::CurrentPartitionAccess for FullReadRound<'_, '_> {
 
 /// The source retains every admitted lease throughout every round. A failed
 /// round's owned result is dropped before I/O, including a provisional denial.
-/// At most one round per newly discovered region is possible. After the policy
-/// ceiling, demand the entire source, so even adversarial traversals converge.
+/// Each successful round resolves its observed immutable-source misses. Later
+/// rounds never widen a bounded read into a whole-source admission.
 pub(crate) fn probe_full<T>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     source: &dyn PartitionAccess,
@@ -192,19 +192,6 @@ pub(crate) fn probe_full_sources<const N: usize, T>(
                 source
             };
             source.demand_full_partition(execution, miss.partition)
-        },
-        || {
-            for source in sources {
-                for id in source.partition_ids_iter() {
-                    source.demand_full_partition(execution, id)?;
-                }
-                if let Some(base) = source.base_source() {
-                    for id in base.partition_ids_iter() {
-                        base.demand_full_partition(execution, id)?;
-                    }
-                }
-            }
-            Ok(())
         },
     )
 }

@@ -30,7 +30,8 @@ pub(super) fn admitted_artifact_for(
     let flow = admit_causal_inspection(request_for(
         reference_set,
         CausalInspectionRichness::ReferenceOnly,
-    ));
+    ))
+    .expect("fixture digest must fit");
     let CausalInspectionProofFlow::Admitted(admitted) = flow else {
         panic!("reference-only cross-runtime inspection should admit");
     };
@@ -80,7 +81,8 @@ pub(super) fn advisory_artifacts(
     let flow = admit_causal_inspection(request_for(
         reference_set,
         CausalInspectionRichness::MaterializedDetail,
-    ));
+    ))
+    .expect("fixture digest must fit");
     let CausalInspectionProofFlow::Advisory(advisory) = flow else {
         panic!("materialized detail should narrow to advisory");
     };
@@ -141,7 +143,8 @@ pub(super) fn denied_artifact_and_missing_evidence(
     let missing_resolution = resolve_causal_evidence_references(
         reference_set.anchor().clone(),
         &[CausalEvidenceFamily::SignalInvalidation],
-    );
+    )
+    .expect("fixture digest must fit");
     let CausalEvidenceReferenceResolution::MissingRequiredEvidence { denial, .. } =
         missing_resolution
     else {
@@ -161,7 +164,9 @@ pub(super) fn denied_artifact_and_missing_evidence(
         &[CausalEvidenceFamily::BridgeRoute],
     )
     .expect("causal inspection request should reach admission boundary");
-    let CausalInspectionProofFlow::Denied(denied) = admit_causal_inspection(request) else {
+    let CausalInspectionProofFlow::Denied(denied) =
+        admit_causal_inspection(request).expect("fixture digest must fit")
+    else {
         panic!("durable causal archive should deny for phase-6 certification");
     };
     let artifact = materialize_denied_causal_inspection(
@@ -169,7 +174,8 @@ pub(super) fn denied_artifact_and_missing_evidence(
         None,
         CausalInspectionRedactionPolicy::PreserveDetail,
         CausalInspectionMaterializationPolicy::OfflineInterpretableArtifact,
-    );
+    )
+    .expect("fixture digest must fit");
     (artifact, denial.failure_digest().to_string())
 }
 
@@ -187,13 +193,16 @@ fn reference_set_for(
                     crate::runtime::tests::causal_inspection::causal_test_reference_digest(
                         format!("query-inspection:{}", outcome.as_str()),
                     ),
-                ),
+                )
+                .expect("fixture digest must fit"),
                 CausalObservationEvidenceIdentity::new(
                     CausalEvidenceFamily::BridgeRoute,
                     route_identity.bridge_admission_evidence(),
-                ),
+                )
+                .expect("fixture digest must fit"),
             ],
-        ),
+        )
+        .expect("positive fixture identity fits canonical digest bounds"),
         reason,
     )
     .expect("fixture receipt should anchor");
@@ -205,6 +214,7 @@ fn reference_set_for(
                 CausalEvidenceFamily::BridgeRoute,
             ],
         )
+        .expect("fixture digest must fit")
     else {
         panic!("fixture references should resolve");
     };

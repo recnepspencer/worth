@@ -1,13 +1,14 @@
 use super::runtime_batching::BatchCommandSummary;
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 impl WorthQueryRuntime {
     pub(super) fn build_batch_component_write_receipts(
         &self,
         receipts: Vec<WorthQueryMutationReceipt>,
         command_summaries: Vec<BatchCommandSummary>,
-    ) -> Vec<WorthQueryWriteReceipt> {
-        receipts
+    ) -> Result<Vec<WorthQueryWriteReceipt>, IdentityDerivationDenial> {
+        Ok(receipts
             .into_iter()
             .zip(command_summaries)
             .map(|(receipt, summary)| {
@@ -53,6 +54,6 @@ impl WorthQueryRuntime {
                     WorthQueryAuthorityLane::AuthoritativeTruth,
                 )
             })
-            .collect()
+            .collect::<Result<Vec<_>, _>>()?)
     }
 }

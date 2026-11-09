@@ -308,10 +308,10 @@ impl WorthQueryEffectBuilder {
         })?;
         let declaration = match action {
             WorthQueryEffectBuilderAction::Deliver(target) => {
-                WorthQueryEffectDeclaration::deliver(self.effect_name, trigger, target)
+                WorthQueryEffectDeclaration::deliver(self.effect_name, trigger, target)?
             }
             WorthQueryEffectBuilderAction::WriteIntent(strategy) => {
-                WorthQueryEffectDeclaration::write_intent(self.effect_name, trigger, strategy)
+                WorthQueryEffectDeclaration::write_intent(self.effect_name, trigger, strategy)?
             }
         }
         .with_condition(self.condition);

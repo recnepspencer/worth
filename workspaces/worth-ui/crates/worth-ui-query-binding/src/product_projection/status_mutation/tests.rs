@@ -62,7 +62,7 @@ fn cancelled_original_status_operation_retries_with_fresh_authority_once() {
         .unwrap();
     let mut live = observe(&owner);
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = authenticate(owner.application.installed_schema(), &stopped)
         .expect("valid authentication precedes cancellation");
     cancellation.cancel();
@@ -124,7 +124,7 @@ fn completed_status_close_refusal_retains_the_actual_disclosed_publication() {
         .basis()
         .version();
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = authenticate(owner.application.installed_schema(), &stopped).unwrap();
     cancellation.cancel();
     let denial = match original
@@ -168,7 +168,7 @@ fn interrupted_live_delivery_retries_by_real_current_retained_disclosure() {
     let owner = WorthUiStatusSourceOwner::install().unwrap();
     let (mut original, mut live) = completed_source(&owner, record("FIRST", 1));
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = authenticate(owner.application.installed_schema(), &stopped).unwrap();
     cancellation.cancel();
     let denial = original
@@ -201,7 +201,7 @@ fn completed_close_retry_cannot_return_a_superseded_cached_publication() {
         .deliver(&owner.application.request(&principal, &scope), &mut live)
         .unwrap();
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = authenticate(owner.application.installed_schema(), &stopped).unwrap();
     cancellation.cancel();
     assert!(

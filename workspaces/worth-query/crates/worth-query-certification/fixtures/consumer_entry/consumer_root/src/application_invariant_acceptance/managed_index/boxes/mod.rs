@@ -16,7 +16,7 @@ pub(super) mod seed;
 pub(super) mod status;
 #[cfg(test)]
 mod summary;
-use super::schema::{Catalog, Item};
+use super::schema::Catalog;
 pub(super) use coordinates::Coordinates;
 pub(super) use field::ItemBounds;
 pub(super) use provider::{BoxIndex, Calls, Provider};
@@ -27,8 +27,6 @@ pub(super) fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Catalog>,
 ) -> ApplicationSchemaDeclarationBuilder<Catalog> {
     let schema = schema
-        .unit(field::FixtureLength::reference())
-        .field(Item::reference(), field::ItemBounds::reference())
         .application_query(query::source_definition())
         .application_query_binding::<query::SourceBinding>()
         .application_query(query::public_definition())

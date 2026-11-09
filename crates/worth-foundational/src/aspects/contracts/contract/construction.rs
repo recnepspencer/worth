@@ -21,15 +21,20 @@ impl AspectContract {
         equivalence: AspectEquivalenceBasis,
         evolution: AspectEvolutionPolicy,
     ) -> Self {
+        let (semantic_bytes, allocation_bytes) = definition_extent(&key, &shape);
         Self {
-            key,
-            identity,
-            revision,
-            shape,
-            masks,
-            absence,
-            equivalence,
-            evolution,
+            definition: std::sync::Arc::new(super::AspectContractDefinition {
+                semantic_bytes,
+                allocation_bytes,
+                key,
+                identity,
+                revision,
+                shape,
+                masks,
+                absence,
+                equivalence,
+                evolution,
+            }),
         }
     }
 
@@ -102,4 +107,29 @@ impl AspectContract {
             AspectEvolutionPolicy::ExplicitBreakRequired,
         )
     }
+}
+
+fn definition_extent(key: &AspectKey, shape: &AspectShape) -> (usize, usize) {
+    let shape_bytes = match shape {
+        AspectShape::Struct(shape) => shape.fields().iter().fold(1_usize, |total, field| {
+            total
+                .saturating_add(field.key().as_str().len())
+                .saturating_add(4)
+        }),
+        _ => 2,
+    };
+    let semantic = key
+        .as_str()
+        .len()
+        .saturating_add(20)
+        .saturating_add(shape_bytes);
+    let allocated = key
+        .owned_allocation_capacity_bytes()
+        .saturating_add(match shape {
+            AspectShape::Struct(shape) => shape.owned_allocation_capacity_bytes(),
+            _ => 0,
+        })
+        .saturating_add(std::mem::size_of::<super::AspectContractDefinition>())
+        .saturating_add(2 * std::mem::size_of::<usize>());
+    (semantic, allocated)
 }

@@ -2,7 +2,6 @@
 //! The application observer records platform values; only the example's checks
 //! compare them. It supplies neither access nor admission policy.
 #![recursion_limit = "256"]
-
 use std::sync::{
     atomic::{AtomicBool, AtomicUsize, Ordering},
     Arc, Mutex,

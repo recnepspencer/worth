@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod merge;
 
 pub(crate) use merge::{
@@ -41,25 +42,26 @@ pub(crate) enum WorthQueryOrdinaryWritebackFailureStage {
     BridgeExecution,
 }
 
-pub(crate) struct WorthQueryOrdinaryWritebackExecutionError {
-    stage: WorthQueryOrdinaryWritebackFailureStage,
-    message: String,
+pub(crate) enum WorthQueryOrdinaryWritebackExecutionError {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
+    Denied {
+        stage: WorthQueryOrdinaryWritebackFailureStage,
+        message: String,
+    },
 }
 
 impl WorthQueryOrdinaryWritebackExecutionError {
     fn new(stage: WorthQueryOrdinaryWritebackFailureStage, message: impl Into<String>) -> Self {
-        Self {
+        Self::Denied {
             stage,
             message: message.into(),
         }
     }
+}
 
-    pub(crate) fn stage(&self) -> WorthQueryOrdinaryWritebackFailureStage {
-        self.stage
-    }
-
-    pub(crate) fn message(&self) -> &str {
-        &self.message
+impl From<IdentityDerivationDenial> for WorthQueryOrdinaryWritebackExecutionError {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
     }
 }
 
@@ -156,7 +158,7 @@ impl WorthQueryRuntime {
             "ordinary-declarative-writeback",
             &scope,
             authority.snapshot_identity().clone(),
-        );
+        )?;
         let basis = basis_lifecycle()
             .branch_head("main", true)
             .prepare_mutation()
@@ -187,7 +189,7 @@ impl WorthQueryRuntime {
                 denial.message(),
             )
         })?;
-        let eligibility = match evaluate_effect_eligibility(normalized) {
+        let eligibility = match evaluate_effect_eligibility(normalized)? {
             EffectEligibilityOutcome::Admitted(eligibility) => eligibility,
             EffectEligibilityOutcome::Advisory(outcome) => {
                 return Err(WorthQueryOrdinaryWritebackExecutionError::new(
@@ -247,7 +249,8 @@ impl WorthQueryRuntime {
         )
         .receipt();
         let diagnostics = materialize_inspection
-            .then(|| receipt.materialize_diagnostics(EffectDiagnosticsRequest::forensic()));
+            .then(|| receipt.materialize_diagnostics(EffectDiagnosticsRequest::forensic()))
+            .transpose()?;
         Ok(WorthQueryLowerRuntimeWritebackExecution {
             admitted_effect_identity,
             lowered_plan_identity,
@@ -264,11 +267,11 @@ impl WorthQueryRuntime {
         materialize_inspection: bool,
     ) -> Result<WorthQueryLowerRuntimePreviewExecution, WorthQueryRuntimeError> {
         let label = basis_admission.session_label().clone();
-        let request_identity = preview_request_identity("read-only", &label, declaration_identity);
+        let request_identity = preview_request_identity("read-only", &label, declaration_identity)?;
         let outcome = {
             let session = self.open_preview_with_admitted_basis(execution, basis_admission)?;
             session.discard()
-        };
+        }?;
         let receipt_identity = outcome.closeout_evidence().closeout_identity().clone();
         self.finish_ordinary_preview_execution(
             execution,
@@ -288,7 +291,7 @@ impl WorthQueryRuntime {
         materialize_inspection: bool,
     ) -> Result<WorthQueryLowerRuntimePreviewExecution, WorthQueryRuntimeError> {
         let label = basis_admission.session_label().clone();
-        let request_identity = preview_request_identity("promotion", &label, declaration_identity);
+        let request_identity = preview_request_identity("promotion", &label, declaration_identity)?;
         let (receipt_identity, outcome) = {
             let mut session = self.open_preview_with_admitted_basis(execution, basis_admission)?;
             let preview_receipt = session.write(execution, command)?;
@@ -335,20 +338,22 @@ fn preview_request_identity(
     family: &'static str,
     label: &WorthQuerySessionLabel,
     declaration_identity: &WorthQueryEvidenceIdentity,
-) -> WorthQueryEvidenceIdentity {
-    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
-        .field_shape(
-            WorthQueryEvidenceTag::new("role"),
-            "ordinary-preview-request",
-        )
-        .field_shape(WorthQueryEvidenceTag::new("family"), family)
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("session_label"),
-            label.identity_digest(),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("declaration"),
-            declaration_identity,
-        )
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
+            .field_shape(
+                WorthQueryEvidenceTag::new("role"),
+                "ordinary-preview-request",
+            )
+            .field_shape(WorthQueryEvidenceTag::new("family"), family)
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("session_label"),
+                label.identity_digest(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("declaration"),
+                declaration_identity,
+            )
+            .seal()?,
+    )
 }

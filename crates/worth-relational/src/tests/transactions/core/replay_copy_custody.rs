@@ -255,6 +255,7 @@ fn normalized_commands(
 ) -> crate::mvcc::OwnedNormalizedPlan {
     match plan {
         crate::authority::commit::semantic_plan::PreparedRelationalCommitPlan::Mutation(commands) => commands,
-        crate::authority::commit::semantic_plan::PreparedRelationalCommitPlan::RetainedEntitySelection { .. } => panic!("the staged authored mutations produce the ordinary command plan"),
+        crate::authority::commit::semantic_plan::PreparedRelationalCommitPlan::OwnedGraphSelection { .. }
+        | crate::authority::commit::semantic_plan::PreparedRelationalCommitPlan::RetainedEntitySelection { .. } => panic!("the staged authored mutations produce the ordinary command plan"),
     }
 }

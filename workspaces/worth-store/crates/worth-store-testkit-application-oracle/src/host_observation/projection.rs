@@ -2,6 +2,7 @@
 use super::OracleRuntime;
 use serde::{Deserialize, Serialize};
 use worth_foundational::facade::WorldOwnerCoordinate;
+use worth_query_host::facade::declaration::application_schema::fragment::{Entity, Relation};
 use worth_query_testkit_host::facade::host::application_home::schema::*;
 use worth_relational::facade::{
     identity::{EntityId, LineageId, RelationId, VersionId},
@@ -131,13 +132,13 @@ pub fn observe(
     // The fixture's complete authored graph; platform idempotency/activation
     // rows are separately checked through actual outcome/receipt observations.
     let roles = [
-        ExternalMapping::reference().name(),
-        Principal::reference().name(),
-        Account::reference().name(),
+        <ExternalMapping as Entity>::NAME,
+        <Principal as Entity>::NAME,
+        <Account as Entity>::NAME,
     ];
     let relation_roles = [
-        MappingTarget::reference().name(),
-        UnusedAccountPeer::reference().name(),
+        <MappingTarget as Relation>::NAME,
+        <UnusedAccountPeer as Relation>::NAME,
     ];
     let mut entities: Vec<_> = entities
         .into_iter()

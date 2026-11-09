@@ -1,8 +1,7 @@
 use std::marker::PhantomData;
 
 use crate::application_schema::{
-    ApplicationAspectMarkerIdentity, ApplicationAspectRef, ApplicationEntityMarkerIdentity,
-    ApplicationEntityRef, ApplicationSchema,
+    ApplicationEntityMarkerIdentity, ApplicationEntityRef, ApplicationSchema,
 };
 use crate::portable_identity::{WorthQueryPortableType, WorthQueryPortableTypeIdentity};
 
@@ -153,16 +152,23 @@ impl<Schema: ApplicationSchema, History: ApplicationHistoryQueryBinding<Schema>>
 }
 
 impl<Schema, History, Record> ApplicationHistoryQueryDefinitionBuilder<Schema, History, Record> {
-    pub fn aspect<Aspect: ApplicationAspectMarkerIdentity<Schema, Record>>(
+    pub fn aspect<Selected>(
         mut self,
-        aspect: ApplicationAspectRef<Schema, Record, Aspect>,
-    ) -> Self {
+        aspect: Selected,
+        schema: &crate::application_schema::ApplicationSchemaDeclarationBuilder<Schema>,
+    ) -> Result<Self, ApplicationHistoryQueryDefinitionDenial>
+    where
+        Selected: crate::application_schema::fragment::AspectSelector<Owner = Record>,
+    {
+        let (identity, revision) = schema
+            .selected_aspect_contract(aspect)
+            .map_err(|_| ApplicationHistoryQueryDefinitionDenial::InvalidAspect)?;
         self.parts.aspects.push(ApplicationHistoryAspectSelection {
-            aspect: aspect.name().to_owned(),
-            identity: aspect.identity(),
-            revision: aspect.revision(),
+            aspect: crate::application_schema::fragment::AspectSelector::name(aspect).to_owned(),
+            identity,
+            revision,
         });
-        self
+        Ok(self)
     }
 
     pub fn finish(

@@ -20,6 +20,6 @@ fn cost_scope_excludes_prior_target_work_and_later_sibling_work() {
         vec![observed_branch],
     );
     fork(execution, &world.runtime, "after-capture");
-    let observation = world.runtime.observe_mvcc_cost(&scope).unwrap();
+    let observation = world.runtime.observe_mvcc_cost(execution, &scope).unwrap();
     assert_eq!(observation.sharing_cost_delta().shared_root_acquisitions, 0);
 }

@@ -40,7 +40,16 @@ pub(crate) fn prepare_query_handoff(
         }
     };
 
-    let downstream_delivery_contract = workspace.public_downstream_delivery_contract();
+    let downstream_delivery_contract = match workspace.public_downstream_delivery_contract() {
+        Ok(contract) => contract,
+        Err(cause) => {
+            return TransitionOutcome::Denied(WorthServerQueryHandoffDenial::new(
+                WorthServerQueryHandoffDenialCode::EvidenceIdentityDerivationDenied(cause),
+                diagnostics_profile,
+                "downstream contract identity exceeded canonical digest bounds",
+            ))
+        }
+    };
     let readiness = WorthServerOperationReadinessFacade::default();
     let operation_support_posture = match readiness.compose_support(
         &operation_admission,

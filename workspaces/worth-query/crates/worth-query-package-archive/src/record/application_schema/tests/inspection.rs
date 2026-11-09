@@ -22,7 +22,6 @@ fn binding() -> ApplicationQueryBindingReference {
         scope_field: "Key".into(),
         scope_value: id("key"),
         scope_resolution: ApplicationQueryScopeResolutionMode::InputField,
-        scope_writable: false,
         principal_binding: "PrincipalBinding".into(),
     })
 }
@@ -105,7 +104,7 @@ fn inspection_members_and_full_binding_selectors_roundtrip_under_additive_tags()
 fn inspection_metadata_rejects_foreign_full_bindings_partial_mixed_and_influence_contracts() {
     let source = governed_parts();
     let original = definition(source.clone());
-    for change in 0..14 {
+    for change in 0..13 {
         let mut parts = source.clone();
         let mut reference = parts.binding.parts().clone();
         let other = Identity::declared("worth.archive.other.v1");
@@ -124,8 +123,7 @@ fn inspection_metadata_rejects_foreign_full_bindings_partial_mixed_and_influence
             11 => {
                 reference.scope_resolution = ApplicationQueryScopeResolutionMode::PrincipalIdentity
             }
-            12 => reference.scope_writable = true,
-            13 => reference.principal_binding = "Other".into(),
+            12 => reference.principal_binding = "Other".into(),
             _ => unreachable!(),
         }
         parts.binding = ApplicationQueryBindingReference::from_untrusted_parts(reference);

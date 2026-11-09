@@ -8,6 +8,7 @@ pub use worth_query::facade::domain::{
     WorthQueryPrimaryGranularMaintenanceOutcome,
 };
 pub use worth_query_host::facade::primary_graph::WorthQueryConditionalClockObservationOutcome;
+use worth_query_testkit_host::facade::host::temporal_conditional_operation::schema::IntentFacts as StoredIntentFacts;
 pub use worth_query_testkit_host::facade::host::world::CourtroomWorld;
 
 pub fn assert_primary_runtime_composition(
@@ -98,7 +99,7 @@ pub fn assert_primary_runtime_composition(
             .iter()
             .map(worth_foundational::facade::FieldKey::as_str)
             .collect::<Vec<_>>(),
-        ["IntentFacts", "IntentGateField"]
+        [StoredIntentFacts::reference().name(), "IntentGateField"]
     );
     assert!(!effect.fact_set_digest().is_empty());
     assert!(!effect.identity().is_empty());

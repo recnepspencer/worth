@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -8,16 +9,16 @@ use super::{WorthQueryLowerRuntimeCapabilityEligibility, WorthQueryLowerRuntimeR
 pub(crate) fn worth_query_lower_runtime_retained_evidence_identity(
     retained_family: impl AsRef<str>,
     retained_evidence: &WorthQueryEvidenceIdentity,
-) -> WorthQueryLowerRuntimeRetainedEvidenceIdentity {
-    WorthQueryLowerRuntimeRetainedEvidenceIdentity::new(
+) -> Result<WorthQueryLowerRuntimeRetainedEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(WorthQueryLowerRuntimeRetainedEvidenceIdentity::new(
         worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
             .field_shape(
                 WorthQueryEvidenceTag::new("retained_family"),
                 retained_family,
             )
             .field_evidence_identity(WorthQueryEvidenceTag::new("retained"), retained_evidence)
-            .seal(),
-    )
+            .seal()?,
+    ))
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -33,8 +34,11 @@ impl WorthQueryLowerRuntimeRetainedEvidenceIdentity {
     pub(crate) fn from_evidence_identity(
         retained_family: impl AsRef<str>,
         evidence_identity: &WorthQueryEvidenceIdentity,
-    ) -> Self {
-        worth_query_lower_runtime_retained_evidence_identity(retained_family, evidence_identity)
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(worth_query_lower_runtime_retained_evidence_identity(
+            retained_family,
+            evidence_identity,
+        )?)
     }
 
     pub fn evidence_identity(&self) -> &WorthQueryEvidenceIdentity {
@@ -75,7 +79,7 @@ impl WorthQueryLowerRuntimeReadmissionReceipt {
                     WorthQueryEvidenceTag::new("retained_evidence"),
                     retained_evidence_identity.evidence_identity(),
                 )
-                .seal();
+                .seal().expect("fixed digest grammar: literal tags and values, primitive values, or sealed identity tokens");
         Self {
             eligibility,
             retained_evidence_identity: retained_evidence_identity.clone(),
@@ -178,7 +182,7 @@ impl WorthQueryLowerRuntimeBoundaryExecutionReceipt {
             WorthQueryEvidenceTag::new("retained_evidence"),
             retained_evidence_identity.evidence_identity(),
         )
-        .seal();
+        .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens");
         Self {
             kind,
             request_identity: request_identity.clone(),
@@ -295,7 +299,8 @@ mod tests {
     };
 
     #[test]
-    fn route_plan_boundary_receipt_reuses_request_and_eligibility_digests() {
+    fn route_plan_boundary_receipt_reuses_request_and_eligibility_digests(
+    ) -> Result<(), IdentityDerivationDenial> {
         let request = WorthQueryLowerRuntimeCapabilityRequest::new(
             WorthQueryLowerRuntimeSeamKey::WriteAuthorityBackendExecution,
             WorthQueryLowerRuntimeRouteKind::RoutePlanning,
@@ -303,24 +308,24 @@ mod tests {
             "write-authority",
             WorthQueryLowerRuntimeSubjectIdentity::compose("test-subject")
                 .field_value(WorthQueryEvidenceTag::new("test_subject"), "subject-1")
-                .seal(),
-        );
+                .seal()?,
+        )?;
         let detail_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
         )
         .field_value(WorthQueryEvidenceTag::new("test_detail"), "detail-1")
-        .seal();
+        .seal()?;
         let eligibility =
             WorthQueryLowerRuntimeCapabilityEligibility::admitted_with_evidence_identity(
                 request,
                 &detail_identity,
-            );
+            )?;
         let plan = WorthQueryLowerRuntimeRoutePlan::new(
             eligibility,
             WorthQueryLowerRuntimeRouteSubjectIdentity::from_evidence_identity(
                 "test-route",
                 &detail_identity,
-            ),
+            )?,
         );
         let retained_evidence = worth_query_lower_runtime_retained_evidence_identity(
             "receipt-test",
@@ -328,8 +333,8 @@ mod tests {
                 WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
             )
             .field_value(WorthQueryEvidenceTag::new("test_retained"), "receipt-1")
-            .seal(),
-        );
+            .seal()?,
+        )?;
         let boundary = WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan(
             &plan,
             &retained_evidence,
@@ -347,5 +352,7 @@ mod tests {
             boundary.kind(),
             WorthQueryLowerRuntimeBoundaryExecutionKind::RoutePlan
         );
+
+        Ok(())
     }
 }

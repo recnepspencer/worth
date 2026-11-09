@@ -1,3 +1,12 @@
+#[derive(Clone, Debug, PartialEq, Eq, worth_query_decl::facade::application_schema::WorthValue)]
+#[worth_value(crate = "worth_query_decl::facade::application_schema")]
+pub enum PostingIntegrityRefusal {
+    UnbalancedJournal,
+}
+worth_query_decl::facade::worth_query_value_binding!(pub PostingIntegrityRefusalBinding for PostingIntegrityRefusal {
+    identity: "bank.posting-integrity-refusal.v1", scalar: String,
+    canonical: worth_query_decl::facade::application_schema::ValueDecodeBounds::new(128, 16, 4, 4),
+});
 use bank_domain::schema::{
     BankSchema, JournalEntry, JournalPosting, JournalPurpose, Posting, PostingAccount,
     PostingAmount, Purpose,
@@ -5,10 +14,10 @@ use bank_domain::schema::{
 use worth_query_host::facade::application_invariants::{
     CustomInvariantLeaseBudget, WorthQueryApplicationInvariantContext,
     WorthQueryApplicationInvariantEntity, WorthQueryApplicationInvariantEntityBinding,
-    WorthQueryApplicationInvariantExecutionError, WorthQueryApplicationInvariantFieldBinding,
-    WorthQueryApplicationInvariantPreparationError, WorthQueryApplicationInvariantRelationBinding,
-    WorthQueryApplicationInvariantRule, WorthQueryApplicationInvariantSchemaResolver,
-    WorthQueryApplicationInvariantScopePlanner, WorthQueryApplicationInvariantVerdict,
+    WorthQueryApplicationInvariantError, WorthQueryApplicationInvariantFieldBinding,
+    WorthQueryApplicationInvariantRelationBinding, WorthQueryApplicationInvariantRule,
+    WorthQueryApplicationInvariantSchemaResolver, WorthQueryApplicationInvariantScopePlanner,
+    WorthQueryApplicationInvariantVerdict,
 };
 
 pub(super) fn resolve_rule(
@@ -19,16 +28,16 @@ pub(super) fn resolve_rule(
             .typed_entity(JournalEntry::reference())
             .ok_or("missing bank journal entity")?,
         journal_purpose: resolver
-            .typed_field(JournalPurpose::reference())
+            .typed_field(JournalPurpose::at("JournalPurpose"))
             .ok_or("missing bank journal purpose field")?,
         journal_posting: resolver
             .typed_relation(JournalPosting::reference())
             .ok_or("missing bank journal-posting relation")?,
         posting_amount: resolver
-            .typed_field(PostingAmount::reference())
+            .typed_field(PostingAmount::at("PostingAmount"))
             .ok_or("missing bank posting amount field")?,
         posting_purpose: resolver
-            .typed_field(Purpose::reference())
+            .typed_field(Purpose::at("Purpose"))
             .ok_or("missing bank posting purpose field")?,
         posting_account: resolver
             .typed_relation(PostingAccount::reference())
@@ -68,9 +77,8 @@ pub(super) struct BankPostingIntegrityRule {
 }
 
 impl WorthQueryApplicationInvariantRule<BankSchema> for BankPostingIntegrityRule {
-    type Refusal = ();
-    type RefusalBinding =
-        worth_query_host::facade::application_invariants::WorthQueryEmptyInvariantRefusal;
+    type Refusal = PostingIntegrityRefusal;
+    type RefusalBinding = PostingIntegrityRefusalBinding;
     type Scope = Vec<WorthQueryApplicationInvariantEntity<BankSchema, JournalEntry>>;
 
     fn supports_checked_preparation(&self) -> bool {
@@ -80,7 +88,8 @@ impl WorthQueryApplicationInvariantRule<BankSchema> for BankPostingIntegrityRule
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, BankSchema>,
         budget: &dyn CustomInvariantLeaseBudget,
-    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantPreparationError>> {
+    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantError<PostingIntegrityRefusal>>>
+    {
         Some(self.prepare_under(planner, Some(budget)))
     }
     fn evaluate_checked(
@@ -90,8 +99,8 @@ impl WorthQueryApplicationInvariantRule<BankSchema> for BankPostingIntegrityRule
         budget: &dyn CustomInvariantLeaseBudget,
     ) -> Option<
         Result<
-            WorthQueryApplicationInvariantVerdict<()>,
-            WorthQueryApplicationInvariantExecutionError,
+            WorthQueryApplicationInvariantVerdict<PostingIntegrityRefusal>,
+            WorthQueryApplicationInvariantError<PostingIntegrityRefusal>,
         >,
     > {
         Some(self.evaluate_under(context, scope, Some(budget)))
@@ -100,7 +109,7 @@ impl WorthQueryApplicationInvariantRule<BankSchema> for BankPostingIntegrityRule
     fn prepare_scope(
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, BankSchema>,
-    ) -> Result<Self::Scope, WorthQueryApplicationInvariantPreparationError> {
+    ) -> Result<Self::Scope, WorthQueryApplicationInvariantError<PostingIntegrityRefusal>> {
         self.prepare_under(planner, None)
     }
 
@@ -109,8 +118,8 @@ impl WorthQueryApplicationInvariantRule<BankSchema> for BankPostingIntegrityRule
         context: &WorthQueryApplicationInvariantContext<'_, '_, BankSchema>,
         scope: &Self::Scope,
     ) -> Result<
-        WorthQueryApplicationInvariantVerdict<()>,
-        WorthQueryApplicationInvariantExecutionError,
+        WorthQueryApplicationInvariantVerdict<PostingIntegrityRefusal>,
+        WorthQueryApplicationInvariantError<PostingIntegrityRefusal>,
     > {
         self.evaluate_under(context, scope, None)
     }
@@ -122,7 +131,7 @@ impl BankPostingIntegrityRule {
         context: &WorthQueryApplicationInvariantContext<'_, '_, BankSchema>,
         journal: &WorthQueryApplicationInvariantEntity<BankSchema, JournalEntry>,
         budget: Option<&dyn CustomInvariantLeaseBudget>,
-    ) -> Result<bool, WorthQueryApplicationInvariantExecutionError> {
+    ) -> Result<bool, WorthQueryApplicationInvariantError<PostingIntegrityRefusal>> {
         let proposed = context.proposed();
         let Some(journal_purpose) = proposed
             .field(&self.journal_purpose, journal)
@@ -136,9 +145,7 @@ impl BankPostingIntegrityRule {
         let mut balance = BankPostingBalance::default();
         for relation in postings {
             if budget.is_some_and(|budget| !budget.checkpoint(1)) {
-                return Err(WorthQueryApplicationInvariantExecutionError::new(
-                    "caller stopped",
-                ));
+                return Err(WorthQueryApplicationInvariantError::Stopped);
             }
             let posting = relation.to();
             let Some(amount) = proposed
@@ -201,13 +208,15 @@ impl BankPostingBalance {
 }
 
 fn preparation_error(
-    error: impl std::fmt::Display,
-) -> WorthQueryApplicationInvariantPreparationError {
-    WorthQueryApplicationInvariantPreparationError::new(error.to_string())
+    error: impl Into<WorthQueryApplicationInvariantError<PostingIntegrityRefusal>>,
+) -> WorthQueryApplicationInvariantError<PostingIntegrityRefusal> {
+    error.into()
 }
 
-fn execution_error(error: impl std::fmt::Display) -> WorthQueryApplicationInvariantExecutionError {
-    WorthQueryApplicationInvariantExecutionError::new(error.to_string())
+fn execution_error(
+    error: impl Into<WorthQueryApplicationInvariantError<PostingIntegrityRefusal>>,
+) -> WorthQueryApplicationInvariantError<PostingIntegrityRefusal> {
+    error.into()
 }
 
 impl BankPostingIntegrityRule {
@@ -217,12 +226,10 @@ impl BankPostingIntegrityRule {
         budget: Option<&dyn CustomInvariantLeaseBudget>,
     ) -> Result<
         <Self as WorthQueryApplicationInvariantRule<BankSchema>>::Scope,
-        WorthQueryApplicationInvariantPreparationError,
+        WorthQueryApplicationInvariantError<PostingIntegrityRefusal>,
     > {
         if budget.is_some_and(|budget| !budget.checkpoint(0)) {
-            return Err(WorthQueryApplicationInvariantPreparationError::new(
-                "caller stopped",
-            ));
+            return Err(WorthQueryApplicationInvariantError::Stopped);
         }
         let proposed = planner.proposed();
         let journals = proposed
@@ -230,9 +237,7 @@ impl BankPostingIntegrityRule {
             .map_err(preparation_error)?;
         for journal in &journals {
             if budget.is_some_and(|budget| !budget.checkpoint(1)) {
-                return Err(WorthQueryApplicationInvariantPreparationError::new(
-                    "caller stopped",
-                ));
+                return Err(WorthQueryApplicationInvariantError::Stopped);
             }
             proposed
                 .field(&self.journal_purpose, journal)
@@ -242,9 +247,7 @@ impl BankPostingIntegrityRule {
                 .map_err(preparation_error)?
             {
                 if budget.is_some_and(|budget| !budget.checkpoint(1)) {
-                    return Err(WorthQueryApplicationInvariantPreparationError::new(
-                        "caller stopped",
-                    ));
+                    return Err(WorthQueryApplicationInvariantError::Stopped);
                 }
                 let posting = relation.to();
                 proposed
@@ -266,22 +269,20 @@ impl BankPostingIntegrityRule {
         scope: &<Self as WorthQueryApplicationInvariantRule<BankSchema>>::Scope,
         budget: Option<&dyn CustomInvariantLeaseBudget>,
     ) -> Result<
-        WorthQueryApplicationInvariantVerdict<()>,
-        WorthQueryApplicationInvariantExecutionError,
+        WorthQueryApplicationInvariantVerdict<PostingIntegrityRefusal>,
+        WorthQueryApplicationInvariantError<PostingIntegrityRefusal>,
     > {
         if budget.is_some_and(|budget| !budget.checkpoint(0)) {
-            return Err(WorthQueryApplicationInvariantExecutionError::new(
-                "caller stopped",
-            ));
+            return Err(WorthQueryApplicationInvariantError::Stopped);
         }
         for journal in scope {
             if budget.is_some_and(|budget| !budget.checkpoint(1)) {
-                return Err(WorthQueryApplicationInvariantExecutionError::new(
-                    "caller stopped",
-                ));
+                return Err(WorthQueryApplicationInvariantError::Stopped);
             }
             if !self.journal_is_balanced(context, journal, budget)? {
-                return Ok(WorthQueryApplicationInvariantVerdict::Violation(()));
+                return Ok(WorthQueryApplicationInvariantVerdict::Violation(
+                    PostingIntegrityRefusal::UnbalancedJournal,
+                ));
             }
         }
         Ok(WorthQueryApplicationInvariantVerdict::Pass)

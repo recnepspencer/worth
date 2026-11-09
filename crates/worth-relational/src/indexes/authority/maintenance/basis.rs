@@ -21,22 +21,6 @@ pub(super) fn validate(
     validate_before_root(root, before, execution)
 }
 
-pub(super) fn validate_prepared(
-    request: &DerivedIndexBuildRequest,
-    before: Option<&VisibilityProjectionView>,
-    after: &VisibilityProjectionView,
-) -> Result<(), Denial> {
-    let root = after.selected_root().ok_or(Denial::CommitMismatch)?;
-    let envelope = root.canonical_envelope().ok_or(Denial::CommitMismatch)?;
-    if envelope.commit.commit_id != request.source_commit_id
-        || envelope.branch_context != request.branch_id
-        || envelope.commit.version_id != after.version_id()
-    {
-        return Err(Denial::CommitMismatch);
-    }
-    validate_before(envelope, before)
-}
-
 fn validate_before_root(
     root: &crate::branch::RelationalBranchRoot,
     before: Option<&VisibilityProjectionView>,
@@ -47,7 +31,7 @@ fn validate_before_root(
     };
     match root.commit_evidence().ok_or(Denial::CommitMismatch)? {
         crate::branch::RelationalRootCommitEvidence::Original(envelope) => {
-            validate_before(envelope, Some(before))
+            validate_before(envelope.envelope(), Some(before))
         }
         crate::branch::RelationalRootCommitEvidence::Checkpoint(commit) => {
             let prior = before.selected_root().ok_or(Denial::BeforeRootMismatch)?;
@@ -109,25 +93,34 @@ fn validate_before(
     before: Option<&VisibilityProjectionView>,
 ) -> Result<(), Denial> {
     if let Some(before) = before {
-        let prior = before.selected_root().ok_or(Denial::BeforeRootMismatch)?;
-        let checkpoint = envelope
-            .branch_cell_checkpoint
-            .as_ref()
-            .ok_or(Denial::BeforeRootMismatch)?;
-        match checkpoint.observation.target() {
-            worth_foundational::FoundationalBranchTarget::Basis(target) => {
-                if prior.descriptor() != Some(target.roots())
-                    || before.version_id().as_u64() != target.version_id()
-                    || prior.commit_id().map(|id| id.0) != Some(target.selected_commit_id())
-                {
-                    return Err(Denial::BeforeRootMismatch);
-                }
+        validate_root_predecessor(
+            envelope,
+            before.selected_root().ok_or(Denial::BeforeRootMismatch)?,
+        )?;
+    }
+    Ok(())
+}
+
+pub(super) fn validate_root_predecessor(
+    envelope: &crate::history::data::CanonicalCommitEnvelope,
+    prior: &std::sync::Arc<crate::branch::RelationalBranchRoot>,
+) -> Result<(), Denial> {
+    let checkpoint = envelope
+        .branch_cell_checkpoint
+        .as_ref()
+        .ok_or(Denial::BeforeRootMismatch)?;
+    match checkpoint.observation.target() {
+        worth_foundational::FoundationalBranchTarget::Basis(target) => {
+            if prior.descriptor() != Some(target.roots())
+                || prior.axes().map_or(0, |axes| axes.storage_version) != target.version_id()
+                || prior.commit_id().map(|id| id.0) != Some(target.selected_commit_id())
+            {
+                return Err(Denial::BeforeRootMismatch);
             }
-            worth_foundational::FoundationalBranchTarget::Empty => {
-                if prior.id() != 0 || prior.commit_id().is_some() || !before.version_id().is_zero()
-                {
-                    return Err(Denial::BeforeRootMismatch);
-                }
+        }
+        worth_foundational::FoundationalBranchTarget::Empty => {
+            if prior.id() != 0 || prior.commit_id().is_some() || prior.axes().is_some() {
+                return Err(Denial::BeforeRootMismatch);
             }
         }
     }

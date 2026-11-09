@@ -47,7 +47,7 @@ impl ComponentSelection {
             origin,
             key,
             layout.clone(),
-            source,
+            source.into(),
             aggregates,
             facts,
             allocation,

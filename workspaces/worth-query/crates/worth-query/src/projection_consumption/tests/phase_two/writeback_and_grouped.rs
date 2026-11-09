@@ -39,7 +39,7 @@ fn write_receipt_admits_target_source_reference_and_effect_aftermath_when_eviden
             capabilities: ProjectionWriteReceiptCapabilities::test_only(true, true, true, true),
         },
     );
-    let report = discover_projection_consumption_support(&source);
+    let report = discover_projection_consumption_support(&source).expect("fixture digest must fit");
 
     for fact_kind in [
         super::super::super::ProjectionFactKind::TargetIdentity,
@@ -70,7 +70,7 @@ fn write_receipt_admits_target_source_reference_and_effect_aftermath_when_eviden
     .expect("write receipt declaration should be valid");
 
     assert!(matches!(
-        evaluate_projection_consumption_eligibility(&declaration),
+        evaluate_projection_consumption_eligibility(&declaration).expect("fixture digest must fit"),
         ProjectionConsumptionEligibility::Admitted(_)
     ));
 }
@@ -91,7 +91,7 @@ fn write_receipt_effect_aftermath_stays_deferred_without_carried_evidence() {
     .expect("write receipt declaration should be valid");
 
     assert!(matches!(
-        evaluate_projection_consumption_eligibility(&declaration),
+        evaluate_projection_consumption_eligibility(&declaration).expect("fixture digest must fit"),
         ProjectionConsumptionEligibility::Deferred(_)
     ));
 }
@@ -112,7 +112,7 @@ fn write_receipt_source_reference_stays_deferred_without_provenance_or_symbolic_
     .expect("write receipt declaration should be valid");
 
     assert!(matches!(
-        evaluate_projection_consumption_eligibility(&declaration),
+        evaluate_projection_consumption_eligibility(&declaration).expect("fixture digest must fit"),
         ProjectionConsumptionEligibility::Deferred(_)
     ));
 }
@@ -152,7 +152,7 @@ fn relational_row_set_admits_identity_and_field_backed_fact_families() {
     .expect("relational row set declaration should be valid");
 
     assert!(matches!(
-        evaluate_projection_consumption_eligibility(&declaration),
+        evaluate_projection_consumption_eligibility(&declaration).expect("fixture digest must fit"),
         ProjectionConsumptionEligibility::Admitted(_)
     ));
 }
@@ -180,7 +180,8 @@ fn grouped_sources_admit_membership_and_view_local_identity_but_not_entity_ident
         )
         .expect("grouped declaration should be valid");
         assert!(matches!(
-            evaluate_projection_consumption_eligibility(&grouped_declaration),
+            evaluate_projection_consumption_eligibility(&grouped_declaration)
+                .expect("fixture digest must fit"),
             ProjectionConsumptionEligibility::Admitted(_)
         ));
 
@@ -197,7 +198,9 @@ fn grouped_sources_admit_membership_and_view_local_identity_but_not_entity_ident
             ProjectMaterializedFacts::declare().entity_identities(),
         )
         .expect("identity declaration should be valid");
-        match evaluate_projection_consumption_eligibility(&identity_declaration) {
+        match evaluate_projection_consumption_eligibility(&identity_declaration)
+            .expect("fixture digest must fit")
+        {
             ProjectionConsumptionEligibility::SourceMismatch(mismatch) => {
                 assert_eq!(mismatch.source_family(), family);
                 assert_eq!(
@@ -245,7 +248,7 @@ fn bridge_truth_view_row_set_matches_relational_row_set_admission_surface() {
     .expect("bridge row set declaration should be valid");
 
     assert!(matches!(
-        evaluate_projection_consumption_eligibility(&declaration),
+        evaluate_projection_consumption_eligibility(&declaration).expect("fixture digest must fit"),
         ProjectionConsumptionEligibility::Admitted(_)
     ));
 }

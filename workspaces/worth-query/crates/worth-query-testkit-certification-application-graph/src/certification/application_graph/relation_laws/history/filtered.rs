@@ -25,7 +25,7 @@ worth_query_structured_value_binding!(pub Parameters for () { identity: "worth.q
 worth_query_structured_value_binding!(pub ResultBinding for Row { identity: "worth.query.record-history.filtered.node-row.v1" });
 worth_query_structured_value_binding!(pub ChildResultBinding for u64 { identity: "worth.query.record-history.filtered.node-child.v1" });
 worth_query_application_query!(pub Query for Schema, identity "FilteredHistorySubjects", parameters Parameters,
-    result ResultBinding, scope Node => "Node", name "filtered_history_subjects");
+    result ResultBinding, scope GraphNode<Schema> => "Node", name "filtered_history_subjects");
 pub struct KeySlot;
 pub struct ChildKeySlot;
 pub struct Children;
@@ -33,40 +33,28 @@ worth_query_portable_type!(KeySlot => "worth.query.record-history.filtered.node-
 worth_query_portable_type!(ChildKeySlot => "worth.query.record-history.filtered.child-key.v1");
 worth_query_portable_type!(Children => "worth.query.record-history.filtered.children.v1");
 
-pub type Field<Slot> = ApplicationQueryResultFieldRef<
-    Query,
-    Slot,
-    Schema,
-    Node,
-    NodeFacts,
-    NodeKey,
-    u64,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
->;
+pub type Field<Slot> = ApplicationQueryResultFieldRef<Query, Slot, Schema, GraphKey<Schema>>;
 pub fn key() -> Field<KeySlot> {
-    ApplicationQueryResultFieldRef::new("key", NodeKey::reference())
+    ApplicationQueryResultFieldRef::new("key", node_key::<Schema>())
 }
 pub fn child_key() -> Field<ChildKeySlot> {
-    ApplicationQueryResultFieldRef::new("child_key", NodeKey::reference())
+    ApplicationQueryResultFieldRef::new("child_key", node_key::<Schema>())
 }
 pub fn children() -> ApplicationQueryResultRelationRef<
     Query,
     Children,
     Schema,
-    Precedes,
-    Node,
-    Node,
+    GraphPrecedes<Schema>,
+    GraphNode<Schema>,
+    GraphNode<Schema>,
     ForwardResultTraversal,
     ManyResults,
 > {
-    ApplicationQueryResultRelationRef::forward_many("children", Precedes::reference())
+    ApplicationQueryResultRelationRef::forward_many("children", precedes::<Schema>())
 }
 
 pub struct Binding;
-pub type Scope =
-    ApplicationQueryFieldScope<Schema, Node, NodeFacts, NodeKey, u64, ReadOnly, NoApplicationUnit>;
+pub type Scope = ApplicationQueryFieldScope<GraphKey<Schema>>;
 impl ApplicationQueryBinding<Schema> for Binding {
     type Input = ReadInput;
     type InputBinding = InputBinding;
@@ -81,17 +69,8 @@ impl ApplicationQueryBinding<Schema> for Binding {
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "worth.query.record-history.filtered.node-read.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Node,
-        NodeFacts,
-        NodeKey,
-        u64,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        NodeKey::reference()
+    fn scope_field() -> GraphKey<Schema> {
+        node_key::<Schema>()
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         Schema,
@@ -134,41 +113,49 @@ pub fn parameter() -> ApplicationQueryParameterRef<Query, ChildParameter, U64App
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    let nested =
-        ApplicationQueryResultShapeBuilder::<Schema, Query, Node, u64, ChildResultBinding>::new(
-            Node::reference(),
-        )
-        .field(child_key());
-    let shape = ApplicationQueryResultShapeBuilder::<Schema, Query, Node, Row, ResultBinding>::new(
-        Node::reference(),
-    )
+    let nested = ApplicationQueryResultShapeBuilder::<
+        Schema,
+        Query,
+        GraphNode<Schema>,
+        u64,
+        ChildResultBinding,
+    >::new(node::<Schema>())
+    .field(child_key());
+    let shape = ApplicationQueryResultShapeBuilder::<
+        Schema,
+        Query,
+        GraphNode<Schema>,
+        Row,
+        ResultBinding,
+    >::new(node::<Schema>())
     .field(key())
-    .relation_where_equal(children(), nested, NodeKey::reference(), parameter())
+    .relation_where_equal(children(), nested, node_key::<Schema>(), parameter())
     .build();
     let query = ApplicationQueryDefinitionBuilder::declare(Query::reference())
-        .root(Node::reference())
-        .scope(Node::reference())
+        .root(node::<Schema>())
+        .scope(node::<Schema>())
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .parameter(parameter())
-        .build()
-        .unwrap();
+        .parameter(parameter());
+    let history = ApplicationHistoryQueryDefinition::<Schema, Relations>::relation(
+        children(),
+        ApplicationQueryDisclosureContract::public(),
+    )
+    .aspect(
+        relation_aspect(PayloadRecords, PayloadNode, PayloadPrecedes, EdgeFacts),
+        &schema,
+    )
+    .unwrap()
+    .finish()
+    .unwrap();
     schema
         .application_query(query)
         .application_query_binding::<Binding>()
-        .application_history_query(
-            ApplicationHistoryQueryDefinition::<Schema, Relations>::relation(
-                children(),
-                ApplicationQueryDisclosureContract::public(),
-            )
-            .aspect(EdgeFacts::reference())
-            .finish()
-            .unwrap(),
-        )
+        .application_history_query(history)
 }
 
 pub use super::super::installation::World;
@@ -208,7 +195,7 @@ pub fn capture(
             let scope = selected
                 .resolve_entity(
                     &phase,
-                    NodeKey::reference(),
+                    node_key::<Schema>(),
                     input.key,
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

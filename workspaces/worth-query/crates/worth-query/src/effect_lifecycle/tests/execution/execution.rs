@@ -306,6 +306,14 @@ fn entity_name(record: &worth_relational::facade::runtime::EntityReadRecord) -> 
     match value.view() {
         worth_foundational::facade::ContractValidatedAspectValueView::Scalar(
             worth_foundational::facade::AspectValue::String(
+                worth_foundational::facade::InternedString::Stored(actual),
+            ),
+        ) => {
+            let actual = actual.as_string();
+            Some(actual.clone())
+        }
+        worth_foundational::facade::ContractValidatedAspectValueView::Scalar(
+            worth_foundational::facade::AspectValue::String(
                 worth_foundational::facade::InternedString::Raw(actual),
             ),
         ) => Some(actual.clone()),

@@ -34,6 +34,9 @@ fn causal_envelope_denies_missing_retained_bridge_record_without_unindexed_scan(
         .diagnostics()
         .assemble_causal_explanation_envelope(request)
         .expect_err("missing retained route should deny");
+    let crate::facade::BridgeCausalEnvelopeConstructionStop::Denied(denial) = denial else {
+        panic!("expected domain denial, got {denial:?}")
+    };
 
     assert_eq!(
         denial.kind(),
@@ -92,6 +95,9 @@ fn causal_envelope_missing_historical_record_preserves_prior_lookup_counters() {
         .diagnostics()
         .assemble_causal_explanation_envelope(request)
         .expect_err("missing historical record should deny after route lookup");
+    let crate::facade::BridgeCausalEnvelopeConstructionStop::Denied(denial) = denial else {
+        panic!("expected domain denial, got {denial:?}")
+    };
 
     assert_eq!(
         denial.kind(),

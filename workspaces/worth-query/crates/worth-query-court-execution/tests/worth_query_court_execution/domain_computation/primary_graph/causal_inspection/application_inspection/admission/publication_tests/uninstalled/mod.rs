@@ -4,8 +4,6 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::stop::InspectionCause;
 use worth_query_execution::facade::application_inspection::WorthQueryApplicationInspectionDenial;
 use worth_query_execution::facade::application_inspection::WorthQueryApplicationInspectionOwnerRefusal;
-use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::Account;
-use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountPolicy;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountStatus;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::ExternalMapping;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::IdentityBinding;
@@ -32,16 +30,7 @@ impl ApplicationQueryBinding<S> for Uninstalled {
     type PrincipalIdentityBinding = <Base as ApplicationQueryBinding<S>>::PrincipalIdentityBinding;
     const IDENTITY: &'static str = "worth.query.test.uninstalled-inspection-cause.v1";
     const LIMITS: ApplicationQueryBindingLimits = Base::LIMITS;
-    fn scope_field() -> ApplicationFieldRef<
-        S,
-        Account,
-        AccountPolicy,
-        AccountStatus,
-        String,
-        ReadWrite,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
+    fn scope_field() -> AccountStatus {
         Base::scope_field()
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<

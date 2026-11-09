@@ -11,7 +11,8 @@ fn continuation_subject_only_certifies_through_continuation() {
     );
     let (admission, continuation) = continuation_report_for(&declaration);
     let subject =
-        QuerySubscriptionSupportSubject::continuation(&declaration, &admission, &continuation);
+        QuerySubscriptionSupportSubject::continuation(&declaration, &admission, &continuation)
+            .expect("fixture digest must fit");
 
     let (report, _) = report_query_subscription_support(
         subject,

@@ -1,6 +1,8 @@
 mod allocation_batch;
 mod checkpoint_snapshot;
 mod observation;
+// Pure borrowed-cursor component evidence; production replay uses pending batches.
+#[cfg(test)]
 mod original_cursor;
 mod partition_frontier;
 pub(crate) use allocation_batch::MutationRecordAllocations;

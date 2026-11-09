@@ -44,11 +44,6 @@ pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
     expectation::declare(schema)
-        .relation(
-            ContainsSamples::reference(),
-            Record::reference(),
-            Record::reference(),
-        )
         .application_query(query::state())
         .application_query_binding::<query::StateBinding>()
         .application_query(query::source())

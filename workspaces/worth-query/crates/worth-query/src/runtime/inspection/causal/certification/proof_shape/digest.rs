@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
 #[cfg(test)]
@@ -7,8 +8,8 @@ pub(super) fn derive_phase_progression_digest(
     inspected_artifact_digest: &str,
     representative_matrix_digest: &str,
     boundary_audit_digest: &str,
-) -> String {
-    WorthQueryEvidenceIdentity::compose(
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(WorthQueryEvidenceIdentity::compose(
         WorthQueryEvidenceScope::CausalInspectionCertificationFailureEvidence,
     )
     .field_shape(
@@ -35,17 +36,17 @@ pub(super) fn derive_phase_progression_digest(
         WorthQueryEvidenceTag::new("boundary"),
         boundary_audit_digest,
     )
-    .seal()
+    .seal()?
     .as_str()
-    .to_string()
+    .to_string())
 }
 
 pub(super) fn derive_witness_authority_digest(
     inspected_artifact_digest: &str,
     representative_matrix_digest: &str,
     boundary_audit_digest: &str,
-) -> String {
-    WorthQueryEvidenceIdentity::compose(
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(WorthQueryEvidenceIdentity::compose(
         WorthQueryEvidenceScope::CausalInspectionCertificationFailureEvidence,
     )
     .field_shape(
@@ -76,9 +77,9 @@ pub(super) fn derive_witness_authority_digest(
         WorthQueryEvidenceTag::new("boundary"),
         boundary_audit_digest,
     )
-    .seal()
+    .seal()?
     .as_str()
-    .to_string()
+    .to_string())
 }
 
 pub(super) fn canonical_proof_shape_digest(
@@ -87,8 +88,8 @@ pub(super) fn canonical_proof_shape_digest(
     boundary_audit_digest: &str,
     phase_progression_digest: &str,
     witness_authority_digest: &str,
-) -> String {
-    WorthQueryEvidenceIdentity::compose(
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(WorthQueryEvidenceIdentity::compose(
         WorthQueryEvidenceScope::CausalInspectionCertificationFailureEvidence,
     )
     .field_shape(
@@ -128,14 +129,16 @@ pub(super) fn canonical_proof_shape_digest(
         WorthQueryEvidenceTag::new("witness_authority"),
         witness_authority_digest,
     )
-    .seal()
+    .seal()?
     .as_str()
-    .to_string()
+    .to_string())
 }
 
 #[cfg(test)]
-pub(super) fn stale_test_proof_shape_digest(inspected_artifact_digest: &str) -> String {
-    WorthQueryEvidenceIdentity::compose(
+pub(super) fn stale_test_proof_shape_digest(
+    inspected_artifact_digest: &str,
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(WorthQueryEvidenceIdentity::compose(
         WorthQueryEvidenceScope::CausalInspectionCertificationFailureEvidence,
     )
     .field_shape(
@@ -147,16 +150,16 @@ pub(super) fn stale_test_proof_shape_digest(inspected_artifact_digest: &str) -> 
         WorthQueryEvidenceTag::new("artifact"),
         inspected_artifact_digest,
     )
-    .seal()
+    .seal()?
     .as_str()
-    .to_string()
+    .to_string())
 }
 
 #[cfg(test)]
 pub(super) fn worthd_test_proof_shape_digest(
     proof: &CausalInspectionProofShapeCertification,
-) -> String {
-    WorthQueryEvidenceIdentity::compose(
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(WorthQueryEvidenceIdentity::compose(
         WorthQueryEvidenceScope::CausalInspectionCertificationFailureEvidence,
     )
     .field_shape(
@@ -184,7 +187,7 @@ pub(super) fn worthd_test_proof_shape_digest(
         WorthQueryEvidenceTag::new("witness"),
         proof.witness_authority_digest(),
     )
-    .seal()
+    .seal()?
     .as_str()
-    .to_string()
+    .to_string())
 }

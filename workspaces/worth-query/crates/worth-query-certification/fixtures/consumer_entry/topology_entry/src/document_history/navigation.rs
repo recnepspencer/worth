@@ -4,7 +4,7 @@ use super::permission::*;
 use std::marker::PhantomData;
 use worth_query_decl::facade::{
     application_capability::*, application_history::*, application_schema::*,
-    portable_identity::WorthQueryPortableType, worth_query_operation, worth_query_operation_reads,
+    portable_identity::WorthQueryPortableType, worth_query_operation,
 };
 
 pub struct NavigatePlanar<S>(PhantomData<fn() -> S>);
@@ -20,7 +20,6 @@ impl<S: TopologySchemaBinding> HistoryPermission<S> for NavigatePlanar<S> {
     const GRANT_KIND: &'static str = "navigation";
 }
 worth_query_operation!(pub NavigatePlanarOperation for Schema: TopologySchemaBinding, input PlanarOutputReadInputBinding);
-worth_query_operation_reads!(NavigatePlanarOperation => [BodyKey]);
 
 pub struct PlanarHistoryNavigation<S>(PhantomData<fn() -> S>);
 impl<S: TopologySchemaBinding> ApplicationHistoryNavigationBinding<S, PlanarDocumentHistory<S>>
@@ -49,7 +48,7 @@ pub(super) fn declare<S: TopologySchemaBinding>(
         .operation_projection_work_budget(NavigatePlanarOperation::reference::<S>(), 512)
         .operation_read_field(
             NavigatePlanarOperation::reference::<S>(),
-            BodyKey::reference(),
+            BodyKey::at("BodyKey"),
         )
         .capability(contract::<S, NavigatePlanar<S>, NavigatePlanarOperation>())
 }

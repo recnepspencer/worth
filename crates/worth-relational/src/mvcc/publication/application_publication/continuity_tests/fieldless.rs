@@ -71,7 +71,7 @@ fn fieldless_birth_incidence_survives_warm_no_data_preserve_and_cold_readmission
         assert_eq!(patch.authoritative_patch.full_grammar_operation_count(), 0);
     }
     let previous = birth.required_output_publication(&installed).unwrap();
-    let origin = previous.envelope.required_output_origin.as_ref().unwrap();
+    let origin = previous.origin.as_ref();
     assert_eq!(origin.outputs, ids);
     assert_eq!(origin.members.len(), 2);
     assert_eq!(origin.relations.len(), 1);
@@ -91,7 +91,7 @@ fn fieldless_birth_incidence_survives_warm_no_data_preserve_and_cold_readmission
     assert_ne!(preserved.commit.commit_id, born_at);
     let preserved_at = preserved.commit.commit_id;
     let warm = preserved.required_output_publication(&installed).unwrap();
-    let origin = warm.envelope.required_output_origin.as_ref().unwrap();
+    let origin = warm.origin.as_ref();
     assert_eq!(origin.outputs, ids);
     assert_eq!(origin.birth, born_at);
     assert_eq!(origin.relations.len(), 1);
@@ -155,8 +155,8 @@ fn fieldless_birth_incidence_survives_warm_no_data_preserve_and_cold_readmission
             ),
         )
         .unwrap();
-    assert_eq!(readmitted.envelope.commit.commit_id, preserved_at);
-    let origin = readmitted.envelope.required_output_origin.as_ref().unwrap();
+    assert_eq!(readmitted.origin.commit.commit_id, preserved_at);
+    let origin = readmitted.origin.as_ref();
     assert_eq!(origin.outputs, ids);
     assert_eq!(origin.relations.len(), 1);
     assert_eq!(origin.relations[0].id, edge_id);

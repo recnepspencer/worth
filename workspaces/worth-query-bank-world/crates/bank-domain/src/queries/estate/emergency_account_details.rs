@@ -1,7 +1,7 @@
 use worth_query_decl::facade::application_query::{
-    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
-    ApplicationQueryInfluenceContract, ApplicationQueryLaneEligibility,
+    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
+    ApplicationQueryDisclosureContract, ApplicationQueryInfluenceContract,
+    ApplicationQueryLaneEligibility,
 };
 use worth_query_decl::facade::worth_query_application_query;
 
@@ -82,15 +82,13 @@ worth_query_decl::facade::worth_query_query_binding!(
     result EstateEmergencyAccountDetailsQueryResultBinding,
     principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
         principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
-    scope EstateCase, crate::schema::EstateCaseRecord, crate::schema::EstateCaseIdentityField,
-        EstateCaseId, worth_query_decl::facade::application_schema::ReadOnly,
-        worth_query_decl::facade::application_schema::NoApplicationUnit,
-    field crate::schema::EstateCaseIdentityField::reference(),
+    scope crate::schema::EstateCaseIdentityField,
+    field crate::schema::EstateCaseIdentityField::at("EstateCaseIdentityField"),
     value EstateEmergencyAccountDetailsRequest::estate,
     limits results 1_024
 );
 
-pub fn estate_emergency_account_details_definition() -> ApplicationQueryDefinition<
+pub fn estate_emergency_account_details_definition() -> ApplicationQueryDefinitionBuilder<
     BankSchema,
     EstateEmergencyAccountDetailsQuery,
     EstateEmergencyAccountDetailsQueryParameters,
@@ -124,6 +122,4 @@ pub fn estate_emergency_account_details_definition() -> ApplicationQueryDefiniti
                 .with_preview(),
         )
         .requires_ability(ViewEstateCase::reference())
-        .build()
-        .expect("estate emergency account details query is statically canonical")
 }

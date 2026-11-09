@@ -10,7 +10,7 @@ use crate::domain_computation::primary_graph::provider::correction_witness::{
 use worth_execution::{ExecutionRequest, MapKernelContext, MapKernelStop};
 use worth_foundational::facade::{
     AspectFieldLocator, AspectValue, AuthoritativeRecordAspectState,
-    ContractValidatedAspectValueView, InternedString,
+    ContractValidatedAspectValueView,
 };
 use worth_relational::facade::{
     runtime::RelationalRuntime, snapshots::SnapshotHandle, storage::RecordLifecycleState,
@@ -109,7 +109,10 @@ impl<'state> Fields<'state, '_, '_, '_> {
         Ok(matches!(self.value(locator)?, Some(AspectValue::UInt64(value)) if *value == expected))
     }
     fn string(&mut self, locator: &AspectFieldLocator, expected: &str) -> Result<bool, Denial> {
-        let Some(AspectValue::String(InternedString::Raw(value))) = self.value(locator)? else {
+        let Some(value) = (self.value(locator)?)
+            .as_ref()
+            .and_then(|value| value.raw_text())
+        else {
             return Ok(false);
         };
         admit(self.context, value.len() as u64)?;

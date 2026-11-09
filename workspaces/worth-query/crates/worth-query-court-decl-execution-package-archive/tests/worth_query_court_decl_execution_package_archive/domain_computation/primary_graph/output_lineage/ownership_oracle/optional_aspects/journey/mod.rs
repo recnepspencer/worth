@@ -92,7 +92,7 @@ pub fn demand_expected<Schema: BirthSchema>(
             let entity = selected
                 .resolve_entity(
                     &phase,
-                    BodyKey::reference(),
+                    BodyKey::at("BodyKey"),
                     ANCHOR.to_owned(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -104,7 +104,7 @@ pub fn demand_expected<Schema: BirthSchema>(
                 let principal = selected.resolve_authenticated_principal(
                     &phase, &principal_binding, &external, &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary).unwrap();
-                let entity = selected.resolve_entity(&phase, BodyKey::reference(), ANCHOR.to_owned(), &scope,
+                let entity = selected.resolve_entity(&phase, BodyKey::at("BodyKey"), ANCHOR.to_owned(), &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary).unwrap();
                 let access = WorthQueryApplicationQueryAccessContext::new(&principal, &entity);
                 let plan = selected
@@ -149,7 +149,7 @@ pub fn demand_expected<Schema: BirthSchema>(
             let mut original_output_revision = None;
             if matches!(expected, Expected::Materialized | Expected::RequiredAdmission) {
                 assert!(matches!(advanced, WorthQueryOutputDemandAdvance::Progressed), "the original born-stale publication progressed without settling current");
-                let locator = (*(*(*(*runtime.runtime_for_test()).primary_provider_for_test()).graph_for_test()).layout_for_test()).field_locator_for_test("Body", "SourceNotes", "SourceSelection").unwrap();
+                let locator = (*(*runtime.runtime_for_test().primary_provider_for_test().graph_for_test()).layout_for_test()).field_locator_for_test("Body", SourceContent::at("SourceContent").aspect(), "SourceSelection").unwrap();
                 demand.assert_born_stale_absence_for_test(runtime, &phase, &execution, root, locator, |receipt| {
                     original_roster = Some(crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::court::own_effect::observe_performed_receipt(runtime, &phase, receipt, WorthQueryApplicationOutputPosture::Create));
                     if matches!(expected, Expected::Materialized) {

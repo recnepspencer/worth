@@ -63,11 +63,10 @@ fn external_owner_aftermath_member(
         DeclaredAftermathPostcondition::BusinessPostcondition {
             identity: "compensated".into(),
         },
-    )
-    .unwrap();
+    );
     let contract = DeclaredApplicationAftermathContract::runtime_with_external_owner(
         DeclaredCorrectionMechanism::Compensation(compensation),
-        DeclaredReconciliationProcedure::new(reconciliation).unwrap(),
+        DeclaredReconciliationProcedure::new(reconciliation),
     );
     let definition =
         ApplicationOperationRef::<Schema, CompilationOperation, ()>::from_declaration()

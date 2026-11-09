@@ -1,24 +1,33 @@
-//! One canonical merge applies clears, sets and field updates without a map clone.
+use worth_proof::{Artifact, TransitionOutcome};
+
 use super::{
-    AuthoritativePatchApplicationDenial as Denial, AuthoritativeRecordAspectPatch,
-    FieldLevelAspectPatch,
+    AuthoritativePatchApplicationDenial, AuthoritativeRecordAspectPatch, FieldLevelAspectPatch,
 };
 use crate::aspects::state::{
-    AuthoritativeRecordAspectState as State, AuthoritativeRecordAspectStateAdmitted,
+    AuthoritativeRecordAspectState, AuthoritativeRecordAspectStateAdmitted,
     AuthoritativeRecordAspectStateArtifact, CanonicalAspectStateMap,
 };
 use crate::aspects::validation::{
     validate_aspect_value, ContractValidatedAspectValue, ContractValidatedAspectValueView,
     ContractValidationInput,
 };
-use worth_proof::{Artifact, TransitionOutcome};
 
 impl AuthoritativeRecordAspectPatch {
     pub fn apply_to_optional(
         &self,
-        state: Option<&State>,
-    ) -> TransitionOutcome<Option<AuthoritativeRecordAspectStateArtifact>, Denial> {
-        match self.apply_canonical(state) {
+        state: Option<&AuthoritativeRecordAspectState>,
+    ) -> TransitionOutcome<
+        Option<AuthoritativeRecordAspectStateArtifact>,
+        AuthoritativePatchApplicationDenial,
+    > {
+        if state.is_none() && self.whole_aspect_sets.is_empty() && self.field_patches.is_empty() {
+            return TransitionOutcome::success(None);
+        }
+        let next_state = match state {
+            Some(state) => self.apply_to_state(state),
+            None => self.apply_to_absent_state(),
+        };
+        match next_state {
             Ok(state) if state.aspects().is_empty() => TransitionOutcome::success(None),
             Ok(state) => TransitionOutcome::success(Some(Artifact::<
                 AuthoritativeRecordAspectStateAdmitted,
@@ -30,110 +39,115 @@ impl AuthoritativeRecordAspectPatch {
 
     pub fn apply_to(
         &self,
-        state: &State,
-    ) -> TransitionOutcome<AuthoritativeRecordAspectStateArtifact, Denial> {
-        match self.apply_canonical(Some(state)) {
-            Ok(state) => TransitionOutcome::success(Artifact::<
+        state: &AuthoritativeRecordAspectState,
+    ) -> TransitionOutcome<
+        AuthoritativeRecordAspectStateArtifact,
+        AuthoritativePatchApplicationDenial,
+    > {
+        match self.apply_to_state(state) {
+            Ok(next_state) => TransitionOutcome::success(Artifact::<
                 AuthoritativeRecordAspectStateAdmitted,
                 _,
-            >::new(state)),
+            >::new(next_state)),
             Err(denial) => TransitionOutcome::denied(denial),
         }
     }
 
-    fn apply_canonical(&self, state: Option<&State>) -> Result<State, Denial> {
-        if state.is_none()
-            && let Some(field) = self.field_patches.first()
-        {
-            return Err(Denial::MissingAspectForFieldPatch(field.key().clone()));
+    /// Cost: O(changed aspects * log(record aspects) + changed struct fields).
+    /// Untouched aspect values and contracts retain their allocation identity.
+    fn apply_to_state(
+        &self,
+        state: &AuthoritativeRecordAspectState,
+    ) -> Result<AuthoritativeRecordAspectState, AuthoritativePatchApplicationDenial> {
+        let mut entries = state.aspects().clone();
+
+        for cleared_key in self.whole_aspect_clears() {
+            entries.remove(cleared_key);
         }
-        let count = self.selected_entries(state).count();
-        let mut entries = Vec::with_capacity(count);
-        let mut fields = self.field_patches.iter().peekable();
-        for current in self.selected_entries(state) {
-            if fields
-                .peek()
-                .is_some_and(|field| field.key() < current.key())
-            {
-                return Err(Denial::MissingAspectForFieldPatch(
-                    fields.peek().unwrap().key().clone(),
-                ));
-            }
-            let entry = if fields
-                .peek()
-                .is_some_and(|field| field.key() == current.key())
-            {
-                apply_field_patch_to_entry(current, fields.next().unwrap())?
-            } else {
-                current.clone()
-            };
-            entries.push(entry);
+
+        for (set_key, set_value) in self.whole_aspect_sets() {
+            entries.insert(set_key.clone(), set_value.clone());
         }
-        if let Some(field) = fields.next() {
-            return Err(Denial::MissingAspectForFieldPatch(field.key().clone()));
+
+        for field_patch in self.field_patches.iter() {
+            let updated_entry = apply_field_patch_to_entry(&entries, field_patch)?;
+            entries.insert(field_patch.key().clone(), updated_entry);
         }
-        Ok(State::from_canonical_map(
-            CanonicalAspectStateMap::from_canonical_entries(entries.into_boxed_slice()),
-        ))
+
+        Ok(AuthoritativeRecordAspectState::from_canonical_map(entries))
     }
 
-    pub(super) fn selected_entries<'a>(
-        &'a self,
-        state: Option<&'a State>,
-    ) -> impl Iterator<Item = &'a ContractValidatedAspectValue> {
-        let mut current = state
-            .into_iter()
-            .flat_map(|state| state.aspects().entries().map(|(_, value)| value))
-            .peekable();
-        let mut sets = self.whole_aspect_sets.iter().peekable();
-        let mut clears = self.whole_aspect_clears.iter().peekable();
-        std::iter::from_fn(move || loop {
-            let use_set = match (current.peek(), sets.peek()) {
-                (None, None) => return None,
-                (None, Some(_)) => true,
-                (Some(_), None) => false,
-                (Some(left), Some(right)) => {
-                    if left.key() == right.key() {
-                        current.next();
-                        true
-                    } else {
-                        right.key() < left.key()
-                    }
-                }
-            };
-            let entry = if use_set {
-                sets.next()?
-            } else {
-                current.next()?
-            };
-            while clears.peek().is_some_and(|clear| clear.key() < entry.key()) {
-                clears.next();
-            }
-            if use_set
-                || !clears
-                    .peek()
-                    .is_some_and(|clear| clear.key() == entry.key())
-            {
-                return Some(entry);
-            }
-        })
+    fn apply_to_absent_state(
+        &self,
+    ) -> Result<AuthoritativeRecordAspectState, AuthoritativePatchApplicationDenial> {
+        if let Some(field_patch) = self.field_patches.iter().next() {
+            return Err(
+                AuthoritativePatchApplicationDenial::MissingAspectForFieldPatch(
+                    field_patch.key().clone(),
+                ),
+            );
+        }
+        Ok(AuthoritativeRecordAspectState::from_canonical_map(
+            CanonicalAspectStateMap::from_canonical_entries(
+                self.whole_aspect_sets
+                    .iter()
+                    .map(|value| (value.key().clone(), value.clone()))
+                    .collect(),
+            ),
+        ))
     }
 }
 
 fn apply_field_patch_to_entry(
-    current: &ContractValidatedAspectValue,
-    patch: &FieldLevelAspectPatch,
-) -> Result<ContractValidatedAspectValue, Denial> {
-    let ContractValidatedAspectValueView::Struct(current_struct) = current.view() else {
-        return Err(Denial::FieldPatchRequiresStructValue(patch.key().clone()));
+    entries: &CanonicalAspectStateMap,
+    field_patch: &FieldLevelAspectPatch,
+) -> Result<ContractValidatedAspectValue, AuthoritativePatchApplicationDenial> {
+    let current_entry = entries.get(field_patch.key()).ok_or_else(|| {
+        AuthoritativePatchApplicationDenial::MissingAspectForFieldPatch(field_patch.key().clone())
+    })?;
+
+    let ContractValidatedAspectValueView::Struct(current_struct) = current_entry.view() else {
+        return Err(
+            AuthoritativePatchApplicationDenial::FieldPatchRequiresStructValue(
+                field_patch.key().clone(),
+            ),
+        );
     };
-    let next_struct = super::struct_field_application::apply(current_struct, patch);
-    match validate_aspect_value(
-        patch.contract(),
+
+    if current_entry
+        .contract()
+        .shares_definition(field_patch.contract())
+    {
+        let crate::aspects::contracts::AspectShape::Struct(shape) = field_patch.contract().shape()
+        else {
+            unreachable!("a field patch is admitted only for its immutable struct definition")
+        };
+        // The admitted source proves all unchanged fields. Construction already
+        // checked required clears and set membership; validate each new value.
+        for (key, value) in field_patch.field_sets() {
+            crate::aspects::validation::validate_struct_field(shape, key, value)
+                .map_err(AuthoritativePatchApplicationDenial::ContractValidationDenied)?;
+        }
+        return Ok(ContractValidatedAspectValue::struct_value(
+            field_patch.contract().clone(),
+            current_struct.patched(field_patch.field_sets(), field_patch.field_clears()),
+        ));
+    }
+    // A different definition is a rebind: retained value proof cannot authorize it.
+    let next_struct = current_struct.patched(field_patch.field_sets(), field_patch.field_clears());
+    let validation = validate_aspect_value(
+        field_patch.contract(),
         ContractValidationInput::Struct(next_struct),
-    ) {
-        TransitionOutcome::Success(artifact) => Ok(artifact.into_parts().into_parts().0),
-        TransitionOutcome::Denied(denial) => Err(Denial::ContractValidationDenied(denial)),
+    );
+
+    match validation {
+        TransitionOutcome::Success(artifact) => {
+            let (entry, _proofs, _basis) = artifact.into_parts().into_parts();
+            Ok(entry)
+        }
+        TransitionOutcome::Denied(denial) => {
+            Err(AuthoritativePatchApplicationDenial::ContractValidationDenied(denial))
+        }
         TransitionOutcome::Deferred(_)
         | TransitionOutcome::Stale(_)
         | TransitionOutcome::RebindRequired(_)

@@ -38,6 +38,20 @@ fn validate_metered(
     activation: &RecoveredCheckpointProgramActivationUpdate,
     context: &mut worth_execution::MapKernelContext<'_, '_>,
 ) -> Result<(), CodecRetirementClosureStop> {
+    // Only publication completion can maintain these private kinds. The
+    // ordinary metadata guard denies caller intents before codec preparation;
+    // recovered codec custody is itself required by this caller. Current-fact
+    // integrity belongs to the same roster reader as ordinary admission.
+    let current = before
+        .schema_authority()
+        .registry()
+        .current_publication_storage
+        .as_ref();
+    let private = |kind: Option<crate::identity::data::KindId>| {
+        current.is_some_and(|storage| {
+            kind.is_some_and(|kind| storage.metadata_kinds().contains(&kind))
+        })
+    };
     let mut activation_seen = false;
     charge(
         context,
@@ -90,7 +104,13 @@ fn validate_metered(
                     charge(context, value.semantic_byte_width())?;
                 }
             }
-            if closure.entities.contains(&id) {
+            if current.is_some() {
+                charge(context, 9)?;
+            }
+            let native_retired = private(old.kind_id())
+                && old.is_live()
+                && new.lifecycle() == crate::storage::data::RecordLifecycleState::DeletedRetained;
+            if closure.entities.contains(&id) || native_retired {
                 if !old.is_live()
                     || new.lifecycle()
                         != crate::storage::data::RecordLifecycleState::DeletedRetained
@@ -124,6 +144,10 @@ fn validate_metered(
                 activation_seen = true;
             } else if old.extra().authoritative_aspect_state()
                 != new.extra().authoritative_aspect_state()
+                && !current.is_some_and(|storage| {
+                    [Some(storage.catalog_kind), Some(storage.position_kind)]
+                        .contains(&old.kind_id())
+                })
             {
                 return Err("codec retirement changed protected payload".into());
             }
@@ -155,7 +179,14 @@ fn validate_metered(
                 }
             }
             let id = RelationId::new(partition_id, slot as u64, old.generation());
-            let retired = closure.relations.contains(&id);
+            if current.is_some() {
+                charge(context, 9)?;
+            }
+            let retired = closure.relations.contains(&id)
+                || (private(old.kind_id())
+                    && old.is_live()
+                    && new.lifecycle()
+                        == crate::storage::data::RecordLifecycleState::DeletedRetained);
             if retired
                 && (!old.is_live()
                     || new.lifecycle()

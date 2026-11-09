@@ -1,5 +1,6 @@
 mod field_declaration;
 mod field_path;
+mod field_tree;
 mod struct_value;
 
 pub use field_declaration::{FieldDeclaration, FieldKey, FieldRequirement};

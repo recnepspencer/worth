@@ -9,6 +9,9 @@ pub(in crate::domain_computation::primary_graph) struct ProjectedPreImageCandida
     examined: usize,
 }
 impl ProjectedPreImageCandidates {
+    pub(in crate::domain_computation::primary_graph) fn as_slice(&self) -> &[Decision] {
+        &self.facts
+    }
     pub(in crate::domain_computation::primary_graph) fn iter(
         &self,
     ) -> impl Iterator<Item = &Decision> {
@@ -25,6 +28,20 @@ impl ApplicationFactTable {
         mutation: &worth_relational::facade::mvcc::ValidatedMutationFootprint,
         policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<ProjectedPreImageCandidates, StoreDenial> {
+        if !demand.relations().is_empty() {
+            let bytes = self
+                .count
+                .checked_mul(size_of::<Decision>())
+                .and_then(|bytes| u64::try_from(bytes).ok())
+                .ok_or(StoreDenial::Representability)?;
+            let memory = policy.reserve_memory(bytes)?;
+            policy.check_live()?;
+            return Ok(ProjectedPreImageCandidates {
+                facts: self.values().collect(),
+                _memory: memory,
+                examined: self.count,
+            });
+        }
         let mut count = Some(self.count);
         if let Some(prefix) = &self.prefix {
             count = Some(0usize);

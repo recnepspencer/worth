@@ -63,7 +63,7 @@ pub fn seed_program_activation(
         .with_runtime_for_test(execution, |runtime| {
             (*(*(*world.application.runtime_for_test()).primary_provider_for_test())
                 .graph_for_test())
-            .ensure_primary_indexes_for_basis_for_test(execution, runtime, &basis)
+            .carry_primary_index_basis_for_basis_for_test(execution, runtime, &basis)
             .unwrap();
         });
     (*world.application.program_support_for_test())

@@ -167,6 +167,11 @@ fn prepared_identity_bounds_include_later_schema_roles_beyond_the_initial_instal
                 grant.original(),
                 &association,
                 grant.admission(),
+                worth_relational::facade::indexes::DerivedIndexMaintenanceBudget {
+                    maximum_work_units: None,
+                    maximum_cold_record_slots: None,
+                    maximum_derived_rows: None,
+                },
             )
             .unwrap();
         transaction

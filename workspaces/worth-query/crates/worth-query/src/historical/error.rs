@@ -3,9 +3,11 @@ use super::cost::HistoricalPathCostPosture;
 use super::path_classes::{
     AdmittedHistoricalPathClass, RequestedHistoricalPathClass, ResolvedHistoricalPathClass,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum HistoricalEvaluationFailureClass {
+    EvidenceIdentityDerivationDenied,
     UnsupportedHistoricalPathRequest,
     IncompatibleBasisPathPair,
     ReplayNotPermitted,
@@ -17,6 +19,7 @@ pub enum HistoricalEvaluationFailureClass {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum HistoricalEvaluationError {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     UnsupportedHistoricalPathRequest {
         requested_path_class: RequestedHistoricalPathClass,
         reason: &'static str,
@@ -49,6 +52,10 @@ pub enum HistoricalEvaluationError {
 impl HistoricalEvaluationError {
     pub fn failure_class(&self) -> HistoricalEvaluationFailureClass {
         match self {
+            Self::EvidenceIdentityDerivationDenied(_) => {
+                HistoricalEvaluationFailureClass::EvidenceIdentityDerivationDenied
+            }
+
             Self::UnsupportedHistoricalPathRequest { .. } => {
                 HistoricalEvaluationFailureClass::UnsupportedHistoricalPathRequest
             }
@@ -71,8 +78,10 @@ impl HistoricalEvaluationError {
         }
     }
 
-    pub fn requested_path_class(&self) -> &RequestedHistoricalPathClass {
+    pub fn requested_path_class(&self) -> Option<&RequestedHistoricalPathClass> {
         match self {
+            Self::EvidenceIdentityDerivationDenied(_) => None,
+
             Self::UnsupportedHistoricalPathRequest {
                 requested_path_class,
                 ..
@@ -100,7 +109,7 @@ impl HistoricalEvaluationError {
             | Self::UnsupportedBridgeMaterializationPath {
                 requested_path_class,
                 ..
-            } => requested_path_class,
+            } => Some(requested_path_class),
         }
     }
 
@@ -126,6 +135,8 @@ impl HistoricalEvaluationError {
 
     pub fn reason(&self) -> &'static str {
         match self {
+Self::EvidenceIdentityDerivationDenied(_) => "historical evidence identity exceeded its digest bounds",
+
             Self::UnsupportedHistoricalPathRequest { reason, .. } => reason,
             Self::IncompatibleBasisPathPair { .. } => {
                 "historical evaluation basis identity does not match the lowered capability basis"
@@ -151,6 +162,10 @@ impl HistoricalEvaluationError {
     #[cfg(test)]
     pub(crate) fn denial_cost_posture(&self) -> HistoricalPathCostPosture {
         match self {
+            Self::EvidenceIdentityDerivationDenied(_) => {
+                HistoricalPathCostPosture::EvidenceIdentityDerivationDenied
+            }
+
             Self::ReplayNotPermitted { .. }
             | Self::RetentionUnavailable { .. }
             | Self::ReconstructionNotAdmitted { .. }
@@ -165,5 +180,11 @@ impl HistoricalEvaluationError {
                 HistoricalPathCostPosture::HistoricalPathDeniedByUnsupportedPath
             }
         }
+    }
+}
+
+impl From<IdentityDerivationDenial> for HistoricalEvaluationError {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
     }
 }

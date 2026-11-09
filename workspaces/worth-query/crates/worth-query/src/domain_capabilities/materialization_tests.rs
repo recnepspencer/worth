@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod admission_explanation;
 mod lower_runtime_and_remaining;
 
@@ -12,9 +13,12 @@ use super::test_support::{
 fn declaration_ready_contribution<P>(
     target_digest: &str,
     payload: P,
-) -> super::WorthQueryMaterializationReadyDomainCapabilityContribution<
-    P,
-    WorthQueryDeclarationBoundContributionTarget,
+) -> Result<
+    super::WorthQueryMaterializationReadyDomainCapabilityContribution<
+        P,
+        WorthQueryDeclarationBoundContributionTarget,
+    >,
+    IdentityDerivationDenial,
 >
 where
     P: super::WorthQueryDomainCapabilityPayload,
@@ -24,15 +28,18 @@ where
             WorthQueryDeclarationBoundContributionTarget,
         >,
 {
-    ready_payload(declaration_target(target_digest), payload)
+    Ok(ready_payload(declaration_target(target_digest), payload)?)
 }
 
 fn admitted_plan_ready_contribution<P>(
     target_digest: &str,
     payload: P,
-) -> super::WorthQueryMaterializationReadyDomainCapabilityContribution<
-    P,
-    WorthQueryAdmittedPlanBoundContributionTarget,
+) -> Result<
+    super::WorthQueryMaterializationReadyDomainCapabilityContribution<
+        P,
+        WorthQueryAdmittedPlanBoundContributionTarget,
+    >,
+    IdentityDerivationDenial,
 >
 where
     P: super::WorthQueryDomainCapabilityPayload,
@@ -42,15 +49,21 @@ where
             WorthQueryAdmittedPlanBoundContributionTarget,
         >,
 {
-    ready_payload(admitted_plan_target(target_digest), payload)
+    Ok(ready_payload(
+        admitted_plan_target(target_digest)?,
+        payload,
+    )?)
 }
 
 fn lower_runtime_ready_contribution<P>(
     target_digest: &str,
     payload: P,
-) -> super::WorthQueryMaterializationReadyDomainCapabilityContribution<
-    P,
-    WorthQueryLowerRuntimeBoundaryBoundContributionTarget,
+) -> Result<
+    super::WorthQueryMaterializationReadyDomainCapabilityContribution<
+        P,
+        WorthQueryLowerRuntimeBoundaryBoundContributionTarget,
+    >,
+    IdentityDerivationDenial,
 >
 where
     P: super::WorthQueryDomainCapabilityPayload,
@@ -60,7 +73,10 @@ where
             WorthQueryLowerRuntimeBoundaryBoundContributionTarget,
         >,
 {
-    ready_payload(lower_runtime_target(target_digest), payload)
+    Ok(ready_payload(
+        lower_runtime_target(target_digest)?,
+        payload,
+    )?)
 }
 
 fn forensic_support_profile() -> worth_foundational::FoundationalProfileSet {

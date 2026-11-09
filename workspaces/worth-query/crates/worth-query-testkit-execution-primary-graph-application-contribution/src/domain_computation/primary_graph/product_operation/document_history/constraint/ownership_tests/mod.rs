@@ -1,14 +1,13 @@
 //! A restriction's model ownership precedes the admission's authentication lapse.
-use worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryDenial as Denial;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::product_operation::document_history::model::HistoryModelIdentity;
-use worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryOperationConstraint;
-use worth_query_execution::publication_boundary::WorthQueryProgramPublicationAccess;
-use worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationDenialKind as Kind;
-use worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationRefusalKind as Refusal;
 use crate::domain_computation::primary_graph::tests::application_attempt::idempotency;
 use crate::domain_computation::primary_graph::tests::application_attempt::resolved_account;
 use crate::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 use crate::domain_computation::primary_graph::tests::fixture::TouchAccountOperation;
+use worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationDenialKind as Kind;
+use worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationRefusalKind as Refusal;
+use worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryDenial as Denial;
+use worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryOperationConstraint;
+use worth_query_execution::publication_boundary::WorthQueryProgramPublicationAccess;
 
 /// Test doors on a library type, owned by the moved courts.
 pub trait OwnershipTestsWorthQueryDocumentHistoryOperationConstraintForTest: Sized {
@@ -58,7 +57,7 @@ impl OwnershipTestsWorthQueryDocumentHistoryOperationConstraintForTest
                         )
                         .unwrap();
                     let binding = idempotency(190, 191);
-                    let restriction = Self::new_for_test(HistoryModelIdentity::from_resolved_for_test(&other), world
+                    let restriction = Self::new_for_test(&other, world
                             .application
                             .product_runtime()
                             .admit_product_occurrence_for_test(

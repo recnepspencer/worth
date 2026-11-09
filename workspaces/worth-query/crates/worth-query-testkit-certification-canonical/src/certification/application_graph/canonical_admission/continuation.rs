@@ -55,7 +55,7 @@ pub fn first_page(
         let root = selected
             .resolve_entity(
                 &phase,
-                DocumentIdentityField::reference(),
+                DocumentIdentityField::at("DocumentIdentityField"),
                 "root".to_owned(),
                 scope,
                 WorthQueryPrincipalResolutionMode::Ordinary,

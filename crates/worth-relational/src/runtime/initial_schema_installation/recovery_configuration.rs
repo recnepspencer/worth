@@ -16,6 +16,7 @@ impl RelationalRuntime {
             if config.schema.registry != *schema {
                 let rebuilt = super::rebuilt_schema_contract_runtime(
                     schema,
+                    &config.schema.invariant_catalog.registrations,
                     state
                         .schema_contract_runtime
                         .custom_invariant_registries

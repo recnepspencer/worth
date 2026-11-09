@@ -1,7 +1,7 @@
 //! Home preparations retain identity and DATA; only Memory keeps live ancestry.
 use super::super::occurrence::CorrectionOccurrence;
+use super::super::occurrence::HomeCorrectionOccurrence;
 use super::*;
-use crate::domain_computation::primary_graph::retained_correction::RetainedCorrectionMaterial;
 use worth_foundational::facade::CorrectionMaterialPinIdentity;
 use worth_runtime_world::facade::{CompositeCommitIdentity, RuntimeWorldOwnerIdentity};
 
@@ -19,10 +19,16 @@ pub(super) enum PreparedCorrectionCustody {
         fence: worth_proof::HomeIncarnationFence,
         world: CompositeCommitIdentity,
         commit: RelationalCommitReceipt,
-        _material: RetainedCorrectionMaterial,
+        source: std::sync::Arc<HomeCorrectionOccurrence>,
     },
 }
 impl PreparedCorrectionCustody {
+    pub(super) fn occurrence(&self) -> CorrectionOccurrence {
+        match self {
+            Self::Memory { material, .. } => material.clone(),
+            Self::Home { source, .. } => CorrectionOccurrence::Home(std::sync::Arc::clone(source)),
+        }
+    }
     pub(super) fn commit(&self) -> &RelationalCommitReceipt {
         match self {
             Self::Memory { material, .. } => material.commit_reference(),

@@ -241,7 +241,13 @@ pub(crate) fn infer_prediction_drift(
 pub(crate) fn digest_historical_failure(error: &HistoricalEvaluationError) -> FailureDigest {
     let mut parts = vec![
         format!("failure_class:{:?}", error.failure_class()),
-        format!("requested_path:{}", error.requested_path_class().as_str()),
+        format!(
+            "requested_path:{}",
+            error
+                .requested_path_class()
+                .map(|path| path.as_str())
+                .unwrap_or("not-admitted")
+        ),
         format!("reason:{}", error.reason()),
     ];
 

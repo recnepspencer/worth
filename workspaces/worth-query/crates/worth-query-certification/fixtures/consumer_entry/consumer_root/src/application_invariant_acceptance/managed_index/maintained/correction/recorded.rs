@@ -1,4 +1,4 @@
-//! Actual recorded inverse declarations and the fixed Catalog correction dispatcher.
+//! Actual recorded inverse declarations for the Catalog contribution.
 use super::*;
 use worth_query_decl::facade::application_query::*;
 pub struct Note;
@@ -10,24 +10,6 @@ fn key(value: &str, identity: &'static str) -> Result<u64, ApplicationValueEncod
         binding_identity: worth_query_decl::facade::portable_identity::WorthQueryPortableTypeIdentity::declared(identity),
         reason: "recorded catalog correction keys are unsigned decimal integers",
     })
-}
-pub(super) fn visit<V: ApplicationCorrectionVisitor<Catalog>>(
-    source: std::any::TypeId,
-    visitor: V,
-) -> Result<V::Output, V> {
-    if source == std::any::TypeId::of::<note::Binding>() {
-        Ok(dispatch_application_correction::<Catalog, Note, V>(visitor))
-    } else if source == std::any::TypeId::of::<mover::Binding>() {
-        Ok(dispatch_application_correction::<Catalog, Mover, V>(
-            visitor,
-        ))
-    } else if source == std::any::TypeId::of::<motion::Binding>() {
-        Ok(dispatch_application_correction::<Catalog, Motion, V>(
-            visitor,
-        ))
-    } else {
-        Err(visitor)
-    }
 }
 impl ApplicationCorrectionBinding<Catalog> for Note {
     const IDENTITY: &'static str = "maintained-catalog.recorded-note.correction.v1";
@@ -87,13 +69,12 @@ impl ApplicationCorrectionBinding<Catalog> for Note {
             .no_external_effect()
     }
     fn mechanism() -> DeclaredCorrectionMechanism<Catalog> {
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
-            DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(DirectoryNote::reference())],
-                PREIMAGE_BYTES,
-            )
-            .unwrap(),
-        )
+        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
+            [DeclaredPreImageLocus::from_field(DirectoryNote::at(
+                "DirectoryNote",
+            ))],
+            PREIMAGE_BYTES,
+        ))
     }
     fn derive_correction(
         original: &note::Input,
@@ -104,9 +85,9 @@ impl ApplicationCorrectionBinding<Catalog> for Note {
         };
         let prior = StringApplicationValueBinding::decode(
             preimage
-                .field(&DeclaredPreImageLocus::from_field(
-                    DirectoryNote::reference(),
-                ))
+                .field(&DeclaredPreImageLocus::from_field(DirectoryNote::at(
+                    "DirectoryNote",
+                )))
                 .ok_or(ApplicationCorrectionDerivationDenial::MissingPreImage)?,
         )
         .map_err(|_| ApplicationCorrectionDerivationDenial::InvalidPreImage)?;
@@ -182,13 +163,10 @@ impl ApplicationCorrectionBinding<Catalog> for Mover {
             .no_external_effect()
     }
     fn mechanism() -> DeclaredCorrectionMechanism<Catalog> {
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
-            DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(ItemName::reference())],
-                PREIMAGE_BYTES,
-            )
-            .unwrap(),
-        )
+        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
+            [DeclaredPreImageLocus::from_field(ItemName::at("ItemName"))],
+            PREIMAGE_BYTES,
+        ))
     }
     fn derive_correction(
         original: &mover::Input,
@@ -199,12 +177,12 @@ impl ApplicationCorrectionBinding<Catalog> for Mover {
         };
         let prior = NameBinding::decode(
             preimage
-                .field(&DeclaredPreImageLocus::from_field(ItemName::reference()))
+                .field(&DeclaredPreImageLocus::from_field(ItemName::at("ItemName")))
                 .ok_or(ApplicationCorrectionDerivationDenial::MissingPreImage)?,
         )
         .map_err(|_| ApplicationCorrectionDerivationDenial::InvalidPreImage)?;
         Ok(mover::Input {
-            replacement: prior,
+            replacement: prior.into(),
             ..original.clone()
         })
     }
@@ -280,15 +258,12 @@ impl ApplicationCorrectionBinding<Catalog> for Motion {
             .no_external_effect()
     }
     fn mechanism() -> DeclaredCorrectionMechanism<Catalog> {
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
-            DeclaredPreImageDemand::new(
-                [DeclaredPreImageLocus::from_field(
-                    super::super::geometry::schema::VertexRegion::reference(),
-                )],
-                PREIMAGE_BYTES,
-            )
-            .unwrap(),
-        )
+        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
+            [DeclaredPreImageLocus::from_field(
+                super::super::geometry::schema::VertexRegion::at("VertexRegion"),
+            )],
+            PREIMAGE_BYTES,
+        ))
     }
     fn derive_correction(
         original: &motion::Input,
@@ -300,7 +275,7 @@ impl ApplicationCorrectionBinding<Catalog> for Motion {
         let prior = super::super::bounds::CoordinatesBinding::decode(
             preimage
                 .field(&DeclaredPreImageLocus::from_field(
-                    super::super::geometry::schema::VertexRegion::reference(),
+                    super::super::geometry::schema::VertexRegion::at("VertexRegion"),
                 ))
                 .ok_or(ApplicationCorrectionDerivationDenial::MissingPreImage)?,
         )

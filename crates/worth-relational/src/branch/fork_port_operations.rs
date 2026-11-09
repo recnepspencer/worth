@@ -1,3 +1,5 @@
+#[path = "fork_port_operations/source_observation.rs"]
+mod source_observation;
 use super::{RelationalForkDenial, RelationalForkOutcome};
 use crate::branch::authority::admit_relational_fork_source;
 use crate::branch::fork_source_basis::{
@@ -53,52 +55,6 @@ impl RelationalForkPort {
         )
         .map(with_basis)
         .map_err(Into::into)
-    }
-
-    /// Observe an exact live source and issue the owner-sealed fork-only
-    /// token. Empty branches do not produce a fork source.
-    pub fn observe_fork_source(
-        &self,
-        source_branch: &BranchId,
-    ) -> Result<
-        (
-            RelationalForkSourceDescriptor,
-            AdmittedRelationalForkSourceBasis,
-        ),
-        RelationalForkDenial,
-    > {
-        let _operation = self
-            .lifecycle
-            .admit()
-            .ok_or(RelationalForkDenial::OwnerUnavailable)?;
-        let source_cell = self
-            .owner
-            .branch_cell(source_branch)
-            .ok_or(RelationalForkDenial::SourceBranchMissing)?;
-        let source_snapshot = source_cell.atomic_snapshot();
-        match source_snapshot.lifecycle_posture() {
-            RelationalBranchLifecyclePosture::Live => {}
-            RelationalBranchLifecyclePosture::Archived => {
-                return Err(RelationalForkDenial::SourceArchived);
-            }
-            RelationalBranchLifecyclePosture::Deleting => {
-                return Err(RelationalForkDenial::SourceDeleting);
-            }
-        }
-        let observation = source_snapshot.observation();
-        let truth_version = source_snapshot.truth_version();
-        self.owner.record_lookup();
-        if observation.target().is_empty() {
-            return Err(RelationalForkDenial::EmptySource);
-        }
-        let descriptor = RelationalForkSourceDescriptor::new(
-            self.runtime_instance_id,
-            observation,
-            source_branch.clone(),
-            truth_version,
-        );
-        let token = admit_relational_fork_source(descriptor.clone());
-        Ok((descriptor, token))
     }
 
     /// Consume a fork-only source token and create a fresh branch reference,
@@ -323,7 +279,7 @@ impl RelationalForkPort {
             })
             .transpose()?;
         pause_before_install();
-        let prepared = self
+        let mut prepared = self
             .prepare_fork_target(
                 execution,
                 reservation,
@@ -332,6 +288,15 @@ impl RelationalForkPort {
                 &mut lookup_cleanup,
             )
             .map_err(denied)?;
+        prepared.indexes = self
+            .indexes
+            .prepare_fork_selection(
+                execution,
+                validated.descriptor.source_branch(),
+                prepared.reservation.branch_id(),
+                &validated.source_root,
+            )
+            .map_err(|stop| denied(RelationalForkDenial::IndexPreparation(Box::new(stop))))?;
         let mut installable = Some(
             self.prepare_installation(prepared, return_basis)
                 .map_err(denied)?,

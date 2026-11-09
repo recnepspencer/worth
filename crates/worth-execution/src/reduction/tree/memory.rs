@@ -58,7 +58,7 @@ impl<T, F> ReductionTree<T, F> {
     /// and completed-node slots are explicit. The BFS split plan, queue,
     /// bounded frontier, join list, and join-result map coexist with final
     /// nodes. Six value caps cover the parent join's canonical buffers and
-    /// temporaries; each parallel task reserves its own six caps separately.
+    /// temporaries (including their proof objects); each parallel task reserves its own six caps separately.
     pub fn checked_build_memory_bound(partitions: usize, max_value_bytes: u64) -> Option<u64> {
         // Scheduled construction may hold one entry and one admitted input
         // cell for every frontier task; partitions bound the task count.
@@ -123,7 +123,8 @@ impl<T, F> ReductionTree<T, F> {
             .checked_add(split_flags)?
             .checked_add(join_map)?
             .checked_add(u64::try_from(size_of::<Arc<Node<T>>>() * 4).ok()?)?
-            .checked_add(max_value_bytes.checked_mul(6)?)
+            .checked_add(max_value_bytes.checked_mul(6)?)?
+            .checked_add((6 * super::value_storage::CanonicalBytes::object_layout().size()) as u64)
     }
 
     /// Additional edit scratch beyond the retained tree and incoming value.
@@ -195,14 +196,16 @@ pub(super) fn node_bytes<T: ChargedBytes>(
 fn node_ceiling<T>(max_value_bytes: u64) -> Option<u64> {
     u64::try_from(size_of::<Node<T>>().checked_add(2 * size_of::<usize>())?)
         .ok()?
-        .checked_add(max_value_bytes.checked_mul(2)?)
+        .checked_add(max_value_bytes.checked_mul(4)?)?
+        .checked_add((2 * super::value_storage::CanonicalBytes::object_layout().size()) as u64)
 }
 
 fn path_ceiling<T>(depth: usize, max_value_bytes: u64) -> Option<u64> {
     let staged = u64::try_from(depth).ok()?.checked_add(1)?.checked_mul(4)?;
     node_ceiling::<T>(max_value_bytes)?
         .checked_mul(staged)?
-        .checked_add(max_value_bytes.checked_mul(6)?)
+        .checked_add(max_value_bytes.checked_mul(6)?)?
+        .checked_add((6 * super::value_storage::CanonicalBytes::object_layout().size()) as u64)
 }
 
 #[cfg(test)]

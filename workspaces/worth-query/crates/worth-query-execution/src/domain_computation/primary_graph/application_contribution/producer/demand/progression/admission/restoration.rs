@@ -172,7 +172,7 @@ where
         Ok(Some(ReadmittedOutput {
             computation_source,
             restored: crate::domain_computation::primary_graph::application_output_demand::WorthQueryRestoredAcceptedOutput {
-                checkpoint: readmitted.checkpoint.clone(),
+                origin: crate::domain_computation::primary_graph::application_output_demand::RestoredOutputOrigin::Checkpoint(readmitted.checkpoint.clone()),
                 correspondence: std::sync::Arc::clone(&readmitted.correspondence),
                 observation: observation.clone(),
                 source_scope,
@@ -192,6 +192,9 @@ where
         readmitted: &ReadmittedOutput,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let restored = &readmitted.restored;
+        let crate::domain_computation::primary_graph::application_output_demand::RestoredOutputOrigin::Checkpoint(checkpoint) = &restored.origin else {
+            return Ok(());
+        };
         let output_binding = restored.correspondence.binding_type().ok_or_else(|| {
             denial(
                 WorthQueryOutputDemandDenialKind::ProducerUnavailable,
@@ -214,12 +217,12 @@ where
                 crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity::Checkpoint(
                     restored.source_identity,
                 ),
-                restored.checkpoint.source_partition,
-                restored.checkpoint.producer_dependency,
-                restored.checkpoint.idempotency_key,
+                checkpoint.source_partition,
+                checkpoint.producer_dependency,
+                checkpoint.idempotency_key,
                 readmitted.computation_source.retain_facts(restored.observed_source_facts.clone()),
                 restored.native_output_witness.as_ref().map(std::sync::Arc::clone),
-                Some(restored.checkpoint.clone()),
+                Some(checkpoint.clone()),
             None,
         );
         let witness = restored
@@ -257,12 +260,12 @@ use worth_relational::facade::mvcc::PublicationCompanionRegistrationStop as Nati
 /// A checkpoint output whose facts and output were compared in full at
 /// `verified_at`, the head of its branch.
 pub(super) struct ReadmittedOutput {
-    computation_source: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence,
+    pub(super) computation_source: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence,
     pub(super) restored: crate::domain_computation::primary_graph::application_output_demand::WorthQueryRestoredAcceptedOutput,
     pub(super) settlement: std::sync::Arc<
         crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
     >,
-    verified_at: Option<worth_relational::facade::runtime::PositionedRelationalSnapshot>,
+    pub(super) verified_at: Option<worth_relational::facade::runtime::PositionedRelationalSnapshot>,
 }
 
 fn restoration_resource_denial(

@@ -19,21 +19,10 @@ worth_query_structured_value_binding!(pub Parameters for () {identity:"worth.que
 pub struct Slot;
 worth_query_portable_type!(Slot=>"worth.query.reference.slot.v1");
 worth_query_application_query!(pub Query for Schema,identity "SelectedParentQuery",parameters Parameters,result ResultBinding,scope Row=>"Row",name "selected_parent");
-pub fn field() -> ApplicationQueryResultFieldRef<
-    Query,
-    Slot,
-    Schema,
-    Parent,
-    ParentFacts,
-    ParentIdentity,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("identity", ParentIdentity::reference())
+pub fn field() -> ApplicationQueryResultFieldRef<Query, Slot, Schema, ParentIdentity> {
+    ApplicationQueryResultFieldRef::new("identity", ParentIdentity::at("ParentIdentity"))
 }
-pub fn definition() -> ApplicationQueryDefinition<Schema, Query, (), Value, Row> {
+pub fn definition() -> ApplicationQueryDefinitionBuilder<Schema, Query, (), Value, Row> {
     ApplicationQueryDefinitionBuilder::declare(Query::reference())
         .root(Parent::reference())
         .scope(Row::reference())
@@ -52,8 +41,6 @@ pub fn definition() -> ApplicationQueryDefinition<Schema, Query, (), Value, Row>
         .root_path(
             ApplicationQueryRootPath::from(Row::reference()).forward(SelectedParent::reference()),
         )
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<Schema, Query> for Value {
     fn project(
@@ -67,4 +54,4 @@ pub fn row(input: Read) -> String {
 }
 worth_query_query_binding!(pub ReadBinding for Read,schema Schema,identity "worth.query.reference.read-binding.v1",input Input,query Query,parameters Parameters=>|_|ApplicationQueryParameterSet::new(),result ResultBinding,
     principal PrincipalBinding,mapping Mapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
-    scope Row,RowFacts,RowIdentity,String,ReadOnly,NoApplicationUnit,field RowIdentity::reference(),value row,limits results 1);
+    scope RowIdentity, field RowIdentity::at("RowIdentity"),value row,limits results 1);

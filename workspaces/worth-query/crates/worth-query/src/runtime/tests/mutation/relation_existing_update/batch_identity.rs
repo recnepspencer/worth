@@ -110,11 +110,13 @@ fn batch_relation_updates_preserve_identity_binding_aggregate_digest() {
     assert_eq!(
         receipt
             .batch_mutation_evidence()
+            .expect("fixture digest must fit")
             .existing_truth_binding_count(),
         2
     );
     assert!(receipt
         .batch_mutation_evidence()
+        .expect("fixture digest must fit")
         .aggregate_existing_truth_binding_digest()
         .is_some());
 

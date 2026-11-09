@@ -122,13 +122,17 @@ pub(super) fn acquire<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>
             return Err(AcquisitionCause::ForeignContext);
         }
         let field = SourceBinding::<S, I>::scope_field();
+        let column = selected
+            .record_selection(field)
+            .map_err(AcquisitionCause::Scope)?;
+        let locus = column.recipe().locus();
         // This local owner pays the resolver's new value/locator/name copies and
         // stays alive until the borrowed typed scope and Source plan are gone.
         temporary = Some(temporary::scope(
             execution,
-            field.entity(),
-            field.aspect(),
-            field.field(),
+            locus.entity(),
+            locus.aspect(),
+            locus.field(),
             selector,
         )?);
         let scope = selected

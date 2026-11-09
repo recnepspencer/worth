@@ -24,6 +24,8 @@ use super::{
     WorthQueryInstalledApplicationSchemaContractCatalogCounters,
 };
 
+#[cfg(test)]
+mod fragment_records;
 mod relation_aspect;
 mod scalar_aspect;
 use relation_aspect::collect_relation_aspects;

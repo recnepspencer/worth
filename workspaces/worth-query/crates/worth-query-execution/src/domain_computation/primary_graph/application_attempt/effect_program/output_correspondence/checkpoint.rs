@@ -64,6 +64,7 @@ impl WorthQueryApplicationOutputCorrespondence {
             contract_type: Some(contract_type),
             storage: std::sync::Arc::new(CorrespondenceStorage {
                 optional_roles: optional,
+                closure_evidence: Vec::new(),
                 roles: rebound,
                 _funding: Some(funding),
             }),

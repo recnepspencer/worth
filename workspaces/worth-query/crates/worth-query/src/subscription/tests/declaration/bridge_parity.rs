@@ -274,7 +274,8 @@ fn parity_artifacts_for_with_budget(
         live_family,
         view_family,
         QuerySubscriptionConstructionSource::Direct,
-    );
+    )
+    .expect("fixture digest must fit");
     let selection = select_query_subscription_family(live, roomy_budget()).unwrap();
     let declaration = declare_query_subscription(selection, roomy_slice_budget()).unwrap();
     let lowering =

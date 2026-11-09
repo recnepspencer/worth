@@ -6,29 +6,31 @@ pub fn observe<Schema: BirthSchema, const KEEP: bool>(
     materialized: bool,
 ) -> Result<(), HandlerExecutionDenial>
 where
-    Binding<Schema, KEEP>:
-        ApplicationMutationBinding<Schema, ScopeBinding = PlanarMutationScope<Schema>>,
-    BodyKey:
-        OperationReads<<Binding<Schema, KEEP> as ApplicationMutationBinding<Schema>>::Operation>,
-    SourceSelection:
-        OperationReads<<Binding<Schema, KEEP> as ApplicationMutationBinding<Schema>>::Operation>,
+    Binding<Schema, KEEP>: ApplicationMutationBinding<Schema, ScopeBinding = PlanarMutationScope>,
 {
     let root = reader
-        .resolve_entity(BodyKey::reference(), scope_key.to_owned())
+        .resolve_entity(BodyKey::at("BodyKey"), scope_key.to_owned())
         .map_err(HandlerExecutionDenial::new)?;
     // Both APIs observe ONLY the untouched selected field. No Content read
     // may mask the whole-aspect dependency when another field materializes it.
-    let selection = reader.field(&root, SourceSelection::reference())?;
+    let selection = reader.field(&root, SourceSelection::at("SourceSelection"))?;
     if materialized {
-        assert_eq!(selection.as_deref(), Some("selected"));
+        assert_eq!(
+            selection.as_ref().map(source_text::SourceText::as_str),
+            Some("selected")
+        );
     } else {
         assert!(selection.is_none());
     }
     let selected = reader
-        .field_with_predecode_admission(&root, SourceSelection::reference(), |_, checkpoint| {
-            checkpoint().unwrap();
-            Ok::<_, ()>(())
-        })?
+        .field_with_predecode_admission(
+            &root,
+            SourceSelection::at("SourceSelection"),
+            |_, checkpoint| {
+                checkpoint().unwrap();
+                Ok::<_, ()>(())
+            },
+        )?
         .unwrap();
     assert_eq!(
         selected, selection,
@@ -54,10 +56,13 @@ pub fn preserve<Schema: BirthSchema>(
     observe(reader, scope_key, materialized)?;
     if materialized {
         let root = reader
-            .resolve_entity(BodyKey::reference(), scope_key.to_owned())
+            .resolve_entity(BodyKey::at("BodyKey"), scope_key.to_owned())
             .map_err(HandlerExecutionDenial::new)?;
         assert_eq!(
-            reader.field(&root, SourceContent::reference())?.as_deref(),
+            reader
+                .field(&root, SourceContent::at("SourceContent"))?
+                .as_ref()
+                .map(source_text::SourceText::as_str),
             Some("complete")
         );
     }

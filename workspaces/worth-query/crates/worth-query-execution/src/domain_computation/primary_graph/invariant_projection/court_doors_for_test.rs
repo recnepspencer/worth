@@ -75,6 +75,9 @@ impl<Schema, Entity> WorthQueryInvariantEntityIdentity<Schema, Entity> {
         entity: Arc<str>,
         authority_identity: u64,
         _marker: PhantomData<fn() -> (Schema, Entity)>,
+        phase: Option<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadQualification,
+        >,
     ) -> Self {
         Self {
             entity_id,
@@ -82,6 +85,7 @@ impl<Schema, Entity> WorthQueryInvariantEntityIdentity<Schema, Entity> {
             entity,
             authority_identity,
             _marker,
+            phase,
         }
     }
 }

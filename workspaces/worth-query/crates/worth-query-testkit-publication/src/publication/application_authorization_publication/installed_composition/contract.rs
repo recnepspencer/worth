@@ -53,16 +53,18 @@ pub fn publication_capability_contract() -> ApplicationCapabilityContract<
 pub fn target() -> ApplicationCapabilityTargetDefinition {
     ApplicationCapabilityTargetDefinition::new(
         ApplicationCapabilityValueBinding::new(
-            GrantActionField::reference(),
+            GrantActionField::at("GrantActionField"),
             encoded_string("inspect"),
-        ),
+        )
+        .unwrap(),
         ApplicationCapabilityRelationBinding::from_reference(GrantResource::reference()),
         ApplicationCapabilityRelationDimension::not_applicable(),
         ApplicationCapabilityFieldDimension::not_applicable(),
         ApplicationCapabilityValueBinding::new(
-            GrantPurposeField::reference(),
+            GrantPurposeField::at("GrantPurposeField"),
             encoded_string("publication-proof"),
-        ),
+        )
+        .unwrap(),
     )
 }
 
@@ -72,19 +74,30 @@ pub fn constraints() -> ApplicationCapabilityConstraintDefinition {
         ApplicationCapabilityCardinalityDimension::One,
         ApplicationCapabilityCurrentnessDefinition::new(
             ApplicationCapabilityValueBinding::new(
-                GrantStatusField::reference(),
+                GrantStatusField::at("GrantStatusField"),
                 encoded_string("active"),
-            ),
+            )
+            .unwrap(),
             ApplicationCapabilityWorkflowDefinition::new(
-                ApplicationCapabilityFieldBinding::from_reference(GrantWorkflowField::reference()),
-                ApplicationCapabilityFieldBinding::from_reference(
-                    ResourceWorkflowField::reference(),
-                ),
+                ApplicationCapabilityFieldBinding::from_reference(GrantWorkflowField::at(
+                    "GrantWorkflowField",
+                ))
+                .unwrap(),
+                ApplicationCapabilityFieldBinding::from_reference(ResourceWorkflowField::at(
+                    "ResourceWorkflowField",
+                ))
+                .unwrap(),
             ),
             ApplicationCapabilityValidityDefinition::new(
                 ApplicationCapabilityValidityTimeline::UnixEpochSeconds,
-                ApplicationCapabilityFieldBinding::from_reference(GrantNotBeforeField::reference()),
-                ApplicationCapabilityFieldBinding::from_reference(GrantNotAfterField::reference()),
+                ApplicationCapabilityFieldBinding::from_reference(GrantNotBeforeField::at(
+                    "GrantNotBeforeField",
+                ))
+                .unwrap(),
+                ApplicationCapabilityFieldBinding::from_reference(GrantNotAfterField::at(
+                    "GrantNotAfterField",
+                ))
+                .unwrap(),
             ),
         ),
         PublicationRequestContext::reference(),
@@ -101,7 +114,10 @@ pub fn delegation() -> ApplicationCapabilityDelegationDefinition {
         ApplicationCapabilityRelationBinding::from_reference(GrantParent::reference()),
         ApplicationCapabilityRelationBinding::from_reference(GrantGrantor::reference()),
         ApplicationCapabilityRelationBinding::from_reference(GrantGrantee::reference()),
-        ApplicationCapabilityFieldBinding::from_reference(GrantDelegationLimitField::reference()),
+        ApplicationCapabilityFieldBinding::from_reference(GrantDelegationLimitField::at(
+            "GrantDelegationLimitField",
+        ))
+        .unwrap(),
         PublicationCapabilityProvenance::reference(),
     )
 }

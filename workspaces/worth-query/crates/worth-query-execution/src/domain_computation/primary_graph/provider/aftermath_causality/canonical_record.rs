@@ -177,6 +177,10 @@ fn string(
     index: usize,
 ) -> Result<String, WorthQueryAftermathCausalityReadDenial> {
     match values.get(index).and_then(Option::as_ref) {
+        Some(AspectValue::String(InternedString::Stored(value))) => {
+            let value = value.as_string();
+            Ok(value.clone())
+        }
         Some(AspectValue::String(InternedString::Raw(value))) => Ok(value.clone()),
         _ => Err(WorthQueryAftermathCausalityReadDenial::Unavailable),
     }

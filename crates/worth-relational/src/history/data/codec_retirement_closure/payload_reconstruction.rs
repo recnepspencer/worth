@@ -15,6 +15,17 @@ pub(super) struct ReconstructedPayload {
     _funding: worth_execution::ExecutionMemoryReservation,
 }
 
+impl ReconstructedPayload {
+    pub(super) fn into_retained_parts(
+        self,
+    ) -> (
+        Option<AuthoritativeRecordAspectState>,
+        worth_execution::ExecutionMemoryReservation,
+    ) {
+        (self.state, self._funding)
+    }
+}
+
 pub(super) fn apply(
     current: Option<&AuthoritativeRecordAspectState>,
     patch: &PublishedAuthoritativePatch,
@@ -48,7 +59,7 @@ pub(super) fn apply(
     };
     drop(admission_scratch);
     let application = admitted
-        .application_allocation_bounds(current)
+        .application_retained_storage_bounds(current)
         .ok_or_else(super::memory_overflow)?;
     let funding = allocation::reserve(lease, application.retained_bytes, context)?;
     let _application_scratch = allocation::reserve(lease, application.transient_bytes, context)?;

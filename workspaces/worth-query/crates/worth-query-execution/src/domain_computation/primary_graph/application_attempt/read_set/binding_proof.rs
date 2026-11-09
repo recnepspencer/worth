@@ -21,6 +21,8 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Wor
 
 pub(in crate::domain_computation::primary_graph::application_attempt) struct MutationHandlerBindingProof
 {
+    pub(in crate::domain_computation::primary_graph::application_attempt) coupled_outputs:
+        super::super::coupled_outputs::DeclaredCoupledOutputDemands,
     pub(in crate::domain_computation::primary_graph::application_attempt) binding: &'static str,
     pub(in crate::domain_computation::primary_graph::application_attempt) input_identity: [u8; 32],
 }

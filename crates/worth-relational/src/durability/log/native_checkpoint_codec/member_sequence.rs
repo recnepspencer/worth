@@ -82,7 +82,7 @@ pub(super) fn empty_envelopes<'de: 'a, 'a, D: Deserializer<'de>>(
     impl<'de> serde::de::Visitor<'de> for Empty {
         type Value = Vec<ByteString<'de>>;
         fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-            f.write_str("the empty CHK18 inline envelope field")
+            f.write_str("the empty CHK22 inline envelope field")
         }
         fn visit_seq<A: serde::de::SeqAccess<'de>>(
             self,
@@ -92,7 +92,7 @@ pub(super) fn empty_envelopes<'de: 'a, 'a, D: Deserializer<'de>>(
                 || input.next_element::<serde::de::IgnoredAny>()?.is_some()
             {
                 return Err(serde::de::Error::custom(
-                    "CHK18 canonical artifacts belong only to members",
+                    "CHK22 canonical artifacts belong only to members",
                 ));
             }
             Ok(Vec::new())

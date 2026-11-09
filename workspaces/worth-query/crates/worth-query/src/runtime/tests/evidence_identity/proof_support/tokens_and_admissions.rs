@@ -3,7 +3,7 @@ use super::super::super::support::*;
 pub(in super::super) fn assert_canonical_evidence_identity_token(token: impl AsRef<str>) {
     let token = token.as_ref();
     assert!(
-        token.starts_with("worth.query.evidence-identity.v1:sha256:"),
+        token.starts_with("worth.query.evidence-identity.v1:sha256-canonical-v2:"),
         "expected canonical evidence identity token, got {token}"
     );
 }
@@ -14,7 +14,8 @@ pub(in super::super) fn compose_basis_admission_identity(
     authority_lane: WorthQueryAuthorityLane,
     evidence: impl IntoIterator<Item = impl Into<String>>,
 ) -> crate::WorthQueryEvidenceIdentity {
-    let evidence_rows = WorthQueryBasisAdmissionEvidenceRow::rows_from_values(evidence);
+    let evidence_rows = WorthQueryBasisAdmissionEvidenceRow::rows_from_values(evidence)
+        .expect("fixture digest must fit");
     crate::WorthQueryEvidenceIdentity::compose(scope)
         .field_value(
             crate::WorthQueryEvidenceTag::new("session_label_identity"),
@@ -33,6 +34,7 @@ pub(in super::super) fn compose_basis_admission_identity(
             evidence_rows.iter().map(|row| row.row_digest().as_str()),
         )
         .seal()
+        .expect("fixture digest must fit")
 }
 
 pub(in super::super) fn compose_receipt_identity(
@@ -47,6 +49,7 @@ pub(in super::super) fn compose_receipt_identity(
         )
         .field_shape(crate::WorthQueryEvidenceTag::new("posture"), posture)
         .seal()
+        .expect("fixture digest must fit")
 }
 
 pub(in super::super) fn compose_denial_evidence_identity(
@@ -125,4 +128,5 @@ pub(in super::super) fn compose_denial_evidence_identity(
                 .map(WorthQueryIntentDecisionTraceEnvelope::trace_digest),
         )
         .seal()
+        .expect("fixture digest must fit")
 }

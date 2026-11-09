@@ -6,7 +6,7 @@ use crate::effect_lifecycle::{
 
 #[test]
 fn support_rows_match_the_family_inventory_contract() {
-    let matrix = effect_lifecycle_support_matrix();
+    let matrix = effect_lifecycle_support_matrix().expect("fixture digest must fit");
 
     assert!(matrix
         .rows()
@@ -16,7 +16,7 @@ fn support_rows_match_the_family_inventory_contract() {
 
 #[test]
 fn support_rows_expose_denial_rebind_and_deferred_neighbor_contracts() {
-    let matrix = effect_lifecycle_support_matrix();
+    let matrix = effect_lifecycle_support_matrix().expect("fixture digest must fit");
 
     let preview_mutation = matrix
         .rows()

@@ -1,133 +1,28 @@
-use std::collections::BTreeMap;
-
-use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationOperationProgramTarget,
-    ApplicationScalarValueBinding, DeclaredApplicationFieldValue, OperationWrites,
-    WritableCapability,
-};
-use worth_relational::facade::transactions::EntityReference;
-
-use super::{
-    denial, WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgramBuilder,
-    WorthQueryApplicationOptionalFieldWrite, WorthQueryApplicationRealizedEffect,
-};
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-};
+use super::WorthQueryApplicationEffectEntity;
+use super::WorthQueryApplicationEffectProgramBuilder;
+use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial;
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope>
 {
-    pub fn write_field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+    #[inline(always)]
+    pub fn write_field<Entity, Field>(
         &mut self,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
-        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
-        value: Value,
+        field: Field,
+        value: Field::Value,
     ) -> Result<(), WorthQueryApplicationAttemptDenial>
     where
-        Field: OperationWrites<Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Write: WritableCapability,
-        Unit: ApplicationFieldUnit,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+        >,
     {
-        let value = Field::Binding::encode(&value).map_err(|_| {
-            denial(
-                WorthQueryApplicationAttemptDenialKind::InvalidEffectValue,
-                field.field(),
-            )
-        })?;
-        self.validate_target(target, field.entity())?;
-        self.admit_program_target(&ApplicationOperationProgramTarget::Write {
-            entity: field.entity().to_string(),
-            aspect: field.aspect().to_string(),
-            field: field.field().to_string(),
-        })?;
-        let EntityReference::Existing(entity_id) = target.reference else {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::ForeignEffectTarget,
-                field.field(),
-            ));
-        };
-        let locator = self.field_locator(field.entity(), field.aspect(), field.field())?;
-        if self.layout.field_is_optional(field.entity(), &locator) {
-            return self.write_optional_value(
-                &worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus::new(
-                    field.entity(), field.aspect(), field.field(),
-                ),
-                entity_id, locator, Some(value),
-            );
-        }
-        self.write_required_value(
-            &worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus::new(
-                field.entity(),
-                field.aspect(),
-                field.field(),
-            ),
-            entity_id,
-            locator,
-            std::borrow::Cow::Owned(value),
+        self.native_effects().write_field(
+            target.borrowed(),
+            field.identity(),
+            &crate::domain_computation::primary_graph::value_decode::ScalarFieldEncoder::<
+                Field::Binding,
+            >::new(&value),
         )
-    }
-
-    pub(super) fn write_required_value(
-        &mut self,
-        field: &worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus,
-        entity_id: worth_relational::facade::identity::EntityId,
-        locator: worth_foundational::facade::AspectFieldLocator,
-        value: std::borrow::Cow<'_, worth_foundational::facade::AspectValue>,
-    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
-        self.require_parent_not_removed(field.entity(), entity_id, &locator)?;
-        self.require_field_observation(entity_id, &locator)?;
-        let position = self
-            .field_write_positions
-            .position(field.entity(), entity_id);
-        let matching_effect = position.map(|position| &self.effects[position]);
-        // Required fields stored in an optional patch retain the same contract
-        // as optional entries. Resolve it before retaining the value.
-        let patch_contract = match matching_effect {
-            Some(WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields { .. }) => Some(
-                self.layout
-                    .aspect_contract(field.entity(), locator.aspect().aspect_key())
-                    .map(worth_foundational::facade::PortableAspectContractBasis::from_contract)
-                    .ok_or_else(|| {
-                        denial(
-                            WorthQueryApplicationAttemptDenialKind::UndeclaredEffect,
-                            field.field(),
-                        )
-                    })?,
-            ),
-            _ => None,
-        };
-        self.reserve_effects(usize::from(position.is_none()))?;
-        let value = value.into_owned();
-        match position.map(|position| &mut self.effects[position]) {
-            Some(WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields {
-                fields, ..
-            }) => {
-                let contract = patch_contract.expect("existing patch contract prepared");
-                fields.insert(
-                    locator,
-                    WorthQueryApplicationOptionalFieldWrite {
-                        contract,
-                        value: Some(value),
-                    },
-                );
-            }
-            Some(WorthQueryApplicationRealizedEffect::UpdateEntity { fields, .. }) => {
-                fields.insert(locator, value);
-            }
-            Some(_) => unreachable!("field-write index names only entity-field effects"),
-            None => {
-                let position = self.effects.len();
-                self.effects
-                    .push(WorthQueryApplicationRealizedEffect::UpdateEntity {
-                        entity: field.entity().to_string(),
-                        entity_id,
-                        fields: BTreeMap::from([(locator, value)]),
-                    });
-                self.field_write_positions
-                    .remember(field.entity(), entity_id, position);
-            }
-        }
-        Ok(())
     }
 }

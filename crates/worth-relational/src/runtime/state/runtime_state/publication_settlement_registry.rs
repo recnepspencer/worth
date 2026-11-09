@@ -153,6 +153,10 @@ impl RelationalPublicationSettlementRegistry {
 }
 
 impl RelationalPendingSettlementReservation {
+    pub(crate) fn install_prepared_indexes(&mut self) {
+        self.record.install_prepared_indexes();
+    }
+
     /// Successful movement authorizes the already-installed record against its
     /// exact positioned canonical commit and disarms pre-effect cleanup. After
     /// this returns, the commit is recovery-addressable by identity alone.

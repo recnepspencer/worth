@@ -65,7 +65,7 @@ fn structured_effect_validation_precedes_retention_and_external_projection() {
                     &admission,
                     |reader, projected| {
                         reader
-                            .require_decision_field(projected, AccountStatus::reference())
+                            .require_decision_field(projected, AccountStatus::at("AccountStatus"))
                             .unwrap();
                     },
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,

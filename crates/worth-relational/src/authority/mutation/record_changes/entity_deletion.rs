@@ -36,6 +36,7 @@ pub(in crate::authority::mutation) fn delete_entity_with_cascade(
     schema_registry: &RelationalSchemaRegistry,
     default_cascade_delete_policy: CascadeDeletePolicy,
     outcome: &mut MutationOutcome,
+    deferred_publication_edges: Option<&std::collections::BTreeSet<RelationId>>,
 ) -> Result<(), crate::transactions::data::TransactionCommitError> {
     let input = input(state, entity_id)?;
     let declaration = schema_registry
@@ -64,30 +65,9 @@ pub(in crate::authority::mutation) fn delete_entity_with_cascade(
         schema_registry,
         default_cascade_delete_policy,
         outcome,
+        deferred_publication_edges,
         input,
         patch,
-    )
-}
-pub(in crate::authority::mutation) fn delete_entity_with_cascade_original(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    state: &mut WorkingState,
-    version_id: crate::identity::data::VersionId,
-    entity_id: EntityId,
-    schema_registry: &RelationalSchemaRegistry,
-    default_cascade_delete_policy: CascadeDeletePolicy,
-    outcome: &mut MutationOutcome,
-) -> Result<(), crate::transactions::data::TransactionCommitError> {
-    let input = input(state, entity_id)?;
-    retire(
-        execution,
-        state,
-        version_id,
-        entity_id,
-        schema_registry,
-        default_cascade_delete_policy,
-        outcome,
-        input,
-        None,
     )
 }
 fn retire(
@@ -98,6 +78,7 @@ fn retire(
     schema_registry: &RelationalSchemaRegistry,
     default_cascade_delete_policy: CascadeDeletePolicy,
     outcome: &mut MutationOutcome,
+    deferred_publication_edges: Option<&std::collections::BTreeSet<RelationId>>,
     input: EntityDeletionInput,
     authoritative_patch: Option<MutationAspectPatch>,
 ) -> Result<(), crate::transactions::data::TransactionCommitError> {
@@ -148,14 +129,23 @@ fn retire(
         }
     }
     for &relation_id in attached.keys() {
-        let cascade_policy = state
+        if deferred_publication_edges.is_some_and(|edges| edges.contains(&relation_id)) {
+            continue;
+        }
+        let relation_kind = state
             .get_current_partition(relation_id.partition_id)
             .and_then(|partition| {
                 partition
                     .relation_arena()
                     .get(&relation_id)
                     .and_then(|slot| slot.kind_id())
-            })
+            });
+        // Native aggregate consequences own metadata deletion; an early audit
+        // retirement would hide their required true deletion patches.
+        if relation_kind.is_some_and(|kind| schema_registry.native_private_kinds.contains(&kind)) {
+            continue;
+        }
+        let cascade_policy = relation_kind
             .and_then(|kind_id| {
                 schema_registry
                     .relation_registration(kind_id)

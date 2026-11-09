@@ -20,8 +20,8 @@ impl ApplicationStructuredValueBinding for BumpInput {
     }
 }
 worth_query_operation!(pub Bump for Schema, input BumpInput);
-worth_query_operation_reads!(Bump => [Row, Parent, ParentRevision, ParentRows, RowIdentity]);
-worth_query_operation_writes!(Bump => [ParentRevision, RowValue, AuditIdentity, AuditValue]);
+worth_query_operation_reads!(Bump => [Row, Parent, ParentRows]);
+
 worth_query_operation_creates!(Bump => [Audit]);
 pub fn body() -> ApplicationOperationBody<Schema, Bump, BumpRow> {
     let op = Bump::reference();
@@ -42,17 +42,17 @@ pub fn body() -> ApplicationOperationBody<Schema, Bump, BumpRow> {
     op.body()
         .assign_value_at_path(
             ApplicationQueryRootPath::from(Row::reference()).reverse(ParentRows::reference()),
-            ParentRevision::reference(),
+            ParentRevision::at("ParentRevision"),
             &next,
         )
         .unwrap()
-        .assign_input(RowValue::reference(), "value")
+        .assign_input(RowValue::at("RowValue"), "value")
         .unwrap()
         .create_in_scope(Audit::reference(), "revision-audit")
         .unwrap()
-        .initialize_input(AuditIdentity::reference(), "row")
+        .initialize_input(AuditIdentity::at("AuditIdentity"), "row")
         .unwrap()
-        .initialize_value(AuditValue::reference(), &next)
+        .initialize_value(AuditValue::at("AuditValue"), &next)
         .unwrap()
         .finish()
         .unwrap()

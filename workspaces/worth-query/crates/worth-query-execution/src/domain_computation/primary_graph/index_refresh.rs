@@ -1,5 +1,4 @@
 use worth_relational::facade::history::{BranchId, CommitId, RelationalCommitReceipt};
-use worth_relational::facade::indexes::DerivedIndexBuildRequest;
 use worth_relational::facade::publication::PatchStreamRequest;
 
 use super::WorthQueryPrimaryGraphIntegrationHandle;
@@ -8,6 +7,7 @@ use super::WorthQueryPrimaryGraphIntegrationHandle;
 pub enum WorthQueryPrimaryGraphIndexRefreshDenialKind {
     MissingCommittedMutation,
     IndexBuildRejected,
+    IndexPredecessorUnavailable,
     Execution(
         Result<
             crate::domain_computation::WorthQueryProviderSessionDenialKind,
@@ -70,13 +70,10 @@ impl std::fmt::Display for WorthQueryPrimaryGraphIndexRefreshDenial {
 impl std::error::Error for WorthQueryPrimaryGraphIndexRefreshDenial {}
 
 impl WorthQueryPrimaryGraphIntegrationHandle {
-    /// Executes a mutation and synchronously refreshes every committed branch
-    /// touched by it. A main-branch commit uses its exact captured prior root;
-    /// other branches and additional commits use the finite cold budget.
-    ///
-    /// The outer result reports derived-index maintenance. The inner result is
-    /// the caller's mutation outcome and is preserved when maintenance
-    /// succeeds, including ordinary mutation rejection.
+    /// Execute a mutation and consume the native pipeline's selections at the
+    /// final live heads reached by this batch. Intermediate selections may
+    /// already have retired. Missing preparation at a selected head refuses;
+    /// batch and non-main writes never trigger a post-publication rebuild.
     #[doc(hidden)]
     pub fn execute_mutation_with_index_refresh<T, E>(
         &self,
@@ -84,127 +81,33 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
         mutate: impl FnOnce(&worth_relational::facade::runtime::RelationalRuntime) -> Result<T, E>,
     ) -> Result<Result<T, E>, WorthQueryPrimaryGraphIndexRefreshDenial> {
         self.source_owner.with_runtime(execution, |runtime| {
-            let before = runtime
-                .observe_branch(&runtime.main_branch_identity())
-                .ok()
-                .and_then(|(_, basis)| {
-                    runtime
-                        .snapshots()
-                        .snapshot_for_observation(&basis.observation())
-                        .ok()
-                });
-            let started_after = runtime.history().latest_patch_stream_position();
-            let previous = started_after.and_then(|position| {
+            let position = runtime.history().latest_patch_stream_position();
+            let previous = position.and_then(|position| {
                 runtime
                     .history()
                     .immutable_commit_receipt_at_patch_stream_position(position)
             });
-            let outcome =
-                match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| mutate(runtime))) {
-                    Ok(outcome) => outcome,
-                    Err(payload) => {
-                        if let Some(before) = before {
-                            runtime
-                                .snapshots()
-                                .release_snapshot(&before)
-                                .expect("captured index snapshot closes during unwind");
-                        }
-                        std::panic::resume_unwind(payload);
-                    }
-                };
-            let published = read_complete_mutation_batch(runtime, execution, started_after);
-            let published = match published {
-                Ok(published) => published,
-                Err(failure) => {
-                    if let Some(before) = before {
-                        runtime
-                            .snapshots()
-                            .release_snapshot(&before)
-                            .expect("captured snapshot closes");
-                    }
-                    return Err(patch_read_denial(
+            let outcome = mutate(runtime);
+            let published =
+                read_complete_mutation_batch(runtime, execution, position).map_err(|failure| {
+                    patch_read_denial(
                         previous.as_ref(),
                         runtime.history().historical_latest_commit().as_ref(),
                         self.primary_index_ids.len(),
                         failure,
-                    ));
-                }
-            };
-            if published.patches.is_empty() {
-                if let Some(before) = before {
-                    runtime
-                        .snapshots()
-                        .release_snapshot(&before)
-                        .expect("captured snapshot closes");
-                }
-                return Ok(outcome);
-            }
-            let captured_branch_commit_count = published
-                .patches
-                .iter()
-                .filter(|patch| {
-                    runtime
-                        .history()
-                        .immutable_commit_receipt_at_patch_stream_position(patch.position)
-                        .is_some_and(|receipt| {
-                            before
-                                .as_ref()
-                                .is_some_and(|snapshot| receipt.branch_id == *snapshot.branch_id())
-                        })
-                })
-                .count();
-            let mut used_before = false;
-            let refresh = (|| {
-                for patch in published.patches {
-                    let committed = runtime
-                        .history()
-                        .immutable_commit_receipt_at_patch_stream_position(patch.position)
-                        .ok_or_else(|| {
-                            missing_committed_mutation(
-                                previous.as_ref(),
-                                self.primary_index_ids.len(),
-                            )
-                        })?;
-                    let basis = runtime
-                        .branch_identity(&committed.branch_id)
-                        .ok()
-                        .and_then(|identity| {
-                            runtime
-                                .observe_branch(&identity)
-                                .ok()
-                                .map(|(_, basis)| basis)
-                        })
-                        .filter(|basis| {
-                            basis.observation().commit_id() == Some(committed.commit_id)
-                        });
-                    let prior = if captured_branch_commit_count == 1
-                        && !used_before
-                        && before
-                            .as_ref()
-                            .is_some_and(|before| before.branch_id() == &committed.branch_id)
-                    {
-                        used_before = true;
-                        before.as_ref()
-                    } else {
-                        None
-                    };
-                    let request = DerivedIndexBuildRequest {
-                        source_commit_id: committed.commit_id,
-                        branch_id: committed.branch_id.clone(),
-                        index_ids: self.primary_index_ids.to_vec(),
-                    };
-                    let build = if let Some(basis) = basis {
-                        super::index_maintenance_budget::refresh_with_cold_fallback(
-                            execution, runtime, request, &basis, prior,
-                        )
-                    } else {
-                        runtime.index_authority().reconstruct_for_commit(
-                            execution,
-                            request,
-                            super::index_maintenance_budget::cold_index_reconstruction_budget(),
-                        )
-                    };
-                    let build = build.map_err(|denial| {
+                    )
+                })?;
+            for patch in published.patches {
+                let committed = runtime
+                    .history()
+                    .immutable_commit_receipt_at_patch_stream_position(patch.position)
+                    .ok_or_else(|| {
+                        missing_committed_mutation(previous.as_ref(), self.primary_index_ids.len())
+                    })?;
+                runtime
+                    .index_authority()
+                    .verify_index_basis_for_commit(execution, &committed)
+                    .map_err(|denial| {
                         maintenance_denial(
                             previous.as_ref(),
                             &committed,
@@ -212,24 +115,8 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
                             denial,
                         )
                     })?;
-                    if build.generations.len() != self.primary_index_ids.len() {
-                        return Err(index_build_rejected(
-                            previous.as_ref(),
-                            &committed,
-                            self.primary_index_ids.len(),
-                            self.primary_index_ids.len(),
-                        ));
-                    }
-                }
-                Ok(outcome)
-            })();
-            if let Some(before) = before {
-                runtime
-                    .snapshots()
-                    .release_snapshot(&before)
-                    .expect("captured index maintenance snapshot releases exactly once");
             }
-            refresh
+            Ok(outcome)
         })
     }
 }
@@ -330,6 +217,10 @@ fn maintenance_denial(
                 ),
             ))
         }
+        Native::ColdReconstructionRequired => {
+            refusal.kind =
+                Box::new(WorthQueryPrimaryGraphIndexRefreshDenialKind::IndexPredecessorUnavailable);
+        }
         Native::Basis(_)
         | Native::SnapshotUnavailable
         | Native::CommitMismatch
@@ -337,7 +228,6 @@ fn maintenance_denial(
         | Native::IndexUnavailable(_)
         | Native::GenerationKindMismatch(_)
         | Native::PriorEntryMismatch
-        | Native::ColdReconstructionRequired
         | Native::WorkBudgetExceeded
         | Native::ForeignCandidate
         | Native::CandidateLifetimeExpired { .. }

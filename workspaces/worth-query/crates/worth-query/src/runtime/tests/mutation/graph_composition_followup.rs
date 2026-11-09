@@ -105,14 +105,28 @@ fn compose_graph_supports_symbolic_relation_followup_mutation() {
         .expect("graph composition receipt should expose composition program");
     let lifecycle = receipt
         .graph_composition_lifecycle_outcomes()
-        .expect("graph composition receipt should expose lifecycle outcomes");
+        .expect("graph composition receipt should expose lifecycle outcomes")
+        .expect("fixture digest must fit");
     let composition_evidence = receipt
         .graph_composition_evidence()
-        .expect("graph composition receipt should expose composition evidence");
+        .expect("graph composition receipt should expose composition evidence")
+        .expect("fixture digest must fit");
 
     assert_eq!(receipt.write_receipts().len(), 3);
-    assert_eq!(receipt.batch_mutation_evidence().component_count(), 3);
-    assert_eq!(receipt.batch_mutation_evidence().resolved_target_count(), 3);
+    assert_eq!(
+        receipt
+            .batch_mutation_evidence()
+            .expect("fixture digest must fit")
+            .component_count(),
+        3
+    );
+    assert_eq!(
+        receipt
+            .batch_mutation_evidence()
+            .expect("fixture digest must fit")
+            .resolved_target_count(),
+        3
+    );
     assert_eq!(receipt.graph_composition_breadth().component_count(), 3);
     assert_eq!(
         receipt
@@ -170,12 +184,14 @@ fn compose_graph_supports_symbolic_relation_followup_mutation() {
     assert_eq!(
         receipt
             .batch_mutation_evidence()
+            .expect("fixture digest must fit")
             .symbolic_resolution_count(),
         2
     );
     assert_eq!(
         receipt
             .batch_mutation_evidence()
+            .expect("fixture digest must fit")
             .symbolic_target_reference_count(),
         1
     );

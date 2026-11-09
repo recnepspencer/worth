@@ -1,8 +1,6 @@
 use worth_foundational::facade::CanonicalDigestWorkBudget;
 use worth_query_declaration::facade::application_query::ErasedApplicationQueryDefinition;
 
-const INSTALLATION_ENTRY_LIMIT: u32 = 4_096;
-const INSTALLATION_ENCODED_BYTE_LIMIT: usize = 1024 * 1024;
 const PARAMETER_ENCODED_BYTE_LIMIT: usize = 256 * 1024;
 const ADMISSION_PLANNING_ENTRY_LIMIT: u32 = 4_096;
 const ADMISSION_PLANNING_ENCODED_BYTE_LIMIT: usize = 1024 * 1024;
@@ -15,7 +13,10 @@ pub struct WorthQueryApplicationQueryCanonicalWorkPolicy {
 }
 
 impl WorthQueryApplicationQueryCanonicalWorkPolicy {
-    pub(super) fn for_definition(definition: &ErasedApplicationQueryDefinition) -> Self {
+    pub(super) fn for_definition(
+        definition: &ErasedApplicationQueryDefinition,
+        installation: CanonicalDigestWorkBudget,
+    ) -> Self {
         let parameter_entries = definition
             .parameters()
             .len()
@@ -24,11 +25,7 @@ impl WorthQueryApplicationQueryCanonicalWorkPolicy {
             .and_then(|count| u32::try_from(count).ok())
             .unwrap_or(u32::MAX);
         Self {
-            installation: CanonicalDigestWorkBudget::new(
-                INSTALLATION_ENTRY_LIMIT,
-                INSTALLATION_ENCODED_BYTE_LIMIT,
-            )
-            .expect("the installed application-query canonical budget is nonzero"),
+            installation,
             parameters: CanonicalDigestWorkBudget::new(
                 parameter_entries,
                 PARAMETER_ENCODED_BYTE_LIMIT,

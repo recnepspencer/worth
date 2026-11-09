@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
 use super::super::materialization::QueryCausalInspectionArtifact;
@@ -9,7 +10,7 @@ use super::error::{CausalInspectionCertificationError, CausalInspectionCertifica
 
 pub fn certify_causal_inspection_runtime_path(
     scope: CausalInspectionCertificationScope,
-) -> CausalInspectionCertificationBundle {
+) -> Result<CausalInspectionCertificationBundle, IdentityDerivationDenial> {
     let parts = scope.into_bundle_parts();
     let certification_bundle_identity = WorthQueryEvidenceIdentity::compose(
         WorthQueryEvidenceScope::CausalInspectionCertificationFailureEvidence,
@@ -94,8 +95,8 @@ pub fn certify_causal_inspection_runtime_path(
         WorthQueryEvidenceTag::new("scale_count"),
         parts.scale_fixture_row_count,
     )
-    .seal();
-    CausalInspectionCertificationBundle::from_parts(
+    .seal()?;
+    Ok(CausalInspectionCertificationBundle::from_parts(
         certification_bundle_identity,
         parts.certification_scope_digest,
         parts.performance_certification_digest,
@@ -116,7 +117,7 @@ pub fn certify_causal_inspection_runtime_path(
         parts.hostile_row_count,
         parts.representative_row_count,
         parts.scale_fixture_row_count,
-    )
+    ))
 }
 
 pub(super) fn validate_required_artifact_lanes(

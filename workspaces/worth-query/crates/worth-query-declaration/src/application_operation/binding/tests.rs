@@ -1,4 +1,7 @@
+#[path = "tests/records.rs"]
+mod storage_model;
 use std::any::TypeId;
+pub use storage_model::*;
 
 mod action_authoring;
 mod conditional_program;
@@ -10,7 +13,6 @@ mod workflow_requirements;
 
 use crate::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationPrincipalScope,
-    ApplicationMutationScopeResolution,
 };
 use crate::application_schema::{ApplicationSchemaMember, ApplicationStructuredValueBinding};
 use crate::authentication::{
@@ -48,24 +50,6 @@ crate::worth_query_structured_value_binding!(
     RenameResultBinding for RenameResult {
         identity: "worth.query.test.rename-result.v1"
     }
-);
-
-crate::worth_query_entity!(ExternalMapping for MutationSchema);
-crate::worth_query_entity!(Account for MutationSchema);
-crate::worth_query_aspect!(
-    ExternalIdentity for MutationSchema, ExternalMapping;
-    identity = AspectIdentity(0x9174_0001),
-    revision = AspectContractRevision(1),
-);
-crate::worth_query_aspect!(
-    AccountIdentity for MutationSchema, Account;
-    identity = AspectIdentity(0x9174_0002),
-    revision = AspectContractRevision(1),
-);
-crate::worth_query_field!(
-    ExternalIdentityField for MutationSchema, ExternalMapping, ExternalIdentity:
-    WorthQueryExternalPrincipalIdentity => WorthQueryExternalPrincipalIdentityBinding,
-    read_only, equality
 );
 
 struct RenamedAccount;
@@ -107,29 +91,37 @@ impl super::ApplicationMutationOutputContract<MutationSchema> for RenameOutputs 
     const ROLE_FAMILIES: &'static [super::ApplicationMutationOutputRoleFamilyDescriptor] =
         &[<Changed as super::WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR];
 }
-crate::worth_query_field!(
-    MappingStatusField for MutationSchema, ExternalMapping, ExternalIdentity:
-    WorthQueryPrincipalMappingStatus => WorthQueryPrincipalMappingStatusBinding,
-    read_write, equality
-);
-crate::worth_query_field!(
-    AccountIdField for MutationSchema, Account, AccountIdentity:
-    u64 => crate::application_schema::U64ApplicationValueBinding, read_only, equality
-);
-crate::worth_query_relation!(
-    MappingTarget in MutationSchema,
-    ExternalMapping => Account;
-    integrity = same_context_unbounded_retain_dangling
-);
-crate::worth_query_principal_binding!(
-    PrincipalBinding in MutationSchema,
-    mapping ExternalMapping {
-        identity: ExternalIdentityField,
-        status: MappingStatusField,
-        target: MappingTarget => Account,
-        principal_identity: AccountIdField
+
+struct PrincipalBinding;
+impl PrincipalBinding {
+    pub fn reference() -> ApplicationPrincipalBindingRef<
+        MutationSchema,
+        Self,
+        ExternalMapping,
+        Account,
+        <AccountIdField as RecordSelection>::Value,
+        <AccountIdField as RecordSelection>::Binding,
+    > {
+        ApplicationPrincipalBindingRef::from_requirements(
+            "PrincipalBinding",
+            ApplicationPrincipalBindingRequirements {
+                mapping_identity: ApplicationPrincipalMappingIdentityRequirement::from_field(
+                    ExternalIdentityField::at("ExternalIdentityField"),
+                ),
+                mapping_status: ApplicationPrincipalMappingStatusRequirement::from_field(
+                    MappingStatusField::at("MappingStatusField"),
+                ),
+                target: ApplicationPrincipalTargetRequirement::from_relation(
+                    MappingTarget::reference(),
+                ),
+                principal_identity: ApplicationPrincipalIdentityRequirement::from_field(
+                    AccountIdField::at("AccountIdField"),
+                ),
+            },
+        )
     }
-);
+}
+
 crate::worth_query_operation!(
     RenameOperation for MutationSchema,
     input RenameInputBinding
@@ -151,40 +143,56 @@ crate::worth_query_mutation_binding!(
     outputs RenameOutputs,
     principal PrincipalBinding, mapping ExternalMapping, principal_entity Account,
         principal_identity u64, identity_binding crate::application_schema::U64ApplicationValueBinding,
-    scope Account, AccountIdentity, AccountIdField, u64,
-        crate::application_schema::ReadOnly, crate::application_schema::NoApplicationUnit,
-    field AccountIdField::reference(),
+    scope AccountIdField,
+    field AccountIdField::at("AccountIdField"),
     value rename_scope,
 );
 
-crate::worth_query_application_schema! {
-    schema MutationSchema {
-        owner: mutation_binding_test,
-        version: (1, 0),
-        members: |schema| {
-            schema
-                .entity(ExternalMapping::reference())
-                .entity(Account::reference())
-                .aspect(ExternalMapping::reference(), ExternalIdentity::reference())
-                .aspect(Account::reference(), AccountIdentity::reference())
-                .field(ExternalMapping::reference(), ExternalIdentityField::reference())
-                .field(ExternalMapping::reference(), MappingStatusField::reference())
-                .field(Account::reference(), AccountIdField::reference())
-                .relation(
-                    MappingTarget::reference(),
-                    ExternalMapping::reference(),
-                    Account::reference(),
-                )
-                .principal_binding(PrincipalBinding::reference())
-                .operation(
-                    RenameOperation::reference()
-                        .definition()
-                        .no_external_effect()
-                        .no_aftermath()
-                        .finish(),
-                )
-                .application_mutation_binding::<RenameBinding>()
-        }
+use crate::facade::application_schema::{
+    fragment::{self, *},
+    *,
+};
+#[derive(Clone, Copy)]
+pub struct MutationSchema;
+impl Fragment for MutationSchema {
+    const NAME: &'static str = "MutationSchema";
+    type Bindings = NoBindings;
+    type Members = (MutationModel, Contracts);
+}
+impl ApplicationSchema for MutationSchema {
+    const OWNER: &'static str = "mutation_binding_test";
+    const NAME: &'static str = <Self as Fragment>::NAME;
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        fragment::declare(Self)
+    }
+}
+impl MutationSchema {
+    pub fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        <Self as ApplicationSchema>::declaration()
+    }
+}
+pub struct Contracts;
+impl Registration<MutationSchema> for Contracts {
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<MutationSchema>,
+    ) -> Result<
+        ApplicationSchemaDeclarationBuilder<MutationSchema>,
+        ApplicationSchemaDeclarationDenial,
+    > {
+        Ok(schema
+            .principal_binding(PrincipalBinding::reference())
+            .operation(
+                RenameOperation::reference()
+                    .definition()
+                    .no_external_effect()
+                    .no_aftermath()
+                    .finish(),
+            )
+            .application_mutation_binding::<RenameBinding>())
     }
 }
 
@@ -262,7 +270,7 @@ fn input_field_scope_resolution_retains_input_and_principal_affinity() {
 
 #[test]
 fn principal_scope_resolution_uses_the_borrowed_principal_identity() {
-    let scope = ApplicationMutationPrincipalScope::new(AccountIdField::reference());
+    let scope = ApplicationMutationPrincipalScope::new(AccountIdField::at("AccountIdField"));
     let (field, resolved) = scope.into_field_parts(&73_u64);
 
     assert_eq!(field.entity(), "Account");

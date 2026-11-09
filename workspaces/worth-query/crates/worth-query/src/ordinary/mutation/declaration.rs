@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::ordinary::WorthQueryOrdinaryInspectionPolicy;
 use crate::runtime::{
     WorthQueryAspectMutationBuilder, WorthQueryRuntimeError, WorthQueryWriteCommand,
@@ -71,7 +72,11 @@ where
             error: error.into(),
         }
     })?;
-    let identity = mutation_declaration_identity(&command);
+    let identity = mutation_declaration_identity(&command).map_err(|cause| {
+        WorthQueryMutationDeclarationStop {
+            error: Box::new(cause.into()),
+        }
+    })?;
     Ok(WorthQueryMutationDeclaration {
         identity: WorthQueryMutationDeclarationIdentity { identity },
         command,
@@ -79,6 +84,8 @@ where
     })
 }
 
-fn mutation_declaration_identity(command: &WorthQueryWriteCommand) -> WorthQueryEvidenceIdentity {
-    crate::intent_admission::authoritative_mutation_input_identity(command)
+fn mutation_declaration_identity(
+    command: &WorthQueryWriteCommand,
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(crate::intent_admission::authoritative_mutation_input_identity(command)?)
 }

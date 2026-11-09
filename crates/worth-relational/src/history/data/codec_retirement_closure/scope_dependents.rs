@@ -1,60 +1,87 @@
 //! Current owned publications whose exact source would be removed by a candidate.
-use super::{charge, CodecRetirementClosureStop as Stop};
+use super::{charge, CodecRetirementClosureStop as Stop, PublicationHistoryFailure as Failure};
 use crate::{
-    history::data::{CanonicalCommitEnvelope, CanonicalRequiredOutputOrigin, CommitId},
-    identity::data::EntityId,
+    history::data::CanonicalRequiredOutputOrigin, identity::data::EntityId,
     mvcc::RequiredOutputRolePosture,
 };
 use std::sync::Arc;
 use worth_execution::MapKernelContext;
 
+pub(crate) enum OwnedScopeDependentSelection<'a> {
+    RemovedSources(&'a [EntityId]),
+    LiveRecord(
+        &'a mut dyn FnMut(
+            &CanonicalRequiredOutputOrigin,
+            &mut MapKernelContext<'_, '_>,
+        ) -> Result<bool, Stop>,
+    ),
+}
+
+/// One current-fact selection owner serves source removal and the write fence.
 pub(crate) fn select_owned_scope_dependent(
-    removed: &[EntityId],
-    mut next: Option<CommitId>,
-    bound: usize,
-    mut load: impl FnMut(CommitId) -> Result<Option<Arc<CanonicalCommitEnvelope>>, Stop>,
+    mut selection: OwnedScopeDependentSelection<'_>,
+    current: &crate::publication::ownership::CurrentPublicationRoster,
     context: &mut MapKernelContext<'_, '_>,
-) -> Result<Option<Arc<CanonicalRequiredOutputOrigin>>, Stop> {
-    let mut seen: Vec<Arc<CanonicalRequiredOutputOrigin>> = Vec::new();
-    for _ in 0..bound {
-        let Some(commit) = next else { return Ok(None) };
-        charge(context, bound.saturating_add(1))?;
-        let envelope = load(commit)?.ok_or("owned source retirement lost history")?;
-        super::require_linear_history(&envelope)?;
-        for origin in envelope.output_origins() {
-            for old in &seen {
-                charge(
-                    context,
-                    old.meaning.family.len() + origin.meaning.family.len() + 65,
-                )?;
+) -> Result<Option<Arc<CanonicalRequiredOutputOrigin>>, Failure> {
+    for origin in current.origins() {
+        crate::execution::request_stage::checkpoint(context, 1).map_err(|cause| {
+            Failure::at_source(origin.meaning.source_scope, Stop::Request(cause.into()))
+        })?;
+        let matches = match &mut selection {
+            OwnedScopeDependentSelection::RemovedSources(removed) => {
+                crate::execution::request_stage::checkpoint(context, removed.len() as u64)
+                    .map_err(|cause| {
+                        Failure::at_source(origin.meaning.source_scope, Stop::Request(cause.into()))
+                    })?;
+                removed.contains(&origin.meaning.source_scope)
             }
-            if seen
-                .iter()
-                .any(|old| old.meaning.same_route(&origin.meaning))
-            {
-                continue;
-            }
-            envelope.output_origin_for_route(&origin.meaning, context)?;
-            charge(context, removed.len() + origin.members.len() + 1)?;
-            if origin.source_scope_owned
-                && origin
-                    .members
-                    .iter()
-                    .any(|member| member.posture != RequiredOutputRolePosture::Retire)
-                && removed.contains(&origin.meaning.source_scope)
-            {
-                return Ok(Some(Arc::clone(origin)));
-            }
-            seen.push(Arc::clone(origin));
+            OwnedScopeDependentSelection::LiveRecord(matches) => matches(origin, context)
+                .map_err(|cause| Failure::at_source(origin.meaning.source_scope, cause))?,
+        };
+        if matches {
+            return Ok(Some(Arc::clone(origin)));
         }
-        next = envelope
-            .required_output_materialization
-            .as_ref()
-            .map(|event| event.source_commit)
-            .or_else(|| envelope.commit.parents.first().copied());
-    }
-    if next.is_some() {
-        return Err("owned source retirement ancestry incomplete or cyclic".into());
     }
     Ok(None)
+}
+
+/// Surviving opted-in writers whose owned edges consume a retiring authored source
+/// or a member of its admitted source-scope closure. Selection uses the closure
+/// owner's already-authenticated current publications; this never walks history.
+pub(super) fn linked_owners(
+    anchors: &[EntityId],
+    retiring: &[crate::history::data::SelectedOutputPublication],
+    current: &[crate::history::data::SelectedOutputPublication],
+    context: &mut MapKernelContext<'_, '_>,
+) -> Result<Vec<crate::history::data::SelectedOutputPublication>, Stop> {
+    let mut selected = Vec::new();
+    for publication in current {
+        let origin = &publication.origin;
+        charge(context, retiring.len() + origin.members.len() + 1)?;
+        if !origin.source_scope_owned
+            || origin
+                .members
+                .iter()
+                .all(|m| m.posture == RequiredOutputRolePosture::Retire)
+            || retiring.iter().any(|p| p.origin.same_publication(origin))
+        {
+            continue;
+        }
+        let mut linked = false;
+        for edge in &origin.relations {
+            charge(context, anchors.len() + 1)?;
+            linked |= anchors.contains(&edge.source) || anchors.contains(&edge.target);
+            for removed in retiring {
+                charge(context, removed.origin.members.len())?;
+                linked |= removed.origin.members.iter().any(|m| {
+                    m.posture != RequiredOutputRolePosture::Retire
+                        && (m.id == edge.source || m.id == edge.target)
+                });
+            }
+        }
+        if linked {
+            selected.push(publication.clone());
+        }
+    }
+    Ok(selected)
 }

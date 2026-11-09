@@ -11,7 +11,13 @@ use worth_query_host::facade::{
         with_bootstrap_advancement_from_request, WorthQueryBootstrapAdvancementPhase,
     },
     application_installation::*,
-    declaration::application_program::*,
+    declaration::{
+        application_program::*,
+        application_schema::{
+            fragment::{self, FieldSelection},
+            ApplicationSchema,
+        },
+    },
     primary_graph::*,
 };
 use worth_query_testkit_host::facade::host::{
@@ -59,11 +65,19 @@ fn seed_batches(
         )?;
         graph.bind_entity(
             WorthQueryApplicationEntitySeed::new(
-                Account::reference(),
+                fragment::entity(HomeRecords, Account),
                 WorthQueryApplicationEntityKey::new(format!("account-row-{ordinal}")).unwrap(),
             )
-            .field(AccountNumber::reference(), format!("account-00{ordinal}"))
-            .field(fixture::native_mutation::Balance::reference(), 7),
+            .field(
+                FieldSelection::<HomeRecords, Account, AccountIdentity, String>::at(
+                    "AccountNumber",
+                ),
+                format!("account-00{ordinal}"),
+            )
+            .field(
+                FieldSelection::<HomeRecords, Account, AccountIdentity, u64>::at("Balance"),
+                7,
+            ),
         )?;
         if ordinal == 1 || flush {
             graph.commit_seed_batch(phase)?;

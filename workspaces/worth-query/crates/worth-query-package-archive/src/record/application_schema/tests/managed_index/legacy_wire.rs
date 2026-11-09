@@ -1,4 +1,4 @@
-//! Baseline full-member receipts captured before public-maintenance codec edits.
+//! Frozen versioned-member receipts for the current portable query association.
 use super::*;
 
 fn member(version: u16) -> ApplicationSchemaMember {
@@ -21,7 +21,7 @@ fn member(version: u16) -> ApplicationSchemaMember {
     ApplicationSchemaMember::ManagedIndex { definition }
 }
 
-// Captured from production at 61b17083ed before any v5 meaning/codec edits.
+// The query association names its field; field writability belongs to that record.
 const LEGACY: [&str; 4] = [
     include_str!("legacy_wire/v1.hex"),
     include_str!("legacy_wire/v2.hex"),
@@ -46,12 +46,12 @@ fn legacy_wire_preserves_v1_through_v4() {
         assert_eq!(
             encode_member(&member),
             expected,
-            "v{version} encoder changed old bytes"
+            "v{version} encoder changed the frozen member layout"
         );
         assert_eq!(
             decode_member(&expected),
             member,
-            "v{version} decoder changed old meaning"
+            "v{version} decoder changed the declared member meaning"
         );
     }
 }

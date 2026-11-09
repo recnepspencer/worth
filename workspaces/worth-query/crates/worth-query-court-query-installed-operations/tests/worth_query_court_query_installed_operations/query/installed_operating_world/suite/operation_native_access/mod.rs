@@ -161,7 +161,7 @@ fn workflow_publication_uses_the_same_bound_native_access_contract() {
         )
         .unwrap()
         .start_workflow(&mut workspace)
-        .unwrap()
+        .unwrap().unwrap()
         .advance(
             "start",
             domain::WorthQueryWorkflowValue::NotRequired,

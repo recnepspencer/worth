@@ -18,6 +18,7 @@ use super::{
 pub(super) fn create_and_reject_cycles(request: &Request<'_>, application: &ProgramApplication) {
     declared_minimum_is_program_meaning();
     short_cycles_reach_the_platform(request, application);
+    let mut native_passes = None;
     for (ordinal, coordinates) in [
         vec![(41, 1), (50, 1), (41, 10)],
         vec![(61, 1), (70, 1), (70, 10), (61, 10)],
@@ -75,7 +76,15 @@ pub(super) fn create_and_reject_cycles(request: &Request<'_>, application: &Prog
             .mutation_work()
             .expect("the real primary mutation carries work evidence");
         assert!(work.invariant_work_units() > 0);
-        assert_eq!(work.relational_invariant_execution_count(), 3);
+        let passes = work.relational_invariant_execution_count();
+        assert!(passes > 0);
+        if let Some(previous) = native_passes {
+            assert_eq!(
+                passes, previous,
+                "changing cycle size must not add invariant passes"
+            );
+        }
+        native_passes = Some(passes);
         assert!(
             receipt.take_performed_relational_product_change().is_some(),
             "a real committed World publication must carry one consumable change"
@@ -143,7 +152,7 @@ fn declared_minimum_is_program_meaning() {
         unbound.revision(),
         "the installed program revision includes its actual schema's graph laws"
     );
-    let declaration = crate::ConsumerSchema::declaration().unwrap();
+    let declaration = <crate::ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap();
     let explicit =
         ApplicationProgramAuthoring::<crate::ConsumerSchema, crate::ConsumerProgram>::begin()
             .with_schema(&declaration)

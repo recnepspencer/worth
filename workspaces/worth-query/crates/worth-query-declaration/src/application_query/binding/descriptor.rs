@@ -22,20 +22,14 @@ pub enum ApplicationQueryScopeResolutionMode {
 pub struct ApplicationQueryScopeContract {
     mode: ApplicationQueryScopeResolutionMode,
     field: ApplicationFieldBindingRecipe,
-    writable: bool,
 }
 
 impl ApplicationQueryScopeContract {
     pub(crate) fn new(
         mode: ApplicationQueryScopeResolutionMode,
         field: ApplicationFieldBindingRecipe,
-        writable: bool,
     ) -> Self {
-        Self {
-            mode,
-            field,
-            writable,
-        }
+        Self { mode, field }
     }
 
     pub const fn mode(&self) -> ApplicationQueryScopeResolutionMode {
@@ -44,10 +38,6 @@ impl ApplicationQueryScopeContract {
 
     pub fn field(&self) -> &ApplicationFieldBindingRecipe {
         &self.field
-    }
-
-    pub const fn writable(&self) -> bool {
-        self.writable
     }
 }
 
@@ -66,9 +56,18 @@ pub struct ApplicationQueryPrincipalBindingContract {
     principal_identity_scalar_family: ScalarAspectType,
     principal_identity_value_type: String,
     principal_identity_binding: ApplicationFieldBindingRecipe,
+    mapping_field_bindings: [ApplicationFieldBindingRecipe; 2],
 }
 
 impl ApplicationQueryPrincipalBindingContract {
+    pub(crate) fn field_expectations(&self) -> [&ApplicationFieldBindingRecipe; 3] {
+        [
+            &self.mapping_field_bindings[0],
+            &self.mapping_field_bindings[1],
+            &self.principal_identity_binding,
+        ]
+    }
+
     pub(crate) fn from_reference<Schema, Binding, Mapping, Principal, Identity, IdentityBinding>(
         reference: ApplicationPrincipalBindingRef<
             Schema,
@@ -93,6 +92,7 @@ impl ApplicationQueryPrincipalBindingContract {
             principal_identity_scalar_family: reference.principal_identity_scalar_family(),
             principal_identity_value_type: reference.principal_identity_value_type().to_owned(),
             principal_identity_binding: reference.principal_identity_binding_recipe().clone(),
+            mapping_field_bindings: reference.mapping_field_bindings().clone(),
         }
     }
 

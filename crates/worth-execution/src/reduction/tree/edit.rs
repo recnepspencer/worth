@@ -138,7 +138,7 @@ where
             )
         }
         Ordering::Equal => {
-            engine.validate(&value)?;
+            let value = engine.admit(value)?;
             if engine.same(&node.value, &value)? {
                 return Ok(Updated {
                     link: root.clone(),
@@ -150,7 +150,7 @@ where
         }
     };
     let candidate = if changed {
-        engine.build(node.identity, next_value, left, right)?
+        engine.build_proven(node.identity, next_value, left, right)?
     } else {
         engine.carry(node, next_value, left, right)?
     };
@@ -197,6 +197,6 @@ pub(super) fn prefix<T: Clone, E>(
     }
     let right = prefix(&node.right, before, engine)?;
     engine
-        .build(node.identity, node.value.clone(), node.left.clone(), right)
+        .build_proven(node.identity, node.value.clone(), node.left.clone(), right)
         .map(Some)
 }

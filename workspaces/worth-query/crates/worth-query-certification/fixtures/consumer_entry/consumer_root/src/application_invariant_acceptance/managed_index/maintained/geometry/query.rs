@@ -1,6 +1,6 @@
 //! The same finite endpoint shape serves ordinary Source and managed Parent reads.
 use super::super::{
-    bounds::{Coordinates, CoordinatesBinding, FixtureLength},
+    bounds::{Coordinates, CoordinatesBinding},
     schema::*,
 };
 use super::{provider::BoxIndex, schema::*};
@@ -34,34 +34,13 @@ worth_query_portable_type!(EndSlot => "maintained-geometry.end-slot.v1");
 worth_query_portable_type!(StartRegionSlot => "maintained-geometry.start-region-slot.v1");
 worth_query_portable_type!(EndRegionSlot => "maintained-geometry.end-region-slot.v1");
 
-pub(super) fn identity<Q>() -> ApplicationQueryResultFieldRef<
-    Q,
-    IdentitySlot,
-    Catalog,
-    Edge,
-    EdgeFacts,
-    EdgeIdentity,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("identity", EdgeIdentity::reference())
+pub(super) fn identity<Q>() -> ApplicationQueryResultFieldRef<Q, IdentitySlot, Catalog, EdgeIdentity>
+{
+    ApplicationQueryResultFieldRef::new("identity", EdgeIdentity::at("EdgeIdentity"))
 }
-type RegionSelector<Q, Slot> = ApplicationQueryResultFieldRef<
-    Q,
-    Slot,
-    Catalog,
-    Vertex,
-    VertexFacts,
-    VertexRegion,
-    Coordinates,
-    ReadWrite,
-    EqualityPredicate,
-    DeclaredApplicationUnit<FixtureLength, ()>,
->;
+type RegionSelector<Q, Slot> = ApplicationQueryResultFieldRef<Q, Slot, Catalog, VertexRegion>;
 fn region<Q, Slot: WorthQueryPortableType>() -> RegionSelector<Q, Slot> {
-    ApplicationQueryResultFieldRef::new("region", VertexRegion::reference())
+    ApplicationQueryResultFieldRef::new("region", VertexRegion::at("VertexRegion"))
 }
 pub fn start<Q>() -> ApplicationQueryResultRelationRef<
     Q,
@@ -132,7 +111,7 @@ pub(super) fn base<Q: ApplicationQueryMarkerIdentity<Catalog, ResultBinding = Re
         .public()
 }
 pub fn source_definition(
-) -> ApplicationQueryDefinition<Catalog, SourceQuery, Parameters, Row, Directory> {
+) -> ApplicationQueryDefinitionBuilder<Catalog, SourceQuery, Parameters, Row, Directory> {
     base(
         SourceQuery::reference(),
         ApplicationQueryLaneEligibility::one_shot(),
@@ -141,22 +120,18 @@ pub fn source_definition(
         ApplicationQueryRootPath::from(Directory::reference()).forward(ContainsEdge::reference()),
     )
     .order_by(identity(), ApplicationQueryOrderingDirection::Descending)
-    .build()
-    .unwrap()
 }
 fn probe() -> ApplicationQueryParameterRef<BoxQuery, ProbeParameter, CoordinatesBinding> {
     ApplicationQueryParameterRef::from_query_identifier("probe")
 }
-pub fn box_definition() -> ApplicationQueryDefinition<Catalog, BoxQuery, Parameters, Row, Directory>
-{
+pub fn box_definition(
+) -> ApplicationQueryDefinitionBuilder<Catalog, BoxQuery, Parameters, Row, Directory> {
     base(
         BoxQuery::reference(),
         ApplicationQueryLaneEligibility::one_shot().with_live(),
     )
     .managed_index(BoxIndex::reference(), probe())
     .order_by(identity(), ApplicationQueryOrderingDirection::Ascending)
-    .build()
-    .unwrap()
 }
 impl<Q: ApplicationQueryMarkerIdentity<Catalog>> WorthQueryApplicationProjection<Catalog, Q>
     for Row
@@ -198,8 +173,8 @@ fn box_scope(input: FindBoxes) -> String {
 worth_query_query_binding!(pub SourceBinding for ReadSource, schema Catalog, identity "maintained-geometry.source-binding.v1", input SourceInputBinding,
     query SourceQuery, parameters ParametersBinding => |_| ApplicationQueryParameterSet::new(), result ResultBinding,
     principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit, field DirectoryIdentity::reference(), value source_scope, limits results 100000);
+    scope DirectoryIdentity, field DirectoryIdentity::at("DirectoryIdentity"), value source_scope, limits results 100000);
 worth_query_query_binding!(pub BoxBinding for FindBoxes, schema Catalog, identity "maintained-geometry.box-binding.v1", input BoxInputBinding,
     query BoxQuery, parameters ParametersBinding => |input:&FindBoxes| ApplicationQueryParameterSet::new().bind(probe(),input.probe).unwrap(), result ResultBinding,
     principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit, field DirectoryIdentity::reference(), value box_scope, limits results 4096);
+    scope DirectoryIdentity, field DirectoryIdentity::at("DirectoryIdentity"), value box_scope, limits results 4096);

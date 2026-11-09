@@ -1,0 +1,133 @@
+use super::*;
+pub fn application_0(
+    reader: &mut WorthQueryApplicationOperationInvariantProjectionReader<
+        '_,
+        '_,
+        Application<0>,
+        Edit,
+    >,
+    writer: &mut WorthQueryApplicationEffectProgramBuilder<Application<0>, Edit, (), Item>,
+    observed: &WorthQueryInvariantEntityIdentity<Application<0>, Item>,
+    target: &WorthQueryApplicationEffectEntity<Application<0>, Item>,
+) {
+    let field = select_field(Records, Item, Fact::<0>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<1>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<2>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<3>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<4>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<5>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<6>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<7>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<8>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<9>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<10>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<11>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<12>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<13>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<14>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<15>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<16>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<17>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<18>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<19>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<20>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<21>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<22>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<23>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<24>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<25>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<26>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<27>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<28>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<29>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<30>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<31>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<32>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<33>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<34>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<35>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<36>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<37>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<38>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+    let field = select_field(Records, Item, Fact::<39>, "value");
+    let value = reader.decision_field(observed, field).unwrap().unwrap();
+    writer.initialize_field(target, field, value).unwrap();
+}

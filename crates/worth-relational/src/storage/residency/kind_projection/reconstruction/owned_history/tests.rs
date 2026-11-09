@@ -30,9 +30,11 @@ fn assert_owned_history(
         project_opening(partial, slot, opening, &mut actual, &mut |_, _| Ok(())).unwrap();
         project_suffix(partial, slot, &mut actual, &mut |_, _| Ok(())).unwrap();
     }
-    let expected = super::super::canonical_history(full).unwrap();
+    let lane = crate::storage::substrate::maintenance::ReconstructionLane::oracle();
+    let expected = super::super::canonical_history(&lane, full).unwrap();
     assert_eq!(actual.values().cloned().collect::<Vec<_>>(), expected);
     super::super::installation::install(
+        &lane,
         partial,
         &actual,
         AdjacencyKindBasis::Historical,
@@ -41,9 +43,9 @@ fn assert_owned_history(
         &mut |_, _| Ok(None),
     )
     .unwrap();
-    crate::storage::residency::rebuild_region_history_kind_buckets(full).unwrap();
+    crate::storage::residency::rebuild_region_history_kind_buckets(&lane, full).unwrap();
     assert_eq!(
-        crate::storage::residency::RelationalRegionKindCommitment::capture(partial).unwrap(),
-        crate::storage::residency::RelationalRegionKindCommitment::capture(full).unwrap()
+        crate::storage::residency::RelationalRegionKindCommitment::capture(&lane, partial).unwrap(),
+        crate::storage::residency::RelationalRegionKindCommitment::capture(&lane, full).unwrap()
     );
 }

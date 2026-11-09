@@ -1,9 +1,7 @@
 #[path = "candidate_index_publication/incremental_accounting.rs"]
 mod incremental_accounting;
 use super::*;
-use crate::facade::indexes::{
-    DerivedIndexEntries, DerivedIndexMaintenanceBudget, DerivedIndexMaintenanceDenialKind,
-};
+use crate::facade::indexes::{DerivedIndexEntries, DerivedIndexMaintenanceDenialKind};
 use crate::facade::transactions::{
     EntityMutationIntent, MutationIntent, UpdateEntityFieldsIntent, WorkerIntentBatch,
 };
@@ -24,12 +22,22 @@ fn index(runtime: &RelationalRuntime) -> DerivedIndexId {
         .index_id
 }
 
-fn candidate_for_update(
+pub(super) fn candidate_for_update(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     entity_id: crate::facade::identity::EntityId,
     name: &str,
 ) -> crate::mvcc::PreparedRelationalCommitCandidate {
+    runtime
+        .prepare_branch_transaction(execution, transaction_for_update(runtime, entity_id, name))
+        .unwrap()
+}
+
+pub(super) fn transaction_for_update(
+    runtime: &RelationalRuntime,
+    entity_id: crate::facade::identity::EntityId,
+    name: &str,
+) -> crate::mvcc::BranchBoundRelationalTransaction {
     let mut transaction = test_owner_begin_transaction_for_main(runtime);
     transaction
         .push_batch(
@@ -42,21 +50,11 @@ fn candidate_for_update(
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    runtime
-        .prepare_branch_transaction(execution, transaction)
-        .unwrap()
-}
-
-fn budget(cold_slots: usize) -> DerivedIndexMaintenanceBudget {
-    DerivedIndexMaintenanceBudget {
-        maximum_work_units: Some(100_000),
-        maximum_cold_record_slots: Some(cold_slots),
-        maximum_derived_rows: Some(100_000),
-    }
+    transaction
 }
 
 #[test]
-fn expired_candidate_denies_index_preflight_with_lifetime_not_missing_generation() {
+fn expired_native_candidate_defers_publication_without_exposing_indexes() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -75,7 +73,7 @@ fn expired_candidate_denies_index_preflight_with_lifetime_not_missing_generation
         })
         .build()
         .expect("valid native runtime configuration");
-    let index_id = index(&runtime);
+    let _index_id = index(&runtime);
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
         .push_batch(
@@ -83,121 +81,108 @@ fn expired_candidate_denies_index_preflight_with_lifetime_not_missing_generation
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    let mut candidate = runtime
+    let candidate = runtime
         .prepare_branch_transaction(execution, transaction)
         .unwrap();
 
-    let denied = runtime
-        .index_authority()
-        .prepare_for_candidate(&mut candidate, &[index_id], None, budget(100), execution)
-        .unwrap_err();
-    assert_eq!(
-        denied.kind,
-        DerivedIndexMaintenanceDenialKind::CandidateLifetimeExpired {
-            maximum_lifetime_millis: 0,
-        }
-    );
+    assert!(candidate.prepared_index_maintenance_work().is_some());
+    let outcome = runtime
+        .publication_port()
+        .compare_and_publish(execution, candidate);
+    assert!(matches!(
+        outcome,
+        crate::mvcc::RelationalPublicationOutcome::Deferred(_)
+    ));
     assert_eq!(runtime.index_access().generations_snapshot().len(), 0);
     assert_eq!(runtime.history().immutable_commit_count(), 0);
 }
 
 #[test]
-fn candidate_indexes_deny_before_effect_then_publish_exact_cold_generation_on_settlement() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
+fn native_empty_predecessor_and_seeded_updates_match_cold_at_every_step() {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
     let runtime = runtime_with_index_field_aspects();
-    let first = create_entity_outcome(execution, &runtime, "before");
-    let entity = changed_entities(&first)[0];
     let index_id = index(&runtime);
-    let mut candidate = candidate_for_update(execution, &runtime, entity, "after");
-    let commit_id = candidate
-        .index_preparation_roots()
-        .unwrap()
-        .1
-        .commit_id()
-        .unwrap();
-    let denied = runtime
-        .index_authority()
-        .prepare_for_candidate(
-            &mut candidate,
-            &[index_id],
-            Some(&first.snapshot),
-            budget(0),
-            execution,
-        )
-        .unwrap_err();
-    assert_eq!(
-        denied.kind,
-        DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired
-    );
-    assert!(runtime
-        .indexes
-        .derived_artifacts_for_commit(commit_id)
-        .is_empty());
-
-    let work = runtime
-        .index_authority()
-        .prepare_for_candidate(
-            &mut candidate,
-            &[index_id],
-            Some(&first.snapshot),
-            budget(100),
-            execution,
+    let mut transaction = test_owner_begin_transaction_for_main(&runtime);
+    transaction
+        .push_batch(
+            batch_create("initial"),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    assert_eq!(work.generation_publications_reserved, 1);
-    assert!(work.cold_record_slots > 0);
-    assert!(runtime
-        .indexes
-        .derived_artifacts_for_commit(commit_id)
-        .is_empty());
-    let duplicate = runtime
-        .index_authority()
-        .prepare_for_candidate(
-            &mut candidate,
-            &[index_id],
-            Some(&first.snapshot),
-            budget(100),
-            execution,
-        )
-        .unwrap_err();
-    assert_eq!(
-        duplicate.kind,
-        DerivedIndexMaintenanceDenialKind::CandidateIndexesAlreadyPrepared
+    let first = publish_native(
+        execution,
+        &runtime,
+        runtime
+            .prepare_branch_transaction(execution, transaction)
+            .unwrap(),
     );
+    let entity = changed_entities(&first)[0];
+    let mut court = worth_testkit_relational::maintenance::MaintainedCourt::new(
+        "native_indexes",
+        Arc::new(Vec::new()),
+    );
+    let mut check = |commit: &crate::transactions::data::CommitResult| {
+        let maintained = runtime
+            .indexes
+            .published_generation_for_commit(
+                index_id,
+                Some(&commit.commit.branch_id),
+                commit.commit.commit_id,
+                commit.commit.version_id,
+            )
+            .unwrap();
+        // Cold reconstruction belongs to an isolated world: it must never
+        // replace the maintained predecessor used by the next incremental step.
+        let oracle = runtime.fork().unwrap();
+        let cold = oracle.index_authority().build_for_commit(
+            execution,
+            DerivedIndexBuildRequest {
+                source_commit_id: commit.commit.commit_id,
+                branch_id: commit.commit.branch_id.clone(),
+                index_ids: vec![index_id],
+            },
+        );
+        assert!(cold.failed_indexes.is_empty());
+        court
+            .check_against_cold::<DerivedIndexMaintenanceDenialKind>(
+                Arc::new(vec![maintained.entries.clone()]),
+                Arc::new(vec![cold.generations[0].entries.clone()]),
+                |left, right| left == right,
+            )
+            .unwrap();
+    };
+    check(&first);
+    let mut previous = first;
+    for ordinal in 0..16 {
+        let candidate = candidate_for_update(
+            execution,
+            &runtime,
+            entity,
+            &format!("seeded-{}", (ordinal * 7) % 11),
+        );
+        let next = publish_native(execution, &runtime, candidate);
+        check(&next);
+        release_test_commit_snapshot(&runtime, &previous);
+        previous = next;
+    }
+    release_test_commit_snapshot(&runtime, &previous);
+}
 
+pub(super) fn publish_native(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    candidate: crate::mvcc::PreparedRelationalCommitCandidate,
+) -> crate::transactions::data::CommitResult {
+    let work = candidate.prepared_index_maintenance_work().unwrap();
+    assert_eq!(work.cold_record_slots, 0);
     let crate::mvcc::RelationalPublicationOutcome::Performed(performed) = runtime
         .publication_port()
         .compare_and_publish(execution, candidate)
     else {
-        panic!("candidate must publish");
+        panic!("native candidate publishes");
     };
-    assert!(runtime
-        .indexes
-        .derived_artifacts_for_commit(commit_id)
-        .is_empty());
-    let second = runtime.settle_performed_publication(performed).unwrap();
-    let generation = runtime
-        .indexes
-        .published_generation_for_commit(
-            index_id,
-            Some(&BranchId("main".into())),
-            commit_id,
-            second.commit.version_id,
-        )
-        .unwrap();
-    let DerivedIndexEntries::EntityField(entries) = &generation.entries else {
-        panic!("entity field index");
-    };
-    let after_key =
-        AuthoritativeFieldComparisonKey::from_aspect_value(&string_aspect_value("after"));
-    let before_key =
-        AuthoritativeFieldComparisonKey::from_aspect_value(&string_aspect_value("before"));
-    assert_eq!(entries.get(&after_key).unwrap().get(0), Some(&entity));
-    assert!(entries.get(&before_key).is_none());
-    release_test_commit_snapshot(&runtime, &first);
-    release_test_commit_snapshot(&runtime, &second);
+    runtime.settle_performed_publication(performed).unwrap()
 }
 
 #[test]
@@ -209,45 +194,37 @@ fn candidate_index_work_exhaustion_leaves_the_candidate_unpublished_and_retryabl
     let first = create_entity_outcome(execution, &runtime, "before");
     let entity = changed_entities(&first)[0];
     let index_id = index(&runtime);
-    let mut candidate = candidate_for_update(execution, &runtime, entity, "after");
+    assert!(runtime
+        .index_authority()
+        .build_for_commit(
+            execution,
+            DerivedIndexBuildRequest {
+                source_commit_id: first.commit.commit_id,
+                branch_id: first.commit.branch_id.clone(),
+                index_ids: vec![index_id],
+            }
+        )
+        .failed_indexes
+        .is_empty());
+    let transaction = transaction_for_update(&runtime, entity, "after");
+    let (denied, _) = execution
+        .run(worth_execution::ExecutionWorkCeiling::new(Some(0)), |_| {
+            runtime.prepare_branch_transaction(execution, transaction)
+        })
+        .unwrap();
+    assert!(matches!(
+        denied.unwrap_err(),
+        crate::transactions::data::TransactionCommitError::Execution { .. }
+    ));
+    assert_eq!(runtime.history().immutable_commit_count(), 1);
+    let candidate = candidate_for_update(execution, &runtime, entity, "after");
     let commit_id = candidate
         .index_preparation_roots()
         .unwrap()
         .1
         .commit_id()
         .unwrap();
-    let denied = runtime
-        .index_authority()
-        .prepare_for_candidate(
-            &mut candidate,
-            &[index_id],
-            Some(&first.snapshot),
-            DerivedIndexMaintenanceBudget {
-                maximum_work_units: Some(0),
-                maximum_cold_record_slots: Some(0),
-                maximum_derived_rows: Some(0),
-            },
-            execution,
-        )
-        .unwrap_err();
-    assert_eq!(
-        denied.kind,
-        DerivedIndexMaintenanceDenialKind::WorkBudgetExceeded
-    );
-    assert!(runtime
-        .indexes
-        .derived_artifacts_for_commit(commit_id)
-        .is_empty());
-    runtime
-        .index_authority()
-        .prepare_for_candidate(
-            &mut candidate,
-            &[index_id],
-            Some(&first.snapshot),
-            budget(100),
-            execution,
-        )
-        .unwrap();
+    assert!(candidate.prepared_index_maintenance_work().is_some());
     let crate::mvcc::RelationalPublicationOutcome::Performed(performed) = runtime
         .publication_port()
         .compare_and_publish(execution, candidate)
@@ -277,22 +254,24 @@ fn discarded_prepared_candidate_does_not_expose_index_generation() {
     let first = create_entity_outcome(execution, &runtime, "before");
     let entity = changed_entities(&first)[0];
     let index_id = index(&runtime);
-    let mut candidate = candidate_for_update(execution, &runtime, entity, "abandoned");
+    assert!(runtime
+        .index_authority()
+        .build_for_commit(
+            execution,
+            DerivedIndexBuildRequest {
+                source_commit_id: first.commit.commit_id,
+                branch_id: first.commit.branch_id.clone(),
+                index_ids: vec![index_id],
+            }
+        )
+        .failed_indexes
+        .is_empty());
+    let candidate = candidate_for_update(execution, &runtime, entity, "abandoned");
     let commit_id = candidate
         .index_preparation_roots()
         .unwrap()
         .1
         .commit_id()
-        .unwrap();
-    runtime
-        .index_authority()
-        .prepare_for_candidate(
-            &mut candidate,
-            &[index_id],
-            Some(&first.snapshot),
-            budget(100),
-            execution,
-        )
         .unwrap();
     runtime.discard_prepared_candidate(candidate).unwrap();
     assert!(runtime
@@ -320,23 +299,14 @@ fn candidate_patch_refresh_uses_prior_generation_without_cold_scan() {
         },
     );
     assert!(initial.failed_indexes.is_empty());
-    let mut candidate = candidate_for_update(execution, &runtime, entity, "after");
+    let candidate = candidate_for_update(execution, &runtime, entity, "after");
     let commit_id = candidate
         .index_preparation_roots()
         .unwrap()
         .1
         .commit_id()
         .unwrap();
-    let work = runtime
-        .index_authority()
-        .prepare_for_candidate(
-            &mut candidate,
-            &[index_id],
-            Some(&first.snapshot),
-            budget(0),
-            execution,
-        )
-        .unwrap();
+    let work = candidate.prepared_index_maintenance_work().unwrap();
     assert_eq!(work.cold_record_slots, 0);
     assert_eq!(work.patch_records, 1);
     assert_eq!(work.entry_edits, 2);
@@ -362,4 +332,34 @@ fn candidate_patch_refresh_uses_prior_generation_without_cold_scan() {
     );
     release_test_commit_snapshot(&runtime, &first);
     release_test_commit_snapshot(&runtime, &second);
+}
+
+// Explicit fixture installation recovery, before an ordinary commit can maintain
+// newly registered indexes on a populated head. Never called as a read fallback.
+pub(super) fn reconstruct_installed_at_head(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+) {
+    let (_, basis) = runtime
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap();
+    let ids = runtime
+        .index_access()
+        .definitions_snapshot()
+        .iter()
+        .map(|d| d.index_id)
+        .collect();
+    let result = runtime.index_authority().build_for_basis(
+        execution,
+        DerivedIndexBuildRequest {
+            source_commit_id: basis.observation().commit_id().unwrap(),
+            branch_id: BranchId("main".into()),
+            index_ids: ids,
+        },
+        &basis,
+    );
+    assert!(
+        result.failed_indexes.is_empty(),
+        "explicit fixture recovery: {result:?}"
+    );
 }

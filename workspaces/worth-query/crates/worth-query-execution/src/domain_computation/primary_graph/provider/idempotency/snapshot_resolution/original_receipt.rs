@@ -2,7 +2,6 @@
 mod causality;
 pub use causality::WorthQueryRecoveredAftermathCausality;
 mod outbox;
-use crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity;
 pub use outbox::WorthQueryRecoveredDispatchOutbox;
 use std::sync::Arc;

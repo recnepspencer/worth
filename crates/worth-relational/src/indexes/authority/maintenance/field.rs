@@ -1,7 +1,7 @@
+use super::root_view::IndexRootView;
 use super::{
     changes::ChangedRecords,
     entry_edits::{grouped, PendingEdit},
-    reads,
     work::MaintenanceWork,
 };
 use crate::identity::data::{EntityId, RelationId};
@@ -9,14 +9,7 @@ use crate::indexes::data::{
     DerivedIndexEntries, DerivedIndexEntryMap, DerivedIndexId,
     DerivedIndexMaintenanceDenialKind as Denial,
 };
-use crate::indexes::projected_field_values::{
-    entity_index_projection_scope, relation_index_projection_scope, IndexProjectionSource,
-};
-use crate::runtime::VisibilityProjectionView;
-use crate::storage::data::{AuthoritativeFieldComparisonKey, EntityReadRecord, RelationReadRecord};
-use crate::visibility::materialization::read_records::{
-    entity_query_locus_comparison_key, relation_query_locus_comparison_key,
-};
+use crate::storage::data::AuthoritativeFieldComparisonKey;
 use std::collections::BTreeMap;
 use worth_foundational::facade::AspectFieldLocator;
 
@@ -27,6 +20,7 @@ pub(super) enum PendingField {
         entries: DerivedIndexEntryMap<AuthoritativeFieldComparisonKey, EntityId>,
         edits: BTreeMap<AuthoritativeFieldComparisonKey, Vec<PendingEdit<EntityId>>>,
         patch: bool,
+        changed: bool,
     },
     Relation {
         index_id: DerivedIndexId,
@@ -34,18 +28,29 @@ pub(super) enum PendingField {
         entries: DerivedIndexEntryMap<AuthoritativeFieldComparisonKey, RelationId>,
         edits: BTreeMap<AuthoritativeFieldComparisonKey, Vec<PendingEdit<RelationId>>>,
         patch: bool,
+        changed: bool,
     },
 }
 
 impl PendingField {
-    pub(super) fn into_prepared(self) -> (DerivedIndexId, DerivedIndexEntries) {
+    pub(super) fn into_prepared(self) -> (DerivedIndexId, DerivedIndexEntries, bool) {
         match self {
             Self::Entity {
-                index_id, entries, ..
-            } => (index_id, DerivedIndexEntries::EntityField(entries)),
+                index_id,
+                entries,
+                changed,
+                ..
+            } => (index_id, DerivedIndexEntries::EntityField(entries), changed),
             Self::Relation {
-                index_id, entries, ..
-            } => (index_id, DerivedIndexEntries::RelationField(entries)),
+                index_id,
+                entries,
+                changed,
+                ..
+            } => (
+                index_id,
+                DerivedIndexEntries::RelationField(entries),
+                changed,
+            ),
         }
     }
 }
@@ -53,17 +58,40 @@ impl PendingField {
 pub(super) fn refresh(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     pending: &mut [PendingField],
+    routing: &crate::indexes::data::InstalledIndexRouting,
     patch_changes: Option<&ChangedRecords>,
     cold_changes: Option<&ChangedRecords>,
-    before: Option<&VisibilityProjectionView>,
-    after: &VisibilityProjectionView,
+    before: Option<&IndexRootView>,
+    after: &IndexRootView,
     work: &mut MaintenanceWork,
 ) -> Result<(), Denial> {
+    if pending.is_empty() {
+        return Ok(());
+    }
+    let exact = after
+        .root()
+        .commit_change()
+        .map(|change| super::field_changes::FieldChanges::prepare(change, routing, work))
+        .transpose()?
+        .flatten();
+    let mut positions = BTreeMap::new();
+    for (position, field) in pending.iter().enumerate() {
+        let index = match field {
+            PendingField::Entity { index_id, .. } | PendingField::Relation { index_id, .. } => {
+                *index_id
+            }
+        };
+        work.ordered::<DerivedIndexId, usize>(positions.len(), 1, 0)?;
+        positions.insert(index, position);
+    }
     for (patch, changes, old) in [(true, patch_changes, before), (false, cold_changes, None)] {
         let Some(changes) = changes else { continue };
         refresh_entities(
             execution,
             pending,
+            routing,
+            &positions,
+            if patch { exact.as_ref() } else { None },
             patch,
             &changes.entities,
             old,
@@ -73,6 +101,9 @@ pub(super) fn refresh(
         refresh_relations(
             execution,
             pending,
+            routing,
+            &positions,
+            if patch { exact.as_ref() } else { None },
             patch,
             &changes.relations,
             old,
@@ -87,8 +118,10 @@ pub(super) fn refresh(
                 entries,
                 edits,
                 patch,
+                changed,
                 ..
             } => {
+                *changed = !edits.is_empty();
                 grouped(
                     entries,
                     std::mem::take(edits),
@@ -102,8 +135,10 @@ pub(super) fn refresh(
                 entries,
                 edits,
                 patch,
+                changed,
                 ..
             } => {
+                *changed = !edits.is_empty();
                 grouped(
                     entries,
                     std::mem::take(edits),
@@ -121,34 +156,30 @@ pub(super) fn refresh(
 fn refresh_entities(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     pending: &mut [PendingField],
+    routing: &crate::indexes::data::InstalledIndexRouting,
+    positions: &BTreeMap<DerivedIndexId, usize>,
+    exact: Option<&super::field_changes::FieldChanges>,
     patch: bool,
     changed: &std::collections::BTreeSet<EntityId>,
-    before: Option<&VisibilityProjectionView>,
-    after: &VisibilityProjectionView,
+    before: Option<&IndexRootView>,
+    after: &IndexRootView,
     work: &mut MaintenanceWork,
 ) -> Result<(), Denial> {
-    work.prepare(pending.len() as u64, 0)?;
-    if !pending
-        .iter()
-        .any(|field| matches!(field, PendingField::Entity { patch: lane, .. } if *lane == patch))
-    {
-        return Ok(());
-    }
     for id in changed {
-        work.prepare(pending.len() as u64, 0)?;
-        let (old, new) = if work.prepares_allocations() {
-            if before.is_some() {
-                work.read()?;
-            }
-            work.read()?;
-            (None, None)
-        } else {
-            (
-                reads::entity(execution, before, *id, work)?,
-                reads::entity(execution, Some(after), *id, work)?,
-            )
-        };
-        for field in pending.iter_mut() {
+        let old_kind = super::record_metadata::entity_kind(execution, before, *id, work)?;
+        let new_kind = super::record_metadata::entity_kind(execution, Some(after), *id, work)?;
+        for position in super::field_routing::positions(
+            routing,
+            positions,
+            exact,
+            crate::transactions::data::RecordRef::Entity(*id),
+            true,
+            old_kind
+                .into_iter()
+                .chain(new_kind.filter(|kind| Some(*kind) != old_kind)),
+            work,
+        )? {
+            let field = &mut pending[position];
             let PendingField::Entity {
                 locator,
                 edits,
@@ -162,17 +193,10 @@ fn refresh_entities(
                 continue;
             }
             work.prepare(1, 0)?;
-            let (old_key, new_key) = if work.prepares_allocations() {
-                (
-                    super::field_keys::entity(execution, before, *id, locator, work)?,
-                    super::field_keys::entity(execution, Some(after), *id, locator, work)?,
-                )
-            } else {
-                (
-                    entity_key(before, old.as_ref(), locator),
-                    entity_key(Some(after), new.as_ref(), locator),
-                )
-            };
+            let (old_key, new_key) = (
+                super::field_keys::entity(execution, before, *id, locator, work)?,
+                super::field_keys::entity(execution, Some(after), *id, locator, work)?,
+            );
             prepare_key_comparison(
                 old_key.as_ref().map(|(key, _)| key),
                 new_key.as_ref().map(|(key, _)| key),
@@ -195,34 +219,32 @@ fn refresh_entities(
 fn refresh_relations(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     pending: &mut [PendingField],
+    routing: &crate::indexes::data::InstalledIndexRouting,
+    positions: &BTreeMap<DerivedIndexId, usize>,
+    exact: Option<&super::field_changes::FieldChanges>,
     patch: bool,
     changed: &std::collections::BTreeSet<RelationId>,
-    before: Option<&VisibilityProjectionView>,
-    after: &VisibilityProjectionView,
+    before: Option<&IndexRootView>,
+    after: &IndexRootView,
     work: &mut MaintenanceWork,
 ) -> Result<(), Denial> {
-    work.prepare(pending.len() as u64, 0)?;
-    if !pending
-        .iter()
-        .any(|field| matches!(field, PendingField::Relation { patch: lane, .. } if *lane == patch))
-    {
-        return Ok(());
-    }
     for id in changed {
-        work.prepare(pending.len() as u64, 0)?;
-        let (old, new) = if work.prepares_allocations() {
-            if before.is_some() {
-                work.read()?;
-            }
-            work.read()?;
-            (None, None)
-        } else {
-            (
-                reads::relation(execution, before, *id, work)?,
-                reads::relation(execution, Some(after), *id, work)?,
-            )
-        };
-        for field in pending.iter_mut() {
+        let old_kind =
+            super::record_metadata::relation(execution, before, *id, work)?.map(|r| r.kind);
+        let new_kind =
+            super::record_metadata::relation(execution, Some(after), *id, work)?.map(|r| r.kind);
+        for position in super::field_routing::positions(
+            routing,
+            positions,
+            exact,
+            crate::transactions::data::RecordRef::Relation(*id),
+            false,
+            old_kind
+                .into_iter()
+                .chain(new_kind.filter(|kind| Some(*kind) != old_kind)),
+            work,
+        )? {
+            let field = &mut pending[position];
             let PendingField::Relation {
                 locator,
                 edits,
@@ -236,17 +258,10 @@ fn refresh_relations(
                 continue;
             }
             work.prepare(1, 0)?;
-            let (old_key, new_key) = if work.prepares_allocations() {
-                (
-                    super::field_keys::relation(execution, before, *id, locator, work)?,
-                    super::field_keys::relation(execution, Some(after), *id, locator, work)?,
-                )
-            } else {
-                (
-                    relation_key(before, old.as_ref(), locator),
-                    relation_key(Some(after), new.as_ref(), locator),
-                )
-            };
+            let (old_key, new_key) = (
+                super::field_keys::relation(execution, before, *id, locator, work)?,
+                super::field_keys::relation(execution, Some(after), *id, locator, work)?,
+            );
             prepare_key_comparison(
                 old_key.as_ref().map(|(key, _)| key),
                 new_key.as_ref().map(|(key, _)| key),
@@ -300,36 +315,4 @@ fn prepare_key_comparison(
         _ => 1,
     };
     work.prepare(width as u64, 0)
-}
-
-fn entity_key(
-    view: Option<&VisibilityProjectionView>,
-    record: Option<&EntityReadRecord>,
-    locator: &AspectFieldLocator,
-) -> Option<(AuthoritativeFieldComparisonKey, EntityId)> {
-    let (Some(view), Some(record)) = (view, record) else {
-        return None;
-    };
-    let source = IndexProjectionSource::selected(view);
-    source
-        .entity_aspect_plan(record.kind.kind_id)
-        .and_then(|plan| entity_index_projection_scope(plan, locator))
-        .and_then(|_| entity_query_locus_comparison_key(record, locator))
-        .map(|key| (key, record.entity_id))
-}
-
-fn relation_key(
-    view: Option<&VisibilityProjectionView>,
-    record: Option<&RelationReadRecord>,
-    locator: &AspectFieldLocator,
-) -> Option<(AuthoritativeFieldComparisonKey, RelationId)> {
-    let (Some(view), Some(record)) = (view, record) else {
-        return None;
-    };
-    let source = IndexProjectionSource::selected(view);
-    source
-        .relation_aspect_plan(record.kind.kind_id)
-        .and_then(|plan| relation_index_projection_scope(plan, locator))
-        .and_then(|_| relation_query_locus_comparison_key(record, locator))
-        .map(|key| (key, record.relation_id))
 }

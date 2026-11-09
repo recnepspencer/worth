@@ -29,7 +29,10 @@ fn all_declared_supply_chain_deltas_match_oracle_and_isolate_cost() {
         fork_from_main(execution, &world.runtime, branch.clone());
     }
     let identities = all_identities(&world.runtime, &scenarios);
-    let shared = world.runtime.observe_branch_sharing(&identities).unwrap();
+    let shared = world
+        .runtime
+        .observe_branch_sharing(execution, &identities)
+        .unwrap();
     assert_eq!(shared.branch_count(), 9);
     assert_eq!(shared.unique_root_count(), 1);
     assert_eq!(shared.fork_materialized_authoritative_bytes(), 0);
@@ -126,7 +129,10 @@ fn all_declared_supply_chain_deltas_match_oracle_and_isolate_cost() {
             .release_snapshot(&committed.snapshot)
             .expect("the exact commit snapshot closes once comparison completes");
 
-        let cost = world.runtime.observe_mvcc_cost(&selected_scope).unwrap();
+        let cost = world
+            .runtime
+            .observe_mvcc_cost(execution, &selected_scope)
+            .unwrap();
         let delta_cost = cost.sharing_cost_delta();
         assert_eq!(delta_cost.transaction_validation_attempts, 1);
         assert_eq!(delta_cost.candidate_preparations, 1);
@@ -135,7 +141,10 @@ fn all_declared_supply_chain_deltas_match_oracle_and_isolate_cost() {
         assert_eq!(delta_cost.copied_commit_envelopes, 0);
         assert!(delta_cost.publication_touched_region_count > 0);
 
-        let unrelated_cost = world.runtime.observe_mvcc_cost(&unrelated_scope).unwrap();
+        let unrelated_cost = world
+            .runtime
+            .observe_mvcc_cost(execution, &unrelated_scope)
+            .unwrap();
         assert_eq!(
             unrelated_cost.sharing_cost_delta(),
             worth_relational::facade::inspection::RelationalBranchSharingCostCounters::default(),
@@ -147,7 +156,10 @@ fn all_declared_supply_chain_deltas_match_oracle_and_isolate_cost() {
 
     assert_v1_sibling_progressed_after_v2_transition(execution, &mut world, &rewire_before);
 
-    let final_sharing = world.runtime.observe_branch_sharing(&identities).unwrap();
+    let final_sharing = world
+        .runtime
+        .observe_branch_sharing(execution, &identities)
+        .unwrap();
     assert_eq!(final_sharing.unique_root_count(), 9);
     assert_eq!(final_sharing.unique_canonical_commit_artifacts(), 9);
     assert_eq!(final_sharing.fork_materialized_authoritative_bytes(), 0);

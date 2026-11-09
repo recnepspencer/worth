@@ -1,0 +1,32 @@
+[
+  {
+    "binary": "worth-store-court-application::worth_store_court_application",
+    "test": "process::application::host_oracle::graceful::graceful_home_oracle_seed_one_preserves_relational_and_world_prefixes",
+    "ignored": false,
+    "selected": true
+  },
+  {
+    "binary": "worth-store-court-application::worth_store_court_application",
+    "test": "process::application::host_oracle::graceful::graceful_home_oracle_seed_zero_preserves_relational_and_world_prefixes",
+    "ignored": false,
+    "selected": true
+  },
+  {
+    "binary": "worth-store-court-application::worth_store_court_application",
+    "test": "process::application::world_durable_release::unclean::graceful_close_reopens_the_checkpointed_native_and_world_heads",
+    "ignored": false,
+    "selected": true
+  },
+  {
+    "binary": "worth-store-court-application::worth_store_court_application",
+    "test": "process::application::world_durable_release::unclean::quiescent_kill_reopens_the_acknowledged_native_and_world_heads",
+    "ignored": false,
+    "selected": true
+  },
+  {
+    "binary": "worth-store-court-application::worth_store_court_application",
+    "test": "process::application::world_durable_release::unclean::unclean_native_tail_refuses_before_world_service_and_names_the_original_effect",
+    "ignored": false,
+    "selected": true
+  }
+]

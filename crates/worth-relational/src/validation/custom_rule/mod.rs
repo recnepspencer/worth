@@ -14,6 +14,7 @@ mod registration;
 mod scope_planner;
 mod structural_source;
 mod structural_views;
+pub(crate) use structural_views::StructuralPresenceDenial;
 #[cfg(test)]
 mod tests;
 mod touched_scope_collection;

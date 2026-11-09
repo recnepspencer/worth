@@ -35,6 +35,9 @@ pub enum OriginalSettledProducerSource {
         #[allow(dead_code, reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it")]
         checkpoint: super::super::WorthQueryAcceptedOutputCheckpointIdentity,
     },
+    HistoricalSelection {
+        origin: crate::domain_computation::primary_graph::output_lineage::HistoricalAcceptedOrigin,
+    },
 }
 
 /// One original-request funded header sharing only original immutable backings.
@@ -45,6 +48,7 @@ pub struct OriginalSettledProducerObservation {
     read: WorthQueryProductBranchReadIdentity,
     source: OriginalSettledProducerSource,
     correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
+    historical_reads: Option<Arc<[crate::domain_computation::primary_graph::application_contribution::producer::predecessor_reads::WorthQueryHistoricalProducerRead]>>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
@@ -106,9 +110,7 @@ impl OriginalSettledProducerObservation {
                 Arc::clone(stable.output_correspondence()),
             ),
             WorthQueryAcceptedOutputAuthority::Restored(restored) => (
-                OriginalSettledProducerSource::Restored {
-                    checkpoint: restored.checkpoint.clone(),
-                },
+                restored_source(restored),
                 Arc::clone(&restored.correspondence),
             ),
         };
@@ -142,9 +144,7 @@ impl OriginalSettledProducerObservation {
             execution,
             runtime,
             product,
-            OriginalSettledProducerSource::Restored {
-                checkpoint: restored.checkpoint.clone(),
-            },
+            restored_source(restored),
             Arc::clone(&restored.correspondence),
         )
     }
@@ -169,12 +169,34 @@ impl OriginalSettledProducerObservation {
                 "original settled producer observation",
             )
         })?;
+        let historical_reads = match &source {
+            OriginalSettledProducerSource::Committed {
+                settlement: Some(identity),
+                ..
+            }
+            | OriginalSettledProducerSource::StableReused {
+                settlement: identity,
+            } => runtime
+                .runtime
+                .primary_provider
+                .graph
+                .output_lineage
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .retain_predecessor_reads(identity),
+            OriginalSettledProducerSource::Committed {
+                settlement: None, ..
+            }
+            | OriginalSettledProducerSource::Restored { .. }
+            | OriginalSettledProducerSource::HistoricalSelection { .. } => None,
+        };
         Ok(Arc::new(Self {
             runtime_authority: runtime.runtime.authority_identity().as_u64(),
             schema: runtime.installed_schema.binding_identity(),
             read: WorthQueryProductBranchReadIdentity::from_observation(product.observation()),
             source,
             correspondence,
+            historical_reads,
             _memory: memory,
         }))
     }
@@ -198,6 +220,11 @@ impl OriginalSettledProducerObservation {
         self.read.matches_observation(product)
     }
 
+    pub(in crate::domain_computation::primary_graph) fn predecessor_reads(
+        &self,
+    ) -> Option<&[crate::domain_computation::primary_graph::application_contribution::producer::predecessor_reads::WorthQueryHistoricalProducerRead]>{
+        self.historical_reads.as_deref()
+    }
     pub fn read(&self) -> &WorthQueryProductBranchReadIdentity {
         &self.read
     }
@@ -211,6 +238,23 @@ impl OriginalSettledProducerObservation {
         &self,
     ) -> Arc<WorthQueryApplicationOutputCorrespondence> {
         Arc::clone(&self.correspondence)
+    }
+}
+
+fn restored_source(
+    restored: &super::super::WorthQueryRestoredAcceptedOutput,
+) -> OriginalSettledProducerSource {
+    match &restored.origin {
+        super::super::RestoredOutputOrigin::Checkpoint(checkpoint) => {
+            OriginalSettledProducerSource::Restored {
+                checkpoint: checkpoint.clone(),
+            }
+        }
+        super::super::RestoredOutputOrigin::HistoricalSelection(origin) => {
+            OriginalSettledProducerSource::HistoricalSelection {
+                origin: origin.clone(),
+            }
+        }
     }
 }
 

@@ -187,19 +187,38 @@ impl WorthQueryApplicationOutputLineage {
                     stable.idempotency_key_identity(),
                     Some(stable.exact_settlement()),
                 ),
-                WorthQueryAcceptedOutputAuthority::Restored(restored) => (
-                    restored.correspondence.as_ref(),
-                    restored.source_scope,
-                    ProductCoordinate {
-                        occurrence: restored.observation.lifecycle_incarnation(),
-                        generation: restored.observation.reference_generation().get(),
-                    },
-                    RecordedSourceIdentity::Checkpoint(restored.source_identity),
-                    restored.checkpoint.source_partition,
-                    restored.checkpoint.producer_dependency,
-                    restored.checkpoint.idempotency_key,
-                    None,
-                ),
+                WorthQueryAcceptedOutputAuthority::Restored(restored) => {
+                    use crate::domain_computation::primary_graph::application_output_demand::RestoredOutputOrigin;
+                    let (coordinate, source, dependency, pin) = match &restored.origin {
+                        RestoredOutputOrigin::Checkpoint(checkpoint) => (
+                            ProductCoordinate {
+                                occurrence: restored.observation.lifecycle_incarnation(),
+                                generation: restored.observation.reference_generation().get(),
+                            },
+                            RecordedSourceIdentity::Checkpoint(restored.source_identity),
+                            checkpoint.producer_dependency,
+                            None,
+                        ),
+                        RestoredOutputOrigin::HistoricalSelection(origin) => (
+                            origin.settlement().coordinate(),
+                            origin
+                                .source_identity()
+                                .ok_or(FullVerificationReason::NativeRevisionUnavailable)?,
+                            origin.dependency(),
+                            Some(origin.settlement()),
+                        ),
+                    };
+                    (
+                        restored.correspondence.as_ref(),
+                        restored.source_scope,
+                        coordinate,
+                        source,
+                        restored.origin.partition(),
+                        dependency,
+                        restored.origin.key(),
+                        pin,
+                    )
+                }
             };
         let Some(output_binding) = correspondence.binding_type() else {
             return Ok(None);

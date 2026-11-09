@@ -5,9 +5,9 @@ use crate::document_retention_model::{
 };
 use worth_query_decl::facade::{
     application_aftermath::*, application_operation::*, application_schema::*,
-    worth_query_application_contribution, worth_query_capability, worth_query_mutation_binding,
-    worth_query_operation, worth_query_operation_emits, worth_query_operation_reads,
-    worth_query_operation_writes, worth_query_structured_value_binding,
+    worth_query_capability, worth_query_mutation_binding, worth_query_operation,
+    worth_query_operation_emits, worth_query_operation_reads, worth_query_operation_writes,
+    worth_query_structured_value_binding,
 };
 use worth_query_host::facade::{application_contribution::*, primary_graph::*};
 
@@ -45,9 +45,10 @@ impl
         use worth_query_decl::facade::application_capability::*;
         Ok(ApplicationCapabilityRequestProjection::new(
             ApplicationCapabilityEntitySelector::new(
-                DocumentIdentityField::reference(),
+                DocumentIdentityField::at("DocumentIdentityField"),
                 ApplicationEncodedScalarValue::try_new(self.identity.clone()).unwrap(),
-            ),
+            )
+            .unwrap(),
             ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
                 "read-workflow-subject".to_owned(),
             )
@@ -75,8 +76,8 @@ worth_query_mutation_binding!(
     outputs NoApplicationMutationOutputs,
     principal DocumentPrincipalBinding, mapping ExternalMapping, principal_entity Principal,
         principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Document, DocumentFacts, DocumentIdentityField, String, ReadOnly, NoApplicationUnit,
-    field DocumentIdentityField::reference(), value identity,
+    scope DocumentIdentityField,
+    field DocumentIdentityField::at("DocumentIdentityField"), value identity,
 );
 impl ApplicationCapabilityMutationBinding<DocumentRetentionSchema> for MonitorBinding {
     type Capability = MonitorInspectionCapability;
@@ -84,45 +85,83 @@ impl ApplicationCapabilityMutationBinding<DocumentRetentionSchema> for MonitorBi
 
 fn aftermath() -> DeclaredApplicationAftermathContract<DocumentRetentionSchema> {
     DeclaredApplicationAftermathContract::runtime_with_external_owner(
-        DeclaredCorrectionMechanism::RecordedInverse(
-            DeclaredRecordedInverse::new(
-                "neutral.recoverable-archive.retention-preimage.v1",
-                DeclaredLoweringCorrespondenceRef::new(
-                    "neutral.recoverable-archive.retention-lowering.v1",
-                )
-                .unwrap(),
-                DeclaredAftermathPostcondition::ExactPriorTruth,
-                DeclaredPreImageDemand::new(
-                    [DeclaredPreImageLocus::from_field(
-                        DocumentRetentionField::reference(),
-                    )],
-                    512,
-                )
-                .unwrap(),
-            )
-            .unwrap(),
-        ),
-        DeclaredReconciliationProcedure::new("neutral.archive-owner-confirms-original-effect")
-            .unwrap(),
+        DeclaredCorrectionMechanism::RecordedInverse(DeclaredRecordedInverse::new(
+            "neutral.recoverable-archive.retention-preimage.v1",
+            DeclaredLoweringCorrespondenceRef::new(
+                "neutral.recoverable-archive.retention-lowering.v1",
+            ),
+            DeclaredAftermathPostcondition::ExactPriorTruth,
+            DeclaredPreImageDemand::new(
+                [DeclaredPreImageLocus::from_field(
+                    DocumentRetentionField::at("DocumentRetentionField"),
+                )],
+                512,
+            ),
+        )),
+        DeclaredReconciliationProcedure::new("neutral.archive-owner-confirms-original-effect"),
     )
 }
-worth_query_application_contribution! {
-    pub contribution MonitorContribution in DocumentRetentionSchema {
-        identity: "neutral.recoverable-archive.application.v1",
-        members: |schema| { schema
-            .operation(MonitorOperation::reference().definition()
-                .external_effect(crate::effect::ArchiveEffect::reference(), WorthQueryExternalEffectCorrelationFamily::new("neutral-recoverable-archive").unwrap())
-                .aftermath(aftermath()).finish())
-            .operation_projection_work_budget(MonitorOperation::reference(), 32)
-            .operation_read_field(MonitorOperation::reference(), DocumentIdentityField::reference())
-            .operation_read_field(MonitorOperation::reference(), DocumentRetentionField::reference())
-            .operation_write(MonitorOperation::reference(), DocumentRetentionField::reference())
-            .operation_emit(MonitorOperation::reference(), crate::effect::ArchiveEffect::reference())
-            .capability(crate::document_retention_model::workflow::governed_read::subject_contract(MonitorInspectionCapability::reference(), MonitorOperation::reference()))
-            .application_mutation_binding::<MonitorBinding>()
-            .application_resource(super::resource::definition()) }
+pub struct MonitorContribution;
+impl ApplicationSchemaContribution<DocumentRetentionSchema> for MonitorContribution {
+    const IDENTITY: ApplicationSchemaContributionIdentity =
+        ApplicationSchemaContributionIdentity::new("neutral.recoverable-archive.application.v1");
+    type Members = (MonitorContributionContracts,);
+}
+impl MonitorContribution {
+    pub const fn reference() -> ApplicationSchemaContributionRef<DocumentRetentionSchema, Self> {
+        ApplicationSchemaContributionRef::from_contribution()
     }
 }
+pub struct MonitorContributionContracts;
+impl fragment::Registration<DocumentRetentionSchema> for MonitorContributionContracts {
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema>,
+    ) -> Result<
+        ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema>,
+        ApplicationSchemaDeclarationDenial,
+    > {
+        Ok(schema
+            .operation(
+                MonitorOperation::reference()
+                    .definition()
+                    .external_effect(
+                        crate::effect::ArchiveEffect::reference(),
+                        WorthQueryExternalEffectCorrelationFamily::new(
+                            "neutral-recoverable-archive",
+                        )
+                        .unwrap(),
+                    )
+                    .aftermath(aftermath())
+                    .finish(),
+            )
+            .operation_projection_work_budget(MonitorOperation::reference(), 32)
+            .operation_read_field(
+                MonitorOperation::reference(),
+                DocumentIdentityField::at("DocumentIdentityField"),
+            )
+            .operation_read_field(
+                MonitorOperation::reference(),
+                DocumentRetentionField::at("DocumentRetentionField"),
+            )
+            .operation_write(
+                MonitorOperation::reference(),
+                DocumentRetentionField::at("DocumentRetentionField"),
+            )
+            .operation_emit(
+                MonitorOperation::reference(),
+                crate::effect::ArchiveEffect::reference(),
+            )
+            .capability(
+                crate::document_retention_model::workflow::governed_read::subject_contract(
+                    MonitorInspectionCapability::reference(),
+                    MonitorOperation::reference(),
+                ),
+            )
+            .application_mutation_binding::<MonitorBinding>()
+            .application_resource(super::resource::definition()))
+    }
+}
+
 impl WorthQueryApplicationContribution<DocumentRetentionSchema> for MonitorContribution {
     type Configuration = super::Configuration;
     fn configure(

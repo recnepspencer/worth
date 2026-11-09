@@ -25,7 +25,7 @@ impl WorthQueryRuntime {
             &name,
             &request,
             schema_view.clone(),
-            crate::subscription::QuerySubscriptionFutureSelection::ordinary(),
+            crate::subscription::QuerySubscriptionFutureSelection::ordinary()?,
         )?;
         self.finish_live_view_declaration(name, request, schema_view, activation, None)
     }
@@ -81,25 +81,29 @@ impl WorthQueryRuntime {
         self.live_subscription_index.register(
             WorthQueryLiveArtifactTarget::from_subscription_installation(&activation.installation),
             &activation.request,
-        );
+        )?;
         let future_selection = activation.active_lane_handle.future_selection();
         let pending_async_projection_digest = future_selection
             .future_selection_projection()
             .label()
             .to_string();
-        let pending_async_result_state =
-            future_selection.requests_completion_lifecycle().then(|| {
+        let pending_async_result_state = future_selection
+            .requests_completion_lifecycle()
+            .then(|| {
                 WorthQueryRuntimeAsyncResultProjection::pending(&format!(
                     "async-pending:{pending_async_projection_digest}"
                 ))
-            });
+            })
+            .transpose()?;
         let basis_binding_identity = async_source_binding
             .as_ref()
             .map(WorthQueryRuntimeAsyncSourceBinding::current_basis_identity)
+            .transpose()?
             .unwrap_or_else(|| activation.installation.basis_binding_identity().clone());
         let checkpoint_identity = async_source_binding
             .as_ref()
             .map(WorthQueryRuntimeAsyncSourceBinding::current_generation_identity)
+            .transpose()?
             .unwrap_or_else(|| activation.active_lane_handle.checkpoint_identity().clone());
         let live_target =
             WorthQueryLiveArtifactTarget::from_subscription_installation(&activation.installation);
@@ -225,7 +229,7 @@ impl WorthQueryRuntime {
                 "derived-declaration",
             )
             .field_value(WorthQueryEvidenceTag::new("view_name"), view_name)
-            .seal(),
+            .seal()?,
         );
         let refresh_metadata = self
             .backend
@@ -258,6 +262,8 @@ pub(super) fn admit_live_view_declaration_receipt(
     request: &DeclarativeLiveQueryRequest,
     schema_view: &QuerySchemaView,
 ) -> Result<(), WorthQueryRuntimeError> {
+    // Check the exact index identity before activation can allocate live state.
+    let _collection_identity = request.target_collection_identity()?;
     let admission_receipt = backend
         .admit_live_view_declaration(view_name, request, schema_view)
         .map_err(
@@ -267,7 +273,7 @@ pub(super) fn admit_live_view_declaration_receipt(
                 message: error.to_string(),
             },
         )?;
-    if let Some(message) = admission_receipt.drift_from_request(view_name, request) {
+    if let Some(message) = admission_receipt.drift_from_request(view_name, request)? {
         return Err(WorthQueryRuntimeError::LiveSubscriptionInstallation {
             view_name: view_name.to_string(),
             stage: "backend-live-admission-receipt",

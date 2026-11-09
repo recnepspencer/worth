@@ -1,4 +1,5 @@
 //! Native readiness contract for the installed retention-assessment producer.
+use super::schema::DocumentRetentionField;
 
 pub use worth_query_host::facade::declaration::{
     authoring::{
@@ -65,13 +66,8 @@ impl application_contribution::WorthQueryApplicationConditionalBinding<DocumentR
         application_contribution::WorthQueryApplicationConditionalPackageContract,
         worth_query_host::facade::application_contribution::WorthQueryOutputReadinessContractDenial,
     > {
-        Ok({
-            application_contribution::WorthQueryApplicationConditionalPackageContract::new(
-                operation_definition().into_portable(),
-                Self::conditional_binding().portable().clone(),
-                RetentionAssessmentReadyNode::reference().node_identity(),
-            )
-        })
+        let contract = readiness_contract(_declaration)?;
+        Ok(contract.into_package_contract(Self::conditional_binding().portable().clone()))
     }
 
     fn install(
@@ -95,91 +91,73 @@ impl application_contribution::WorthQueryApplicationConditionalBinding<DocumentR
             .expect("the assessment conditional binding is installed")
             .bind_node(RetentionAssessmentReadyNode::reference())
             .expect("the assessment readiness node is installed");
-        installation.bind_output_readiness::<RetentionAssessmentProducer, _, _, _, _, _, _>(node, 0)
+        let contract =
+            readiness_contract(installation.installed_schema().installed_declaration()).unwrap();
+        let ordinal = contract
+            .delivery_ordinal(
+                installation.installed_schema(),
+                node.declaration(),
+                DocumentRetentionField::at("DocumentRetentionField"),
+            )
+            .unwrap();
+        installation
+            .bind_output_readiness::<RetentionAssessmentProducer, _, _, _, _, _, _>(node, ordinal)
     }
 }
 
+type Contract = application_contribution::WorthQueryOutputReadinessContract<
+    RetentionAssessmentReadinessDomain,
+    RetentionAssessmentReadinessOperation,
+    RetentionAssessmentReadinessFamily,
+>;
+pub fn readiness_contract(
+    declaration: &worth_query_host::facade::declaration::application_schema::ErasedApplicationSchemaDeclaration,
+) -> Result<Contract, application_contribution::WorthQueryOutputReadinessContractDenial> {
+    application_contribution::WorthQueryOutputReadinessContractBuilder::for_field(
+        declaration,
+        DocumentRetentionField::at("DocumentRetentionField"),
+        domain::WorthQueryDomainOperationIdentity::new("retention-assessment-readiness", 1),
+        "retention-assessment-ready",
+        canonical_query(),
+        domain::WorthQueryOperationProjectionRole::new("assessment").unwrap(),
+        domain::WorthQueryExecutionStrategyName::new("retention-assessment-readiness").unwrap(),
+        "retention-assessment-readiness-v1",
+    )?
+    .field_dependency(
+        declaration,
+        DocumentRetentionField::at("DocumentRetentionField"),
+        application_contribution::WorthQueryReadinessFieldUse::DeliveryAndEligibility,
+    )?
+    .build_typed()
+}
 pub fn operation_definition() -> domain::WorthQueryDomainOperationDefinition<
     RetentionAssessmentReadinessDomain,
     RetentionAssessmentReadinessOperation,
     RetentionAssessmentReadinessFamily,
 > {
-    let dependency = retention_dependency();
-    application_contribution::WorthQueryOutputReadinessContractBuilder::new(
-        domain::WorthQueryDomainOperationIdentity::new("retention-assessment-readiness", 1),
-        "retention-assessment-ready",
-        retention_projection(),
-        canonical_query(),
-        domain::WorthQueryOperationProjectionRole::new("assessment").unwrap(),
-        domain::WorthQueryExecutionStrategyName::new("retention-assessment-readiness").unwrap(),
-        "retention-assessment-readiness-v1",
-    )
-    .semantic_reads([retention_projection()])
-    .dependencies([dependency.clone()])
-    .readiness_dependencies([dependency])
-    .build()
-    .expect("the document assessment readiness declaration is canonical")
-}
-
-pub fn retention_dependency() -> domain::WorthQuerySemanticTruthDependency {
-    domain::WorthQuerySemanticTruthDependency::new(
-        domain::WorthQueryConditionalGraphReadRole::new("primary").unwrap(),
-        document_contract(),
-        retention_mask(),
-        domain::AspectBinding::EntityField {
-            field: domain::FieldKey::new("DocumentRetentionField").unwrap(),
-        },
-        domain::WorthQuerySemanticLocality::SourceRecord,
-        [domain::AuthoritativeAspectChangeKind::FieldSet],
-    )
-    .unwrap()
-}
-
-pub fn document_contract() -> domain::AspectContract {
-    let field = |name, scalar| {
-        domain::FieldDeclaration::new(
-            domain::FieldKey::new(name).unwrap(),
-            scalar,
-            domain::FieldRequirement::Required,
-            domain::AbsenceLaw::Required,
-            domain::AspectEvolutionPolicy::AdditiveFieldsAllowed,
-        )
+    readiness_contract(DocumentRetentionSchema::declaration().unwrap().erased())
         .unwrap()
-    };
-    domain::AspectContract::struct_aspect(
-        domain::AspectKey::new("DocumentFacts").unwrap(),
-        domain::AspectIdentity(0x9175_0103),
-        domain::AspectContractRevision(1),
-        domain::StructAspectShape::new([
-            field("DocumentIdentityField", domain::ScalarAspectType::String),
-            field("DocumentRetentionField", domain::ScalarAspectType::UInt64),
-        ])
-        .unwrap(),
-    )
-}
-
-pub fn retention_mask() -> domain::AspectMask<domain::ProjectionMask> {
-    domain::AspectMask::new([domain::CanonicalFieldPath::single(
-        domain::FieldKey::new("DocumentRetentionField").unwrap(),
-    )])
-}
-
-pub fn retention_projection() -> domain::WorthQueryOperationNativeProjectionContract {
-    domain::WorthQueryOperationNativeProjectionContract::new(document_contract(), retention_mask())
-        .unwrap()
+        .definition()
+        .clone()
 }
 
 pub fn canonical_query(
 ) -> worth_query_host::facade::declaration::canonicalization::CanonicalQueryBundle {
     let query = DetailQueryBuilder::new(RootEntityKey::new("Document").unwrap())
-        .project(AspectFieldSelector::new("DocumentFacts", "DocumentRetentionField").unwrap())
+        .project(
+            AspectFieldSelector::new(
+                DocumentRetentionField::at("DocumentRetentionField").aspect(),
+                "DocumentRetentionField",
+            )
+            .unwrap(),
+        )
         .build()
         .unwrap()
         .into_raw();
     let shape = DetailResultShapeBuilder::new()
         .field(
             AuthoredResultShapeField::new(
-                "DocumentFacts",
+                DocumentRetentionField::at("DocumentRetentionField").aspect(),
                 "DocumentRetentionField",
                 "document_retention",
             )

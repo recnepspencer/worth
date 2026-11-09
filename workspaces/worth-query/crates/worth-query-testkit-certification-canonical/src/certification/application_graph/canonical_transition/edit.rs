@@ -18,21 +18,12 @@ worth_query_structured_value_binding!(pub InputBinding for Input { identity: "ca
 worth_query_structured_value_binding!(pub ResultBinding for Edited { identity: "canonical-transition.edit.result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for Denied { identity: "canonical-transition.edit.denial.v1" });
 worth_query_operation!(pub Edit for CanonicalSchema, input InputBinding);
-worth_query_operation_reads!(Edit => [DocumentIdentityField, DocumentValueField]);
-worth_query_operation_writes!(Edit => [DocumentValueField]);
+
 pub struct EditBinding;
 impl ApplicationMutationAdmissionBinding<CanonicalSchema> for EditBinding {
     type Admission = ApplicationConventionalAdmission;
 }
-pub type Scope = ApplicationMutationFieldScope<
-    CanonicalSchema,
-    Document,
-    DocumentFacts,
-    DocumentIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type Scope = ApplicationMutationFieldScope<DocumentIdentityField>;
 impl ApplicationMutationBinding<CanonicalSchema> for EditBinding {
     type Input = Input;
     type InputBinding = InputBinding;
@@ -57,17 +48,8 @@ impl ApplicationMutationBinding<CanonicalSchema> for EditBinding {
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
     }
-    fn scope_field() -> ApplicationFieldRef<
-        CanonicalSchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         CanonicalSchema,
@@ -86,7 +68,10 @@ impl ApplicationMutationIntent<CanonicalSchema> for Input {
         self
     }
     fn scope_binding(&self) -> Scope {
-        Scope::new(DocumentIdentityField::reference(), self.identity.clone())
+        Scope::new(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            self.identity.clone(),
+        )
     }
 }
 pub struct Handler;
@@ -96,13 +81,14 @@ impl OperationHandler<CanonicalSchema, EditBinding> for Handler {
         input: &Input,
         reader: &mut DecisionReader<'_, '_, '_, CanonicalSchema, EditBinding>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<CanonicalSchema, Document>, Denied> {
-        let root = match reader
-            .resolve_entity(DocumentIdentityField::reference(), input.identity.clone())
-        {
+        let root = match reader.resolve_entity(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            input.identity.clone(),
+        ) {
             Ok(root) => root,
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };
-        match reader.field(&root, DocumentValueField::reference()) {
+        match reader.field(&root, DocumentValueField::at("DocumentValueField")) {
             Ok(Some(_)) => {}
             Ok(None) => return HandlerResult::DomainDenied(Denied),
             Err(error) => return HandlerResult::ExecutionDenied(error),
@@ -126,7 +112,7 @@ impl OperationHandler<CanonicalSchema, EditBinding> for Handler {
         };
         match writer.write_field(
             &target,
-            DocumentValueField::reference(),
+            DocumentValueField::at("DocumentValueField"),
             input.value.clone(),
         ) {
             Ok(()) => HandlerResult::Completed(Edited),

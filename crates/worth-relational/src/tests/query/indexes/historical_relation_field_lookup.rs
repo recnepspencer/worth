@@ -22,6 +22,7 @@ fn relation_field_index_executes_retained_history_after_relation_deletion() {
         })
         .expect("index fixture has identity capacity");
 
+    reconstruct_installed_at_head(execution, &runtime);
     delete_relation_on_branch(
         execution,
         &runtime,

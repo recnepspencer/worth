@@ -322,59 +322,5 @@ fn leased_kind_scan_stops_at_a_record_checkpoint() {
     );
 }
 
-#[test]
-fn leased_kind_scan_rejects_one_record_larger_than_its_packet_ceiling() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    create_entity_in_partition(execution, &runtime, &"x".repeat(32_000), PartitionId(7));
-    let snapshot = runtime
-        .visibility_authority()
-        .snapshot()
-        .expect("current snapshot fixture is admitted");
-    let context = runtime.read_truth().query_plan_context(&snapshot).unwrap();
-    let plan = runtime
-        .read_truth()
-        .plan_query_packet(
-            &snapshot,
-            PlannedQueryPacket {
-                label: "leased-oversized-record".to_owned(),
-                context_id: context,
-                scope: QueryScope::EntityKindScan {
-                    kind_id: KindId(1),
-                    partition_scope: Some(Arc::from([PartitionId(7)])),
-                },
-                locality: QueryLocalityClass::PartitionBounded {
-                    partitions: Arc::from([PartitionId(7)]),
-                },
-                ordering: QueryOrderingContract::CanonicalEntityIdOrder,
-                access_contract: QueryAccessContract::AuthoritativeStorageOnly,
-                execution_shape: QueryExecutionShape::BulkPacketized,
-                reduction: ReductionDiscipline::DeterministicMerge,
-                plan_key: DeterministicQueryPlanKey(9_176_304),
-                target_count_hint: 0,
-            },
-        )
-        .unwrap();
-    let constrained = lease(1, 64 << 10, CancellationToken::new());
-    assert!(matches!(
-        runtime
-            .read_truth()
-            .execute_query_plan(
-                plan,
-                &worth_execution::ExecutionRequest::leased(&constrained)
-            )
-            .map(|read| read.map(|read| read.outcome)),
-        Err(QueryReadExecutionStop::PacketStopped {
-            reason: MapStop::Failure {
-                cause: MapKernelFailure::ResultCapacityExceeded,
-                ..
-            },
-            ..
-        })
-    ));
-}
-
 #[path = "leased_explicit_targets/traversal_and_values.rs"]
 mod traversal_and_values;

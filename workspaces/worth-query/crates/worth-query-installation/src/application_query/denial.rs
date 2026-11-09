@@ -38,6 +38,7 @@ pub enum WorthQueryApplicationQueryInstallationDenialKind {
 pub struct WorthQueryApplicationQueryInstallationDenial {
     kind: WorthQueryApplicationQueryInstallationDenialKind,
     subject: String,
+    canonical_denial: Option<CanonicalDigestDerivationDenial>,
 }
 
 impl WorthQueryApplicationQueryInstallationDenial {
@@ -48,6 +49,7 @@ impl WorthQueryApplicationQueryInstallationDenial {
         Self {
             kind,
             subject: subject.into(),
+            canonical_denial: None,
         }
     }
 
@@ -57,6 +59,10 @@ impl WorthQueryApplicationQueryInstallationDenial {
 
     pub fn subject(&self) -> &str {
         &self.subject
+    }
+
+    pub const fn canonical_denial(&self) -> Option<&CanonicalDigestDerivationDenial> {
+        self.canonical_denial.as_ref()
     }
 }
 
@@ -103,5 +109,35 @@ pub(super) fn canonical_work_denial(
         }
         _ => WorthQueryApplicationQueryInstallationDenialKind::CanonicalDigestSlotRejected,
     };
-    WorthQueryApplicationQueryInstallationDenial::new(kind, subject)
+    WorthQueryApplicationQueryInstallationDenial {
+        kind,
+        subject: subject.to_owned(),
+        canonical_denial: Some(denial),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn graph_obligation_budget_refusals_preserve_requested_and_maximum_counts() {
+        for cause in [
+            CanonicalDigestDerivationDenial::EntryLimitExceeded {
+                actual: 17,
+                maximum: 16,
+            },
+            CanonicalDigestDerivationDenial::EncodedByteLimitExceeded {
+                attempted: 33,
+                maximum: 32,
+            },
+        ] {
+            let denial = graph_obligation_denial(
+                "query",
+                WorthQueryGraphObligationInstallationDenial::Canonical(cause),
+            );
+            assert_eq!(denial.canonical_denial(), Some(&cause));
+            assert_eq!(denial.subject(), "query");
+        }
+    }
 }

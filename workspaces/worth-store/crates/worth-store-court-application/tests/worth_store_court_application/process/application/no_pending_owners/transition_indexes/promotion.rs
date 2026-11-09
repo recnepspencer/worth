@@ -178,6 +178,11 @@ fn home_binding_promotes_the_original_receiver_only_after_all_actual_steps() {
             grant.original(),
             &association,
             grant.admission(),
+            worth_relational::facade::indexes::DerivedIndexMaintenanceBudget {
+                maximum_work_units: None,
+                maximum_cold_record_slots: None,
+                maximum_derived_rows: None,
+            },
         )
         .unwrap();
     transaction

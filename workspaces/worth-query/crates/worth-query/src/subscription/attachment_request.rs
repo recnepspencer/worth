@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -12,7 +13,7 @@ impl SubscriptionConsumerAttachmentRequest {
     pub fn admitted(
         consumer_id: impl Into<String>,
         delivery_cursor_seed: impl Into<String>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let consumer_id = consumer_id.into();
         let delivery_cursor_seed = delivery_cursor_seed.into();
         let consumer_identity = WorthQueryEvidenceIdentity::compose(
@@ -27,12 +28,12 @@ impl SubscriptionConsumerAttachmentRequest {
             WorthQueryEvidenceTag::new("cursor_seed"),
             &delivery_cursor_seed,
         )
-        .seal();
-        let delivery_cursor_seed_identity = delivery_cursor_seed_identity(&delivery_cursor_seed);
-        Self {
+        .seal()?;
+        let delivery_cursor_seed_identity = delivery_cursor_seed_identity(&delivery_cursor_seed)?;
+        Ok(Self {
             consumer_identity,
             delivery_cursor_seed_identity,
-        }
+        })
     }
 
     pub fn from_consumer_identity(
@@ -54,12 +55,16 @@ impl SubscriptionConsumerAttachmentRequest {
     }
 }
 
-fn delivery_cursor_seed_identity(seed: &str) -> WorthQueryEvidenceIdentity {
-    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
-        .field_shape(
-            WorthQueryEvidenceTag::new("identity_family"),
-            "subscription_delivery_cursor_seed_v1",
-        )
-        .field_value(WorthQueryEvidenceTag::new("seed"), seed)
-        .seal()
+fn delivery_cursor_seed_identity(
+    seed: &str,
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
+            .field_shape(
+                WorthQueryEvidenceTag::new("identity_family"),
+                "subscription_delivery_cursor_seed_v1",
+            )
+            .field_value(WorthQueryEvidenceTag::new("seed"), seed)
+            .seal()?,
+    )
 }

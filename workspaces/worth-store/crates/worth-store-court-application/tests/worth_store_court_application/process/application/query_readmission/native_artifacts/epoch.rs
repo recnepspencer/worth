@@ -10,7 +10,11 @@ fn batch(id: worth_relational::facade::identity::EntityId) -> WorkerIntentBatch 
             entity_id: id,
             fields: AspectFieldPatch::from_locator(
                 planned_single_field_locator(
-                    AspectKey::new("AccountIdentity").unwrap(),
+                    AspectKey::new(
+                        FieldSelection::<HomeRecords, Account, AccountIdentity, u64>::at("Balance")
+                            .aspect(),
+                    )
+                    .unwrap(),
                     FieldKey::new("Balance").unwrap(),
                 ),
                 AspectValue::UInt64(29),
@@ -42,7 +46,12 @@ fn equivalent_receiver_replacement_refuses_retained_proposals_and_candidates_bef
         let [row] = rows.as_slice() else {
             panic!("actual nonempty Home account");
         };
-        let original = administration::field(row, "AccountIdentity", "Balance").clone();
+        let original = administration::field(
+            row,
+            FieldSelection::<HomeRecords, Account, AccountIdentity, u64>::at("Balance").aspect(),
+            "Balance",
+        )
+        .clone();
         let validate = |native: &RelationalRuntime| {
             let mut transaction = native
                 .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
@@ -99,7 +108,12 @@ fn equivalent_receiver_replacement_refuses_retained_proposals_and_candidates_bef
         assert_eq!(after.descriptor(), basis.descriptor());
         let after_rows = administration::rows(native, &execution, "Account");
         assert_eq!(
-            administration::field(&after_rows[0], "AccountIdentity", "Balance"),
+            administration::field(
+                &after_rows[0],
+                FieldSelection::<HomeRecords, Account, AccountIdentity, u64>::at("Balance")
+                    .aspect(),
+                "Balance"
+            ),
             &original
         );
         // A current operation still validates and prepares at precisely that basis.

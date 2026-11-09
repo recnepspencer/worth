@@ -59,7 +59,7 @@ fn explicit_scope_mismatch_preserves_its_exact_explanation_cause() {
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &phase,
-                    PrincipalIdentityField::reference(),
+                    PrincipalIdentityField::at("PrincipalIdentityField"),
                     1_u64,
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

@@ -22,11 +22,11 @@ fn optional_aspect_initialization_presence_follows_exact_installed_write_members
         .primary_graph_for_test()
         .unwrap();
     for field in [
-        AccountNote::reference().field(),
-        AccountScore::reference().field(),
+        AccountNote::at("AccountNote").field(),
+        AccountScore::at("AccountScore").field(),
     ] {
         let locator = (*graph.layout_for_test())
-            .field_locator_for_test("Account", "AccountPolicy", field)
+            .field_locator_for_test("Account", AccountNote::at("AccountNote").aspect(), field)
             .unwrap();
         assert!(may_write(writer.contracts().touches(), "Account", locator));
         assert!(!may_write(

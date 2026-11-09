@@ -1,7 +1,7 @@
 use super::*;
 
 struct OptionalWorkSchema;
-impl OperationReads<TestOperation<OptionalWorkSchema>> for FixtureEntity<OptionalWorkSchema> {}
+impl OperationReads<TestOperation<OptionalWorkSchema>> for FixtureEntity {}
 impl ApplicationSchema for OptionalWorkSchema {
     const OWNER: &'static str = "typed-test";
     const NAME: &'static str = "OptionalWorkSchema";
@@ -15,9 +15,8 @@ impl ApplicationSchema for OptionalWorkSchema {
         let operation =
             ApplicationOperationRef::<Self, TestOperation<Self>, TestInput>::from_declaration();
         let entity =
-            ApplicationEntityRef::<Self, FixtureEntity<Self>>::from_schema_identifier("TestEntity");
-        ApplicationSchemaDeclarationBuilder::<Self>::for_schema()
-            .entity(entity)
+            ApplicationEntityRef::<Self, FixtureEntity>::from_schema_identifier("TestEntity");
+        ApplicationSchemaDeclarationBuilder::<Self>::from_fragment(OptionalWorkRecords)?
             .operation(
                 operation
                     .definition()
@@ -43,4 +42,18 @@ fn installed_operation_without_projection_budget_has_no_intrinsic_work_limit() {
     let installed = schema.installed_operation(operation).unwrap();
     index.validate_application_operation(&installed).unwrap();
     assert_eq!(installed.contracts().projection_work_budget(), None);
+}
+
+use worth_query_declaration::facade::application_schema::fragment;
+struct OptionalWorkRecords;
+struct OptionalWorkEntity;
+impl fragment::Fragment for OptionalWorkRecords {
+    const NAME: &'static str = "optional_work_records";
+    type Bindings = fragment::NoBindings;
+    type Members = (OptionalWorkEntity,);
+}
+impl fragment::Entity for OptionalWorkEntity {
+    const NAME: &'static str = <FixtureEntity as fragment::Entity>::NAME;
+    type Aspects = ();
+    type Relations = ();
 }

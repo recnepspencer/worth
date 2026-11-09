@@ -78,6 +78,11 @@ impl ValueDecodeSession<'_> {
 }
 
 impl ValueDecodeSession<'_> {
+    pub(in crate::domain_computation::primary_graph) fn accounting_overflow(&self) -> Stop {
+        self.refuse(Stop::AccountingOverflow);
+        Stop::AccountingOverflow
+    }
+
     /// Fund write traversal and installed lookup using this exact request loan.
     pub(in crate::domain_computation::primary_graph) fn admit_write_quantities(
         &self,

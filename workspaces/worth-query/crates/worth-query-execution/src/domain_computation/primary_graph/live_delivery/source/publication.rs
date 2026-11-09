@@ -11,7 +11,7 @@ impl WorthQueryLiveDeliverySource {
         predicate: Option<crate::domain_computation::primary_graph::application_query::derived_view::PreparedPredicatePublication>,
     ) -> usize {
         let emitted = emissions.len();
-        let emissions = emissions.into_emissions();
+        let (emissions, emission_memory) = emissions.into_live_emissions();
         use crate::domain_computation::primary_graph::application_query::derived_view::PreparedPredicatePublication;
         let (predicate, resync) = match predicate {
             Some(PreparedPredicatePublication::Matched(notices)) => (Some(notices), false),
@@ -93,6 +93,7 @@ impl WorthQueryLiveDeliverySource {
                 publication,
                 product: crate::basis::WorthQueryProductObservationLease::new(observation),
                 emissions,
+                _emission_memory: emission_memory,
                 predicate,
             })
             .unwrap_or_else(|_| panic!("reserved live batch initializes once"));

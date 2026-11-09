@@ -1,12 +1,11 @@
 use worth_query_decl::facade::{
     application_query::{
-        ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
+        ApplicationQueryBasisSupport, ApplicationQueryCardinality,
         ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
         ApplicationQueryLaneEligibility, ApplicationQueryOrderingDirection,
         ApplicationQueryResultFieldRef, ApplicationQueryResultShapeBuilder,
         ApplicationQueryRootPath,
     },
-    application_schema::{EqualityPredicate, NoApplicationUnit, ReadOnly},
     worth_query_application_query,
 };
 use worth_query_host::facade::primary_graph::{
@@ -16,11 +15,10 @@ use worth_query_host::facade::primary_graph::{
 
 use crate::{
     authorization::DiscoverOwnAccounts,
-    model::AccountId,
     reads::VisibleAccount,
     schema::{
         Account, AccountAuthorizedUser, AccountIdentity, AuthorizationAccount, BankSchema,
-        BusinessAccount, BusinessOwner, Identity, PersonalOwner, Principal,
+        BusinessAccount, BusinessOwner, PersonalOwner, Principal,
     },
 };
 
@@ -55,14 +53,13 @@ worth_query_decl::facade::worth_query_query_binding!(
     result AccountDiscoveryQueryResultBinding,
     principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
         principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
-    scope Principal, crate::schema::PrincipalIdentity, crate::schema::PrincipalIdentityField,
-        crate::model::BankPrincipalId, ReadOnly, NoApplicationUnit,
-    principal_field crate::schema::PrincipalIdentityField::reference(),
+    scope crate::schema::PrincipalIdentityField,
+    principal_field crate::schema::PrincipalIdentityField::at("PrincipalIdentityField"),
     limits results 1_024
 
 );
 
-pub fn account_discovery_definition() -> ApplicationQueryDefinition<
+pub fn account_discovery_definition() -> ApplicationQueryDefinitionBuilder<
     BankSchema,
     AccountDiscoveryQuery,
     AccountDiscoveryQueryParameters,
@@ -97,8 +94,6 @@ pub fn account_discovery_definition() -> ApplicationQueryDefinition<
                 .forward(BusinessAccount::reference()),
         )
         .order_by(identity, ApplicationQueryOrderingDirection::Ascending)
-        .build()
-        .expect("bank account discovery query is statically canonical")
 }
 
 impl WorthQueryApplicationProjection<BankSchema, AccountDiscoveryQuery> for VisibleAccount {
@@ -109,17 +104,7 @@ impl WorthQueryApplicationProjection<BankSchema, AccountDiscoveryQuery> for Visi
     }
 }
 
-pub(super) fn account_identity<Q>() -> ApplicationQueryResultFieldRef<
-    Q,
-    AccountIdentitySlot,
-    BankSchema,
-    Account,
-    Identity,
-    AccountIdentity,
-    AccountId,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("account", AccountIdentity::reference())
+pub(super) fn account_identity<Q>(
+) -> ApplicationQueryResultFieldRef<Q, AccountIdentitySlot, BankSchema, AccountIdentity> {
+    ApplicationQueryResultFieldRef::new("account", AccountIdentity::at("AccountIdentity"))
 }

@@ -7,6 +7,12 @@ pub trait ApplicationFeatureDefinition<S: ApplicationSchema> {
     type Outputs: ApplicationProgramOutputRootsShape<S>;
     fn declare_members(
         schema: ApplicationSchemaDeclarationBuilder<S>,
+    ) -> ApplicationSchemaDeclarationBuilder<S> {
+        schema.in_feature(std::any::type_name::<Self>(), Self::members)
+    }
+
+    fn members(
+        schema: ApplicationSchemaDeclarationBuilder<S>,
     ) -> ApplicationSchemaDeclarationBuilder<S>;
     fn feature_specs() -> Vec<ApplicationFeatureSpec>;
 }
@@ -18,7 +24,7 @@ where
     B: ApplicationFeatureDefinition<S>,
 {
     type Outputs = (A::Outputs, B::Outputs);
-    fn declare_members(
+    fn members(
         schema: ApplicationSchemaDeclarationBuilder<S>,
     ) -> ApplicationSchemaDeclarationBuilder<S> {
         B::declare_members(A::declare_members(schema))

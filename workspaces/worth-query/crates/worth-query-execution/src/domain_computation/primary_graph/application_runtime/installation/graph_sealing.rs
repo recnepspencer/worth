@@ -63,6 +63,7 @@ fn seal_bridge(
             WorthQueryPrimaryGraphInstallationDenialKind::RuntimeBridgeRejected,
             format!("{denial:?}"),
         )
+        .with_bridge_conditional_cause(denial)
     })?;
     Ok(storage.fill(bridge))
 }

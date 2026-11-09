@@ -90,7 +90,7 @@ pub(super) fn install_bridge<S: ApplicationSchema>(
                 }
                 _ => WorthQueryPrimaryGraphInstallationDenialKind::RelationalSchemaRejected,
             };
-            WorthQueryPrimaryGraphInstallationDenial::new(kind, format!("{denial:?}"))
+            WorthQueryPrimaryGraphInstallationDenial::new(kind, format!("{denial:?}")).with_branch_basis_cause(denial)
         })?;
     let relational_branch_identity = graph.with_runtime(execution, |runtime| {
         runtime
@@ -114,6 +114,7 @@ pub(super) fn install_bridge<S: ApplicationSchema>(
         fault_port,
         maximum_concurrent_graph_work,
         resource_support,
+        installed_schema.installed_view().retain_operation_catalog(),
     );
     primary_provider
         .graph

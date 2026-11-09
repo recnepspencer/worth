@@ -21,7 +21,7 @@ pub fn world_no_effect_retains_conditional_provenance(
                 .unwrap()
                 .resolve_entity(
                     &phase,
-                    schema::IntentIdentityField::reference(),
+                    schema::IntentIdentityField::at("IntentIdentityField"),
                     "intent-1".to_owned(),
                     &request,
                     primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
@@ -99,7 +99,7 @@ pub fn world_no_effect_retains_conditional_provenance(
     );
     courtroom_support::assert_authoritative_value(
         &world,
-        schema::IntentEffectField::reference(),
+        schema::IntentEffectField::at("IntentEffectField"),
         "pending".to_owned(),
     );
     assert!(matches!(
@@ -125,7 +125,7 @@ pub fn live_query_receives_conditional_world_publication(
                 .unwrap()
                 .resolve_entity(
                     &phase,
-                    schema::IntentIdentityField::reference(),
+                    schema::IntentIdentityField::at("IntentIdentityField"),
                     "intent-1".to_owned(),
                     &request,
                     primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,

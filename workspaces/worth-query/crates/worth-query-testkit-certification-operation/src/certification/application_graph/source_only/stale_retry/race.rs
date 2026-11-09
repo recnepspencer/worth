@@ -32,12 +32,12 @@ pub fn stale_owner(
     let original = {
         let request = host.runtime().request(&principal, &scope);
         let mut conditions = worth_query_host::facade::declaration::application_schema::TypedMutationPreconditions::new().expect_fact(
-            super::super::schema::DocumentIdentityField::reference(),
+            super::super::schema::DocumentIdentityField::at("DocumentIdentityField"),
             worth_query_host::facade::declaration::application_schema::ApplicationEncodedScalarValue::try_new(super::super::schema::DOCUMENT_IDENTITY.to_owned()).unwrap(),
-        );
+        ).unwrap();
         if let Some(days) = expected_retention {
-            conditions = conditions.expect_fact(super::super::schema::DocumentRetentionField::reference(),
-                worth_query_host::facade::declaration::application_schema::ApplicationEncodedScalarValue::try_new(days).unwrap());
+            conditions = conditions.expect_fact(super::super::schema::DocumentRetentionField::at("DocumentRetentionField"),
+                worth_query_host::facade::declaration::application_schema::ApplicationEncodedScalarValue::try_new(days).unwrap()).unwrap();
         }
         request
             .mutate(fixture::OriginalRetention {

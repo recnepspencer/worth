@@ -128,6 +128,11 @@ fn validated_proposal_complexity_excludes_intervening_sibling_commit_work() {
     let candidate = runtime
         .prepare_validated_proposal(execution, proposal)
         .expect("sibling advancement permits candidate revalidation");
+    assert_eq!(
+        candidate.prepared_index_maintenance_work(),
+        Some(Default::default()),
+        "native preparation verified that no index definitions are installed"
+    );
     let exact_records = candidate
         .with_prepared_changed_records(|records| records.to_vec())
         .expect("the prepared owner retains its exact records");

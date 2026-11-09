@@ -29,11 +29,11 @@ mod descriptive_decode;
 mod original_inputs;
 pub(crate) use live_managed_source_history::LiveManagedSourceHistory;
 mod authoritative_artifact_encoding;
-mod authoritative_payload;
 mod control_allocation;
 #[cfg(test)]
 mod embedded_checkpoint;
 mod lineage_projection;
+mod owned_graph_selection;
 mod payload_digest;
 mod retained_entity_selection;
 mod shared;
@@ -41,10 +41,12 @@ pub(crate) use authoritative_artifact_encoding::AuthoritativeArtifactEnvelopeRef
 pub(crate) use control_allocation::CanonicalEnvelopeControlAllocation;
 #[cfg(test)]
 pub(crate) use embedded_checkpoint::EmbeddedCheckpointEnvelopeRef;
+pub use owned_graph_selection::CanonicalOwnedGraphSelection;
 pub use retained_entity_selection::CanonicalRetainedEntitySelection;
 pub use shared::SharedCanonicalCommitEnvelope;
 #[path = "canonical_commit_envelope/descriptive_touches.rs"]
 mod descriptive_touches;
+mod payload_encoding;
 mod required_output_codec_retirement;
 mod required_output_materialization;
 mod required_output_origin;
@@ -59,10 +61,12 @@ pub(crate) use required_output_materialization::{
     CanonicalRequiredOutputMaterialization, CanonicalRequiredOutputMaterializationRecord,
 };
 pub(crate) use required_output_origin::validate_authored_restoration_candidate;
+pub(crate) use required_output_origin::CanonicalHistoricalOutputSelection;
 pub(crate) use required_output_origin::{
-    CanonicalAuthoredRestoration, CanonicalAuthoredRetirement, CanonicalOutputMember,
-    CanonicalOutputPublication, CanonicalProducerRetirement, CanonicalRequiredOutputOrigin,
-    CanonicalRequiredOutputRelation,
+    CanonicalAuthoredRestoration, CanonicalAuthoredRetirement, CanonicalCoupledAuthoredPublication,
+    CanonicalCoupledAuthoredSources, CanonicalOutputMember, CanonicalOutputPublication,
+    CanonicalProducerRetirement, CanonicalRequiredOutputOrigin, CanonicalRequiredOutputRelation,
+    OutputOriginHistory, OwnedValidatedOutputOrigins, ValidatedOutputOrigins,
 };
 
 mod draft;
@@ -166,6 +170,12 @@ pub struct CanonicalCommitEnvelopeBody {
     pub(crate) producer_cascade_retirement: Option<std::sync::Arc<CanonicalProducerRetirement>>,
     pub(crate) authored_cascade_retirement: Option<std::sync::Arc<CanonicalAuthoredRetirement>>,
     pub(crate) authored_cascade_restoration: Option<std::sync::Arc<CanonicalAuthoredRestoration>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) coupled_authored_publication:
+        Option<std::sync::Arc<CanonicalCoupledAuthoredPublication>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) historical_output_selection:
+        Option<std::sync::Arc<required_output_origin::CanonicalHistoricalOutputSelection>>,
     #[serde(default)]
     pub(crate) required_output_materialization:
         Option<std::sync::Arc<CanonicalRequiredOutputMaterialization>>,
@@ -215,12 +225,15 @@ pub enum CanonicalCommitAuthorityKind {
     BranchReferenceMovement,
     /// A fresh version selecting one retained authoritative entity payload.
     RetainedEntitySelection(std::sync::Arc<CanonicalRetainedEntitySelection>),
+    OwnedGraphSelection(std::sync::Arc<CanonicalOwnedGraphSelection>),
 }
 
 impl CanonicalCommitAuthorityKind {
     pub fn advances_version(&self) -> bool {
         match self {
-            Self::VersionedTransaction | Self::RetainedEntitySelection(_) => true,
+            Self::VersionedTransaction
+            | Self::RetainedEntitySelection(_)
+            | Self::OwnedGraphSelection(_) => true,
             Self::BranchReferenceMovement => false,
         }
     }
@@ -228,7 +241,9 @@ impl CanonicalCommitAuthorityKind {
     pub fn retained_entity_selection(&self) -> Option<&CanonicalRetainedEntitySelection> {
         match self {
             Self::RetainedEntitySelection(selection) => Some(selection),
-            Self::VersionedTransaction | Self::BranchReferenceMovement => None,
+            Self::VersionedTransaction
+            | Self::BranchReferenceMovement
+            | Self::OwnedGraphSelection(_) => None,
         }
     }
 }
@@ -289,6 +304,9 @@ impl CanonicalCommitEnvelopeBody {
         if let Some(selection) = self.authority_kind.retained_entity_selection() {
             touched.insert(RecordRef::Entity(selection.entity()));
         }
+        if let CanonicalCommitAuthorityKind::OwnedGraphSelection(selection) = &self.authority_kind {
+            touched.extend(selection.targets());
+        }
         touched
     }
 
@@ -299,6 +317,14 @@ impl CanonicalCommitEnvelopeBody {
             .retained_entity_selection()
             .map(|selection| Some(RecordRef::Entity(selection.entity())))
             .into_iter()
+            .chain(
+                match &self.authority_kind {
+                    CanonicalCommitAuthorityKind::OwnedGraphSelection(selection) => Some(selection),
+                    _ => None,
+                }
+                .into_iter()
+                .flat_map(|selection| selection.targets().map(Some)),
+            )
             .chain(
                 self.merged_plan
                     .merged_intents
@@ -354,18 +380,8 @@ fn intent_record_ref(intent: &MutationIntent) -> Option<RecordRef> {
     })
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct ReplaySchemaVersion(pub u32);
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct RelationalReplayRecord {
-    pub schema_version: ReplaySchemaVersion,
-    pub commit_id: crate::history::data::CommitId,
-    pub version_id: crate::identity::data::VersionId,
-    pub snapshot_id: crate::snapshots::data::SnapshotId,
-    pub patch: crate::publication::patch::data::PublishedAuthoritativePatchEnvelope,
-    pub schema_authority: SchemaAuthoritySnapshot,
-}
+mod replay_record;
+pub use replay_record::{RelationalReplayRecord, ReplaySchemaVersion};
 
 #[cfg(test)]
 #[path = "canonical_commit_envelope/tests.rs"]

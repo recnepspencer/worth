@@ -1,120 +1,56 @@
-use crate::application_schema::{
-    ApplicationFieldRef, ApplicationFieldUnit, DeclaredApplicationFieldValue, EqualityPredicate,
-    WritePosture,
-};
-
+//! Scope strategies carry a record selection; storage facts stay on its binding.
 use super::ApplicationMutationScopeResolutionMode;
+use crate::application_schema::fragment::RecordSelection;
 
-/// Declaration-only description of how a mutation intent locates its scope.
 pub trait ApplicationMutationScopeBinding<Schema> {
     type Scope;
-    type Aspect;
-    type Field: DeclaredApplicationFieldValue<Value = Self::Value>;
-    type Value;
-    type Write: WritePosture;
-    type Unit: ApplicationFieldUnit;
-
+    type Value: 'static;
+    type Field: RecordSelection<Entity = Self::Scope, Value = Self::Value>;
     const RESOLUTION_MODE: ApplicationMutationScopeResolutionMode;
 }
 
-pub struct ApplicationMutationFieldScope<Schema, Scope, Aspect, Field, Value, Write, Unit>
-where
-    Field: DeclaredApplicationFieldValue<Value = Value>,
-    Write: WritePosture,
-    Unit: ApplicationFieldUnit,
-{
-    pub(super) field:
-        ApplicationFieldRef<Schema, Scope, Aspect, Field, Value, Write, EqualityPredicate, Unit>,
-    pub(super) value: Value,
+pub struct ApplicationMutationFieldScope<Field: RecordSelection> {
+    pub(super) field: Field,
+    pub(super) value: Field::Value,
 }
-
-impl<Schema, Scope, Aspect, Field, Value, Write, Unit>
-    ApplicationMutationFieldScope<Schema, Scope, Aspect, Field, Value, Write, Unit>
-where
-    Field: DeclaredApplicationFieldValue<Value = Value>,
-    Write: WritePosture,
-    Unit: ApplicationFieldUnit,
-{
-    pub const fn new(
-        field: ApplicationFieldRef<
-            Schema,
-            Scope,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
-            Unit,
-        >,
-        value: Value,
-    ) -> Self {
+impl<Field: RecordSelection> ApplicationMutationFieldScope<Field> {
+    pub const fn new(field: Field, value: Field::Value) -> Self {
         Self { field, value }
     }
+    pub fn into_field_parts<Principal>(self, _: &Principal) -> (Field, Field::Value) {
+        (self.field, self.value)
+    }
 }
-
-impl<Schema, Scope, Aspect, Field, Value, Write, Unit> ApplicationMutationScopeBinding<Schema>
-    for ApplicationMutationFieldScope<Schema, Scope, Aspect, Field, Value, Write, Unit>
-where
-    Field: DeclaredApplicationFieldValue<Value = Value>,
-    Write: WritePosture,
-    Unit: ApplicationFieldUnit,
+impl<Schema, Field: RecordSelection> ApplicationMutationScopeBinding<Schema>
+    for ApplicationMutationFieldScope<Field>
 {
-    type Scope = Scope;
-    type Aspect = Aspect;
+    type Scope = Field::Entity;
+    type Value = Field::Value;
     type Field = Field;
-    type Value = Value;
-    type Write = Write;
-    type Unit = Unit;
     const RESOLUTION_MODE: ApplicationMutationScopeResolutionMode =
         ApplicationMutationScopeResolutionMode::InputField;
 }
 
-pub struct ApplicationMutationPrincipalScope<Schema, Scope, Aspect, Field, Value, Write, Unit>
-where
-    Field: DeclaredApplicationFieldValue<Value = Value>,
-    Write: WritePosture,
-    Unit: ApplicationFieldUnit,
-{
-    pub(super) field:
-        ApplicationFieldRef<Schema, Scope, Aspect, Field, Value, Write, EqualityPredicate, Unit>,
+pub struct ApplicationMutationPrincipalScope<Field: RecordSelection> {
+    pub(super) field: Field,
 }
-
-impl<Schema, Scope, Aspect, Field, Value, Write, Unit>
-    ApplicationMutationPrincipalScope<Schema, Scope, Aspect, Field, Value, Write, Unit>
-where
-    Field: DeclaredApplicationFieldValue<Value = Value>,
-    Write: WritePosture,
-    Unit: ApplicationFieldUnit,
-{
-    pub const fn new(
-        field: ApplicationFieldRef<
-            Schema,
-            Scope,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
-            Unit,
-        >,
-    ) -> Self {
+impl<Field: RecordSelection> ApplicationMutationPrincipalScope<Field> {
+    pub const fn new(field: Field) -> Self {
         Self { field }
     }
+    pub fn into_field_parts(self, principal: &Field::Value) -> (Field, Field::Value)
+    where
+        Field::Value: Clone,
+    {
+        (self.field, principal.clone())
+    }
 }
-
-impl<Schema, Scope, Aspect, Field, Value, Write, Unit> ApplicationMutationScopeBinding<Schema>
-    for ApplicationMutationPrincipalScope<Schema, Scope, Aspect, Field, Value, Write, Unit>
-where
-    Field: DeclaredApplicationFieldValue<Value = Value>,
-    Write: WritePosture,
-    Unit: ApplicationFieldUnit,
+impl<Schema, Field: RecordSelection> ApplicationMutationScopeBinding<Schema>
+    for ApplicationMutationPrincipalScope<Field>
 {
-    type Scope = Scope;
-    type Aspect = Aspect;
+    type Scope = Field::Entity;
+    type Value = Field::Value;
     type Field = Field;
-    type Value = Value;
-    type Write = Write;
-    type Unit = Unit;
     const RESOLUTION_MODE: ApplicationMutationScopeResolutionMode =
         ApplicationMutationScopeResolutionMode::PrincipalIdentity;
 }

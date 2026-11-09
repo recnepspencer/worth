@@ -34,28 +34,20 @@ impl EditEdges {
         ApplicationOperationRef::from_declaration()
     }
 }
-worth_query_operation_reads!(EditEdges => [NodeKey, Precedes]);
+worth_query_operation_reads!(EditEdges =>[Precedes]);
 worth_query_operation_links!(EditEdges => [Precedes]);
 worth_query_operation_unlinks!(EditEdges => [Precedes]);
 
 pub struct EditBinding<L: LawPolicy>(pub PhantomData<fn() -> L>);
 pub type PairTargets<L> = (
-    WorthQueryInvariantMutationTarget<GraphSchema<L>, Node>,
-    WorthQueryInvariantMutationTarget<GraphSchema<L>, Node>,
+    WorthQueryInvariantMutationTarget<GraphSchema<L>, GraphNode<GraphSchema<L>>>,
+    WorthQueryInvariantMutationTarget<GraphSchema<L>, GraphNode<GraphSchema<L>>>,
 );
 pub struct Targets<L: LawPolicy> {
     pub added: Vec<PairTargets<L>>,
     pub removed: Vec<PairTargets<L>>,
 }
-pub type NodeScope<L> = ApplicationMutationFieldScope<
-    GraphSchema<L>,
-    Node,
-    NodeFacts,
-    NodeKey,
-    u64,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type NodeScope<L> = ApplicationMutationFieldScope<GraphKey<GraphSchema<L>>>;
 impl<L: LawPolicy> ApplicationMutationBinding<GraphSchema<L>> for EditBinding<L> {
     type Input = EdgeEdit;
     type InputBinding = EdgeEditBinding;
@@ -80,17 +72,8 @@ impl<L: LawPolicy> ApplicationMutationBinding<GraphSchema<L>> for EditBinding<L>
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
     }
-    fn scope_field() -> ApplicationFieldRef<
-        GraphSchema<L>,
-        Node,
-        NodeFacts,
-        NodeKey,
-        u64,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        NodeKey::reference()
+    fn scope_field() -> GraphKey<GraphSchema<L>> {
+        node_key::<GraphSchema<L>>()
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         GraphSchema<L>,
@@ -114,8 +97,8 @@ impl<L: LawPolicy> ApplicationMutationIntent<GraphSchema<L>> for Edit<L> {
         &self.input
     }
     fn scope_binding(&self) -> NodeScope<L> {
-        NodeScope::new(
-            NodeKey::reference(),
+        NodeScope::<L>::new(
+            node_key::<GraphSchema<L>>(),
             self.input
                 .edges
                 .first()

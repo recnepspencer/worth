@@ -28,9 +28,7 @@ pub use application_schema::{
     WorthUiProjectionField, WorthUiRecord,
 };
 pub(crate) use authentication::{
-    WorthUiExternalIdentity, WorthUiExternalIdentityKey, WorthUiExternalPrincipal,
-    WorthUiExternalPrincipalMapping, WorthUiMappingStatus, WorthUiPrincipal,
-    WorthUiPrincipalBinding, WorthUiPrincipalId, WorthUiPrincipalIdentity,
+    WorthUiExternalPrincipalMapping, WorthUiPrincipal, WorthUiPrincipalBinding,
 };
 pub use collection_registration::UiCollectionProjectionRegistration;
 pub use definition::{

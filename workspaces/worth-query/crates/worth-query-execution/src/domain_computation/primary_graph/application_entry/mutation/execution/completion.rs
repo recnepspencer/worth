@@ -7,7 +7,10 @@ type Report<Schema, Binding> = WorthQueryMutationHandlerExecutionReport<
     WorthQueryCompletedMutationCandidate<Schema, Binding>,
     <Binding as ApplicationMutationBinding<Schema>>::Denial,
 >;
-type Projection<Schema, Binding> = crate::domain_computation::primary_graph::WorthQueryApplicationOperationInvariantProjectionSnapshot<Schema, <Binding as ApplicationMutationBinding<Schema>>::Operation>;
+type Projection<Schema, Binding> = super::projection::PreparedMutationProjection<
+    Schema,
+    <Binding as ApplicationMutationBinding<Schema>>::Operation,
+>;
 
 type PreparedHandlerParts<'authority, Schema, Binding> = (
     Vec<crate::domain_computation::primary_graph::application_contribution::computation::prepared_request::PreparedCompute>,
@@ -68,7 +71,7 @@ where
         }
     }
 
-    pub(super) fn run(
+    pub(in crate::domain_computation::primary_graph) fn run(
         self,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         identities: &ApplicationMutationIdentities<'_, Schema, Binding>,

@@ -38,7 +38,7 @@ pub(super) fn prepare(
             let account = selected
                 .resolve_entity(
                     &phase,
-                    Count::reference(),
+                    Count::at("value"),
                     PositiveCount::new(7).unwrap(),
                     scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -66,7 +66,7 @@ pub(super) fn prepare(
                     &admission,
                     |reader, projected| {
                         reader
-                            .require_decision_field(projected, Count::reference())
+                            .require_decision_field(projected, Count::at("value"))
                             .unwrap();
                     },
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -91,7 +91,7 @@ pub(super) fn prepare(
                 .begin_effect_program();
             let account = effects.existing_entity(&account).unwrap();
             effects
-                .write_field(&account, Count::reference(), PositiveCount::new(8).unwrap())
+                .write_field(&account, Count::at("value"), PositiveCount::new(8).unwrap())
                 .unwrap();
             effects.finish().unwrap()
         })

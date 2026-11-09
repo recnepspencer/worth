@@ -67,10 +67,10 @@ fn capability_relation_traversal_does_not_enter_sealed_decision_dependencies() {
                             .relations_from(AccountOwner::reference(), principal)
                             .unwrap();
                         let account = reader
-                            .resolve_entity(AccountStatus::reference(), "open".to_string())
+                            .resolve_entity(AccountStatus::at("AccountStatus"), "open".to_string())
                             .unwrap();
                         reader
-                            .require_decision_field(&account, AccountStatus::reference())
+                            .require_decision_field(&account, AccountStatus::at("AccountStatus"))
                             .unwrap();
                     },
                     AllocationPolicy::SystemAllocation,

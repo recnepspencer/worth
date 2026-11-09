@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod integrity;
 mod row_documents;
 pub(crate) mod schema;
@@ -80,7 +81,9 @@ pub(crate) struct WorthQuerySupportPinContractDocument {
 }
 
 impl WorthQuerySupportPinContractDocument {
-    pub(crate) fn from_contract(contract: &WorthQuerySupportPinContract) -> Self {
+    pub(crate) fn from_contract(
+        contract: &WorthQuerySupportPinContract,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let mut document = Self {
             schema_version: contract.contract_schema_version().major(),
             schema_identity: contract.contract_schema_identity().to_string(),
@@ -104,10 +107,10 @@ impl WorthQuerySupportPinContractDocument {
                 .collect(),
         };
         document.document_digest =
-            derive_support_pin_contract_document_identity(&document.contract_digest)
+            derive_support_pin_contract_document_identity(&document.contract_digest)?
                 .terminal_projection_for_reporting()
                 .to_string();
-        document
+        Ok(document)
     }
 
     pub fn from_terminal_json_document(
@@ -141,7 +144,7 @@ impl WorthQuerySupportPinContractDocument {
             &self.source_matrix_digest,
             &requirements,
             &observed_rows,
-        );
+        )?;
         if contract_digest != self.contract_digest {
             return Err(WorthQuerySupportPinningError::with_expected_found(
                 WorthQuerySupportPinningErrorKind::ContractDigestMismatch,
@@ -176,7 +179,7 @@ impl WorthQuerySupportPinContractDocument {
             ));
         }
         let expected_identity = expected_schema_version
-            .identity()
+            .identity()?
             .terminal_projection_for_reporting()
             .to_string();
         if self.schema_identity != expected_identity {
@@ -191,7 +194,7 @@ impl WorthQuerySupportPinContractDocument {
     }
 
     fn reject_vocabulary_mismatch(&self) -> Result<(), WorthQuerySupportPinningError> {
-        let expected = support_pin_vocabulary_identity()
+        let expected = support_pin_vocabulary_identity()?
             .terminal_projection_for_reporting()
             .to_string();
         if self.pinned_vocabulary_identity == expected {
@@ -207,7 +210,7 @@ impl WorthQuerySupportPinContractDocument {
     }
 
     fn reject_document_digest_mismatch(&self) -> Result<(), WorthQuerySupportPinningError> {
-        let expected = derive_support_pin_contract_document_identity(&self.contract_digest)
+        let expected = derive_support_pin_contract_document_identity(&self.contract_digest)?
             .terminal_projection_for_reporting()
             .to_string();
         if self.document_digest == expected {

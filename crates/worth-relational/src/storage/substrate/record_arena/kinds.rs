@@ -19,6 +19,10 @@ pub(crate) trait RecordKind: Clone + Debug + 'static {
     fn arena(partition: &PartitionState) -> &RecordArena<Self>;
     fn arena_mut(partition: &mut PartitionState) -> &mut RecordArena<Self>;
     fn empty_extra() -> Self::Extra;
+    fn copy_extra_for_request(
+        extra: &Self::Extra,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self::Extra, crate::execution::RelationalExecutionDenialCause>;
     #[cfg(test)]
     fn unavailable_extra(extra: &Self::Extra) -> Self::Extra;
     fn retire_metadata(metadata: &mut Self::Meta, version_id: VersionId);
@@ -63,6 +67,13 @@ impl RecordKind for EntityRecordKind {
 
     fn empty_extra() -> Self::Extra {
         EntityExtra::default()
+    }
+
+    fn copy_extra_for_request(
+        extra: &Self::Extra,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self::Extra, crate::execution::RelationalExecutionDenialCause> {
+        extra.copy_for_request(request)
     }
 
     #[cfg(test)]
@@ -142,6 +153,13 @@ impl RecordKind for RelationRecordKind {
 
     fn empty_extra() -> Self::Extra {
         RelationExtra::default()
+    }
+
+    fn copy_extra_for_request(
+        extra: &Self::Extra,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self::Extra, crate::execution::RelationalExecutionDenialCause> {
+        extra.copy_for_request(request)
     }
 
     #[cfg(test)]

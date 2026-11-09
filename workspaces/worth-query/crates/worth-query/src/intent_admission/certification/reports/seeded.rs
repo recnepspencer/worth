@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::hash_parts;
 
 use super::super::fixtures::{
@@ -78,19 +79,19 @@ impl WorthQueryIntentAdmissionSeededCertificationReport {
 
 pub fn worth_query_intent_admission_seeded_certification_report(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> WorthQueryIntentAdmissionSeededCertificationReport {
+) -> Result<WorthQueryIntentAdmissionSeededCertificationReport, IdentityDerivationDenial> {
     let rows = [17_u64, 18_u64, 23_u64, 29_u64]
         .into_iter()
         .map(|seed| seed_row(execution, seed))
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     let seeded_sequence_digest = hash_parts(
         &rows
             .iter()
             .map(|row| row.row_digest().to_string())
             .collect::<Vec<_>>(),
     );
-    let stable_replay = seed_row(execution, 17);
-    let changed_seed = seed_row(execution, 30);
+    let stable_replay = seed_row(execution, 17)?;
+    let changed_seed = seed_row(execution, 30)?;
     let seed_replay_digest = hash_parts(&[
         "worth_query_intent_admission_seed_replay_v1".to_string(),
         format!("primary:{}", rows[0].replay_digest),
@@ -106,19 +107,19 @@ pub fn worth_query_intent_admission_seeded_certification_report(
             .map(|class| class.as_str().to_string())
             .collect::<Vec<_>>(),
     );
-    WorthQueryIntentAdmissionSeededCertificationReport {
+    Ok(WorthQueryIntentAdmissionSeededCertificationReport {
         rows,
         seeded_sequence_digest,
         seed_replay_digest,
         seed_generator_class_digest,
-    }
+    })
 }
 
 fn seed_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     seed: u64,
-) -> WorthQueryIntentAdmissionSeedReplayRow {
-    let replay_digest = executed_artifact_digest(execution, seed);
+) -> Result<WorthQueryIntentAdmissionSeedReplayRow, IdentityDerivationDenial> {
+    let replay_digest = executed_artifact_digest(execution, seed)?;
     let row_digest = hash_parts(&[
         "worth_query_intent_admission_seed_row_v1".to_string(),
         format!("seed:{seed}"),
@@ -129,36 +130,36 @@ fn seed_row(
         format!("surface:{}", execution_surface_choice(seed)),
         format!("failure-path:{}", failure_path_choice(seed)),
     ]);
-    WorthQueryIntentAdmissionSeedReplayRow {
+    Ok(WorthQueryIntentAdmissionSeedReplayRow {
         seed,
         replay_digest,
         row_digest,
-    }
+    })
 }
 
 fn executed_artifact_digest(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     seed: u64,
-) -> String {
-    match seed % 5 {
-        0 => certified_failure_intent_fixture(execution).failure_digest,
-        1 => certified_admitted_intent_fixture(execution)
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(match seed % 5 {
+        0 => certified_failure_intent_fixture(execution)?.failure_digest,
+        1 => certified_admitted_intent_fixture(execution)?
             .receipt
             .receipt_digest()
             .to_string(),
-        2 => certified_advisory_intent_fixture()
+        2 => certified_advisory_intent_fixture()?
             .trace
             .trace_digest()
             .to_string(),
-        3 => legacy_delegation_parity_fixture(execution)
+        3 => legacy_delegation_parity_fixture(execution)?
             .effect_canonical
             .receipt_digest()
             .to_string(),
-        _ => certified_violation_intent_fixture()
+        _ => certified_violation_intent_fixture()?
             .trace
             .trace_digest()
             .to_string(),
-    }
+    })
 }
 
 fn family_choice(seed: u64) -> &'static str {

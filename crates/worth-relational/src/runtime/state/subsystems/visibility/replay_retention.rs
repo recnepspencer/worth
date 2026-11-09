@@ -31,8 +31,13 @@ impl ReplayRetentionIndex {
         self.entries.remove(&version_id)
     }
 
+    #[cfg(test)]
     pub(crate) fn versions(&self) -> impl Iterator<Item = VersionId> + '_ {
         self.entries.keys().copied()
+    }
+
+    pub(crate) fn oldest_version(&self) -> Option<VersionId> {
+        self.entries.first_key_value().map(|(version, _)| *version)
     }
 }
 

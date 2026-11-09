@@ -50,7 +50,7 @@ fn preflight_rejects_complete_envelopes_and_matching_forged_identity_claims() {
     forged[EXPECTED_IDENTITY_OFFSET] = 0;
     world.replace_signing_payload(&forged);
     let staged = world.output_path("forged.signing-payload");
-    let forged_identity = "0052098143f06caf6cc143c0af20bc10778339ae6d1e250ad7fb9b3bce14a9b8";
+    let forged_identity = "005923afa113ac168ab43d923a50b5e0cdee3002ea50888f4bd1453fc084bffd";
     let result = world.run_preflight(&[("--expected-package-identity", forged_identity)], &staged);
     assert!(!result.status.success());
     assert!(

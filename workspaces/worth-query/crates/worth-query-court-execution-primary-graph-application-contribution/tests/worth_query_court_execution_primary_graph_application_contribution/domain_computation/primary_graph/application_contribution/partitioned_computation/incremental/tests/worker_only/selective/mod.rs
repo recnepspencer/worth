@@ -27,7 +27,7 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Sou
     ) -> Result<WorthQueryComputationPartitionPlan<Number>, WorthQueryComputationInputDenial<u32>>
     {
         let source = reader
-            .field(input, AccountLabel::reference())?
+            .field(input, AccountLabel::at("AccountLabel"))?
             .expect("seeded authored label");
         Ok(WorthQueryComputationPartitionPlan::keyed(
             source.chars().enumerate().map(|(index, character)| {
@@ -110,7 +110,7 @@ fn native_value_key_and_membership_edits_carry_unaffected_partitions() {
         ("urimary", vec![0]),    // remove that member
         ("urimar", vec![1]),     // remove an odd member
     ] {
-        let field = AccountLabel::reference();
+        let field = AccountLabel::at("AccountLabel");
         let locator = (*(*(*(*world.application.runtime_for_test()).primary_provider_for_test())
             .graph_for_test())
         .layout_for_test())

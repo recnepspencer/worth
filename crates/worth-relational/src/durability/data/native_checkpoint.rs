@@ -5,6 +5,7 @@ mod component_custody;
 mod publication_binding;
 mod region_publications;
 use region_publications::CapturedRegionPublications;
+mod roster_corruption;
 #[cfg(test)]
 mod tests;
 use component_custody::ComponentCaptureCustody;

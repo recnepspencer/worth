@@ -18,14 +18,14 @@ fn map_read_preserves_its_callers_work_stop_and_releases_transient_memory() {
             let unrelated = old
                 .resolve_entity(
                     &host_custody.phase_for_application_for_test(&world.application),
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "unrelated".to_owned(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap();
             let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
-            let field = AccountStatus::reference();
+            let field = AccountStatus::at("AccountStatus");
             let locator = (*graph
                 .layout_for_test())
                 .field_locator_for_test(field.entity(), field.aspect(), field.field())
@@ -62,7 +62,7 @@ fn map_read_preserves_its_callers_work_stop_and_releases_transient_memory() {
             let root = selected
                 .resolve_entity(
                     &host_custody.phase_for_application_for_test(&world.application),
-                    AccountLabel::reference(),
+                    AccountLabel::at("AccountLabel"),
                     "primary".to_owned(),
                     &scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,

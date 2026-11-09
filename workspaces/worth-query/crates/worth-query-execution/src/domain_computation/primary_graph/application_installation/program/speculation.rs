@@ -136,7 +136,10 @@ impl WorthQueryApplicationPreviewSession {
     ) -> Result<(), (Self, worth_runtime_bridge::facade::BridgeSpeculationError)> {
         let residue = vec![BridgePreviewResidueClass::TemporaryDiagnosticsResidue];
         // Armed only by a court through `reject_discard_for_test`.
-        let residue = if self.discard_fault.load(std::sync::atomic::Ordering::SeqCst) {
+        let residue = if self
+            .discard_fault
+            .load(std::sync::atomic::Ordering::Relaxed)
+        {
             vec![BridgePreviewResidueClass::AuthoritativeDiagnosticsResidue]
         } else {
             residue

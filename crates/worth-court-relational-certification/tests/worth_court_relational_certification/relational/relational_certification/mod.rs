@@ -38,3 +38,5 @@ pub(crate) mod observation_contracts;
 pub(crate) mod owner_service_completion;
 #[path = "profile_contracts/mod.rs"]
 pub(crate) mod profile_contracts;
+
+mod history_ownership;

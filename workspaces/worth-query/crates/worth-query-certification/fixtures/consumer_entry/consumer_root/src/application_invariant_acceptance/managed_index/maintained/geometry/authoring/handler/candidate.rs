@@ -29,12 +29,16 @@ pub(super) fn apply(
                 )
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .initialize_field(&entity, VertexIdentity::reference(), identity.clone())
+                .initialize_field(
+                    &entity,
+                    VertexIdentity::at("VertexIdentity"),
+                    identity.clone(),
+                )
                 .map_err(HandlerExecutionDenial::new)?;
             writer
                 .initialize_field(
                     &entity,
-                    VertexRegion::reference(),
+                    VertexRegion::at("VertexRegion"),
                     Coordinates::new(*x, *y, *x, *y),
                 )
                 .map_err(HandlerExecutionDenial::new)?;
@@ -69,7 +73,7 @@ pub(super) fn apply(
                 )
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .initialize_field(&edge, EdgeIdentity::reference(), identity.clone())
+                .initialize_field(&edge, EdgeIdentity::at("EdgeIdentity"), identity.clone())
                 .map_err(HandlerExecutionDenial::new)?;
             writer
                 .link(
@@ -98,7 +102,7 @@ pub(super) fn apply(
             writer
                 .write_field(
                     &vertex,
-                    VertexRegion::reference(),
+                    VertexRegion::at("VertexRegion"),
                     Coordinates::new(*x, *y, *x, *y),
                 )
                 .map_err(HandlerExecutionDenial::new)?;

@@ -21,7 +21,9 @@ impl CapturedCheckpointBasis {
         >,
     ) -> Result<CapturedManifest, RelationalNativeCheckpointCaptureDenial> {
         let mut symbols = crate::symbols::data::StringInterner::default();
-        symbols.restore_snapshot(self.symbol_table.clone());
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+            symbols.restore_snapshot(lane, self.symbol_table.clone())
+        });
         let prior = self.selected_directory.take();
         let current_members = placement.current_members();
         let carry_metadata = super::checkpoint_member_carry::may_carry_metadata(
@@ -82,20 +84,30 @@ impl CapturedCheckpointBasis {
             }
         }
         let metadata = self.build_checkpoint_image(execution)?;
-        let mut captured = CapturedManifest::capture_metadata(
-            &metadata,
-            policy,
-            prior.as_ref().map(|prior| &prior.manifest),
-            journal_index,
-            control,
-            |position| {
-                captured_cells
-                    .get(&position)
-                    .ok_or_else(|| corrupt("original Memory canonical cell unavailable"))?
-                    .original_memory_payload_digest(execution)
-                    .map_err(crate::durability::checkpoint_history::capture::capture_stop)
-            },
-        )?;
+        let mut captured =
+            crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
+                |lane| {
+                    CapturedManifest::capture_metadata(
+                        lane,
+                        &metadata,
+                        policy,
+                        prior.as_ref().map(|prior| &prior.manifest),
+                        journal_index,
+                        control,
+                        |position| {
+                            captured_cells
+                                .get(&position)
+                                .ok_or_else(|| {
+                                    corrupt("original Memory canonical cell unavailable")
+                                })?
+                                .original_memory_payload_digest(execution)
+                                .map_err(
+                                    crate::durability::checkpoint_history::capture::capture_stop,
+                                )
+                        },
+                    )
+                },
+            )?;
         captured.component_holds = component_holds;
         captured.append_lineage_events(event_rows, policy)?;
         captured.envelope_cells = captured_cells;
@@ -143,7 +155,7 @@ impl CapturedCheckpointBasis {
                     &symbols,
                     current_members.as_ref(),
                 )?;
-                super::checkpoint_region_consistency::validate(&region, &capture.leaf)?;
+                super::checkpoint_region_consistency::validate(execution, &region, &capture.leaf)?;
                 merge_history_dependencies(
                     &mut history_dependencies,
                     capture.history_dependencies,
@@ -302,9 +314,10 @@ impl CapturedCheckpointBasis {
             .into_iter()
             .map(|(member, bases)| RelationalCheckpointHistoryDependency { member, bases })
             .collect();
-        captured.history_members = captured
-            .manifest
-            .readmit_history_members()
+        captured.history_members =
+            crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
+                |lane| captured.manifest.readmit_history_members(lane),
+            )
             .map_err(|cause| corrupt(format!("captured history dependencies: {cause:?}")))?;
         captured.validate_lineage_events()?;
         crate::durability::checkpoint_history::capture::capture(&mut captured, execution)?;

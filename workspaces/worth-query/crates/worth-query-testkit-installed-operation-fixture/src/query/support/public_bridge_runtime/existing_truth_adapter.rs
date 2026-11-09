@@ -79,7 +79,17 @@ impl worth_query::facade::runtime::WorthQueryRuntimeExistingTruthVerificationAda
                 WorthQueryExistingTruthProbeField::from_admitted_aspect_touch(
                     aspect_touch.clone(),
                     value.clone(),
-                ),
+                )
+                .map_err(|cause| {
+                    WorthQueryExistingTruthProbeDenial::new(
+                        request.binding(),
+                        WorthQueryExistingTruthProbeDenialKind::EvidenceIdentityDerivationDenied(
+                            cause,
+                        ),
+                        Some(aspect_touch.clone()),
+                        "probe field identity exceeded canonical digest bounds",
+                    )
+                })?,
             );
         }
         Ok(fields)
@@ -101,6 +111,12 @@ pub fn terminal_digest_from_aspect_value(value: &AspectValue) -> String {
         AspectValue::Float32(value) => format!("f32-bits:{}", value.bits()),
         AspectValue::Float64(value) => format!("f64-bits:{}", value.bits()),
         AspectValue::String(value) => match value {
+            worth_foundational::facade::InternedString::Stored(value) => {
+                let value = value.as_string();
+                {
+                    format!("string:{}:{value}", value.len())
+                }
+            }
             worth_foundational::facade::InternedString::Raw(value) => {
                 format!("string:{}:{value}", value.len())
             }

@@ -23,10 +23,13 @@ where
     B::Input: serde::Serialize,
 {
     use WorthQueryCorrectionDerivationDenial as D;
-    let material = source
-        .occurrence()
-        .home_material()
-        .ok_or(D::UnsupportedSourceMeaning)?;
+    let source_occurrence = match source.occurrence() {
+        super::super::occurrence::CorrectionOccurrence::Home(value) => std::sync::Arc::clone(value),
+        super::super::occurrence::CorrectionOccurrence::Memory(_) => {
+            return Err(D::UnsupportedSourceMeaning)
+        }
+    };
+    let material = &source_occurrence.material;
     let branch = target.product().observation();
     let owner = branch.owner_identity();
     let durable = owner.durable().ok_or(D::ForeignSelection)?;
@@ -83,6 +86,6 @@ where
         fence: owner.home_incarnation_fence().ok_or(D::ForeignSelection)?,
         world: source.ancestry().source().identity().clone(),
         commit: source.occurrence().commit_reference().clone(),
-        _material: material.clone(),
+        source: source_occurrence,
     })
 }

@@ -255,7 +255,9 @@ fn handle_lookup_is_constant_width_and_installation_is_self_describing() {
     assert_eq!(receipt.domain_owner(), "WORTH.tests.installed-domain");
     assert_eq!(receipt.definition_counts().graph_read_operations(), 1);
 
-    let rebuild = runtime.verify_domain_execution_index_rebuild();
+    let rebuild = runtime
+        .verify_domain_execution_index_rebuild()
+        .expect("fixture digest must fit");
     assert!(rebuild.is_equivalent());
     assert_eq!(rebuild.operation_count(), 1);
 

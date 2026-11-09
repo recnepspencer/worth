@@ -32,7 +32,7 @@ impl OperationHandler<Schema, Binding> for Handler {
             return HandlerResult::DomainDenied(Denial::PrincipalMismatch);
         }
         let observed = (|| -> Result<_, HandlerExecutionDenial> {
-            if reader.field(&model, ModelName::reference())? != Some(model_ref.label.clone()) {
+            if reader.field(&model, ModelName::at("ModelName"))? != Some(model_ref.label.clone()) {
                 return Ok(Err(Denial::ModelMismatch));
             }
             let mut matches = 0;
@@ -48,7 +48,7 @@ impl OperationHandler<Schema, Binding> for Handler {
                     generation: id.generation_value(),
                 };
                 if occurrence == input.data.claim.occurrence {
-                    if reader.field(claim, ClaimData::reference())?.as_ref()
+                    if reader.field(claim, ClaimData::at("ClaimData"))?.as_ref()
                         != Some(&input.data.claim.data)
                     {
                         return Ok(Err(Denial::ClaimMismatch));
@@ -63,7 +63,7 @@ impl OperationHandler<Schema, Binding> for Handler {
                 .relations_from(ModelResult::reference(), &model)
                 .map_err(HandlerExecutionDenial::new)?
             {
-                if let Some(result) = reader.field(relation.to(), ResultData::reference())? {
+                if let Some(result) = reader.field(relation.to(), ResultData::at("ResultData"))? {
                     if result.claim.occurrence == input.data.claim.occurrence {
                         return Ok(Err(Denial::AlreadyRecorded));
                     }
@@ -100,10 +100,10 @@ impl OperationHandler<Schema, Binding> for Handler {
                 )
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .initialize_field(&result, ResultName::reference(), key.clone())
+                .initialize_field(&result, ResultName::at("ResultName"), key.clone())
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .initialize_field(&result, ResultData::reference(), input.data.clone())
+                .initialize_field(&result, ResultData::at("ResultData"), input.data.clone())
                 .map_err(HandlerExecutionDenial::new)?;
             writer
                 .link(ModelResult::reference(), key, &model, &result)

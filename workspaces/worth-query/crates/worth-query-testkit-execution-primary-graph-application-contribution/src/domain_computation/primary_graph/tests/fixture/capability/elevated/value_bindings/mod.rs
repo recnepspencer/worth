@@ -25,10 +25,10 @@ pub fn encode_elevation_status(value: &CapabilityElevationStatus) -> InternedStr
 }
 
 pub fn decode_elevation_status(value: InternedString) -> Option<CapabilityElevationStatus> {
-    let InternedString::Raw(value) = value else {
+    let Some(value) = value.raw_text() else {
         return None;
     };
-    match value.as_str() {
+    match value {
         "requested" => Some(CapabilityElevationStatus::Requested),
         "approved" => Some(CapabilityElevationStatus::Approved),
         "expired" => Some(CapabilityElevationStatus::Expired),
@@ -54,10 +54,10 @@ pub fn encode_review_status(value: &CapabilityReviewStatus) -> InternedString {
 }
 
 pub fn decode_review_status(value: InternedString) -> Option<CapabilityReviewStatus> {
-    let InternedString::Raw(value) = value else {
+    let Some(value) = value.raw_text() else {
         return None;
     };
-    match value.as_str() {
+    match value {
         "required" => Some(CapabilityReviewStatus::Required),
         "completed" => Some(CapabilityReviewStatus::Completed),
         _ => None,
@@ -98,7 +98,7 @@ impl ApplicationScalarValueBinding for CapabilityReviewKindBinding {
 impl ApplicationReadableScalarValueBinding for CapabilityReviewKindBinding {
     fn decode(value: &AspectValue) -> Result<Self::Value, ApplicationValueDecodeDenial> {
         match value {
-            AspectValue::String(InternedString::Raw(value)) if value == "elevation" => {
+            AspectValue::String(text) if text.raw_text() == Some("elevation") => {
                 Ok(CapabilityReviewKind::Elevation)
             }
             AspectValue::String(_) => Err(ApplicationValueDecodeDenial::CodecRejected {

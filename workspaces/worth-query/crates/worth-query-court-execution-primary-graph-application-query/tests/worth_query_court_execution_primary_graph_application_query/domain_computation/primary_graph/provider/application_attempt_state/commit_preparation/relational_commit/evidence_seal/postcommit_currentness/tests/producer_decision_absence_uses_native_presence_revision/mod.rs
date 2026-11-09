@@ -17,7 +17,7 @@ fn producer_decision_absence_uses_native_presence_revision() {
             .primary_graph_for_test()
             .unwrap()
             .layout_for_test())
-        .entity_kind_for_test(AccountIdentity::reference().entity())
+        .entity_kind_for_test(AccountIdentity::at("AccountIdentity").entity())
         .unwrap(),
         locator: planned(&locator),
     };

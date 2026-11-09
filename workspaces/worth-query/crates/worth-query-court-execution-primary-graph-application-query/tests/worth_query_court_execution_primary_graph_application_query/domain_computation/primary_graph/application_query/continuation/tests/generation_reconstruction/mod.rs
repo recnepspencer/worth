@@ -1,4 +1,4 @@
-//! Query readmission reconstructs cold ordered generations; old cursors stay stale.
+//! Ordinary readmission refuses lost state; explicit recovery preserves rows and retires old cursors.
 use std::num::NonZeroUsize;
 use std::time::Duration;
 
@@ -135,13 +135,35 @@ fn discarded_ordered_generation_rebuilds_without_reviving_old_query_cursors() {
                 &phase,
                 &context,
                 cold_cursor,
-                WorthQueryApplicationContinuationDenialKind::ContinuationGenerationChanged,
+                WorthQueryApplicationContinuationDenialKind::ContinuationIndexUnavailable,
             )
         })
         .expect("the fixture read owns its installed host call");
 
-    // Ordinary Query admission owns reconstruction at the retained exact basis.
-    // No test-issued build may stand in for that downstream handoff.
+    // Derived-state discard requires an explicit recovery boundary. Ordinary
+    // readmission above must not manufacture a replacement generation.
+    graph.with_runtime(request_execution, |runtime| {
+        assert!(runtime
+            .index_access()
+            .read_published_generation_for_observation(
+                request_execution,
+                index_id,
+                &basis.observation()
+            )
+            .unwrap()
+            .is_none());
+        let recovered = runtime.index_authority().build_for_basis(
+            request_execution,
+            worth_relational::facade::indexes::DerivedIndexBuildRequest {
+                source_commit_id: original.source_commit_id,
+                branch_id: basis.observation().identity().branch_id().clone(),
+                index_ids: vec![index_id],
+            },
+            &basis,
+        );
+        assert!(recovered.failed_indexes.is_empty(), "{recovered:?}");
+        assert_eq!(recovered.generations.len(), 1);
+    });
     let generation = graph.with_runtime(request_execution, |runtime| {
         runtime
             .index_access()
@@ -151,7 +173,7 @@ fn discarded_ordered_generation_rebuilds_without_reviving_old_query_cursors() {
                 &basis.observation(),
             )
             .unwrap()
-            .expect("ordinary readmission rebuilt the discarded ordered generation")
+            .expect("explicit recovery rebuilt the discarded ordered generation")
     });
     assert_ne!(generation.generation_id, original.generation_id);
     assert_eq!(generation.source_commit_id, original.source_commit_id);

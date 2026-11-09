@@ -51,6 +51,7 @@ impl RelationalInvariantRuntime {
         let graph_composition_execution_point =
             super::profile::InvariantRequestProfile::GraphComposition.execution_point();
 
+        run_at[InvariantExecutionPoint::ProposedState as usize] = profile.consumed_groups().mask();
         run_at[InvariantExecutionPoint::CommitBoundary as usize] = profile.consumed_groups().mask();
         run_at[InvariantExecutionPoint::MutationSensitive as usize] =
             profile.consumed_groups().mask();

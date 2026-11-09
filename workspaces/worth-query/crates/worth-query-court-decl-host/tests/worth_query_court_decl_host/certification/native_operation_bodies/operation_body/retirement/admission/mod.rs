@@ -2,7 +2,7 @@ pub(crate) use worth_query_testkit_certification_operation::facade::certificatio
 
 #[test]
 fn typed_finish_rejects_a_structurally_valid_selection_that_would_delete_the_root() {
-    use super::{super::schema::*, declaration::*};
+    use super::super::schema::*;
     let base = ApplicationRelationIntegrity::same_context_unbounded_retain_dangling();
     let relation = ApplicationRelationRef::<
         DocumentRetentionSchema<120>,
@@ -21,10 +21,13 @@ fn typed_finish_rejects_a_structurally_valid_selection_that_would_delete_the_roo
     );
     let result = SetRetention::reference::<DocumentRetentionSchema<120>>()
         .body()
-        .assign_input(DocumentRetentionField::reference(), "retention_days")
+        .assign_input(
+            DocumentRetentionField::at("DocumentRetentionField"),
+            "retention_days",
+        )
         .unwrap()
         .retire_owned_selections_on_input_change(
-            DocumentRetentionField::reference(),
+            DocumentRetentionField::at("DocumentRetentionField"),
             "retention_days",
             OwnedRows::reference(),
             relation,
@@ -149,18 +152,18 @@ fn fresh_readmission_reconstructs_retirement_meaning_and_required_authority() {
 
 #[test]
 fn typed_finish_requires_the_exact_source_write_not_an_independent_input_read() {
-    use super::{super::schema::*, declaration::*};
+    use super::super::schema::*;
     let result = SetRetention::reference::<DocumentRetentionSchema<120>>()
         .body()
         .retire_owned_selections_on_input_change(
-            DocumentRetentionField::reference(),
+            DocumentRetentionField::at("DocumentRetentionField"),
             "retention_days",
             OwnedRows::reference(),
             CurrentSelection::reference(),
             std::num::NonZeroUsize::new(2).unwrap(),
         )
         .unwrap()
-        .assign(DocumentRetentionField::reference(), 8)
+        .assign(DocumentRetentionField::at("DocumentRetentionField"), 8)
         .unwrap()
         .finish();
     assert!(matches!(

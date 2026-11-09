@@ -132,13 +132,13 @@ pub(in crate::domain_computation::primary_graph) fn read_recorded(
             RelationalPinnedReadAdmissionDenial::Request(cause) => Denial::Execution(cause),
             _ => Denial::Corrupt,
         })?;
-    let text = pin
-        .symbols()
-        .retained_text(symbol)
-        .filter(|text| text.is_managed())
-        .ok_or(Denial::Corrupt)?;
-    let recorded = worth_foundational::facade::CanonicalDigestId::parse_hex(text.as_str())
-        .filter(|digest| digest.render_hex() == text.as_str())
-        .ok_or(Denial::Corrupt)?;
-    Ok(recorded)
+    pin.with_symbol_text(execution, symbol, |text| {
+        let text = text
+            .filter(|text| text.is_managed())
+            .ok_or(Denial::Corrupt)?;
+        worth_foundational::facade::CanonicalDigestId::parse_hex(text.as_str())
+            .filter(|digest| digest.render_hex() == text.as_str())
+            .ok_or(Denial::Corrupt)
+    })
+    .map_err(Denial::Execution)?
 }

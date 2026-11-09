@@ -80,16 +80,13 @@ fn exact_entity_field_lookup_uses_one_branch_root_after_both_heads_diverge() {
         assert_eq!(outcome.candidate_entity_ids(), &[entity_id]);
     }
 
-    let sibling_denial = runtime
+    let sibling = runtime
         .index_access()
         .execute_bounded_entity_field_lookup(
             entity_field_request(sibling_snapshot, index.index_id, field_locator, exact_value),
             BoundedIndexParityMode::Certification,
             execution,
         )
-        .unwrap_err();
-    assert_eq!(
-        sibling_denial.kind(),
-        BoundedEntityFieldLookupDenialKind::ExactGenerationUnavailable
-    );
+        .unwrap();
+    assert_eq!(sibling.candidate_entity_ids(), &[entity_id]);
 }

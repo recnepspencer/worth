@@ -82,10 +82,12 @@ mod edit;
 mod edit_builder;
 mod group;
 pub use group::{
-    WorthQueryGroupedHistoryDocument, WorthQueryHistoryGroupCompletionIter,
-    WorthQueryHistoryGroupCompletionKind, WorthQueryHistoryGroupCompletions,
-    WorthQueryHistoryGroupDenial, WorthQueryHistoryGroupExecution, WorthQueryHistoryGroupFinish,
-    WorthQueryHistoryGroupPosture,
+    WorthQueryGroupedHistoryDocument, WorthQueryHistoryGestureCompletion,
+    WorthQueryHistoryGestureIntent, WorthQueryHistoryGestureMembers,
+    WorthQueryHistoryGroupCompletionIter, WorthQueryHistoryGroupCompletionKind,
+    WorthQueryHistoryGroupCompletions, WorthQueryHistoryGroupDenial,
+    WorthQueryHistoryGroupExecution, WorthQueryHistoryGroupFinish, WorthQueryHistoryGroupMembers,
+    WorthQueryHistoryGroupPosture, WorthQueryHistoryTypedMembers,
 };
 #[doc(hidden)]
 pub use group::{
@@ -105,9 +107,12 @@ pub use navigation::{
 mod observation;
 mod outputs;
 mod owner_handoff;
+mod recipe_fault;
 pub use outputs::{
-    WorthQueryHistoryNoOutputs, WorthQueryHistoryOutputDenial, WorthQueryHistoryOutputsMode,
-    WorthQueryHistoryWithOutputs,
+    WorthQueryHistoryNoOutputs, WorthQueryHistoryOutputDenial,
+    WorthQueryHistoryOutputQualificationDenial, WorthQueryHistoryOutputsMode,
+    WorthQueryHistoryWithOutputTrees, WorthQueryHistoryWithOutputs,
+    WorthQueryOriginalReadOutputDenial, WorthQueryRecordingOutputQualificationDenial,
 };
 pub use outputs::{
     WorthQueryHistoryOutputAdvanceDenial, WorthQueryHistoryOutputControlDenial,
@@ -227,3 +232,5 @@ impl<
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
+
+pub use worth_query_execution::publication_boundary::document_history::WorthQueryHistoryPublicationCorrespondenceMismatch;

@@ -2,8 +2,7 @@
 use super::*;
 use worth_query_consumer_values::PlanarVertex;
 use worth_query_decl::facade::{
-    application_operation::ApplicationMutationBinding,
-    application_schema::{OperationCreates, OperationWrites},
+    application_operation::ApplicationMutationBinding, application_schema::OperationCreates,
 };
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, HandlerExecutionDenial, WorthQueryApplicationEffectEntity,
@@ -16,24 +15,20 @@ pub(crate) fn initialize_planar_vertex<S: TopologySchemaBinding, B: ApplicationM
 ) -> Result<(), HandlerExecutionDenial>
 where
     Body: OperationCreates<B::Operation>,
-    BodyKey: OperationWrites<B::Operation>,
-    PositionX: OperationWrites<B::Operation>,
-    PositionY: OperationWrites<B::Operation>,
-    Length: OperationWrites<B::Operation>,
 {
     writer
-        .initialize_field(entity, BodyKey::reference(), vertex.body_key.clone())
+        .initialize_field(entity, BodyKey::at("BodyKey"), vertex.body_key.clone())
         .map_err(HandlerExecutionDenial::new)?;
     writer
-        .initialize_field(entity, PositionX::reference(), vertex.x)
+        .initialize_field(entity, PositionX::at("PositionX"), vertex.x)
         .map_err(HandlerExecutionDenial::new)?;
     writer
-        .initialize_field(entity, PositionY::reference(), vertex.y)
+        .initialize_field(entity, PositionY::at("PositionY"), vertex.y)
         .map_err(HandlerExecutionDenial::new)?;
     writer
         .initialize_field(
             entity,
-            Length::reference(),
+            Length::at("Length"),
             PositiveLength::new(1).expect("positive initial length"),
         )
         .map_err(HandlerExecutionDenial::new)

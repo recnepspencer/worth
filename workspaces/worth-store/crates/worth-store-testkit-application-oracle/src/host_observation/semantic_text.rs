@@ -7,6 +7,7 @@ use worth_relational::facade::symbols::SymbolTableSnapshot;
 pub(super) fn text(value: &InternedString, symbols: &SymbolTableSnapshot) -> String {
     match value {
         InternedString::Raw(value) => value.clone(),
+        InternedString::Stored(value) => value.as_str().to_owned(),
         InternedString::Symbol(symbol) => symbols
             .entries
             .iter()

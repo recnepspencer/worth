@@ -225,7 +225,7 @@ impl WorthQueryAspectMutationBuilder {
             ));
         }
         let collection =
-            WorthQueryMutationTargetCollectionIdentity::new("write-command-declared", collection);
+            WorthQueryMutationTargetCollectionIdentity::new("write-command-declared", collection)?;
         if let Some(reference_collection) = symbolic_target_reference
             .as_ref()
             .and_then(WorthQuerySymbolicTargetReference::target_collection_identity)

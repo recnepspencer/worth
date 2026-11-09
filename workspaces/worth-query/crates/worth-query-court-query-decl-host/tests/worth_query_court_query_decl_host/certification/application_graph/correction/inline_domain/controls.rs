@@ -1,4 +1,5 @@
 //! The actual retained Native pin borrows its caller's Work and cancellation.
+use super::super::model::schema::Counter;
 use super::*;
 use std::{cell::Cell, num::NonZeroUsize};
 use worth_execution::{CancellationSource, ExecutionRequest, ExecutionWorkCeiling, LeaseRequest};
@@ -16,7 +17,7 @@ fn inline_domain_at_its_wire_bound_uses_original_native_work_and_cancellation() 
                 &phase,
                 |reader| {
                     reader
-                        .resolve_entity(Key::reference(), "numeric".to_owned())
+                        .resolve_entity(Key::at("Key"), "numeric".to_owned())
                         .unwrap()
                 },
                 ExecutionAllocationPolicy::SystemAllocation,
@@ -44,7 +45,7 @@ fn inline_domain_at_its_wire_bound_uses_original_native_work_and_cancellation() 
             let returned = Cell::new(false);
             let (result, report) = request.run(ExecutionWorkCeiling::new(Some(work)), |_| {
                 snapshot.read_fields(&request, |reader| {
-                    let value = reader.field(&identity, Primary::reference());
+                    let value = reader.field(&identity, Primary::at("Primary"));
                     observed.set(value.as_ref().err().map(|denial| denial.kind()));
                     if cancel_at_handoff { cancellation.cancel(); }
                     returned.set(true);
@@ -55,7 +56,7 @@ fn inline_domain_at_its_wire_bound_uses_original_native_work_and_cancellation() 
             (result, observed.get(), returned.get(), report)
         };
         let (funded, observed, returned, report) = run(1_000_000, false);
-        assert_eq!(funded.unwrap(), Some(5));
+        assert_eq!(funded.unwrap(), Some(Counter(5)));
         assert_eq!(observed, None);
         assert!(returned);
         // One work unit below the measured actual bill refuses through the
@@ -71,7 +72,7 @@ fn inline_domain_at_its_wire_bound_uses_original_native_work_and_cancellation() 
         assert!(returned);
         assert_eq!(cancelled.unwrap_err().kind(), WorthQueryInvariantProjectionDenialKind::ExecutionRequest(worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled));
         let (retried, _, _, retry_report) = run(1_000_000, false);
-        assert_eq!(retried.unwrap(), Some(5));
+        assert_eq!(retried.unwrap(), Some(Counter(5)));
         assert_eq!(retry_report.charged_work(), report.charged_work());
         assert_eq!(snapshot.version(), version);
         println!("inline native wire bound=9 original_work={} refused_at={narrow}", report.charged_work());

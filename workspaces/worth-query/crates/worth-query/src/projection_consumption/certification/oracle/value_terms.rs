@@ -41,6 +41,12 @@ pub(super) fn raw_string_snapshot_value(
 ) -> Option<&str> {
     match value {
         worth_runtime_bridge::facade::SnapshotReadValue::Scalar(AspectValue::String(
+            InternedString::Stored(value),
+        )) => {
+            let value = value.as_string();
+            Some(value.as_str())
+        }
+        worth_runtime_bridge::facade::SnapshotReadValue::Scalar(AspectValue::String(
             InternedString::Raw(value),
         )) => Some(value.as_str()),
         _ => None,
@@ -200,6 +206,10 @@ fn float(material: &mut String, width: &str, bits_value: u64) {
 
 fn interned(material: &mut String, label: &str, value: &InternedString) {
     match value {
+        InternedString::Stored(value) => {
+            let value = value.as_string();
+            token(material, &format!("{label}.raw"), value)
+        }
         InternedString::Raw(value) => token(material, &format!("{label}.raw"), value),
         InternedString::Symbol(value) => {
             token(material, &format!("{label}.symbol"), &value.0.to_string())

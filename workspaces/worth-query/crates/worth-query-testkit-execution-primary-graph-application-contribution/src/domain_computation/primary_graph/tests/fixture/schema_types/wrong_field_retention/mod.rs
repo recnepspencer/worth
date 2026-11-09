@@ -22,17 +22,15 @@ pub fn recorded_inverse(
         DeclaredCorrectionMechanism::RecordedInverse(
             DeclaredRecordedInverse::new(
                 identity,
-                DeclaredLoweringCorrespondenceRef::new(lowering).unwrap(),
+                DeclaredLoweringCorrespondenceRef::new(lowering),
                 DeclaredAftermathPostcondition::ExactPriorTruth,
                 DeclaredPreImageDemand::new(
                     [DeclaredPreImageLocus::from_field(
-                        crate::domain_computation::primary_graph::tests::fixture::schema_types::AccountStatus::reference(),
+                        crate::domain_computation::primary_graph::tests::fixture::schema_types::AccountStatus::at("AccountStatus"),
                     )],
                     256,
-                )
-                .unwrap(),
-            )
-            .unwrap(),
+                ),
+            ),
         ),
     )
 }

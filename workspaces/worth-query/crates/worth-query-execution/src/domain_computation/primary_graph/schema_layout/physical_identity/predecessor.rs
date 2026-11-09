@@ -47,7 +47,7 @@ impl PhysicalIdentityBindings {
                 "original physical role inventory differs from the installed meaning",
             ));
         }
-        for kind in expected.entity_kinds {
+        for kind in &expected.entity_kinds {
             if compiled
                 .entity_registration(kind.kind_id)
                 .map_err(relational_schema_denial)?
@@ -60,7 +60,7 @@ impl PhysicalIdentityBindings {
                 ));
             }
         }
-        for kind in expected.relation_kinds {
+        for kind in &expected.relation_kinds {
             if compiled
                 .relation_registration(kind.kind_id)
                 .map_err(relational_schema_denial)?

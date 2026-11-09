@@ -51,11 +51,12 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             lineage.reversed_source_index,
             lineage.consumed_reversal_index,
         ];
-        graph.with_runtime(&execution, |runtime| runtime.index_authority().refresh_for_basis(
+        graph.with_runtime(&execution, |runtime| runtime.index_authority().reconstruct_for_basis(
+            &execution,
             worth_relational::facade::indexes::DerivedIndexBuildRequest {
                 source_commit_id: basis.observation().commit_id().expect("published correction basis"),
                 branch_id: basis.identity().branch_id().clone(), index_ids,
-            }, basis, None, crate::domain_computation::primary_graph::index_maintenance_budget::cold_index_reconstruction_budget(), &execution,
+            }, basis, crate::domain_computation::primary_graph::index_maintenance_budget::cold_index_reconstruction_budget(),
         ))
         .map_err(Box::new)
     }

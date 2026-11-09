@@ -1,6 +1,6 @@
 //! Ordinary native query of the published checked collection record.
 use super::*;
-use members::{Quantity, QuantityFacts, QuantityKey, QuantitySnapshot};
+use members::{Quantity, QuantityKey, QuantitySnapshot};
 #[derive(Clone, Debug)]
 pub(super) struct Read(pub String);
 pub(super) struct Parameters;
@@ -17,22 +17,11 @@ impl ApplicationQueryMarkerIdentity<Schema> for Query {
     const QUERY_TYPE_NAME: &'static str = "availability-quantity-query";
     const SCOPE_TYPE_NAME: &'static str = "Quantity";
 }
-fn snapshot() -> ApplicationQueryResultFieldRef<
-    Query,
-    SnapshotSlot,
-    Schema,
-    Quantity,
-    QuantityFacts,
-    QuantitySnapshot,
-    Snapshot,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("snapshot", QuantitySnapshot::reference())
+fn snapshot() -> ApplicationQueryResultFieldRef<Query, SnapshotSlot, Schema, QuantitySnapshot> {
+    ApplicationQueryResultFieldRef::new("snapshot", QuantitySnapshot::at("QuantitySnapshot"))
 }
 pub(super) fn definition(
-) -> ApplicationQueryDefinition<Schema, Query, Parameters, Snapshot, Quantity> {
+) -> ApplicationQueryDefinitionBuilder<Schema, Query, Parameters, Snapshot, Quantity> {
     let shape = ApplicationQueryResultShapeBuilder::<
         Schema,
         Query,
@@ -57,8 +46,6 @@ pub(super) fn definition(
     .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
     .lanes(ApplicationQueryLaneEligibility::one_shot())
     .public()
-    .build()
-    .unwrap()
 }
 impl worth_query_host::facade::primary_graph::WorthQueryApplicationProjection<Schema, Query>
     for Snapshot
@@ -75,15 +62,7 @@ impl worth_query_host::facade::primary_graph::WorthQueryApplicationProjection<Sc
     }
 }
 pub(super) struct Binding;
-type Scope = ApplicationQueryFieldScope<
-    Schema,
-    Quantity,
-    QuantityFacts,
-    QuantityKey,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+type Scope = ApplicationQueryFieldScope<QuantityKey>;
 impl ApplicationQueryBinding<Schema> for Binding {
     type Input = Read;
     type InputBinding = ReadInput;
@@ -98,17 +77,8 @@ impl ApplicationQueryBinding<Schema> for Binding {
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "availability-quantity-read";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Quantity,
-        QuantityFacts,
-        QuantityKey,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        QuantityKey::reference()
+    fn scope_field() -> QuantityKey {
+        QuantityKey::at("QuantityKey")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         Schema,
@@ -127,6 +97,6 @@ impl ApplicationQueryIntent<Schema> for Read {
         ApplicationQueryParameterSet::new()
     }
     fn into_scope(self) -> Scope {
-        Scope::new(QuantityKey::reference(), self.0)
+        Scope::new(QuantityKey::at("QuantityKey"), self.0)
     }
 }

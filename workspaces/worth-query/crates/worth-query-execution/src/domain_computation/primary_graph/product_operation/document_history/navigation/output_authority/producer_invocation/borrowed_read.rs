@@ -1,7 +1,7 @@
 //! Confirm a prepared result without reacquiring an already borrowed Native owner.
 use super::*;
 use crate::domain_computation::primary_graph::product_operation::document_history::{
-    authority_lifetime::HistoryAuthorityTryStop, current_head,
+    authority_lifetime::HistoryAuthorityTryStop,
 };
 use crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitLane;
 
@@ -22,37 +22,24 @@ impl HistoryProducerInvocation<'_> {
         let mut value = Some(value);
         let result = self.selection.try_while_live(|| {
             self.callback.try_while_live(|| {
-                let Some(coordination) = lane.try_enter() else {
-                    return Err(Stop::Busy);
-                };
                 let original = value.take().expect("one original result handoff");
-                match current_head::confirm_in_native(
-                    runtime,
-                    execution,
-                    self.current,
-                    Some(self.request),
-                    &coordination,
-                    native,
-                    original,
-                ) {
+                match self
+                    .read_control
+                    .confirm_in_borrowed_preserving(execution, runtime, lane, native, original)
+                {
                     Ok(delivered) => Ok(delivered),
                     Err((original, cause)) => {
                         value = Some(original);
-                        Err(Stop::Navigation(Denial::Document(cause)))
+                        Err(cause)
                     }
                 }
             })
         });
         // Neither refused-value cleanup nor public-denial allocation runs under seals.
         match result {
-            Ok(Ok(Ok((delivered, None)))) => Ok(delivered),
-            Ok(Ok(Ok((_refused, Some(lapse))))) => Err(Stop::Navigation(Denial::Authorization(
-                WorthQueryOperationAuthorizationDenial::new(
-                    lapse.denial_kind(),
-                    "history source query",
-                ),
-            ))),
-            Ok(Ok(Err(stop))) => Err(stop),
+            Ok(Ok(Ok(delivered))) => Ok(delivered),
+            Ok(Ok(Err(crate::domain_computation::primary_graph::product_operation::current_read::CurrentReadDenial::Busy))) => Err(Stop::Busy),
+            Ok(Ok(Err(cause))) => Err(Stop::Navigation(super::read_confirmation::read_denial(cause, "history source query"))),
             Err(HistoryAuthorityTryStop::Busy) | Ok(Err(HistoryAuthorityTryStop::Busy)) => {
                 Err(Stop::Busy)
             }

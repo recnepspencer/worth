@@ -2,8 +2,8 @@ use worth_foundational::facade::{
     derive_canonical_digest, prepare_canonical_basis_bundle, prepare_canonical_basis_sequence,
     CanonicalBasisDomain, CanonicalBasisEntry, CanonicalBasisEntryKind, CanonicalBasisLocus,
     CanonicalBasisReadyArtifact, CanonicalBasisValue, CanonicalDerivedDigest,
-    CanonicalDigestAlgorithmId, CanonicalDigestFrontDoor, CanonicalDigestId,
-    CanonicalizationRuleVersion,
+    CanonicalDigestAlgorithmId, CanonicalDigestDerivationDenial, CanonicalDigestFrontDoor,
+    CanonicalDigestId, CanonicalizationRuleVersion,
 };
 use worth_proof::TransitionOutcome;
 
@@ -17,7 +17,7 @@ pub(crate) fn derive_evidence_identity(
     scope: WorthQueryEvidenceScope,
     scheme: WorthQueryEvidenceIdentityScheme,
     entries: Vec<CanonicalBasisEntry>,
-) -> SealedWorthQueryEvidenceIdentity {
+) -> Result<SealedWorthQueryEvidenceIdentity, CanonicalDigestDerivationDenial> {
     let version = scheme.canonicalization_rule_version();
     let ready = canonical_basis_from_entries(version.clone(), entries);
     let bundle = match prepare_canonical_basis_bundle(version, [ready]) {
@@ -27,15 +27,16 @@ pub(crate) fn derive_evidence_identity(
     let digest_ready =
         match CanonicalDigestFrontDoor.for_bundle(bundle, CanonicalDigestAlgorithmId::sha256()) {
             TransitionOutcome::Success(ready) => ready,
-            outcome => panic!("evidence identity digest derivation should succeed: {outcome:?}"),
+            TransitionOutcome::Denied(denial) => return Err(denial),
+            _ => unreachable!("canonical digest admission only succeeds or denies"),
         };
     let canonical_digest = derive_canonical_digest(digest_ready);
-    SealedWorthQueryEvidenceIdentity::new(
+    Ok(SealedWorthQueryEvidenceIdentity::new(
         scope,
         scheme,
         canonical_digest_token(scheme, &canonical_digest),
         canonical_digest,
-    )
+    ))
 }
 
 pub(crate) fn text_entry(

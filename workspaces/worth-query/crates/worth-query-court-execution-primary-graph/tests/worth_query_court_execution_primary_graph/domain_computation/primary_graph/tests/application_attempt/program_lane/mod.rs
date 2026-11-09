@@ -58,7 +58,7 @@ fn declaration_derived_program_requirement_denies_the_raw_commit_entry() {
                     &admission,
                     |reader, projected| {
                         reader
-                            .require_decision_field(projected, AccountStatus::reference())
+                            .require_decision_field(projected, AccountStatus::at("AccountStatus"))
                             .unwrap();
                     },
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -91,7 +91,7 @@ fn declaration_derived_program_requirement_denies_the_raw_commit_entry() {
     effects
         .write_field(
             &account,
-            AccountStatus::reference(),
+            AccountStatus::at("AccountStatus"),
             ProgramRequiredInput::new("program-owned").status,
         )
         .unwrap();

@@ -1,4 +1,4 @@
-use super::super::{recombine::NodeEngine, Link, Node, ReductionRunStop};
+use super::super::{recombine::NodeEngine, Admitted, Link, Node, ReductionRunStop};
 use super::RunSummary;
 use crate::{
     ChargedBytes, ExecutionMemoryReservation, ExecutionResourceLease, ExecutionRetainedResult,
@@ -42,10 +42,17 @@ impl<R> NodeEngine<Slot<R>, LeaseDenial> for RunEngine<'_, '_> {
     fn inspect(&mut self) {
         self.metrics.edit_visits += 1;
     }
-    fn validate(&self, _: &Slot<R>) -> Result<(), ReductionRunStop<LeaseDenial>> {
-        Ok(())
+    fn admit(&self, value: Slot<R>) -> Result<Admitted<Slot<R>>, ReductionRunStop<LeaseDenial>> {
+        Ok(Admitted {
+            value,
+            canonical: None,
+        })
     }
-    fn same(&self, a: &Slot<R>, b: &Slot<R>) -> Result<bool, ReductionRunStop<LeaseDenial>> {
+    fn same(
+        &self,
+        a: &Admitted<Slot<R>>,
+        b: &Admitted<Slot<R>>,
+    ) -> Result<bool, ReductionRunStop<LeaseDenial>> {
         // Exact native backing is only an immutable-storage cutoff. No R
         // comparison, digest, source authority or application freshness grant.
         Ok(match (&a.result, &b.result) {
@@ -54,10 +61,10 @@ impl<R> NodeEngine<Slot<R>, LeaseDenial> for RunEngine<'_, '_> {
             _ => false,
         })
     }
-    fn build(
+    fn build_proven(
         &mut self,
         id: PartitionIdentity,
-        value: Slot<R>,
+        value: Admitted<Slot<R>>,
         left: Link<Slot<R>>,
         right: Link<Slot<R>>,
     ) -> Result<Arc<Node<Slot<R>>>, ReductionRunStop<LeaseDenial>> {
@@ -112,9 +119,12 @@ impl<R> NodeEngine<Slot<R>, LeaseDenial> for RunEngine<'_, '_> {
         Ok(Arc::new(Node {
             identity: id,
             value,
-            aggregate: Slot {
-                result: None,
-                summary,
+            aggregate: Admitted {
+                value: Slot {
+                    result: None,
+                    summary,
+                },
+                canonical: None,
             },
             left,
             right,
@@ -126,10 +136,10 @@ impl<R> NodeEngine<Slot<R>, LeaseDenial> for RunEngine<'_, '_> {
     fn carry(
         &mut self,
         old: &Arc<Node<Slot<R>>>,
-        value: Slot<R>,
+        value: Admitted<Slot<R>>,
         left: Link<Slot<R>>,
         right: Link<Slot<R>>,
     ) -> Result<Arc<Node<Slot<R>>>, ReductionRunStop<LeaseDenial>> {
-        self.build(old.identity, value, left, right)
+        self.build_proven(old.identity, value, left, right)
     }
 }

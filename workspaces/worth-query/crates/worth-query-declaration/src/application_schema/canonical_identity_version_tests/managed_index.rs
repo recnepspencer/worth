@@ -45,7 +45,6 @@ fn parts(version: u16) -> WorthQueryPortableManagedIndexParts {
                     scope_field: "Id".into(),
                     scope_value: Identity::declared("worth.rust.u64"),
                     scope_resolution: ApplicationQueryScopeResolutionMode::PrincipalIdentity,
-                    scope_writable: false,
                     principal_binding: "Principal".into(),
                 },
             ),

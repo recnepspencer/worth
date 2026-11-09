@@ -1,7 +1,6 @@
 use worth_query_decl::facade::{
-    application_operation::NoApplicationMutationOutputs,
-    application_schema::{NoApplicationUnit, ReadOnly},
-    worth_query_mutation_binding, worth_query_structured_value_binding,
+    application_operation::NoApplicationMutationOutputs, worth_query_mutation_binding,
+    worth_query_structured_value_binding,
 };
 
 use crate::model::{AccountId, BankPrincipalId, InstitutionId, JournalEntryId};
@@ -12,10 +11,9 @@ use super::{
     SendMoneyInputBinding, Withdraw, WithdrawInputBinding,
 };
 use crate::schema::{
-    Account, AccountIdentity, ApplyOpeningFundingOperation, BankPrincipalBinding,
-    BankPrincipalIdBinding, BankSchema, DepositOperation, ExternalPrincipalMapping, Identity,
-    Institution, InstitutionIdentity, InstitutionIdentityField, Principal, SendMoneyOperation,
-    SendMoneyOutputs, WithdrawOperation,
+    AccountIdentity, ApplyOpeningFundingOperation, BankPrincipalBinding, BankPrincipalIdBinding,
+    BankSchema, DepositOperation, ExternalPrincipalMapping, InstitutionIdentityField, Principal,
+    SendMoneyOperation, SendMoneyOutputs, WithdrawOperation,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -71,13 +69,8 @@ macro_rules! institution_movement_binding {
                 principal_entity Principal,
                 principal_identity BankPrincipalId,
                 identity_binding BankPrincipalIdBinding,
-            scope Institution,
-                InstitutionIdentity,
-                InstitutionIdentityField,
-                InstitutionId,
-                ReadOnly,
-                NoApplicationUnit,
-            field InstitutionIdentityField::reference(),
+            scope InstitutionIdentityField,
+    field InstitutionIdentityField::at("InstitutionIdentityField"),
             value $scope,
         );
     };
@@ -129,12 +122,7 @@ worth_query_mutation_binding!(
         principal_entity Principal,
         principal_identity BankPrincipalId,
         identity_binding BankPrincipalIdBinding,
-    scope Account,
-        Identity,
-        AccountIdentity,
-        AccountId,
-        ReadOnly,
-        NoApplicationUnit,
-    field AccountIdentity::reference(),
+    scope AccountIdentity,
+    field AccountIdentity::at("AccountIdentity"),
     value send_scope,
 );

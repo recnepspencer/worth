@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -80,19 +81,21 @@ pub struct WorthQueryPublicBridgeReaderLaneInventory {
 }
 
 impl WorthQueryPublicBridgeReaderLaneInventory {
-    pub fn scan<'a>(sources: impl IntoIterator<Item = (&'a str, &'a str)>) -> Self {
+    pub fn scan<'a>(
+        sources: impl IntoIterator<Item = (&'a str, &'a str)>,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let mut paths = Vec::new();
         let mut forbidden_findings = Vec::new();
         for (path, source) in sources {
             paths.push(path.to_string());
             forbidden_findings.extend(scan_source(path, source));
         }
-        let digest = inventory_digest(&paths, &forbidden_findings);
-        Self {
+        let digest = inventory_digest(&paths, &forbidden_findings)?;
+        Ok(Self {
             paths,
             forbidden_findings,
             digest,
-        }
+        })
     }
 
     pub fn paths(&self) -> &[String] {
@@ -144,17 +147,19 @@ fn forbidden_patterns() -> &'static [WorthQueryPublicBridgeForbiddenAccessPatter
 fn inventory_digest(
     paths: &[String],
     findings: &[WorthQueryPublicBridgeForbiddenAccessFinding],
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::RuntimeHostileCertificationArtifact)
-        .field_value_sequence(
-            WorthQueryEvidenceTag::new("inventory_path"),
-            paths.iter().map(String::as_str),
-        )
-        .field_value_sequence(
-            WorthQueryEvidenceTag::new("forbidden_access"),
-            findings
-                .iter()
-                .map(WorthQueryPublicBridgeForbiddenAccessFinding::localized_pattern),
-        )
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        worth_query_evidence_identity(WorthQueryEvidenceScope::RuntimeHostileCertificationArtifact)
+            .field_value_sequence(
+                WorthQueryEvidenceTag::new("inventory_path"),
+                paths.iter().map(String::as_str),
+            )
+            .field_value_sequence(
+                WorthQueryEvidenceTag::new("forbidden_access"),
+                findings
+                    .iter()
+                    .map(WorthQueryPublicBridgeForbiddenAccessFinding::localized_pattern),
+            )
+            .seal()?,
+    )
 }

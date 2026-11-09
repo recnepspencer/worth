@@ -7,6 +7,7 @@ use crate::domain_installation::{
     WorthQueryCollectionPatchApplicationReceipt, WorthQueryCollectionRowHandle,
     WorthQueryConsumerInvalidationAuthority, WorthQueryOperationResultState,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[path = "state/evidence.rs"]
 mod evidence;
@@ -137,8 +138,8 @@ impl WorthQueryCollectionConsumerWindow {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         admitted: &WorthQueryAdmittedConsumerInvalidation<'_>,
         workspace: &crate::runtime::WorthQueryWorkspace,
-    ) -> WorthQueryCollectionDeliveryOutcome {
-        super::planning::plan(execution, self, admitted, workspace)
+    ) -> Result<WorthQueryCollectionDeliveryOutcome, IdentityDerivationDenial> {
+        Ok(super::planning::plan(execution, self, admitted, workspace)?)
     }
 
     pub fn apply_patch(
@@ -315,8 +316,10 @@ impl WorthQueryCollectionConsumerWindow {
         self.reset_pending
     }
 
-    pub fn binding_identity_evidence(&self) -> crate::WorthQueryEvidenceIdentity {
-        collection_evidence("collection-binding")
+    pub fn binding_identity_evidence(
+        &self,
+    ) -> Result<crate::WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(collection_evidence("collection-binding")
             .field_value(
                 crate::WorthQueryEvidenceTag::new("binding"),
                 &self.window.binding_identity,
@@ -325,11 +328,13 @@ impl WorthQueryCollectionConsumerWindow {
                 crate::WorthQueryEvidenceTag::new("basis"),
                 &self.window.basis_identity,
             )
-            .seal()
+            .seal()?)
     }
 
-    pub fn source_generation_identity_evidence(&self) -> crate::WorthQueryEvidenceIdentity {
-        collection_evidence("collection-source-generation")
+    pub fn source_generation_identity_evidence(
+        &self,
+    ) -> Result<crate::WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(collection_evidence("collection-source-generation")
             .field_value(
                 crate::WorthQueryEvidenceTag::new("source"),
                 &self.window.source_identity,
@@ -342,23 +347,25 @@ impl WorthQueryCollectionConsumerWindow {
                 crate::WorthQueryEvidenceTag::new("maintenance"),
                 maintenance_ordinal(self.last_maintenance_ordinal),
             )
-            .seal()
+            .seal()?)
     }
 
-    pub fn result_generation_identity_evidence(&self) -> crate::WorthQueryEvidenceIdentity {
-        collection_evidence("collection-result-generation")
+    pub fn result_generation_identity_evidence(
+        &self,
+    ) -> Result<crate::WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(collection_evidence("collection-result-generation")
             .field_value(
                 crate::WorthQueryEvidenceTag::new("result-shape"),
                 &self.window.result_shape_identity,
             )
             .field_evidence_identity(
                 crate::WorthQueryEvidenceTag::new("source-generation"),
-                &self.source_generation_identity_evidence(),
+                &self.source_generation_identity_evidence()?,
             )
             .field_value(
                 crate::WorthQueryEvidenceTag::new("maintenance"),
                 maintenance_ordinal(self.last_maintenance_ordinal),
             )
-            .seal()
+            .seal()?)
     }
 }

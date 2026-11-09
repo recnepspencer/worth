@@ -6,7 +6,9 @@ fn runtime_public_downstream_delivery_contract_freezes_runtime_backed_and_durabl
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = stateful_bridge_task_runtime(request_execution);
-    let contract = runtime.public_downstream_delivery_contract();
+    let contract = runtime
+        .public_downstream_delivery_contract()
+        .expect("fixture digest must fit");
 
     assert_eq!(
         contract.backend_posture(),
@@ -35,7 +37,9 @@ fn runtime_public_support_matrix_exposes_downstream_delivery_contract_row() {
     let workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("task.downstream-delivery-support")
         .expect("task runtime should open a named workspace");
-    let matrix = workspace.public_support_matrix();
+    let matrix = workspace
+        .public_support_matrix()
+        .expect("fixture digest must fit");
     let row = matrix
         .row("downstream-delivery-contract")
         .expect("downstream delivery contract row should stay explicit");
@@ -56,6 +60,7 @@ fn runtime_public_support_matrix_exposes_downstream_delivery_contract_row() {
         Some(
             workspace
                 .public_downstream_delivery_contract()
+                .expect("fixture digest must fit")
                 .contract_for_reporting()
         )
     );

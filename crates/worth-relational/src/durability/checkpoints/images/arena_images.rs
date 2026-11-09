@@ -64,6 +64,7 @@ fn missing_plan(kind_id: KindId) -> DurabilityError {
 }
 
 pub(super) fn arena_to_image<K: CheckpointArenaKind>(
+    _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     arena: RecordArena<K>,
     catalog: &AspectContractPlanCatalog,
     contracts: &CheckpointAspectContractCatalog,
@@ -133,11 +134,12 @@ pub(super) fn arena_to_image<K: CheckpointArenaKind>(
 }
 
 pub(super) fn arena_from_image<K: CheckpointArenaKind>(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     partition_id: PartitionId,
     image: RecordArenaCheckpointImage<K::ImageKind>,
     catalog: &AspectContractPlanCatalog,
     contracts: &CheckpointAspectContractCatalog,
     admission: &ImageReadmission<'_, '_, '_>,
 ) -> Result<RecordArena<K>, crate::durability::data::RelationalRecoveryStop> {
-    readmission::arena::<K>(partition_id, image, catalog, contracts, admission)
+    readmission::arena::<K>(lane, partition_id, image, catalog, contracts, admission)
 }

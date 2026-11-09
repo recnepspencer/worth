@@ -1,19 +1,18 @@
 //! History constraints retain real source/model facts and reject altered admission seals.
-use worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryDenial as Denial;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::product_operation::document_history::model::HistoryModelIdentity;
-use worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryOperationConstraint;
-use worth_query_execution::publication_boundary::WorthQueryProgramPublicationAccess;
-use worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationDenialKind as Kind;
-use worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationRefusalKind as Refusal;
-use worth_query_execution::facade::domain_computation::fact_verification_on_this_thread_for_test as fact_work;
 use crate::domain_computation::primary_graph::tests::application_attempt::authenticated_principal;
 use crate::domain_computation::primary_graph::tests::application_attempt::idempotency;
 use crate::domain_computation::primary_graph::tests::application_attempt::resolved_account;
-use crate::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 use crate::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
+use crate::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 use crate::domain_computation::primary_graph::tests::fixture::ExactStatusRetentionOperation;
 use crate::domain_computation::primary_graph::tests::fixture::TouchAccountOperation;
+use worth_query_execution::facade::domain_computation::fact_verification_on_this_thread_for_test as fact_work;
 use worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation;
+use worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationDenialKind as Kind;
+use worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationRefusalKind as Refusal;
+use worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryDenial as Denial;
+use worth_query_execution::publication_boundary::document_history::WorthQueryDocumentHistoryOperationConstraint;
+use worth_query_execution::publication_boundary::WorthQueryProgramPublicationAccess;
 use worth_query_execution::test_read_stops::charged_prefixes_for_test;
 use worth_query_execution::test_read_stops::consult_count_for_test;
 use worth_query_execution::test_read_stops::observe_consults_for_test;
@@ -66,7 +65,7 @@ impl InstalledEntryTestsWorthQueryDocumentHistoryOperationConstraintForTest
                         .unwrap();
                     let binding = idempotency(185, 186);
                     let restriction = WorthQueryDocumentHistoryOperationConstraint::new_for_test(
-                        HistoryModelIdentity::from_resolved_for_test(&account),
+                        &account,
                         world
                             .application
                             .product_runtime()

@@ -72,6 +72,19 @@ impl<'a> ValueDecodeSession<'a> {
         (self.poll)().map_err(|cause| self.refuse(Stop::Checkpoint(cause)))
     }
 
+    pub(in crate::domain_computation::primary_graph) fn with_record_admission<Output>(
+        &self,
+        decode: impl FnOnce(
+            &mut worth_query_declaration::facade::application_schema::ValueDecodeAdmission<'_>,
+        ) -> Output,
+    ) -> Result<Output, Stop> {
+        let output = decode(&mut |work, bytes| self.admit(work, bytes));
+        match self.denial() {
+            Some(cause) => Err(cause),
+            None => Ok(output),
+        }
+    }
+
     /// The selected installed Index already binds this exact Parent probe codec.
     /// Its input is the actual admitted parameter, not a fabricated entity field.
     pub(in crate::domain_computation::primary_graph) fn decode_managed_probe<

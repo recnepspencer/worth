@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 
 use crate::domain_capabilities::denials::{
@@ -32,7 +33,12 @@ where
     T: WorthQueryWorkflowDeclarationMaterializationTarget,
 {
     let target_kind = contribution.payload().target().kind();
-    let target_identity = contribution.payload().target().target_identity().clone();
+    let target_identity = contribution
+        .payload()
+        .target()
+        .target_identity()
+        .clone()
+        .expect("positive fixture identity fits canonical digest bounds");
     let request_identity = contribution.payload().request_identity().clone();
     let lowering = match extract_workflow_lowering_semantics(
         "mutation workflow lowering",
@@ -52,7 +58,9 @@ where
             ))
         }
     };
-    let declaration = match materialize_query_workflow_declaration(contribution) {
+    let declaration = match materialize_query_workflow_declaration(contribution)
+        .expect("positive fixture identity fits canonical digest bounds")
+    {
         TransitionOutcome::Success(declaration) => declaration,
         TransitionOutcome::Denied(denial) => return TransitionOutcome::Denied(denial),
         TransitionOutcome::Stale(stale) => return TransitionOutcome::Stale(stale),
@@ -73,6 +81,7 @@ where
                     target_identity,
                     error,
                 )
+                .expect("positive fixture identity fits canonical digest bounds")
             },
             TransitionOutcome::Success,
         )
@@ -86,7 +95,12 @@ where
     T: WorthQueryWorkflowDeclarationMaterializationTarget,
 {
     let target_kind = contribution.payload().target().kind();
-    let target_identity = contribution.payload().target().target_identity().clone();
+    let target_identity = contribution
+        .payload()
+        .target()
+        .target_identity()
+        .clone()
+        .expect("positive fixture identity fits canonical digest bounds");
     let request_identity = contribution.payload().request_identity().clone();
     let lowering = match extract_workflow_lowering_semantics(
         "merge workflow lowering",
@@ -106,7 +120,9 @@ where
             ))
         }
     };
-    let declaration = match materialize_query_workflow_declaration(contribution) {
+    let declaration = match materialize_query_workflow_declaration(contribution)
+        .expect("positive fixture identity fits canonical digest bounds")
+    {
         TransitionOutcome::Success(declaration) => declaration,
         TransitionOutcome::Denied(denial) => return TransitionOutcome::Denied(denial),
         TransitionOutcome::Stale(stale) => return TransitionOutcome::Stale(stale),
@@ -126,6 +142,7 @@ where
                 target_identity,
                 error,
             )
+            .expect("positive fixture identity fits canonical digest bounds")
         },
         TransitionOutcome::Success,
     )
@@ -139,7 +156,12 @@ where
     T: WorthQueryWorkflowDeclarationMaterializationTarget,
 {
     let target_kind = contribution.payload().target().kind();
-    let target_identity = contribution.payload().target().target_identity().clone();
+    let target_identity = contribution
+        .payload()
+        .target()
+        .target_identity()
+        .clone()
+        .expect("positive fixture identity fits canonical digest bounds");
     let request_identity = contribution.payload().request_identity().clone();
     let lowering = match extract_workflow_lowering_semantics(
         "writeback workflow lowering",
@@ -159,7 +181,9 @@ where
             ))
         }
     };
-    let declaration = match materialize_query_workflow_declaration(contribution) {
+    let declaration = match materialize_query_workflow_declaration(contribution)
+        .expect("positive fixture identity fits canonical digest bounds")
+    {
         TransitionOutcome::Success(declaration) => declaration,
         TransitionOutcome::Denied(denial) => return TransitionOutcome::Denied(denial),
         TransitionOutcome::Stale(stale) => return TransitionOutcome::Stale(stale),
@@ -179,6 +203,7 @@ where
                 target_identity,
                 error,
             )
+            .expect("positive fixture identity fits canonical digest bounds")
         },
         TransitionOutcome::Success,
     )
@@ -233,9 +258,9 @@ fn lowering_error_outcome<S>(
     request_identity: WorthQueryEvidenceIdentity,
     target_identity: WorthQueryEvidenceIdentity,
     error: WorkflowLoweringError,
-) -> WorthQueryDomainCapabilityTransitionOutcome<S> {
-    let posture_identity = workflow_lowering_posture_identity(&target_identity, &error);
-    match error.staleness_class() {
+) -> Result<WorthQueryDomainCapabilityTransitionOutcome<S>, IdentityDerivationDenial> {
+    let posture_identity = workflow_lowering_posture_identity(&target_identity, &error)?;
+    Ok(match error.staleness_class() {
         WorkflowStalenessClass::StaleDenied => TransitionOutcome::Stale(
             WorthQueryDomainCapabilityStale::new(category, target_identity, posture_identity),
         ),
@@ -256,7 +281,7 @@ fn lowering_error_outcome<S>(
                 error,
             ))
         }
-    }
+    })
 }
 
 #[cfg(test)]
@@ -286,21 +311,23 @@ fn lowering_error_denial(
 fn workflow_lowering_posture_identity(
     target_identity: &WorthQueryEvidenceIdentity,
     error: &WorkflowLoweringError,
-) -> WorthQueryEvidenceIdentity {
-    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
-        .field_shape(
-            WorthQueryEvidenceTag::new("identity_family"),
-            "worth_query_domain_capability_workflow_lowering_posture_v1",
-        )
-        .field_evidence_identity(WorthQueryEvidenceTag::new("target"), target_identity)
-        .field_shape(
-            WorthQueryEvidenceTag::new("failure"),
-            error.failure_class().as_str(),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("staleness"),
-            error.staleness_class().as_str(),
-        )
-        .field_shape(WorthQueryEvidenceTag::new("message"), error.message())
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
+            .field_shape(
+                WorthQueryEvidenceTag::new("identity_family"),
+                "worth_query_domain_capability_workflow_lowering_posture_v1",
+            )
+            .field_evidence_identity(WorthQueryEvidenceTag::new("target"), target_identity)
+            .field_shape(
+                WorthQueryEvidenceTag::new("failure"),
+                error.failure_class().as_str(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("staleness"),
+                error.staleness_class().as_str(),
+            )
+            .field_shape(WorthQueryEvidenceTag::new("message"), error.message())
+            .seal()?,
+    )
 }

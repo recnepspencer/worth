@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::runtime::{WorthQueryAdmittedIntentPlan, WorthQueryIntentDeclaration};
 
 use super::bind_requested;
@@ -16,12 +17,15 @@ pub struct WorthQueryContinuityContributionAuthoring {
 }
 
 impl WorthQueryContinuityContributionAuthoring {
-    pub fn preserved(semantic_code: impl Into<String>, detail: impl Into<String>) -> Self {
-        Self::new(
+    pub fn preserved(
+        semantic_code: impl Into<String>,
+        detail: impl Into<String>,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             WorthQueryContinuityContributionPosture::Preserved,
             semantic_code,
             detail,
-        )
+        )?)
     }
 
     pub fn preserved_rebind(
@@ -29,8 +33,8 @@ impl WorthQueryContinuityContributionAuthoring {
         successor_authoritative_identity: impl Into<String>,
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
-    ) -> Self {
-        Self::with_runtime_semantics(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_runtime_semantics(
             WorthQueryContinuityContributionPosture::Preserved,
             semantic_code,
             detail,
@@ -39,16 +43,19 @@ impl WorthQueryContinuityContributionAuthoring {
                 crate::runtime::WorthQueryContinuityMutationOutcomeClass::ContinuesAsSingleSuccessor,
                 prior_authoritative_identity,
                 [successor_authoritative_identity],
-            ),
-        )
+            )?,
+        )?)
     }
 
-    pub fn split(semantic_code: impl Into<String>, detail: impl Into<String>) -> Self {
-        Self::new(
+    pub fn split(
+        semantic_code: impl Into<String>,
+        detail: impl Into<String>,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             WorthQueryContinuityContributionPosture::Split,
             semantic_code,
             detail,
-        )
+        )?)
     }
 
     pub fn split_successors<I, S>(
@@ -56,12 +63,12 @@ impl WorthQueryContinuityContributionAuthoring {
         successor_authoritative_identities: I,
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
-    ) -> Self
+    ) -> Result<Self, IdentityDerivationDenial>
     where
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        Self::with_runtime_semantics(
+        Ok(Self::with_runtime_semantics(
             WorthQueryContinuityContributionPosture::Split,
             semantic_code,
             detail,
@@ -70,16 +77,19 @@ impl WorthQueryContinuityContributionAuthoring {
                 crate::runtime::WorthQueryContinuityMutationOutcomeClass::ContinuesAsSplitSuccessors,
                 prior_authoritative_identity,
                 successor_authoritative_identities,
-            ),
-        )
+            )?,
+        )?)
     }
 
-    pub fn replaced(semantic_code: impl Into<String>, detail: impl Into<String>) -> Self {
-        Self::new(
+    pub fn replaced(
+        semantic_code: impl Into<String>,
+        detail: impl Into<String>,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             WorthQueryContinuityContributionPosture::Replaced,
             semantic_code,
             detail,
-        )
+        )?)
     }
 
     pub fn replaced_merge_successor(
@@ -87,8 +97,8 @@ impl WorthQueryContinuityContributionAuthoring {
         successor_authoritative_identity: impl Into<String>,
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
-    ) -> Self {
-        Self::with_runtime_semantics(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_runtime_semantics(
             WorthQueryContinuityContributionPosture::Replaced,
             semantic_code,
             detail,
@@ -97,62 +107,73 @@ impl WorthQueryContinuityContributionAuthoring {
                 crate::runtime::WorthQueryContinuityMutationOutcomeClass::ContinuesViaTruthLoweredCanonicalMergeSuccessor,
                 prior_authoritative_identity,
                 [successor_authoritative_identity],
-            ),
-        )
+            )?,
+        )?)
     }
 
     pub fn correspondence_only(
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
-    ) -> Self {
-        Self::new(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             WorthQueryContinuityContributionPosture::CorrespondenceOnly,
             semantic_code,
             detail,
-        )
+        )?)
     }
 
     pub fn for_admitted_intent_plan(
         self,
         plan: &WorthQueryAdmittedIntentPlan,
-    ) -> WorthQueryRequestedContinuityContribution<WorthQueryAdmittedPlanBoundContributionTarget>
-    {
-        self.bind_to_admitted_plan_target(
+    ) -> Result<
+        WorthQueryRequestedContinuityContribution<WorthQueryAdmittedPlanBoundContributionTarget>,
+        IdentityDerivationDenial,
+    > {
+        Ok(self.bind_to_admitted_plan_target(
             WorthQueryAdmittedPlanBoundContributionTarget::for_admitted_intent_plan(plan),
-        )
+        )?)
     }
 
     pub fn for_intent_declaration(
         self,
         declaration: &WorthQueryIntentDeclaration,
-    ) -> WorthQueryRequestedContinuityContribution<WorthQueryDeclarationBoundContributionTarget>
-    {
-        self.bind_to_declaration_target(
+    ) -> Result<
+        WorthQueryRequestedContinuityContribution<WorthQueryDeclarationBoundContributionTarget>,
+        IdentityDerivationDenial,
+    > {
+        Ok(self.bind_to_declaration_target(
             WorthQueryDeclarationBoundContributionTarget::for_intent_declaration(declaration),
-        )
+        )?)
     }
 
     pub fn bind_to_admitted_plan_target(
         self,
         target: WorthQueryAdmittedPlanBoundContributionTarget,
-    ) -> WorthQueryRequestedContinuityContribution<WorthQueryAdmittedPlanBoundContributionTarget>
-    {
-        bind_requested(self.payload, target)
+    ) -> Result<
+        WorthQueryRequestedContinuityContribution<WorthQueryAdmittedPlanBoundContributionTarget>,
+        IdentityDerivationDenial,
+    > {
+        Ok(bind_requested(self.payload, target)?)
     }
 
     pub fn bind_to_declaration_target(
         self,
         target: WorthQueryDeclarationBoundContributionTarget,
-    ) -> WorthQueryRequestedContinuityContribution<WorthQueryDeclarationBoundContributionTarget>
-    {
-        bind_requested(self.payload, target)
+    ) -> Result<
+        WorthQueryRequestedContinuityContribution<WorthQueryDeclarationBoundContributionTarget>,
+        IdentityDerivationDenial,
+    > {
+        Ok(bind_requested(self.payload, target)?)
     }
 
     pub(crate) fn bind_to_installed_target<T>(
         self,
         target: crate::domain_capabilities::WorthQueryInstalledDomainContributionTarget<T>,
-    ) -> WorthQueryRequestedContinuityContribution<
-        crate::domain_capabilities::WorthQueryInstalledDomainContributionTarget<T>,
+    ) -> Result<
+        WorthQueryRequestedContinuityContribution<
+            crate::domain_capabilities::WorthQueryInstalledDomainContributionTarget<T>,
+        >,
+        IdentityDerivationDenial,
     >
     where
         T: crate::domain_capabilities::WorthQueryDomainCapabilityTargetBinding,
@@ -162,20 +183,20 @@ impl WorthQueryContinuityContributionAuthoring {
                 T,
             >,
     {
-        bind_requested::<
+        Ok(bind_requested::<
             WorthQueryContinuityContributionPayload,
             crate::domain_capabilities::WorthQueryInstalledDomainContributionTarget<T>,
-        >(self.payload, target)
+        >(self.payload, target)?)
     }
 
     fn new(
         posture: WorthQueryContinuityContributionPosture,
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
-    ) -> Self {
-        Self {
-            payload: WorthQueryContinuityContributionPayload::new(posture, semantic_code, detail),
-        }
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
+            payload: WorthQueryContinuityContributionPayload::new(posture, semantic_code, detail)?,
+        })
     }
 
     fn with_runtime_semantics(
@@ -183,14 +204,14 @@ impl WorthQueryContinuityContributionAuthoring {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
         runtime_semantics: WorthQueryContinuityRuntimeSemantics,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             payload: WorthQueryContinuityContributionPayload::with_runtime_semantics(
                 posture,
                 semantic_code,
                 detail,
                 Some(runtime_semantics),
-            ),
-        }
+            )?,
+        })
     }
 }

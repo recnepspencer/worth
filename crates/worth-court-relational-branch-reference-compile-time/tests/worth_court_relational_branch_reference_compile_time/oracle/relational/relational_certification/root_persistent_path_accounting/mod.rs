@@ -50,7 +50,7 @@ fn persistent_radix_paths_retain_untouched_owner_allocations() {
     let after_mutation = persistent_node_locators(&world.runtime, &identity);
     let mutation_cost = world
         .runtime
-        .observe_mvcc_cost(&mutation_scope)
+        .observe_mvcc_cost(execution, &mutation_scope)
         .expect("selected branch reports exact publication work")
         .sharing_cost_delta();
     assert_eq!(
@@ -95,7 +95,7 @@ fn persistent_radix_paths_retain_untouched_owner_allocations() {
     let after_noop = persistent_node_locators(&world.runtime, &identity);
     let noop_cost = world
         .runtime
-        .observe_mvcc_cost(&noop_scope)
+        .observe_mvcc_cost(execution, &noop_scope)
         .expect("no-op publication remains inspectable")
         .sharing_cost_delta();
     assert_eq!(noop_cost.publication_touched_region_count, 0);

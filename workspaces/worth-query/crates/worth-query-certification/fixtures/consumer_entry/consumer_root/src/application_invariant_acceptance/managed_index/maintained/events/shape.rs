@@ -5,7 +5,7 @@ use super::{
     schema::*,
 };
 use worth_query_decl::facade::{
-    application_query::*, application_schema::*, portable_identity::WorthQueryPortableType, *,
+    application_query::*, portable_identity::WorthQueryPortableType, *,
 };
 use worth_query_host::facade::primary_graph::*;
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -45,23 +45,12 @@ pub struct SiblingIdentity;
 worth_query_portable_type!(SiblingIdentity => "nested-catalog.sibling-identity.v1");
 pub struct SiblingName;
 worth_query_portable_type!(SiblingName => "nested-catalog.sibling-name.v1");
-type Text<Q, Slot, Field, Write> = ApplicationQueryResultFieldRef<
-    Q,
-    Slot,
-    Catalog,
-    Item,
-    ItemFacts,
-    Field,
-    String,
-    Write,
-    EqualityPredicate,
-    NoApplicationUnit,
->;
-fn identity<Q, Slot: WorthQueryPortableType>() -> Text<Q, Slot, ItemIdentity, ReadOnly> {
-    ApplicationQueryResultFieldRef::new("identity", ItemIdentity::reference())
+type Text<Q, Slot, Field> = ApplicationQueryResultFieldRef<Q, Slot, Catalog, Field>;
+fn identity<Q, Slot: WorthQueryPortableType>() -> Text<Q, Slot, ItemIdentity> {
+    ApplicationQueryResultFieldRef::new("identity", ItemIdentity::at("ItemIdentity"))
 }
-fn name<Q, Slot: WorthQueryPortableType>() -> Text<Q, Slot, ItemName, ReadWrite> {
-    ApplicationQueryResultFieldRef::new("name", ItemName::reference())
+fn name<Q, Slot: WorthQueryPortableType>() -> Text<Q, Slot, ItemName> {
+    ApplicationQueryResultFieldRef::new("name", ItemName::at("ItemName"))
 }
 fn relation<Q, Slot: WorthQueryPortableType>() -> ApplicationQueryResultRelationRef<
     Q,
@@ -153,7 +142,7 @@ fn node<
             id.generation_value(),
         ),
         identity: row.field(identity::<Q, I>())?,
-        name: row.field(name::<Q, N>())?,
+        name: row.field(name::<Q, N>())?.into(),
         children: Vec::new(),
     })
 }

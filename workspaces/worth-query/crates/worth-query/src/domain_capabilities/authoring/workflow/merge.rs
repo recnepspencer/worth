@@ -3,6 +3,7 @@ use crate::domain_capabilities::payloads::{
     WorthQueryWorkflowContributionPosture, WorthQueryWorkflowLoweringSemantics,
     WorthQueryWorkflowRuntimeBindingSemantics, WorthQueryWorkflowRuntimeSemantics,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::workflow::{
     MergeLoweringInput, WorkflowAuthorityTargetFamily, WorkflowBudgetClass, WorkflowCostClass,
     WorkflowDeclarationFamily, WorkflowFreshnessPolicy, WorkflowPreviewEvaluationClass,
@@ -17,8 +18,8 @@ impl WorthQueryWorkflowContributionAuthoring {
         preview_session_identity: BridgePreviewSessionIdentity,
         target_branch: BranchId,
         source_branch: BranchId,
-    ) -> Self {
-        Self::with_runtime_and_lowering_semantics(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::with_runtime_and_lowering_semantics(
             WorthQueryWorkflowContributionPosture::PromotionEligible,
             semantic_code,
             detail,
@@ -37,6 +38,6 @@ impl WorthQueryWorkflowContributionAuthoring {
                 target_branch,
                 source_branch,
             )),
-        )
+        )?)
     }
 }

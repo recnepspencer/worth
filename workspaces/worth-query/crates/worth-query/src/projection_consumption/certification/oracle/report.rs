@@ -5,6 +5,7 @@ use super::comparison_terms::{
     grouped_worth_actual_digest, grouped_worth_expected_digest, row_set_control_actual_digest,
     row_set_control_expected_digest,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::projection_consumption::identity::{
     compose_digest_sequence, compose_oracle_comparison_row_digest,
     compose_oracle_manifest_row_digest, compose_oracle_parity_lane_digest,
@@ -93,10 +94,11 @@ impl ProjectionConsumptionOracleReport {
     }
 }
 
-pub fn projection_consumption_oracle_report() -> ProjectionConsumptionOracleReport {
-    let control = control_row_set_lifecycle(2);
-    let parity = parity_row_set_lifecycle(2);
-    let grouped = grouped_worth_lifecycle(3);
+pub fn projection_consumption_oracle_report(
+) -> Result<ProjectionConsumptionOracleReport, IdentityDerivationDenial> {
+    let control = control_row_set_lifecycle(2)?;
+    let parity = parity_row_set_lifecycle(2)?;
+    let grouped = grouped_worth_lifecycle(3)?;
     let manifest_rows = vec![
         manifest_row(
             ProjectionConsumptionOracleLane::ControlLane,
@@ -112,7 +114,7 @@ pub fn projection_consumption_oracle_report() -> ProjectionConsumptionOracleRepo
                 "contract_digest",
                 "semantic_fact_digest",
             ],
-        ),
+        )?,
         manifest_row(
             ProjectionConsumptionOracleLane::HostileLane,
             "grouped_worth_membership_and_endpoint_hostile",
@@ -127,7 +129,7 @@ pub fn projection_consumption_oracle_report() -> ProjectionConsumptionOracleRepo
                 "semantic_fact_digest",
                 "counter_snapshot",
             ],
-        ),
+        )?,
         manifest_row(
             ProjectionConsumptionOracleLane::ParityLane,
             "equivalent_row_set_replay_parity",
@@ -143,19 +145,19 @@ pub fn projection_consumption_oracle_report() -> ProjectionConsumptionOracleRepo
                 "fact_set_digest",
                 "receipt_digest",
             ],
-        ),
+        )?,
     ];
     let comparison_rows = vec![
         comparison_row(
             ProjectionConsumptionOracleLane::ControlLane,
-            row_set_control_expected_digest(2),
-            row_set_control_actual_digest(control.facts()),
-        ),
+            row_set_control_expected_digest(2)?,
+            row_set_control_actual_digest(control.facts())?,
+        )?,
         comparison_row(
             ProjectionConsumptionOracleLane::HostileLane,
-            grouped_worth_expected_digest(3),
-            grouped_worth_actual_digest(grouped.facts()),
-        ),
+            grouped_worth_expected_digest(3)?,
+            grouped_worth_actual_digest(grouped.facts())?,
+        )?,
         comparison_row(
             ProjectionConsumptionOracleLane::ParityLane,
             compose_oracle_parity_lane_digest(
@@ -163,30 +165,30 @@ pub fn projection_consumption_oracle_report() -> ProjectionConsumptionOracleRepo
                 control.contract().contract_digest(),
                 control.facts().fact_set_digest(),
                 control.receipt().receipt_digest(),
-            ),
+            )?,
             compose_oracle_parity_lane_digest(
                 parity.declaration().declaration_digest(),
                 parity.contract().contract_digest(),
                 parity.facts().fact_set_digest(),
                 parity.receipt().receipt_digest(),
-            ),
-        ),
+            )?,
+        )?,
     ];
     let manifest_digest = compose_digest_sequence(
         "projection_consumption_oracle_manifest_v1",
         "row",
         manifest_rows.iter().map(|row| row.row_digest().to_string()),
-    );
+    )?;
     let oracle_digest = compose_oracle_report_digest(
         comparison_rows.iter().map(|row| row.row_digest()),
         &manifest_digest,
-    );
-    ProjectionConsumptionOracleReport {
+    )?;
+    Ok(ProjectionConsumptionOracleReport {
         manifest_rows,
         comparison_rows,
         manifest_digest,
         oracle_digest,
-    }
+    })
 }
 
 fn manifest_row(
@@ -196,7 +198,7 @@ fn manifest_row(
     source_artifacts_consulted: Vec<&'static str>,
     forbidden_reused_production_helpers: Vec<&'static str>,
     comparison_digest_fields: Vec<&'static str>,
-) -> ProjectionConsumptionOracleManifestRow {
+) -> Result<ProjectionConsumptionOracleManifestRow, IdentityDerivationDenial> {
     let row_digest = compose_oracle_manifest_row_digest(
         lane.as_str(),
         lane_name,
@@ -204,8 +206,8 @@ fn manifest_row(
         &source_artifacts_consulted,
         &forbidden_reused_production_helpers,
         &comparison_digest_fields,
-    );
-    ProjectionConsumptionOracleManifestRow {
+    )?;
+    Ok(ProjectionConsumptionOracleManifestRow {
         lane,
         lane_name,
         oracle_owner_module,
@@ -213,26 +215,26 @@ fn manifest_row(
         forbidden_reused_production_helpers,
         comparison_digest_fields,
         row_digest,
-    }
+    })
 }
 
 fn comparison_row(
     lane: ProjectionConsumptionOracleLane,
     expected_digest: String,
     actual_digest: String,
-) -> ProjectionConsumptionOracleComparisonRow {
+) -> Result<ProjectionConsumptionOracleComparisonRow, IdentityDerivationDenial> {
     let row_digest = compose_oracle_comparison_row_digest(
         lane.as_str(),
         &expected_digest,
         &actual_digest,
         expected_digest == actual_digest,
-    );
-    ProjectionConsumptionOracleComparisonRow {
+    )?;
+    Ok(ProjectionConsumptionOracleComparisonRow {
         lane,
         expected_digest,
         actual_digest,
         row_digest,
-    }
+    })
 }
 
 #[cfg(test)]
@@ -240,8 +242,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn oracle_report_binds_control_hostile_and_parity_lanes() {
-        let report = projection_consumption_oracle_report();
+    fn oracle_report_binds_control_hostile_and_parity_lanes() -> Result<(), IdentityDerivationDenial>
+    {
+        let report = projection_consumption_oracle_report()?;
         assert_eq!(report.manifest_rows().len(), 3);
         assert_eq!(report.comparison_rows().len(), 3);
         assert!(report
@@ -250,12 +253,15 @@ mod tests {
             .all(|row| !row.row_digest().is_empty()));
         assert!(!report.manifest_digest().is_empty());
         assert!(!report.oracle_digest().is_empty());
+
+        Ok(())
     }
 
     #[test]
-    fn parity_lane_normalizes_distinct_authoring_path_to_same_proof_outputs() {
-        let control = control_row_set_lifecycle(2);
-        let parity = parity_row_set_lifecycle(2);
+    fn parity_lane_normalizes_distinct_authoring_path_to_same_proof_outputs(
+    ) -> Result<(), IdentityDerivationDenial> {
+        let control = control_row_set_lifecycle(2)?;
+        let parity = parity_row_set_lifecycle(2)?;
         assert_eq!(
             control.declaration().declaration_digest(),
             parity.declaration().declaration_digest()
@@ -272,5 +278,7 @@ mod tests {
             control.receipt().receipt_digest(),
             parity.receipt().receipt_digest()
         );
+
+        Ok(())
     }
 }

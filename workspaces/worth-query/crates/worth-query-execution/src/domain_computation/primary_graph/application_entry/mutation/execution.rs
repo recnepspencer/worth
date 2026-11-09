@@ -9,6 +9,7 @@ mod completion;
 mod decision_query;
 pub(super) use decision_query::native_decision_cause;
 mod preparation;
+mod projection;
 pub(in crate::domain_computation::primary_graph) use candidate::build_handler_candidate;
 pub(in crate::domain_computation::primary_graph) use completion::PreparedMutationHandler;
 

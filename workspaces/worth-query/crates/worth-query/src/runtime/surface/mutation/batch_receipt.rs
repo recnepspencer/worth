@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -15,7 +16,8 @@ use super::batch_receipt_aggregates::{
     batch_bridge_evidence_from_receipts, derive_batch_receipt_aggregates,
 };
 use super::batch_receipt_identity::{
-    evidence_value_identities, terminal_touch_projection_identities,
+    evidence_value_identities, terminal_derived_view_ids, terminal_live_view_ids,
+    terminal_touch_projection_identities,
 };
 use super::WorthQueryWriteReceipt;
 
@@ -23,15 +25,17 @@ mod graph_composition_accessors;
 mod terminal_affected_view_accessors;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+/// Retains performed write receipts even when aggregate diagnostic identities exceed digest bounds.
+/// Diagnostic accessors return the refusal independently of the retained writes.
 pub struct WorthQueryBatchWriteReceipt {
     write_receipts: Vec<WorthQueryWriteReceipt>,
     authority_lane: WorthQueryAuthorityLane,
     basis_lane: WorthQueryAuthorityLane,
-    batch_mutation_evidence: WorthQueryBatchMutationEvidence,
+    batch_mutation_evidence: Result<WorthQueryBatchMutationEvidence, IdentityDerivationDenial>,
     graph_composition_breadth: WorthQueryGraphCompositionBreadth,
     graph_composition_program: WorthQueryGraphCompositionProgram,
     graph_composition_resolution_map: WorthQueryGraphCompositionResolutionMap,
-    batch_digest: WorthQueryEvidenceIdentity,
+    batch_digest: Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial>,
     touched_aspects: Vec<WorthQueryAspectTouch>,
     affected_live_view_targets: Vec<WorthQueryLiveArtifactTarget>,
     affected_derived_view_targets: Vec<WorthQueryDerivedMaterializationTarget>,
@@ -86,60 +90,67 @@ impl WorthQueryBatchWriteReceipt {
             ));
         }
 
-        let graph_lifecycle_digest =
-            WorthQueryGraphCompositionLifecycleOutcomes::derive(&graph_composition_program)
-                .map(|outcomes| outcomes.lifecycle_evidence_digest().clone());
-        let journal_position_identities = write_receipts
-            .iter()
-            .map(WorthQueryWriteReceipt::journal_position)
-            .map(WorthQueryJournalPosition::evidence_identity)
-            .collect::<Vec<_>>();
-        let batch_digest =
-            worth_query_evidence_identity(WorthQueryEvidenceScope::BatchWriteReceipt)
-                .field_evidence_identity(
-                    WorthQueryEvidenceTag::new("graph_breadth_digest"),
-                    graph_composition_breadth.breadth_evidence_digest(),
-                )
-                .field_evidence_identity(
-                    WorthQueryEvidenceTag::new("graph_program_digest"),
-                    graph_composition_program.program_evidence_digest(),
-                )
-                .optional_evidence_identity(
-                    WorthQueryEvidenceTag::new("graph_lifecycle_digest"),
-                    graph_lifecycle_digest.as_ref(),
-                )
-                .field_evidence_identity_sequence(
-                    WorthQueryEvidenceTag::new("write_commit_identity"),
-                    write_receipts
-                        .iter()
-                        .map(WorthQueryWriteReceipt::commit_evidence_identity),
-                )
-                .field_evidence_identity_sequence(
-                    WorthQueryEvidenceTag::new("journal_position_identity"),
-                    journal_position_identities.iter(),
-                )
-                .field_evidence_identity_sequence(
-                    WorthQueryEvidenceTag::new("touched_aspect"),
-                    terminal_touch_projection_identities("batch-touched-aspect", &touched_aspects)
+        let batch_digest = (|| {
+            let graph_lifecycle_digest =
+                WorthQueryGraphCompositionLifecycleOutcomes::derive(&graph_composition_program)?
+                    .map(|outcomes| outcomes.lifecycle_evidence_digest().clone());
+            let journal_position_identities = write_receipts
+                .iter()
+                .map(WorthQueryWriteReceipt::journal_position)
+                .map(WorthQueryJournalPosition::evidence_identity)
+                .collect::<Vec<_>>();
+            let batch_digest =
+                worth_query_evidence_identity(WorthQueryEvidenceScope::BatchWriteReceipt)
+                    .field_evidence_identity(
+                        WorthQueryEvidenceTag::new("graph_breadth_digest"),
+                        graph_composition_breadth.breadth_evidence_digest(),
+                    )
+                    .field_evidence_identity(
+                        WorthQueryEvidenceTag::new("graph_program_digest"),
+                        graph_composition_program.program_evidence_digest(),
+                    )
+                    .optional_evidence_identity(
+                        WorthQueryEvidenceTag::new("graph_lifecycle_digest"),
+                        graph_lifecycle_digest.as_ref(),
+                    )
+                    .field_evidence_identity_sequence(
+                        WorthQueryEvidenceTag::new("write_commit_identity"),
+                        write_receipts
+                            .iter()
+                            .map(WorthQueryWriteReceipt::commit_evidence_identity),
+                    )
+                    .field_evidence_identity_sequence(
+                        WorthQueryEvidenceTag::new("journal_position_identity"),
+                        journal_position_identities.iter(),
+                    )
+                    .field_evidence_identity_sequence(
+                        WorthQueryEvidenceTag::new("touched_aspect"),
+                        terminal_touch_projection_identities(
+                            "batch-touched-aspect",
+                            &touched_aspects,
+                        )?
                         .iter(),
-                )
-                .field_evidence_identity_sequence(
-                    WorthQueryEvidenceTag::new("affected_live_view_id"),
-                    evidence_value_identities(
-                        "batch-affected-live-view",
-                        &terminal_live_view_ids(&affected_live_view_targets),
                     )
-                    .iter(),
-                )
-                .field_evidence_identity_sequence(
-                    WorthQueryEvidenceTag::new("affected_derived_view_id"),
-                    evidence_value_identities(
-                        "batch-affected-derived-view",
-                        &terminal_derived_view_ids(&affected_derived_view_targets),
+                    .field_evidence_identity_sequence(
+                        WorthQueryEvidenceTag::new("affected_live_view_id"),
+                        evidence_value_identities(
+                            "batch-affected-live-view",
+                            &terminal_live_view_ids(&affected_live_view_targets),
+                        )?
+                        .iter(),
                     )
-                    .iter(),
-                )
-                .seal();
+                    .field_evidence_identity_sequence(
+                        WorthQueryEvidenceTag::new("affected_derived_view_id"),
+                        evidence_value_identities(
+                            "batch-affected-derived-view",
+                            &terminal_derived_view_ids(&affected_derived_view_targets),
+                        )?
+                        .iter(),
+                    )
+                    .seal()?;
+
+            Ok(batch_digest)
+        })();
 
         let target_evidence = write_receipts
             .iter()
@@ -195,7 +206,7 @@ impl WorthQueryBatchWriteReceipt {
             &provenance_evidence,
             aggregate_bridge.as_ref(),
         )
-        .expect("non-empty mutation batch must produce batch evidence");
+        .map(|evidence| evidence.expect("non-empty mutation batch must produce batch evidence"));
         let graph_composition_resolution_map =
             WorthQueryGraphCompositionResolutionMap::from_write_receipts(&write_receipts);
 
@@ -264,7 +275,7 @@ impl WorthQueryBatchWriteReceipt {
             authority_lane,
             basis_lane,
             WorthQueryGraphCompositionBreadth::empty(),
-            WorthQueryGraphCompositionProgram::empty(),
+            WorthQueryGraphCompositionProgram::empty()?,
             aggregates.touched_aspects,
             aggregates.affected_live_view_targets,
             aggregates.affected_derived_view_targets,
@@ -289,16 +300,22 @@ impl WorthQueryBatchWriteReceipt {
         self.basis_lane
     }
 
-    pub fn batch_digest(&self) -> &str {
-        self.batch_digest.as_str()
+    pub fn batch_digest(&self) -> Result<&str, IdentityDerivationDenial> {
+        Ok(self.batch_identity()?.as_str())
     }
 
-    pub(in crate::runtime) fn batch_identity(&self) -> &WorthQueryEvidenceIdentity {
-        &self.batch_digest
+    pub(in crate::runtime) fn batch_identity(
+        &self,
+    ) -> Result<&WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        self.batch_digest.as_ref().map_err(|cause| *cause)
     }
 
-    pub fn batch_mutation_evidence(&self) -> &WorthQueryBatchMutationEvidence {
-        &self.batch_mutation_evidence
+    pub fn batch_mutation_evidence(
+        &self,
+    ) -> Result<&WorthQueryBatchMutationEvidence, IdentityDerivationDenial> {
+        self.batch_mutation_evidence
+            .as_ref()
+            .map_err(|cause| *cause)
     }
 
     pub fn graph_composition_breadth(&self) -> &WorthQueryGraphCompositionBreadth {
@@ -366,22 +383,4 @@ impl WorthQueryBatchWriteReceipt {
     pub fn execution_provenance(&self) -> Option<&WorthQueryIntentExecutionProvenance> {
         self.execution_provenance.as_ref()
     }
-}
-
-pub(in crate::runtime) fn terminal_live_view_ids(
-    targets: &[WorthQueryLiveArtifactTarget],
-) -> Vec<String> {
-    targets
-        .iter()
-        .map(|target| target.view_name().to_string())
-        .collect()
-}
-
-pub(in crate::runtime) fn terminal_derived_view_ids(
-    targets: &[WorthQueryDerivedMaterializationTarget],
-) -> Vec<String> {
-    targets
-        .iter()
-        .map(|target| target.view_name().to_string())
-        .collect()
 }

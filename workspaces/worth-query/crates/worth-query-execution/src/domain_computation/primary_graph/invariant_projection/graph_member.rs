@@ -11,7 +11,7 @@ use crate::domain_computation::primary_graph::{
 use std::{marker::PhantomData, sync::Arc};
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::{
-    runtime::PinnedDerivedRelationRead, schema::NativeMemberKey as Key, snapshots::SnapshotHandle,
+    runtime::PinnedDerivedRelationRead, schema::NativeMemberKey as Key,
 };
 
 /// A local read-only graph member; a projected case cannot become an Entity target.
@@ -20,7 +20,7 @@ pub struct WorthQueryInvariantGraphMember<S, M> {
     domain: Domain,
     entity: Option<Entity<S, M>>,
     pub(super) carrier_name: Arc<str>,
-    snapshot: SnapshotHandle,
+    origin: super::super::projection_read_origin::ProjectionReadOrigin,
     cookie: u64,
     _source: Option<Arc<PinnedDerivedRelationRead>>,
     _allocation: Option<Arc<SourceFactsAllocation>>,
@@ -32,7 +32,7 @@ impl<S, M> Clone for WorthQueryInvariantGraphMember<S, M> {
             domain: self.domain.clone(),
             entity: self.entity.as_ref().map(clone_entity),
             carrier_name: self.carrier_name.clone(),
-            snapshot: self.snapshot.clone(),
+            origin: self.origin.clone(),
             cookie: self.cookie,
             _source: self._source.clone(),
             _allocation: self._allocation.clone(),
@@ -56,7 +56,7 @@ impl<S, M> WorthQueryInvariantGraphMember<S, M> {
 impl<S: ApplicationSchema, M> WorthQueryInvariantGraphMember<S, M> {
     pub(super) fn check(&self, reader: &Reader<'_, S>, domain: &Domain) -> Result<(), Denial> {
         if self.cookie != reader.authority_identity
-            || &self.snapshot != reader.snapshot
+            || self.origin != reader.native.origin(reader.snapshot)
             || &self.domain != domain
         {
             return Err(Denial::new(
@@ -80,7 +80,7 @@ impl<S: ApplicationSchema, M> WorthQueryInvariantGraphMember<S, M> {
             domain: Domain::Entity(entity.kind),
             entity: Some(clone_entity(entity)),
             carrier_name: entity.entity.clone(),
-            snapshot: reader.snapshot.clone(),
+            origin: reader.native.origin(reader.snapshot).retained(),
             cookie: reader.authority_identity,
             _source: None,
             _allocation: None,
@@ -123,6 +123,10 @@ impl<S: ApplicationSchema, M> WorthQueryInvariantGraphMember<S, M> {
                 kind: *kind,
                 entity: name.clone(),
                 authority_identity: reader.authority_identity,
+                phase: reader
+                    .native
+                    .candidate_identity()
+                    .map(|id| id.qualification()),
                 _marker: PhantomData,
             }),
             (Key::Projected(_), Domain::Projected(_)) => None,
@@ -133,7 +137,7 @@ impl<S: ApplicationSchema, M> WorthQueryInvariantGraphMember<S, M> {
             domain: domain.clone(),
             entity,
             carrier_name: name,
-            snapshot: reader.snapshot.clone(),
+            origin: reader.native.origin(reader.snapshot).retained(),
             cookie: reader.authority_identity,
             _source: Some(source.clone()),
             _allocation: allocation.cloned(),
@@ -146,6 +150,7 @@ fn clone_entity<S, M>(entity: &Entity<S, M>) -> Entity<S, M> {
         kind: entity.kind,
         entity: entity.entity.clone(),
         authority_identity: entity.authority_identity,
+        phase: entity.phase,
         _marker: PhantomData,
     }
 }

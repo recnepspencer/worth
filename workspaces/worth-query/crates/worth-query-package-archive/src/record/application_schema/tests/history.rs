@@ -53,7 +53,6 @@ pub(super) fn history() -> ErasedApplicationHistoryQueryDefinition {
                     scope_field: "Key".to_owned(),
                     scope_value: identity("key"),
                     scope_resolution: ApplicationQueryScopeResolutionMode::InputField,
-                    scope_writable: false,
                     principal_binding: "AuditPrincipal".to_owned(),
                 },
             ),

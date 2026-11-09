@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity_authority::{QueryProjectionIdentity, QuerySubscriptionIdentityKind};
 
 use super::super::super::evidence_identities::support_lookup_receipt_identity;
@@ -42,22 +43,22 @@ impl SupportLookupReceipt {
         resolution_posture: SupportResolutionPosture,
         consumed_lookup_width: usize,
         remaining_lookup_width: usize,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let lookup_receipt_identity = support_lookup_receipt_identity(
             family,
             support_class.as_str(),
             resolution_posture.as_str(),
             consumed_lookup_width,
             remaining_lookup_width,
-        );
-        Self {
+        )?;
+        Ok(Self {
             family: family.clone(),
             support_class,
             resolution_posture,
             consumed_lookup_width,
             remaining_lookup_width,
             lookup_receipt_identity,
-        }
+        })
     }
 
     pub fn family(&self) -> &QuerySubscriptionFamily {

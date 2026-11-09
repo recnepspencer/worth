@@ -51,7 +51,7 @@ impl WorthQueryRuntimeWriteAuthorityAdapter for CertificationWriteAuthority {
                 entity_identity_handle,
                 WorthQueryMutationKind::Updated,
                 aspect_touches,
-            )],
+            )?],
             bridge_authority,
         );
         Ok(self.build_write_authority_execution_receipt(&mutation, receipt))

@@ -102,20 +102,20 @@ pub(super) fn bind_commit_history(
         };
         let merge_execution_authority =
             merge_plan.map(PublishedMergeExecutionAuthority::from_merge_plan);
-        let schema_continuity = resolve_schema_continuity(
-            runtime,
-            &history.branch_id,
-            validation_input,
-        )
-        .map_err(|error| {
-            super::rejection::attach_rejection(commit_log, CommitPhase::ArtifactAssembly, error)
-        })?;
+        let schema_continuity =
+            resolve_schema_continuity(execution, runtime, &history.branch_id, validation_input)
+                .map_err(|error| {
+                    super::rejection::attach_rejection(
+                        commit_log,
+                        CommitPhase::ArtifactAssembly,
+                        error,
+                    )
+                })?;
         deferred_diagnostic_artifacts.extend(prepare_schema_continuity_diagnostics(
             &history.branch_id,
             &schema_continuity,
         ));
         let merge_parent_branches = validation_input.merge_parent_branch_ids();
-        mutated.bind_aggregate_consequences(execution, runtime, history.commit_id)?;
         HistoryBoundCommitExecution {
             mutated,
             history,

@@ -1,9 +1,10 @@
 //! Current complete canonical publication per family/source route at one native root.
 //! This derived selection image grants no ownership without native/proof custody.
 mod checkpoint;
+pub(crate) mod presence;
 mod readmission;
-mod reconstruction;
 use super::CommitId;
+use crate::execution::request_stage::checkpoint;
 use crate::identity::data::EntityId;
 use crate::mvcc::RequiredOutputPublicationMeaning as Meaning;
 use crate::transactions::data::TransactionCommitError;
@@ -14,11 +15,13 @@ use worth_execution::{ExecutionMemoryReservation, ExecutionResourceLease, MapKer
 pub(crate) enum RequiredOutputRoutePosition {
     Published(CommitId),
     CodecRetired(CommitId),
+    HistoricalAbsence(CommitId),
 }
 
 #[derive(Clone, Debug, Default)]
 pub(crate) struct RequiredOutputPublicationPositions {
     root: Option<Arc<PositionNode>>,
+    pub(crate) current_owned: presence::CurrentPositions,
     // Exact unindexed canonical prefix. Absence in this image is not route absence.
     unresolved_prefix: Option<CommitId>,
 }
@@ -47,6 +50,7 @@ impl RequiredOutputPublicationPositions {
     pub(crate) fn unresolved_at(commit: CommitId) -> Self {
         Self {
             root: None,
+            current_owned: Default::default(),
             unresolved_prefix: Some(commit),
         }
     }
@@ -100,7 +104,7 @@ fn insert(
         let bytes = (std::mem::size_of::<PublicationRoute>()
             + 2 * std::mem::size_of::<usize>()
             + meaning.family.len()) as u64;
-        context.checkpoint(bytes).map_err(request)?;
+        checkpoint(context, bytes).map_err(request)?;
         let funding = reserve(lease, bytes)?;
         let route = Arc::new(PublicationRoute {
             family: meaning.family.clone(),
@@ -163,9 +167,11 @@ fn compare(
     meaning: &Meaning,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<Ordering, TransactionCommitError> {
-    context
-        .checkpoint((route.family.len() + meaning.family.len() + 64) as u64)
-        .map_err(request)?;
+    checkpoint(
+        context,
+        (route.family.len() + meaning.family.len() + 64) as u64,
+    )
+    .map_err(request)?;
     Ok(route
         .family
         .cmp(&meaning.family)
@@ -185,7 +191,7 @@ fn node(
     lease: Lease<'_, '_>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<Arc<PositionNode>, TransactionCommitError> {
-    context.checkpoint(6).map_err(request)?;
+    checkpoint(context, 6).map_err(request)?;
     let bytes = (std::mem::size_of::<PositionNode>() + 2 * std::mem::size_of::<usize>()) as u64;
     let funding = reserve(lease, bytes)?;
     let height = height(&left)

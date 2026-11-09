@@ -5,27 +5,25 @@ impl<Schema, Query, Entity, Row, Binding>
 where
     Binding: ApplicationStructuredValueBinding<Value = Row>,
 {
-    pub fn optional_aspect_field<Slot, Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn optional_aspect_field<Slot, Aspect, Field, Value>(
         mut self,
         field: crate::application_query::ApplicationQueryOptionalAspectFieldRef<
             Query,
             Slot,
             Schema,
-            Entity,
-            Aspect,
             Field,
-            Value,
-            Write,
-            Equality,
-            Unit,
         >,
     ) -> Self
     where
-        Field: RequiredApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
+        Field: crate::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
         Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {
+        self.field_expectations.push(field.binding_recipe());
         self.fields
             .push(ApplicationQueryResultField::from_untrusted_parts(
                 WorthQueryPortableApplicationQueryResultFieldParts {

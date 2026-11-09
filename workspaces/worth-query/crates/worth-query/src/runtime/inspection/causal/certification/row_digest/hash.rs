@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
 use super::super::matrix_kind::CausalInspectionRepresentativeKind;
@@ -34,8 +35,8 @@ pub(super) struct RowDigestParts<'a> {
     pub(super) failure_digest: Option<&'a str>,
 }
 
-pub(super) fn row_digest(parts: RowDigestParts<'_>) -> String {
-    WorthQueryEvidenceIdentity::compose(
+pub(super) fn row_digest(parts: RowDigestParts<'_>) -> Result<String, IdentityDerivationDenial> {
+    Ok(WorthQueryEvidenceIdentity::compose(
         WorthQueryEvidenceScope::CausalInspectionCertificationFailureEvidence,
     )
     .field_shape(
@@ -149,7 +150,7 @@ pub(super) fn row_digest(parts: RowDigestParts<'_>) -> String {
         parts.counter_snapshot_digest,
     )
     .optional_identity(WorthQueryEvidenceTag::new("failure"), parts.failure_digest)
-    .seal()
+    .seal()?
     .as_str()
-    .to_string()
+    .to_string())
 }

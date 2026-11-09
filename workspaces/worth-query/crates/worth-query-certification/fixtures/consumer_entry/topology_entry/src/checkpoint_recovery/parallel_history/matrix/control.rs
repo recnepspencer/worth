@@ -33,7 +33,7 @@ pub struct NestedMeter {
     pub cost: Option<(u128, u128)>,
 }
 pub struct Control {
-    pub world: World,
+    pub(crate) world: World,
     pub reuse: bool,
     pub overlap: bool,
     pub declaration: u64,
@@ -46,7 +46,13 @@ pub struct Control {
     backstop: Duration,
 }
 impl Control {
-    pub fn new(world: World, reuse: bool, overlap: bool, declaration: u64, nested: bool) -> Self {
+    pub(crate) fn new(
+        world: World,
+        reuse: bool,
+        overlap: bool,
+        declaration: u64,
+        nested: bool,
+    ) -> Self {
         Self {
             world,
             reuse,

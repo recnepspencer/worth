@@ -47,14 +47,19 @@ fn retain_preview(
     else {
         return Err(Denial::HistoryNodeUnavailable);
     };
+    let retained = retained
+        .get(&id.ordinal)
+        .filter(|entry| entry.source.is_some())
+        .ok_or(Denial::HistoryNodeExcluded)?;
     Ok(WorthQueryHistoryPreview {
+        discovery_recipes: retained.discovery_recipes.clone(),
         step: node.step.clone(),
         model,
         source: Arc::clone(
             retained
-                .get(&id.ordinal)
-                .and_then(|entry| entry.source.as_ref())
-                .ok_or(Denial::HistoryNodeExcluded)?,
+                .source
+                .as_ref()
+                .expect("a retained source was checked"),
         ),
         root_posture: node.root_posture,
     })

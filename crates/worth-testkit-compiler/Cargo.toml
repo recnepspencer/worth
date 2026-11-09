@@ -15,5 +15,9 @@ glob = { workspace = true }
 [lib]
 doctest = false
 
+[[example]]
+name = "record_denials"
+test = false
+
 [lints]
 workspace = true

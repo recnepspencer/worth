@@ -15,6 +15,7 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     /// An opted-in producer's source is shared, contextual or not its exact entity scope.
     ProducerOwnershipRequiresEntitySourceScope,
     ProducerFamilyOwnershipMismatch,
+    ProducerPredecessorReadContractRejected,
     /// Typed readiness declaration or installed field meaning was refused.
     ReadinessContractRejected,
     ContentAdmissionRejected,
@@ -235,51 +236,10 @@ pub struct WorthQueryPrimaryGraphInstallationDenial {
     cause: Option<Box<InstallationDenialCause>>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-enum InstallationDenialCause {
-    NativeInitialization(
-        worth_relational::facade::runtime::RelationalInitialSchemaInstallationDenial,
-    ),
-    Content(worth_relational::facade::content::RelationalContentDenial),
-    Readiness(super::application_contribution::WorthQueryOutputReadinessContractDenial),
-    NativeValidation(crate::domain_computation::WorthQueryInvariantExecutionFailure),
-}
+mod causes;
+use causes::InstallationDenialCause;
 
 impl WorthQueryPrimaryGraphInstallationDenial {
-    pub fn native_initialization_denial(
-        &self,
-    ) -> Option<&worth_relational::facade::runtime::RelationalInitialSchemaInstallationDenial> {
-        match self.cause.as_deref()? {
-            InstallationDenialCause::NativeInitialization(cause) => Some(cause),
-            InstallationDenialCause::Readiness(_)
-            | InstallationDenialCause::Content(_)
-            | InstallationDenialCause::NativeValidation(_) => None,
-        }
-    }
-    pub(super) fn with_native_initialization(
-        mut self,
-        cause: worth_relational::facade::runtime::RelationalInitialSchemaInstallationDenial,
-    ) -> Self {
-        self.cause = Some(Box::new(InstallationDenialCause::NativeInitialization(
-            cause,
-        )));
-        self
-    }
-    pub fn content_cause(
-        &self,
-    ) -> Option<&worth_relational::facade::content::RelationalContentDenial> {
-        match self.cause.as_deref() {
-            Some(InstallationDenialCause::Content(cause)) => Some(cause),
-            _ => None,
-        }
-    }
-    pub(in crate::domain_computation::primary_graph) fn with_content_cause(
-        mut self,
-        cause: worth_relational::facade::content::RelationalContentDenial,
-    ) -> Self {
-        self.cause = Some(Box::new(InstallationDenialCause::Content(cause)));
-        self
-    }
     /// A complete feature's typed handler slot was left unconfigured.
     #[doc(hidden)]
     pub fn missing_mutation_handler<Schema, Binding>() -> Self
@@ -321,49 +281,6 @@ impl WorthQueryPrimaryGraphInstallationDenial {
 
     pub fn subject(&self) -> &str {
         &self.subject
-    }
-    pub fn readiness_denial(
-        &self,
-    ) -> Option<&super::application_contribution::WorthQueryOutputReadinessContractDenial> {
-        match self.cause.as_deref()? {
-            InstallationDenialCause::Readiness(denial) => Some(denial),
-            _ => None,
-        }
-    }
-
-    /// Original Native preparation/validation failure from the refused seed commit.
-    pub fn invariant_execution_failure(
-        &self,
-    ) -> Option<&crate::domain_computation::WorthQueryInvariantExecutionFailure> {
-        match self.cause.as_deref()? {
-            InstallationDenialCause::NativeValidation(failure) => Some(failure),
-            _ => None,
-        }
-    }
-    pub fn managed_source_denial(
-        &self,
-    ) -> Option<&worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial> {
-        self.invariant_execution_failure()?.managed_source_denial()
-    }
-    /// Original custom invariant verdict/failure, not a string classification.
-    pub fn custom_invariant_denial(
-        &self,
-    ) -> Option<&crate::domain_computation::WorthQueryCustomInvariantDenial> {
-        self.invariant_execution_failure()?
-            .custom_invariant_denial()
-    }
-    /// Original native law evidence from the refused bootstrap commit.
-    pub fn relation_law(
-        &self,
-    ) -> Option<crate::domain_computation::WorthQueryRelationLawDenial<'_>> {
-        self.invariant_execution_failure()?.relation_law()
-    }
-    pub(super) fn with_native_validation_failure(
-        mut self,
-        failure: crate::domain_computation::WorthQueryInvariantExecutionFailure,
-    ) -> Self {
-        self.cause = Some(Box::new(InstallationDenialCause::NativeValidation(failure)));
-        self
     }
 }
 

@@ -4,8 +4,8 @@ use super::completeness_support::{
     representative_runtime_stop_errors, runtime_error_variant_key, stop_class_variant_key,
 };
 
-const COVERED_RUNTIME_ERROR_VARIANT_COUNT: usize = 49;
-const STOP_CLASS_VARIANT_COUNT: usize = 27;
+const COVERED_RUNTIME_ERROR_VARIANT_COUNT: usize = 50;
+const STOP_CLASS_VARIANT_COUNT: usize = 28;
 
 #[test]
 fn runtime_stop_class_classifier_is_complete_for_covered_runtime_error_variants() {

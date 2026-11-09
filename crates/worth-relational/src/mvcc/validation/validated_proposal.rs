@@ -68,9 +68,7 @@ pub(crate) struct ValidatedProposalState {
     pub(crate) prepared: PreparedWorkingStateScope,
     pub(crate) proposed_mutation:
         crate::authority::commit::phases::applied_mutation::AppliedMutationDraft,
-    pub(crate) commit_boundary: InvariantExecutionResult,
-    pub(crate) mutation_sensitive: InvariantExecutionResult,
-    pub(crate) snapshot_publication: InvariantExecutionResult,
+    pub(crate) invariants: InvariantExecutionResult,
     pub(crate) evidence: RelationalMutationInvariantEvidence,
     pub(crate) proposal_identity: super::proposal_identity::RelationalMutationProposalIdentity,
     pub(crate) validated_against_commit: Option<CommitId>,

@@ -192,6 +192,14 @@ where
             }
         }))
     }
+    fn recording_source_at<'a>(
+        completed: &'a C<S, I, P, A>,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+        _: &crate::application_entry::WorthQueryApplicationReadObservation,
+    ) -> Result<Option<HistoryRecordingSource<'a>>, WorthQueryHistoryEditDenial> {
+        Self::recording_source(completed, phase, request)
+    }
     fn close_operation(
         operation: O<S, I, P, A>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,

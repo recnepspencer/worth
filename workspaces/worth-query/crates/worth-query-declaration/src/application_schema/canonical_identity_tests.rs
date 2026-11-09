@@ -15,6 +15,8 @@ use query_fixture::{application_query, QueryEntity, QueryMarker, QueryResult, Qu
 
 #[path = "canonical_identity_application_query_tests.rs"]
 mod application_query;
+#[path = "canonical_identity_document_history_tests.rs"]
+mod document_history;
 #[path = "canonical_identity_external_effect_tests.rs"]
 mod external_effect;
 #[path = "canonical_identity_inbound_occurrence_tests.rs"]

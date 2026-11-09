@@ -1,4 +1,5 @@
 use super::super::proof_artifacts::ProjectionConsumptionCompileFailProof;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::projection_consumption::facts::ProjectionFactKind;
 use crate::projection_consumption::source::{
     ProjectionConsumptionSource, ProjectionSourceCapabilityProfile,
@@ -71,8 +72,8 @@ impl ProjectionConsumptionCertifiedSourceSurface {
 
 pub fn representative_source(
     surface: ProjectionConsumptionCertifiedSourceSurface,
-) -> ProjectionConsumptionSource {
-    match surface {
+) -> Result<ProjectionConsumptionSource, IdentityDerivationDenial> {
+    Ok(match surface {
         ProjectionConsumptionCertifiedSourceSurface::QueryReadCurrent => {
             ProjectionConsumptionSource::synthetic_for_certification(
                 ProjectionSourceFamily::QueryReadReceipt,
@@ -81,7 +82,7 @@ pub fn representative_source(
                 },
                 "certified:query_read_current",
                 Vec::new(),
-            )
+            )?
         }
         ProjectionConsumptionCertifiedSourceSurface::QueryReadHistorical => {
             ProjectionConsumptionSource::synthetic_for_certification(
@@ -91,7 +92,7 @@ pub fn representative_source(
                 },
                 "certified:query_read_historical",
                 Vec::new(),
-            )
+            )?
         }
         ProjectionConsumptionCertifiedSourceSurface::QueryWriteCompleteEvidence => {
             ProjectionConsumptionSource::synthetic_for_certification(
@@ -106,7 +107,7 @@ pub fn representative_source(
                     "bridge_provenance_execution_record",
                     "certified:bridge_provenance",
                 )],
-            )
+            )?
         }
         ProjectionConsumptionCertifiedSourceSurface::QueryWriteMissingSourceReferenceEvidence => {
             ProjectionConsumptionSource::synthetic_for_certification(
@@ -118,7 +119,7 @@ pub fn representative_source(
                 },
                 "certified:query_write_missing_source_reference",
                 Vec::new(),
-            )
+            )?
         }
         ProjectionConsumptionCertifiedSourceSurface::QueryContextCurrentWithSourceReference => {
             ProjectionConsumptionSource::synthetic_for_certification(
@@ -131,7 +132,7 @@ pub fn representative_source(
                     "query_context_materialization_path",
                     "certified:query_context_path",
                 )],
-            )
+            )?
         }
         ProjectionConsumptionCertifiedSourceSurface::QueryContextHistoricalWithoutSourceReference => {
             ProjectionConsumptionSource::synthetic_for_certification(
@@ -141,7 +142,7 @@ pub fn representative_source(
                 },
                 "certified:query_context_historical",
                 Vec::new(),
-            )
+            )?
         }
         ProjectionConsumptionCertifiedSourceSurface::QueryContextPreviewDerivedWithSourceReference => {
             ProjectionConsumptionSource::synthetic_for_certification(
@@ -154,7 +155,7 @@ pub fn representative_source(
                     "query_context_preview_provenance",
                     "certified:query_context_preview_provenance",
                 )],
-            )
+            )?
         }
         ProjectionConsumptionCertifiedSourceSurface::RelationalRowSet => {
             ProjectionConsumptionSource::synthetic_for_certification(
@@ -162,7 +163,7 @@ pub fn representative_source(
                 ProjectionSourceCapabilityProfile::RelationalRowSet,
                 "certified:relational_row_set",
                 Vec::new(),
-            )
+            )?
         }
         ProjectionConsumptionCertifiedSourceSurface::RelationalGroupedProjection => {
             ProjectionConsumptionSource::synthetic_for_certification(
@@ -170,7 +171,7 @@ pub fn representative_source(
                 ProjectionSourceCapabilityProfile::RelationalGroupedProjection,
                 "certified:relational_grouped_projection",
                 Vec::new(),
-            )
+            )?
         }
         ProjectionConsumptionCertifiedSourceSurface::BridgeTruthViewRowSet => {
             ProjectionConsumptionSource::synthetic_for_certification(
@@ -178,7 +179,7 @@ pub fn representative_source(
                 ProjectionSourceCapabilityProfile::BridgeTruthViewRowSet,
                 "certified:bridge_truth_view_row_set",
                 Vec::new(),
-            )
+            )?
         }
         ProjectionConsumptionCertifiedSourceSurface::BridgeGroupedTruthView => {
             ProjectionConsumptionSource::synthetic_for_certification(
@@ -186,7 +187,7 @@ pub fn representative_source(
                 ProjectionSourceCapabilityProfile::BridgeGroupedTruthView,
                 "certified:bridge_grouped_truth_view",
                 Vec::new(),
-            )
+            )?
         }
         ProjectionConsumptionCertifiedSourceSurface::RetainedDerivedArtifactBinding => {
             ProjectionConsumptionSource::synthetic_for_certification(
@@ -203,7 +204,7 @@ pub fn representative_source(
                         "certified:retained_target:second",
                     ),
                 ],
-            )
+            )?
         }
         ProjectionConsumptionCertifiedSourceSurface::LiveArtifactBinding => {
             ProjectionConsumptionSource::synthetic_for_certification(
@@ -220,9 +221,9 @@ pub fn representative_source(
                         "certified:live_target:second",
                     ),
                 ],
-            )
+            )?
         }
-    }
+    })
 }
 
 pub fn traceability_for(

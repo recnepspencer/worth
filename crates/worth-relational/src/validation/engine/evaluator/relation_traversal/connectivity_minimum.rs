@@ -21,7 +21,11 @@ pub(in crate::validation::engine::evaluator) fn evaluate_connectivity_minimum_co
         Err(violation) => return Some(violation),
     };
     context.metrics().count_relation_contracts_evaluated(1);
-    let source_entities = visible_entities_of_kinds(context, &contract.source_kind_ids);
+    let source_entities = visible_entities_of_kinds(
+        context,
+        &contract.source_kind_ids,
+        contract.relation_kind_id,
+    );
     if !context.checkpoint(0) {
         return None;
     }
@@ -39,6 +43,7 @@ pub(in crate::validation::engine::evaluator) fn evaluate_connectivity_minimum_co
     let traversal = PreparedSuccessorTraversal {
         scope,
         class,
+        kind: contract.relation_kind_id,
         planned_successors: planned_successors.as_ref(),
     };
     for source in source_entities {

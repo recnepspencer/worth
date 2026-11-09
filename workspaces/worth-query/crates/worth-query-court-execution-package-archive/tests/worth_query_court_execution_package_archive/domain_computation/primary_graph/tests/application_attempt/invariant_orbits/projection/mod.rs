@@ -52,7 +52,9 @@ fn projection_orbits_preserve_successor_order_name_and_all_member_scope() {
                 .project(
                     &phase,
                     |reader| {
-                        let root = reader.resolve_entity(NodeKey::reference(), 3_u64).unwrap();
+                        let root = reader
+                            .resolve_entity(NodeKey::at("NodeKey"), 3_u64)
+                            .unwrap();
                         let before = reader.work();
                         let orbit = reader.orbit(Next::reference(), &root).unwrap();
                         let after = reader.work();
@@ -92,7 +94,7 @@ fn projection_orbits_preserve_successor_order_name_and_all_member_scope() {
         .members()
         .map(|member| {
             snapshot
-                .field(&execution, &member, NodeKey::reference())
+                .field(&execution, &member, NodeKey::at("NodeKey"))
                 .unwrap()
                 .unwrap()
         })
@@ -123,7 +125,9 @@ fn projection_orbits_preserve_successor_order_name_and_all_member_scope() {
                 .project_operation::<ReplaceNext, _>(
                     &phase,
                     |reader| {
-                        let root = reader.resolve_entity(NodeKey::reference(), 1_u64).unwrap();
+                        let root = reader
+                            .resolve_entity(NodeKey::at("NodeKey"), 1_u64)
+                            .unwrap();
                         let same = reader.orbit(Next::reference(), &root).unwrap();
                         assert_eq!(same.identity(), orbit.identity());
                         assert_eq!(
@@ -131,7 +135,7 @@ fn projection_orbits_preserve_successor_order_name_and_all_member_scope() {
                             *same.identity()
                         );
                         same.members()
-                            .map(|member| reader.field(&member, NodeKey::reference()).unwrap())
+                            .map(|member| reader.field(&member, NodeKey::at("NodeKey")).unwrap())
                             .collect::<Vec<_>>()
                     },
                     Allocation::SystemAllocation,
@@ -157,11 +161,11 @@ pub fn inspect(
             execution,
             product,
             |reader| {
-                let root = reader.resolve_entity(NodeKey::reference(), key).unwrap();
+                let root = reader.resolve_entity(NodeKey::at("NodeKey"), key).unwrap();
                 let orbit = reader.orbit(Next::reference(), &root).unwrap();
                 let keys = orbit
                     .members()
-                    .map(|member| reader.field(&member, NodeKey::reference()).unwrap())
+                    .map(|member| reader.field(&member, NodeKey::at("NodeKey")).unwrap())
                     .collect();
                 (orbit.identity().clone(), keys)
             },

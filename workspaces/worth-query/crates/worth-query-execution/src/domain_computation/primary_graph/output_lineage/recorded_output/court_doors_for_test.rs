@@ -355,6 +355,7 @@ impl RecordedOutput {
         producer_dependency_identity: Option<[u8; 32]>,
         idempotency_key_identity: [u8; 32],
         mutable: Mutex<RecordedOutputMutable>,
+        coupled_completion: Option<super::super::CoupledOutputCompletion>,
     ) -> Self {
         Self {
             producing_implementation,
@@ -362,6 +363,7 @@ impl RecordedOutput {
             computation_source,
             native_prior_checkpoint,
             performed_origin,
+            historical_selection: None,
             consumed_outputs,
             completed_handler_facts,
             completed_decision_reuse,
@@ -374,6 +376,16 @@ impl RecordedOutput {
             producer_dependency_identity,
             idempotency_key_identity,
             mutable,
+            coupled_completion,
         }
+    }
+}
+
+impl RecordedOutput {
+    #[doc(hidden)]
+    pub fn coupled_completion_mut_for_test(
+        &mut self,
+    ) -> &mut Option<super::super::CoupledOutputCompletion> {
+        &mut self.coupled_completion
     }
 }

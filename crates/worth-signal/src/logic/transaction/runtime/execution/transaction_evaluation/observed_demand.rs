@@ -36,10 +36,11 @@ where
     /// Observation is demand. A watcher registered on a node has asked for
     /// that node's committed value, and `ObservationDeliveryMode::
     /// PerCommittedTransaction` only classifies what the committing
-    /// transaction evaluated. `evaluate_dirty` runs in `Default` mode and
-    /// leaves on-demand nodes `DeferredOnDemand`, so without this pass a
-    /// watched on-demand computed is invalidated, never recomputed, and never
-    /// delivered. Call it after `evaluate_dirty` and before commit.
+    /// transaction evaluated. `evaluate_dirty` settles only the dirty
+    /// frontier and invalidation advances one level per evaluation, so
+    /// without this pass a watched computed below the frontier is never
+    /// recomputed and never delivered. Call it after `evaluate_dirty` and
+    /// before commit.
     ///
     /// Impacted observed nodes are found by walking `subscribers_of` forward
     /// from every candidate this transaction staged (changed sources and the

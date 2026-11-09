@@ -8,6 +8,7 @@ use worth_relational::facade::transactions::RecordRef;
 use super::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::application_aftermath::{
     WorthQueryDispatchOutboxLayout, WorthQueryDispatchOutboxRecord,
+    WorthQueryDispatchOutboxRestoredFields,
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitReceipt, WorthQueryCommittedProductPublication,
@@ -19,7 +20,7 @@ mod original_row;
 pub(crate) mod restoration;
 mod work;
 
-use restoration::{required_fields, restore_record};
+use restoration::{decode_fields, required_fields};
 
 pub use work::WorthQueryCommittedDispatchOutboxReadWork;
 
@@ -304,3 +305,6 @@ mod record_read;
 use record_read::CommittedOutboxRead;
 
 mod court_doors_for_test;
+
+#[cfg(test)]
+mod restoration_tests;

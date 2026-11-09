@@ -16,7 +16,8 @@ mod wire;
 pub use admission::{ValueCodecDenial, ValueDecodeBounds};
 pub use admitted::{
     decode_canonical_value_with_admission, decode_delegated_canonical_value,
-    decode_delegated_canonical_value_with_admission,
+    decode_delegated_canonical_value_with_admission, decode_stored_canonical_value,
+    encode_stored_canonical_value, StoredValueText,
 };
 pub use binary::{
     decode_binary_value, decode_binary_value_with_admission, encode_binary_value,

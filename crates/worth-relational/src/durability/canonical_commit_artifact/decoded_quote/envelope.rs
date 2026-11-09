@@ -75,6 +75,14 @@ pub(in super::super) fn canonical(
                 &mut result.cascades,
                 super::cascades::restoration(value, request)?,
             )?,
+            "coupled_authored_publication" => add(
+                &mut result.cascades,
+                super::coupled_publication::quote(value, request)?,
+            )?,
+            "historical_output_selection" => add(
+                &mut result.cascades,
+                super::historical_selection::quote(value, request)?,
+            )?,
             "authority_kind" => result.selection = super::cascades::authority(value, request)?,
             "semantic_result" => result.semantic = super::semantic::quote(value, request)?,
             "index_definition_delta" => result.index_delta = super::indexes::delta(value, request)?,
@@ -175,8 +183,10 @@ fn require_empty(
         Ok(())
     })
 }
-const FIELDS: [&str; 34] = [
+const FIELDS: [&str; 36] = [
     "content",
+    "coupled_authored_publication",
+    "historical_output_selection",
     "producer_cascade_retirement",
     "authored_cascade_retirement",
     "authored_cascade_restoration",

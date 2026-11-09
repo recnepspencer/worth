@@ -15,7 +15,7 @@ macro_rules! native_write {
                 .unwrap()
                 .resolve_entity(
                     phase,
-                    BodyKey::reference::<CheckpointSchema>(),
+                    BodyKey::at("BodyKey"),
                     $body,
                     &$scope,
                     primary_graph::WorthQueryPrincipalResolutionMode::Certification,
@@ -27,7 +27,7 @@ macro_rules! native_write {
             .publish_native_field_write_for_test(
                 branch,
                 record,
-                $field::reference::<CheckpointSchema>(),
+                $field::at(stringify!($field)),
                 length($value),
                 &$scope,
             )

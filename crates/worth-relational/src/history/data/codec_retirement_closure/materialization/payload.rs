@@ -1,6 +1,9 @@
 //! Entity and owned-relation maintenance must preserve canonical semantic payload.
 use super::super::PublicationHistoryFailure as Failure;
 use super::*;
+use crate::history::data::canonical_commit_envelope::{
+    OutputOriginHistory, OwnedValidatedOutputOrigins,
+};
 use crate::history::data::CanonicalRequiredOutputMaterializationRecord;
 use crate::publication::patch::data::RecordStructuralChange;
 use crate::storage::overlay::{
@@ -18,6 +21,16 @@ pub(super) fn candidate_matches(
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Result<bool, Stop> {
+    let mut origin_frames = OutputOriginHistory::default();
+    let validated_history = &mut origin_frames;
+    let original = validated_history
+        .by_commit(
+            original.commit.commit_id,
+            &mut |commit| runtime.commit(commit),
+            &runtime.execution(),
+            context,
+        )?
+        .ok_or("maintenance producer history absent")?;
     let origin = original.validate_output_membership_header()?;
     let after = OverlayStateView::new(basis.inner.root.as_ref(), state);
     for member in records {
@@ -39,7 +52,14 @@ pub(super) fn candidate_matches(
                     .entity_aspect_plan(entry.kind)
                     .ok_or("maintenance entity contract absent")?;
                 let expected = super::super::membership::reconstruct(
-                    runtime, original, id, plan, context, lease,
+                    runtime,
+                    &original,
+                    id,
+                    plan,
+                    validated_history,
+                    context,
+                    lease,
+                    basis.inner.root.schema_authority(),
                 )?;
                 let (_, partition) = current_entity_partition_source_for_slot(
                     &after,
@@ -75,7 +95,14 @@ pub(super) fn candidate_matches(
                     .relation_aspect_plan(entry.kind)
                     .ok_or("maintenance relation contract absent")?;
                 let expected = super::super::relation_payload::reconstruct(
-                    runtime, original, id, plan, context, lease,
+                    runtime,
+                    &original,
+                    id,
+                    plan,
+                    validated_history,
+                    context,
+                    lease,
+                    basis.inner.root.schema_authority(),
                 )?;
                 let (_, partition) = current_relation_partition_source_for_slot(
                     &after,
@@ -115,8 +142,11 @@ pub(super) fn validate(
     envelope: &CanonicalCommitEnvelope,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Failure> {
-    validate_one(runtime, envelope, context, lease)?;
+    let mut origin_frames = OutputOriginHistory::default();
+    let validated_history = &mut origin_frames;
+    validate_one(runtime, envelope, validated_history, context, lease, schema)?;
     let event = envelope
         .required_output_materialization
         .as_ref()
@@ -143,7 +173,14 @@ pub(super) fn validate(
         if previous.required_output_materialization.is_some() {
             // The header pass has authenticated this pair and its source jump.
             // Validate its own payload once; do not recursively revisit its prefix.
-            validate_one(runtime, &previous, context, lease)?;
+            validate_one(
+                runtime,
+                &previous,
+                validated_history,
+                context,
+                lease,
+                schema,
+            )?;
         }
         next = previous
             .required_output_materialization
@@ -157,8 +194,10 @@ pub(super) fn validate(
 fn validate_one(
     runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     envelope: &CanonicalCommitEnvelope,
+    validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Failure> {
     let event = envelope
         .required_output_materialization
@@ -167,7 +206,13 @@ fn validate_one(
     for member in &event.records {
         let mut original = None;
         for id in &event.producer_publications {
-            let Some(envelope) = runtime.commit(*id)? else {
+            let Some(envelope) = validated_history.by_commit(
+                *id,
+                &mut |commit| runtime.commit(commit),
+                &runtime.execution(),
+                context,
+            )?
+            else {
                 continue;
             };
             if envelope
@@ -186,8 +231,17 @@ fn validate_one(
             .ok_or("maintenance producer origin absent")?
             .meaning
             .source_scope;
-        validate_record(runtime, envelope, &original, member, context, lease)
-            .map_err(|stop| Failure::at_source(source, stop))?;
+        validate_record(
+            runtime,
+            envelope,
+            &original,
+            member,
+            validated_history,
+            context,
+            lease,
+            schema,
+        )
+        .map_err(|stop| Failure::at_source(source, stop))?;
     }
     Ok(())
 }
@@ -195,10 +249,12 @@ fn validate_one(
 fn validate_record(
     runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     envelope: &CanonicalCommitEnvelope,
-    original: &Arc<CanonicalCommitEnvelope>,
+    original: &OwnedValidatedOutputOrigins,
     member: &CanonicalRequiredOutputMaterializationRecord,
+    validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Stop> {
     let origin = original.validate_output_membership_header()?;
     let (plan, expected) = match member.record {
@@ -223,7 +279,14 @@ fn validate_record(
             (
                 plan,
                 super::super::membership::reconstruct_canonical_payload(
-                    runtime, original, id, plan, context, lease,
+                    runtime,
+                    original,
+                    id,
+                    plan,
+                    validated_history,
+                    context,
+                    lease,
+                    schema,
                 )?,
             )
         }
@@ -249,7 +312,14 @@ fn validate_record(
             (
                 plan,
                 super::super::relation_payload::reconstruct(
-                    runtime, original, id, plan, context, lease,
+                    runtime,
+                    original,
+                    id,
+                    plan,
+                    validated_history,
+                    context,
+                    lease,
+                    schema,
                 )?,
             )
         }

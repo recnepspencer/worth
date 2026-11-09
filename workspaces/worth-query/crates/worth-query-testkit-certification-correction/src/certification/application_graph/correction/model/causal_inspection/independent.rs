@@ -91,6 +91,7 @@ pub fn calculated_only_connects_original_source_under_independent_governance() {
         )
         .unwrap();
     assert_eq!(report.reason(), CausalInspectionReason::ObservedResult);
+    assert!(report.predecessor_reads().is_none(), "this original producer declared no predecessor read; current input keys cannot impersonate one");
     assert_eq!(
         report.producer_connection().source_commit(),
         &expected_source

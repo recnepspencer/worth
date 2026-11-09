@@ -52,7 +52,7 @@ impl HomeCorrectionOccurrence {
         let association = binding
             .retain_correction_binding()
             .ok_or(Denial::UnsupportedSourceMeaning)?;
-        if association.declaration() != &DeclaredCorrectionBinding::of::<S, C>() {
+        if DeclaredCorrectionBinding::of::<S, C>().as_ref() != Ok(association.declaration()) {
             return Err(Denial::UnsupportedSourceMeaning);
         }
         let aftermath = binding

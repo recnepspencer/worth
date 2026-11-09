@@ -1,86 +1,84 @@
-//! Schema-owned marker family for the installation schema fixtures.
+//! One reusable installation fixture fragment, independent of its installation root.
+use super::TestOperation;
+use worth_query_declaration::facade::application_schema::{fragment::*, *};
+use worth_query_declaration::facade::authentication::*;
 
-use std::marker::PhantomData;
-
-use worth_query_declaration::facade::application_schema::{
-    ApplicationAspectMarkerIdentity, ApplicationEntityMarkerIdentity,
-    ApplicationFieldMarkerIdentity, ApplicationFieldPresence, DeclaredApplicationFieldValue,
-    OperationCreates, OperationExpectsFact, OperationReads, U64ApplicationValueBinding,
-};
-use worth_query_declaration::facade::authentication::{
-    WorthQueryExternalPrincipalIdentity, WorthQueryExternalPrincipalIdentityBinding,
-    WorthQueryPrincipalMappingStatus, WorthQueryPrincipalMappingStatusBinding,
-};
-
-use super::{TestOperation, TestSchema};
-
-pub(super) struct FixtureEntity<Schema>(PhantomData<fn() -> Schema>);
-pub(super) struct FixtureIdentityAspect<Schema>(PhantomData<fn() -> Schema>);
-pub(super) struct FixtureExternalIdentityField<Schema>(PhantomData<fn() -> Schema>);
-pub(super) struct FixtureMappingStatusField<Schema>(PhantomData<fn() -> Schema>);
-pub(super) struct FixturePrincipalIdentityField<Schema>(PhantomData<fn() -> Schema>);
-
-pub(super) type TestEntity = FixtureEntity<TestSchema>;
-
-impl<Schema> ApplicationEntityMarkerIdentity<Schema> for FixtureEntity<Schema> {
-    const IDENTIFIER: &'static str = "TestEntity";
+pub(super) struct InstallationFields;
+impl Fragment for InstallationFields {
+    const NAME: &'static str = "installation_fields";
+    type Bindings = InstallationBindings;
+    type Members = (FixtureEntity,);
 }
-
-impl<Schema> ApplicationAspectMarkerIdentity<Schema, FixtureEntity<Schema>>
-    for FixtureIdentityAspect<Schema>
-{
-    const IDENTIFIER: &'static str = "IdentityAspect";
-    const ASPECT_IDENTITY: worth_query_declaration::facade::application_schema::AspectIdentity =
-        worth_query_declaration::facade::application_schema::AspectIdentity(0x9161200c);
-    const CONTRACT_REVISION:
-        worth_query_declaration::facade::application_schema::AspectContractRevision =
-        worth_query_declaration::facade::application_schema::AspectContractRevision(1);
+pub(super) struct InstallationBindings;
+impl BindingSet for InstallationBindings {
+    type Work<'a> = ValueDecodeAdmission<'a>;
+    fn with_admission<T>(
+        work: &mut Self::Work<'_>,
+        f: impl FnOnce(&mut ValueDecodeAdmission<'_>) -> T,
+    ) -> T {
+        f(work)
+    }
 }
-
-macro_rules! field_marker_identity {
-    ($marker:ident, $identifier:literal) => {
-        impl<Schema>
-            ApplicationFieldMarkerIdentity<
-                Schema,
-                FixtureEntity<Schema>,
-                FixtureIdentityAspect<Schema>,
-            > for $marker<Schema>
-        {
-            const IDENTIFIER: &'static str = $identifier;
-        }
-    };
+impl Scalar<u64> for InstallationBindings {
+    type Binding = U64ApplicationValueBinding;
+    const WRITABLE: bool = false;
 }
-
-field_marker_identity!(FixtureExternalIdentityField, "ExternalIdentityField");
-field_marker_identity!(FixtureMappingStatusField, "MappingStatusField");
-field_marker_identity!(FixturePrincipalIdentityField, "PrincipalIdentityField");
-
-macro_rules! required_field {
-    ($field:ident, $value:ty, $binding:ty) => {
-        impl<Schema> DeclaredApplicationFieldValue for $field<Schema> {
-            type Value = $value;
-            type Binding = $binding;
-            const PRESENCE: ApplicationFieldPresence = ApplicationFieldPresence::Required;
-        }
-    };
+impl Scalar<WorthQueryExternalPrincipalIdentity> for InstallationBindings {
+    type Binding = WorthQueryExternalPrincipalIdentityBinding;
+    const WRITABLE: bool = false;
 }
-
-required_field!(
-    FixtureExternalIdentityField,
-    WorthQueryExternalPrincipalIdentity,
-    WorthQueryExternalPrincipalIdentityBinding
-);
-required_field!(
-    FixtureMappingStatusField,
+impl Scalar<WorthQueryPrincipalMappingStatus> for InstallationBindings {
+    type Binding = WorthQueryPrincipalMappingStatusBinding;
+}
+pub(super) struct FixtureEntity;
+impl Entity for FixtureEntity {
+    const NAME: &'static str = "TestEntity";
+    type Aspects = (FixtureIdentityAspect,);
+    type Relations = (super::MappingTarget,);
+}
+pub(super) struct FixtureIdentityAspect;
+impl Aspect for FixtureIdentityAspect {
+    const NAME: &'static str = "IdentityAspect";
+    type Row = InstallationIdentity;
+}
+pub(super) struct InstallationIdentity {
+    external: WorthQueryExternalPrincipalIdentity,
+    status: WorthQueryPrincipalMappingStatus,
+    principal: u64,
+}
+impl Record<InstallationIdentity> for InstallationBindings {
+    fn record() -> impl Shape<InstallationIdentity, Self> {
+        field("ExternalIdentityField", |r: &InstallationIdentity| {
+            r.external.clone()
+        })
+        .equality_queryable(true)
+        .and("MappingStatusField", |r: &InstallationIdentity| r.status)
+        .and("PrincipalIdentityField", |r: &InstallationIdentity| {
+            r.principal
+        })
+        .equality_queryable(true)
+        .build(
+            |external, status, principal, _: &mut ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(InstallationIdentity {
+                    external,
+                    status,
+                    principal,
+                })
+            },
+        )
+    }
+}
+pub(super) type FixtureMappingStatusField = FieldSelection<
+    InstallationFields,
+    FixtureEntity,
+    FixtureIdentityAspect,
     WorthQueryPrincipalMappingStatus,
-    WorthQueryPrincipalMappingStatusBinding
-);
-required_field!(
-    FixturePrincipalIdentityField,
-    u64,
-    U64ApplicationValueBinding
-);
-
-impl<Schema> OperationCreates<TestOperation<Schema>> for FixtureEntity<Schema> {}
-impl<Schema> OperationReads<TestOperation<Schema>> for FixturePrincipalIdentityField<Schema> {}
-impl<Schema> OperationExpectsFact<TestOperation<Schema>> for FixturePrincipalIdentityField<Schema> {}
+>;
+pub(super) type FixturePrincipalIdentityField =
+    FieldSelection<InstallationFields, FixtureEntity, FixtureIdentityAspect, u64>;
+pub(super) type TestEntity = FixtureEntity;
+impl<Schema> OperationCreates<TestOperation<Schema>> for FixtureEntity {}
+impl Relation for super::MappingTarget {
+    const NAME: &'static str = "MappingTarget";
+    type To = FixtureEntity;
+}

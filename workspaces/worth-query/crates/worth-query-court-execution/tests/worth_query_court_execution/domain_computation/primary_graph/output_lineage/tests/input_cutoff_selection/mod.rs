@@ -93,34 +93,14 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition() {
         "RestoredOutputBinding",
     );
 
-    lineage.record_recovered_prior_output_for_test(
-        lineage.binding_type_for_test(source.output_binding_for_test()),
-        runtime_authority,
-        schema.clone(),
-        source.scope,
-        parent.lifecycle_incarnation(),
-        parent.reference_generation().get(),
-        Arc::clone(&target),
-        checkpoint_identity([0x31; 32]),
-        target_partition,
-        None,
-        [0x41; 32],
-        None,
-    );
-    lineage.record_recovered_prior_output_for_test(
-        lineage.binding_type_for_test(source.output_binding_for_test()),
-        runtime_authority,
-        schema,
-        source.scope,
-        parent.lifecycle_incarnation(),
-        parent.reference_generation().get(),
-        sibling,
-        checkpoint_identity([0x32; 32]),
-        sibling_partition,
-        None,
-        [0x42; 32],
-        None,
-    );
+    lineage.record_prior_output_for_test(lineage.binding_type_for_test(source.output_binding_for_test()), runtime_authority, schema.clone(), source.scope, parent.lifecycle_incarnation(), parent.reference_generation().get(), Arc::clone(&target), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::restoration::PriorOutputOrigin::Recovered {
+            source_identity: checkpoint_identity([0x31; 32]),
+            checkpoint: None,
+        }, target_partition, None, [0x41; 32]);
+    lineage.record_prior_output_for_test(lineage.binding_type_for_test(source.output_binding_for_test()), runtime_authority, schema, source.scope, parent.lifecycle_incarnation(), parent.reference_generation().get(), sibling, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::restoration::PriorOutputOrigin::Recovered {
+            source_identity: checkpoint_identity([0x32; 32]),
+            checkpoint: None,
+        }, sibling_partition, None, [0x42; 32]);
     lineage.register_fork_for_test(parent, &child);
     let selected_cell = &(*lineage.by_source_for_test())[&source][&parent.lifecycle_incarnation()]
         [&parent.reference_generation().get()][0];

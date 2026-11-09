@@ -84,13 +84,53 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
             observation.selected_commit(),
             publication.commit().identity()
         );
+        if let Some(transport) = self.output_transport.take() {
+            let committed = publication
+                .component_results()
+                .relational_commit_result()
+                .expect("a performed selection retains its Native commit result");
+            let restored = transport
+                .publications
+                .finish(committed)
+                .expect("World performed the prepared selection envelope");
+            self.application
+                .runtime
+                .primary_provider
+                .graph
+                .output_lineage
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .record_historical_transport(
+                    transport.lineage,
+                    &observation,
+                    restored.into_publications(),
+                );
+        }
         let exact = crate::basis::WorthQueryProductObservationLease::new(observation);
-        if self.output_profile.is_some() {
-            self.output_source = Some(crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation::from_product_with_memory(
+        if self.output_profile.is_some() || self.ownership.is_some() {
+            let original = crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation::from_product_with_memory(
                 self.application, exact.retained_clone(), self.output_source_memory.take(),
+            );
+            let selected = self.ownership.map(|_| {
+                self.source
+                    .as_ref()
+                    .expect("a committed output restoration retains its selected preview")
+                    .source
+                    .product_observation()
+                    .basis()
+                    .relational_basis()
+                    .observation()
+            });
+            self.output_source = Some(super::output_authority::HistoryRestoredOutputBasis::new(
+                original,
+                selected,
+                self.output_basis_memory.take(),
+                self.source
+                    .as_ref()
+                    .expect("selected preview retained until qualification"),
             ));
         }
-        self.phase = if self.output_profile.is_some() {
+        self.phase = if self.output_profile.is_some() || self.ownership.is_some() {
             NavigationPhase::AwaitingOutputs {
                 candidate,
                 exact,

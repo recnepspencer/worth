@@ -202,6 +202,7 @@ where
     );
     let scope_entity_kind = access.resource_entity_kind();
     let scope_entity_name = access.resource_entity_name().to_string();
+    let authentication = access.authentication.clone();
     let authentication_valid_until = access.authentication_valid_until;
     let request_scope = access.request_scope.clone();
     let original_scope =
@@ -285,7 +286,9 @@ where
             original_inspection_disclosure: None,
             original_scope,
             authorization_basis: ErasedAuthorizationBasis::Capability,
-            graph_work: revalidated.graph_work,
+            graph_work: revalidated
+                .graph_work
+                .with_actor_authentication(authentication),
             source_partition_identity: None,
             source_expectation_kind: None,
             source_facts: Vec::new(),

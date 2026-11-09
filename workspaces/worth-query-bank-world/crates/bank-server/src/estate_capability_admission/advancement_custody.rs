@@ -140,10 +140,11 @@ fn run(entry: Entry, refusal: Option<bool>) {
             .map(|f| f.into_denial()),
     };
     if let Some(memory) = refusal {
-        let Some(BankEstateProgressionDenial::ApplicationEntry(Mutation::ExecutionRequest(cause))) =
-            denial
-        else {
+        let Some(BankEstateProgressionDenial::ApplicationEntry(entry)) = denial else {
             panic!("opening has one spelling: {denial:?}")
+        };
+        let Mutation::ExecutionRequest(cause) = *entry else {
+            panic!("the public entry retains its execution refusal");
         };
         if !memory {
             assert_eq!(cause, Denial::Resource(Resource::WorkExhausted));

@@ -21,7 +21,9 @@ pub fn admitted_declaration_support(
 ) -> WorthQueryAdmittedSupportContribution<WorthQueryDeclarationBoundContributionTarget> {
     admitted(
         WorthQuerySupportContributionAuthoring::declaration_support(semantic_code, detail)
-            .bind_to_declaration_target(declaration_target(declaration_label)),
+            .expect("fixture digest must fit")
+            .bind_to_declaration_target(declaration_target(declaration_label))
+            .expect("fixture digest must fit"),
     )
 }
 
@@ -35,7 +37,9 @@ pub fn admitted_declaration_explanation<
 ) -> WorthQueryAdmittedExplanationContribution<WorthQueryDeclarationBoundContributionTarget> {
     admitted(
         WorthQueryExplanationContributionAuthoring::requires_context(semantic_code, detail)
-            .bind_to_declaration_target(canonical_declaration_target(declaration)),
+            .expect("fixture digest must fit")
+            .bind_to_declaration_target(canonical_declaration_target(declaration))
+            .expect("fixture digest must fit"),
     )
 }
 
@@ -49,7 +53,9 @@ pub fn admitted_declaration_advisory<
 ) -> WorthQueryAdmittedAdmissionContribution<WorthQueryDeclarationBoundContributionTarget> {
     admitted(
         WorthQueryAdmissionContributionAuthoring::advisory(semantic_code, detail)
-            .bind_to_declaration_target(canonical_declaration_target(declaration)),
+            .expect("fixture digest must fit")
+            .bind_to_declaration_target(canonical_declaration_target(declaration))
+            .expect("fixture digest must fit"),
     )
 }
 
@@ -60,7 +66,9 @@ pub fn admitted_declaration_workflow(
 ) -> WorthQueryAdmittedWorkflowContribution<WorthQueryDeclarationBoundContributionTarget> {
     admitted_generic(
         WorthQueryWorkflowContributionAuthoring::preview_only(semantic_code, detail)
-            .bind_to_declaration_target(declaration_target(declaration_label)),
+            .expect("fixture digest must fit")
+            .bind_to_declaration_target(declaration_target(declaration_label))
+            .expect("fixture digest must fit"),
     )
 }
 
@@ -71,7 +79,9 @@ pub fn admitted_plan_support(
 ) -> WorthQueryAdmittedSupportContribution<WorthQueryAdmittedPlanBoundContributionTarget> {
     admitted_generic(
         WorthQuerySupportContributionAuthoring::narrowed_support(semantic_code, detail)
-            .for_admitted_intent_plan(plan),
+            .expect("fixture digest must fit")
+            .for_admitted_intent_plan(plan)
+            .expect("fixture digest must fit"),
     )
 }
 
@@ -82,7 +92,9 @@ pub fn admitted_plan_workflow(
 ) -> WorthQueryAdmittedWorkflowContribution<WorthQueryAdmittedPlanBoundContributionTarget> {
     admitted_generic(
         WorthQueryWorkflowContributionAuthoring::preview_only(semantic_code, detail)
-            .for_admitted_intent_plan(plan),
+            .expect("fixture digest must fit")
+            .for_admitted_intent_plan(plan)
+            .expect("fixture digest must fit"),
     )
 }
 
@@ -93,7 +105,9 @@ pub fn admitted_plan_continuity(
 ) -> WorthQueryAdmittedContinuityContribution<WorthQueryAdmittedPlanBoundContributionTarget> {
     admitted_generic(
         WorthQueryContinuityContributionAuthoring::preserved(semantic_code, detail)
-            .for_admitted_intent_plan(plan),
+            .expect("fixture digest must fit")
+            .for_admitted_intent_plan(plan)
+            .expect("fixture digest must fit"),
     )
 }
 
@@ -104,7 +118,9 @@ pub fn admitted_plan_aftermath(
 ) -> WorthQueryAdmittedAftermathContribution<WorthQueryAdmittedPlanBoundContributionTarget> {
     admitted_generic(
         WorthQueryAftermathContributionAuthoring::declares_residue(semantic_code, detail)
-            .for_admitted_intent_plan(plan),
+            .expect("fixture digest must fit")
+            .for_admitted_intent_plan(plan)
+            .expect("fixture digest must fit"),
     )
 }
 
@@ -117,7 +133,9 @@ pub fn admitted_lower_runtime_explanation(
 > {
     admitted_generic(
         WorthQueryExplanationContributionAuthoring::requires_context(semantic_code, detail)
-            .for_lower_runtime_boundary_envelope(envelope),
+            .expect("fixture digest must fit")
+            .for_lower_runtime_boundary_envelope(envelope)
+            .expect("fixture digest must fit"),
     )
 }
 
@@ -130,7 +148,9 @@ pub fn admitted_lower_runtime_aftermath(
 > {
     admitted_generic(
         WorthQueryAftermathContributionAuthoring::declares_residue(semantic_code, detail)
-            .for_lower_runtime_boundary_envelope(envelope),
+            .expect("fixture digest must fit")
+            .for_lower_runtime_boundary_envelope(envelope)
+            .expect("fixture digest must fit"),
     )
 }
 

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::collections::BTreeSet;
 
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
@@ -40,13 +41,13 @@ impl QuerySubscriptionFamilyCoverageMatrix {
 
 pub fn build_query_subscription_family_coverage_matrix(
     rows: Vec<QuerySubscriptionFamilyCoverageRow>,
-) -> QuerySubscriptionFamilyCoverageMatrix {
+) -> Result<QuerySubscriptionFamilyCoverageMatrix, IdentityDerivationDenial> {
     let family_coverage_identity =
-        coverage_matrix_identity(rows.iter().map(|row| row.row_identity()));
-    QuerySubscriptionFamilyCoverageMatrix {
+        coverage_matrix_identity(rows.iter().map(|row| row.row_identity()))?;
+    Ok(QuerySubscriptionFamilyCoverageMatrix {
         rows,
         family_coverage_identity,
-    }
+    })
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -118,7 +119,7 @@ pub fn build_certified_family_coverage_handle(
         return Err(QuerySubscriptionRuntimeCertificationError::new(
             QuerySubscriptionRuntimeCertificationErrorKind::CoverageResolutionDenied,
             "runtime family coverage handle construction may not proceed from a denied matrix-scan posture",
-            &[validation_shape_role_evidence_identity("family", family.as_str())],
+            (|| { Ok(vec![validation_shape_role_evidence_identity("family", family.as_str())?]) })(),
             QuerySubscriptionRuntimeCertificationCounters::uncovered_family(false),
         ));
     }
@@ -133,10 +134,10 @@ pub fn build_certified_family_coverage_handle(
         return Err(QuerySubscriptionRuntimeCertificationError::new(
             QuerySubscriptionRuntimeCertificationErrorKind::CoverageFamilyMissing,
             "runtime family coverage handle construction requires at least one family-scoped coverage row",
-            &[
-                validation_shape_role_evidence_identity("family", family.as_str()),
+            (|| { Ok(vec![
+                validation_shape_role_evidence_identity("family", family.as_str())?,
                 validation_role_evidence_identity("matrix", matrix.family_coverage_identity()),
-            ],
+            ]) })(),
             QuerySubscriptionRuntimeCertificationCounters::uncovered_family(
                 posture == CoverageResolutionPosture::MatrixScanDebtExplicit,
             ),
@@ -165,20 +166,72 @@ pub fn build_certified_family_coverage_handle(
         }
     }
 
-    let basis_variations =
-        QuerySubscriptionBasisVariationSet::from_identities(basis_identities.iter());
-    let policy_variations =
-        QuerySubscriptionPolicyVariationSet::from_identities(policy_identities.iter());
-    let tenant_variations =
-        QuerySubscriptionTenantVariationSet::from_identities(tenant_identities.iter());
+    let basis_variations = QuerySubscriptionBasisVariationSet::from_identities(
+        basis_identities.iter(),
+    )
+    .map_err(|cause| {
+        QuerySubscriptionRuntimeCertificationError::identity_refused(
+            cause,
+            QuerySubscriptionRuntimeCertificationCounters::coverage_handle_refusal(
+                posture == CoverageResolutionPosture::MatrixScanDebtExplicit,
+            ),
+        )
+    })?;
+    let policy_variations = QuerySubscriptionPolicyVariationSet::from_identities(
+        policy_identities.iter(),
+    )
+    .map_err(|cause| {
+        QuerySubscriptionRuntimeCertificationError::identity_refused(
+            cause,
+            QuerySubscriptionRuntimeCertificationCounters::coverage_handle_refusal(
+                posture == CoverageResolutionPosture::MatrixScanDebtExplicit,
+            ),
+        )
+    })?;
+    let tenant_variations = QuerySubscriptionTenantVariationSet::from_identities(
+        tenant_identities.iter(),
+    )
+    .map_err(|cause| {
+        QuerySubscriptionRuntimeCertificationError::identity_refused(
+            cause,
+            QuerySubscriptionRuntimeCertificationCounters::coverage_handle_refusal(
+                posture == CoverageResolutionPosture::MatrixScanDebtExplicit,
+            ),
+        )
+    })?;
     let relationship_proof_variations =
         QuerySubscriptionRelationshipProofVariationSet::from_identities(
             relationship_identities.iter(),
-        );
+        )
+        .map_err(|cause| {
+            QuerySubscriptionRuntimeCertificationError::identity_refused(
+                cause,
+                QuerySubscriptionRuntimeCertificationCounters::coverage_handle_refusal(
+                    posture == CoverageResolutionPosture::MatrixScanDebtExplicit,
+                ),
+            )
+        })?;
     let view_shape_variations =
-        QuerySubscriptionViewShapeVariationSet::from_identities(view_shape_identities.iter());
-    let lifecycle_class_variations =
-        QuerySubscriptionLifecycleClassVariationSet::from_set(lifecycle_classes);
+        QuerySubscriptionViewShapeVariationSet::from_identities(view_shape_identities.iter())
+            .map_err(|cause| {
+                QuerySubscriptionRuntimeCertificationError::identity_refused(
+                    cause,
+                    QuerySubscriptionRuntimeCertificationCounters::coverage_handle_refusal(
+                        posture == CoverageResolutionPosture::MatrixScanDebtExplicit,
+                    ),
+                )
+            })?;
+    let lifecycle_class_variations = QuerySubscriptionLifecycleClassVariationSet::from_set(
+        lifecycle_classes,
+    )
+    .map_err(|cause| {
+        QuerySubscriptionRuntimeCertificationError::identity_refused(
+            cause,
+            QuerySubscriptionRuntimeCertificationCounters::coverage_handle_refusal(
+                posture == CoverageResolutionPosture::MatrixScanDebtExplicit,
+            ),
+        )
+    })?;
 
     let family_coverage_identity = certified_family_coverage_handle_identity(
         family.as_str(),
@@ -192,7 +245,15 @@ pub fn build_certified_family_coverage_handle(
         lifecycle_class_variations.variation_identity(),
         admitted_rows.len(),
         hostile_rows.len(),
-    );
+    )
+    .map_err(|cause| {
+        QuerySubscriptionRuntimeCertificationError::identity_refused(
+            cause,
+            QuerySubscriptionRuntimeCertificationCounters::coverage_handle_refusal(
+                posture == CoverageResolutionPosture::MatrixScanDebtExplicit,
+            ),
+        )
+    })?;
 
     Ok(CertifiedFamilyCoverageHandle {
         family: family.clone(),

@@ -1,4 +1,5 @@
 pub(crate) use worth_query_testkit_certification_canonical::facade::certification::canonical_transition::successor::pre_effect_indexes::*;
+use worth_query_decl::facade::application_schema::ApplicationSchema;
 
 #[test]
 fn missing_native_bootstrap_index_generation_refuses_before_codec_authoring() {

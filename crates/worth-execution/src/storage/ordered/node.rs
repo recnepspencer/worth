@@ -1,4 +1,4 @@
-use super::{funding::Funding, ExecutionOrderedMapDenial as Denial};
+use super::{funding::PathFunding, ExecutionOrderedMapDenial as Denial};
 use crate::{ChargedBytes, ExecutionMemoryReservation};
 use std::{alloc::Layout, sync::Arc};
 pub(super) type Link<K, V> = Option<Arc<Node<K, V>>>;
@@ -17,7 +17,7 @@ pub(super) struct Node<K, V> {
     pub(super) bytes: Option<u64>,
     _memory: Option<ExecutionMemoryReservation>,
 }
-fn arc_bytes<T>() -> Result<u64, Denial> {
+pub(super) fn arc_bytes<T>() -> Result<u64, Denial> {
     Layout::new::<[usize; 2]>()
         .extend(Layout::new::<T>())
         .ok()
@@ -38,56 +38,24 @@ pub(super) fn detached_bytes<K, V>(entry: &Entry<K, V>) -> Result<Option<u64>, D
         })
         .transpose()
 }
-/// Both original owners are admitted before either allocation is made.
+/// Both original cell owners are admitted before either allocation is made.
 pub(super) fn prepared_copy<K: Copy, V: Copy>(
     key: K,
     value: V,
-    policy: Funding<'_, '_>,
+    source: &dyn super::funding::FundingSource,
 ) -> Result<Arc<Node<K, V>>, Denial> {
-    prepared_owned(key, value, policy)
+    prepared_owned(key, value, source)
 }
 
-/// Move native payload custody without invoking its Clone implementation.
+/// Move native payload custody through the same admitted path funding owner.
 pub(super) fn prepared_owned<K, V>(
     key: K,
     value: V,
-    policy: Funding<'_, '_>,
+    source: &dyn super::funding::FundingSource,
 ) -> Result<Arc<Node<K, V>>, Denial> {
-    let (entry_bytes, node_bytes) = if policy.uses_accounting() {
-        (
-            Some(arc_bytes::<Entry<K, V>>()?),
-            Some(arc_bytes::<Node<K, V>>()?),
-        )
-    } else {
-        (None, None)
-    };
-    let bytes = match (entry_bytes, node_bytes) {
-        (Some(entry), Some(node)) => Some(entry.checked_add(node).ok_or(Denial::CapacityOverflow)?),
-        _ => None,
-    };
-    let entry_memory = entry_bytes
-        .map(|n| policy.reserve_memory(n))
-        .transpose()?
-        .flatten();
-    let node_memory = node_bytes
-        .map(|n| policy.reserve_memory(n))
-        .transpose()?
-        .flatten();
-    let entry = Arc::new(Entry {
-        key,
-        value,
-        bytes: entry_bytes,
-        _memory: entry_memory,
-    });
-    Ok(Arc::new(Node {
-        entry,
-        left: None,
-        right: None,
-        height: 1,
-        count: 1,
-        bytes,
-        _memory: node_memory,
-    }))
+    let funding = PathFunding::admit(source, cell_bytes::<K, V>()?)?;
+    let entry = Entry::owned_native(key, value, &funding)?;
+    build(entry, None, None, &funding)
 }
 
 /// Refresh a moved, uniquely owned cell without creating accounting knowledge
@@ -118,55 +86,55 @@ pub(super) fn refresh<K, V>(node: &mut Node<K, V>) {
         _ => None,
     };
 }
-impl<K: Clone + ChargedBytes, V: Clone + ChargedBytes> Entry<K, V> {
-    pub(super) fn cloned(key: &K, value: &V, policy: Funding<'_, '_>) -> Result<Arc<Self>, Denial> {
-        if !policy.uses_accounting() {
-            return Self::cloned_with_bytes(key, value, policy, None);
-        }
-        let bytes = arc_bytes::<Self>()?
-            .checked_add(key.additional_charged_bytes())
-            .and_then(|n| n.checked_add(value.additional_charged_bytes()))
-            .ok_or(Denial::CapacityOverflow)?;
-        Self::cloned_with_bytes(key, value, policy, Some(bytes))
-    }
+pub(super) struct EntryPlan<'a, K, V> {
+    key: &'a K,
+    value: &'a V,
+    bytes: Option<u64>,
 }
-impl<K: Clone, V: Clone> Entry<K, V> {
-    pub(super) fn cloned_native(
-        key: &K,
-        value: &V,
-        policy: Funding<'_, '_>,
-    ) -> Result<Arc<Self>, Denial> {
-        let bytes = if policy.uses_accounting() {
-            Some(arc_bytes::<Self>()?)
-        } else {
-            None
-        };
-        Self::cloned_with_bytes(key, value, policy, bytes)
+impl<'a, K: Clone, V: Clone> EntryPlan<'a, K, V> {
+    pub(super) fn native(key: &'a K, value: &'a V, accounted: bool) -> Result<Self, Denial> {
+        Ok(Self {
+            key,
+            value,
+            bytes: accounted.then(arc_bytes::<Entry<K, V>>).transpose()?,
+        })
     }
-    fn cloned_with_bytes(
-        key: &K,
-        value: &V,
-        policy: Funding<'_, '_>,
-        bytes: Option<u64>,
-    ) -> Result<Arc<Self>, Denial> {
-        let memory = bytes
-            .map(|bytes| policy.reserve_memory(bytes))
+    pub(super) fn bytes(&self) -> u64 {
+        self.bytes.unwrap_or(0)
+    }
+    pub(super) fn seal(self, pool: &PathFunding) -> Result<Arc<Entry<K, V>>, Denial> {
+        let memory = self
+            .bytes
+            .map(|bytes| pool.reserve_memory(bytes))
             .transpose()?
             .flatten();
-        let entry = Self {
-            key: key.clone(),
-            value: value.clone(),
-            bytes,
+        Ok(Arc::new(Entry {
+            key: self.key.clone(),
+            value: self.value.clone(),
+            bytes: self.bytes,
             _memory: memory,
-        };
-        Ok(Arc::new(entry))
+        }))
+    }
+}
+impl<'a, K: Clone + ChargedBytes, V: Clone + ChargedBytes> EntryPlan<'a, K, V> {
+    pub(super) fn measured(key: &'a K, value: &'a V, accounted: bool) -> Result<Self, Denial> {
+        let mut plan = Self::native(key, value, accounted)?;
+        if let Some(bytes) = plan.bytes {
+            plan.bytes = Some(
+                bytes
+                    .checked_add(key.additional_charged_bytes())
+                    .and_then(|n| n.checked_add(value.additional_charged_bytes()))
+                    .ok_or(Denial::CapacityOverflow)?,
+            );
+        }
+        Ok(plan)
     }
 }
 impl<K, V> Entry<K, V> {
     pub(super) fn owned_native(
         key: K,
         value: V,
-        policy: Funding<'_, '_>,
+        policy: &PathFunding,
     ) -> Result<Arc<Self>, Denial> {
         let bytes = policy
             .uses_accounting()
@@ -191,7 +159,7 @@ pub(super) fn build<K, V>(
     entry: Arc<Entry<K, V>>,
     left: Link<K, V>,
     right: Link<K, V>,
-    policy: Funding<'_, '_>,
+    policy: &PathFunding,
 ) -> Result<Arc<Node<K, V>>, Denial> {
     let allocation = if policy.uses_accounting() {
         Some(arc_bytes::<Node<K, V>>()?)

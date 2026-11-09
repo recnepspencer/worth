@@ -5,13 +5,19 @@ use super::{
     ApplicationSchemaMember,
 };
 
-struct StrictSchema;
 struct StrictEntity;
 
-crate::worth_query_relation!(
-    NoSelfPeer in StrictSchema,
-    StrictEntity => StrictEntity; integrity = same_context_no_self_edges_unbounded_retain_dangling
-);
+impl super::fragment::Entity for StrictEntity {
+    const NAME: &'static str = "StrictEntity";
+    type Aspects = ();
+    type Relations = (NoSelfPeer,);
+}
+struct NoSelfPeer;
+impl super::fragment::Relation for NoSelfPeer {
+    const NAME: &'static str = "NoSelfPeer";
+    type To = StrictEntity;
+    const SELF_EDGES: bool = false;
+}
 
 fn members(integrity: ApplicationRelationIntegrity) -> Vec<ApplicationSchemaMember> {
     vec![
@@ -87,7 +93,10 @@ fn no_self_edges_is_an_explicit_stronger_contract() {
     assert_eq!(established.cardinality, stronger.cardinality);
     assert_eq!(established.deletion, stronger.deletion);
     assert_ne!(established, stronger);
-    assert_eq!(NoSelfPeer::reference().integrity(), stronger);
+    assert_eq!(
+        super::fragment::relation_integrity::<NoSelfPeer>(),
+        stronger
+    );
 }
 
 #[test]

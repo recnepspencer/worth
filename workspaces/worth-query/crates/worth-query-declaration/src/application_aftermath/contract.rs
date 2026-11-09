@@ -16,7 +16,7 @@ pub struct DeclaredApplicationAftermathContract<Schema> {
     authority: DeclaredCorrectionAuthority,
     mechanism: Option<DeclaredCorrectionMechanism<Schema>>,
     reconciliation: Option<DeclaredReconciliationProcedure>,
-    correction_binding: Option<super::DeclaredCorrectionBinding>,
+    correction_binding: Option<super::correction_binding::CorrectionBindingDeclaration>,
 }
 
 impl<Schema> Clone for DeclaredApplicationAftermathContract<Schema> {
@@ -126,7 +126,9 @@ impl<Schema> DeclaredApplicationAftermathContract<Schema> {
             },
             mechanism: Some(Correction::mechanism()),
             reconciliation,
-            correction_binding: Some(super::DeclaredCorrectionBinding::of::<Schema, Correction>()),
+            correction_binding: Some(
+                super::correction_binding::CorrectionBindingDeclaration::of::<Schema, Correction>(),
+            ),
         }
     }
 
@@ -141,14 +143,54 @@ impl<Schema> DeclaredApplicationAftermathContract<Schema> {
     pub(crate) fn associate_with_operation(
         self,
         _authority: AftermathAssociationAuthority<Schema>,
-    ) -> PortableApplicationAftermathContract {
-        PortableApplicationAftermathContract {
-            authority: self.authority,
-            mechanism: self
-                .mechanism
-                .map(DeclaredCorrectionMechanism::into_portable),
-            reconciliation: self.reconciliation,
-            correction_binding: self.correction_binding,
+        operation: &str,
+    ) -> AssociatedAftermathContract {
+        let correction = self
+            .correction_binding
+            .as_ref()
+            .map(|binding| binding.identity)
+            .unwrap_or(operation);
+        let mut fields = Vec::new();
+        if let Some(DeclaredCorrectionMechanism::RecordedInverse(inverse)) = &self.mechanism {
+            fields.extend(
+                inverse
+                    .preimage_demand()
+                    .loci()
+                    .iter()
+                    .map(|locus| locus.recipe.clone()),
+            );
+        }
+        let demand_check = validate_expression(correction, self.mechanism.as_ref(), self.reconciliation.as_ref()).and_then(|()| match &self.mechanism {
+            Some(DeclaredCorrectionMechanism::RecordedInverse(inverse)) => inverse.preimage_demand().validate().map_err(|cause| crate::application_schema::ApplicationSchemaDeclarationDenial::InvalidCorrectionDemand { correction: correction.to_owned(), cause }),
+            _ => Ok(()),
+        });
+        let contract = demand_check
+            .and_then(|()| {
+                self.correction_binding
+                    .as_ref()
+                    .map(|binding| binding.compose(self.reconciliation.clone()))
+                    .transpose()
+            })
+            .map(|composed| {
+                let binding = composed.map(|composed| {
+                    fields.extend(composed.fields);
+                    composed.binding
+                });
+                PortableApplicationAftermathContract {
+                    authority: self.authority,
+                    mechanism: self
+                        .mechanism
+                        .map(DeclaredCorrectionMechanism::into_portable),
+                    reconciliation: self.reconciliation,
+                    correction_binding: binding,
+                }
+            });
+        AssociatedAftermathContract {
+            contract,
+            fields: fields
+                .into_iter()
+                .map(|field| (correction.to_owned(), field))
+                .collect(),
         }
     }
 }
@@ -202,4 +244,54 @@ impl PortableApplicationAftermathContract {
     pub const fn reconciliation(&self) -> Option<&DeclaredReconciliationProcedure> {
         self.reconciliation.as_ref()
     }
+}
+
+/// Compiler-local association retains refusals and codec expectations until schema composition.
+pub(crate) struct AssociatedAftermathContract {
+    pub(crate) contract: Result<
+        PortableApplicationAftermathContract,
+        crate::application_schema::ApplicationSchemaDeclarationDenial,
+    >,
+    pub(crate) fields: Vec<(
+        String,
+        crate::application_schema::ApplicationFieldBindingRecipe,
+    )>,
+}
+
+fn validate_expression<Schema>(
+    correction: &str,
+    mechanism: Option<&DeclaredCorrectionMechanism<Schema>>,
+    reconciliation: Option<&DeclaredReconciliationProcedure>,
+) -> Result<(), crate::application_schema::ApplicationSchemaDeclarationDenial> {
+    use super::DeclaredCorrectionMechanismDenial as Cause;
+    let check = (|| {
+        if let Some(reconciliation) = reconciliation {
+            reconciliation.validate()?;
+        }
+        match mechanism {
+            Some(DeclaredCorrectionMechanism::RecordedInverse(inverse)) => {
+                if inverse.inverse_operation_slot().trim().is_empty() {
+                    return Err(Cause::EmptyInverseOperation);
+                }
+                inverse.lowering_correspondence().validate()?;
+                if !matches!(
+                    inverse.postcondition(),
+                    super::DeclaredAftermathPostcondition::ExactPriorTruth
+                ) {
+                    return Err(Cause::RecordedInverseRequiresExactPriorTruth);
+                }
+                Ok(())
+            }
+            Some(DeclaredCorrectionMechanism::Compensation(compensation)) => {
+                compensation.validate()
+            }
+            _ => Ok(()),
+        }
+    })();
+    check.map_err(|cause| {
+        crate::application_schema::ApplicationSchemaDeclarationDenial::InvalidCorrectionMechanism {
+            correction: correction.to_owned(),
+            cause,
+        }
+    })
 }

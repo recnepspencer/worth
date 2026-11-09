@@ -10,7 +10,8 @@ fn runtime_stop_class_taxonomy_covers_representative_runtime_error_variants() {
 
     for error in representative_runtime_stop_errors(request_execution) {
         match error.stop_class() {
-            WorthQueryStopClass::Advancement { .. }
+            WorthQueryStopClass::EvidenceIdentityDerivationDenied { .. }
+            | WorthQueryStopClass::Advancement { .. }
             | WorthQueryStopClass::ForeignPhase { .. }
             | WorthQueryStopClass::InstalledDomainAuthorityDenied { .. }
             | WorthQueryStopClass::MissingRuntimeComponent { .. }

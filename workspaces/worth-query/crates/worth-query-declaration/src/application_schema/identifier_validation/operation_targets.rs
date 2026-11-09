@@ -1,5 +1,8 @@
 //! Identifier validation for declared operation decision and program targets.
-use super::{validate_identifiers, validate_simple_identifier, ApplicationSchemaDeclarationDenial};
+use super::{
+    validate_field_identifier, validate_field_locus, validate_identifiers,
+    validate_simple_identifier, ApplicationSchemaDeclarationDenial,
+};
 use crate::application_schema::schema_member::{
     ApplicationOperationDecisionReadTarget, ApplicationOperationProgramTarget,
 };
@@ -14,9 +17,9 @@ pub(super) fn validate_decision_read_target_identifiers(
                 &p.query_name,
                 &p.scope_entity,
                 &p.scope_aspect,
-                &p.scope_field,
                 &p.principal_binding,
-            ])
+            ])?;
+            validate_field_identifier(&p.scope_field)
         }
         ApplicationOperationDecisionReadTarget::Entity { entity } => {
             validate_simple_identifier(entity)
@@ -25,7 +28,7 @@ pub(super) fn validate_decision_read_target_identifiers(
             entity,
             aspect,
             field,
-        } => validate_identifiers([entity, aspect, field]),
+        } => validate_field_locus(entity, aspect, field),
         ApplicationOperationDecisionReadTarget::Relation { relation, from, to } => {
             validate_identifiers([relation, from, to])
         }
@@ -47,7 +50,7 @@ pub(super) fn validate_program_target_identifiers(
             entity,
             aspect,
             field,
-        } => validate_identifiers([entity, aspect, field]),
+        } => validate_field_locus(entity, aspect, field),
         ApplicationOperationProgramTarget::Link { relation, from, to }
         | ApplicationOperationProgramTarget::Unlink { relation, from, to } => {
             validate_identifiers([relation, from, to])
@@ -59,6 +62,9 @@ pub(super) fn validate_program_target_identifiers(
             to,
             aspect,
             field,
-        } => validate_identifiers([relation, from, to, aspect, field]),
+        } => {
+            validate_identifiers([relation, from, to, aspect])?;
+            validate_field_identifier(field)
+        }
     }
 }

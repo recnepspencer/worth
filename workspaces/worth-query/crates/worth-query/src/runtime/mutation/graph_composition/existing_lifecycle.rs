@@ -20,7 +20,7 @@ pub(super) fn require_retarget_intent(
             None,
             declared_collection.cloned(),
             "graph retarget lanes preserve one continuing target identity; split or merge continuity requires supersession_with_lineage instead",
-        ));
+        )?);
     }
     let has_naming_rebind = command
         .naming_intent()
@@ -37,7 +37,7 @@ pub(super) fn require_retarget_intent(
         None,
         declared_collection.cloned(),
         "graph retarget lanes require naming_rebind_target(...) or continuity_rebind_existing_target(...) on the update component",
-    ))
+    )?)
 }
 
 pub(super) fn require_supersession_intent(
@@ -59,5 +59,5 @@ pub(super) fn require_supersession_intent(
         None,
         declared_collection.cloned(),
         "graph supersession lanes require continuity_split_successors(...) or continuity_rebind_merge_successor(...) on the update component",
-    ))
+    )?)
 }

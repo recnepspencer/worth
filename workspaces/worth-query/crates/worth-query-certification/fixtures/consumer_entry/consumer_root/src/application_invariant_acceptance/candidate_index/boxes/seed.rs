@@ -29,16 +29,16 @@ pub fn populate(
             BoxGrant::reference(),
             WorthQueryApplicationEntityKey::new("box-access").unwrap(),
         )
-        .field(GrantIdentity::reference(), "box-access".to_owned())
-        .field(GrantAction::reference(), 1u64)
-        .field(GrantPurpose::reference(), 1u64)
-        .field(GrantStatus::reference(), 1u64)
-        .field(GrantReadStatus::reference(), 1u64)
-        .field(GrantScope::reference(), "boxes".to_owned())
-        .field(GrantNotBefore::reference(), 0u64)
-        .field(GrantNotAfter::reference(), u64::MAX)
-        .field(GrantDepth::reference(), 0u64)
-        .field(GrantDisclosure::reference(), 1u64),
+        .field(GrantIdentity::at("GrantIdentity"), "box-access".to_owned())
+        .field(GrantAction::at("GrantAction"), 1u64)
+        .field(GrantPurpose::at("GrantPurpose"), 1u64)
+        .field(GrantStatus::at("GrantStatus"), 1u64)
+        .field(GrantReadStatus::at("GrantReadStatus"), 1u64)
+        .field(GrantScope::at("GrantScope"), "boxes".to_owned())
+        .field(GrantNotBefore::at("GrantNotBefore"), 0u64)
+        .field(GrantNotAfter::at("GrantNotAfter"), u64::MAX)
+        .field(GrantDepth::at("GrantDepth"), 0u64)
+        .field(GrantDisclosure::at("GrantDisclosure"), 1u64),
     )?;
     graph.bind_relation(WorthQueryApplicationRelationSeed::new(
         GrantResource::reference(),
@@ -73,10 +73,10 @@ fn seed_box(
             Item::reference(),
             WorthQueryApplicationEntityKey::new(identity).unwrap(),
         )
-        .field(ItemIdentity::reference(), identity.to_owned())
-        .field(ItemName::reference(), identity.to_owned())
-        .field(ItemEnabled::reference(), enabled)
-        .field(ItemBounds::reference(), bounds),
+        .field(ItemIdentity::at("ItemIdentity"), identity.to_owned())
+        .field(ItemName::at("ItemName"), identity.into())
+        .field(ItemEnabled::at("ItemEnabled"), enabled)
+        .field(ItemBounds::at("ItemBounds"), bounds),
     )?;
     graph.bind_relation(WorthQueryApplicationRelationSeed::new(
         Contains::reference(),

@@ -143,7 +143,9 @@ fn rebuilt_execution_index_preserves_operation_authority_and_exact_shape() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let world = workspace(request_execution, "operation-index-rebuild", false).unwrap();
-    let report = world.verify_domain_execution_index_rebuild();
+    let report = world
+        .verify_domain_execution_index_rebuild()
+        .expect("fixture digest must fit");
     assert!(report.is_equivalent());
     assert_eq!(report.active_identity(), report.rebuilt_identity());
     assert_eq!(report.domain_operation_count(), 2);

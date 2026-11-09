@@ -88,7 +88,7 @@ impl CanonicalCommitEnvelopeBody {
             .saturating_add(merge_parent_storage)
             .saturating_add(merge_parent_names)
             .saturating_add(vector_capacity_bytes(&self.merge_base_commits))
-            .saturating_add(self.schema_authority.owned_allocation_capacity_bytes())
+            // Schema backing is shared with the root authority, which inventories it once.
             .saturating_add(merged_intents)
             .saturating_add(vector_capacity_bytes(&self.record_allocations))
             .saturating_add(patch_storage)

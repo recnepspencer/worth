@@ -1,0 +1,38 @@
+[
+  {
+    "lane": "topology",
+    "exit": 100,
+    "names": [
+      "checkpoint_recovery::computation_partition::oracle::absence::serial::checkpoint_absence_rebuilds_every_owner_call_like_fresh",
+      "checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_chain_settles_through_its_last_consumer_alone",
+      "checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_consumer_never_settles_over_a_stale_upstream",
+      "checkpoint_recovery::required_chain::exact_invalidation::discontinuity::serial::a_restored_world_verifies_each_root_and_decides_each_consumer_once",
+      "checkpoint_recovery::required_chain::exact_invalidation::locality::lifecycle::serial::authored_ring_checkpoint_reopens_then_accepts_a_new_source_edit"
+    ],
+    "default_stack": false,
+    "RUST_MIN_STACK_present": true
+  },
+  {
+    "lane": "store",
+    "exit": 0,
+    "names": [
+      "process::application::world_durable_release::unclean::unclean_native_tail_refuses_before_world_service_and_names_the_original_effect",
+      "process::application::world_durable_release::unclean::quiescent_kill_reopens_the_acknowledged_native_and_world_heads",
+      "process::application::world_durable_release::unclean::graceful_close_reopens_the_checkpointed_native_and_world_heads",
+      "process::application::host_oracle::graceful::graceful_home_oracle_seed_zero_preserves_relational_and_world_prefixes",
+      "process::application::host_oracle::graceful::graceful_home_oracle_seed_one_preserves_relational_and_world_prefixes"
+    ],
+    "default_stack": false,
+    "RUST_MIN_STACK_present": false
+  },
+  {
+    "lane": "bank",
+    "exit": 0,
+    "names": [
+      "oracle::server_owned_effects::server::parallel_history::assessment_history::assessment_history_settles_at_each_request_width",
+      "oracle::server_owned_effects::server::parallel_history::transfer_history::seeded_transfers_match_at_host_policy_and_each_request_width"
+    ],
+    "default_stack": true,
+    "RUST_MIN_STACK_present": false
+  }
+]

@@ -31,41 +31,64 @@ pub(in crate::durability::checkpoints) fn readmit_state_using(
     let mut retained = owner_bytes;
     let mut scratch = 0;
     if let Some(state) = &state {
+        use worth_foundational::facade::CanonicalAspectStateMap as Map;
+        let checked = |bytes: Option<usize>| {
+            bytes
+                .and_then(|n| u64::try_from(n).ok())
+                .ok_or_else(|| Stop::from(Cause::ChargedBytesOverflow))
+        };
         let count = state.entries().len();
-        retained = add(retained, array::<ContractValidatedAspectValue>(count)?)?;
+        let maximum_key_width = state
+            .entries()
+            .iter()
+            .map(|entry| entry.basis().key().as_str().len())
+            .max()
+            .unwrap_or(0);
+        retained = add(retained, checked(Map::construction_storage_bytes(count))?)?;
+        retained = add(
+            retained,
+            checked(ContractValidatedAspectValue::admission_cell_storage_bytes())?
+                .checked_mul(count as u64)
+                .ok_or(Cause::ChargedBytesOverflow)?,
+        )?;
         scratch = add(scratch, array::<ContractValidatedAspectArtifact>(count)?)?;
-        let capacity = count
-            .checked_mul(2)
-            .ok_or(Cause::ChargedBytesOverflow)?
-            .max(4);
-        scratch = add(scratch, array::<ContractValidatedAspectValue>(capacity)?)?;
-        let node = std::alloc::Layout::new::<(
-            usize,
-            u16,
-            u16,
-            [AspectKey; 11],
-            [ContractValidatedAspectValue; 11],
-            [usize; 12],
-        )>()
-        .size() as u64;
-        if count != 0 {
-            scratch = add(
-                scratch,
-                node.checked_mul((count.div_ceil(5) + 2) as u64)
-                    .ok_or(Cause::ChargedBytesOverflow)?,
-            )?;
-        }
+        scratch = add(
+            scratch,
+            checked(Map::construction_scratch_bytes(count, maximum_key_width))?,
+        )?;
         for entry in state.entries() {
             admission.charge(1)?;
-            let key = entry.basis().owned_allocation_capacity_bytes() as u64;
+            let key = u64::try_from(entry.basis().key().as_str().len())
+                .map_err(|_| Cause::ChargedBytesOverflow)?;
             let value = input_bytes(entry.value(), admission)?;
-            retained = add(retained, add(add(key, value)?, admission.contract_bound)?)?;
+            // The exact catalog door clones an owned tuple key. Fund that
+            // preflight temporary from this same request before the lookup.
+            let basis = entry.basis();
+            admission.charge(key)?;
+            let lookup_memory = admission.reserve(key)?;
+            let contract =
+                contracts.exact_contract_for(basis.key(), basis.identity(), basis.revision());
+            let contract = contract
+                .as_ref()
+                .map_or(0, AspectContract::owned_allocation_capacity_bytes);
+            drop(lookup_memory);
+            // Absent exact definitions retain no output. Foundation still owns
+            // the later missing/identity/revision mismatch denial and fallback.
+            let contract = u64::try_from(contract).map_err(|_| Cause::ChargedBytesOverflow)?;
+            retained = add(
+                retained,
+                add(
+                    add(
+                        key.checked_mul(2).ok_or(Cause::ChargedBytesOverflow)?,
+                        value,
+                    )?,
+                    contract,
+                )?,
+            )?;
+            // Entry admission and map insertion each make a temporary owned key.
             scratch = add(
                 scratch,
-                add(
-                    key.checked_mul(4).ok_or(Cause::ChargedBytesOverflow)?,
-                    admission.contract_bound,
-                )?,
+                key.checked_mul(2).ok_or(Cause::ChargedBytesOverflow)?,
             )?;
         }
     }
@@ -130,22 +153,7 @@ fn input_bytes(
     input: &worth_foundational::facade::ContractValidationInput,
     admission: &ImageReadmission<'_, '_, '_>,
 ) -> Result<u64, Stop> {
-    use worth_foundational::facade::{AspectValue, ContractValidationInput as Input, FieldKey};
-    match input {
-        Input::Scalar(value) => Ok(value.owned_allocation_capacity_bytes() as u64),
-        Input::Struct(value) => {
-            let mut bytes = array::<(FieldKey, AspectValue)>(value.len())?;
-            for (key, scalar) in value.fields() {
-                admission.charge(1)?;
-                bytes = add(
-                    bytes,
-                    add(
-                        key.owned_allocation_capacity_bytes() as u64,
-                        scalar.owned_allocation_capacity_bytes() as u64,
-                    )?,
-                )?;
-            }
-            Ok(bytes)
-        }
-    }
+    admission.charge(1)?;
+    u64::try_from(input.owned_allocation_capacity_bytes())
+        .map_err(|_| Cause::ChargedBytesOverflow.into())
 }

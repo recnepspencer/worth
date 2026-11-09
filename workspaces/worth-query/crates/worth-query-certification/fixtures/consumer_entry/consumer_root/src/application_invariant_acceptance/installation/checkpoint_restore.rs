@@ -35,7 +35,7 @@ where
                 &phase,
                 program,
                 installation::WorthQueryApplicationProgramRoster::new(),
-                ConsumerSchema::declaration().unwrap(),
+                <ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap(),
                 configuration,
                 ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
                 resources::application_limits(),

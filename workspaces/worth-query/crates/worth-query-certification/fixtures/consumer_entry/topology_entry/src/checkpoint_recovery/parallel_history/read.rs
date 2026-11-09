@@ -36,36 +36,14 @@ impl<S: SchemaBinding> ApplicationQueryMarkerIdentity<S> for Query {
     const QUERY_TYPE_NAME: &'static str = "neutral.query";
     const SCOPE_TYPE_NAME: &'static str = "Node";
 }
-fn value<S: SchemaBinding>() -> ApplicationQueryResultFieldRef<
-    Query,
-    ValueSlot,
-    S,
-    Node,
-    NodeFacts,
-    Value,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("value", Value::reference())
+fn value<S: SchemaBinding>() -> ApplicationQueryResultFieldRef<Query, ValueSlot, S, Value> {
+    ApplicationQueryResultFieldRef::new("value", Value::at("Value"))
 }
-fn applied<S: SchemaBinding>() -> ApplicationQueryResultFieldRef<
-    Query,
-    AppliedSlot,
-    S,
-    Node,
-    NodeFacts,
-    Applied,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("applied", Applied::reference())
+fn applied<S: SchemaBinding>() -> ApplicationQueryResultFieldRef<Query, AppliedSlot, S, Applied> {
+    ApplicationQueryResultFieldRef::new("applied", Applied::at("Applied"))
 }
-fn definition<S: SchemaBinding>() -> ApplicationQueryDefinition<S, Query, Parameters, Result, Node>
-{
+fn definition<S: SchemaBinding>(
+) -> ApplicationQueryDefinitionBuilder<S, Query, Parameters, Result, Node> {
     let shape = ApplicationQueryResultShapeBuilder::<S, Query, Node, Result, ResultBinding>::new(
         Node::reference(),
     )
@@ -87,8 +65,6 @@ fn definition<S: SchemaBinding>() -> ApplicationQueryDefinition<S, Query, Parame
     .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
     .lanes(ApplicationQueryLaneEligibility::one_shot())
     .public()
-    .build()
-    .unwrap()
 }
 impl<S: SchemaBinding> WorthQueryApplicationProjection<S, Query> for Result {
     fn project(
@@ -101,15 +77,14 @@ impl<S: SchemaBinding> WorthQueryApplicationProjection<S, Query> for Result {
     }
 }
 pub struct Binding<S>(PhantomData<fn() -> S>);
-pub type Scope<S> =
-    ApplicationQueryFieldScope<S, Node, NodeFacts, NodeKey, u64, ReadOnly, NoApplicationUnit>;
+pub type Scope = ApplicationQueryFieldScope<NodeKey>;
 impl<S: SchemaBinding> ApplicationQueryBinding<S> for Binding<S> {
     type Input = Read;
     type InputBinding = InputBinding;
     type Query = Query;
     type ParameterBinding = ParametersBinding;
     type ResultBinding = ResultBinding;
-    type ScopeBinding = Scope<S>;
+    type ScopeBinding = Scope;
     type PrincipalBinding = ConsumerPrincipalBinding;
     type Mapping = ExternalPrincipalMapping;
     type Principal = Principal;
@@ -117,17 +92,8 @@ impl<S: SchemaBinding> ApplicationQueryBinding<S> for Binding<S> {
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "neutral.read";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        S,
-        Node,
-        NodeFacts,
-        NodeKey,
-        u64,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        NodeKey::reference()
+    fn scope_field() -> NodeKey {
+        NodeKey::at("NodeKey")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         S,
@@ -145,8 +111,8 @@ impl<S: SchemaBinding> ApplicationQueryIntent<S> for Read {
     fn parameters(&self) -> ApplicationQueryParameterSet<Query> {
         ApplicationQueryParameterSet::new()
     }
-    fn into_scope(self) -> Scope<S> {
-        Scope::new(NodeKey::reference(), self.key)
+    fn into_scope(self) -> Scope {
+        Scope::new(NodeKey::at("NodeKey"), self.key)
     }
 }
 pub fn declare<S: SchemaBinding>(

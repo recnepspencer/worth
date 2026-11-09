@@ -4,7 +4,10 @@ use crate::identity::data::{KindId, RelationId};
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
 use std::collections::{BTreeMap, BTreeSet};
 
-pub(super) fn verify(image: &RegionHistoryImage) -> Result<(), Cause> {
+pub(super) fn verify(
+    _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+    image: &RegionHistoryImage,
+) -> Result<(), Cause> {
     if image
         .kind_projection
         .windows(2)

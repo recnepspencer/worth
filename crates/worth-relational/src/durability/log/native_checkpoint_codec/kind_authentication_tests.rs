@@ -53,108 +53,114 @@ fn checkpoint_readmission_refuses_retired_integer_array_digest_before_restore() 
 
 #[test]
 fn forged_cross_region_kind_commitment_is_refused_before_member_reads() {
-    let host = crate::test_execution_policy::serial_request();
-    let execution = worth_execution::ExecutionRequest::serial(&host);
-    let runtime = durable_runtime_with_test_schema();
-    let source = create_entity_in_partition(&execution, &runtime, "source", PartitionId(1));
-    let target = create_entity_in_partition(&execution, &runtime, "target", PartitionId(2));
-    create_relation_in_partition(
-        &execution,
-        &runtime,
-        source,
-        target,
-        "cross-region",
-        PartitionId(3),
-    );
-    let native = runtime
-        .durability_authority()
-        .native_checkpoint_with_policy(
+    for dimension in 0..4 {
+        let host = crate::test_execution_policy::serial_request();
+        let execution = worth_execution::ExecutionRequest::serial(&host);
+        let runtime = durable_runtime_with_test_schema();
+        let source = create_entity_in_partition(&execution, &runtime, "source", PartitionId(1));
+        let target = create_entity_in_partition(&execution, &runtime, "target", PartitionId(2));
+        create_relation_in_partition(
             &execution,
-            execution.allocation_policy(),
-            RelationalCheckpointArtifactPolicy::ExternalMembers {
-                current_members: &[],
-                source: None,
-            },
-        )
-        .unwrap();
-    let mut wire: checkpoint_wire::CheckpointWire<'_> =
-        rmp_serde::from_slice(native.bytes().strip_prefix(CHECKPOINT_MAGIC).unwrap()).unwrap();
-    // Keep every copy of this leaf consistent; only canonical root authority
-    // can reject the forgery. No member is needed to perform that check.
-    let mut manifest = wire.manifest.ordinary_owned_draft();
-    let mut roots = Vec::with_capacity(manifest.roots.len());
-    for original in &manifest.roots {
-        let mut regions = original.regions.clone();
-        for leaf in &mut regions {
+            &runtime,
+            source,
+            target,
+            "cross-region",
+            PartitionId(3),
+        );
+        let native = runtime
+            .durability_authority()
+            .native_checkpoint_with_policy(
+                &execution,
+                execution.allocation_policy(),
+                RelationalCheckpointArtifactPolicy::ExternalMembers {
+                    current_members: &[],
+                    source: None,
+                },
+            )
+            .unwrap();
+        let mut wire: checkpoint_wire::CheckpointWire<'_> =
+            rmp_serde::from_slice(native.bytes().strip_prefix(CHECKPOINT_MAGIC).unwrap()).unwrap();
+        // Keep every copy of this leaf consistent; only canonical root authority
+        // can reject the forgery. No member is needed to perform that check.
+        let mut manifest = wire.manifest.ordinary_owned_draft();
+        let mut roots = manifest.roots.iter().cloned().collect::<Vec<_>>();
+        let mutate = |leaf: &mut RelationalCheckpointRegion| {
             if leaf.partition_id == PartitionId(1) {
-                let mut altered_head = *leaf.kind_authority.head.bytes();
-                altered_head[0] ^= 1;
-                leaf.kind_authority.head = worth_foundational::CanonicalDigestId::new(altered_head);
-            }
-        }
-        roots.push(RelationalCheckpointRoot::from_ordinary_parts(
-            original.commit_id,
-            original.recorded_components.clone(),
-            original.schema_carrier_digest,
-            regions,
-            original.content.clone(),
-        ));
-    }
-    for leaf in &mut manifest.mirror {
-        if leaf.partition_id == PartitionId(1) {
-            let mut altered_head = *leaf.kind_authority.head.bytes();
-            altered_head[0] ^= 1;
-            leaf.kind_authority.head = worth_foundational::CanonicalDigestId::new(altered_head);
-        }
-    }
-    manifest.roots = CheckpointRoots::from_ordinary(roots);
-    wire.manifest = manifest.seal_ordinary();
-    let mut bytes = CHECKPOINT_MAGIC.to_vec();
-    bytes.extend(rmp_serde::to_vec_named(&wire).unwrap());
-    let source = Arc::new(ForgedKindSource {
-        members: member_source::InlineCheckpointSource {
-            members: {
-                let mut members = worth_execution::ExecutionOrderedMap::default();
-                for member in native.members() {
-                    let RelationalCheckpointMember::New { locator, bytes } = member else {
-                        panic!("first capture owns its members")
-                    };
-                    members
-                        .insert_cloned_native_for_request(locator, bytes, execution)
-                        .unwrap();
+                match dimension {
+                    0 => {
+                        let mut head = *leaf.kind_authority.head.bytes();
+                        head[0] ^= 1;
+                        leaf.kind_authority.head = worth_foundational::CanonicalDigestId::new(head);
+                    }
+                    1 => leaf.live_counts.entities += 1,
+                    2 => leaf.live_counts.relations += 1,
+                    3 => Arc::make_mut(&mut leaf.directory).entities.clear(),
+                    _ => unreachable!("four explicit corruptions"),
                 }
-                members
+            }
+        };
+        for root in &mut roots {
+            let mut regions = root.regions.clone();
+            regions.iter_mut().for_each(&mutate);
+            *root = RelationalCheckpointRoot::from_ordinary_parts(
+                root.commit_id,
+                root.recorded_components.clone(),
+                root.schema_carrier_digest,
+                regions,
+                root.content.clone(),
+            );
+        }
+        manifest.mirror.iter_mut().for_each(mutate);
+        manifest.roots = CheckpointRoots::from_ordinary(roots);
+        wire.manifest = manifest.seal_ordinary();
+        let mut bytes = CHECKPOINT_MAGIC.to_vec();
+        bytes.extend(rmp_serde::to_vec_named(&wire).unwrap());
+        let source = Arc::new(ForgedKindSource {
+            members: member_source::InlineCheckpointSource {
+                members: {
+                    let mut members = worth_execution::ExecutionOrderedMap::default();
+                    for member in native.members() {
+                        let RelationalCheckpointMember::New { locator, bytes } = member else {
+                            panic!("first capture owns its members")
+                        };
+                        members
+                            .insert_cloned_native_for_request(locator, bytes, execution)
+                            .unwrap();
+                    }
+                    members
+                },
             },
-        },
-        journal: attached_durable_medium(&runtime).expect("fixture owns its actual durable medium"),
-        reads: AtomicUsize::new(0),
-    });
-    let recovery = RelationalDurableRecoverySource::new(
-        Some(RelationalDurableCheckpointSource::new(
-            native.covered_position().unwrap(),
-            native.covered_branch_transitions().unwrap(),
-            RelationalNativeCheckpoint::from_untrusted_bytes(bytes),
-        )),
-        Vec::new(),
-        Vec::new(),
-        source.clone(),
-    );
-    let mut receiving = durable_runtime_with_test_schema();
-    let plan = receiving
-        .durability()
-        .recovery_plan_from_source(
-            &execution,
-            recovery,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap();
-    let failure = receiving
-        .durability_recovery()
-        .recover(&execution, plan)
-        .unwrap_err();
-    assert_eq!(source.reads.load(Ordering::SeqCst), 0);
-    assert!(matches!(failure, RelationalRecoveryStop::Durability(error)
+            journal: attached_durable_medium(&runtime)
+                .expect("fixture owns its actual durable medium"),
+            reads: AtomicUsize::new(0),
+        });
+        let recovery = RelationalDurableRecoverySource::new(
+            Some(RelationalDurableCheckpointSource::new(
+                native.covered_position().unwrap(),
+                native.covered_branch_transitions().unwrap(),
+                RelationalNativeCheckpoint::from_untrusted_bytes(bytes),
+            )),
+            Vec::new(),
+            Vec::new(),
+            source.clone(),
+        );
+        let mut receiving = durable_runtime_with_test_schema();
+        let plan = receiving
+            .durability()
+            .recovery_plan_from_source(
+                &execution,
+                recovery,
+                RecoveryVerificationMode::NormalRecoveryVerification,
+            )
+            .unwrap();
+        let failure = receiving
+            .durability_recovery()
+            .recover(&execution, plan)
+            .unwrap_err();
+        assert_eq!(source.reads.load(Ordering::SeqCst), 0);
+        assert!(matches!(failure, RelationalRecoveryStop::Durability(error)
         if error.class == RecoveryFailureClass::CorruptCheckpoint && error.detail.contains("StorageContentMismatch")));
+    }
 }
 
 #[derive(Debug)]

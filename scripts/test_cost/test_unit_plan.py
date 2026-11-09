@@ -176,6 +176,41 @@ class RequiredUnitPlanTests(unittest.TestCase):
             with self.assertRaises(CompilerUnitRefusal):
                 attribute(checked_test, unknown)
 
+    def test_primary_rustc_arguments_do_not_become_dependency_inputs(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            owner, dependency = unit('owner', dependencies=(1,)), unit('dependency')
+            observed = json.dumps(graph(owner, dependency))
+            base = declare(['cargo', 'rustc'], temporary, {}, observed)
+            changed = declare(['cargo', 'rustc', '--', '--emit=llvm-ir=observed.ll'],
+                              temporary, {}, observed)
+            self.assertNotEqual(attribute(event(owner), base)['compiler_inputs'],
+                                attribute(event(owner), changed)['compiler_inputs'])
+            self.assertEqual(attribute(event(dependency), base)['compiler_inputs'],
+                             attribute(event(dependency), changed)['compiler_inputs'])
+
+    def test_incremental_override_uses_the_resolved_profile_but_flags_still_drift(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            owner = unit('owner')
+            owner['profile']['incremental'] = False
+            observed = json.dumps(graph(owner))
+            base = declare(['cargo', 'build'], temporary, {}, observed)
+            equivalent = declare(['cargo', 'build', '--config', 'build.incremental=false'],
+                                 temporary, {}, observed)
+            flags = declare(['cargo', 'build', '--config', 'build.rustflags=["-A", "dead_code"]'],
+                            temporary, {}, observed)
+            self.assertEqual(attribute(event(owner), base), attribute(event(owner), equivalent))
+            self.assertNotEqual(attribute(event(owner), base)['compiler_inputs'],
+                                attribute(event(owner), flags)['compiler_inputs'])
+            owner['profile']['incremental'] = True
+            different = declare(['cargo', 'build'], temporary, {}, json.dumps(graph(owner)))
+            self.assertNotEqual(base['units'][0]['identity'], different['units'][0]['identity'])
+
+    def test_incremental_override_without_resolved_profile_evidence_refuses(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            with self.assertRaisesRegex(CompilerUnitRefusal, 'resolved incremental mode'):
+                declare(['cargo', 'build', '--config', 'build.incremental=false'],
+                        temporary, {}, json.dumps(graph(unit('owner'))))
+
     def test_nextest_build_declares_the_same_cargo_targets_profile_and_features(self):
         command = ['cargo', 'nextest', 'list', '--cargo-message-format=json', '--workspace',
                    '--all-targets', '--cargo-profile', 'ci-test', '--manifest-path', 'Cargo.toml',

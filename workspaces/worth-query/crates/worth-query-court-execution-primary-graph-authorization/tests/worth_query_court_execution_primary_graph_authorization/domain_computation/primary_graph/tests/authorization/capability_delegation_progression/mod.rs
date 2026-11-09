@@ -97,7 +97,7 @@ pub fn revoke_parent(
         phase_custody,
         world,
         "capability-parent",
-        field(world, CapabilityStatusField::reference()),
+        field(world, CapabilityStatusField::at("CapabilityStatusField")),
         worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::CapabilityStatusBinding::encode(&CapabilityStatus::Revoked).unwrap(),
     );
 }

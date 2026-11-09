@@ -1,3 +1,8 @@
+mod access_denial;
+mod failure_cause;
+mod memory_denial;
+pub use access_denial::{CustomInvariantAccessDenial, CustomInvariantAccessDenialKind};
+pub use failure_cause::CustomInvariantFailureCause;
 mod errors;
 mod refusal;
 pub use refusal::CustomInvariantRefusal;

@@ -1,4 +1,5 @@
 use crate::declarative_live::DeclarativeLiveQueryRequest;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::WorthQueryEvidenceTag;
 use crate::lower_runtime_routing::WorthQueryLowerRuntimeSubjectIdentity;
 use crate::runtime::{
@@ -10,23 +11,25 @@ use crate::subscription::SubscriptionActivationInput;
 pub(super) fn live_view_subject_identity(
     view_name: &str,
     request: &DeclarativeLiveQueryRequest,
-) -> WorthQueryLowerRuntimeSubjectIdentity {
-    WorthQueryLowerRuntimeSubjectIdentity::compose("live-view-route-subject")
-        .field_value(WorthQueryEvidenceTag::new("view"), view_name)
-        .field_value(WorthQueryEvidenceTag::new("target"), request.target())
-        .field_shape(
-            WorthQueryEvidenceTag::new("shape"),
-            request.view_shape().as_str(),
-        )
-        .field_usize(
-            WorthQueryEvidenceTag::new("projection_count"),
-            request.query_projection().len(),
-        )
-        .field_usize(
-            WorthQueryEvidenceTag::new("result_count"),
-            request.result_fields().len(),
-        )
-        .seal()
+) -> Result<WorthQueryLowerRuntimeSubjectIdentity, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryLowerRuntimeSubjectIdentity::compose("live-view-route-subject")
+            .field_value(WorthQueryEvidenceTag::new("view"), view_name)
+            .field_value(WorthQueryEvidenceTag::new("target"), request.target())
+            .field_shape(
+                WorthQueryEvidenceTag::new("shape"),
+                request.view_shape().as_str(),
+            )
+            .field_usize(
+                WorthQueryEvidenceTag::new("projection_count"),
+                request.query_projection().len(),
+            )
+            .field_usize(
+                WorthQueryEvidenceTag::new("result_count"),
+                request.result_fields().len(),
+            )
+            .seal()?,
+    )
 }
 
 pub(super) fn write_command_subject_identity(
@@ -56,7 +59,7 @@ pub(super) fn write_command_subject_identity(
         encoder =
             encoder.field_evidence_identity(WorthQueryEvidenceTag::new("entity"), &entity_identity);
     }
-    encoder.seal()
+    encoder.seal().expect("bounded route grammar: sealed identifiers, primitive counts and closed inventory or policy labels")
 }
 
 pub(super) fn backend_admissible_mutation_subject_identity(
@@ -86,50 +89,54 @@ pub(super) fn backend_admissible_mutation_subject_identity(
         encoder =
             encoder.field_evidence_identity(WorthQueryEvidenceTag::new("entity"), &entity_identity);
     }
-    encoder.seal()
+    encoder.seal().expect("bounded route grammar: sealed identifiers, primitive counts and closed inventory or policy labels")
 }
 
 pub(super) fn activation_subject_identity(
     view_name: &str,
     activation: &SubscriptionActivationInput,
     activation_receipt: &SubscriptionActivationReceipt,
-) -> WorthQueryLowerRuntimeSubjectIdentity {
-    WorthQueryLowerRuntimeSubjectIdentity::compose("subscription-activation-route-subject")
-        .field_value(WorthQueryEvidenceTag::new("view"), view_name)
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("activation_receipt"),
-            activation_receipt.receipt_identity(),
-        )
-        .field_usize(
-            WorthQueryEvidenceTag::new("async_request_identity_width"),
-            activation.future_selection().async_request_identity().len(),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("future_selection_class"),
-            activation.future_selection().class().as_str(),
-        )
-        .seal()
+) -> Result<WorthQueryLowerRuntimeSubjectIdentity, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryLowerRuntimeSubjectIdentity::compose("subscription-activation-route-subject")
+            .field_value(WorthQueryEvidenceTag::new("view"), view_name)
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("activation_receipt"),
+                activation_receipt.receipt_identity(),
+            )
+            .field_usize(
+                WorthQueryEvidenceTag::new("async_request_identity_width"),
+                activation.future_selection().async_request_identity().len(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("future_selection_class"),
+                activation.future_selection().class().as_str(),
+            )
+            .seal()?,
+    )
 }
 
 pub(super) fn signal_invalidation_subject_identity(
     receipt: &SignalInvalidationRoutingReceipt,
-) -> WorthQueryLowerRuntimeSubjectIdentity {
+) -> Result<WorthQueryLowerRuntimeSubjectIdentity, IdentityDerivationDenial> {
     let commit_identity = receipt.commit_identity().evidence_identity();
     let snapshot_identity = receipt.snapshot_identity().evidence_identity();
-    WorthQueryLowerRuntimeSubjectIdentity::compose("signal-invalidation-route-subject")
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("routing_receipt"),
-            receipt.receipt_identity(),
-        )
-        .field_evidence_identity(WorthQueryEvidenceTag::new("commit"), &commit_identity)
-        .field_evidence_identity(WorthQueryEvidenceTag::new("snapshot"), &snapshot_identity)
-        .field_usize(
-            WorthQueryEvidenceTag::new("delta_count"),
-            receipt.delta_count(),
-        )
-        .field_usize(
-            WorthQueryEvidenceTag::new("routed_collection_count"),
-            receipt.routed_collection_count(),
-        )
-        .seal()
+    Ok(
+        WorthQueryLowerRuntimeSubjectIdentity::compose("signal-invalidation-route-subject")
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("routing_receipt"),
+                receipt.receipt_identity(),
+            )
+            .field_evidence_identity(WorthQueryEvidenceTag::new("commit"), &commit_identity)
+            .field_evidence_identity(WorthQueryEvidenceTag::new("snapshot"), &snapshot_identity)
+            .field_usize(
+                WorthQueryEvidenceTag::new("delta_count"),
+                receipt.delta_count(),
+            )
+            .field_usize(
+                WorthQueryEvidenceTag::new("routed_collection_count"),
+                receipt.routed_collection_count(),
+            )
+            .seal()?,
+    )
 }

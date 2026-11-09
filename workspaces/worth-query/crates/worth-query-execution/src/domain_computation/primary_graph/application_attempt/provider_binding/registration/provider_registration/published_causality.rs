@@ -22,22 +22,24 @@ impl WorthQueryPublishedApplicationCausality {
 }
 
 impl WorthQueryPrimaryGraphApplicationAttempt {
-    pub(in crate::domain_computation::primary_graph) fn publish_causality(
+    pub(in crate::domain_computation::primary_graph) fn publish_group_causality(
         self,
         provider: &WorthQueryPrimaryGraphProvider,
         publication: crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
         predicate: Option<crate::domain_computation::primary_graph::application_query::derived_view::PreparedPredicatePublication>,
+        group: Option<crate::domain_computation::primary_graph::application_attempt::WorthQueryAdmittedApplicationEmissionBatch>,
     ) -> WorthQueryPublishedApplicationCausality {
-        let emitted_effect_count = provider.publish_application_commit_causality(
+        let own_emitted_effect_count = self.effects.emissions().len();
+        let _published = provider.publish_application_commit_causality(
             self.live_delivery_reservation
                 .expect("World publication reserved live causality before owner effects"),
             publication,
-            self.effects.into_emissions(),
+            group.unwrap_or_else(|| self.effects.into_emissions()),
             predicate,
         );
         WorthQueryPublishedApplicationCausality {
             outcome_identity: self.outcome_identity,
-            emitted_effect_count,
+            emitted_effect_count: own_emitted_effect_count,
         }
     }
 }

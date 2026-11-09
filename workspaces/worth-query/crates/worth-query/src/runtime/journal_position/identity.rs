@@ -121,15 +121,15 @@ impl WorthQueryJournalPosition {
 
 fn committed_journal_position_identity(commit_id: u64) -> WorthQueryEvidenceIdentity {
     WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::JournalPositionIdentity)
-        .field_shape(
-            WorthQueryEvidenceTag::new("journal_position_authority"),
-            WorthQueryJournalPositionAuthority::Committed.as_str(),
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("journal_position_ordinal"),
-            commit_id.to_string(),
-        )
-        .seal()
+            .field_shape(
+                WorthQueryEvidenceTag::new("journal_position_authority"),
+                WorthQueryJournalPositionAuthority::Committed.as_str(),
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("journal_position_ordinal"),
+                commit_id.to_string(),
+            )
+            .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }
 
 fn preview_journal_position_identity(
@@ -137,27 +137,27 @@ fn preview_journal_position_identity(
     sequence: u64,
 ) -> WorthQueryEvidenceIdentity {
     WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::JournalPositionIdentity)
-        .field_shape(
-            WorthQueryEvidenceTag::new("journal_position_authority"),
-            WorthQueryJournalPositionAuthority::Preview.as_str(),
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("preview_write_receipt_identity"),
-            preview_identity.as_str(),
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("journal_position_ordinal"),
-            sequence.to_string(),
-        )
-        .seal()
+            .field_shape(
+                WorthQueryEvidenceTag::new("journal_position_authority"),
+                WorthQueryJournalPositionAuthority::Preview.as_str(),
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("preview_write_receipt_identity"),
+                preview_identity.as_str(),
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("journal_position_ordinal"),
+                sequence.to_string(),
+            )
+            .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }
 
 fn absent_journal_position_identity() -> WorthQueryEvidenceIdentity {
     WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::JournalPositionIdentity)
-        .field_shape(
-            WorthQueryEvidenceTag::new("journal_position_authority"),
-            WorthQueryJournalPositionAuthority::Absent.as_str(),
-        )
-        .field_value(WorthQueryEvidenceTag::new("journal_position_ordinal"), "0")
-        .seal()
+            .field_shape(
+                WorthQueryEvidenceTag::new("journal_position_authority"),
+                WorthQueryJournalPositionAuthority::Absent.as_str(),
+            )
+            .field_value(WorthQueryEvidenceTag::new("journal_position_ordinal"), "0")
+            .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens")
 }

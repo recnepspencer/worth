@@ -2,8 +2,9 @@ use std::sync::Arc;
 
 use super::{
     WorthQueryGraphProviderAnchor, WorthQueryProviderExecutionPlanContract,
-    WorthQueryProviderProductAffinity, WorthQueryProviderRunBorrow, WorthQueryProviderSessionLease,
-    WorthQueryProviderSessionToken, WorthQueryProviderSessionView, WorthQuerySessionBinding,
+    WorthQueryProviderProductAffinity, WorthQueryProviderRunCustody,
+    WorthQueryProviderSessionLease, WorthQueryProviderSessionToken, WorthQueryProviderSessionView,
+    WorthQuerySessionBinding,
 };
 
 /// The live, inseparable authority for one admitted provider session.
@@ -13,7 +14,7 @@ use super::{
 /// phases can advance the same authority, but cannot copy or reassemble its
 /// run, plan, token, and binding axes.
 pub(crate) struct WorthQueryProviderSessionAffinity<'run> {
-    _run: WorthQueryProviderRunBorrow<'run>,
+    _run: WorthQueryProviderRunCustody<'run>,
     contract: WorthQueryProviderExecutionPlanContract,
     product: WorthQueryProviderProductAffinity,
     session: WorthQueryProviderSessionLease<'run>,
@@ -40,7 +41,7 @@ pub struct WorthQueryProviderSessionAffinityView<'session> {
 impl<'run> WorthQueryProviderSessionAffinity<'run> {
     pub(super) fn mint(
         request: worth_execution::ExecutionRequest<'run, 'run>,
-        run: WorthQueryProviderRunBorrow<'run>,
+        run: WorthQueryProviderRunCustody<'run>,
         contract: WorthQueryProviderExecutionPlanContract,
         product: WorthQueryProviderProductAffinity,
         provider: Arc<WorthQueryGraphProviderAnchor>,

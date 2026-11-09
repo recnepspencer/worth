@@ -22,7 +22,7 @@ impl<K: Ord + Copy, V> ExecutionOrderedMapCell<K, V> {
         policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<Self, ExecutionOrderedMapDenial> {
         policy.check_live()?;
-        let node = node::prepared_owned(key, value, policy.into())?;
+        let node = node::prepared_owned(key, value, &policy)?;
         policy.check_live()?;
         Ok(Self { node })
     }

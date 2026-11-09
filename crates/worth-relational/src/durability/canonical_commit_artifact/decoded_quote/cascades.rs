@@ -11,23 +11,31 @@ pub(super) fn producer(
     value: BorrowedPayload<'_>,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<OwnerAllocation, Refusal> {
-    cascade::<CanonicalProducerRetirement>(value, request)
+    cascade::<CanonicalProducerRetirement>(value, request, |_, _| Err(Refusal::NonCanonicalPayload))
 }
 pub(super) fn authored(
     value: BorrowedPayload<'_>,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<OwnerAllocation, Refusal> {
-    cascade::<CanonicalAuthoredRetirement>(value, request)
+    cascade::<CanonicalAuthoredRetirement>(value, request, |value, request| {
+        vector::<(EntityId, crate::history::data::CommitId)>(value, request, |_| Ok(0.into()))
+    })
 }
 pub(super) fn restoration(
     value: BorrowedPayload<'_>,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<OwnerAllocation, Refusal> {
-    cascade::<CanonicalAuthoredRestoration>(value, request)
+    cascade::<CanonicalAuthoredRestoration>(value, request, |value, request| {
+        vector::<(EntityId, EntityId)>(value, request, |_| Ok(0.into()))
+    })
 }
 fn cascade<T>(
     value: BorrowedPayload<'_>,
     request: &ExecutionRequest<'_, '_>,
+    co_anchors: impl Fn(
+        BorrowedPayload<'_>,
+        &ExecutionRequest<'_, '_>,
+    ) -> Result<OwnerAllocation, Refusal>,
 ) -> Result<OwnerAllocation, Refusal> {
     optional(value, |value| {
         let mut bytes = shared_root::<T>()?;
@@ -38,6 +46,7 @@ fn cascade<T>(
                         super::required_output::origin(origin, request)
                     })?
                 }
+                "co_anchors" => co_anchors(value, request)?,
                 "anchors" => vector::<EntityId>(value, request, |_| Ok(0.into()))?,
                 "entities" => vector::<(EntityId, EntityId)>(value, request, |_| Ok(0.into()))?,
                 "relations" => {
@@ -61,6 +70,12 @@ pub(super) fn authority(
     }
     let mut bytes = OwnerAllocation::default();
     value.fields(request, |variant, value| {
+        if variant == "OwnedGraphSelection" {
+            return add(
+                &mut bytes,
+                super::owned_graph_selection::quote(value, request)?,
+            );
+        }
         if variant != "RetainedEntitySelection" {
             return Err(Refusal::NonCanonicalPayload);
         }

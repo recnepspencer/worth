@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 pub(super) mod route_result;
 
 use super::*;
@@ -117,7 +118,7 @@ fn relevant_source_deltas(
     view: &WorthQueryDerivedViewRuntime,
     receipt: &WorthQueryMutationReceipt,
     emitted_by_view: &BTreeMap<WorthQueryDerivedMaterializationTarget, Vec<WorthQueryDerivedPatch>>,
-) -> Vec<WorthQueryMutationDelta> {
+) -> Result<Vec<WorthQueryMutationDelta>, IdentityDerivationDenial> {
     let mut deltas = Vec::new();
     let accepts_authoritative_deltas = view.declaration.upstream_derived_views().is_empty();
     if accepts_authoritative_deltas {
@@ -136,14 +137,14 @@ fn relevant_source_deltas(
             continue;
         };
         for patch in upstream_patches {
-            let delta = patch.to_mutation_delta(upstream);
+            let delta = patch.to_mutation_delta(upstream)?;
             if mutation_delta_matches_view(view, &delta) {
                 deltas.push(delta);
             }
         }
     }
 
-    deltas
+    Ok(deltas)
 }
 
 fn mutation_delta_matches_view(

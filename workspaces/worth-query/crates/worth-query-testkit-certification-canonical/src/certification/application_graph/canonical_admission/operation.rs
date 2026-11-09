@@ -19,8 +19,8 @@ pub struct Input {
 }
 worth_query_structured_value_binding!(pub InputBinding for Input { identity: "canonical-admission.input.v1" });
 worth_query_operation!(pub Advance for AdmissionSchema, input InputBinding);
-worth_query_operation_reads!(Advance => [DocumentIdentityField, DocumentValueField, CounterField, ChildLink]);
-worth_query_operation_writes!(Advance => [CounterField]);
+worth_query_operation_reads!(Advance => [ChildLink]);
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Written {
     pub counter: u64,
@@ -34,15 +34,7 @@ pub struct AdvanceBinding;
 impl ApplicationMutationAdmissionBinding<AdmissionSchema> for AdvanceBinding {
     type Admission = ApplicationConventionalAdmission;
 }
-pub type Scope = ApplicationMutationFieldScope<
-    AdmissionSchema,
-    Document,
-    DocumentFacts,
-    DocumentIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type Scope = ApplicationMutationFieldScope<DocumentIdentityField>;
 pub struct Decision {
     pub target: WorthQueryInvariantMutationTarget<AdmissionSchema, Document>,
     pub counter: u64,
@@ -71,17 +63,8 @@ impl ApplicationMutationBinding<AdmissionSchema> for AdvanceBinding {
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
     }
-    fn scope_field() -> ApplicationFieldRef<
-        AdmissionSchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         AdmissionSchema,
@@ -104,7 +87,10 @@ impl ApplicationMutationIntent<AdmissionSchema> for Intent {
         &self.input
     }
     fn scope_binding(&self) -> Scope {
-        Scope::new(DocumentIdentityField::reference(), "root".to_owned())
+        Scope::new(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            "root".to_owned(),
+        )
     }
 }
 
@@ -148,12 +134,14 @@ impl OperationHandler<AdmissionSchema, AdvanceBinding> for Handler {
         input: &Input,
         reader: &mut DecisionReader<'_, '_, '_, AdmissionSchema, AdvanceBinding>,
     ) -> HandlerResult<Decision, Denied> {
-        let root =
-            match reader.resolve_entity(DocumentIdentityField::reference(), "root".to_owned()) {
-                Ok(root) => root,
-                Err(error) => return HandlerResult::ExecutionDenied(error),
-            };
-        let counter = match reader.field(&root, CounterField::reference()) {
+        let root = match reader.resolve_entity(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            "root".to_owned(),
+        ) {
+            Ok(root) => root,
+            Err(error) => return HandlerResult::ExecutionDenied(error),
+        };
+        let counter = match reader.field(&root, CounterField::at("CounterField")) {
             Ok(Some(counter)) => counter,
             Ok(None) => return HandlerResult::DomainDenied(Denied),
             Err(error) => return HandlerResult::ExecutionDenied(error),
@@ -171,10 +159,16 @@ impl OperationHandler<AdmissionSchema, AdvanceBinding> for Handler {
         assert_eq!(links.len(), 1);
         let child = links.pop().unwrap().into_to();
         if !matches!(input.reads, Reads::Child) {
-            record(reader.field(&root, DocumentValueField::reference()), true);
+            record(
+                reader.field(&root, DocumentValueField::at("DocumentValueField")),
+                true,
+            );
         }
         if !matches!(input.reads, Reads::Root) {
-            record(reader.field(&child, DocumentValueField::reference()), false);
+            record(
+                reader.field(&child, DocumentValueField::at("DocumentValueField")),
+                false,
+            );
         }
         // Deliberately ignore any field failure: the native completion gate must veto this plan.
         HandlerResult::Completed(Decision {
@@ -197,7 +191,7 @@ impl OperationHandler<AdmissionSchema, AdvanceBinding> for Handler {
                 return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error))
             }
         };
-        match writer.write_field(&target, CounterField::reference(), decision.counter) {
+        match writer.write_field(&target, CounterField::at("CounterField"), decision.counter) {
             Ok(()) => HandlerResult::Completed(Written {
                 counter: decision.counter,
             }),

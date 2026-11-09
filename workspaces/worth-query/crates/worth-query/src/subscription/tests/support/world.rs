@@ -39,7 +39,8 @@ pub(super) fn declaration_for(
         live_family,
         view_family,
         QuerySubscriptionConstructionSource::Direct,
-    );
+    )
+    .expect("fixture digest must fit");
     let selection = select_query_subscription_family(live, roomy_budget()).unwrap();
     declare_query_subscription(selection, roomy_slice_budget()).unwrap()
 }
@@ -70,7 +71,8 @@ pub(super) fn continuation_report_for(
     let attachment = attach_subscription_consumer(
         &mut runtime,
         &handle,
-        SubscriptionConsumerAttachmentRequest::admitted("consumer-a", "cursor-a"),
+        SubscriptionConsumerAttachmentRequest::admitted("consumer-a", "cursor-a")
+            .expect("fixture digest must fit"),
         attachment_budget(),
     )
     .unwrap();
@@ -104,7 +106,8 @@ pub(super) fn preview_closeout_for(
     let attachment = attach_subscription_consumer(
         &mut runtime,
         &handle,
-        SubscriptionConsumerAttachmentRequest::admitted("preview-a", "cursor-a"),
+        SubscriptionConsumerAttachmentRequest::admitted("preview-a", "cursor-a")
+            .expect("fixture digest must fit"),
         attachment_budget(),
     )
     .unwrap();

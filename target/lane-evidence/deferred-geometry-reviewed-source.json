@@ -1,0 +1,26 @@
+{
+  "source_head": "df643bdf1debcdea743473fcd952d3416efc8567",
+  "raw_lane_HEAD": "307539feba2f331a8b7406f3a69868bc3ee3b45d",
+  "lane_sources_were_dirty_and_frozen": true,
+  "frozen_source_manifest": "target/lane-evidence/deferred-geometry-source-inputs.json",
+  "committed_source_blobs_match_working_files": {
+    "crates/worth-relational/src/authority/commit/pipeline/publication_execution.rs": "ec8e7a30437070c46533afa63a9d0289da464551",
+    "crates/worth-relational/src/indexes/authority/maintenance/candidate.rs": "727de0661590415739ecf83f651f9b0c68349ee8",
+    "crates/worth-relational/src/mvcc/publication/port_cutover.rs": "ac0025c36000605de30aae05da78e19664eb4174",
+    "crates/worth-relational/src/mvcc/publication/port_preflight.rs": "98b60eeb43c084e89e8a40a791c63e0445e40989",
+    "crates/worth-relational/src/runtime/state/runtime_state/publication_settlement_registry.rs": "e1f13d1047e5857b213024fab4b958cc1fe81800",
+    "crates/worth-relational/src/runtime/state/runtime_state/publication_settlement_registry/record.rs": "0948cab38502d9a579cd44925c441d853032349e",
+    "crates/worth-relational/src/runtime/state/subsystems/indexing.rs": "ae6152eff8c63a96169722a2f0eb422093d1e0b3",
+    "crates/worth-relational/src/runtime/state/subsystems/indexing/admitted_selection.rs": "bf1ec1fffa164c881e0cd465b3ffeb63a069b168",
+    "crates/worth-relational/src/runtime/state/subsystems/indexing/cold_checkpoint.rs": "11a230bfbb62888e716593c76af1c355d8b31b89",
+    "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/admitted_publication.rs": "01bf66fcc975402520c827d5625e1ba2a18c9c66",
+    "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/installation.rs": "c162a50bbe9a9e67837d90b686344bb26194b72e",
+    "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/mod.rs": "7a50ba9d422265513da5dc41d0aa77b200105ed4",
+    "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_publication_gate.rs": "facefc1f6e44211d542b6dd23b6e28d05ad38e12",
+    "crates/worth-relational/src/runtime/state/subsystems/indexing/generation_publication_gate/tests.rs": "bf545d47d5761667664b3fbb6bc2c69ab6809c81",
+    "crates/worth-relational/src/runtime/state/subsystems/indexing/prepared_publication.rs": "192f154f8d2fb40bb07593a71965dc91682dc56b",
+    "crates/worth-relational/src/runtime/state/subsystems/indexing/prepared_publication/tests.rs": "4ef2da7059855cd5148876201b458cb6a5d367f2"
+  },
+  "frozen_file_count": 4039,
+  "all_frozen_files_match": true
+}

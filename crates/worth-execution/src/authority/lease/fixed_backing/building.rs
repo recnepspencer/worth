@@ -13,6 +13,7 @@ pub(in super::super) struct BuildingFixedBacking<T> {
     element_count: usize,
     quote: u64,
     status: Option<ExecutionLeaseStatus>,
+    writes: super::WriteCadence,
 }
 
 impl<T> BuildingFixedBacking<T> {
@@ -70,6 +71,7 @@ impl<T> BuildingFixedBacking<T> {
             element_count,
             quote,
             status,
+            writes: super::WriteCadence::new::<T>(),
         };
         building.check_live()?;
         Ok(building)
@@ -79,13 +81,32 @@ impl<T> BuildingFixedBacking<T> {
             .as_ref()
             .map_or(Ok(()), |status| check_status(status, Some(self.quote)))
     }
+    fn check_cancellation(&self) -> Result<(), Denial> {
+        if self
+            .status
+            .as_ref()
+            .is_some_and(|status| status.is_cancelled())
+        {
+            self.check_live()?;
+        }
+        Ok(())
+    }
     pub(in super::super) fn push(&mut self, value: T) -> Result<(), Denial> {
-        self.check_live()?;
+        self.check_cancellation()?;
+        if self.writes.before() {
+            self.check_live()?;
+        }
         if self.len() == self.element_count {
+            self.check_live()?;
             return Err(self.denial(Kind::WriteBeyondReserved));
         }
         self.backing.push(value);
-        self.check_live()
+        if self.writes.completed() {
+            self.check_live()?;
+        } else {
+            self.check_cancellation()?;
+        }
+        Ok(())
     }
     pub(in super::super) fn elements(&self) -> &[T] {
         self.backing.elements()
@@ -97,6 +118,7 @@ impl<T> BuildingFixedBacking<T> {
     ) -> Result<(), Denial> {
         self.check_live()?;
         if index >= self.len() {
+            self.check_live()?;
             return Err(self.denial(Kind::UninitializedElement));
         }
         // The slot remains initialized even if the replaced value's Drop unwinds.

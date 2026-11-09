@@ -27,7 +27,7 @@ pub(super) fn is_empty(
     runtime.index_authority().ensure_field_index_for_basis(
         lineage.identity_index_id,
         basis,
-        crate::domain_computation::primary_graph::index_maintenance_budget::cold_index_reconstruction_budget(),
+        crate::domain_computation::primary_graph::index_maintenance_budget::ordinary_index_maintenance_budget(),
         execution,
     ).map_err(|cause| match cause.kind {
         DerivedIndexMaintenanceDenialKind::Execution(cause) => Denial::ReadExecution(cause),

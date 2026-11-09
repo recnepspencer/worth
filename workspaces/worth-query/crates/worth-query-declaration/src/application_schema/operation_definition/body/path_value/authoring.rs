@@ -3,38 +3,36 @@ use super::ApplicationOperationBodyPathValueAssignment as Assignment;
 use crate::{
     application_query::ApplicationQueryRootPath,
     application_schema::{
-        ApplicationFieldBindingLocus, ApplicationFieldRef,
         ApplicationOperationBodyAuthoringDenial as Denial, ApplicationOperationBodyBuilder,
-        ApplicationOperationBodyPathFieldSource, ApplicationOperationBodyValue,
-        ApplicationScalarValueBinding, DeclaredApplicationFieldValue, NoApplicationUnit,
-        OperationReads, OperationWrites, WritableCapability,
+        ApplicationOperationBodyPathFieldSource, ApplicationOperationBodyValue, OperationReads,
     },
 };
 impl<S, O, I> ApplicationOperationBodyBuilder<S, O, I> {
     /// Assign a checked value to one live endpoint at every guard-free path hop.
     /// The path starts at the admitted scope; it grants no additional permission.
-    pub fn assign_value_at_path<Root, E, A, F, V, W, Q, B>(
+    pub fn assign_value_at_path<Root, E, F, B>(
         mut self,
         path: ApplicationQueryRootPath<S, Root, E>,
-        field: ApplicationFieldRef<S, E, A, F, V, W, Q, NoApplicationUnit>,
+        field: F,
         value: &ApplicationOperationBodyValue<S, O, B>,
     ) -> Result<Self, Denial>
     where
         Root: OperationReads<O>,
         E: OperationReads<O>,
-        F: OperationReads<O>
-            + OperationWrites<O>
-            + DeclaredApplicationFieldValue<Value = V, Binding = B>,
-        W: WritableCapability,
-        B: ApplicationScalarValueBinding<Value = V>,
+        F: crate::application_schema::fragment::RecordSelection<Entity = E, Binding = B>,
+        B: crate::application_schema::ApplicationReadableScalarValueBinding,
     {
+        let field = super::super::record_authoring::resolve(field)?;
+        if !field.writable() {
+            return Err(Denial::IncompatibleSourceBinding);
+        }
         let target = ApplicationOperationBodyPathFieldSource {
             path: path.into_meaning(),
-            field: ApplicationFieldBindingLocus::new(field.entity(), field.aspect(), field.field()),
-            presence: F::PRESENCE,
+            field: field.locus().clone(),
+            presence: field.presence(),
         };
         if !target.has_supported_shape()
-            || F::PRESENCE != crate::application_schema::ApplicationFieldPresence::Required
+            || field.presence() != crate::application_schema::ApplicationFieldPresence::Required
         {
             return Err(Denial::IncompatibleSourceBinding);
         }

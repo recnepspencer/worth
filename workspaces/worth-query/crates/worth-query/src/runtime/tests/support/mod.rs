@@ -72,8 +72,10 @@ pub(in crate::runtime::tests) fn test_mutation_metadata_key(
 pub(in crate::runtime::tests) fn test_entity_identity(
     identity: impl AsRef<str>,
 ) -> WorthQueryEntityIdentity {
-    relational_test_entity_identity_from_label(identity.as_ref())
-        .unwrap_or_else(|| crate::memory_workspace::admit_authored_entity_label(identity))
+    relational_test_entity_identity_from_label(identity.as_ref()).unwrap_or_else(|| {
+        crate::memory_workspace::admit_authored_entity_label(identity)
+            .expect("fixture digest must fit")
+    })
 }
 
 fn relational_test_entity_identity_from_label(label: &str) -> Option<WorthQueryEntityIdentity> {
@@ -172,6 +174,7 @@ pub(in crate::runtime::tests) fn test_write_adjacent_origin_identity(
         origin.as_ref(),
     )
     .seal()
+    .expect("fixture digest must fit")
 }
 
 pub(in crate::runtime::tests) fn live_subscription_async_identity(
@@ -255,11 +258,9 @@ pub(in crate::runtime::tests) fn test_native_string_value(
     let AspectValue::String(value) = test_native_scalar_value(row, field_path)? else {
         return None;
     };
-    Some(match value {
-        worth_foundational::facade::InternedString::Raw(value) => value.clone(),
-        worth_foundational::facade::InternedString::Symbol(symbol) => {
-            format!("symbol:{}", symbol.0)
-        }
+    Some(match value.raw_text() {
+        Some(text) => text.to_owned(),
+        None => format!("symbol:{}", value.as_symbol()?.0),
     })
 }
 
@@ -389,12 +390,6 @@ pub(in crate::runtime::tests) fn test_update_string_aspect_command(
     }
 }
 
-pub(in crate::runtime::tests) fn test_intent_input(
-    fields: impl IntoIterator<Item = (&'static str, &'static str)>,
-) -> WorthQueryIntentInput {
-    WorthQueryIntentInput::object(
-        fields
-            .into_iter()
-            .map(|(field, value)| (field, WorthQueryIntentInput::string(value))),
-    )
-}
+#[path = "test_intent_input.rs"]
+mod test_intent_input;
+pub(in crate::runtime::tests) use test_intent_input::test_intent_input;

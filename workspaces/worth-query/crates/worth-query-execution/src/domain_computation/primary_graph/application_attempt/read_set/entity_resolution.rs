@@ -4,28 +4,21 @@ use super::*;
 impl<Schema, Operation, Input, Scope, Phase>
     WorthQueryApplicationReadAttempt<'_, '_, Schema, Operation, Input, Scope, Phase>
 {
-    pub fn resolve_entity<Aspect, Entity, Field, Value, Write, Unit>(
+    pub fn resolve_entity<Aspect, Entity, Field, Value>(
         &self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
-        field: ApplicationFieldRef<
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
-            Unit,
-        >,
+        field: Field,
         value: Value,
     ) -> Result<
         WorthQueryApplicationEntityIdentity<Schema, Entity>,
         WorthQueryApplicationAttemptDenial,
     >
     where
-        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
     {
         let phase_request = phase
             .request_for_source(self.lease.handle().relational_runtime_instance_id())
@@ -43,33 +36,31 @@ impl<Schema, Operation, Input, Scope, Phase>
         Entity,
         Field,
         Value,
-        Write,
-        Unit,
     >(
         &self,
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
-        field: ApplicationFieldRef<
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
-            Unit,
-        >,
+        field: Field,
         value: Value,
     ) -> Result<
         WorthQueryApplicationEntityIdentity<Schema, Entity>,
         WorthQueryApplicationAttemptDenial,
     >
     where
-        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
     {
         self.check_value_decode()?;
         let execution = &self.execution;
+        let column = self.layout.record_selection(field)?;
+        Field::Binding::validate(&value).map_err(|_| {
+            denial(
+                WorthQueryApplicationAttemptDenialKind::InvalidAuthoritativeValue,
+                column.path(),
+            )
+        })?;
         let value = Field::Binding::encode(&value).map_err(|_| {
             denial(
                 WorthQueryApplicationAttemptDenialKind::InvalidAuthoritativeValue,

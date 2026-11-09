@@ -5,8 +5,7 @@ use std::marker::PhantomData;
 use worth_query_decl::facade::{
     application_operation::*, application_schema::*, worth_query_operation,
     worth_query_operation_creates, worth_query_operation_links, worth_query_operation_reads,
-    worth_query_operation_unlinks, worth_query_operation_writes,
-    worth_query_structured_value_binding,
+    worth_query_operation_unlinks, worth_query_structured_value_binding,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
@@ -16,8 +15,8 @@ pub struct PlanarMutation {
 }
 worth_query_structured_value_binding!(pub PlanarMutationInputBinding for PlanarMutation { identity: "worth.query.certification.planar-mutation-input.v2" });
 worth_query_operation!(pub MutatePlanar for Schema: TopologySchemaBinding, input PlanarMutationInputBinding);
-worth_query_operation_reads!(MutatePlanar => [Body, BodyKey, PositionX, PositionY, Length, PlanarSuccessor]);
-worth_query_operation_writes!(MutatePlanar => [BodyKey, PositionX, PositionY, Length]);
+worth_query_operation_reads!(MutatePlanar => [Body, PlanarSuccessor]);
+
 worth_query_operation_creates!(MutatePlanar => [Body]);
 worth_query_operation_links!(MutatePlanar => [PlanarSuccessor]);
 worth_query_operation_unlinks!(MutatePlanar => [PlanarSuccessor]);
@@ -45,7 +44,7 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     type Denial = PlanarMutationDenial;
     type DenialBinding = PlanarMutationDenialBinding;
     type Output = PlanarOutputs;
-    type ScopeBinding = PlanarMutationScope<Schema>;
+    type ScopeBinding = PlanarMutationScope;
     type PrincipalBinding = ConsumerPrincipalBinding;
     type Mapping = ExternalPrincipalMapping;
     type Principal = Principal;
@@ -56,17 +55,8 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     const HANDLER_IDENTITY: &'static str = "worth.query.certification.planar-handler.v4";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.certification.planar-command.v1";
 
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Body,
-        PlanarPosition,
-        BodyKey,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        BodyKey::reference()
+    fn scope_field() -> BodyKey {
+        BodyKey::at("BodyKey")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         Schema,
@@ -84,8 +74,8 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationIntent<Schema> for Planar
     fn input(&self) -> &Self {
         self
     }
-    fn scope_binding(&self) -> PlanarMutationScope<Schema> {
-        PlanarMutationScope::new(BodyKey::reference(), self.scope_key.clone())
+    fn scope_binding(&self) -> PlanarMutationScope {
+        PlanarMutationScope::new(BodyKey::at("BodyKey"), self.scope_key.clone())
     }
 }
 mod output_contract;

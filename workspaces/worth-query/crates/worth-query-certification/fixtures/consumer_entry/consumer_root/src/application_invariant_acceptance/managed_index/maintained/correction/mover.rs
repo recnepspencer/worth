@@ -18,8 +18,8 @@ worth_query_structured_value_binding!(pub InputBinding for Input { identity: "ma
 worth_query_structured_value_binding!(pub ResultBinding for Changed { identity: "maintained-catalog.recorded-mover.result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "maintained-catalog.recorded-mover.denial.v1" });
 worth_query_operation!(pub MoveName for Catalog, input InputBinding);
-worth_query_operation_reads!(MoveName => [DirectoryIdentity, Item, ItemIdentity, ItemName]);
-worth_query_operation_writes!(MoveName => [ItemName]);
+worth_query_operation_reads!(MoveName => [Item]);
+
 fn scope(input: &Input) -> String {
     input.directory.clone()
 }
@@ -33,8 +33,8 @@ worth_query_mutation_binding!(
     outputs NoApplicationMutationOutputs,
     principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit,
-    field DirectoryIdentity::reference(), value scope,
+    scope DirectoryIdentity,
+    field DirectoryIdentity::at("DirectoryIdentity"), value scope,
 );
 impl ApplicationDeclaredOperation<Catalog> for MoveName {
     fn declare_access(
@@ -43,11 +43,11 @@ impl ApplicationDeclaredOperation<Catalog> for MoveName {
         let op = Self::reference();
         schema
             .operation_projection_work_budget(op, 32)
-            .operation_read_field(op, DirectoryIdentity::reference())
+            .operation_read_field(op, DirectoryIdentity::at("DirectoryIdentity"))
             .operation_read_entity(op, Item::reference())
-            .operation_read_field(op, ItemIdentity::reference())
-            .operation_read_field(op, ItemName::reference())
-            .operation_write(op, ItemName::reference())
+            .operation_read_field(op, ItemIdentity::at("ItemIdentity"))
+            .operation_read_field(op, ItemName::at("ItemName"))
+            .operation_write(op, ItemName::at("ItemName"))
     }
 }
 pub struct Handler;
@@ -58,8 +58,9 @@ impl OperationHandler<Catalog, Binding> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, Catalog, Binding>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<Catalog, Item>, Denial> {
         let result = (|| {
-            let item = reader.resolve_entity(ItemIdentity::reference(), input.item.clone())?;
-            if reader.field(&item, ItemName::reference())?.is_none() {
+            let item =
+                reader.resolve_entity(ItemIdentity::at("ItemIdentity"), input.item.clone())?;
+            if reader.field(&item, ItemName::at("ItemName"))?.is_none() {
                 return Ok(None);
             }
             reader.mutation_target(&item).map(Some)
@@ -81,7 +82,11 @@ impl OperationHandler<Catalog, Binding> for Handler {
             .map_err(HandlerExecutionDenial::new)
             .and_then(|entity| {
                 writer
-                    .write_field(&entity, ItemName::reference(), input.replacement.clone())
+                    .write_field(
+                        &entity,
+                        ItemName::at("ItemName"),
+                        input.replacement.clone().into(),
+                    )
                     .map_err(HandlerExecutionDenial::new)
             });
         match result {

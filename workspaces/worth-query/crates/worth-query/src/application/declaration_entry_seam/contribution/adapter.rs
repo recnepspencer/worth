@@ -1,4 +1,5 @@
 use crate::domain_capabilities::WorthQueryDomainCapabilityTargetBinding;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::{
     WorthQueryDeclarationEntryContributionCategoryFamily,
@@ -7,21 +8,29 @@ use super::{
     WorthQueryDeclarationEntryContributionTargetFamily,
 };
 
-macro_rules! impl_from_admitted {
+macro_rules! impl_try_from_admitted {
     ($wrapper:path, $target:ty, $variant:ident, $family:expr) => {
-        impl From<$wrapper> for WorthQueryDeclarationEntryContributionEvidence {
-            fn from(value: $wrapper) -> Self {
+        impl TryFrom<$wrapper> for WorthQueryDeclarationEntryContributionEvidence {
+            type Error = IdentityDerivationDenial;
+
+            fn try_from(value: $wrapper) -> Result<Self, Self::Error> {
                 let payload = value.payload().payload();
-                Self::$variant(WorthQueryDeclarationEntryContributionEvidenceRecord {
-                    target_family: target_family_for::<$target>(),
-                    target_digest: value.payload().target().target_digest().to_string(),
-                    target_binding_digest: value.payload().target().binding_digest().to_string(),
-                    evidence_digest: value.admitted_for_reporting(),
-                    posture_label: payload.posture_label().to_string(),
-                    semantic_code: payload.semantic_code().to_string(),
-                    detail: payload.detail().to_string(),
-                    decision_stage: decision_stage_for(&$family, payload),
-                })
+                Ok(Self::$variant(
+                    WorthQueryDeclarationEntryContributionEvidenceRecord {
+                        target_family: target_family_for::<$target>(),
+                        target_digest: value.payload().target().target_digest().to_string(),
+                        target_binding_digest: value
+                            .payload()
+                            .target()
+                            .binding_digest()
+                            .to_string(),
+                        evidence_digest: value.admitted_for_reporting()?,
+                        posture_label: payload.posture_label().to_string(),
+                        semantic_code: payload.semantic_code().to_string(),
+                        detail: payload.detail().to_string(),
+                        decision_stage: decision_stage_for(&$family, payload),
+                    },
+                ))
             }
         }
     };
@@ -93,7 +102,7 @@ fn decision_stage_for<P: EntryContributionPayloadView>(
     None
 }
 
-impl_from_admitted!(
+impl_try_from_admitted!(
     crate::domain_capabilities::WorthQueryAdmittedAdmissionContribution<
         crate::domain_capabilities::WorthQueryDeclarationBoundContributionTarget,
     >,
@@ -101,7 +110,7 @@ impl_from_admitted!(
     Admission,
     WorthQueryDeclarationEntryContributionCategoryFamily::Admission
 );
-impl_from_admitted!(
+impl_try_from_admitted!(
     crate::domain_capabilities::WorthQueryAdmittedAdmissionContribution<
         crate::domain_capabilities::WorthQueryAdmittedPlanBoundContributionTarget,
     >,
@@ -109,7 +118,7 @@ impl_from_admitted!(
     Admission,
     WorthQueryDeclarationEntryContributionCategoryFamily::Admission
 );
-impl_from_admitted!(
+impl_try_from_admitted!(
     crate::domain_capabilities::WorthQueryAdmittedSupportContribution<
         crate::domain_capabilities::WorthQueryDeclarationBoundContributionTarget,
     >,
@@ -117,7 +126,7 @@ impl_from_admitted!(
     SupportTraceability,
     WorthQueryDeclarationEntryContributionCategoryFamily::SupportTraceability
 );
-impl_from_admitted!(
+impl_try_from_admitted!(
     crate::domain_capabilities::WorthQueryAdmittedSupportContribution<
         crate::domain_capabilities::WorthQueryAdmittedPlanBoundContributionTarget,
     >,
@@ -125,7 +134,7 @@ impl_from_admitted!(
     SupportTraceability,
     WorthQueryDeclarationEntryContributionCategoryFamily::SupportTraceability
 );
-impl_from_admitted!(
+impl_try_from_admitted!(
     crate::domain_capabilities::WorthQueryAdmittedSupportContribution<
         crate::domain_capabilities::WorthQueryLowerRuntimeBoundaryBoundContributionTarget,
     >,
@@ -133,7 +142,7 @@ impl_from_admitted!(
     SupportTraceability,
     WorthQueryDeclarationEntryContributionCategoryFamily::SupportTraceability
 );
-impl_from_admitted!(
+impl_try_from_admitted!(
     crate::domain_capabilities::WorthQueryAdmittedExplanationContribution<
         crate::domain_capabilities::WorthQueryDeclarationBoundContributionTarget,
     >,
@@ -141,7 +150,7 @@ impl_from_admitted!(
     ExplanationInspection,
     WorthQueryDeclarationEntryContributionCategoryFamily::ExplanationInspection
 );
-impl_from_admitted!(
+impl_try_from_admitted!(
     crate::domain_capabilities::WorthQueryAdmittedExplanationContribution<
         crate::domain_capabilities::WorthQueryAdmittedPlanBoundContributionTarget,
     >,
@@ -149,7 +158,7 @@ impl_from_admitted!(
     ExplanationInspection,
     WorthQueryDeclarationEntryContributionCategoryFamily::ExplanationInspection
 );
-impl_from_admitted!(
+impl_try_from_admitted!(
     crate::domain_capabilities::WorthQueryAdmittedExplanationContribution<
         crate::domain_capabilities::WorthQueryLowerRuntimeBoundaryBoundContributionTarget,
     >,
@@ -157,7 +166,7 @@ impl_from_admitted!(
     ExplanationInspection,
     WorthQueryDeclarationEntryContributionCategoryFamily::ExplanationInspection
 );
-impl_from_admitted!(
+impl_try_from_admitted!(
     crate::domain_capabilities::WorthQueryAdmittedWorkflowContribution<
         crate::domain_capabilities::WorthQueryDeclarationBoundContributionTarget,
     >,
@@ -165,7 +174,7 @@ impl_from_admitted!(
     WorkflowPreview,
     WorthQueryDeclarationEntryContributionCategoryFamily::WorkflowPreview
 );
-impl_from_admitted!(
+impl_try_from_admitted!(
     crate::domain_capabilities::WorthQueryAdmittedWorkflowContribution<
         crate::domain_capabilities::WorthQueryAdmittedPlanBoundContributionTarget,
     >,
@@ -173,7 +182,7 @@ impl_from_admitted!(
     WorkflowPreview,
     WorthQueryDeclarationEntryContributionCategoryFamily::WorkflowPreview
 );
-impl_from_admitted!(
+impl_try_from_admitted!(
     crate::domain_capabilities::WorthQueryAdmittedContinuityContribution<
         crate::domain_capabilities::WorthQueryAdmittedPlanBoundContributionTarget,
     >,
@@ -181,7 +190,7 @@ impl_from_admitted!(
     ContinuityLineage,
     WorthQueryDeclarationEntryContributionCategoryFamily::ContinuityLineage
 );
-impl_from_admitted!(
+impl_try_from_admitted!(
     crate::domain_capabilities::WorthQueryAdmittedAftermathContribution<
         crate::domain_capabilities::WorthQueryAdmittedPlanBoundContributionTarget,
     >,
@@ -189,7 +198,7 @@ impl_from_admitted!(
     ConsequenceAftermath,
     WorthQueryDeclarationEntryContributionCategoryFamily::ConsequenceAftermath
 );
-impl_from_admitted!(
+impl_try_from_admitted!(
     crate::domain_capabilities::WorthQueryAdmittedAftermathContribution<
         crate::domain_capabilities::WorthQueryLowerRuntimeBoundaryBoundContributionTarget,
     >,

@@ -13,7 +13,9 @@ use super::WorthQueryPrimaryGraphInstallationDenial;
 mod aggregate_identity;
 mod aspect_contract;
 mod content;
+mod current_publication_ownership;
 pub(in crate::domain_computation::primary_graph) use aggregate_identity::ComponentSetLayout;
+pub(in crate::domain_computation::primary_graph) use current_publication_ownership::install_current_publication_ownership;
 mod application_layout_lowering;
 mod authorization_selectors;
 mod bootstrap_publication;
@@ -24,6 +26,7 @@ mod equality_fields;
 pub(crate) mod field_coordinate;
 mod field_optionality;
 pub(in crate::domain_computation::primary_graph) use field_coordinate::InstalledFieldCoordinate;
+mod history_ownership;
 mod installation_primitives;
 mod kind_lookup;
 mod live_control_roles;
@@ -42,6 +45,7 @@ mod provider_aftermath_causality;
 mod provider_dispatch_outbox;
 pub(crate) mod provider_idempotency;
 pub(crate) mod provider_inbound_completion;
+mod record_selection;
 mod registry_lowering;
 mod relation_payload;
 mod signed_entities;
@@ -84,6 +88,9 @@ pub(in crate::domain_computation::primary_graph) use registry_lowering::{
 
 #[derive(Debug)]
 pub struct WorthQueryPrimaryGraphLayout {
+    history_ownership: history_ownership::HistoryOwnershipLayouts,
+    value_bindings:
+        worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
     principal_bindings: BTreeMap<String, WorthQueryPrimaryPrincipalBindingLayout>,
     live_control_entity_kinds: BTreeSet<KindId>,
     authorization_selectors: authorization_selectors::WorthQueryAuthorizationSelectors,
@@ -127,6 +134,7 @@ pub struct WorthQueryPrimaryRelationLayout {
 
 #[derive(Clone, Debug)]
 pub struct WorthQueryPrimaryFieldLayout {
+    pub(super) record_presence: Option<AspectFieldLocator>,
     pub(super) entity_kind: KindId,
     pub(super) locator: AspectFieldLocator,
     /// Whether the schema declares the field equality-queryable.

@@ -9,8 +9,7 @@ use worth_query_host::facade::{
             ApplicationQueryIntent, ApplicationQueryParameterSet,
         },
         application_schema::{
-            ApplicationFieldRef, ApplicationPrincipalBindingRef,
-            ApplicationSchemaDeclarationBuilder, EqualityPredicate, NoApplicationUnit, ReadOnly,
+            ApplicationPrincipalBindingRef, ApplicationSchemaDeclarationBuilder,
             U64ApplicationValueBinding,
         },
     },
@@ -23,7 +22,7 @@ use worth_query_host::facade::{
 
 use super::schema::{
     AmendTemporal, AmendTemporalInput, AmendTemporalInputBinding, ExternalMapping, IntentDueField,
-    IntentFacts, IntentGateField, IntentIdentityField, IntentInputField, IntentLifecycleField,
+    IntentGateField, IntentIdentityField, IntentInputField, IntentLifecycleField,
     IntentQueryParametersBinding, IntentQueryResultBinding, IntentRevisionField, Principal,
     TemporalHostSchema, TemporalIntent, TemporalIntentQuery, TemporalPrincipalBinding,
 };
@@ -39,15 +38,7 @@ worth_query_structured_value_binding!(pub TemporalIntentReadBinding for Temporal
 
 pub struct TemporalIntentQueryBinding;
 
-pub type TemporalIntentQueryScope = ApplicationQueryFieldScope<
-    TemporalHostSchema,
-    TemporalIntent,
-    IntentFacts,
-    IntentIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type TemporalIntentQueryScope = ApplicationQueryFieldScope<IntentIdentityField>;
 
 impl ApplicationQueryBinding<TemporalHostSchema> for TemporalIntentQueryBinding {
     type Input = TemporalIntentRead;
@@ -65,17 +56,8 @@ impl ApplicationQueryBinding<TemporalHostSchema> for TemporalIntentQueryBinding 
     const IDENTITY: &'static str = "worth.query.example.temporal-intent-query.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
 
-    fn scope_field() -> ApplicationFieldRef<
-        TemporalHostSchema,
-        TemporalIntent,
-        IntentFacts,
-        IntentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        IntentIdentityField::reference()
+    fn scope_field() -> IntentIdentityField {
+        IntentIdentityField::at("IntentIdentityField")
     }
 
     fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -98,7 +80,10 @@ impl ApplicationQueryIntent<TemporalHostSchema> for TemporalIntentRead {
     }
 
     fn into_scope(self) -> TemporalIntentQueryScope {
-        TemporalIntentQueryScope::new(IntentIdentityField::reference(), self.identity)
+        TemporalIntentQueryScope::new(
+            IntentIdentityField::at("IntentIdentityField"),
+            self.identity,
+        )
     }
 }
 
@@ -130,15 +115,7 @@ impl worth_query_host::facade::declaration::application_operation::ApplicationMu
     type Admission = worth_query_host::facade::declaration::application_operation::ApplicationConventionalAdmission;
 }
 
-pub type AmendTemporalScope = ApplicationMutationFieldScope<
-    TemporalHostSchema,
-    TemporalIntent,
-    IntentFacts,
-    IntentIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type AmendTemporalScope = ApplicationMutationFieldScope<IntentIdentityField>;
 
 impl ApplicationMutationBinding<TemporalHostSchema> for AmendTemporalBinding {
     fn workflow_execution_requirements(
@@ -169,17 +146,8 @@ impl ApplicationMutationBinding<TemporalHostSchema> for AmendTemporalBinding {
     const HANDLER_IDENTITY: &'static str = "worth.query.example.temporal-amend-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.example.temporal-amend-command.v1";
 
-    fn scope_field() -> ApplicationFieldRef<
-        TemporalHostSchema,
-        TemporalIntent,
-        IntentFacts,
-        IntentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        IntentIdentityField::reference()
+    fn scope_field() -> IntentIdentityField {
+        IntentIdentityField::at("IntentIdentityField")
     }
 
     fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -202,7 +170,10 @@ impl ApplicationMutationIntent<TemporalHostSchema> for AmendTemporalIntent {
     }
 
     fn scope_binding(&self) -> AmendTemporalScope {
-        AmendTemporalScope::new(IntentIdentityField::reference(), self.identity.clone())
+        AmendTemporalScope::new(
+            IntentIdentityField::at("IntentIdentityField"),
+            self.identity.clone(),
+        )
     }
 }
 
@@ -217,28 +188,30 @@ impl OperationHandler<TemporalHostSchema, AmendTemporalBinding> for AmendTempora
         WorthQueryInvariantMutationTarget<TemporalHostSchema, TemporalIntent>,
         AmendTemporalDenial,
     > {
-        let entity =
-            match reader.resolve_entity(IntentIdentityField::reference(), "intent-1".to_owned()) {
-                Ok(entity) => entity,
-                Err(error) => return HandlerResult::ExecutionDenied(error),
-            };
-        match reader.field(&entity, IntentRevisionField::reference()) {
+        let entity = match reader.resolve_entity(
+            IntentIdentityField::at("IntentIdentityField"),
+            "intent-1".to_owned(),
+        ) {
+            Ok(entity) => entity,
+            Err(error) => return HandlerResult::ExecutionDenied(error),
+        };
+        match reader.field(&entity, IntentRevisionField::at("IntentRevisionField")) {
             Ok(Some(revision)) if input.revision > revision => {}
             Ok(_) => return HandlerResult::DomainDenied(AmendTemporalDenial::RevisionMustAdvance),
             Err(error) => return HandlerResult::ExecutionDenied(error),
         }
         for read in [
             reader
-                .field(&entity, IntentDueField::reference())
+                .field(&entity, IntentDueField::at("IntentDueField"))
                 .map(|_| ()),
             reader
-                .field(&entity, IntentLifecycleField::reference())
+                .field(&entity, IntentLifecycleField::at("IntentLifecycleField"))
                 .map(|_| ()),
             reader
-                .field(&entity, IntentInputField::reference())
+                .field(&entity, IntentInputField::at("IntentInputField"))
                 .map(|_| ()),
             reader
-                .field(&entity, IntentGateField::reference())
+                .field(&entity, IntentGateField::at("IntentGateField"))
                 .map(|_| ()),
         ] {
             if let Err(error) = read {
@@ -264,15 +237,27 @@ impl OperationHandler<TemporalHostSchema, AmendTemporalBinding> for AmendTempora
             }
         };
         for result in [
-            writer.write_field(&entity, IntentRevisionField::reference(), input.revision),
-            writer.write_field(&entity, IntentDueField::reference(), input.due),
             writer.write_field(
                 &entity,
-                IntentLifecycleField::reference(),
+                IntentRevisionField::at("IntentRevisionField"),
+                input.revision,
+            ),
+            writer.write_field(&entity, IntentDueField::at("IntentDueField"), input.due),
+            writer.write_field(
+                &entity,
+                IntentLifecycleField::at("IntentLifecycleField"),
                 input.lifecycle.clone(),
             ),
-            writer.write_field(&entity, IntentInputField::reference(), input.input.clone()),
-            writer.write_field(&entity, IntentGateField::reference(), input.gate.clone()),
+            writer.write_field(
+                &entity,
+                IntentInputField::at("IntentInputField"),
+                input.input.clone(),
+            ),
+            writer.write_field(
+                &entity,
+                IntentGateField::at("IntentGateField"),
+                input.gate.clone(),
+            ),
         ] {
             if let Err(error) = result {
                 return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));

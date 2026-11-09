@@ -15,7 +15,7 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
         );
         owner.field::<MutationApplyOutcome>("outcome");
         owner.field::<PendingMutationIdentities>("mutation_identities");
-        owner.field::<Option<crate::aggregate_identity::AggregateProposal>>("aggregate");
+        owner.field::<Option<crate::aggregate_identity::AggregateProposal>>("_aggregate");
         owner.field::<std::sync::Arc<crate::validation::candidate_source::NativeManagedSourceInterpretation>>("source_interpretation");
         owner.field::<Option<crate::aggregate_identity::AggregateAdmission>>("aggregate_admission");
     }

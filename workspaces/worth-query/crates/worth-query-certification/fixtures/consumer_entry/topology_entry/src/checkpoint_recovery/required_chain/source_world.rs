@@ -20,10 +20,10 @@ pub(super) fn seed<Schema: TopologySchemaBinding>(
         graph
             .bind_entity(
                 WorthQueryApplicationEntitySeed::new(Body::reference::<Schema>(), entity_key(&key))
-                    .field(BodyKey::reference::<Schema>(), key)
-                    .field(Length::reference::<Schema>(), length(y + 1))
-                    .field(PositionX::reference::<Schema>(), length(x))
-                    .field(PositionY::reference::<Schema>(), length(y)),
+                    .field(BodyKey::at("BodyKey"), key)
+                    .field(Length::at("Length"), length(y + 1))
+                    .field(PositionX::at("PositionX"), length(x))
+                    .field(PositionY::at("PositionY"), length(y)),
             )
             .unwrap();
     }

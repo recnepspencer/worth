@@ -19,7 +19,7 @@ fn scalar(value: &AspectValue) -> Result<(), Denial> {
         | AspectValue::Decimal(_)
         | AspectValue::BigInt(_)
         | AspectValue::Rational(_)
-        | AspectValue::String(InternedString::Raw(_))
+        | AspectValue::String(InternedString::Raw(_) | InternedString::Stored(_))
         | AspectValue::Uuid(_)
         | AspectValue::Date(_)
         | AspectValue::Time(_)

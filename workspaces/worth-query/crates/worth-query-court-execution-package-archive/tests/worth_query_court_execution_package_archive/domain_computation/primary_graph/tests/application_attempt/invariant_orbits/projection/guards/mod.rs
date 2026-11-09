@@ -17,7 +17,11 @@ fn projection_orbits_refuse_foreign_members_and_forged_orbit_declarations() {
                 .invariant
                 .project(
                     &phase,
-                    |reader| reader.resolve_entity(NodeKey::reference(), 0_u64).unwrap(),
+                    |reader| {
+                        reader
+                            .resolve_entity(NodeKey::at("NodeKey"), 0_u64)
+                            .unwrap()
+                    },
                     Allocation::SystemAllocation,
                 )
                 .unwrap()
@@ -50,7 +54,7 @@ fn projection_orbits_refuse_foreign_members_and_forged_orbit_declarations() {
     let plain = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::world::install_with_probe(graph(), worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::probe::Probe::new(|_, _, _| {}));
     plain.application.with_host_advancement(|phase| {
         plain.invariant.project_operation::<ReplaceNext, _>(&phase, |reader| {
-            let local = reader.resolve_entity(NodeKey::reference(), 0_u64).unwrap();
+            let local = reader.resolve_entity(NodeKey::at("NodeKey"), 0_u64).unwrap();
             let forged: ApplicationRelationRef<OrbitSchema<false>, Next, Node, Node> = ApplicationRelationRef::from_schema_identifiers(
                 "Next", "Node", "Node",
                 ApplicationRelationIntegrity::same_context_unbounded_retain_dangling().orbit(),

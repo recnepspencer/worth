@@ -77,7 +77,7 @@ fn foreign_workspace_denies_before_the_ordinary_read_journey_begins() {
         .run(request_execution, &mut workspace)
         .unwrap_err();
     assert_eq!(
-        stop.stop().kind(),
+        stop.stop().expect("fixture digest must fit").kind(),
         WorthQueryInstalledDomainExecutionDriftKind::ForeignRuntime
     );
     assert_eq!(
@@ -85,12 +85,30 @@ fn foreign_workspace_denies_before_the_ordinary_read_journey_begins() {
         handle.authority_witness().witness_identity()
     );
     assert_eq!(
-        stop.stop().next_action(),
+        stop.stop().expect("fixture digest must fit").next_action(),
         WorthQueryInstalledDomainExecutionNextAction::UseOwningRuntime
     );
-    assert_eq!(stop.stop().counters().planning_attempts(), 0);
-    assert_eq!(stop.stop().counters().lower_runtime_attempts(), 0);
-    assert_eq!(stop.stop().counters().execution_attempts(), 0);
+    assert_eq!(
+        stop.stop()
+            .expect("fixture digest must fit")
+            .counters()
+            .planning_attempts(),
+        0
+    );
+    assert_eq!(
+        stop.stop()
+            .expect("fixture digest must fit")
+            .counters()
+            .lower_runtime_attempts(),
+        0
+    );
+    assert_eq!(
+        stop.stop()
+            .expect("fixture digest must fit")
+            .counters()
+            .execution_attempts(),
+        0
+    );
 }
 
 #[test]
@@ -138,12 +156,19 @@ fn installed_read_preserves_authority_across_an_ordinary_cross_basis_stop() {
         WorthQueryInstalledDomainCapabilityKind::Read
     );
     assert_eq!(
-        stop.stop().next_action(),
+        stop.stop().expect("fixture digest must fit").next_action(),
         WorthQueryReadNextAction::SupplyFreshBasis
     );
-    assert_eq!(stop.stop().journey_counters().planning_attempt_count(), 0);
     assert_eq!(
         stop.stop()
+            .expect("fixture digest must fit")
+            .journey_counters()
+            .planning_attempt_count(),
+        0
+    );
+    assert_eq!(
+        stop.stop()
+            .expect("fixture digest must fit")
             .journey_counters()
             .lower_runtime_execution_attempt_count(),
         0
@@ -199,6 +224,7 @@ fn installed_read_preserves_authority_across_changed_policy_denial() {
     };
     let denial = stopped
         .stop()
+        .expect("fixture digest must fit")
         .context_denial()
         .expect("changed policy must remain a contextual denial");
     let WorthQueryReadContextDenialSource::PolicyTenant(policy_denial) = denial.source() else {
@@ -211,16 +237,24 @@ fn installed_read_preserves_authority_across_changed_policy_denial() {
         PolicyTenantAdmissionFailureClass::StalePolicyAuthority
     );
     assert_eq!(
-        stopped.stop().next_action(),
+        stopped
+            .stop()
+            .expect("fixture digest must fit")
+            .next_action(),
         WorthQueryReadNextAction::SupplyPolicyAuthority
     );
     assert_eq!(
-        stopped.stop().journey_counters().planning_attempt_count(),
+        stopped
+            .stop()
+            .expect("fixture digest must fit")
+            .journey_counters()
+            .planning_attempt_count(),
         0
     );
     assert_eq!(
         stopped
             .stop()
+            .expect("fixture digest must fit")
             .journey_counters()
             .lower_runtime_execution_attempt_count(),
         0
@@ -353,17 +387,6 @@ fn installed_operational_and_rich_inspection_share_operational_evidence() {
         .is_some());
 }
 
-fn identity_read<Output>(
-    read: WorthQueryReadBuilder<Output>,
-) -> Result<Output, crate::runtime::WorthQueryReadDenial> {
-    read.local_detail(
-        "user",
-        schema(),
-        |query: DetailQueryBuilder| {
-            query.project(AspectFieldSelector::new("identity", "id").unwrap())
-        },
-        |shape: DetailResultShapeBuilder| {
-            shape.field(AuthoredResultShapeField::new("identity", "id", "id").unwrap())
-        },
-    )
-}
+#[path = "journey/identity_read.rs"]
+mod identity_read;
+use identity_read::identity_read;

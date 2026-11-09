@@ -111,10 +111,16 @@ impl ReadmittedSourceSchemaCatalog {
             return Ok(None);
         }
         let (registry, contracts) = image.readmit_registry().map_err(corrupt)?;
-        let expected = registry.authority_snapshot();
+        let expected = registry
+            .snapshot_for_compilation(crate::schema::SchemaCompilationControl::Request(*request))
+            .map_err(RelationalRecoveryStop::Request)?;
         // Reuse genuine registered recipe/domain Arcs when the exact meaning
         // matches. This does not bind absent receiving codec implementations.
-        let registry = if configured.authority_snapshot() == expected {
+        let registry = if configured
+            .snapshot_for_compilation(crate::schema::SchemaCompilationControl::Request(*request))
+            .map_err(RelationalRecoveryStop::Request)?
+            == expected
+        {
             configured.clone()
         } else {
             registry
@@ -136,7 +142,9 @@ impl ReadmittedSourceSchemaCatalog {
             contracts,
             expected,
             image.descriptor_semantics_version(),
+            crate::schema::SchemaCompilationControl::Request(*request),
         )
+        .map_err(RelationalRecoveryStop::Request)?
         .ok_or_else(|| corrupt("original schema carrier DATA admission failed"))?;
         schema
             .retain_readmitted_image(image.clone())

@@ -62,9 +62,7 @@ impl RelationalRuntime {
             )
             .map_err(Denial::Transaction)?;
         transaction.schema_authority_input = Some(
-            crate::schema::SchemaContinuityAuthorityInput::from_shared_registry(
-                target.schema.registry_arc(),
-                target.schema.descriptor_semantics_version(),
+            target.schema.continuity_input(
                 epoch
                     .config
                     .schema

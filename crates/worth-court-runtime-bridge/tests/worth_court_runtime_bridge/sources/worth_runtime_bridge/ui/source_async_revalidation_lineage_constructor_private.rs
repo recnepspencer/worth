@@ -4,13 +4,18 @@ use worth_runtime_bridge::facade::{
 
 fn main() {
     let _ = BridgeAsyncRevalidationLineage {
-        causality_identity: todo!(),
-        prior_request: todo!(),
-        newer_request: todo!(),
+        causality_identity: supplied(),
+        prior_request: supplied(),
+        newer_request: supplied(),
         class: BridgeAsyncForwardCausalityClass::RevalidationAfterTruthBasisDrift,
-        counters: todo!(),
-        receipt: todo!(),
-        canonical_basis: todo!(),
-        digest: todo!(),
+        counters: supplied(),
+        receipt: supplied(),
+        canonical_basis: supplied(),
+        digest: supplied(),
     };
+}
+
+// Type-check the forbidden action without a divergent argument lint.
+fn supplied<T>() -> T {
+    loop {}
 }

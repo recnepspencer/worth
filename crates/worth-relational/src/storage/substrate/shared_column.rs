@@ -8,6 +8,8 @@ mod bulk_bootstrap;
 #[cfg(test)]
 mod custody_tests;
 mod iteration;
+mod iteration_observation;
+pub use iteration_observation::observe_history_prefix_traversal;
 mod node;
 mod preallocation;
 #[cfg(test)]

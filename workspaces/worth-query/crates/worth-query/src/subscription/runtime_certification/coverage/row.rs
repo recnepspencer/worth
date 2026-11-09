@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::subscription::bridge_parity::QuerySubscriptionBridgeParityExplanation;
 use crate::subscription::certification::SubscriptionLifecycleCertificationBundle;
 use crate::subscription::diagnostic::{
@@ -115,7 +116,7 @@ impl QuerySubscriptionFamilyCoverageRow {
             return Err(QuerySubscriptionRuntimeCertificationError::new(
                 QuerySubscriptionRuntimeCertificationErrorKind::ScopeSourceMismatch,
                 "admitted family coverage rows require diagnostic bundle digests aligned with support and lifecycle evidence",
-                &[
+                (|| { Ok(vec![
                     validation_role_evidence_identity(
                         "diagnostic_support",
                         diagnostic.support_report_identity(),
@@ -129,7 +130,7 @@ impl QuerySubscriptionFamilyCoverageRow {
                         "lifecycle",
                         lifecycle.certification_bundle_identity(),
                     ),
-                ],
+                ]) })(),
                 QuerySubscriptionRuntimeCertificationCounters::default(),
             ));
         }
@@ -143,7 +144,13 @@ impl QuerySubscriptionFamilyCoverageRow {
             diagnostic.bundle_identity(),
             None,
             lifecycle_class,
-        ))
+        )
+        .map_err(|cause| {
+            QuerySubscriptionRuntimeCertificationError::identity_refused(
+                cause,
+                QuerySubscriptionRuntimeCertificationCounters::default(),
+            )
+        })?)
     }
 
     pub fn hostile(
@@ -161,16 +168,16 @@ impl QuerySubscriptionFamilyCoverageRow {
             return Err(QuerySubscriptionRuntimeCertificationError::new(
                 QuerySubscriptionRuntimeCertificationErrorKind::CoverageFamilyMismatch,
                 "hostile family coverage rows require denied diagnostic bundles for the same query subscription family",
-                &[
+                (|| { Ok(vec![
                     validation_shape_role_evidence_identity(
                         "diagnostic_family",
                         diagnostic.semantic_labels().query_family_label(),
-                    ),
+                    )?,
                     validation_shape_role_evidence_identity(
                         "expected_family",
                         family.as_str(),
-                    ),
-                ],
+                    )?,
+                ]) })(),
                 QuerySubscriptionRuntimeCertificationCounters::default(),
             ));
         }
@@ -184,7 +191,13 @@ impl QuerySubscriptionFamilyCoverageRow {
             diagnostic.bundle_identity(),
             Some(failure.failure_identity()),
             lifecycle_class,
-        ))
+        )
+        .map_err(|cause| {
+            QuerySubscriptionRuntimeCertificationError::identity_refused(
+                cause,
+                QuerySubscriptionRuntimeCertificationCounters::default(),
+            )
+        })?)
     }
 
     fn new(
@@ -196,7 +209,7 @@ impl QuerySubscriptionFamilyCoverageRow {
         diagnostic_bundle_identity: &WorthQueryEvidenceIdentity,
         failure_identity: Option<&WorthQueryEvidenceIdentity>,
         lifecycle_class: QuerySubscriptionLifecycleCoverageClass,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let row_identity = coverage_row_identity(
             family.as_str(),
             row_class.as_str(),
@@ -216,8 +229,8 @@ impl QuerySubscriptionFamilyCoverageRow {
             diagnostic_bundle_identity,
             lifecycle_class.as_str(),
             failure_identity,
-        );
-        Self {
+        )?;
+        Ok(Self {
             family: family.clone(),
             row_class,
             query_scope_identity: lifecycle.query_scope_identity().clone(),
@@ -239,7 +252,7 @@ impl QuerySubscriptionFamilyCoverageRow {
             view_shape_identity: lifecycle.view_shape_identity().clone(),
             lifecycle_class,
             row_identity,
-        }
+        })
     }
 
     pub fn family(&self) -> &QuerySubscriptionFamily {

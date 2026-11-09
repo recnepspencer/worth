@@ -9,7 +9,6 @@ use worth_query_decl::facade::{
         WorthQueryApplicationDeclaredOutputRole, WorthQueryApplicationOutputRole,
         WorthQueryCreateOutput, WorthQueryExactlyOneOutput,
     },
-    application_schema::{NoApplicationUnit, ReadOnly},
     worth_query_mutation_binding, worth_query_structured_value_binding,
 };
 
@@ -21,7 +20,7 @@ use super::{
 };
 use crate::schema::{
     Account, BankPrincipalBinding, BankPrincipalIdBinding, BankSchema, ExternalPrincipalMapping,
-    Institution, InstitutionIdentity, InstitutionIdentityField, Principal,
+    InstitutionIdentityField, Principal,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -138,13 +137,8 @@ worth_query_mutation_binding!(
         principal_entity Principal,
         principal_identity BankPrincipalId,
         identity_binding BankPrincipalIdBinding,
-    scope Institution,
-        InstitutionIdentity,
-        InstitutionIdentityField,
-        InstitutionId,
-        ReadOnly,
-        NoApplicationUnit,
-    field InstitutionIdentityField::reference(),
+    scope InstitutionIdentityField,
+    field InstitutionIdentityField::at("InstitutionIdentityField"),
     value institution_scope,
 );
 

@@ -160,7 +160,10 @@ fn update_existing_denies_missing_target_typed_and_early() {
                 denial.kind(),
                 WorthQueryExistingTruthBindingDenialKind::ResolvedTargetMissing
             );
-            assert!(!denial.denial_digest().is_empty());
+            assert!(!denial
+                .denial_digest()
+                .expect("fixture digest must fit")
+                .is_empty());
         }
         other => panic!("expected typed mutation binding denial, got {other:?}"),
     }

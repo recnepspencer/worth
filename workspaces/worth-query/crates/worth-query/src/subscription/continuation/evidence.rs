@@ -1,4 +1,6 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+#[cfg(test)]
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity_authority::{QueryProjectionIdentity, QuerySubscriptionIdentityKind};
 
 use super::super::active_digest::ActiveSubscriptionLaneDigest;
@@ -37,14 +39,14 @@ impl SubscriptionContinuationEvidence {
         checkpoint_identity: WorthQueryEvidenceIdentity,
         authority_identity: WorthQueryEvidenceIdentity,
         remap_width: ContinuationRemapWidth,
-    ) -> Self {
-        let source_identity = lifecycle_continuation_endpoint_identity("source", &source_identity);
-        let target_identity = lifecycle_continuation_endpoint_identity("target", &target_identity);
-        let basis_identity = lifecycle_continuation_endpoint_identity("basis", &basis_identity);
+    ) -> Result<Self, IdentityDerivationDenial> {
+        let source_identity = lifecycle_continuation_endpoint_identity("source", &source_identity)?;
+        let target_identity = lifecycle_continuation_endpoint_identity("target", &target_identity)?;
+        let basis_identity = lifecycle_continuation_endpoint_identity("basis", &basis_identity)?;
         let checkpoint_endpoint_identity =
-            lifecycle_continuation_endpoint_identity("checkpoint", &checkpoint_identity);
+            lifecycle_continuation_endpoint_identity("checkpoint", &checkpoint_identity)?;
         let authority_identity =
-            lifecycle_continuation_endpoint_identity("authority", &authority_identity);
+            lifecycle_continuation_endpoint_identity("authority", &authority_identity)?;
         let continuation_identity = lifecycle_continuation_identity(
             active_lane_digest.evidence_identity(),
             continuation_class.as_str(),
@@ -55,8 +57,8 @@ impl SubscriptionContinuationEvidence {
             &checkpoint_endpoint_identity,
             &authority_identity,
             remap_width.get(),
-        );
-        Self {
+        )?;
+        Ok(Self {
             active_lane_digest,
             continuation_class,
             source_identity,
@@ -67,7 +69,7 @@ impl SubscriptionContinuationEvidence {
             authority_identity,
             remap_width,
             continuation_identity,
-        }
+        })
     }
 
     pub(crate) fn active_lane_digest(&self) -> &ActiveSubscriptionLaneDigest {

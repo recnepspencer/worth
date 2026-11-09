@@ -3,6 +3,7 @@
 mod advancement;
 mod authored_retirement;
 mod capacity;
+mod coupled_producer;
 mod decision_read_set;
 mod denial_cause;
 mod domain_value;
@@ -14,6 +15,7 @@ mod lane;
 mod program_binding;
 mod recorded_idempotency;
 mod relation_law;
+mod relation_preimage;
 mod request_authority;
 mod signed_creation;
 mod signing_lifecycle;
@@ -290,6 +292,7 @@ impl WorthQueryApplicationCommitDenial {
                 identity,
                 phase,
                 failure,
+                ..
             } => Some((identity, *phase, *failure)),
             crate::domain_computation::WorthQueryCustomInvariantDenial::Violation { .. } => None,
         }

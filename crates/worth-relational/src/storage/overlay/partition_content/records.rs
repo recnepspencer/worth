@@ -1,5 +1,7 @@
 mod frontier_view;
-use super::{digest_index::DigestIndex, hash_value, PartitionContentDigestError};
+mod reconstruction;
+use super::{hash_value, PartitionContentDigestError, ReconstructionLane, ReconstructionWork};
+use crate::storage::substrate::DigestIndex;
 use crate::storage::substrate::{
     HistoryAppendFrontier, RecordArena, RecordKind, SharedMap, StorageAllocationVisitor,
 };
@@ -15,138 +17,51 @@ pub(super) struct RecordContentIndex {
 }
 
 impl RecordContentIndex {
-    pub(super) fn capture_full<K: RecordKind>(
-        arena: &RecordArena<K>,
-        symbols: &dyn SymbolTextLookup,
-        request: super::full::Request<'_, '_, '_>,
-        frontiers: Option<&[(u64, HistoryAppendFrontier)]>,
-        extra: impl Fn(
-            &K::Extra,
-            &dyn SymbolTextLookup,
-        ) -> Result<[u8; 32], PartitionContentDigestError>,
-    ) -> Result<(Self, u64), PartitionContentDigestError>
-    where
-        K::Meta: serde::Serialize,
-    {
-        let mut count = 0usize;
-        for _ in arena.occupied_slots_iter() {
-            super::full::poll(request)?;
-            count = count
-                .checked_add(1)
-                .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
-        }
-        if frontiers.is_some_and(|rows| rows.len() != count) {
-            return Err(PartitionContentDigestError::InvalidHistoryCoverage);
-        }
-        let _memory = super::full::rows_memory(count, request)?;
-        let mut rows = Vec::with_capacity(count);
-        let mut result = Self::default();
-        let mut hashed = 0u64;
-        for (ordinal, slot) in arena.occupied_slots_iter().enumerate() {
-            super::full::poll(request)?;
-            let physical = arena
-                .physical_index(slot)
-                .ok_or(PartitionContentDigestError::InvalidHistoryCoverage)?;
-            let (history, values) = match frontiers {
-                Some(frontiers) => super::head_commitment::history_from_frontier(
-                    arena, slot, ordinal, frontiers, request,
-                )?,
-                None => super::record_history::capture_full(arena, slot, request)?,
-            };
-            rows.push((
-                slot as u128,
-                record_digest(
-                    arena,
-                    slot,
-                    physical,
-                    history.digest(),
-                    symbols,
-                    &extra,
-                    request,
-                )?,
-            ));
-            result.history_bytes = result
-                .history_bytes
-                .checked_add(history.allocation_bytes())
-                .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
-            match request {
-                Some(request) => {
-                    result
-                        .histories
-                        .insert_for_request(slot as u64, history, request)
-                        .map_err(PartitionContentDigestError::Request)?;
-                }
-                None => {
-                    result.histories.insert(slot as u64, history);
-                }
-            }
-            hashed = hashed
-                .checked_add(values)
-                .and_then(|sum| sum.checked_add(1))
-                .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
-        }
-        rows.sort_unstable_by_key(|(key, _)| *key);
-        result.records = DigestIndex::from_sorted_entries_for_request(&rows, request)?;
-        for (words, target, domain) in [
-            (
-                &arena.live_bitset,
-                &mut result.live_words,
-                b"live-word".as_slice(),
-            ),
-            (
-                &arena.reclaimable_bitset,
-                &mut result.reclaimable_words,
-                b"reclaimable-word".as_slice(),
-            ),
-        ] {
-            let mut count = 0usize;
-            for _ in words.words() {
-                super::full::poll(request)?;
-                count = count
-                    .checked_add(1)
-                    .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
-            }
-            let _memory = super::full::rows_memory(count, request)?;
-            let mut rows = Vec::with_capacity(count);
-            for (index, value) in words.words() {
-                super::full::poll(request)?;
-                rows.push((index as u128, hash_value(domain, &value)?));
-            }
-            *target = DigestIndex::from_sorted_entries_for_request(&rows, request)?;
-            hashed = hashed
-                .checked_add(rows.len() as u64)
-                .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
-        }
-        Ok((result, hashed))
-    }
-
     pub(super) fn history_frontiers<K: RecordKind>(
         &self,
+        _lane: &ReconstructionLane<'_>,
         arena: &RecordArena<K>,
-    ) -> Option<Vec<(u64, HistoryAppendFrontier)>>
+        work: &mut ReconstructionWork<'_, '_>,
+    ) -> Result<Vec<(u64, HistoryAppendFrontier)>, PartitionContentDigestError>
     where
         K::Meta: serde::Serialize,
     {
-        self.histories
-            .iter()
-            .map(|(&slot, history)| {
-                let metadata = arena.metadata_history_at(usize::try_from(slot).ok()?)?;
-                let last_value = metadata
-                    .len()
-                    .checked_sub(1)
-                    .and_then(|index| metadata.get(index))
-                    .map(|value| hash_value(b"metadata", value))
-                    .transpose()
-                    .ok()?;
-                Some((slot, history.append_frontier(last_value)?))
-            })
-            .collect()
+        work.prepare(
+            0,
+            (self.histories.len() * size_of::<(u64, HistoryAppendFrontier)>()) as u64,
+        )?;
+        let mut result = Vec::with_capacity(self.histories.len());
+        for (&slot, history) in self.histories.iter() {
+            let (units, bytes) = history
+                .frontier_quote()
+                .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
+            work.prepare(units, bytes)?;
+            let metadata = arena
+                .metadata_history_at(
+                    usize::try_from(slot)
+                        .map_err(|_| PartitionContentDigestError::InvalidHistoryCoverage)?,
+                )
+                .ok_or(PartitionContentDigestError::InvalidHistoryCoverage)?;
+            let last_value = metadata
+                .len()
+                .checked_sub(1)
+                .and_then(|index| metadata.get(index))
+                .map(|value| super::admission::hash_controlled(b"metadata", value, work))
+                .transpose()?;
+            result.push((
+                slot,
+                history
+                    .append_frontier(last_value)
+                    .ok_or(PartitionContentDigestError::InvalidHistoryCoverage)?,
+            ));
+        }
+        Ok(result)
     }
 
     pub(super) fn update<K: RecordKind>(
         &mut self,
         arena: &RecordArena<K>,
-        previous: Option<&RecordArena<K>>,
+        previous: &RecordArena<K>,
         slots: impl IntoIterator<Item = usize>,
         symbols: &dyn SymbolTextLookup,
         extra: impl Fn(
@@ -158,24 +73,17 @@ impl RecordContentIndex {
         K::Meta: serde::Serialize,
     {
         let mut hashed_values = 0;
-        let mut cold_records = previous.is_none().then(Vec::new);
-        let mut cold_histories = previous.is_none().then(Vec::new);
         for slot in slots {
             let physical = arena
                 .physical_index(slot)
                 .ok_or(PartitionContentDigestError::InvalidHistoryCoverage)?;
-            let carried_head = previous.is_none() && self.histories.contains_key(&(slot as u64));
             let cached = self
                 .histories
                 .get(&(slot as u64))
                 .cloned()
                 .unwrap_or_default();
             let old_bytes = cached.allocation_bytes();
-            let (history, hashed) = if carried_head {
-                (cached, 0)
-            } else {
-                super::record_history::update(arena, previous, slot, &cached)?
-            };
+            let (history, hashed) = super::record_history::update(arena, previous, slot, &cached)?;
             hashed_values += hashed;
             let digest = record_digest(
                 arena,
@@ -193,28 +101,12 @@ impl RecordContentIndex {
                 .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?
                 .checked_add(history.allocation_bytes())
                 .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
-            if let Some(entries) = &mut cold_histories {
-                entries.push((slot as u64, history));
-            } else {
-                self.histories.insert(slot as u64, history);
-            }
-            if let Some(entries) = &mut cold_records {
-                entries.push((slot as u128, digest));
-            } else {
-                self.records.set(slot as u128, Some(digest))?;
-            }
-        }
-        if let Some(mut entries) = cold_records {
-            entries.sort_unstable_by_key(|(slot, _)| *slot);
-            self.records = DigestIndex::from_sorted_entries(&entries);
-        }
-        if let Some(mut entries) = cold_histories {
-            entries.sort_unstable_by_key(|(slot, _)| *slot);
-            self.histories = SharedMap::from_sorted_unique(entries);
+            self.histories.insert(slot as u64, history);
+            self.records.set(slot as u128, Some(digest))?;
         }
         for (word, value) in arena
             .live_bitset
-            .changed_words_since(previous.map(|old| &old.live_bitset))
+            .changed_words_since(Some(&previous.live_bitset))
         {
             self.live_words.set(
                 word as u128,
@@ -226,7 +118,7 @@ impl RecordContentIndex {
         }
         for (word, value) in arena
             .reclaimable_bitset
-            .changed_words_since(previous.map(|old| &old.reclaimable_bitset))
+            .changed_words_since(Some(&previous.reclaimable_bitset))
         {
             self.reclaimable_words.set(
                 word as u128,
@@ -261,8 +153,10 @@ impl RecordContentIndex {
         self.live_words.visit_allocations(visitor);
         self.reclaimable_words.visit_allocations(visitor);
         self.histories
-            .visit_allocations(false, visitor, &mut |history, _, visitor| {
-                history.visit_allocations(visitor);
+            .visit_allocations(false, visitor, &mut |history, allocation, visitor| {
+                if allocation.visit(visitor) {
+                    history.visit_allocations(visitor);
+                }
             });
     }
 }
@@ -274,42 +168,9 @@ fn record_digest<K: RecordKind>(
     history: [u8; 32],
     symbols: &dyn SymbolTextLookup,
     extra: &impl Fn(&K::Extra, &dyn SymbolTextLookup) -> Result<[u8; 32], PartitionContentDigestError>,
-    request: super::full::Request<'_, '_, '_>,
+    request: super::request_admission::Request<'_, '_, '_>,
 ) -> Result<[u8; 32], PartitionContentDigestError> {
-    let versions = &arena.aspect_versions[physical];
-    let bytes = std::alloc::Layout::array::<(&str, u64)>(versions.len())
-        .ok()
-        .and_then(|layout| u64::try_from(layout.size()).ok())
-        .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
-    let _memory = request
-        .map(|request| {
-            request
-                .reserve_retained_memory(bytes)
-                .map_err(|cause| PartitionContentDigestError::Request(cause.into()))
-        })
-        .transpose()?
-        .flatten();
-    let mut resolved = Vec::with_capacity(versions.len());
-    let mut text_bytes = 0u64;
-    for (symbol, version) in versions.iter() {
-        super::full::poll(request)?;
-        let name = symbols.resolve(*symbol).ok_or(
-            PartitionContentDigestError::UnresolvedContentSymbol(*symbol),
-        )?;
-        text_bytes = text_bytes
-            .checked_add(name.len() as u64)
-            .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
-        resolved.push((name, *version));
-    }
-    // Name bytes vary independently of numeric Symbol IDs. A machine-width
-    // comparison bound covers lexical sorting as well as serialized hashing.
-    super::full::charge(
-        request,
-        text_bytes
-            .checked_mul(2 * usize::BITS as u64)
-            .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?,
-    )?;
-    resolved.sort_unstable_by(|left, right| left.0.cmp(right.0));
+    let resolved = resolve_aspect_versions(&arena.aspect_versions[physical], symbols, request)?;
     hash_value(
         b"record",
         &(
@@ -326,4 +187,45 @@ fn record_digest<K: RecordKind>(
             resolved,
         ),
     )
+}
+
+fn resolve_aspect_versions<'a>(
+    versions: &crate::storage::substrate::AspectVersions,
+    symbols: &'a dyn SymbolTextLookup,
+    request: super::request_admission::Request<'_, '_, '_>,
+) -> Result<Vec<(&'a str, u64)>, PartitionContentDigestError> {
+    let bytes = std::alloc::Layout::array::<(&str, u64)>(versions.len())
+        .ok()
+        .and_then(|layout| u64::try_from(layout.size()).ok())
+        .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
+    let _memory = request
+        .map(|request| {
+            request
+                .reserve_retained_memory(bytes)
+                .map_err(|cause| PartitionContentDigestError::Request(cause.into()))
+        })
+        .transpose()?
+        .flatten();
+    let mut resolved = Vec::with_capacity(versions.len());
+    let mut text_bytes = 0u64;
+    for (symbol, version) in versions.iter() {
+        super::request_admission::poll(request)?;
+        let name = symbols.resolve(*symbol).ok_or(
+            PartitionContentDigestError::UnresolvedContentSymbol(*symbol),
+        )?;
+        text_bytes = text_bytes
+            .checked_add(name.len() as u64)
+            .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
+        resolved.push((name, *version));
+    }
+    // Name bytes vary independently of numeric Symbol IDs. A machine-width
+    // comparison bound covers lexical sorting as well as serialized hashing.
+    super::request_admission::charge(
+        request,
+        text_bytes
+            .checked_mul(2 * usize::BITS as u64)
+            .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?,
+    )?;
+    resolved.sort_unstable_by(|left, right| left.0.cmp(right.0));
+    Ok(resolved)
 }

@@ -8,6 +8,7 @@ license.workspace = true
 publish = false
 
 [dev-dependencies]
+worth-testkit-compiler = { path = "../../../../crates/worth-testkit-compiler" }
 im = "=15.1.0"
 sha2 = "0.10"
 worth-execution = { path = "../../../../crates/worth-execution" }
@@ -21,6 +22,8 @@ worth-query-testkit-execution-primary-graph-application-attempt-2 = { path = "..
 worth-query-testkit-execution-primary-graph-application-contribution = { path = "../worth-query-testkit-execution-primary-graph-application-contribution" }
 worth-relational = { path = "../../../../crates/worth-relational" }
 worth-runtime-world = { path = "../../../../crates/worth-runtime-world" }
+serde_json = "1"
+worth-query-testkit-instantiation = { path = "../worth-query-testkit-instantiation" }
 
 [[test]]
 name = "worth_query_court_execution"

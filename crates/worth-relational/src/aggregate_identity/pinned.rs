@@ -19,6 +19,7 @@ mod denial;
 mod lineage;
 mod lookup;
 mod member;
+mod proposed;
 mod resolution;
 mod result;
 pub use denial::{PinnedAggregateReadDenial, PinnedAggregateReadDenialKind};
@@ -126,6 +127,11 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
                 let contract = contract::resolve(root, scope.selection, funded)?;
                 let registry = root.schema_authority().registry();
                 member::validate(view, registry, contract, &scope.member, funded)?;
+                if let Some(candidate) = self.candidate_aggregate()
+                    && let Some(value) = proposed::read(candidate, contract, &scope.member, funded)?
+                {
+                    return Ok(value);
+                }
                 let group =
                     super::stored_read::collect(view, contract, registry, scope.member, funded)?;
                 let lineage =

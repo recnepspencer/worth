@@ -6,52 +6,76 @@ use worth_foundational::facade::{
 use super::{ApplicationSchemaDeclarationBuilder, ApplicationSchemaMember};
 use std::any::TypeId;
 
-crate::worth_query_application_schema! {
-    schema StableAspectSchema {
-        owner: "worth.test",
-        version: (1, 0),
-        members: |schema| {
-            schema
-                .entity(Account::reference())
-                .aspect(Account::reference(), AccountFacts::reference())
-                .field(Account::reference(), Balance::reference())
-        }
+use super::fragment::*;
+use super::{
+    ApplicationSchema, ApplicationSchemaDeclaration, ApplicationSchemaDeclarationDenial,
+    ValueDecodeAdmission,
+};
+struct StableAspectSchema;
+impl Fragment for StableAspectSchema {
+    const NAME: &'static str = "StableAspectSchema";
+    type Bindings = Bindings;
+    type Members = (Account,);
+}
+impl ApplicationSchema for StableAspectSchema {
+    const OWNER: &'static str = "worth.test";
+    const NAME: &'static str = <Self as Fragment>::NAME;
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        declare(Self)
     }
 }
-
-crate::worth_query_entity!(Account for StableAspectSchema);
-crate::worth_query_aspect!(
-    AccountFacts for StableAspectSchema, Account;
-    identity = AspectIdentity(0x9161_1f01),
-    revision = AspectContractRevision(2),
-);
-crate::worth_query_field!(
-    Balance for StableAspectSchema, Account, AccountFacts:
-    u64 => super::U64ApplicationValueBinding, read_only, equality
-);
-
-#[test]
-fn authored_identity_and_revision_survive_reference_and_erasure() {
-    let reference = AccountFacts::reference();
-    assert_eq!(reference.identity(), AspectIdentity(0x9161_1f01));
-    assert_eq!(reference.revision(), AspectContractRevision(2));
-
-    let declaration = StableAspectSchema::declaration().unwrap();
-    let aspect = declaration
-        .erased()
+struct Bindings;
+impl BindingSet for Bindings {
+    type Work<'a> = ValueDecodeAdmission<'a>;
+    fn with_admission<T>(
+        work: &mut Self::Work<'_>,
+        use_admission: impl FnOnce(&mut ValueDecodeAdmission<'_>) -> T,
+    ) -> T {
+        use_admission(work)
+    }
+}
+impl Scalar<u64> for Bindings {
+    type Binding = super::U64ApplicationValueBinding;
+    const WRITABLE: bool = false;
+}
+struct Account;
+impl Entity for Account {
+    const NAME: &'static str = "Account";
+    type Aspects = (AccountFacts,);
+    type Relations = ();
+}
+struct AccountFacts;
+impl Aspect for AccountFacts {
+    const NAME: &'static str = "AccountFacts";
+    type Row = IdentityRow;
+}
+fn aspect_contract(
+    declaration: &super::ErasedApplicationSchemaDeclaration,
+) -> (AspectIdentity, AspectContractRevision) {
+    declaration
         .members()
         .iter()
-        .find(|member| matches!(member, ApplicationSchemaMember::Aspect { .. }))
-        .expect("the authored aspect is retained");
-    assert!(matches!(
-        aspect,
-        ApplicationSchemaMember::Aspect {
-            absence: worth_foundational::facade::AbsenceLaw::Required,
-            identity: AspectIdentity(0x9161_1f01),
-            revision: AspectContractRevision(2),
-            ..
-        }
-    ));
+        .find_map(|member| match member {
+            ApplicationSchemaMember::Aspect {
+                identity,
+                revision,
+                absence: worth_foundational::facade::AbsenceLaw::Required,
+                ..
+            } => Some((*identity, *revision)),
+            _ => None,
+        })
+        .expect("the declared required aspect is retained")
+}
+#[test]
+fn derived_identity_and_revision_are_stable_and_survive_erasure() {
+    let first = StableAspectSchema::declaration().unwrap();
+    let second = StableAspectSchema::declaration().unwrap();
+    assert_eq!(
+        aspect_contract(first.erased()),
+        aspect_contract(second.erased())
+    );
+    assert_eq!(first.identity(), second.identity());
 }
 
 #[test]
@@ -62,9 +86,11 @@ fn canonical_schema_current_identity_contains_all_description_axes() {
         sequence.version().as_str(),
         "worth-query-application-schema-v18"
     );
+    let (AspectIdentity(aspect_identity), AspectContractRevision(aspect_revision)) =
+        aspect_contract(declaration.erased());
     assert_eq!(
         canonical_entries_golden(sequence.entries()),
-        "contribution-count=u64:0\nheader.major=u32:1\nheader.minor=u32:0\nheader.name=text:StableAspectSchema\nheader.owner=text:worth.test\nmember-count=u64:3\nmember[0].entity=text:Account\nmember[0].kind=text:entity\nmember[1].absence=text:required\nmember[1].aspect=text:AccountFacts\nmember[1].entity=text:Account\nmember[1].identity=u64:2439061249\nmember[1].kind=text:aspect\nmember[1].revision=u64:2\nmember[2].aspect=text:AccountFacts\nmember[2].entity=text:Account\nmember[2].equality-queryable=bool:true\nmember[2].field=text:Balance\nmember[2].frame=null\nmember[2].kind=text:field\nmember[2].presence=text:required\nmember[2].scalar-family=text:uint64\nmember[2].unique=bool:false\nmember[2].unit=null\nmember[2].value-type=text:worth.rust.u64\nmember[2].writable=bool:false"
+        format!("contribution-count=u64:0\nheader.major=u32:1\nheader.minor=u32:0\nheader.name=text:StableAspectSchema\nheader.owner=text:worth.test\nmember-count=u64:3\nmember[0].entity=text:Account\nmember[0].kind=text:entity\nmember[1].absence=text:required\nmember[1].aspect=text:a5afdd3aaadd07ed2\nmember[1].entity=text:Account\nmember[1].identity=u64:{aspect_identity}\nmember[1].kind=text:aspect\nmember[1].revision=u64:{aspect_revision}\nmember[2].aspect=text:a5afdd3aaadd07ed2\nmember[2].entity=text:Account\nmember[2].equality-queryable=bool:true\nmember[2].field=text:value\nmember[2].frame=null\nmember[2].kind=text:field\nmember[2].presence=text:required\nmember[2].scalar-family=text:uint64\nmember[2].unique=bool:false\nmember[2].unit=null\nmember[2].value-type=text:worth.rust.u64\nmember[2].writable=bool:false")
     );
     let entries = sequence.entries();
     let identity = canonical_entry(entries, ".identity");
@@ -74,32 +100,33 @@ fn canonical_schema_current_identity_contains_all_description_axes() {
         identity.1,
         &CanonicalBasisValue::UnsignedInteger {
             width: CanonicalIntegerWidth::Bits64,
-            value: 0x9161_1f01,
+            value: u128::from(aspect_identity),
         }
     );
     assert_eq!(
         revision.1,
         &CanonicalBasisValue::UnsignedInteger {
             width: CanonicalIntegerWidth::Bits64,
-            value: 2,
+            value: u128::from(aspect_revision),
         }
     );
 }
 
 #[test]
 fn aspect_member_order_is_canonical() {
-    let first = ApplicationSchemaDeclarationBuilder::<StableAspectSchema>::for_schema()
-        .entity(Account::reference())
-        .aspect(Account::reference(), AccountFacts::reference())
-        .field(Account::reference(), Balance::reference())
-        .build()
-        .unwrap();
-    let reordered = ApplicationSchemaDeclarationBuilder::<StableAspectSchema>::for_schema()
-        .field(Account::reference(), Balance::reference())
-        .aspect(Account::reference(), AccountFacts::reference())
-        .entity(Account::reference())
-        .build()
-        .unwrap();
+    let declaration = StableAspectSchema::declaration().unwrap();
+    let members = declaration.erased().members().to_vec();
+    let first = ApplicationSchemaDeclarationBuilder::<StableAspectSchema>::from_test_members(
+        members.clone(),
+    )
+    .build()
+    .unwrap();
+    let mut reversed = members;
+    reversed.reverse();
+    let reordered =
+        ApplicationSchemaDeclarationBuilder::<StableAspectSchema>::from_test_members(reversed)
+            .build()
+            .unwrap();
     assert_eq!(first.identity(), reordered.identity());
 }
 
@@ -113,8 +140,8 @@ fn field_declaration_retains_the_exact_compiler_local_binding_recipe() {
         .expect("the field binding recipe is retained");
 
     assert_eq!(recipe.locus().entity(), "Account");
-    assert_eq!(recipe.locus().aspect(), "AccountFacts");
-    assert_eq!(recipe.locus().field(), "Balance");
+    assert_eq!(recipe.locus().aspect(), "a5afdd3aaadd07ed2");
+    assert_eq!(recipe.locus().field(), "value");
     assert_eq!(recipe.binding_identity().as_str(), "worth.rust.u64");
     assert_eq!(
         recipe.binding_type(),
@@ -139,7 +166,14 @@ fn canonical_entry<'a>(
         .iter()
         .enumerate()
         .find_map(|(index, entry)| match entry.locus() {
-            CanonicalBasisLocus::Named(InternedString::Raw(name)) if name.ends_with(suffix) => {
+            CanonicalBasisLocus::Named(InternedString::Stored(name))
+                if name.as_str().ends_with(suffix) =>
+            {
+                Some((index, entry.value()))
+            }
+            CanonicalBasisLocus::Named(InternedString::Raw(name))
+                if name.as_str().ends_with(suffix) =>
+            {
                 Some((index, entry.value()))
             }
             _ => None,
@@ -155,6 +189,12 @@ fn canonical_entries_golden(entries: &[worth_foundational::facade::CanonicalBasi
                 panic!("schema identity golden requires named raw loci")
             };
             let value = match entry.value() {
+                CanonicalBasisValue::ExactText(InternedString::Stored(value)) => {
+                    let value = value.as_string();
+                    {
+                        format!("text:{value}")
+                    }
+                }
                 CanonicalBasisValue::ExactText(InternedString::Raw(value)) => {
                     format!("text:{value}")
                 }
@@ -174,4 +214,15 @@ fn canonical_entries_golden(entries: &[worth_foundational::facade::CanonicalBasi
         })
         .collect::<Vec<_>>()
         .join("\n")
+}
+
+pub struct IdentityRow(u64);
+impl super::fragment::Record<IdentityRow> for Bindings {
+    fn record() -> impl super::fragment::Shape<IdentityRow, Self> {
+        super::fragment::field("value", |row: &IdentityRow| row.0)
+            .equality_queryable(true)
+            .build(|value, _: &mut ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(IdentityRow(value))
+            })
+    }
 }

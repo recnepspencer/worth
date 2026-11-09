@@ -1,9 +1,7 @@
-mod original;
 use crate::identity::data::VersionId;
 use crate::storage::overlay::WorkingState;
 use crate::storage::substrate::{partition_of, slot_of, EntityRecordKind, RelationRecordKind};
 use crate::transactions::data::RecordRef;
-pub(super) use original::write_original_aspect_version;
 
 pub(super) fn write_aspect_versions_for_delta_for_request(
     request: &worth_execution::ExecutionRequest<'_, '_>,

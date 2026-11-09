@@ -1,6 +1,7 @@
 pub(crate) mod materialization;
 mod native_scan_stop;
 mod projection;
+pub(crate) use projection::CheckpointProjectionContext;
 pub(crate) mod read_footprint;
 pub(crate) mod read_prices;
 pub(crate) mod read_request;
@@ -21,6 +22,8 @@ pub use projection::{
     RelationalAdjacencyDirection, RelationalAdjacencySupportDenial, RelationalAdjacencyVisit,
     RelationalAspectPresenceSupportDenial, RelationalBorrowedRecordReadDenial,
     RelationalEntityMetadata, RelationalEntityRetirement, RelationalFieldSupportComparisonDenial,
+    RelationalHistoricalSelectionRead, RelationalHistoricalSelectionReadDenial,
+    RelationalHistoricalSourcePresence, RelationalHistoricalSourceReadDenial,
     RelationalProjectedFieldObservation, RelationalProjectionContractDenial,
     RelationalRelationMetadata, VisibilityProjectionView,
 };
@@ -33,6 +36,7 @@ pub use reader::{
     PinnedStructuralWalkReads, PinnedStructuralWalkScope, PinnedStructuralWalkVisit,
     PositionedRelationalSnapshot, QueryLeasedReadOutcome, QueryReadExecutionStop,
     QueryReadPacketDenial, RelationKindTruthReadDenial, RelationKindTruthReadLimitExceeded,
+    RelationalAppliedCandidateReadIdentity, RelationalAppliedCandidateReadQualification,
     RelationalEntityMetadataPinDenial, RelationalPinnedEntityMetadata, RelationalPinnedRead,
     RelationalPinnedReadAdmissionDenial, RelationalSnapshotPositionAdmissionStop,
     SnapshotPositionDenial, VisibilityReadContext,

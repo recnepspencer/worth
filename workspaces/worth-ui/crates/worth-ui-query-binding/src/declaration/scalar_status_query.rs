@@ -1,14 +1,11 @@
 use worth_query_decl::facade::{
     application_query::{
         ApplicationLiveQueryIntent, ApplicationQueryBasisSupport, ApplicationQueryCardinality,
-        ApplicationQueryDefinition, ApplicationQueryDefinitionBuilder,
-        ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
-        ApplicationQueryParameterSet, ApplicationQueryResultFieldRef,
-        ApplicationQueryResultShapeBuilder,
+        ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
+        ApplicationQueryLaneEligibility, ApplicationQueryParameterSet,
+        ApplicationQueryResultFieldRef, ApplicationQueryResultShapeBuilder,
     },
-    application_schema::{
-        EqualityPredicate, NoApplicationUnit, ReadOnly, ReadWrite, U64ApplicationValueBinding,
-    },
+    application_schema::U64ApplicationValueBinding,
     worth_query_application_query, worth_query_portable_type, worth_query_query_binding,
     worth_query_structured_value_binding,
 };
@@ -18,9 +15,9 @@ use worth_query_host::facade::primary_graph::{
 };
 
 use super::{
-    IdentityAspect, IdentityIdField, QueryRevisionAspect, QueryRevisionValueField, QueryTextAspect,
-    QueryTextStatusField, WorthUiApplicationSchema, WorthUiExternalPrincipalMapping,
-    WorthUiPrincipal, WorthUiPrincipalBinding, WorthUiRecord, WorthUiStatusLiveCause,
+    IdentityIdField, QueryRevisionValueField, QueryTextStatusField, WorthUiApplicationSchema,
+    WorthUiExternalPrincipalMapping, WorthUiPrincipal, WorthUiPrincipalBinding, WorthUiRecord,
+    WorthUiStatusLiveCause,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -80,8 +77,8 @@ worth_query_query_binding!(
     principal_entity WorthUiPrincipal,
     principal_identity u64,
     identity_binding U64ApplicationValueBinding,
-    scope WorthUiRecord, IdentityAspect, IdentityIdField, String, ReadOnly, NoApplicationUnit,
-    field IdentityIdField::reference(),
+    scope IdentityIdField,
+    field IdentityIdField::at("IdentityIdField"),
     value WorthUiStatusQueryRequest::identity,
     limits results 1
 );
@@ -102,52 +99,37 @@ type IdentitySelector = ApplicationQueryResultFieldRef<
     WorthUiStatusQuery,
     IdentitySlot,
     WorthUiApplicationSchema,
-    WorthUiRecord,
-    IdentityAspect,
     IdentityIdField,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
 >;
 type StatusSelector = ApplicationQueryResultFieldRef<
     WorthUiStatusQuery,
     StatusSlot,
     WorthUiApplicationSchema,
-    WorthUiRecord,
-    QueryTextAspect,
     QueryTextStatusField,
-    String,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
 >;
 type RevisionSelector = ApplicationQueryResultFieldRef<
     WorthUiStatusQuery,
     RevisionSlot,
     WorthUiApplicationSchema,
-    WorthUiRecord,
-    QueryRevisionAspect,
     QueryRevisionValueField,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
 >;
 
 fn identity() -> IdentitySelector {
-    ApplicationQueryResultFieldRef::new("identity", IdentityIdField::reference())
+    ApplicationQueryResultFieldRef::new("identity", IdentityIdField::at("IdentityIdField"))
 }
 
 fn status() -> StatusSelector {
-    ApplicationQueryResultFieldRef::new("status", QueryTextStatusField::reference())
+    ApplicationQueryResultFieldRef::new("status", QueryTextStatusField::at("QueryTextStatusField"))
 }
 
 fn revision() -> RevisionSelector {
-    ApplicationQueryResultFieldRef::new("revision", QueryRevisionValueField::reference())
+    ApplicationQueryResultFieldRef::new(
+        "revision",
+        QueryRevisionValueField::at("QueryRevisionValueField"),
+    )
 }
 
-pub(crate) fn status_query_definition() -> ApplicationQueryDefinition<
+pub(crate) fn status_query_definition() -> ApplicationQueryDefinitionBuilder<
     WorthUiApplicationSchema,
     WorthUiStatusQuery,
     WorthUiStatusQueryParameters,
@@ -174,9 +156,7 @@ pub(crate) fn status_query_definition() -> ApplicationQueryDefinition<
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot().with_live())
         .public()
-        .live_root_by::<WorthUiStatusLiveCause, _, _, _, _, _, _, _, _>(identity(), identity())
-        .build()
-        .expect("the UI status query is statically canonical")
+        .live_root_by::<WorthUiStatusLiveCause>(identity(), identity())
 }
 
 impl WorthQueryApplicationProjection<WorthUiApplicationSchema, WorthUiStatusQuery>

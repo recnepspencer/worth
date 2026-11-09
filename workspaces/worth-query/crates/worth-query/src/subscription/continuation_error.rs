@@ -4,6 +4,9 @@ use super::active_counters::ActiveSubscriptionCounters;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum SubscriptionContinuationDenialKind {
+    EvidenceIdentityDerivationDenied(
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+    ),
     UnsupportedContinuationClass,
     ContinuationEvidenceMismatch,
     ContinuationRemapBudgetExceeded,
@@ -12,6 +15,7 @@ pub enum SubscriptionContinuationDenialKind {
 impl SubscriptionContinuationDenialKind {
     pub fn as_str(&self) -> &'static str {
         match self {
+            Self::EvidenceIdentityDerivationDenied(_) => "evidence_identity_derivation_denied",
             Self::UnsupportedContinuationClass => "unsupported_continuation_class",
             Self::ContinuationEvidenceMismatch => "continuation_evidence_mismatch",
             Self::ContinuationRemapBudgetExceeded => "continuation_remap_budget_exceeded",

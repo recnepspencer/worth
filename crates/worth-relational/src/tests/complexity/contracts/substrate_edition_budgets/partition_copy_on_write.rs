@@ -1,8 +1,8 @@
 //! What an observed write actually copies, partition by partition.
 //!
 //! Owning the map spine is not owning the partitions behind it. A write that
-//! finds a reader edition outstanding copies the spine once and then copies
-//! each partition it mutates out of structural sharing, and that second copy is
+//! finds a reader edition outstanding shares the persistent spine and copies
+//! each partition it mutates out of structural sharing. A partition copy is
 //! Theta(the partition's slots) rather than Theta(pointers). These tests hold
 //! the spine cost and the partition cost apart, and pair every positive witness
 //! with the unobserved run that must charge nothing.
@@ -47,7 +47,6 @@ fn complexity_budget_observed_write_copies_only_the_partition_it_touches() {
 
     // The positive witness the spine counter cannot give: an observed write
     // copies partition states, and that cost is charged rather than absorbed.
-    assert_eq!(counters.full_state_clones, 1);
     assert_eq!(counters.ordinary_partitions_copied_on_write, 1);
     assert!(
         counters.ordinary_partition_slots_copied_on_write > 0,
@@ -81,7 +80,6 @@ fn complexity_budget_observed_substrate_wide_pass_copies_every_partition_it_hold
     // A pass that takes every partition mutably under an outstanding reader
     // copies every one of them. This is the case the spine counter would have
     // reported as a single event.
-    assert_eq!(counters.full_state_clones, 1);
     assert_eq!(
         counters.ordinary_partitions_copied_on_write,
         resident_partitions

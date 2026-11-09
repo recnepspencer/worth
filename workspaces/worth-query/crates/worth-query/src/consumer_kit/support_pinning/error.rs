@@ -1,5 +1,7 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQuerySupportPinningErrorKind {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     BlankConsumerName,
     SnapshotRowMissing,
     DuplicateSnapshotFamily,
@@ -159,3 +161,12 @@ impl std::fmt::Display for WorthQuerySupportPinningError {
 }
 
 impl std::error::Error for WorthQuerySupportPinningError {}
+
+impl From<IdentityDerivationDenial> for WorthQuerySupportPinningError {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::new(
+            WorthQuerySupportPinningErrorKind::EvidenceIdentityDerivationDenied(cause),
+            "support pinning evidence identity refused",
+        )
+    }
+}

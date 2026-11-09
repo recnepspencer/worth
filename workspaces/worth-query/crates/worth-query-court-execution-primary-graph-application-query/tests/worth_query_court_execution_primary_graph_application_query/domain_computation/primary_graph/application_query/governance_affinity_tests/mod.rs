@@ -83,7 +83,7 @@ fn governance_rejects_real_query_parameter_principal_and_scope_substitution() {
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &host_custody.phase_for_application_for_test(&context.world.application),
-                    AccountIdentity::reference(),
+                    AccountIdentity::at("AccountIdentity"),
                     "account-2".to_owned(),
                     &context.request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -198,7 +198,7 @@ pub fn governance_context(label: &str) -> GovernanceContext {
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &phase_custody.phase_for_application_for_test(&world.application),
-                    AccountIdentity::reference(),
+                    AccountIdentity::at("AccountIdentity"),
                     "account-1".to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

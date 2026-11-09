@@ -13,7 +13,7 @@ pub(in crate::indexes) use field_projection_scope::{
 pub(super) use checked_entry_map::checked_finish;
 pub(super) use entity_field_index_values::{
     build_entity_aspect_field_index, build_entity_aspect_field_index_checked,
-    entity_aspect_field_index_entry, entity_aspect_field_ordering_value,
+    entity_aspect_field_ordering_value,
 };
 pub(super) use exact_entity_field_match::exact_entity_field_matches;
 pub(super) use index_projection_source::IndexProjectionSource;
@@ -27,3 +27,6 @@ pub(super) use relation_field_index_values::{
 pub(super) use relation_join::{
     build_relation_join_index, build_relation_join_index_checked, join_endpoints,
 };
+
+mod scoped_parity;
+pub(super) use scoped_parity::{joined_rows_for_pair, ordered_children_for_parent};

@@ -5,8 +5,8 @@ use crate::application_aftermath::{
 };
 
 use super::{
-    ApplicationFieldRef, ApplicationOperationMarkerIdentity, ApplicationOperationRef,
-    ApplicationSchema, ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
+    ApplicationOperationMarkerIdentity, ApplicationOperationRef, ApplicationSchema,
+    ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
     ApplicationSchemaDeclarationDenial, ApplicationSchemaIdentity,
 };
 
@@ -14,13 +14,6 @@ struct Schema;
 struct Operation;
 struct Entity;
 struct Aspect;
-struct Field;
-impl crate::application_schema::DeclaredApplicationFieldValue for Field {
-    type Value = u64;
-    type Binding = crate::application_schema::U64ApplicationValueBinding;
-    const PRESENCE: crate::application_schema::ApplicationFieldPresence =
-        crate::application_schema::ApplicationFieldPresence::Required;
-}
 crate::worth_query_structured_value_binding!(
     OperationInputBinding for () {
         identity: "worth.rust.unit"
@@ -63,20 +56,38 @@ fn identity(
     field: &'static str,
     maximum_encoded_bytes: usize,
 ) -> ApplicationSchemaIdentity {
-    let field = ApplicationFieldRef::<Schema, Entity, Aspect, Field, u64>::from_schema_identifiers(
-        entity, aspect, field,
-    );
+    use super::fragment::FieldSelection;
+    let locus = match (entity, aspect) {
+        ("Entity", "Aspect") => DeclaredPreImageLocus::<Schema>::from_field(FieldSelection::<
+            Fixture,
+            Entity,
+            Aspect,
+            u64,
+        >::at(field)),
+        ("OtherEntity", "Aspect") => {
+            DeclaredPreImageLocus::<Schema>::from_field(FieldSelection::<
+                Fixture,
+                OtherEntity,
+                Aspect,
+                u64,
+            >::at(field))
+        }
+        ("Entity", "OtherAspect") => {
+            DeclaredPreImageLocus::<Schema>::from_field(FieldSelection::<
+                Fixture,
+                Entity,
+                OtherAspect,
+                u64,
+            >::at(field))
+        }
+        _ => panic!("unknown fixture locus"),
+    };
     let inverse = DeclaredRecordedInverse::new(
         "restore",
-        DeclaredLoweringCorrespondenceRef::new("exact-inverse").unwrap(),
+        DeclaredLoweringCorrespondenceRef::new("exact-inverse"),
         DeclaredAftermathPostcondition::ExactPriorTruth,
-        DeclaredPreImageDemand::new(
-            [DeclaredPreImageLocus::from_field(field)],
-            maximum_encoded_bytes,
-        )
-        .unwrap(),
-    )
-    .unwrap();
+        DeclaredPreImageDemand::new([locus], maximum_encoded_bytes),
+    );
     let definition = ApplicationOperationRef::<Schema, Operation, ()>::from_declaration()
         .definition()
         .no_external_effect()
@@ -84,10 +95,62 @@ fn identity(
             DeclaredCorrectionMechanism::RecordedInverse(inverse),
         ))
         .finish();
-    ApplicationSchemaDeclarationBuilder::<Schema>::for_schema()
+    ApplicationSchemaDeclarationBuilder::<Schema>::from_fragment(Fixture)
+        .unwrap()
         .operation(definition)
         .build()
         .unwrap()
         .identity()
         .clone()
+}
+
+use super::fragment;
+struct Fixture;
+impl fragment::Fragment for Fixture {
+    const NAME: &'static str = "fixture";
+    type Bindings = Bindings;
+    type Members = (Entity, OtherEntity);
+}
+struct OtherEntity;
+struct OtherAspect;
+struct Bindings;
+impl fragment::BindingSet for Bindings {
+    type Work<'a> = super::ValueDecodeAdmission<'a>;
+    fn with_admission<T>(
+        work: &mut Self::Work<'_>,
+        run: impl FnOnce(&mut super::ValueDecodeAdmission<'_>) -> T,
+    ) -> T {
+        run(work)
+    }
+}
+impl fragment::Scalar<u64> for Bindings {
+    type Binding = super::U64ApplicationValueBinding;
+}
+impl fragment::Entity for Entity {
+    const NAME: &'static str = "Entity";
+    type Aspects = (Aspect, OtherAspect);
+    type Relations = ();
+}
+impl fragment::Entity for OtherEntity {
+    const NAME: &'static str = "OtherEntity";
+    type Aspects = (Aspect,);
+    type Relations = ();
+}
+impl fragment::Aspect for Aspect {
+    const NAME: &'static str = "Aspect";
+    type Row = Pair;
+}
+impl fragment::Aspect for OtherAspect {
+    const NAME: &'static str = "OtherAspect";
+    type Row = Pair;
+}
+struct Pair(u64, u64);
+impl fragment::Record<Pair> for Bindings {
+    fn record() -> impl fragment::Shape<Pair, Self> {
+        fragment::field("Field", |r: &Pair| r.0)
+            .and("OtherField", |r: &Pair| r.1)
+            .build(|a, b, _: &mut super::ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(Pair(a, b))
+            })
+    }
 }

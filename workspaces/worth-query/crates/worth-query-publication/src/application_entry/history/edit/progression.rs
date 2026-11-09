@@ -1,10 +1,7 @@
 //! The edit delegates business execution to its original concrete SourceOnly owner.
 use super::*;
 use crate::application_entry::WorthQuerySourceOperationBinding;
-use worth_query_declaration::facade::{
-    application_history::ApplicationHistoryModel,
-    application_operation::{ApplicationMutationScopeBinding, NoApplicationMutationSource},
-};
+use worth_query_declaration::facade::application_operation::NoApplicationMutationSource;
 
 impl<'runtime, S, H, I, P, A, Payload: WorthQueryHistoryPayloadMode<S, H>, Outputs>
     WorthQueryHistoryEdit<'runtime, S, H, I, P, A, Payload, Outputs>
@@ -15,10 +12,9 @@ where
     P: ApplicationProgramDefinition<S>,
     A: ApplicationAction<S, I::Binding>,
     Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
+    Outputs: WorthQueryHistoryOutputsMode<S, H>,
     I::Binding: WorthQuerySourceOperationBinding<S>
         + ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
-    <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding:
-        ApplicationMutationScopeBinding<S, Scope = ApplicationHistoryModel<S, H>>,
     Scope<S, H>: ApplicationQueryScopeResolution<S, Principal<S, H>>,
     Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
 {

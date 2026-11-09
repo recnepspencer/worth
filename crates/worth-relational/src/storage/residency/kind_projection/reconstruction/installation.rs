@@ -2,6 +2,7 @@
 use super::*;
 
 pub(super) fn install(
+    lane: &ReconstructionLane<'_>,
     partition: &mut PartitionState,
     expected: &BTreeMap<RelationId, RegionRelationProjection>,
     basis: AdjacencyKindBasis,
@@ -11,7 +12,7 @@ pub(super) fn install(
 ) -> Result<(), Cause> {
     match request {
         Some(request) => install_request(partition, expected, basis, request, checkpoint),
-        None => install_controlled(partition, expected, basis, checkpoint, retain),
+        None => install_controlled(lane, partition, expected, basis, checkpoint, retain),
     }
 }
 
@@ -85,6 +86,7 @@ fn install_request(
 }
 
 pub(super) fn install_controlled(
+    lane: &ReconstructionLane<'_>,
     partition: &mut PartitionState,
     expected: &BTreeMap<RelationId, RegionRelationProjection>,
     basis: AdjacencyKindBasis,
@@ -149,7 +151,7 @@ pub(super) fn install_controlled(
             for (_, adjacency) in table.iter() {
                 let ids: BTreeSet<_> = adjacency.current_ids().iter().copied().collect();
                 let indexed: BTreeSet<_> = adjacency
-                    .checkpoint_kind_memberships(basis)
+                    .checkpoint_kind_memberships(lane, basis, checkpoint)?
                     .into_iter()
                     .flat_map(|(_, ids)| ids)
                     .collect();

@@ -68,7 +68,7 @@ fn stale_identity_is_refused_before_counted_native_field_provider_work() {
                     &admission,
                     |reader, _| {
                         reader
-                            .resolve_entity(AccountStatus::reference(), "open".to_owned())
+                            .resolve_entity(AccountStatus::at("AccountStatus"), "open".to_owned())
                             .unwrap();
                     },
                     AllocationPolicy::SystemAllocation,
@@ -122,7 +122,7 @@ fn stale_identity_is_refused_before_counted_native_field_provider_work() {
                 .observe_field(
                     &host_custody.borrowed_request_for_test(),
                     &other,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                 )
                 .unwrap();
             assert_eq!(
@@ -134,7 +134,7 @@ fn stale_identity_is_refused_before_counted_native_field_provider_work() {
                 .observe_field(
                     &host_custody.borrowed_request_for_test(),
                     &newer,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                 )
                 .unwrap_err()
         })

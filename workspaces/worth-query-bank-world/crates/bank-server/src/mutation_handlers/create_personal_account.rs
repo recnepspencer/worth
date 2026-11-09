@@ -72,10 +72,16 @@ fn author_candidate(
 ) -> Result<CreatePersonalAccountResult, HandlerExecutionDenial> {
     let (account_id, institution_id, owner_id, display_name) = decision.into_parts();
     let institution = candidate
-        .resolve_entity(InstitutionIdentityField::reference(), institution_id)
+        .resolve_entity(
+            InstitutionIdentityField::at("InstitutionIdentityField"),
+            institution_id,
+        )
         .map_err(HandlerExecutionDenial::new)?;
     let owner = candidate
-        .resolve_entity(PrincipalIdentityField::reference(), owner_id)
+        .resolve_entity(
+            PrincipalIdentityField::at("PrincipalIdentityField"),
+            owner_id,
+        )
         .map_err(HandlerExecutionDenial::new)?;
     let key = WorthQueryApplicationEntityKey::<BankSchema, Account>::new(
         account_key(account_id).into_boxed_str().into_string(),
@@ -85,23 +91,27 @@ fn author_candidate(
         .create_entity_in_context(&institution, Account::reference(), key)
         .map_err(HandlerExecutionDenial::new)?;
     candidate
-        .initialize_field(&created, AccountIdentity::reference(), account_id)
-        .map_err(HandlerExecutionDenial::new)?;
-    candidate
-        .initialize_field(&created, AccountDisplayName::reference(), display_name)
+        .initialize_field(&created, AccountIdentity::at("AccountIdentity"), account_id)
         .map_err(HandlerExecutionDenial::new)?;
     candidate
         .initialize_field(
             &created,
-            AccountingRevision::reference(),
+            AccountDisplayName::at("AccountDisplayName"),
+            display_name,
+        )
+        .map_err(HandlerExecutionDenial::new)?;
+    candidate
+        .initialize_field(
+            &created,
+            AccountingRevision::at("AccountingRevision"),
             AccountJournalRevision::default(),
         )
         .map_err(HandlerExecutionDenial::new)?;
     candidate
-        .initialize_field(&created, Kind::reference(), AccountKind::Personal)
+        .initialize_field(&created, Kind::at("Kind"), AccountKind::Personal)
         .map_err(HandlerExecutionDenial::new)?;
     candidate
-        .initialize_field(&created, Status::reference(), AccountStatus::Open)
+        .initialize_field(&created, Status::at("Status"), AccountStatus::Open)
         .map_err(HandlerExecutionDenial::new)?;
     candidate
         .link(

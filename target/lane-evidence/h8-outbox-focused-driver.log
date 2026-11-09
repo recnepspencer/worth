@@ -1,0 +1,120 @@
+COMMAND: ["C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\h8_outbox_verify.py"]
+HEAD: 5d41be299030a2e9d90dae61dfc36da9a86cb385
+CLEAN: false
+START: 2026-11-08T23:22:21.741259+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+C_FREE_BYTES 884526194688
+prebuild: cargo metadata --offline --format-version 1 --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\Cargo.toml"
+prebuild: cargo test --message-format=json --no-run --package worth-query-execution --lib --profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\Cargo.toml" --unit-graph -Z unstable-options
+prebuild: cargo nextest list --cargo-message-format=json --package worth-query-execution --lib --cargo-profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\Cargo.toml" --list-type binaries-only --message-format json
+   Compiling typenum v1.20.1
+   Compiling memchr v2.8.3
+   Compiling cfg-if v1.0.5
+   Compiling windows-link v0.2.1
+   Compiling subtle v2.6.1
+   Compiling cpufeatures v0.2.17
+   Compiling itoa v1.0.18
+   Compiling worth-proof v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-proof)
+   Compiling either v1.19.0
+   Compiling allocator-api2 v0.2.21
+   Compiling rand_core v0.6.4
+   Compiling scopeguard v1.2.0
+   Compiling serde_core v1.0.229
+   Compiling crossbeam-utils v0.8.23
+   Compiling libc v0.2.190
+   Compiling zmij v1.0.23
+   Compiling hashbrown v0.14.5
+   Compiling once_cell v1.21.4
+   Compiling equivalent v1.0.3
+   Compiling hashbrown v0.17.1
+   Compiling zeroize v1.9.1
+   Compiling num-traits v0.2.19
+   Compiling arc-swap v1.9.2
+   Compiling object v0.39.1
+   Compiling serde v1.0.229
+   Compiling getrandom v0.4.3
+   Compiling crossbeam-epoch v0.9.21
+   Compiling crossbeam-queue v0.3.14
+   Compiling windows-sys v0.61.2
+   Compiling serde_json v1.0.154
+   Compiling lock_api v0.4.14
+   Compiling rmp v0.8.15
+   Compiling rand_xoshiro v0.6.0
+   Compiling generic-array v0.14.7
+   Compiling bitmaps v2.1.0
+   Compiling indexmap v2.14.2
+   Compiling ar_archive_writer v0.5.3
+   Compiling smallvec v1.16.3
+   Compiling crossbeam-deque v0.8.8
+   Compiling rmp-serde v1.3.1
+   Compiling sized-chunks v0.6.5
+   Compiling crypto-common v0.1.7
+   Compiling block-buffer v0.10.4
+   Compiling psm v0.1.32
+   Compiling parking_lot_core v0.9.12
+   Compiling rayon-core v1.13.0
+   Compiling im v15.1.0
+   Compiling digest v0.10.7
+   Compiling dashmap v6.2.1
+   Compiling rayon v1.12.0
+   Compiling sha2 v0.10.9
+   Compiling hmac v0.12.1
+   Compiling stacker v0.1.25
+   Compiling serde_stacker v0.1.14
+   Compiling worth-foundational v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-foundational)
+   Compiling worth-execution v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-execution)
+   Compiling worth-query-declaration v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-declaration)
+   Compiling worth-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-relational)
+   Compiling worth-signal v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-signal)
+   Compiling worth-query-installation v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-installation)
+   Compiling worth-query-admission v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-admission)
+   Compiling worth-runtime-bridge v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-runtime-bridge)
+   Compiling worth-testkit-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-testkit-relational)
+   Compiling worth-runtime-world v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-runtime-world)
+   Compiling worth-query-execution v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-execution)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 9m 26s
+prebuild: cargo nextest list --cargo-metadata "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\h8-outbox-focused\query\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\h8-outbox-focused\query\build\binaries.json" --message-format json --ignore-default-filter -E "test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::the_recorded_intent_names_its_encoding_and_no_runtime) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_record_resolves_by_its_durable_parts) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_record_with_another_durable_part_is_drift) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_operation_without_a_mutation_binding_is_unverifiable) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_record_without_operation_or_scope_matches_exactly) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_record_in_neither_encoding_is_malformed_not_drift) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::original_lookup_scope_uses_only_the_validated_correction_slot) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::current_recorded_operation_definition_is_stable_descriptive_meaning) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::installation_seals_and_absent_operations_do_not_readmit_a_definition) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::recorded_operation_readmission_validates_the_complete_intent_grammar) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent::shape::tests::durable_intent_shape_refuses_unknown_reordered_and_nullable_optional_slots) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent::shape::tests::durable_and_legacy_scopes_and_complete_optional_suffix_are_exact) + test(=domain_computation::primary_graph::provider::committed_dispatch_outbox::restoration_tests::durable_field_restore_accepts_the_exact_committed_shape) + test(=domain_computation::primary_graph::provider::committed_dispatch_outbox::restoration_tests::durable_field_restore_rejects_every_omission_and_wrong_storage_type) + test(=domain_computation::primary_graph::provider::committed_dispatch_outbox::restoration_tests::durable_field_restore_rejects_malformed_protocol_and_encoded_bytes) + test(=domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::original_definition_rebinds_across_independent_real_installations) + test(=domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::equal_outbound_fields_cannot_rebind_changed_inbound_source_or_limits) + test(=domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::missing_or_unverifiable_binding_never_claims_no_inbound) + test(=domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::only_a_matching_installed_absence_is_no_inbound)"
+prebuild: cargo nextest run --cargo-metadata "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\h8-outbox-focused\query\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\h8-outbox-focused\query\build\binaries.json" --profile ci --config-file "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\h8-outbox-focused\query\nextest.toml" --ignore-default-filter --no-fail-fast --no-tests=fail --message-format libtest-json --success-output immediate -E "test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::the_recorded_intent_names_its_encoding_and_no_runtime) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_record_resolves_by_its_durable_parts) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_record_with_another_durable_part_is_drift) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_operation_without_a_mutation_binding_is_unverifiable) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_record_without_operation_or_scope_matches_exactly) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_record_in_neither_encoding_is_malformed_not_drift) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::original_lookup_scope_uses_only_the_validated_correction_slot) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::current_recorded_operation_definition_is_stable_descriptive_meaning) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::installation_seals_and_absent_operations_do_not_readmit_a_definition) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::recorded_operation_readmission_validates_the_complete_intent_grammar) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent::shape::tests::durable_intent_shape_refuses_unknown_reordered_and_nullable_optional_slots) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent::shape::tests::durable_and_legacy_scopes_and_complete_optional_suffix_are_exact) + test(=domain_computation::primary_graph::provider::committed_dispatch_outbox::restoration_tests::durable_field_restore_accepts_the_exact_committed_shape) + test(=domain_computation::primary_graph::provider::committed_dispatch_outbox::restoration_tests::durable_field_restore_rejects_every_omission_and_wrong_storage_type) + test(=domain_computation::primary_graph::provider::committed_dispatch_outbox::restoration_tests::durable_field_restore_rejects_malformed_protocol_and_encoded_bytes) + test(=domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::original_definition_rebinds_across_independent_real_installations) + test(=domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::equal_outbound_fields_cannot_rebind_changed_inbound_source_or_limits) + test(=domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::missing_or_unverifiable_binding_never_claims_no_inbound) + test(=domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::only_a_matching_installed_absence_is_no_inbound)"
+RESULT query 0
+C_FREE_BYTES 876086292480
+prebuild: cargo metadata --offline --format-version 1 --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query-bank-world\Cargo.toml"
+prebuild: cargo test --message-format=json --no-run --package worth-query-bank-court-external-rail-server --test worth_query_bank_court_external_rail_server --profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query-bank-world\Cargo.toml" --unit-graph -Z unstable-options
+prebuild: cargo nextest list --cargo-message-format=json --package worth-query-bank-court-external-rail-server --test worth_query_bank_court_external_rail_server --cargo-profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query-bank-world\Cargo.toml" --list-type binaries-only --message-format json
+   Compiling worth-store-physical-backend v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-physical-backend)
+   Compiling worth-query-execution v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-execution)
+   Compiling worth-store-physical-isolation v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-physical-isolation)
+   Compiling worth-store-io-scheduler v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-io-scheduler)
+   Compiling worth-store-reclaim-policy v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-reclaim-policy)
+   Compiling worth-store-retention v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-retention)
+   Compiling worth-store-lsm-authority v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-lsm-authority)
+   Compiling worth-store-tiering v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-tiering)
+   Compiling worth-store-blob-chunks v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-blob-chunks)
+   Compiling worth-store-layout-indexes v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-layout-indexes)
+   Compiling worth-store v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store)
+   Compiling worth-store-recovery-runtime v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-recovery-runtime)
+   Compiling worth-store-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-relational)
+   Compiling worth-store-application v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-store\crates\worth-store-application)
+   Compiling worth-query-publication v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-publication)
+   Compiling worth-query-host v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-host)
+   Compiling bank-domain v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query-bank-world\crates\bank-domain)
+   Compiling bank-server v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query-bank-world\crates\bank-server)
+   Compiling worth-query-bank-testkit-server v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query-bank-world\crates\worth-query-bank-testkit-server)
+   Compiling worth-query-bank-court-external-rail-server v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query-bank-world\crates\worth-query-bank-court-external-rail-server)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 6m 26s
+prebuild: cargo nextest list --cargo-metadata "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\h8-outbox-focused\bank\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\h8-outbox-focused\bank\build\binaries.json" --message-format json --ignore-default-filter -E "test(=oracle::server_owned_effects::server::parallel_history::assessment_history::assessment_history_settles_at_each_request_width) + test(=oracle::server_owned_effects::server::parallel_history::transfer_history::seeded_transfers_match_at_host_policy_and_each_request_width) + test(=process::server_owned_effects::server::ordinary_mutations::estate_operations::c4_retry_outbox_rebind::ordinary_equivalent_retry_skips_materialization_and_the_external_rail) + test(=process::server_owned_effects::server::ordinary_mutations::estate_operations::external_effect_dispatch::committed_outbox::committed_outbox_is_fresh_owner_truth_with_exact_commit_affinity) + test(=process::server_owned_effects::server::ordinary_mutations::estate_operations::external_effect_dispatch::committed_outbox::another_runtime_without_the_exact_commit_cannot_observe_a_receipts_committed_outbox)"
+prebuild: "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query-bank-world\target\debug\deps\worth_query_bank_court_external_rail_server-c13c2d9ded46b1fb.exe" --list --exact oracle::server_owned_effects::server::parallel_history::assessment_history::assessment_history_settles_at_each_request_width oracle::server_owned_effects::server::parallel_history::transfer_history::seeded_transfers_match_at_host_policy_and_each_request_width process::server_owned_effects::server::ordinary_mutations::estate_operations::c4_retry_outbox_rebind::ordinary_equivalent_retry_skips_materialization_and_the_external_rail process::server_owned_effects::server::ordinary_mutations::estate_operations::external_effect_dispatch::committed_outbox::committed_outbox_is_fresh_owner_truth_with_exact_commit_affinity process::server_owned_effects::server::ordinary_mutations::estate_operations::external_effect_dispatch::committed_outbox::another_runtime_without_the_exact_commit_cannot_observe_a_receipts_committed_outbox
+prebuild: "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query-bank-world\target\debug\deps\worth_query_bank_court_external_rail_server-c13c2d9ded46b1fb.exe" --exact oracle::server_owned_effects::server::parallel_history::assessment_history::assessment_history_settles_at_each_request_width oracle::server_owned_effects::server::parallel_history::transfer_history::seeded_transfers_match_at_host_policy_and_each_request_width process::server_owned_effects::server::ordinary_mutations::estate_operations::c4_retry_outbox_rebind::ordinary_equivalent_retry_skips_materialization_and_the_external_rail process::server_owned_effects::server::ordinary_mutations::estate_operations::external_effect_dispatch::committed_outbox::committed_outbox_is_fresh_owner_truth_with_exact_commit_affinity process::server_owned_effects::server::ordinary_mutations::estate_operations::external_effect_dispatch::committed_outbox::another_runtime_without_the_exact_commit_cannot_observe_a_receipts_committed_outbox --nocapture
+
+thread 'process::server_owned_effects::server::ordinary_mutations::estate_operations::external_effect_dispatch::committed_outbox::another_runtime_without_the_exact_commit_cannot_observe_a_receipts_committed_outbox' (68500) panicked at crates\worth-query-bank-testkit\src\binary_path.rs:13:5:
+product executable was not built: C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query-bank-world\target\debug\bank-external-rail.exe
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'process::server_owned_effects::server::ordinary_mutations::estate_operations::c4_retry_outbox_rebind::ordinary_equivalent_retry_skips_materialization_and_the_external_rail' (17000) panicked at crates\worth-query-bank-testkit\src\binary_path.rs:13:5:
+product executable was not built: C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query-bank-world\target\debug\bank-external-rail.exe
+
+thread 'process::server_owned_effects::server::ordinary_mutations::estate_operations::external_effect_dispatch::committed_outbox::committed_outbox_is_fresh_owner_truth_with_exact_commit_affinity' (40288) panicked at crates\worth-query-bank-testkit\src\binary_path.rs:13:5:
+product executable was not built: C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query-bank-world\target\debug\bank-external-rail.exe
+RESULT bank 101
+
+END: 2026-11-08T23:39:01.816353+00:00
+EXIT: 1

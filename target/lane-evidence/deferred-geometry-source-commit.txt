@@ -1,0 +1,10 @@
+fix(relational): price deferred index publication from live catalog
+
+Quote the actual retained catalog at Native preflight and pay from the
+original request. Hold catalog growth through the prepaid Native cutover,
+then release coordination before settlement. Keep owning payload cleanup
+in the reserved completion until settlement, with backing retired before
+its funding tickets. Preserve Full validation, the 8M serving allowance,
+and every existing court assertion.
+
+Co-Authored-By: GPT-6.1 Sol <noreply@openai.com>

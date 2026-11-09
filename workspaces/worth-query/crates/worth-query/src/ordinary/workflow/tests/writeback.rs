@@ -258,7 +258,8 @@ fn explicit_writeback(
         "ordinary-declarative-writeback",
         &scope,
         snapshot,
-    );
+    )
+    .expect("fixture digest must fit");
     let basis = basis_lifecycle()
         .branch_head("main", true)
         .prepare_mutation()
@@ -278,10 +279,11 @@ fn explicit_writeback(
         },
     )
     .expect("explicit writeback should normalize");
-    let eligibility = match evaluate_effect_eligibility(normalized) {
-        EffectEligibilityOutcome::Admitted(eligibility) => eligibility,
-        other => panic!("explicit writeback should admit, got {other:?}"),
-    };
+    let eligibility =
+        match evaluate_effect_eligibility(normalized).expect("fixture digest must fit") {
+            EffectEligibilityOutcome::Admitted(eligibility) => eligibility,
+            other => panic!("explicit writeback should admit, got {other:?}"),
+        };
     let lowered = scope_admitted_effect_plan(admit_effect_intent(eligibility))
         .lower()
         .expect("explicit writeback should lower");
@@ -299,7 +301,10 @@ fn explicit_writeback(
         1,
     )
     .receipt();
-    let diagnostics = materialize_diagnostics
-        .then(|| receipt.materialize_diagnostics(EffectDiagnosticsRequest::forensic()));
+    let diagnostics = materialize_diagnostics.then(|| {
+        receipt
+            .materialize_diagnostics(EffectDiagnosticsRequest::forensic())
+            .expect("fixture digest must fit")
+    });
     (receipt, diagnostics)
 }

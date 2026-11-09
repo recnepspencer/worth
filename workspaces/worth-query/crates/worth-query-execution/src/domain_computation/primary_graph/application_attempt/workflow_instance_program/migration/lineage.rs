@@ -42,6 +42,10 @@ pub fn successor_identity(
             layout.instance.entity_kind,
             &layout.instance.identity,
         )? {
+            Some(AspectValue::String(InternedString::Stored(identity))) => {
+                let identity = identity.as_str().to_owned();
+                Some(identity)
+            }
             Some(AspectValue::String(InternedString::Raw(identity))) => Some(identity),
             _ => None,
         },

@@ -14,25 +14,20 @@ pub(super) fn eligible_registrations<'state>(
     stage: super::InvariantStage,
 ) -> Vec<InvariantPacketRegistration> {
     let touched_kinds = std::cell::OnceCell::new();
-    let native = runtime
-        .config
-        .schema
-        .invariant_catalog
-        .registrations
-        .iter()
-        .chain(
-            runtime
-                .schema_contract_runtime
-                .relation_integrity_registrations
-                .iter(),
-        )
+    let native = stage
+        .registration_points(request.execution_point())
+        .into_iter()
+        .flatten()
+        .flat_map(|point| runtime.schema_contract_runtime.invariant_points[point as usize].iter())
         .take(if stage.native() { usize::MAX } else { 0 })
         .take_while(|_| {
             execution.check_live().is_ok()
                 && preparation_budget.is_none_or(|budget| budget.try_plan_item(0))
         })
         .filter(|registration| {
-            registration.execution_point == request.execution_point()
+            request
+                .execution_point()
+                .includes(registration.execution_point)
                 && request.includes_registration(registration)
         })
         .filter_map(|registration| {
@@ -47,10 +42,16 @@ pub(super) fn eligible_registrations<'state>(
             Some(InvariantPacketRegistration::Native(registration.clone()))
         });
 
-    let custom = runtime
-        .schema_contract_runtime
-        .custom_invariant_registries
-        .iter()
+    let custom = stage
+        .registration_points(request.execution_point())
+        .into_iter()
+        .flatten()
+        .flat_map(|point| {
+            runtime
+                .schema_contract_runtime
+                .custom_invariant_registries
+                .at(point)
+        })
         .take(if stage.custom() { usize::MAX } else { 0 })
         .take_while(|_| {
             execution.check_live().is_ok()
@@ -102,10 +103,12 @@ pub(super) fn eligible_registrations<'state>(
                     basis: CustomInvariantNonApplicability::CandidateOutsideClosure,
                 });
             }
+            let observation = request.observation_for(registration.execution_point());
+            let version = request.version_for(registration.execution_point());
             let prepared_scope =
                 crate::validation::data::PreparedCustomInvariantScope::capture_with_shared_inputs(
-                    request.observation(),
-                    request.version_id(),
+                    observation,
+                    version,
                     request.semantic_plan(),
                     registration.access_contract(),
                     &work,
@@ -114,8 +117,8 @@ pub(super) fn eligible_registrations<'state>(
             let mut planner = CustomInvariantScopePlanner::new_at_current_version(
                 runtime,
                 execution,
-                request.observation(),
-                request.version_id(),
+                observation,
+                version,
                 request.current_version_id(),
                 &prepared_scope,
                 work.clone(),

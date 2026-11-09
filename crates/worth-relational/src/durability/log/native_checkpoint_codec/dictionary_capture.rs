@@ -15,6 +15,7 @@ pub(super) struct CapturedDictionary {
     pub(super) by_text: Vec<RelationalCheckpointSymbolBucket>,
 }
 pub(super) fn capture(
+    _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     snapshot: &SymbolTableSnapshot,
     policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     members: &mut BTreeMap<RelationalDurableMemberLocator, RelationalCheckpointMember>,

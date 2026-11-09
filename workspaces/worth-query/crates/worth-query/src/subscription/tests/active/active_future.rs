@@ -36,7 +36,7 @@ fn temporal_async_and_mixed_live_meaning_become_real_active_lanes() {
         let activation = activation_for_future(
             LiveQueryFamily::OrderedCollection,
             Some(LiveViewShapeFamily::Table),
-            future_selection,
+            future_selection.expect("fixture digest must fit"),
         );
         let future_digest = activation
             .future_selection()
@@ -85,7 +85,8 @@ fn future_equivalent_consumers_share_one_lane_and_retain_lane_owned_future_ident
                 "request",
                 "employees",
             )],
-        ),
+        )
+        .expect("fixture digest must fit"),
     );
     let first = admit_active_subscription_lane(
         activation.clone(),
@@ -104,14 +105,16 @@ fn future_equivalent_consumers_share_one_lane_and_retain_lane_owned_future_ident
     let first_attachment = attach_subscription_consumer(
         &mut runtime,
         &first_handle,
-        SubscriptionConsumerAttachmentRequest::admitted("consumer-a", "cursor-a"),
+        SubscriptionConsumerAttachmentRequest::admitted("consumer-a", "cursor-a")
+            .expect("fixture digest must fit"),
         attachment_budget(2, DeliveryBackpressurePolicy::RetainWithinWindow),
     )
     .unwrap();
     let second_attachment = attach_subscription_consumer(
         &mut runtime,
         &second_handle,
-        SubscriptionConsumerAttachmentRequest::admitted("consumer-b", "cursor-b"),
+        SubscriptionConsumerAttachmentRequest::admitted("consumer-b", "cursor-b")
+            .expect("fixture digest must fit"),
         attachment_budget(2, DeliveryBackpressurePolicy::RetainWithinWindow),
     )
     .unwrap();
@@ -147,7 +150,8 @@ fn async_request_identity_mismatch_denies_semantic_lane_join() {
                     "request",
                     "employees-a",
                 )],
-            ),
+            )
+            .expect("fixture digest must fit"),
         ),
         active_budget(1, 2, ActiveSubscriptionAllocationPolicy::LifecycleArena),
     )
@@ -162,7 +166,8 @@ fn async_request_identity_mismatch_denies_semantic_lane_join() {
                     "request",
                     "employees-b",
                 )],
-            ),
+            )
+            .expect("fixture digest must fit"),
         ),
         active_budget(1, 2, ActiveSubscriptionAllocationPolicy::LifecycleArena),
     )

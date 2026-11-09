@@ -9,8 +9,15 @@ use crate::aspects::identity::{AspectContractRevision, AspectIdentity};
 use crate::aspects::keys::AspectKey;
 use crate::aspects::masks::AspectMaskContract;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct AspectContract {
+    definition: std::sync::Arc<AspectContractDefinition>,
+}
+
+#[derive(Debug, Clone)]
+struct AspectContractDefinition {
+    semantic_bytes: usize,
+    allocation_bytes: usize,
     key: AspectKey,
     identity: AspectIdentity,
     revision: AspectContractRevision,
@@ -22,71 +29,84 @@ pub struct AspectContract {
 }
 
 impl AspectContract {
-    /// Checked heap allocated by Clone; excludes this inline contract.
+    /// Clone shares the immutable definition and allocates no heap backing.
     pub fn clone_allocation_bytes(&self) -> Option<usize> {
-        self.key.as_str().len().checked_add(match &self.shape {
-            AspectShape::Struct(shape) => shape.clone_allocation_bytes()?,
-            _ => 0,
-        })
+        Some(0)
     }
 
     pub fn key(&self) -> &AspectKey {
-        &self.key
+        &self.definition.key
     }
 
     pub fn identity(&self) -> AspectIdentity {
-        self.identity
+        self.definition.identity
     }
 
     pub fn revision(&self) -> AspectContractRevision {
-        self.revision
+        self.definition.revision
     }
 
     pub fn shape(&self) -> &AspectShape {
-        &self.shape
+        &self.definition.shape
     }
 
     pub fn masks(&self) -> &AspectMaskContract {
-        &self.masks
+        &self.definition.masks
     }
 
     pub fn absence(&self) -> AbsenceLaw {
-        self.absence
+        self.definition.absence
     }
 
     pub fn equivalence(&self) -> AspectEquivalenceBasis {
-        self.equivalence
+        self.definition.equivalence
     }
 
     pub fn evolution(&self) -> crate::aspects::evolution::AspectEvolutionPolicy {
-        self.evolution
+        self.definition.evolution
     }
 
     /// Stable logical width of this contract's native semantic material.
     pub fn semantic_byte_width(&self) -> usize {
-        let shape = match &self.shape {
-            AspectShape::Struct(shape) => shape.fields().iter().fold(1_usize, |total, field| {
-                total
-                    .saturating_add(field.key().as_str().len())
-                    .saturating_add(4)
-            }),
-            _ => 2,
-        };
-        self.key
-            .as_str()
-            .len()
-            .saturating_add(20)
-            .saturating_add(shape)
+        self.definition.semantic_bytes
     }
 
-    /// Allocator capacity retained exclusively by this contract, excluding
-    /// its inline `AspectContract` storage.
+    /// Reachable allocation, including shared backing; not a clone quote.
     pub fn owned_allocation_capacity_bytes(&self) -> usize {
-        self.key
-            .owned_allocation_capacity_bytes()
-            .saturating_add(match &self.shape {
-                AspectShape::Struct(shape) => shape.owned_allocation_capacity_bytes(),
-                _ => 0,
-            })
+        self.definition.allocation_bytes
     }
 }
+
+impl AspectContract {
+    pub(crate) fn shares_definition(&self, other: &Self) -> bool {
+        std::sync::Arc::ptr_eq(&self.definition, &other.definition)
+    }
+}
+impl std::fmt::Debug for AspectContract {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AspectContract")
+            .field("key", self.key())
+            .field("identity", &self.identity())
+            .field("revision", &self.revision())
+            .field("shape", self.shape())
+            .field("masks", self.masks())
+            .field("absence", &self.absence())
+            .field("equivalence", &self.equivalence())
+            .field("evolution", &self.evolution())
+            .finish()
+    }
+}
+
+impl PartialEq for AspectContractDefinition {
+    fn eq(&self, other: &Self) -> bool {
+        self.key == other.key
+            && self.identity == other.identity
+            && self.revision == other.revision
+            && self.shape == other.shape
+            && self.masks == other.masks
+            && self.absence == other.absence
+            && self.equivalence == other.equivalence
+            && self.evolution == other.evolution
+    }
+}
+impl Eq for AspectContractDefinition {}

@@ -61,32 +61,18 @@ impl<
         Principal,
         PrincipalIdentity,
         PrincipalIdentityBinding,
-        ScopeAspect,
         ScopeField,
         ScopeValue,
-        ScopeWrite,
-        ScopeUnit,
         PrincipalSource,
         QueryAuthorization,
         Invoker,
         IntentEntity,
-        IdentityAspect,
         IdentityField,
         IdentityValue,
-        IdentityWrite,
-        IdentityUnit,
-        RevisionAspect,
         RevisionField,
         RevisionValue,
-        RevisionWrite,
-        RevisionEquality,
-        RevisionUnit,
-        LifecycleAspect,
         LifecycleField,
         LifecycleValue,
-        LifecycleWrite,
-        LifecycleEquality,
-        LifecycleUnit,
         Authorization,
     > WorthQueryPendingConditionalOperation<Schema>
     for PendingTemporalOperation<
@@ -115,11 +101,8 @@ impl<
             PrincipalIdentity,
             PrincipalIdentityBinding,
             Scope,
-            ScopeAspect,
             ScopeField,
             ScopeValue,
-            ScopeWrite,
-            ScopeUnit,
             PrincipalSource,
             QueryAuthorization,
         >,
@@ -130,23 +113,12 @@ impl<
             Scope,
             Invoker,
             IntentEntity,
-            IdentityAspect,
             IdentityField,
             IdentityValue,
-            IdentityWrite,
-            IdentityUnit,
-            RevisionAspect,
             RevisionField,
             RevisionValue,
-            RevisionWrite,
-            RevisionEquality,
-            RevisionUnit,
-            LifecycleAspect,
             LifecycleField,
             LifecycleValue,
-            LifecycleWrite,
-            LifecycleEquality,
-            LifecycleUnit,
             Authorization,
         >,
     >
@@ -175,14 +147,13 @@ where
         worth_query_installation::facade::ApplicationIdentityScalarValueBinding<
                 Value = PrincipalIdentity,
             > + 'static,
-    ScopeAspect: 'static,
-    ScopeField: worth_query_installation::facade::DeclaredApplicationFieldValue<Value = ScopeValue>
-        + 'static,
+    ScopeField: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Scope,
+            Value = ScopeValue,
+        > + 'static,
     ScopeField::Binding:
         worth_query_installation::facade::ApplicationScalarValueBinding<Value = ScopeValue>,
     ScopeValue: Clone + Send + Sync + 'static,
-    ScopeWrite: worth_query_installation::facade::WritePosture + 'static,
-    ScopeUnit: worth_query_installation::facade::ApplicationFieldUnit + 'static,
     PrincipalSource: super::reconstruction_authority::WorthQueryTemporalPrincipalSource<Schema>,
     QueryAuthorization: super::WorthQueryTemporalQueryAuthorization<
             Schema,
@@ -200,41 +171,31 @@ where
         Scope,
     >,
     IntentEntity: 'static,
-    IdentityAspect: 'static,
-    IdentityField: worth_query_installation::facade::OperationReads<ApplicationOperation>
-        + worth_query_installation::facade::DeclaredApplicationFieldValue<Value = IdentityValue>
-        + 'static,
+    IdentityField: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = IntentEntity,
+            Value = IdentityValue,
+        > + 'static,
     IdentityField::Binding: worth_query_installation::facade::ApplicationReadableScalarValueBinding<
         Value = IdentityValue,
     >,
     IdentityValue: Clone + Send + 'static,
-    IdentityWrite: worth_query_installation::facade::WritePosture + 'static,
-    IdentityUnit: worth_query_installation::facade::ApplicationFieldUnit + 'static,
-    RevisionAspect: 'static,
-    RevisionField: worth_query_installation::facade::OperationReads<ApplicationOperation>
-        + worth_query_installation::facade::OperationWrites<ApplicationOperation>
-        + worth_query_installation::facade::DeclaredApplicationFieldValue<Value = RevisionValue>
-        + 'static,
+    RevisionField: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = IntentEntity,
+            Value = RevisionValue,
+        > + 'static,
     RevisionField::Binding: worth_query_installation::facade::ApplicationReadableScalarValueBinding<
             Value = RevisionValue,
         > + worth_query_installation::facade::WorthQueryTemporalIntentRevisionValue,
     RevisionValue: Clone + Send + 'static,
-    RevisionWrite: worth_query_installation::facade::WritableCapability + 'static,
-    RevisionEquality: 'static,
-    RevisionUnit: worth_query_installation::facade::ApplicationFieldUnit + 'static,
-    LifecycleAspect: 'static,
-    LifecycleField: worth_query_installation::facade::OperationReads<ApplicationOperation>
-        + worth_query_installation::facade::OperationWrites<ApplicationOperation>
-        + worth_query_installation::facade::DeclaredApplicationFieldValue<Value = LifecycleValue>
-        + 'static,
+    LifecycleField: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = IntentEntity,
+            Value = LifecycleValue,
+        > + 'static,
     LifecycleField::Binding:
         worth_query_installation::facade::ApplicationReadableScalarValueBinding<
             Value = LifecycleValue,
         >,
     LifecycleValue: Clone + Send + Sync + 'static,
-    LifecycleWrite: worth_query_installation::facade::WritableCapability + 'static,
-    LifecycleEquality: 'static,
-    LifecycleUnit: worth_query_installation::facade::ApplicationFieldUnit + 'static,
     Authorization: super::WorthQueryTemporalOperationAuthorization<Schema, ApplicationOperation, Input, Scope>
         + 'static,
 {

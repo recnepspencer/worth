@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 mod construction;
 
 use crate::basis_lifecycle::{
@@ -185,8 +186,10 @@ impl WorthQueryProjectionConsumptionPlan {
         &self.inner.request_digest
     }
 
-    pub fn bind_contract(&self) -> MaterializedProjectionContract {
-        self.admitted.bind_contract()
+    pub fn bind_contract(
+        &self,
+    ) -> Result<MaterializedProjectionContract, IdentityDerivationDenial> {
+        Ok(self.admitted.bind_contract()?)
     }
 
     pub fn warning_kinds(&self) -> Option<&ProjectionConsumptionWarnings> {

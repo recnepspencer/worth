@@ -1,8 +1,8 @@
 use crate::runtime::state::subsystems::RuntimeInstrumentation;
 
-/// The lane a partition-map copy is charged to.
+/// The lane an observed partition payload copy is charged to.
 ///
-/// Copying the authoritative map is legitimate work in more than one lane, and
+/// Copying an observed partition is legitimate work in more than one lane, and
 /// the lanes must never share a counter: an ordinary-lane zero is only
 /// interpretable when reconstructive copies are accounted somewhere else
 /// instead of being laundered into silence.
@@ -18,27 +18,16 @@ pub(crate) enum PartitionEditionCopyLane {
 
 /// Copy-on-write actually performed under one writer guard.
 ///
-/// The spine and the partitions behind it are separate costs and are tallied
-/// separately. A spine copy is Theta(partitions) pointer work; copying one
-/// partition out of structural sharing is Theta(that partition's slots), which
-/// is the larger number whenever a partition holds more than a handful of
-/// records. Charging only the spine would report the cheaper half of the work
-/// and call the expensive half free.
+/// Persistent map roots share their spine; only changed paths are copied.
+/// This tally records actual partition payload detachment, separately by lane.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub(crate) struct PartitionCopyTally {
-    spine: bool,
     partitions: usize,
     entity_slots: usize,
     relation_slots: usize,
 }
 
 impl PartitionCopyTally {
-    /// Record that the map spine itself was copied. Idempotent: once the guard
-    /// owns the spine outright, later mutations reuse it.
-    pub(super) fn record_spine_copy(&mut self) {
-        self.spine = true;
-    }
-
     /// Record one partition state lifted out of structural sharing, together
     /// with the slots that copy carried.
     pub(super) fn record_partition_copy(&mut self, entity_slots: usize, relation_slots: usize) {
@@ -48,7 +37,7 @@ impl PartitionCopyTally {
     }
 
     const fn is_empty(&self) -> bool {
-        !self.spine && self.partitions == 0
+        self.partitions == 0
     }
 }
 
@@ -67,17 +56,11 @@ impl PartitionEditionCopyLane {
         }
         instrumentation.count(|counters| match self {
             Self::Ordinary => {
-                if tally.spine {
-                    counters.full_state_clones += 1;
-                }
                 counters.ordinary_partitions_copied_on_write += tally.partitions;
                 counters.ordinary_partition_slots_copied_on_write +=
                     tally.entity_slots + tally.relation_slots;
             }
             Self::Reconstructive => {
-                if tally.spine {
-                    counters.reconstructive_state_clones += 1;
-                }
                 counters.reconstructive_partitions_materialized += tally.partitions;
             }
         });

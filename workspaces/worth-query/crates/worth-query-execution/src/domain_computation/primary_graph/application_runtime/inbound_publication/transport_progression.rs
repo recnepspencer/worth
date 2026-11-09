@@ -197,7 +197,6 @@ pub fn completion_candidate(
             | Preparation::ValidationUnavailable
             | Preparation::PreparationUnavailable
             | Preparation::SnapshotUnavailable
-            | Preparation::IndexPreparationUnavailable
             | Preparation::InstalledBindingMismatch
             | Preparation::DispatchOwnerMismatch),
         ) => Err(Outcome::Denied(

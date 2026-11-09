@@ -131,7 +131,7 @@ fn workflow_stage_receipts_retain_stage_local_plans_and_one_attempt_session() {
         .admit_workflow_resources(execution_resource_request(), &workspace)
         .unwrap();
     let session_identity = admitted.provider_session_identity().to_owned();
-    let run = admitted.start_workflow(&mut workspace).unwrap();
+    let run = admitted.start_workflow(&mut workspace).unwrap().unwrap();
     assert_eq!(
         run.operation_resource_evidence()
             .provider_session_identity(),

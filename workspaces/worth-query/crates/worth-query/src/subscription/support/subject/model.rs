@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::super::super::activation::SubscriptionActivationInput;
 use super::super::super::active_lane::ActiveSubscriptionLaneAdmission;
@@ -23,96 +24,102 @@ pub struct QuerySubscriptionSupportSubject {
 }
 
 impl QuerySubscriptionSupportSubject {
-    pub fn declaration(declaration: &QuerySubscriptionDeclarationArtifact) -> Self {
-        Self::new(
+    pub fn declaration(
+        declaration: &QuerySubscriptionDeclarationArtifact,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             QuerySubscriptionSupportClass::Declaration,
             declaration.family().clone(),
             declaration.future_selection().clone(),
             declaration.declaration_identity(),
             None,
             declaration.declaration_identity(),
-        )
+        )?)
     }
 
     pub fn activation(
         declaration: &QuerySubscriptionDeclarationArtifact,
         activation: &SubscriptionActivationInput,
-    ) -> Self {
-        Self::new(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             QuerySubscriptionSupportClass::Activation,
             declaration.family().clone(),
             declaration.future_selection().clone(),
             declaration.declaration_identity(),
             Some(activation.admission_identity()),
             activation.evidence_identity(),
-        )
+        )?)
     }
 
     pub fn active_lifecycle(
         declaration: &QuerySubscriptionDeclarationArtifact,
         admission: &QuerySubscriptionAdmissionArtifact,
         active_admission: &ActiveSubscriptionLaneAdmission,
-    ) -> Self {
-        Self::new(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             QuerySubscriptionSupportClass::ActiveLifecycle,
             declaration.family().clone(),
             declaration.future_selection().clone(),
             declaration.declaration_identity(),
             Some(admission.evidence_identity()),
             active_admission.lane_digest().evidence_identity(),
-        )
+        )?)
     }
 
     pub fn continuation(
         declaration: &QuerySubscriptionDeclarationArtifact,
         admission: &QuerySubscriptionAdmissionArtifact,
         continuation: &SubscriptionContinuationReport,
-    ) -> Self {
-        Self::new(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             QuerySubscriptionSupportClass::Continuation,
             declaration.family().clone(),
             declaration.future_selection().clone(),
             declaration.declaration_identity(),
             Some(admission.evidence_identity()),
             continuation.evidence_identity(),
-        )
+        )?)
     }
 
     pub fn preview_closeout(
         declaration: &QuerySubscriptionDeclarationArtifact,
         admission: &QuerySubscriptionAdmissionArtifact,
         closeout: &SubscriptionLifecycleCloseout,
-    ) -> Self {
-        Self::new(
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             QuerySubscriptionSupportClass::PreviewCloseout,
             declaration.family().clone(),
             closeout.future_selection().clone(),
             declaration.declaration_identity(),
             Some(admission.evidence_identity()),
             closeout.evidence_identity(),
-        )
+        )?)
     }
 
-    pub fn durable_replay(declaration: &QuerySubscriptionDeclarationArtifact) -> Self {
-        Self::new(
+    pub fn durable_replay(
+        declaration: &QuerySubscriptionDeclarationArtifact,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             QuerySubscriptionSupportClass::DurableReplay,
             declaration.family().clone(),
             declaration.future_selection().clone(),
             declaration.declaration_identity(),
             None,
             declaration.declaration_identity(),
-        )
+        )?)
     }
 
-    pub fn store_backed_restart(declaration: &QuerySubscriptionDeclarationArtifact) -> Self {
-        Self::new(
+    pub fn store_backed_restart(
+        declaration: &QuerySubscriptionDeclarationArtifact,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(
             QuerySubscriptionSupportClass::StoreBackedRestart,
             declaration.family().clone(),
             declaration.future_selection().clone(),
             declaration.declaration_identity(),
             None,
             declaration.declaration_identity(),
-        )
+        )?)
     }
 
     fn new(
@@ -122,7 +129,7 @@ impl QuerySubscriptionSupportSubject {
         declaration_identity: &WorthQueryEvidenceIdentity,
         admission_identity: Option<&WorthQueryEvidenceIdentity>,
         source_identity: &WorthQueryEvidenceIdentity,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let subject_identity = support_subject_identity(
             support_class.as_str(),
             &family,
@@ -130,8 +137,8 @@ impl QuerySubscriptionSupportSubject {
             declaration_identity,
             admission_identity,
             source_identity,
-        );
-        Self {
+        )?;
+        Ok(Self {
             support_class,
             family,
             future_selection,
@@ -139,7 +146,7 @@ impl QuerySubscriptionSupportSubject {
             admission_identity: admission_identity.cloned(),
             source_identity: source_identity.clone(),
             subject_identity,
-        }
+        })
     }
 
     pub fn support_class(&self) -> &QuerySubscriptionSupportClass {

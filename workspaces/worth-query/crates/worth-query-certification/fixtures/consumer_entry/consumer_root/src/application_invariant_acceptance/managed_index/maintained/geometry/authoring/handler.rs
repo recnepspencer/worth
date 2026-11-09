@@ -95,7 +95,8 @@ fn directory_target(
     reader: &mut Reader<'_, '_, '_>,
     key: &str,
 ) -> Result<Target<Directory>, HandlerExecutionDenial> {
-    let entity = reader.resolve_entity(DirectoryIdentity::reference(), key.to_owned())?;
+    let entity =
+        reader.resolve_entity(DirectoryIdentity::at("DirectoryIdentity"), key.to_owned())?;
     reader
         .reader()
         .require_decision_entity(&entity, Directory::reference())
@@ -106,19 +107,19 @@ fn vertex_target(
     reader: &mut Reader<'_, '_, '_>,
     key: &str,
 ) -> Result<Target<Vertex>, HandlerExecutionDenial> {
-    let entity = reader.resolve_entity(VertexIdentity::reference(), key.to_owned())?;
+    let entity = reader.resolve_entity(VertexIdentity::at("VertexIdentity"), key.to_owned())?;
     reader
         .reader()
         .require_decision_entity(&entity, Vertex::reference())
         .map_err(HandlerExecutionDenial::new)?;
-    reader.field(&entity, VertexRegion::reference())?;
+    reader.field(&entity, VertexRegion::at("VertexRegion"))?;
     reader.mutation_target(&entity)
 }
 fn edge_identity(
     reader: &mut Reader<'_, '_, '_>,
     key: &str,
 ) -> Result<WorthQueryInvariantEntityIdentity<Catalog, Edge>, HandlerExecutionDenial> {
-    let entity = reader.resolve_entity(EdgeIdentity::reference(), key.to_owned())?;
+    let entity = reader.resolve_entity(EdgeIdentity::at("EdgeIdentity"), key.to_owned())?;
     reader
         .reader()
         .require_decision_entity(&entity, Edge::reference())

@@ -36,3 +36,6 @@ pub(super) fn admit(
         ticket.map(|ticket| HistoricalKindCustody::new(std::sync::Mutex::new(ticket)))
     })
 }
+
+#[cfg(test)]
+mod custody_tests;

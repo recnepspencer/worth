@@ -47,7 +47,7 @@ impl
     }
 }
 
-pub fn public_membership_definition() -> ApplicationQueryDefinition<
+pub fn public_membership_definition() -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     PublicAccountMembershipQuery,
     AccountSummaryParameters,
@@ -72,21 +72,13 @@ pub fn public_membership_definition() -> ApplicationQueryDefinition<
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 
 pub fn tag_result_field() -> ApplicationQueryResultFieldRef<
     PublicAccountMembershipQuery,
     StatusResultSlot,
     IdentityExecutionSchema,
-    Account,
-    AccountMembership,
     AccountMembershipTag,
-    String,
-    worth_query_declaration::facade::application_schema::ReadOnly,
-    worth_query_declaration::facade::application_schema::EqualityPredicate,
-    worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("tag", AccountMembershipTag::reference())
+    ApplicationQueryResultFieldRef::new("tag", AccountMembershipTag::at("AccountMembershipTag"))
 }

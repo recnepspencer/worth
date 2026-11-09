@@ -48,7 +48,7 @@ pub(super) fn compile<S: ApplicationSchema>(
         .map(|(name, definition)| {
             Ok((
                 name,
-                Arc::new(definition.install(schema.binding_identity())?),
+                Arc::new(definition.install(schema.binding_identity(), schema.identity_budget)?),
             ))
         })
         .collect()

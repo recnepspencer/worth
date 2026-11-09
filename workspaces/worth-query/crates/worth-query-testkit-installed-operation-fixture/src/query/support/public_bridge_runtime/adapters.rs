@@ -41,7 +41,7 @@ impl WorthQueryRuntimeSchemaAdapter for PublicSchemaAdapter {
         _schema_view: &QuerySchemaView,
     ) -> Result<LiveViewDeclarationAdmissionBoundaryReceipt, WorthQueryWorkspaceError> {
         let receipt = self.build_live_view_declaration_admission_receipt(name, request);
-        Ok(self.build_live_view_declaration_boundary_receipt(name, request, receipt))
+        Ok(self.build_live_view_declaration_boundary_receipt(name, request, receipt?)?)
     }
 }
 
@@ -67,7 +67,7 @@ impl WorthQueryRuntimeSourceAdapter for PublicSourceAdapter {
         self.state
             .borrow_mut()
             .live_views
-            .insert(live_target, request.target_collection_identity());
+            .insert(live_target, request.target_collection_identity()?);
         Ok(WorthQueryLiveViewHandle::new(name))
     }
 
@@ -215,7 +215,7 @@ impl WorthQueryRuntimeWriteAuthorityAdapter for PublicWriteAuthorityAdapter {
                 entity_identity,
                 mutation_kind,
                 mutation.declared_aspect_touches(),
-            )],
+            )?],
             bridge_authority,
         );
         Ok(self.build_write_authority_execution_receipt(&mutation, receipt))
@@ -342,6 +342,7 @@ pub struct PublicSubscriptionActivationAdapter;
 impl WorthQueryRuntimeSubscriptionActivationAdapter for PublicSubscriptionActivationAdapter {
     fn support_evidence_identity(&self) -> WorthQueryEvidenceIdentity {
         runtime_subscription_support_evidence_identity("public-graph-subscription-activation")
+            .expect("fixed support label fits digest bounds")
     }
 
     fn admit_activation(
@@ -350,7 +351,7 @@ impl WorthQueryRuntimeSubscriptionActivationAdapter for PublicSubscriptionActiva
         activation: &SubscriptionActivationInput,
     ) -> Result<SubscriptionActivationBoundaryReceipt, WorthQueryWorkspaceError> {
         let receipt = self.build_subscription_activation_receipt(view_name, activation);
-        Ok(self.build_subscription_activation_boundary_receipt(view_name, activation, receipt))
+        Ok(self.build_subscription_activation_boundary_receipt(view_name, activation, receipt?)?)
     }
 }
 
@@ -367,8 +368,8 @@ impl WorthQueryRuntimePreviewBasisAdapter for PublicPreviewBasisAdapter {
             authority,
             label.clone(),
             effect_policy,
-            WorthQueryBasisAdmissionEvidenceRow::rows_from_values(["public-graph-preview-basis"]),
-        ))
+            WorthQueryBasisAdmissionEvidenceRow::rows_from_values(["public-graph-preview-basis"])?,
+        )?)
     }
 }
 

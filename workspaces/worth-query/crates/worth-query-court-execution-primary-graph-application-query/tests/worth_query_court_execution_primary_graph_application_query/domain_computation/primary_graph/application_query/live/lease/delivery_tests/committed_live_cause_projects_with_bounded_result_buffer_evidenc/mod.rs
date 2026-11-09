@@ -61,7 +61,7 @@ fn committed_live_cause_projects_with_bounded_result_buffer_evidence() {
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &phase,
-                    AccountIdentity::reference(),
+                    AccountIdentity::at("AccountIdentity"),
                     "account-1".to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -106,7 +106,7 @@ fn committed_live_cause_projects_with_bounded_result_buffer_evidence() {
             retained_predecessor
                 .resolve_entity(
                     &phase,
-                    AccountIdentity::reference(),
+                    AccountIdentity::at("AccountIdentity"),
                     "account-1".to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

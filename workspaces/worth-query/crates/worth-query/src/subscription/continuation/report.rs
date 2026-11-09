@@ -49,7 +49,7 @@ impl SubscriptionContinuationReport {
             crate::evidence_identity::WorthQueryEvidenceTag::new("performance"),
             performance_receipt.performance_receipt_identity(),
         )
-        .seal();
+        .seal().expect("bounded scalar receipt grammar: literal and enum labels, primitive values and sealed identity tokens");
         Self {
             active_lane_digest: evidence.active_lane_digest().clone(),
             continuation_class: evidence.continuation_class(),

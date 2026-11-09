@@ -5,6 +5,7 @@ use worth_foundational::facade::ScalarAspectType;
 
 mod authoring;
 mod builder;
+mod value_traits;
 
 pub use authoring::{
     ApplicationQueryAuthorizationAuthoring, ApplicationQueryBasisAuthoring,
@@ -69,7 +70,6 @@ impl ApplicationQueryPredicate {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ApplicationQueryDefinition<Schema, Query, Parameters, QueryResult, Scope> {
     pub(super) name: &'static str,
     pub(super) query_type: WorthQueryPortableTypeIdentity,
@@ -80,6 +80,7 @@ pub struct ApplicationQueryDefinition<Schema, Query, Parameters, QueryResult, Sc
     pub(super) scope_entity: &'static str,
     pub(super) parameters: Vec<ApplicationQueryParameterDefinition>,
     pub(super) result_shape: ApplicationQueryResultShape,
+    pub(super) field_expectations: Vec<crate::application_schema::ApplicationFieldBindingRecipe>,
     pub(super) root_paths: Vec<ApplicationQueryRootPathMeaning>,
     pub(super) component_selection:
         Option<crate::application_query::ApplicationQueryComponentMeaning>,
@@ -205,6 +206,12 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
 
     pub const fn lanes(&self) -> ApplicationQueryLaneEligibility {
         self.lanes
+    }
+
+    pub(crate) fn take_field_expectations(
+        &mut self,
+    ) -> Vec<crate::application_schema::ApplicationFieldBindingRecipe> {
+        std::mem::take(&mut self.field_expectations)
     }
 
     pub(crate) fn take_managed_index_recipe(

@@ -4,12 +4,14 @@ use crate::values::ScalarAspectType;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+/// One opaque leaf name. Dots and brackets are literal characters; hierarchy
+/// is represented only by separate `CanonicalFieldPath` components.
 pub struct FieldKey(String);
 
 impl FieldKey {
     pub fn new(value: impl Into<String>) -> Option<Self> {
         let value = value.into();
-        if value.trim().is_empty() || value.contains('.') || value.contains(char::is_whitespace) {
+        if value.trim().is_empty() || value.contains(char::is_whitespace) {
             None
         } else {
             Some(Self(value))
@@ -104,3 +106,6 @@ fn requirement_matches_absence_law(requirement: FieldRequirement, absence: Absen
             | (FieldRequirement::Defaulted, AbsenceLaw::Defaulted)
     )
 }
+
+#[cfg(test)]
+mod tests;

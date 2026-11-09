@@ -119,6 +119,8 @@ fn intact_history_member_with_relabelled_content_is_refused_against_the_leaf() {
     let mut cold = fixture.cold;
     let bytes = fixture.source.members.get(&cold.history).unwrap();
     let frame = RelationalRegionImage::decode(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &mut |_, _| Ok(()),
         bytes,
         cold.history,
         cold.partition_id,
@@ -129,6 +131,8 @@ fn intact_history_member_with_relabelled_content_is_refused_against_the_leaf() {
     let mut history: RegionHistoryImage = rmp_serde::from_slice(frame.payload).unwrap();
     history.entities[0].earlier[0].generation ^= 1;
     let (locator, bytes) = RelationalRegionImage::encode(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &mut |_, _| Ok(()),
         cold.partition_id,
         cold.schema_carrier_digest,
         RelationalRegionImageKind::History,

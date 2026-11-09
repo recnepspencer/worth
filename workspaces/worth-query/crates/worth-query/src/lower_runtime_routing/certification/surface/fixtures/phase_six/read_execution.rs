@@ -1,4 +1,5 @@
 use crate::authoring::{AspectFieldSelector, AuthoredResultShapeField};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -23,38 +24,38 @@ use super::super::{RepresentativeArtifacts, WorthQueryLowerRuntimeRepresentative
 
 pub(crate) fn representative_compose_read_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> RepresentativeArtifacts {
+) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let mut workspace = certification_workspace(execution, "lower-runtime-compose-read");
     let result = workspace
         .compose_read(execution, read_declaration())
         .expect("compose-read fixture should execute");
 
-    route_planned_read_row(
+    Ok(route_planned_read_row(
         WorthQueryLowerRuntimeSeamKey::ComposeRead,
         "Composed current read",
         &result,
-    )
+    )?)
 }
 
 pub(crate) fn representative_execute_read_family_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> RepresentativeArtifacts {
+) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let mut workspace = certification_workspace(execution, "lower-runtime-execute-read-family");
     let family = certification_read_family(&mut workspace, "lower-runtime-read-family");
     let result = workspace
         .execute_read_family(execution, &family)
         .expect("execute-read-family fixture should execute");
 
-    route_planned_read_row(
+    Ok(route_planned_read_row(
         WorthQueryLowerRuntimeSeamKey::ExecuteReadFamily,
         "Defined read-family execution",
         &result,
-    )
+    )?)
 }
 
 pub(crate) fn representative_execute_read_family_in_basis_context_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> RepresentativeArtifacts {
+) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let mut workspace =
         certification_workspace(execution, "lower-runtime-execute-read-family-basis");
     let family = certification_read_family(&mut workspace, "lower-runtime-basis-family");
@@ -63,37 +64,37 @@ pub(crate) fn representative_execute_read_family_in_basis_context_row(
     let context = branch_context_for_family(
         &family,
         snapshot_evidence_identity.terminal_projection_for_reporting(),
-    );
+    )?;
     let result = workspace
         .execute_read_family_in_basis_context(execution, &family, &context)
         .expect("execute-read-family-in-basis-context fixture should execute");
 
-    route_planned_read_row(
+    Ok(route_planned_read_row(
         WorthQueryLowerRuntimeSeamKey::ExecuteReadFamilyInBasisContext,
         "Basis-context read-family execution",
         &result,
-    )
+    )?)
 }
 
 pub(crate) fn representative_runtime_current_read_graph_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> RepresentativeArtifacts {
+) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let mut workspace = certification_workspace(execution, "lower-runtime-runtime-current-read");
     let family = certification_read_family(&mut workspace, "lower-runtime-current-family");
     let result = workspace
         .execute_read_family(execution, &family)
         .expect("runtime current-read fixture should execute");
 
-    route_planned_read_row(
+    Ok(route_planned_read_row(
         WorthQueryLowerRuntimeSeamKey::ExecuteRuntimeCurrentReadGraph,
         "Current read execution",
         &result,
-    )
+    )?)
 }
 
 pub(crate) fn representative_runtime_basis_context_read_graph_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> RepresentativeArtifacts {
+) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let mut workspace = certification_workspace(execution, "lower-runtime-runtime-basis-read");
     let family = certification_read_family(&mut workspace, "lower-runtime-runtime-basis-family");
     let snapshot_identity = workspace.snapshot_identity_with_request(execution);
@@ -101,24 +102,24 @@ pub(crate) fn representative_runtime_basis_context_read_graph_row(
     let context = branch_context_for_family(
         &family,
         snapshot_evidence_identity.terminal_projection_for_reporting(),
-    );
+    )?;
     let result = workspace
         .execute_read_family_in_basis_context(execution, &family, &context)
         .expect("runtime basis-context read fixture should execute");
 
-    route_planned_read_row(
+    Ok(route_planned_read_row(
         WorthQueryLowerRuntimeSeamKey::ExecuteRuntimeBasisContextReadGraph,
         "Basis-context read execution",
         &result,
-    )
+    )?)
 }
 
 fn route_planned_read_row(
     seam_key: WorthQueryLowerRuntimeSeamKey,
     capability_label: &str,
     result: &WorthQueryReadResult,
-) -> RepresentativeArtifacts {
-    let read_evidence = read_result_evidence_identity(result);
+) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
+    let read_evidence = read_result_evidence_identity(result)?;
     let request = WorthQueryLowerRuntimeCapabilityRequest::new(
         seam_key,
         WorthQueryLowerRuntimeRouteKind::RoutePlanning,
@@ -128,24 +129,24 @@ fn route_planned_read_row(
             "phase-six-read-execution-route-subject",
         )
         .field_evidence_identity(WorthQueryEvidenceTag::new("read"), &read_evidence)
-        .seal(),
-    );
+        .seal()?,
+    )?;
     let eligibility = WorthQueryLowerRuntimeCapabilityEligibility::admitted_with_evidence_identity(
         request.clone(),
         &read_evidence,
-    );
+    )?;
     let route_plan = WorthQueryLowerRuntimeRoutePlan::new(
         eligibility.clone(),
         crate::lower_runtime_routing::WorthQueryLowerRuntimeRouteSubjectIdentity::from_evidence_identity(
             "read-execution-engine-route",
             &read_evidence,
-        ),
+        )?,
     );
     let retained_evidence_identity =
         crate::lower_runtime_routing::worth_query_lower_runtime_retained_evidence_identity(
             "phase-six-read-execution-route",
             &read_evidence,
-        );
+        )?;
     let boundary_receipt = WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan(
         &route_plan,
         &retained_evidence_identity,
@@ -156,7 +157,7 @@ fn route_planned_read_row(
         &boundary_receipt,
         &retained_evidence_identity,
     );
-    RepresentativeArtifacts {
+    Ok(RepresentativeArtifacts {
         seam_key,
         request,
         eligibility,
@@ -164,10 +165,12 @@ fn route_planned_read_row(
         boundary_receipt,
         envelope,
         evidence_source: WorthQueryLowerRuntimeRepresentativeEvidenceSource::RuntimeBackedFixture,
-    }
+    })
 }
 
-fn read_result_evidence_identity(result: &WorthQueryReadResult) -> WorthQueryEvidenceIdentity {
+fn read_result_evidence_identity(
+    result: &WorthQueryReadResult,
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let receipt = result.receipt();
     let snapshot_evidence_identity = receipt.snapshot_evidence_identity();
     let mut builder =
@@ -189,7 +192,7 @@ fn read_result_evidence_identity(result: &WorthQueryReadResult) -> WorthQueryEvi
     if let Some(provenance) = receipt.execution_provenance_chain_digest() {
         builder = builder.field_value(WorthQueryEvidenceTag::new("provenance"), provenance);
     }
-    builder.seal()
+    Ok(builder.seal()?)
 }
 
 fn certification_workspace(
@@ -258,19 +261,19 @@ fn read_declaration() -> impl FnOnce(
 fn branch_context_for_family(
     family: &WorthQueryReadFamily,
     snapshot_token: &str,
-) -> ScopedQueryBasisContext {
-    let preflight = runtime_preflight_for_family(family, snapshot_token);
-    admit_query_basis_context(
+) -> Result<ScopedQueryBasisContext, IdentityDerivationDenial> {
+    let preflight = runtime_preflight_for_family(family, snapshot_token)?;
+    Ok(admit_query_basis_context(
         basis_lifecycle().branch_head(snapshot_token, true),
         QueryContextBindingSource::RuntimeBranch(&preflight),
     )
-    .expect("branch read fixture context should admit")
+    .expect("branch read fixture context should admit"))
 }
 
 fn runtime_preflight_for_family(
     family: &WorthQueryReadFamily,
     snapshot_token: &str,
-) -> crate::facade::foundation::ExecutionPreflightBundle {
+) -> Result<crate::facade::foundation::ExecutionPreflightBundle, IdentityDerivationDenial> {
     let intent = ExecutionBasisIntent::new(
         BasisAuthorityFamily::Runtime,
         SnapshotLineageClass::CurrentHead,
@@ -286,12 +289,14 @@ fn runtime_preflight_for_family(
             crate::evidence_identity::WorthQueryEvidenceTag::new("fixture_snapshot"),
             snapshot_token,
         )
-        .seal(),
+        .seal()?,
         family.read_graph().schema_basis().clone(),
         SnapshotLineageClass::CurrentHead,
     );
     let basis = resolve_snapshot_basis(intent, identity, BasisResolutionMode::RuntimeDirect)
         .expect("read fixture runtime basis should resolve");
-    preflight_execution_basis(family.read_graph().execution_plan().clone(), basis)
-        .expect("read fixture preflight should build")
+    Ok(
+        preflight_execution_basis(family.read_graph().execution_plan().clone(), basis)
+            .expect("read fixture preflight should build"),
+    )
 }

@@ -62,6 +62,7 @@ where
             runtime,
             &shared,
             Some(&control),
+            commit_authority.history_control(),
             external_principal,
             request_scope,
             &input,
@@ -75,6 +76,7 @@ where
             external_principal,
             request_scope,
             prepared.principal.principal(),
+            prepared.scope.as_ref(),
             prepared.operation,
             required_output,
             provider,
@@ -88,14 +90,15 @@ where
             producer_contacts,
         );
     }
-    let (shared, principal, admission) = super::ordinary_authorization::prepare::<Schema, Binding>(
-        execution,
-        selected,
-        installed,
-        external_principal,
-        request_scope,
-        &input,
-    )?;
+    let (shared, principal, admission, scope) =
+        super::ordinary_authorization::prepare::<Schema, Binding>(
+            execution,
+            selected,
+            installed,
+            external_principal,
+            request_scope,
+            &input,
+        )?;
     post_authorization::execute_authorized::<Schema, Binding>(
         phase,
         runtime,
@@ -104,6 +107,7 @@ where
         external_principal,
         request_scope,
         &principal,
+        Binding::PREDECESSOR_READS.as_ref().map(|_| &scope),
         admission,
         required_output,
         provider,

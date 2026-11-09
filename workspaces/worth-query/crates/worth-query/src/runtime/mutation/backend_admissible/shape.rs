@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::WorthQueryEntityIdentity;
 use crate::runtime::{
     WorthQueryAspectTouch, WorthQueryAuthoredAspectMutation, WorthQueryContinuityMutationIntent,
@@ -68,8 +69,10 @@ pub(super) enum WorthQueryBackendAdmissibleMutationShape {
 }
 
 impl WorthQueryBackendAdmissibleMutationShape {
-    pub(super) fn from_admitted_command(command: WorthQueryWriteCommand) -> Self {
-        match command {
+    pub(super) fn from_admitted_command(
+        command: WorthQueryWriteCommand,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(match command {
             WorthQueryWriteCommand::InsertAspects {
                 collection,
                 aspects,
@@ -82,7 +85,7 @@ impl WorthQueryBackendAdmissibleMutationShape {
                 collection: WorthQueryMutationTargetCollectionIdentity::new(
                     "backend-admissible-declared",
                     collection.as_str(),
-                ),
+                )?,
                 aspects,
                 symbolic_aspect_references,
                 metadata,
@@ -180,12 +183,14 @@ impl WorthQueryBackendAdmissibleMutationShape {
                 naming_intent,
             } => Self::DeleteDirect {
                 entity_identity,
-                declared_collection: declared_collection.map(|collection| {
-                    WorthQueryMutationTargetCollectionIdentity::new(
-                        "backend-admissible-declared",
-                        collection.as_str(),
-                    )
-                }),
+                declared_collection: declared_collection
+                    .map(|collection| {
+                        WorthQueryMutationTargetCollectionIdentity::new(
+                            "backend-admissible-declared",
+                            collection.as_str(),
+                        )
+                    })
+                    .transpose()?,
                 touched_aspects,
                 metadata,
                 naming_intent,
@@ -233,6 +238,6 @@ impl WorthQueryBackendAdmissibleMutationShape {
                 metadata,
                 naming_intent,
             },
-        }
+        })
     }
 }

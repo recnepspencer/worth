@@ -1,26 +1,18 @@
-use worth_query_decl::facade::{
-    application_query::{
-        ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
-        ApplicationQueryResultShapeBuilder, ExactlyOneResult, ForwardResultTraversal,
-        OptionalOneResult, ReverseResultTraversal,
-    },
-    application_schema::{
-        DeclaredApplicationUnit, EqualityPredicate, NoApplicationUnit, NoEqualityPredicate,
-        ReadOnly, ReadWrite,
-    },
+use worth_query_decl::facade::application_query::{
+    ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
+    ApplicationQueryResultShapeBuilder, ExactlyOneResult, ForwardResultTraversal,
+    OptionalOneResult, ReverseResultTraversal,
 };
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationProjectionDenial, WorthQueryApplicationProjectionRow,
 };
 
-use crate::model::{AccountId, BankPrincipalId, BusinessId, Money, PaymentId, USD};
 use crate::reads::PaymentSummary;
 use crate::schema::{
-    Account, AccountIdentity, Approval, ApprovalPrincipal, BankSchema, Business, BusinessIdentity,
+    Account, AccountIdentity, Approval, ApprovalPrincipal, BankSchema, Business,
     BusinessIdentityField, PaymentAmount, PaymentApproval, PaymentBusiness, PaymentDestination,
-    PaymentIdentity, PaymentIdentityField, PaymentInitiator, PaymentIntent, PaymentSource,
-    PaymentState, PaymentStatus, PaymentStatusField, PaymentValue, Principal, PrincipalIdentity,
-    PrincipalIdentityField, UsdCurrency,
+    PaymentIdentityField, PaymentInitiator, PaymentIntent, PaymentSource, PaymentStatusField,
+    Principal, PrincipalIdentityField,
 };
 
 pub(super) struct PaymentIdentitySlot;
@@ -52,83 +44,23 @@ worth_query_decl::facade::worth_query_portable_type!(ApprovalPrincipalSlot => "A
 struct DecidingPrincipalIdentitySlot;
 worth_query_decl::facade::worth_query_portable_type!(DecidingPrincipalIdentitySlot => "DecidingPrincipalIdentitySlot");
 
-type PaymentIdentitySelector<Query> = ApplicationQueryResultFieldRef<
-    Query,
-    PaymentIdentitySlot,
-    BankSchema,
-    PaymentIntent,
-    PaymentIdentity,
-    PaymentIdentityField,
-    PaymentId,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
->;
+type PaymentIdentitySelector<Query> =
+    ApplicationQueryResultFieldRef<Query, PaymentIdentitySlot, BankSchema, PaymentIdentityField>;
 
-pub(super) type PaymentAmountSelector<Query> = ApplicationQueryResultFieldRef<
-    Query,
-    PaymentAmountSlot,
-    BankSchema,
-    PaymentIntent,
-    PaymentValue,
-    PaymentAmount,
-    Money<USD>,
-    ReadWrite,
-    NoEqualityPredicate,
-    DeclaredApplicationUnit<UsdCurrency, USD>,
->;
+pub(super) type PaymentAmountSelector<Query> =
+    ApplicationQueryResultFieldRef<Query, PaymentAmountSlot, BankSchema, PaymentAmount>;
 
-type PaymentStatusSelector<Query> = ApplicationQueryResultFieldRef<
-    Query,
-    PaymentStatusSlot,
-    BankSchema,
-    PaymentIntent,
-    PaymentState,
-    PaymentStatusField,
-    PaymentStatus,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
->;
+type PaymentStatusSelector<Query> =
+    ApplicationQueryResultFieldRef<Query, PaymentStatusSlot, BankSchema, PaymentStatusField>;
 
-type AccountIdentitySelector<Query, Slot> = ApplicationQueryResultFieldRef<
-    Query,
-    Slot,
-    BankSchema,
-    Account,
-    crate::schema::Identity,
-    AccountIdentity,
-    AccountId,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
->;
+type AccountIdentitySelector<Query, Slot> =
+    ApplicationQueryResultFieldRef<Query, Slot, BankSchema, AccountIdentity>;
 
-type BusinessIdentitySelector<Query> = ApplicationQueryResultFieldRef<
-    Query,
-    BusinessIdentitySlot,
-    BankSchema,
-    Business,
-    BusinessIdentity,
-    BusinessIdentityField,
-    BusinessId,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
->;
+type BusinessIdentitySelector<Query> =
+    ApplicationQueryResultFieldRef<Query, BusinessIdentitySlot, BankSchema, BusinessIdentityField>;
 
-type PrincipalIdentitySelector<Query, Slot> = ApplicationQueryResultFieldRef<
-    Query,
-    Slot,
-    BankSchema,
-    Principal,
-    PrincipalIdentity,
-    PrincipalIdentityField,
-    BankPrincipalId,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
->;
+type PrincipalIdentitySelector<Query, Slot> =
+    ApplicationQueryResultFieldRef<Query, Slot, BankSchema, PrincipalIdentityField>;
 
 pub(super) fn payment_summary_shape<Query, Result, ShapeBinding>(
 ) -> ApplicationQueryResultShapeBuilder<BankSchema, Query, PaymentIntent, Result, ShapeBinding>
@@ -225,36 +157,45 @@ where
 }
 
 pub(super) fn payment_identity<Query>() -> PaymentIdentitySelector<Query> {
-    ApplicationQueryResultFieldRef::new("payment", PaymentIdentityField::reference())
+    ApplicationQueryResultFieldRef::new("payment", PaymentIdentityField::at("PaymentIdentityField"))
 }
 
 pub(super) fn payment_amount<Query>() -> PaymentAmountSelector<Query> {
-    ApplicationQueryResultFieldRef::new("amount", PaymentAmount::reference())
+    ApplicationQueryResultFieldRef::new("amount", PaymentAmount::at("PaymentAmount"))
 }
 
 fn payment_status<Query>() -> PaymentStatusSelector<Query> {
-    ApplicationQueryResultFieldRef::new("status", PaymentStatusField::reference())
+    ApplicationQueryResultFieldRef::new("status", PaymentStatusField::at("PaymentStatusField"))
 }
 
 fn source_identity<Query>() -> AccountIdentitySelector<Query, SourceIdentitySlot> {
-    ApplicationQueryResultFieldRef::new("source", AccountIdentity::reference())
+    ApplicationQueryResultFieldRef::new("source", AccountIdentity::at("AccountIdentity"))
 }
 
 fn destination_identity<Query>() -> AccountIdentitySelector<Query, DestinationIdentitySlot> {
-    ApplicationQueryResultFieldRef::new("destination", AccountIdentity::reference())
+    ApplicationQueryResultFieldRef::new("destination", AccountIdentity::at("AccountIdentity"))
 }
 
 fn business_identity<Query>() -> BusinessIdentitySelector<Query> {
-    ApplicationQueryResultFieldRef::new("business", BusinessIdentityField::reference())
+    ApplicationQueryResultFieldRef::new(
+        "business",
+        BusinessIdentityField::at("BusinessIdentityField"),
+    )
 }
 
 fn initiator_identity<Query>() -> PrincipalIdentitySelector<Query, InitiatorIdentitySlot> {
-    ApplicationQueryResultFieldRef::new("initiator", PrincipalIdentityField::reference())
+    ApplicationQueryResultFieldRef::new(
+        "initiator",
+        PrincipalIdentityField::at("PrincipalIdentityField"),
+    )
 }
 
 fn deciding_principal_identity<Query>(
 ) -> PrincipalIdentitySelector<Query, DecidingPrincipalIdentitySlot> {
-    ApplicationQueryResultFieldRef::new("deciding_principal", PrincipalIdentityField::reference())
+    ApplicationQueryResultFieldRef::new(
+        "deciding_principal",
+        PrincipalIdentityField::at("PrincipalIdentityField"),
+    )
 }
 
 fn payment_source<Query>() -> ApplicationQueryResultRelationRef<

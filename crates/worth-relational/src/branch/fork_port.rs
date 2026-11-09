@@ -12,6 +12,7 @@ pub struct RelationalForkPort {
     pub(super) lifecycle: RelationalRuntimeOwnerBinding,
     pub(super) owner: RelationalForkOwnerBinding,
     pub(super) medium: Option<Arc<RelationalDurableMediumBinding>>,
+    pub(super) indexes: crate::runtime::IndexDefinitionReadBinding,
     pub(super) publication: crate::runtime::RelationalRuntimePublicationBinding,
 }
 
@@ -22,6 +23,7 @@ impl RelationalForkPort {
         owner: RelationalForkOwnerBinding,
         medium: Option<Arc<RelationalDurableMediumBinding>>,
         publication: crate::runtime::RelationalRuntimePublicationBinding,
+        indexes: crate::runtime::IndexDefinitionReadBinding,
     ) -> Self {
         Self {
             runtime_instance_id,
@@ -29,6 +31,7 @@ impl RelationalForkPort {
             owner,
             medium,
             publication,
+            indexes,
         }
     }
 }

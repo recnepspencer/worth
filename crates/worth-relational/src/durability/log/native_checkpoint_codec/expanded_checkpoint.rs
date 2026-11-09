@@ -65,21 +65,27 @@ pub(super) fn expand(
     }
     symbol_table.entries.sort_by_key(|(id, _)| *id);
     let mut symbols = crate::symbols::data::StringInterner::default();
-    symbols.restore_snapshot(symbol_table.clone());
+    crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+        symbols.restore_snapshot(lane, symbol_table.clone())
+    });
     let admitted_symbols = crate::runtime::RuntimeSymbolTable::default();
     admitted_symbols.replace(symbols);
     let symbols = admitted_symbols;
     let mut schemas = BTreeMap::new();
     for image in &manifest.schemas {
         let (registry, contracts) = image.readmit_registry().map_err(corrupt)?;
-        let expected = registry.authority_snapshot();
+        let expected = registry
+            .snapshot_for_compilation(crate::schema::SchemaCompilationControl::Request(*execution))
+            .map_err(RelationalRecoveryStop::Request)?;
         let schema = crate::branch::RelationalBranchRootSchemaAuthority::readmit_exact(
             schemas.len() as u64 + 1,
             registry,
             contracts,
             &expected,
             image.descriptor_semantics_version(),
+            crate::schema::SchemaCompilationControl::Request(*execution),
         )
+        .map_err(RelationalRecoveryStop::Request)?
         .ok_or_else(|| corrupt("checkpoint schema readmission failed"))?;
         if schemas.insert(image.carrier_digest(), schema).is_some() {
             return Err(corrupt("duplicate checkpoint schema carrier").into());
@@ -98,7 +104,10 @@ pub(super) fn expand(
             &history_members,
         )?;
         root_kind_images.insert(root.commit_id, kinds);
-        let partition_image_digest = branch_root_partition_image_digest(&partition_images)
+        let partition_image_digest =
+            crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
+                |lane| branch_root_partition_image_digest(lane, &partition_images),
+            )
             .map_err(|error| corrupt(error.to_string()))?;
         let format_version = DurableBranchRootImage::CURRENT_FORMAT_VERSION;
         let content_records = crate::durability::checkpoints::content::read_records(
@@ -113,13 +122,19 @@ pub(super) fn expand(
             partition_images,
             partition_image_digest,
             schema_carrier_digest: root.schema_carrier_digest,
-            root_image_digest: branch_root_image_digest(
-                format_version,
-                root.commit_id,
-                partition_image_digest,
-                root.schema_carrier_digest,
-                &content_records,
-            ),
+            root_image_digest:
+                crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
+                    |lane| {
+                        branch_root_image_digest(
+                            lane,
+                            format_version,
+                            root.commit_id,
+                            partition_image_digest,
+                            root.schema_carrier_digest,
+                            &content_records,
+                        )
+                    },
+                ),
         });
     }
     let (partition_images, mirror_kind_images) = if let Some(schema) = manifest.mirror_schema {
@@ -259,6 +274,8 @@ fn expand_regions(
                 schema_carrier_digest: schema_digest,
                 symbols: symbols.clone(),
                 content_digest: leaf.content_digest,
+                directory: leaf.directory.clone(),
+                live_counts: leaf.live_counts,
                 entity_slots: leaf.entity_slots,
                 relation_slots: leaf.relation_slots,
                 unavailable_records: leaf.unavailable_records,
@@ -266,7 +283,9 @@ fn expand_regions(
             Ok((leaf.partition_id, cell))
         })
         .collect::<Result<Vec<_>, crate::storage::data::RelationalStorageUnavailable>>()?;
-    authority.bind_for_request(cells.iter().cloned(), execution)?;
+    crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+        authority.bind_for_request(lane, cells.iter().cloned(), execution)
+    })?;
     let admitted = cells
         .into_iter()
         .map(|(_, cell)| {
@@ -275,13 +294,26 @@ fn expand_regions(
             Ok(lease.into_owned_partition())
         })
         .collect::<Result<Vec<_>, RelationalRecoveryStop>>()?;
-    let kinds = crate::storage::residency::CheckpointRegionKindImages::capture(&admitted)
-        .map_err(|cause| corrupt(format!("expanded kind projection: {cause:?}")))?;
+    let kinds =
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+            crate::storage::residency::CheckpointRegionKindImages::capture(
+                lane, execution, &admitted,
+            )
+        })?;
     let images = admitted
         .into_iter()
         .map(|partition| {
-            partition_to_image_with_contracts(partition, schema.aspect_plans(), &contracts)
-                .map_err(Into::into)
+            crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
+                |lane| {
+                    partition_to_image_with_contracts(
+                        lane,
+                        partition,
+                        schema.aspect_plans(),
+                        &contracts,
+                    )
+                },
+            )
+            .map_err(Into::into)
         })
         .collect::<Result<Vec<_>, RelationalRecoveryStop>>()?;
     Ok((images, kinds))

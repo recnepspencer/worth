@@ -104,7 +104,9 @@ fn content_old_retained_contract_cannot_hide_a_reference_after_current_binding_i
         root.schema_authority().retained_aspect_contracts().to_vec(),
         &envelope.schema_authority,
         envelope.descriptor_semantics_version,
+        crate::schema::SchemaCompilationControl::Configuration,
     )
+    .expect("configuration compilation cannot refuse")
     .unwrap();
     let descriptor = super::RelationalBranchRootDescriptor::new(
         *root.descriptor().unwrap().truth_root(),
@@ -129,7 +131,11 @@ fn content_old_retained_contract_cannot_hide_a_reference_after_current_binding_i
         &execution,
         &RelationalContentAttachments::default(),
         partitions,
-        Arc::new(envelope),
+        crate::branch::RelationalOriginalRootCommitEvidence::prepare(
+            &execution,
+            Arc::new(envelope),
+        )
+        .unwrap(),
         descriptor,
         authority,
         &runtime.services.symbols.interner_snapshot(),
@@ -324,7 +330,11 @@ fn assert_axis_mutation_rejected(
     let denial = root
         .relink_canonical_envelope(
             execution,
-            Arc::new(mutant),
+            crate::branch::RelationalOriginalRootCommitEvidence::prepare(
+                execution,
+                Arc::new(mutant),
+            )
+            .unwrap(),
             &runtime.services.symbols.interner_snapshot(),
         )
         .expect_err("authoritative payload mutation cannot relink");

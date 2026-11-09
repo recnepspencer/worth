@@ -28,7 +28,8 @@ def read_lane(path):
     text = Path(path).read_text(encoding='utf-8-sig', errors='replace')
     result = {'log': str(path), 'artifacts': [], 'artifact_messages': 0, 'tests': [], 'suites': [], 'setup': [],
               'cpu': [], 'compiler_progress': [], 'telemetry': {}, 'headers': {},
-              'failed_compiler_attempts': [], 'compiler_attempt_refusals': [], 'compiler_error_messages': 0}
+              'failed_compiler_attempts': [], 'compiler_attempt_refusals': [], 'compiler_error_messages': 0,
+              'reused_artifacts': []}
     context, failed, refused, invocation, states, state = {}, {}, set(), -1, [], None
     unscoped_artifacts = False
     if not any(event.get('type') == 'cargo-invocation' for event in json_objects(text)):
@@ -56,8 +57,8 @@ def read_lane(path):
             result['artifact_messages'] += 1
             if context.get('unit_plan') is None and not compiler_context(context):
                 unscoped_artifacts = True
-            if not event['fresh']:
-                result['artifacts'].append(artifact(event, context))
+            field = 'reused_artifacts' if event['fresh'] else 'artifacts'
+            result[field].append(artifact(event, context))
         if (event.get('reason') == 'compiler-message' and event.get('message', {}).get('level') == 'error'
                 and active and compiler_context(context)):
             result['compiler_error_messages'] += 1

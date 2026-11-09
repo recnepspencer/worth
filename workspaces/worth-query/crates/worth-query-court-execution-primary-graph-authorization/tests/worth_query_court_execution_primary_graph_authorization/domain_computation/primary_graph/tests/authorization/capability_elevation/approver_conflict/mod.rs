@@ -152,7 +152,7 @@ pub fn add_approver_conflict(
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             &phase_custody.phase_for_application_for_test(&world.application),
-            PrincipalIdentityField::reference(),
+            PrincipalIdentityField::at("PrincipalIdentityField"),
             2_u64,
             &scope,
             WorthQueryPrincipalResolutionMode::Ordinary,
@@ -170,7 +170,7 @@ pub fn add_approver_conflict(
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             &phase_custody.phase_for_application_for_test(&world.application),
-            AccountIdentity::reference(),
+            AccountIdentity::at("AccountIdentity"),
             "account-1".to_owned(),
             &scope,
             WorthQueryPrincipalResolutionMode::Ordinary,

@@ -81,6 +81,20 @@ impl RelationalPreparationRuntime {
         )
     }
 
+    pub(in crate::mvcc) fn validate_consulted_owned_graph_selection(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        transaction: crate::mvcc::BranchBoundRelationalTransaction,
+        retained: crate::mvcc::owned_graph_selection::PreparedOwnedGraphSelection,
+    ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
+        self.validate_branch_transaction_source(
+            execution,
+            transaction,
+            RelationalProposalSource::OwnedGraphSelection(retained),
+            None,
+        )
+    }
+
     fn validate_branch_transaction_source(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

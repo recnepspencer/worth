@@ -58,11 +58,10 @@ pub(super) fn state(
         else {
             continue; // Foundation retains its precise missing-contract refusal.
         };
-        if let Some(request) = admission.request {
-            let bytes = super::readmission_funding::contract_clone_bytes(contract, request)?;
-            // One catalog return clone, then the validated value's clone.
-            admission.charge(product(bytes, 2)?)?;
-        }
+        // Catalog return and admitted value each clone one immutable Arc.
+        // Reachable definition retention is separately reserved by the holder;
+        // it is not newly copied payload work.
+        admission.charge(2)?;
         match entry.value() {
             ContractValidationInput::Scalar(value) => {
                 admission.charge(value.semantic_byte_width() as u64)?

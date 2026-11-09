@@ -28,6 +28,7 @@ impl RelationalRegionKindAuthority {
     #[cfg(test)]
     pub(crate) fn bind(
         &self,
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         regions: impl IntoIterator<Item = (PartitionId, Arc<RelationalRegionResidency>)>,
     ) -> Result<(), Cause> {
         let mut directory = worth_execution::ExecutionOrderedMap::default();
@@ -70,6 +71,7 @@ impl RelationalRegionKindAuthority {
     }
     pub(crate) fn bind_for_request(
         &self,
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         regions: impl IntoIterator<Item = (PartitionId, Arc<RelationalRegionResidency>)>,
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<(), crate::durability::data::RelationalRecoveryStop> {

@@ -28,19 +28,9 @@ worth_query_application_query!(pub Allowed for Schema: OrbitModel, identity "Dec
 worth_query_application_query!(pub Omitted for Schema: OrbitModel, identity "DeclaredOrbitOmitted", parameters ParametersBinding, result RowsBinding, scope Node => "Node", name "declared_orbit_omitted");
 worth_query_application_query!(pub Missing for Schema: OrbitModel, identity "DeclaredOrbitMissing", parameters ParametersBinding, result RowsBinding, scope Node => "Node", name "declared_orbit_missing");
 
-pub fn key<S: OrbitModel, Q: ApplicationQueryMarkerIdentity<S>>() -> ApplicationQueryResultFieldRef<
-    Q,
-    KeySlot,
-    S,
-    Node,
-    NodeData,
-    NodeKey,
-    u64,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("key", NodeKey::reference())
+pub fn key<S: OrbitModel, Q: ApplicationQueryMarkerIdentity<S>>(
+) -> ApplicationQueryResultFieldRef<Q, KeySlot, S, NodeKey> {
+    ApplicationQueryResultFieldRef::new("key", NodeKey::at("NodeKey"))
 }
 pub fn orbit<S: OrbitModel>() -> ApplicationQueryOrbitRef<S, Orbit, OrbitSlot, Next, Node> {
     ApplicationQueryOrbitRef::new("orbit", Next::reference())
@@ -88,14 +78,12 @@ pub fn builder<
         .public()
         .orbit(whole::<S, Q>())
 }
-pub fn definition<S: OrbitModel>() -> ApplicationQueryDefinition<S, Orbit, Parameters, NodeRow, Node>
-{
+pub fn definition<S: OrbitModel>(
+) -> ApplicationQueryDefinitionBuilder<S, Orbit, Parameters, NodeRow, Node> {
     builder(
         Orbit::reference(),
         ApplicationQueryDisclosureContract::public(),
     )
-    .build()
-    .unwrap()
 }
 pub fn disclosure<S: OrbitModel, Q: ApplicationQueryMarkerIdentity<S, Scope = Node> + 'static>(
     value: Option<u64>,
@@ -130,25 +118,19 @@ pub fn declare<const O: bool>(
                 builder(
                     Allowed::reference(),
                     disclosure::<OrbitSchema<O>, Allowed>(Some(0)),
-                )
-                .build()
-                .unwrap(),
+                ),
             )
             .application_query(
                 builder(
                     Omitted::reference(),
                     disclosure::<OrbitSchema<O>, Omitted>(Some(1)),
-                )
-                .build()
-                .unwrap(),
+                ),
             )
             .application_query(
                 builder(
                     Missing::reference(),
                     disclosure::<OrbitSchema<O>, Missing>(None),
-                )
-                .build()
-                .unwrap(),
+                ),
             )
     } else {
         schema

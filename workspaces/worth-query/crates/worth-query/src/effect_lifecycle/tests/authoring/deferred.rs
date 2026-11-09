@@ -17,7 +17,8 @@ use super::support::{
 #[test]
 fn deferred_support_discovery_exposes_exact_contract_for_store_backed_writeback() {
     let support =
-        discover_effect_lifecycle_support(BasisFamily::StoreBacked, EffectFamily::Writeback);
+        discover_effect_lifecycle_support(BasisFamily::StoreBacked, EffectFamily::Writeback)
+            .expect("fixture digest must fit");
     let contract = support
         .deferred_contract()
         .expect("store-backed writeback should expose deferred contract");
@@ -38,7 +39,8 @@ fn deferred_support_discovery_exposes_exact_contract_for_store_backed_writeback(
 #[test]
 fn deferred_support_discovery_exposes_exact_contract_for_durable_writeback() {
     let support =
-        discover_effect_lifecycle_support(BasisFamily::DurableReload, EffectFamily::Writeback);
+        discover_effect_lifecycle_support(BasisFamily::DurableReload, EffectFamily::Writeback)
+            .expect("fixture digest must fit");
     let contract = support
         .deferred_contract()
         .expect("durable writeback should expose deferred contract");
@@ -67,9 +69,10 @@ fn deferred_effect_eligibility_matches_support_contract_and_zero_residue() {
     )
     .expect("store-backed writeback should normalize");
     let support =
-        discover_effect_lifecycle_support(BasisFamily::StoreBacked, EffectFamily::Writeback);
+        discover_effect_lifecycle_support(BasisFamily::StoreBacked, EffectFamily::Writeback)
+            .expect("fixture digest must fit");
 
-    let deferred = match evaluate_effect_eligibility(normalized) {
+    let deferred = match evaluate_effect_eligibility(normalized).expect("fixture digest must fit") {
         EffectEligibilityOutcome::Deferred(deferred) => deferred,
         other => panic!("expected deferred effect, got {other:?}"),
     };
@@ -117,14 +120,16 @@ fn deferred_contracts_diverge_for_intentionally_different_future_neighbors() {
     )
     .expect("durable writeback should normalize");
 
-    let store_contract = match evaluate_effect_eligibility(store) {
+    let store_contract = match evaluate_effect_eligibility(store).expect("fixture digest must fit")
+    {
         EffectEligibilityOutcome::Deferred(deferred) => deferred.deferred_contract().clone(),
         other => panic!("expected store-backed deferred effect, got {other:?}"),
     };
-    let durable_contract = match evaluate_effect_eligibility(durable) {
-        EffectEligibilityOutcome::Deferred(deferred) => deferred.deferred_contract().clone(),
-        other => panic!("expected durable deferred effect, got {other:?}"),
-    };
+    let durable_contract =
+        match evaluate_effect_eligibility(durable).expect("fixture digest must fit") {
+            EffectEligibilityOutcome::Deferred(deferred) => deferred.deferred_contract().clone(),
+            other => panic!("expected durable deferred effect, got {other:?}"),
+        };
 
     assert_ne!(
         store_contract.contract_for_reporting(),

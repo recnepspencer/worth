@@ -4,6 +4,7 @@ use crate::application_operation::{
 };
 use crate::application_schema::{
     ApplicationDeclaredOperation, ApplicationOperationDefinitionBuilder, ApplicationSchema,
+    ApplicationSchemaDeclarationDenial,
 };
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
@@ -12,10 +13,44 @@ pub type ApplicationInverseBinding<Schema, Correction> =
 
 /// Read-only original values; this view grants no current read or write authority.
 pub trait ApplicationCorrectionPreImage<Schema> {
+    fn output_entity(
+        &self,
+        _role: &crate::application_operation::ApplicationMutationOutputRoleDescriptor,
+    ) -> Option<worth_foundational::facade::EntityId> {
+        None
+    }
+
+    /// Complete original lifecycle material for a declared relation kind.
+    /// None means the locus was not retained; Some(0) is authenticated empty material.
+    fn relation_count(
+        &self,
+        _locus: &super::super::DeclaredPreImageRelationLocus<Schema>,
+    ) -> Option<usize> {
+        None
+    }
+    fn relation_at(
+        &self,
+        _locus: &super::super::DeclaredPreImageRelationLocus<Schema>,
+        _index: usize,
+    ) -> Option<super::super::ApplicationCorrectionRelationMaterial> {
+        None
+    }
+
     fn field(
         &self,
         locus: &DeclaredPreImageLocus<Schema>,
     ) -> Option<&worth_foundational::facade::AspectValue>;
+
+    /// Read one declared locus on the exact original record bound to this output
+    /// role. An absent optional role yields None; equal loci on co-anchors never
+    /// substitute for one another. This grants historical values only.
+    fn field_for_output(
+        &self,
+        _role: &crate::application_operation::ApplicationMutationOutputRoleDescriptor,
+        _locus: &DeclaredPreImageLocus<Schema>,
+    ) -> Option<&worth_foundational::facade::AspectValue> {
+        None
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -97,6 +132,16 @@ pub trait ApplicationCorrectionBinding<Schema: ApplicationSchema>: Sized + 'stat
     fn authored_identity() -> Option<super::ApplicationAuthoredCorrection<Schema>> {
         None
     }
+    /// The original input and pre-image derive these typed owner demands for
+    /// correction. By default the source binding's declaration is reused.
+    fn visit_coupled_outputs<
+        Visitor: crate::application_program::ApplicationCoupledOutputVisitor<Schema, Self::Source>,
+    >(
+        visitor: &mut Visitor,
+    ) {
+        Self::Source::visit_coupled_outputs(visitor);
+    }
+
     /// Additional historical fields the disclosure contract permits deriving from outputs.
     fn source_output_fields() -> Vec<super::ApplicationCorrectionOutputField<Schema>> {
         Vec::new()
@@ -148,6 +193,7 @@ pub struct DeclaredCorrectionBinding {
     disclosure: super::DeclaredCorrectionDisclosure,
     source_output_fields: Vec<super::DeclaredCorrectionOutputField>,
     authored_identity: Option<super::DeclaredAuthoredCorrection>,
+    coupled_outputs: Vec<crate::application_program::DeclaredCoupledOutputConnection>,
     completed_external_reconciliation: Option<super::super::DeclaredReconciliationProcedure>,
     reapplication_source: Option<WorthQueryPortableTypeIdentity>,
 }
@@ -166,16 +212,72 @@ impl DeclaredCorrectionBinding {
             disclosure: parts.disclosure,
             source_output_fields: parts.source_output_fields,
             authored_identity: parts.authored_identity,
+            coupled_outputs: Vec::new(),
             completed_external_reconciliation: parts.completed_external_reconciliation,
             reapplication_source: parts.reapplication_source,
         }
     }
 
-    pub fn of<Schema: ApplicationSchema, Correction: ApplicationCorrectionBinding<Schema>>() -> Self
-    {
+    pub fn of<Schema: ApplicationSchema, Correction: ApplicationCorrectionBinding<Schema>>(
+    ) -> Result<Self, ApplicationSchemaDeclarationDenial> {
+        Self::from_expression::<Schema, Correction>(
+            Correction::authored_identity(),
+            Correction::source_output_fields(),
+            Correction::completed_external_reconciliation(),
+        )
+    }
+
+    pub(crate) fn compose<
+        Schema: ApplicationSchema,
+        Correction: ApplicationCorrectionBinding<Schema>,
+    >(
+        reconciliation: Option<super::super::DeclaredReconciliationProcedure>,
+    ) -> Result<super::ComposedCorrectionBinding, ApplicationSchemaDeclarationDenial> {
+        let expression = Correction::authored_identity();
+        let mut fields: Vec<_> = expression
+            .as_ref()
+            .map(|identity| identity.binding_recipes().cloned().collect())
+            .unwrap_or_default();
+        let outputs = Correction::source_output_fields();
+        fields.extend(outputs.iter().map(|field| field.binding_recipe().clone()));
+        Self::from_expression::<Schema, Correction>(expression, outputs, reconciliation)
+            .map(|binding| super::ComposedCorrectionBinding { binding, fields })
+    }
+
+    fn from_expression<
+        Schema: ApplicationSchema,
+        Correction: ApplicationCorrectionBinding<Schema>,
+    >(
+        expression: Option<super::ApplicationAuthoredCorrection<Schema>>,
+        outputs: Vec<super::ApplicationCorrectionOutputField<Schema>>,
+        reconciliation: Option<super::super::DeclaredReconciliationProcedure>,
+    ) -> Result<Self, ApplicationSchemaDeclarationDenial> {
+        if let Some(reconciliation) = &reconciliation {
+            reconciliation.validate().map_err(|cause| {
+                ApplicationSchemaDeclarationDenial::InvalidCorrectionMechanism {
+                    correction: Correction::IDENTITY.to_owned(),
+                    cause,
+                }
+            })?;
+        }
         let source = Correction::Source::descriptor();
         let inverse = ApplicationInverseBinding::<Schema, Correction>::descriptor();
-        Self {
+        let authored_identity = expression
+            .map(|identity| {
+                let requested = identity.binding_recipe().locus().clone();
+                identity.into_declaration().map_err(|cause| {
+                    let field = match cause {
+                        ApplicationSchemaDeclarationDenial::InvalidRecordField { field } => field,
+                        _ => requested,
+                    };
+                    ApplicationSchemaDeclarationDenial::InvalidCorrectionField {
+                        correction: Correction::IDENTITY.to_owned(),
+                        field,
+                    }
+                })
+            })
+            .transpose()?;
+        Ok(Self {
             identity: WorthQueryPortableTypeIdentity::declared(Correction::IDENTITY),
             source: source.description().clone(),
             inverse: inverse.description().clone(),
@@ -184,15 +286,47 @@ impl DeclaredCorrectionBinding {
             source_query: source.source_query_identifier().map(str::to_owned),
             inverse_query: inverse.source_query_identifier().map(str::to_owned),
             disclosure: super::DeclaredCorrectionDisclosure::of::<Schema, Correction::Disclosure>(),
-            authored_identity: Correction::authored_identity()
-                .map(super::ApplicationAuthoredCorrection::into_declaration),
-            completed_external_reconciliation: Correction::completed_external_reconciliation(),
+            authored_identity,
+            coupled_outputs: {
+                let mut visitor = crate::application_program::DescribeCoupledOutputs::new();
+                Correction::visit_coupled_outputs(&mut visitor);
+                visitor.finish()
+            },
+            completed_external_reconciliation: reconciliation,
             reapplication_source: super::reapplication::declared_source::<Schema, Correction>(),
-            source_output_fields: Correction::source_output_fields()
+            source_output_fields: outputs
                 .into_iter()
-                .map(super::ApplicationCorrectionOutputField::into_declaration)
-                .collect(),
-        }
+                .map(|field| {
+                    let requested = field.binding_recipe().locus().clone();
+                    field.into_declaration().map_err(|cause| {
+                        let field = match cause {
+                            ApplicationSchemaDeclarationDenial::InvalidRecordField { field } => {
+                                field
+                            }
+                            _ => requested,
+                        };
+                        ApplicationSchemaDeclarationDenial::InvalidCorrectionField {
+                            correction: Correction::IDENTITY.to_owned(),
+                            field,
+                        }
+                    })
+                })
+                .collect::<Result<_, _>>()?,
+        })
+    }
+
+    pub fn with_coupled_outputs(
+        mut self,
+        mut connections: Vec<crate::application_program::DeclaredCoupledOutputConnection>,
+    ) -> Self {
+        connections.sort();
+        self.coupled_outputs = connections;
+        self
+    }
+    pub fn coupled_outputs(
+        &self,
+    ) -> &[crate::application_program::DeclaredCoupledOutputConnection] {
+        &self.coupled_outputs
     }
 
     pub fn identity(&self) -> &WorthQueryPortableTypeIdentity {

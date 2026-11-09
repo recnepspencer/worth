@@ -1,0 +1,8 @@
+chore(m3): retain deferred publication qualification and review
+
+Record exact grants, frozen-source correspondence, complete lane logs,
+24 selected passing cases, unchanged held findings and independent APPROVE.
+Preserve the failed check and evidence-wrapper attempts with their fixes.
+No product inputs changed after qualification.
+
+Co-Authored-By: GPT-6.1 Sol <noreply@openai.com>

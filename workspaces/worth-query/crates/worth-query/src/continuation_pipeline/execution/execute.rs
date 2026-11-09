@@ -3,6 +3,7 @@ use crate::application::{
     WorthQueryDomainOperatingContext, WorthQueryInstalledDomainDeclarationContext,
 };
 use crate::binding_pipeline::{WorthQueryBindingRequestDescriptor, WorthQueryBindingWitnessCheck};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -43,14 +44,14 @@ pub(crate) fn execute_prepared_continuation_on_handle<
 >(
     handle: &WorthQueryInstalledDomainDeclarationContext<D, C>,
     request: WorthQueryExecutePreparedContinuationRequest<D, I>,
-) -> WorthQueryContinuationExecutionTranscript<D, I> {
+) -> Result<WorthQueryContinuationExecutionTranscript<D, I>, IdentityDerivationDenial> {
     let prepared = request.into_prepared();
     let request_descriptor = WorthQueryBindingRequestDescriptor::new(
         I::Family::semantic_family_key(),
         "execute_prepared_continuation",
         prepared.bridge_routing().aspect_contract().clone(),
     );
-    let linked = linked_from_prepared(&prepared);
+    let linked = linked_from_prepared(&prepared)?;
 
     if let Err(drift) =
         crate::domain_installation::WorthQueryInstalledDomainExecutionDrift::validate_retained_for_current(
@@ -58,15 +59,15 @@ pub(crate) fn execute_prepared_continuation_on_handle<
             handle.installed_authority(),
         )
     {
-        return execution_installed_authority_drift_transcript(
+        return Ok(execution_installed_authority_drift_transcript(
             request_descriptor,
             linked,
             drift,
-        );
+        )?);
     }
 
     if prepared.operating_context_identity_digest() != handle.operating_context_identity_digest() {
-        return WorthQueryContinuationExecutionTranscript::new(
+        return Ok(WorthQueryContinuationExecutionTranscript::new(
             request_descriptor,
             WorthQueryContinuationExecutionOutcome::WrongWorld(
                 "the prepared continuation belongs to a different admitted world".to_string(),
@@ -80,13 +81,13 @@ pub(crate) fn execute_prepared_continuation_on_handle<
                 I::Family::semantic_family_key(),
                 &linked,
                 "wrong_world",
-            ),
+            )?,
             linked,
-        );
+        ));
     }
 
     if let Some(family) = missing_required_capability(handle, &prepared) {
-        return WorthQueryContinuationExecutionTranscript::new(
+        return Ok(WorthQueryContinuationExecutionTranscript::new(
             request_descriptor,
             WorthQueryContinuationExecutionOutcome::Unsupported(format!(
                 "the current admitted handle no longer admits required continuation capability {}",
@@ -101,18 +102,22 @@ pub(crate) fn execute_prepared_continuation_on_handle<
                 I::Family::semantic_family_key(),
                 &linked,
                 "unsupported",
-            ),
+            )?,
             linked,
-        );
+        ));
     }
 
-    let current_evidence = current_readmission_evidence_from_handle(handle, &prepared);
+    let current_evidence = current_readmission_evidence_from_handle(handle, &prepared)?;
     if let Err(denial) = validate_execution_readmission(&prepared, &current_evidence) {
-        return transcript_from_readmission_denial(request_descriptor, linked, denial);
+        return Ok(transcript_from_readmission_denial(
+            request_descriptor,
+            linked,
+            denial,
+        )?);
     }
 
     if prepared.handle_identity_digest() != handle.handle_identity_digest() {
-        return WorthQueryContinuationExecutionTranscript::new(
+        return Ok(WorthQueryContinuationExecutionTranscript::new(
             request_descriptor,
             WorthQueryContinuationExecutionOutcome::WrongHandle(
                 "the prepared continuation belongs to a different admitted handle".to_string(),
@@ -126,9 +131,9 @@ pub(crate) fn execute_prepared_continuation_on_handle<
                 I::Family::semantic_family_key(),
                 &linked,
                 "wrong_handle",
-            ),
+            )?,
             linked,
-        );
+        ));
     }
 
     let execution_digest =
@@ -191,9 +196,9 @@ pub(crate) fn execute_prepared_continuation_on_handle<
             )
             .field_value(
                 WorthQueryEvidenceTag::new("linked_artifacts"),
-                linked_artifacts_identity(&linked),
+                linked_artifacts_identity(&linked)?,
             )
-            .seal()
+            .seal()?
             .as_str()
             .to_string();
     let binding_surface = prepared.bridge_routing().binding().surface().to_string();
@@ -205,7 +210,7 @@ pub(crate) fn execute_prepared_continuation_on_handle<
         execution_digest.clone(),
     );
 
-    WorthQueryContinuationExecutionTranscript::new(
+    Ok(WorthQueryContinuationExecutionTranscript::new(
         request_descriptor,
         WorthQueryContinuationExecutionOutcome::Executed(execution),
         vec![
@@ -216,5 +221,5 @@ pub(crate) fn execute_prepared_continuation_on_handle<
         ],
         execution_digest,
         linked,
-    )
+    ))
 }

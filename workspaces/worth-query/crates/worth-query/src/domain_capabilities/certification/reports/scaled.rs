@@ -10,6 +10,7 @@ use crate::domain_capabilities::identity::{
 use crate::domain_capabilities::{
     materialize_intent_admission_support_traceability_report, WorthQueryDomainCapabilityCategory,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::intent_admission::dx::WorthQueryRuntimeIntentAdmissionReviewData;
 use crate::intent_admission::WorthQueryIntentAdmissionCoveredEntrypoint;
 
@@ -60,22 +61,22 @@ impl WorthQueryDomainCapabilityScaledEvidence {
 
 pub(crate) fn worth_query_domain_capability_scaled_evidence_in(
     domain: &crate::domain_capabilities::WorthQueryInstalledDomainContributionSurface,
-) -> [WorthQueryDomainCapabilityScaledEvidence; 3] {
-    [
-        scaled_evidence(1, domain),
-        scaled_evidence(2, domain),
-        scaled_evidence(3, domain),
-    ]
+) -> Result<[WorthQueryDomainCapabilityScaledEvidence; 3], IdentityDerivationDenial> {
+    Ok([
+        scaled_evidence(1, domain)?,
+        scaled_evidence(2, domain)?,
+        scaled_evidence(3, domain)?,
+    ])
 }
 
 fn scaled_evidence(
     scale: usize,
     domain: &crate::domain_capabilities::WorthQueryInstalledDomainContributionSurface,
-) -> WorthQueryDomainCapabilityScaledEvidence {
+) -> Result<WorthQueryDomainCapabilityScaledEvidence, IdentityDerivationDenial> {
     let declaration = intent_declaration(&format!("domain-capability-scale-{scale}"));
-    let admitted_plan = admitted_basis_observation_plan();
-    let projection_plan = admitted_projection_consumption_plan();
-    let lower_runtime = lower_runtime_envelope(&format!("domain-capability-scale-{scale}"));
+    let admitted_plan = admitted_basis_observation_plan()?;
+    let projection_plan = admitted_projection_consumption_plan()?;
+    let lower_runtime = lower_runtime_envelope(&format!("domain-capability-scale-{scale}"))?;
     let categories = category_set_for_scale(scale);
     let admitted_plan_target = domain
         .admitted_plan_target(&admitted_plan)
@@ -110,8 +111,8 @@ fn scaled_evidence(
 
         for _ in 0..scale {
             let report = success(materialize_intent_admission_support_traceability_report(
-                admitted_ready(plan_support_requested(admitted_plan_target.clone())),
-            ));
+                admitted_ready(plan_support_requested(admitted_plan_target.clone())?)?,
+            )?);
             support_width += report.rows().len();
             support_digests.push(report.decision_support_traceability_digest().to_string());
         }
@@ -165,7 +166,7 @@ fn scaled_evidence(
             .expect("installed contribution authority must remain current")
             .consumes_projection_contract(
                 format!("aftermath.scale_{scale}"),
-                projection_contract_request(),
+                projection_contract_request()?,
             )
             .because("scaled aftermath evidence should remain canonical")
             .materialize()
@@ -179,7 +180,7 @@ fn scaled_evidence(
             .expect("installed contribution authority must remain current")
             .explains_store_backed_replay_gap(
                 format!("explanation.scale_{scale}"),
-                store_backed_replay_gap_request(),
+                store_backed_replay_gap_request()?,
             )
             .because("scaled explanation evidence should remain canonical")
             .materialize_artifact()
@@ -208,7 +209,7 @@ fn scaled_evidence(
                 intent_declaration(&format!("trace.scale.{scale}.{index}")),
             )
             .expect("scaled deferred-neighbor request should build"),
-        );
+        )?;
         let trace = review
             .decision_trace_envelope()
             .expect("scaled review should preserve decision trace")
@@ -217,16 +218,16 @@ fn scaled_evidence(
         trace_digests.push(trace.trace_digest().to_string());
     }
 
-    WorthQueryDomainCapabilityScaledEvidence {
+    Ok(WorthQueryDomainCapabilityScaledEvidence {
         contribution_width: contribution_digests.len(),
         trace_width,
         category_width: categories.len(),
         support_width,
-        contribution_digest: compose_scaled_contribution_digest(&contribution_digests),
-        trace_digest: compose_scaled_trace_digest(&trace_digests),
-        category_digest: compose_scaled_category_digest(&categories),
-        support_digest: compose_scaled_support_digest(&support_digests),
-    }
+        contribution_digest: compose_scaled_contribution_digest(&contribution_digests)?,
+        trace_digest: compose_scaled_trace_digest(&trace_digests)?,
+        category_digest: compose_scaled_category_digest(&categories)?,
+        support_digest: compose_scaled_support_digest(&support_digests)?,
+    })
 }
 
 fn category_set_for_scale(scale: usize) -> Vec<WorthQueryDomainCapabilityCategory> {

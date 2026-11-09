@@ -49,17 +49,8 @@ impl<const MODE: u64> ApplicationMutationBinding<DocumentRetentionSchema<MODE>>
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.body-court.unlink-member-command.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
 
-    fn scope_field() -> ApplicationFieldRef<
-        DocumentRetentionSchema<MODE>,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         DocumentRetentionSchema<MODE>,
@@ -82,9 +73,10 @@ impl<const MODE: u64> OperationHandler<DocumentRetentionSchema<MODE>, UnlinkBind
         input: &DraftInput,
         reader: &mut DecisionReader<'_, '_, '_, DocumentRetentionSchema<MODE>, UnlinkBinding<MODE>>,
     ) -> HandlerResult<Targets<MODE>, WorthQueryOperationBodyDenial> {
-        let document = match reader
-            .resolve_entity(DocumentIdentityField::reference(), input.identity.clone())
-        {
+        let document = match reader.resolve_entity(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            input.identity.clone(),
+        ) {
             Ok(value) => value,
             Err(cause) => return HandlerResult::ExecutionDenied(cause),
         };
@@ -145,6 +137,9 @@ impl<const MODE: u64> ApplicationMutationIntent<DocumentRetentionSchema<MODE>>
         &self.0
     }
     fn scope_binding(&self) -> Scope<MODE> {
-        Scope::<MODE>::new(DocumentIdentityField::reference(), self.0.identity.clone())
+        Scope::<MODE>::new(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            self.0.identity.clone(),
+        )
     }
 }

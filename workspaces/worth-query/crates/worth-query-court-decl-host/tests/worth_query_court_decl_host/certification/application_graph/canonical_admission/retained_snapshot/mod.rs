@@ -12,7 +12,10 @@ fn retained_snapshot_multi_read_vetoes_swallowed_refusal_and_retries_at_original
                 |reader| {
                     ["root", "child"].map(|name| {
                         reader
-                            .resolve_entity(DocumentIdentityField::reference(), name.to_owned())
+                            .resolve_entity(
+                                DocumentIdentityField::at("DocumentIdentityField"),
+                                name.to_owned(),
+                            )
                             .unwrap()
                     })
                 },
@@ -61,7 +64,7 @@ fn retained_snapshot_multi_read_vetoes_swallowed_refusal_and_retries_at_original
                     .run(ExecutionWorkCeiling::new(Some(work)), |_| {
                         snapshot.read_fields(&request, |reader| {
                             let first = reader
-                                .field(&identities[0], DocumentValueField::reference())
+                                .field(&identities[0], DocumentValueField::at("DocumentValueField"))
                                 .expect("the first nested decode fits this native allowance")
                                 .expect("the pinned source has its root value");
                             assert_eq!(first.0, super::value());
@@ -70,7 +73,7 @@ fn retained_snapshot_multi_read_vetoes_swallowed_refusal_and_retries_at_original
                             // the caller can also swallow the field error. The
                             // native completion owner must veto either case.
                             let second = reader
-                                .field(&identities[1], DocumentValueField::reference())
+                                .field(&identities[1], DocumentValueField::at("DocumentValueField"))
                                 .ok()
                                 .flatten();
                             if cancel_at_handoff {
@@ -84,6 +87,9 @@ fn retained_snapshot_multi_read_vetoes_swallowed_refusal_and_retries_at_original
                 (result, first_read.get(), callback_returned.get(), report)
             };
 
+            // The first real read certifies the stored bytes. Measure the warm
+            // path used by the following narrowed request, on the same pin.
+            assert!(run(super::FUNDED_WORK, false).0.is_ok());
             let (funded, first, returned, report) = run(super::FUNDED_WORK, false);
             let (root, child) = funded.expect("funded cumulative retained reads complete");
             assert!(first && returned);
@@ -92,16 +98,16 @@ fn retained_snapshot_multi_read_vetoes_swallowed_refusal_and_retries_at_original
             assert_eq!(opaque::ignored_refusals(), 0);
 
             let worth_foundational::facade::AspectValue::String(
-                worth_foundational::facade::InternedString::Raw(wire),
+                wire,
             ) = super::binding::NestedBinding::encode(&opaque::SwallowingValue(super::value())).unwrap()
             else { panic!("the installed canonical value uses a string carrier"); };
-            // The real native bill ends with the decoder's wire.len() canonical
-            // comparison. Removing that plus half a wire reaches the last seed:
-            // its sixteen 256-byte tags alone exceed this remaining tail.
-            // Independent assertions below require the first read and a genuine
-            // swallowed seed refusal, rather than accepting a lookup stop.
+            let wire = wire.raw_text().expect("canonical string carrier is textual");
+            // The carried seal removes the canonical comparison. Subtract only
+            // half a wire from the real native bill to reach the final nested
+            // seed; independent assertions require the first read and a genuine
+            // swallowed callback refusal rather than accepting a lookup stop.
             let narrow_work = report.charged_work()
-                .checked_sub(u64::try_from(wire.len() * 3 / 2).unwrap()).unwrap();
+                .checked_sub(u64::try_from(wire.len() / 2).unwrap()).unwrap();
             // The later cancellation cannot replace the seed's first refusal.
             let (refused, first, returned, _) = run(narrow_work, true);
             let refused = refused.expect_err("swallowed second decode cannot publish output");
@@ -137,7 +143,7 @@ fn retained_snapshot_multi_read_vetoes_swallowed_refusal_and_retries_at_original
             assert_eq!(snapshot.version(), pinned_version);
             assert_eq!(
                 snapshot
-                    .field(&execution, &identities[0], CounterField::reference())
+                    .field(&execution, &identities[0], CounterField::at("CounterField"))
                     .unwrap(),
                 Some(0),
                 "the native retained pin keeps its old value after a committed source edit"

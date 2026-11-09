@@ -10,7 +10,6 @@ impl super::RelationalRegionHeadView<'_> {
     pub(crate) fn materialize_consequence_partition<E>(
         &self,
         working: &mut WorkingState,
-        entity_only: bool,
         entities: &BTreeSet<EntityId>,
         relations: &BTreeSet<RelationId>,
         mut admit: impl FnMut(u64, Option<u64>) -> Result<(), E>,
@@ -64,8 +63,19 @@ impl super::RelationalRegionHeadView<'_> {
             let staged = working.partitions.entry(id).or_insert_with(|| {
                 prior.clone_graph_with_sparse_entity_slots_and_relation_shape(&BTreeSet::new())
             });
-            if entity_only && staged.relation_arena.slot_count() == 0 {
+            // Promotion is per partition: an earlier consequence may already
+            // have promoted the WorkingState while this partition still holds
+            // its original entity-only shell. Never publish that shell as a
+            // replacement for the prior retained relation arena.
+            if !staged.relation_overlay_is_sparse
+                && staged.relation_arena.slot_count() == 0
+                && journal.relation_slots.is_empty()
+            {
                 admit(1, prior.relation_arena.sparse_shell_allocation_bound())?;
+                staged.relation_arena = prior.relation_arena.sparse_shape_clone_for_overlay();
+                staged.relation_overlay_is_sparse = true;
+            }
+            if journal.adjacency_omitted {
                 admit(
                     journal.adjacency_slots.len() as u64,
                     prior
@@ -78,8 +88,6 @@ impl super::RelationalRegionHeadView<'_> {
                         .reverse_adjacency
                         .adoption_allocation_bound(journal.reverse_adjacency_slots.len()),
                 )?;
-                staged.relation_arena = prior.relation_arena.sparse_shape_clone_for_overlay();
-                staged.relation_overlay_is_sparse = true;
                 let mut outgoing = prior.adjacency.clone();
                 let mut incoming = prior.reverse_adjacency.clone();
                 copied = copied.saturating_add(
@@ -92,6 +100,7 @@ impl super::RelationalRegionHeadView<'_> {
                     ));
                 staged.adjacency = outgoing;
                 staged.reverse_adjacency = incoming;
+                journal.adjacency_omitted = false;
             }
             if !entity_slots.is_empty() {
                 admit(1, prior.entity_arena.sparse_shell_allocation_bound())?;

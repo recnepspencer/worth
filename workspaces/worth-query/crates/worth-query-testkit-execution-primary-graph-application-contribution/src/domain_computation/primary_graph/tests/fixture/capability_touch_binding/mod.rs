@@ -7,8 +7,6 @@ use crate::domain_computation::primary_graph::tests::fixture::capability::declar
 use crate::domain_computation::primary_graph::tests::fixture::*;
 use worth_query_declaration::facade::application_operation::ApplicationCapabilityMutationBinding;
 use worth_query_declaration::facade::application_operation::NoApplicationMutationOutputs;
-use worth_query_declaration::facade::application_schema::NoApplicationUnit;
-use worth_query_declaration::facade::application_schema::ReadWrite;
 use worth_query_declaration::facade::application_schema::U64ApplicationValueBinding;
 use worth_query_execution::facade::domain_computation::CandidateWriter;
 use worth_query_execution::facade::domain_computation::DecisionReader;
@@ -32,8 +30,8 @@ worth_query_declaration::worth_query_mutation_binding!(
         principal_entity Principal,
         principal_identity u64,
         identity_binding U64ApplicationValueBinding,
-    scope Account, AccountPolicy, AccountStatus, String, ReadWrite, NoApplicationUnit,
-    field AccountStatus::reference(),
+    scope AccountStatus,
+    field AccountStatus::at("AccountStatus"),
     value touch_scope,
 );
 

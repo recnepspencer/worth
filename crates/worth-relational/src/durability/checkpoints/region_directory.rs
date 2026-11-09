@@ -1,4 +1,5 @@
 //! Readmit a manifest's immutable region directory without reading members.
+mod root_readmission;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use worth_execution::{
@@ -30,13 +31,19 @@ pub(crate) struct ReadmittedRegionDirectory {
     cells: ExecutionOrderedMap<CellKey, Arc<RelationalRegionResidency>>,
 }
 
+#[derive(Debug, Clone)]
 pub(crate) enum ReadmittedSchemas {
     Source(
         Arc<
             crate::durability::source_initial_inputs::schema_catalog::ReadmittedSourceSchemaCatalog,
         >,
     ),
-    Original(BTreeMap<[u8; 32], Arc<RelationalBranchRootSchemaAuthority>>),
+    Original(Arc<ReadmittedOriginalSchemas>),
+}
+#[derive(Debug)]
+pub(crate) struct ReadmittedOriginalSchemas {
+    rows: BTreeMap<[u8; 32], Arc<RelationalBranchRootSchemaAuthority>>,
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 impl ReadmittedSchemas {
     pub(crate) fn get(
@@ -45,7 +52,7 @@ impl ReadmittedSchemas {
     ) -> Option<&Arc<RelationalBranchRootSchemaAuthority>> {
         match self {
             Self::Source(catalog) => catalog.rows.get(digest),
-            Self::Original(rows) => rows.get(digest),
+            Self::Original(rows) => rows.rows.get(digest),
         }
     }
 }
@@ -72,6 +79,27 @@ impl ReadmittedRegionDirectory {
             )
             .into());
         }
+        let layout = std::alloc::Layout::new::<[usize; 2]>()
+            .extend(std::alloc::Layout::new::<ReadmittedOriginalSchemas>())
+            .map_err(|_| corrupt("readmitted schema directory layout overflow"))?
+            .0
+            .pad_to_align();
+        let count = directory.manifest.schemas.len();
+        let nodes = if count == 0 {
+            0
+        } else {
+            crate::branch::retained_compilation_tree_bytes::<
+                [u8; 32],
+                Arc<RelationalBranchRootSchemaAuthority>,
+            >(count)
+            .map_err(|_| corrupt("readmitted schema map layout overflow"))?
+        };
+        let bytes = nodes
+            .checked_add(layout.size() as u64)
+            .ok_or_else(|| corrupt("readmitted schema directory layout overflow"))?;
+        let memory = request
+            .reserve_retained_memory(bytes)
+            .map_err(|cause| RelationalRecoveryStop::Request(cause.into()))?;
         let mut schemas = BTreeMap::new();
         for (index, image) in directory.manifest.schemas.iter().enumerate() {
             let (mut registry, contracts) = image.readmit_registry().map_err(corrupt)?;
@@ -79,21 +107,30 @@ impl ReadmittedRegionDirectory {
                 .content_formats
                 .bind_recorded(content_formats)
                 .map_err(RelationalRecoveryStop::from)?;
-            let expected = registry.authority_snapshot();
+            let expected = registry
+                .snapshot_for_compilation(crate::schema::SchemaCompilationControl::Request(
+                    *request,
+                ))
+                .map_err(RelationalRecoveryStop::Request)?;
             let authority = RelationalBranchRootSchemaAuthority::readmit_exact(
                 index as u64 + 1,
                 registry,
                 contracts,
                 &expected,
                 image.descriptor_semantics_version(),
+                crate::schema::SchemaCompilationControl::Request(*request),
             )
+            .map_err(RelationalRecoveryStop::Request)?
             .ok_or_else(|| corrupt("schema carrier executable readmission failed"))?;
             if schemas.insert(image.carrier_digest(), authority).is_some() {
                 return Err(corrupt("duplicate schema carrier").into());
             }
         }
         Ok(Self {
-            schemas: ReadmittedSchemas::Original(schemas),
+            schemas: ReadmittedSchemas::Original(Arc::new(ReadmittedOriginalSchemas {
+                rows: schemas,
+                _memory: memory,
+            })),
             directory,
             // Cells retain an isolated readmission dictionary, never a live
             // runtime's writable symbol authority. Serving leases readmit into
@@ -103,6 +140,20 @@ impl ReadmittedRegionDirectory {
         })
     }
 
+    pub(crate) fn from_readmitted_schemas(
+        directory: Arc<RelationalCheckpointDirectory>,
+        symbols: crate::runtime::RuntimeSymbolTable,
+        schemas: ReadmittedSchemas,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Self, RelationalRecoveryStop> {
+        crate::execution::check_request(request).map_err(RelationalRecoveryStop::Request)?;
+        Ok(Self {
+            directory,
+            symbols,
+            schemas,
+            cells: Default::default(),
+        })
+    }
     pub(crate) fn regions(
         &mut self,
         schema_digest: [u8; 32],
@@ -118,6 +169,24 @@ impl ReadmittedRegionDirectory {
         let mut result = ExecutionRequestArrayBuilder::allocate(*request, leaves.len())
             .map_err(crate::durability::checkpoint_history::capture::array_capture_stop)?;
         for leaf in leaves {
+            let record_directory =
+                crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
+                    |lane| {
+                        lane.recover(request, |lane, work| {
+                            crate::storage::residency::RegionRecordDirectory::from_portable(
+                                lane,
+                                leaf.partition_id,
+                                leaf.directory.clone(),
+                                &mut |units, bytes| work.prepare(units, bytes).map_err(Into::into),
+                            )
+                        })
+                    },
+                )
+                .map_err(
+                    |cause: crate::storage::residency::RecordDirectoryError| {
+                        cause.into_failure(leaf.partition_id)
+                    },
+                )?;
             crate::durability::artifact_payload_emission::request::account_work(request, 1)?;
             let key = (leaf.partition_id, schema_digest, leaf.head, leaf.history);
             let cell = match self.cells.get(&key) {
@@ -135,6 +204,8 @@ impl ReadmittedRegionDirectory {
                             schema_carrier_digest: schema_digest,
                             symbols: self.symbols.clone(),
                             content_digest: leaf.content_digest,
+                            directory: leaf.directory.clone(),
+                            live_counts: leaf.live_counts,
                             entity_slots: leaf.entity_slots,
                             relation_slots: leaf.relation_slots,
                             unavailable_records: leaf.unavailable_records,
@@ -153,6 +224,8 @@ impl ReadmittedRegionDirectory {
                     partition_id: leaf.partition_id,
                     content_digest: leaf.content_digest,
                     kind_commitment: leaf.kind_authority,
+                    directory: record_directory,
+                    live_counts: leaf.live_counts,
                     entity_slots: leaf.entity_slots,
                     relation_slots: leaf.relation_slots,
                     unavailable_records: leaf.unavailable_records,
@@ -164,12 +237,15 @@ impl ReadmittedRegionDirectory {
         let result = result
             .seal()
             .map_err(crate::durability::checkpoint_history::capture::array_capture_stop)?;
-        authority.bind_for_request(
-            result
-                .iter()
-                .map(|region| (region.partition_id, region.cell.clone())),
-            request,
-        )?;
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+            authority.bind_for_request(
+                lane,
+                result
+                    .iter()
+                    .map(|region| (region.partition_id, region.cell.clone())),
+                request,
+            )
+        })?;
         Ok(result)
     }
 }

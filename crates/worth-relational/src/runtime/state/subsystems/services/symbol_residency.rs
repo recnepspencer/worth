@@ -1,6 +1,6 @@
 //! Paged dictionary admission. I/O occurs only in explicit demands, before
 //! taking the symbol table's mutation lock.
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::{Arc, Mutex};
 
 use super::symbol_table::RuntimeSymbolTable;
@@ -8,24 +8,24 @@ use crate::durability::data::{RelationalCheckpointPage, RelationalCheckpointSymb
 use crate::durability::medium::{RelationalDurableColdSource, RelationalDurableMemberLocator};
 use crate::storage::data::{
     RelationalStorageSubject, RelationalStorageUnavailable,
-    RelationalStorageUnavailableCause as Cause,
+    RelationalStorageUnavailableCause as Cause, SymbolPageShape,
 };
 use crate::storage::residency::RelationalResidencyDemandFailure as Failure;
 use crate::symbols::data::Symbol;
 
+mod admission;
 mod member_export;
 mod selected_directory;
 mod source_retirement;
 use source_retirement::SymbolPageState;
 mod page_shape;
-use page_shape::{SymbolPageSelection, SymbolPageShape};
+use page_shape::SymbolPageSelection;
 
 #[cfg(test)]
 mod tests;
 
 #[derive(Debug)]
 pub(super) struct RuntimeSymbolResidency {
-    regions: Mutex<HashSet<crate::storage::residency::RelationalRegionSymbolAdmissionIdentity>>,
     by_id: crate::durability::data::CheckpointPages,
     by_value: crate::durability::data::CheckpointSymbolBuckets,
     pages: Mutex<SymbolPageState>,
@@ -33,16 +33,6 @@ pub(super) struct RuntimeSymbolResidency {
 }
 
 impl RuntimeSymbolResidency {
-    pub(super) fn region_is_admitted(
-        &self,
-        region: crate::storage::residency::RelationalRegionSymbolAdmissionIdentity,
-    ) -> bool {
-        self.regions
-            .lock()
-            .unwrap_or_else(|error| error.into_inner())
-            .contains(&region)
-    }
-
     pub(super) fn all_id_pages_resident(&self) -> bool {
         let pages = self.pages.lock().unwrap_or_else(|error| error.into_inner());
         self.by_id
@@ -75,11 +65,10 @@ impl RuntimeSymbolResidency {
                 )
             })?;
         Ok(Self {
-            regions: Mutex::new(HashSet::new()),
             by_id: crate::durability::data::CheckpointPages::from_ordinary(by_id),
             by_value: crate::durability::data::CheckpointSymbolBuckets::from_ordinary(by_value),
             pages: Mutex::new(SymbolPageState {
-                data: BTreeMap::new(),
+                data: Default::default(),
                 physical: crate::durability::medium::NativeSourceMemberState::new(
                     source, placement,
                 ),
@@ -89,6 +78,8 @@ impl RuntimeSymbolResidency {
     }
 
     pub(super) fn detached_with_owner<T>(&self, snapshot: impl FnOnce() -> T) -> (Self, T) {
+        // Page admission and snapshot capture both take pages before the
+        // dictionary. The same immutable state owns meanings and proof marks.
         let pages = self
             .pages
             .lock()
@@ -96,7 +87,6 @@ impl RuntimeSymbolResidency {
         let owner = snapshot();
         (
             Self {
-                regions: Mutex::new(HashSet::new()),
                 by_id: self.by_id.clone(),
                 by_value: self.by_value.clone(),
                 pages: Mutex::new(SymbolPageState {
@@ -111,41 +101,6 @@ impl RuntimeSymbolResidency {
 
     pub(super) fn same_directory(&self, other: &Self) -> bool {
         self.by_id == other.by_id && self.by_value == other.by_value
-    }
-
-    pub(super) fn demand_region(
-        &self,
-        owner: &RuntimeSymbolTable,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        region: crate::storage::residency::RelationalRegionSymbolAdmissionIdentity,
-        ids: impl FnOnce() -> BTreeSet<Symbol>,
-    ) -> Result<(), Failure> {
-        crate::execution::check_request(execution).map_err(Failure::Request)?;
-        let mut admitted = self
-            .regions
-            .lock()
-            .unwrap_or_else(|error| error.into_inner());
-        if admitted.contains(&region) {
-            return Ok(());
-        }
-        let covered_head = region.covered_head();
-        admitted
-            .try_reserve(1 + usize::from(covered_head.is_some()))
-            .map_err(|_| {
-                unavailable(
-                    RelationalStorageSubject::Symbols {
-                        first: Symbol(0),
-                        last: Symbol(u32::MAX - 1),
-                    },
-                    Cause::MemoryExhausted,
-                )
-            })?;
-        self.demand_ids(owner, execution, ids())?;
-        if let Some(head) = covered_head {
-            admitted.insert(head);
-        }
-        admitted.insert(region);
-        Ok(())
     }
 
     pub(super) fn demand_ids(
@@ -268,11 +223,18 @@ impl RuntimeSymbolResidency {
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         if let Some(result) = pages.get(&locator).copied() {
             return match result {
-                Ok(shape) => shape.validate(selection).map_err(|cause| {
-                    let failure = unavailable(subject, cause);
-                    pages.insert(locator, Err(failure));
-                    failure.into()
-                }),
+                Ok(shape) => {
+                    if let Err(cause) = shape.validate(selection) {
+                        let failure = unavailable(subject, cause);
+                        let mut refused = pages.data.clone();
+                        refused
+                            .insert_for_request(locator, Err(failure), execution)
+                            .map_err(Failure::Request)?;
+                        pages.data = refused;
+                        return Err(failure.into());
+                    }
+                    Ok(())
+                }
                 Err(failure) => Err(failure.into()),
             };
         }
@@ -291,22 +253,32 @@ impl RuntimeSymbolResidency {
             shape
                 .validate(selection)
                 .map_err(|cause| unavailable(subject, cause))?;
+            // Admit the complete map path before importing any dictionary text.
+            // A refused update drops its partial path and leaves the cache intact.
+            let mut admitted = pages.data.clone();
+            admitted
+                .insert_for_request(locator, Ok(shape), execution)
+                .map_err(Failure::Request)?;
+            crate::execution::check_request(execution).map_err(Failure::Request)?;
             owner
                 .import_canonical_snapshot(&snapshot)
                 .map_err(|_| unavailable(subject, Cause::Damaged))?;
-            Ok(shape)
+            pages.data = admitted;
+            Ok(())
         })();
         match &result {
-            Ok(shape) => {
-                pages.insert(locator, Ok(*shape));
-            }
+            Ok(()) => {}
             Err(Failure::StorageUnavailable(failure)) if failure.cause.is_proven_damage() => {
-                pages.insert(locator, Err(*failure));
+                let mut refused = pages.data.clone();
+                refused
+                    .insert_for_request(locator, Err(*failure), execution)
+                    .map_err(Failure::Request)?;
+                pages.data = refused;
             }
             Err(Failure::StorageUnavailable(_)) => {}
             Err(Failure::Request(_) | Failure::Content(_)) => {}
         }
-        result.map(|_| ())
+        result
     }
 }
 

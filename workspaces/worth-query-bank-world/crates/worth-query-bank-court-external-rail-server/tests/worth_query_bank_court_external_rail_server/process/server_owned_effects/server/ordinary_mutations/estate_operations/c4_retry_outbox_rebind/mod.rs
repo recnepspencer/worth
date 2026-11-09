@@ -70,6 +70,20 @@ fn ordinary_equivalent_retry_skips_materialization_and_the_external_rail() {
         bank_server::BankClosedSourceCompletion::from_query(closed_source)
     };
     let recovered = retry;
+    let original_outbox = recovered
+        .recorded_receipt()
+        .expect("same-key retry exposes original receipt DATA")
+        .dispatch_outbox()
+        .expect("original Native rows retain the emitted outbox");
+    let inbound = original_outbox
+        .inbound()
+        .expect("the original durable operation definition matches genuine installed meaning")
+        .expect("this original operation declared inbound completion");
+    assert_eq!(inbound.source_identity(), "rail-primary");
+    assert_eq!(
+        inbound.protocol().identity().as_str(),
+        "bank.estate.death-notification"
+    );
     publication_assertions::assert_recovered_commit_axes(&receipt_closed, &recovered);
     assert_eq!(world.transport.attempts().len(), 1);
     assert!(!dispatch_observed.load(Ordering::Acquire));

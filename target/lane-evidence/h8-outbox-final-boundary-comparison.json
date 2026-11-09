@@ -1,0 +1,13 @@
+{
+  "baseline": "topology-boundary.log",
+  "final": "h8-outbox-fixture-boundary.log",
+  "baseline_count": 3,
+  "final_count": 3,
+  "added": [],
+  "removed": [],
+  "findings": [
+    "BC9002_TEST_TOPOLOGY crates/worth-relational/src/tests/durability/medium/cold_source.rs::file: {\"source\":\"crates/worth-relational/src/tests/durability/medium/cold_source.rs\",\"module\":\"file\",\"roots\":[\"ExecutionRequest\"]}",
+    "BC9002_TEST_TOPOLOGY crates/worth-relational/src/tests/durability/medium/cold_source/protected_reads.rs::file: {\"source\":\"crates/worth-relational/src/tests/durability/medium/cold_source/protected_reads.rs\",\"module\":\"file\",\"roots\":[\"ExecutionRequest\"]}",
+    "BC9002_TEST_TOPOLOGY crates/worth-relational/src/tests/support/durable_medium/runtime_attachment.rs::file: {\"source\":\"crates/worth-relational/src/tests/support/durable_medium/runtime_attachment.rs\",\"module\":\"file\",\"roots\":[\"ExecutionRequest\",\"RelationalRuntime\"]}"
+  ]
+}

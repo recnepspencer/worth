@@ -50,8 +50,8 @@ impl WorthQueryRuntime {
                 ),
             ));
         }
-        let expected_basis_identity = binding.current_basis_identity();
-        let expected_checkpoint_identity = binding.current_generation_identity();
+        let expected_basis_identity = binding.current_basis_identity()?;
+        let expected_checkpoint_identity = binding.current_generation_identity()?;
         let remask_posture = state.remask_posture.clone();
         Ok(WorthQueryAsyncResultTransitionBatch::admitted(
             runtime_provenance,
@@ -89,8 +89,8 @@ impl WorthQueryRuntime {
             .map(WorthQueryRuntimeAsyncResultState::kind);
         let plan = plan_async_result_transitions(view.name(), binding, prior_kind, ordering)?;
         let (binding, transitions, suppressed_duplicate_count) = plan.into_parts();
-        let expected_basis = binding.current_basis_identity();
-        let expected_checkpoint = binding.current_generation_identity();
+        let expected_basis = binding.current_basis_identity()?;
+        let expected_checkpoint = binding.current_generation_identity()?;
         let remask_posture = state.remask_posture.clone();
         let mut states = Vec::with_capacity(transitions.len());
         for transition in transitions {

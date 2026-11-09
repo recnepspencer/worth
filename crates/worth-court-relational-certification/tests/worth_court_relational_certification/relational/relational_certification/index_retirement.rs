@@ -35,6 +35,20 @@ fn a_global_generation_survives_its_publishers_deletion_while_another_head_selec
         Some(0)
     );
     assert!(generation(execution, &runtime, index.index_id, &anchor) == Some(original));
+    let (_, main_basis) = runtime
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap();
+    let seeded = runtime.index_authority().build_for_basis(
+        execution,
+        DerivedIndexBuildRequest {
+            source_commit_id: anchor.commit.commit_id,
+            branch_id: BranchId("main".into()),
+            index_ids: vec![index.index_id],
+        },
+        &main_basis,
+    );
+    assert!(seeded.failed_indexes.is_empty());
+    drop(main_basis);
     let latest = create_entity_outcome(execution, &runtime, "global-advanced-root");
     let current = build(execution, &runtime, index.index_id, &latest);
     release_test_commit_snapshot(&runtime, &latest);

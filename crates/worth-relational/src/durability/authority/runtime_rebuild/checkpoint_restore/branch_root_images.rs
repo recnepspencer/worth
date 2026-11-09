@@ -17,6 +17,8 @@ pub(super) struct RestoredBranchRootImages {
 }
 
 pub(super) fn restore_branch_root_images(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
     checkpoint: &DurableCheckpoint,
     work: &mut CheckpointRestoreWork,
@@ -48,14 +50,16 @@ pub(super) fn restore_branch_root_images(
         })?;
         let owner = format!("branch-root image `{}`", image.commit_id.0);
         reject_duplicate_partition_images(&image.partition_images, &owner)?;
-        let observed_digest =
-            crate::durability::data::branch_root_partition_image_digest(&image.partition_images)
-                .map_err(|error| {
-                    corrupt_checkpoint(format!(
-                        "branch-root image `{}` integrity encoding failed: {error}",
-                        image.commit_id.0
-                    ))
-                })?;
+        let observed_digest = crate::durability::data::branch_root_partition_image_digest(
+            lane,
+            &image.partition_images,
+        )
+        .map_err(|error| {
+            corrupt_checkpoint(format!(
+                "branch-root image `{}` integrity encoding failed: {error}",
+                image.commit_id.0
+            ))
+        })?;
         if observed_digest != image.partition_image_digest {
             return Err(corrupt_checkpoint(format!(
                 "branch-root image `{}` partition integrity mismatch",
@@ -66,7 +70,7 @@ pub(super) fn restore_branch_root_images(
         work.root_images_verified += 1;
         let schema_authority = match original_schemas {
             Some(graph) => {
-                super::root_schema_readmission::validate_root_image_integrity(image)?;
+                super::root_schema_readmission::validate_root_image_integrity(lane, image)?;
                 let schema = graph.schemas.rows.get(&image.schema_carrier_digest)
                     .ok_or_else(|| corrupt_checkpoint("source root carrier unavailable".into()))?;
                 if !schema.matches(&envelope.schema_authority)
@@ -77,12 +81,13 @@ pub(super) fn restore_branch_root_images(
             }
             None => schema_catalog.as_mut()
                 .expect(/* Proof: the local catalog is constructed above exactly when original_schemas is None. */ "ordinary schema admission owns its catalog")
-                .readmit_root(restored, image, envelope)?,
+                .readmit_root(lane, execution, restored, image, envelope)?,
         };
         let root_contracts = crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog::from_contracts(
             schema_authority.retained_aspect_contracts(),
         )?;
         let mut restored_partitions = restore_unique_partition_images_with_schema(
+            lane,
             &image.partition_images,
             schema_authority.aspect_plans(),
             &root_contracts,
@@ -93,8 +98,13 @@ pub(super) fn restore_branch_root_images(
             .root_kind_images
             .get(&image.commit_id)
             .ok_or_else(|| corrupt_checkpoint("root kind images missing".into()))?
-            .restore(&mut restored_partitions)
-            .map_err(|cause| corrupt_checkpoint(format!("root kind reconstruction: {cause:?}")))?;
+            .restore(lane, execution, &mut restored_partitions)
+            .map_err(|cause| {
+                crate::durability::checkpoints::kind_reconstruction::stop(
+                    "root kind reconstruction",
+                    cause,
+                )
+            })?;
         if partitions
             .insert(image.commit_id, restored_partitions)
             .is_some()

@@ -78,7 +78,7 @@ pub fn commit_live_activity_on_product(
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &phase_custody.phase_for_application_for_test(&world.application),
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_owned(),
                     request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -149,10 +149,10 @@ pub fn live_activity_program(
             &admission,
             |reader, projected| {
                 reader
-                    .require_decision_field(projected, AccountStatus::reference())
+                    .require_decision_field(projected, AccountStatus::at("AccountStatus"))
                     .unwrap();
                 reader
-                    .require_decision_field(projected, AccountLabel::reference())
+                    .require_decision_field(projected, AccountLabel::at("AccountLabel"))
                     .unwrap();
             },
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -177,7 +177,7 @@ pub fn live_activity_program(
         .begin_effect_program();
     let account = effects.existing_entity(account).unwrap();
     effects
-        .write_field(&account, AccountLabel::reference(), label.to_owned())
+        .write_field(&account, AccountLabel::at("AccountLabel"), label.to_owned())
         .unwrap();
     effects
         .emit(

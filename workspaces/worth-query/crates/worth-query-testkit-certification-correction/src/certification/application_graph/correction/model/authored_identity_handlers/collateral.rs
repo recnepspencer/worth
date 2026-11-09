@@ -6,9 +6,9 @@ pub(super) fn observe(
     key: Option<&str>,
 ) -> Result<Option<Target>, HandlerExecutionDenial> {
     let Some(key) = key else { return Ok(None) };
-    let entity = reader.resolve_entity(Key::reference(), key.to_owned())?;
+    let entity = reader.resolve_entity(Key::at("Key"), key.to_owned())?;
     // Only the shared logical key is needed from this derived record.
-    reader.field(&entity, Key::reference())?;
+    reader.field(&entity, Key::at("Key"))?;
     reader.entity(&entity, Number::reference())?;
     reader.mutation_target(&entity).map(Some)
 }

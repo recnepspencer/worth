@@ -62,10 +62,10 @@ fn compile_capability_does_not_widen_the_installed_effect_program() {
                     &admission,
                     |reader, _| {
                         let projected = reader
-                            .resolve_entity(AccountStatus::reference(), "open".to_string())
+                            .resolve_entity(AccountStatus::at("AccountStatus"), "open".to_string())
                             .unwrap();
                         reader
-                            .require_decision_field(&projected, AccountStatus::reference())
+                            .require_decision_field(&projected, AccountStatus::at("AccountStatus"))
                             .unwrap();
                     },
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -82,7 +82,7 @@ fn compile_capability_does_not_widen_the_installed_effect_program() {
                 )
                 .unwrap();
             reads
-                .observe_field(execution, &account, AccountStatus::reference())
+                .observe_field(execution, &account, AccountStatus::at("AccountStatus"))
                 .unwrap();
             let mut effects = reads
                 .complete(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
@@ -90,9 +90,11 @@ fn compile_capability_does_not_widen_the_installed_effect_program() {
                 .begin_effect_program();
             let target = effects.existing_entity(&account).unwrap();
 
-            let Err(denial) =
-                effects.write_field(&target, AccountLabel::reference(), "forged".to_string())
-            else {
+            let Err(denial) = effects.write_field(
+                &target,
+                AccountLabel::at("AccountLabel"),
+                "forged".to_string(),
+            ) else {
                 panic!("a compile-capable field outside the installed program must deny");
             };
             assert_eq!(
@@ -173,10 +175,10 @@ fn entity_from_another_admitted_scope_cannot_become_an_effect_target() {
                     &admission,
                     |reader, _| {
                         let projected = reader
-                            .resolve_entity(AccountStatus::reference(), "open".to_string())
+                            .resolve_entity(AccountStatus::at("AccountStatus"), "open".to_string())
                             .unwrap();
                         reader
-                            .require_decision_field(&projected, AccountStatus::reference())
+                            .require_decision_field(&projected, AccountStatus::at("AccountStatus"))
                             .unwrap();
                     },
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -193,7 +195,7 @@ fn entity_from_another_admitted_scope_cannot_become_an_effect_target() {
                 )
                 .unwrap();
             reads
-                .observe_field(execution, &account, AccountStatus::reference())
+                .observe_field(execution, &account, AccountStatus::at("AccountStatus"))
                 .unwrap();
             let effects = reads
                 .complete(worth_execution::ExecutionAllocationPolicy::SystemAllocation)

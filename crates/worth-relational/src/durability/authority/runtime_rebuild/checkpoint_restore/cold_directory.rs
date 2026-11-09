@@ -9,12 +9,16 @@ use crate::runtime::RelationalRuntime;
 use crate::storage::residency::RelationalRegionRetention;
 
 pub(super) fn restore(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     checkpoint: &DurableCheckpoint,
     directory: Arc<crate::durability::data::RelationalCheckpointDirectory>,
     work: &mut CheckpointRestoreWork,
-) -> Result<(), RelationalRecoveryStop> {
+) -> Result<
+    crate::durability::checkpoints::region_directory::ReadmittedSchemas,
+    RelationalRecoveryStop,
+> {
     crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
     if directory.admission_image.is_some() {
         let owner = crate::durability::checkpoint_admission::CheckpointAdmissionOwner::bind(
@@ -32,7 +36,7 @@ pub(super) fn restore(
         .detached_owner_snapshot()
         .map_err(|denial| corrupt(format!("cold history snapshot denied: {denial:?}")))?;
     let mut symbols = runtime.services.symbols.interner_snapshot();
-    symbols.restore_snapshot(checkpoint.symbol_table.clone());
+    symbols.restore_snapshot(lane, checkpoint.symbol_table.clone());
     let paged_symbols = if directory.admission_image.is_some() {
         runtime
             .services
@@ -52,11 +56,6 @@ pub(super) fn restore(
         execution,
         &runtime.config.schema.registry.content_formats,
     )?;
-    let heads = checkpoint
-        .envelopes
-        .iter()
-        .map(|entry| (entry.commit.commit_id, Arc::clone(entry.canonical_arc())))
-        .collect::<BTreeMap<_, _>>();
     let mut head_ids = worth_execution::ExecutionOrderedMap::default();
     for cell in &checkpoint.branch_cells {
         crate::durability::artifact_payload_emission::request::account_work(execution, 1)?;
@@ -131,50 +130,7 @@ pub(super) fn restore(
             .get(&image.schema_carrier_digest)
             .cloned()
             .ok_or_else(|| corrupt("root has no schema carrier"))?;
-        let descriptor = checkpoint
-            .commit_descriptors
-            .get(&image.commit_id)
-            .cloned()
-            .ok_or_else(|| corrupt("root has no commit descriptor"))?;
-        let leaves = regions.regions(image.schema_carrier_digest, &image.regions, execution)?;
-        let content_records = crate::durability::checkpoints::content::read_records(
-            execution,
-            &image.content,
-            directory.source.as_ref(),
-        )?;
-        let root = if directory.admission_image.is_some() {
-            let artifact = history
-                .commit_artifact(image.commit_id)
-                .ok_or_else(|| corrupt("root has no actual selected canonical row"))?;
-            let (entry, source) = artifact
-                .envelope_residency()
-                .source_placement()
-                .ok_or_else(|| corrupt("root has no actual selected source placement"))?;
-            if !Arc::ptr_eq(&directory.source, &source) {
-                return Err(corrupt("root catalog source differs from selected directory").into());
-            }
-            let commit = runtime
-                .durability
-                .checkpoint_selection()
-                .admitted_commit(&entry)
-                .map_err(RelationalRecoveryStop::AdmissionImage)?
-                .ok_or_else(|| corrupt("root has no admitted checkpoint row"))?;
-            history.readmit_checkpoint_region_directory(leaves, commit, &content_records, execution)
-        } else {
-            let envelope = heads
-                .get(&image.commit_id)
-                .cloned()
-                .ok_or_else(|| corrupt("root has no admitted head envelope"))?;
-            history.readmit_branch_region_directory(
-                execution,
-                &content_records,
-                leaves,
-                envelope,
-                descriptor,
-                schema.clone(),
-            )
-        }
-        .map_err(super::super::original_inputs::root_stop)?;
+        let root = regions.readmit_root(&history, image, execution)?;
         roots.insert(image.commit_id, root);
         authorities.insert(image.commit_id, schema);
         work.root_images_verified += 1;
@@ -190,6 +146,7 @@ pub(super) fn restore(
     )?;
     history
         .restore_branch_cells(
+            lane,
             &checkpoint.branch_cells,
             &checkpoint.branch_lifecycle,
             &checkpoint.retired_branch_names,
@@ -214,7 +171,7 @@ pub(super) fn restore(
                 )
             })
             .collect(),
-        None if directory.manifest.mirror.is_empty() => BTreeMap::new(),
+        None if directory.manifest.mirror.is_empty() => Default::default(),
         None => return Err(corrupt("mirror has no schema carrier").into()),
     };
     let record_identity = super::record_identity::prepare_record_identity(checkpoint)?;
@@ -225,11 +182,8 @@ pub(super) fn restore(
     runtime.history = history;
     runtime.lineage.install_cold_pages(&directory)?;
     runtime
-        .indexes
-        .install_cold_checkpoint(directory.clone(), &runtime.history)?;
-    runtime
         .durability
         .checkpoint_selection()
         .restore_selected(directory);
-    Ok(())
+    Ok(regions.schemas)
 }

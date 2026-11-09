@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::collections::BTreeMap;
 
 use crate::identity::hash_parts;
@@ -193,35 +194,35 @@ impl WorthQueryLowerRuntimeRepresentativeSurface {
 
 pub fn worth_query_lower_runtime_representative_surface(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> WorthQueryLowerRuntimeRepresentativeSurface {
+) -> Result<WorthQueryLowerRuntimeRepresentativeSurface, IdentityDerivationDenial> {
     let concrete_rows = vec![
-        representative_compose_read_row(execution),
-        representative_execute_read_family_row(execution),
-        representative_execute_read_family_in_basis_context_row(execution),
-        representative_runtime_current_read_graph_row(execution),
-        representative_runtime_basis_context_read_graph_row(execution),
-        representative_live_view_schema_row(),
-        representative_live_view_source_row(),
-        representative_public_live_view_declaration_row(),
-        representative_runtime_live_installation_orchestration_row(),
-        representative_subscription_activation_row(),
-        representative_subscription_continuity_row(*execution),
-        representative_preview_basis_row(),
-        representative_basis_truth_view_readmission_row(*execution),
-        representative_basis_subscription_readmission_row(*execution),
-        representative_historical_bridge_lowering_row(*execution),
-        representative_effect_relational_mutation_row(execution),
-        representative_effect_relational_merge_row(execution),
-        representative_effect_bridge_writeback_row(execution),
-        representative_write_authority_row(),
-        representative_signal_invalidation_row(),
-        representative_runtime_intent_authority_row(execution),
-        representative_intent_runtime_execution_row(execution),
-        representative_projection_query_receipts_row(execution),
-        representative_projection_relational_row(),
-        representative_projection_bridge_row(*execution),
-        representative_causal_bridge_materialization_row(execution),
-        representative_frontier_evidence_row(),
+        representative_compose_read_row(execution)?,
+        representative_execute_read_family_row(execution)?,
+        representative_execute_read_family_in_basis_context_row(execution)?,
+        representative_runtime_current_read_graph_row(execution)?,
+        representative_runtime_basis_context_read_graph_row(execution)?,
+        representative_live_view_schema_row()?,
+        representative_live_view_source_row()?,
+        representative_public_live_view_declaration_row()?,
+        representative_runtime_live_installation_orchestration_row()?,
+        representative_subscription_activation_row()?,
+        representative_subscription_continuity_row(*execution)?,
+        representative_preview_basis_row()?,
+        representative_basis_truth_view_readmission_row(*execution)?,
+        representative_basis_subscription_readmission_row(*execution)?,
+        representative_historical_bridge_lowering_row(*execution)?,
+        representative_effect_relational_mutation_row(execution)?,
+        representative_effect_relational_merge_row(execution)?,
+        representative_effect_bridge_writeback_row(execution)?,
+        representative_write_authority_row()?,
+        representative_signal_invalidation_row()?,
+        representative_runtime_intent_authority_row(execution)?,
+        representative_intent_runtime_execution_row(execution)?,
+        representative_projection_query_receipts_row(execution)?,
+        representative_projection_relational_row()?,
+        representative_projection_bridge_row(*execution)?,
+        representative_causal_bridge_materialization_row(execution)?,
+        representative_frontier_evidence_row()?,
     ];
     let concrete_seams = concrete_rows
         .iter()
@@ -233,7 +234,7 @@ pub fn worth_query_lower_runtime_representative_surface(
         if concrete_seams.contains(&row.seam_key().as_str()) {
             continue;
         }
-        rows.push(synthetic_inventory_row(row));
+        rows.push(synthetic_inventory_row(row)?);
     }
 
     let requests = rows
@@ -258,12 +259,12 @@ pub fn worth_query_lower_runtime_representative_surface(
         .collect::<Vec<_>>();
     let query_digest = digest_query_subjects(&requests);
     let route_parity_digest = hash_parts(&[
-        normalized_parity_digest("compose-read", &envelopes),
-        normalized_parity_digest("basis-readmission", &envelopes),
-        hostile_parity_divergence_digest(&envelopes),
+        normalized_parity_digest("compose-read", &envelopes)?,
+        normalized_parity_digest("basis-readmission", &envelopes)?,
+        hostile_parity_divergence_digest(&envelopes)?,
     ]);
 
-    WorthQueryLowerRuntimeRepresentativeSurface {
+    Ok(WorthQueryLowerRuntimeRepresentativeSurface {
         requests,
         eligibilities,
         route_plans,
@@ -283,7 +284,7 @@ pub fn worth_query_lower_runtime_representative_surface(
             .collect(),
         receipts_by_seam: collect_surface_map(&rows, |row| row.boundary_receipt.clone()),
         envelopes_by_seam: collect_surface_map(&rows, |row| row.envelope.clone()),
-    }
+    })
 }
 
 fn digest_query_subjects(requests: &[WorthQueryLowerRuntimeCapabilityRequest]) -> String {

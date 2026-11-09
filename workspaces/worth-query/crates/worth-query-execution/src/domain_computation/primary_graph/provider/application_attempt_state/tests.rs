@@ -1,6 +1,5 @@
-use super::{
-    WorthQueryApplicationAttemptPhase as AttemptPhase, WorthQueryPrimaryGraphOverlay as Overlay,
-};
+use super::phase::WorthQueryApplicationAttemptPhase as AttemptPhase;
+use super::WorthQueryPrimaryGraphOverlay as Overlay;
 
 fn overlay(identity: &str) -> Overlay {
     Overlay::new(identity.to_owned(), Vec::new())

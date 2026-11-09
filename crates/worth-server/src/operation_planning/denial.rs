@@ -6,6 +6,9 @@ use crate::{
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthServerOperationPlanDenialCode {
+    EvidenceIdentityDerivationDenied(
+        worth_query::facade::runtime::WorthQueryEvidenceIdentityDerivationDenial,
+    ),
     PreparedIntentMismatch,
     WorkspaceBindingFailed,
     SupportDenied,
@@ -67,6 +70,9 @@ impl WorthServerOperationPlanDenial {
 
     pub(crate) fn into_query_handoff_denial(self) -> WorthServerQueryHandoffDenial {
         let code = match self.code {
+            WorthServerOperationPlanDenialCode::EvidenceIdentityDerivationDenied(cause) => {
+                WorthServerQueryHandoffDenialCode::EvidenceIdentityDerivationDenied(cause)
+            }
             WorthServerOperationPlanDenialCode::PreparedIntentMismatch => {
                 WorthServerQueryHandoffDenialCode::PreparedIntentMismatch
             }

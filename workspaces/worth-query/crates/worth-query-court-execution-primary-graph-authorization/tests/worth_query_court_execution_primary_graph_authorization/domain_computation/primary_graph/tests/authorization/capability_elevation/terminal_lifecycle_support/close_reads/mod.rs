@@ -34,12 +34,15 @@ pub fn close_reads(
                 seal_lifecycle_facts(reader);
                 let elevation = reader
                     .resolve_entity(
-                        CapabilityElevationIdentity::reference(),
-                        "elevation-2".to_owned(),
+                        CapabilityElevationIdentity::at("CapabilityElevationIdentity"),
+                        "elevation-2".to_owned().into(),
                     )
                     .unwrap();
                 reader
-                    .require_decision_field(&elevation, CapabilityElevationClosedAt::reference())
+                    .require_decision_field(
+                        &elevation,
+                        CapabilityElevationClosedAt::at("CapabilityElevationClosedAt"),
+                    )
                     .unwrap();
             },
             AllocationPolicy::SystemAllocation,

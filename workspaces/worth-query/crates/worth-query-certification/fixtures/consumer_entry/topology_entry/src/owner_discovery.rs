@@ -34,10 +34,11 @@ pub(crate) fn declare<S: TopologySchemaBinding>(
             [
                 ApplicationAuthorizationPathBuilder::from_principal(Principal::reference::<S>())
                     .where_equal(
-                        PrincipalIdentity::reference::<S>(),
+                        PrincipalIdentity::at("PrincipalIdentity"),
                         ApplicationEncodedScalarValue::<U64ApplicationValueBinding>::try_new(1)
                             .unwrap(),
                     )
+                    .expect("owned principal field is valid")
                     .forward(PlanarHistoryGrantee::reference::<S>())
                     .forward(PlanarHistoryResource::reference::<S>())
                     .allow(Body::reference::<S>()),

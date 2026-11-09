@@ -127,7 +127,7 @@ impl WorthQueryPrimaryGraphProvider {
     {
         let layout = self.graph.layout.provider_aftermath_causality().clone();
         self.graph
-            .ensure_primary_indexes_for_basis(execution, runtime, basis)
+            .carry_primary_index_basis_for_basis(execution, runtime, basis)
             .map_err(aftermath_index_currency_denial)?;
         WorthQueryAftermathCausalityRead {
             runtime,

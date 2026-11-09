@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::hash_parts;
 
 use super::super::fixtures::{
@@ -162,14 +163,14 @@ impl WorthQueryIntentAdmissionSupportTraceabilityReport {
 
 pub fn worth_query_intent_admission_support_traceability_report(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> WorthQueryIntentAdmissionSupportTraceabilityReport {
+) -> Result<WorthQueryIntentAdmissionSupportTraceabilityReport, IdentityDerivationDenial> {
     let support = worth_query_intent_admission_support_matrix();
-    let admitted = certified_admitted_intent_fixture(execution);
-    let advisory = certified_advisory_intent_fixture();
-    let violation = certified_violation_intent_fixture();
+    let admitted = certified_admitted_intent_fixture(execution)?;
+    let advisory = certified_advisory_intent_fixture()?;
+    let violation = certified_violation_intent_fixture()?;
     let routing = certified_routing_intent_fixture(execution);
-    let deferred = certified_deferred_intent_fixture();
-    let unsupported = certified_unsupported_intent_fixture();
+    let deferred = certified_deferred_intent_fixture()?;
+    let unsupported = certified_unsupported_intent_fixture()?;
     let rows = vec![
         traceability_row(
             "admitted",
@@ -231,7 +232,7 @@ pub fn worth_query_intent_admission_support_traceability_report(
             ),
         ),
     ];
-    WorthQueryIntentAdmissionSupportTraceabilityReport::from_rows(rows)
+    Ok(WorthQueryIntentAdmissionSupportTraceabilityReport::from_rows(rows))
 }
 
 fn traceability_row(

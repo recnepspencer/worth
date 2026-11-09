@@ -4,7 +4,10 @@ use super::*;
 impl WorthQueryRestoredAcceptedOutput {
     #[doc(hidden)]
     pub fn checkpoint_for_test(&self) -> &super::super::WorthQueryAcceptedOutputCheckpointIdentity {
-        &self.checkpoint
+        match &self.origin {
+            RestoredOutputOrigin::Checkpoint(checkpoint) => checkpoint,
+            _ => panic!("checkpoint court requires checkpoint origin"),
+        }
     }
 }
 
@@ -47,7 +50,10 @@ impl WorthQueryRestoredAcceptedOutput {
     pub fn checkpoint_mut_for_test(
         &mut self,
     ) -> &mut super::super::WorthQueryAcceptedOutputCheckpointIdentity {
-        &mut self.checkpoint
+        match &mut self.origin {
+            RestoredOutputOrigin::Checkpoint(checkpoint) => checkpoint,
+            _ => panic!("checkpoint court requires checkpoint origin"),
+        }
     }
 }
 
@@ -67,7 +73,7 @@ impl WorthQueryRestoredAcceptedOutput {
     >,
     ) -> Self {
         Self {
-            checkpoint,
+            origin: RestoredOutputOrigin::Checkpoint(checkpoint),
             correspondence,
             observation,
             source_scope,

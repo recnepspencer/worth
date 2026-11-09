@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -168,7 +169,7 @@ pub struct WorthQueryContinuityMutationDenial {
     successor_authoritative_identities: Vec<WorthQueryMutationAuthorityIdentity>,
     basis_binding_digest: Option<crate::runtime::WorthQueryMutationEvidenceDigest>,
     reason: String,
-    denial_digest: String,
+    denial_digest: Result<String, IdentityDerivationDenial>,
 }
 
 impl WorthQueryContinuityMutationDenial {
@@ -181,46 +182,52 @@ impl WorthQueryContinuityMutationDenial {
         let reason = reason.into();
         let basis_binding_identity =
             existing_truth_binding.map(|binding| binding.binding_evidence_identity());
-        let basis_binding_digest = basis_binding_identity.map(|identity| {
-            crate::runtime::WorthQueryMutationEvidenceDigest::source_identity(
-                "continuity-basis-binding",
-                identity,
+        let basis_binding_digest = basis_binding_identity
+            .map(|identity| {
+                crate::runtime::WorthQueryMutationEvidenceDigest::source_identity(
+                    "continuity-basis-binding",
+                    identity,
+                )
+            })
+            .transpose()
+            .expect("fixed continuity basis role and a sealed binding token fit digest bounds");
+        let denial_digest = (|| {
+            Ok(worth_query_evidence_identity(
+                WorthQueryEvidenceScope::MutationEvidenceAggregateDigest,
             )
-        });
-        let denial_digest =
-            worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
-                .field_shape(
-                    WorthQueryEvidenceTag::new("role"),
-                    "continuity-mutation-denial",
-                )
-                .field_shape(
-                    WorthQueryEvidenceTag::new("family"),
-                    intent.family().as_str(),
-                )
-                .field_shape(WorthQueryEvidenceTag::new("kind"), kind.as_str())
-                .field_shape(
-                    WorthQueryEvidenceTag::new("outcome"),
-                    intent.outcome_class().as_str(),
-                )
-                .field_evidence_identity(
-                    WorthQueryEvidenceTag::new("prior"),
-                    intent.prior_authoritative_identity().evidence_identity(),
-                )
-                .field_evidence_identity_sequence(
-                    WorthQueryEvidenceTag::new("successor"),
-                    intent
-                        .successor_authoritative_identities()
-                        .iter()
-                        .map(WorthQueryMutationAuthorityIdentity::evidence_identity),
-                )
-                .optional_evidence_identity(
-                    WorthQueryEvidenceTag::new("basis_binding"),
-                    basis_binding_identity,
-                )
-                .field_value(WorthQueryEvidenceTag::new("reason"), &reason)
-                .seal()
-                .as_str()
-                .to_string();
+            .field_shape(
+                WorthQueryEvidenceTag::new("role"),
+                "continuity-mutation-denial",
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("family"),
+                intent.family().as_str(),
+            )
+            .field_shape(WorthQueryEvidenceTag::new("kind"), kind.as_str())
+            .field_shape(
+                WorthQueryEvidenceTag::new("outcome"),
+                intent.outcome_class().as_str(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("prior"),
+                intent.prior_authoritative_identity().evidence_identity(),
+            )
+            .field_evidence_identity_sequence(
+                WorthQueryEvidenceTag::new("successor"),
+                intent
+                    .successor_authoritative_identities()
+                    .iter()
+                    .map(WorthQueryMutationAuthorityIdentity::evidence_identity),
+            )
+            .optional_evidence_identity(
+                WorthQueryEvidenceTag::new("basis_binding"),
+                basis_binding_identity,
+            )
+            .field_value(WorthQueryEvidenceTag::new("reason"), &reason)
+            .seal()?
+            .as_str()
+            .to_string())
+        })();
         Self {
             family: intent.family(),
             kind,
@@ -267,8 +274,8 @@ impl WorthQueryContinuityMutationDenial {
         &self.reason
     }
 
-    pub fn denial_digest(&self) -> &str {
-        &self.denial_digest
+    pub fn denial_digest(&self) -> Result<&str, IdentityDerivationDenial> {
+        self.denial_digest.as_deref().map_err(|cause| *cause)
     }
 }
 

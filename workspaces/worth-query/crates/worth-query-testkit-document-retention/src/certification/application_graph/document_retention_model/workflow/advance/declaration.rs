@@ -46,7 +46,6 @@ worth_query_structured_value_binding!(pub WorkflowAdvanceInputBinding for Workfl
     identity: "worth.query.certification.workflow-advance-input.v1"
 });
 worth_query_operation!(pub WorkflowAdvanceOperation for DocumentRetentionSchema, input WorkflowAdvanceInputBinding);
-worth_query_operation_reads!(WorkflowAdvanceOperation => [DocumentIdentityField]);
 
 impl ApplicationCapabilityRequest<DocumentRetentionSchema, WorkflowAdvanceCapability>
     for WorkflowAdvanceInput
@@ -66,9 +65,10 @@ impl ApplicationCapabilityRequest<DocumentRetentionSchema, WorkflowAdvanceCapabi
     > {
         Ok(ApplicationCapabilityRequestProjection::new(
             ApplicationCapabilityEntitySelector::new(
-                DocumentIdentityField::reference(),
+                DocumentIdentityField::at("DocumentIdentityField"),
                 encoded(self.document_identity.clone()),
-            ),
+            )
+            .unwrap(),
             encoded("advance-workflow-instance".to_owned()),
             encoded("reviewed-document".to_owned()),
             ApplicationCapabilityRequestContext::new(WorkflowAdvanceContext::reference()),
@@ -76,9 +76,10 @@ impl ApplicationCapabilityRequest<DocumentRetentionSchema, WorkflowAdvanceCapabi
         .related_entity(ApplicationCapabilityRelatedEntitySelector::new(
             WorkflowGrantRelated::reference(),
             ApplicationCapabilityEntitySelector::new(
-                DocumentIdentityField::reference(),
+                DocumentIdentityField::at("DocumentIdentityField"),
                 encoded(RELATED_DOCUMENT_IDENTITY.to_owned()),
-            ),
+            )
+            .unwrap(),
         )))
     }
 }
@@ -101,9 +102,10 @@ impl ApplicationCapabilityRequest<DocumentRetentionSchema, WorkflowApprovalCapab
     > {
         Ok(ApplicationCapabilityRequestProjection::new(
             ApplicationCapabilityEntitySelector::new(
-                DocumentIdentityField::reference(),
+                DocumentIdentityField::at("DocumentIdentityField"),
                 encoded(self.document_identity.clone()),
-            ),
+            )
+            .unwrap(),
             encoded("approve-workflow-transition".to_owned()),
             encoded("reviewed-document".to_owned()),
             ApplicationCapabilityRequestContext::new(WorkflowAdvanceContext::reference()),
@@ -127,7 +129,7 @@ pub fn install_members(
         .operation_projection_work_budget(WorkflowAdvanceOperation::reference(), 512)
         .operation_read_field(
             WorkflowAdvanceOperation::reference(),
-            DocumentIdentityField::reference(),
+            DocumentIdentityField::at("DocumentIdentityField"),
         )
 }
 
@@ -139,25 +141,37 @@ pub fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<DocumentRetentionSchema>
                 entity_key("workflow-advance-grant"),
             )
             .field(
-                WorkflowGrantIdentityField::reference(),
-                "workflow-advance-grant".to_owned(),
+                WorkflowGrantIdentityField::at("WorkflowGrantIdentityField"),
+                "workflow-advance-grant".to_owned().into(),
             )
             .field(
-                WorkflowGrantActionField::reference(),
+                WorkflowGrantActionField::at("WorkflowGrantActionField"),
                 "advance-workflow-instance".to_owned(),
             )
             .field(
-                WorkflowGrantPurposeField::reference(),
+                WorkflowGrantPurposeField::at("WorkflowGrantPurposeField"),
                 "reviewed-document".to_owned(),
             )
-            .field(WorkflowGrantStatusField::reference(), "active".to_owned())
             .field(
-                WorkflowGrantWorkflowField::reference(),
+                WorkflowGrantStatusField::at("WorkflowGrantStatusField"),
+                "active".to_owned(),
+            )
+            .field(
+                WorkflowGrantWorkflowField::at("WorkflowGrantWorkflowField"),
                 DOCUMENT_IDENTITY.to_owned(),
             )
-            .field(WorkflowGrantNotBeforeField::reference(), 0_u64)
-            .field(WorkflowGrantNotAfterField::reference(), u64::MAX)
-            .field(WorkflowGrantDelegationLimitField::reference(), 0_u64),
+            .field(
+                WorkflowGrantNotBeforeField::at("WorkflowGrantNotBeforeField"),
+                0_u64,
+            )
+            .field(
+                WorkflowGrantNotAfterField::at("WorkflowGrantNotAfterField"),
+                u64::MAX,
+            )
+            .field(
+                WorkflowGrantDelegationLimitField::at("WorkflowGrantDelegationLimitField"),
+                0_u64,
+            ),
         )
         .expect("workflow advance grant must seed");
     graph
@@ -199,25 +213,37 @@ pub fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<DocumentRetentionSchema>
                 entity_key("workflow-approval-grant"),
             )
             .field(
-                WorkflowGrantIdentityField::reference(),
-                "workflow-approval-grant".to_owned(),
+                WorkflowGrantIdentityField::at("WorkflowGrantIdentityField"),
+                "workflow-approval-grant".to_owned().into(),
             )
             .field(
-                WorkflowGrantActionField::reference(),
+                WorkflowGrantActionField::at("WorkflowGrantActionField"),
                 "approve-workflow-transition".to_owned(),
             )
             .field(
-                WorkflowGrantPurposeField::reference(),
+                WorkflowGrantPurposeField::at("WorkflowGrantPurposeField"),
                 "reviewed-document".to_owned(),
             )
-            .field(WorkflowGrantStatusField::reference(), "active".to_owned())
             .field(
-                WorkflowGrantWorkflowField::reference(),
+                WorkflowGrantStatusField::at("WorkflowGrantStatusField"),
+                "active".to_owned(),
+            )
+            .field(
+                WorkflowGrantWorkflowField::at("WorkflowGrantWorkflowField"),
                 DOCUMENT_IDENTITY.to_owned(),
             )
-            .field(WorkflowGrantNotBeforeField::reference(), 0_u64)
-            .field(WorkflowGrantNotAfterField::reference(), u64::MAX)
-            .field(WorkflowGrantDelegationLimitField::reference(), 0_u64),
+            .field(
+                WorkflowGrantNotBeforeField::at("WorkflowGrantNotBeforeField"),
+                0_u64,
+            )
+            .field(
+                WorkflowGrantNotAfterField::at("WorkflowGrantNotAfterField"),
+                u64::MAX,
+            )
+            .field(
+                WorkflowGrantDelegationLimitField::at("WorkflowGrantDelegationLimitField"),
+                0_u64,
+            ),
         )
         .expect("workflow approval grant must seed");
     graph

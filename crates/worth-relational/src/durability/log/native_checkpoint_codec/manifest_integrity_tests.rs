@@ -63,7 +63,11 @@ fn shared_members_with_inconsistent_leaf_facts_refuse_the_manifest() {
             original.content.clone(),
         );
         forged.roots = crate::durability::data::CheckpointRoots::from_ordinary(roots);
-        let failure = validate(&forged.seal_ordinary()).unwrap_err();
+        let failure = validate(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            &forged.seal_ordinary(),
+        )
+        .unwrap_err();
         assert_eq!(
             failure.class,
             crate::durability::data::RecoveryFailureClass::CorruptCheckpoint

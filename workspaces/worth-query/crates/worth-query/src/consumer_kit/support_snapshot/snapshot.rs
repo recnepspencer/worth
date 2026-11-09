@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::runtime::WorthQueryRuntimePublicSupportMatrix;
 
 use super::document::{
@@ -21,9 +22,9 @@ pub struct WorthQuerySupportSnapshot {
 impl WorthQuerySupportSnapshot {
     pub(crate) fn from_public_support_matrix(
         matrix: &WorthQueryRuntimePublicSupportMatrix,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let schema_version = WorthQuerySupportSnapshotSchemaVersion::current();
-        let schema_identity = schema_version.identity();
+        let schema_identity = schema_version.identity()?;
         let backend_posture = matrix.backend_posture().as_str().to_string();
         let source_matrix_digest = matrix
             .matrix_digest()
@@ -33,17 +34,17 @@ impl WorthQuerySupportSnapshot {
             .rows()
             .iter()
             .map(|row| WorthQuerySupportSnapshotRow::from_runtime_row(schema_version, row))
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, _>>()?;
         let snapshot_digest = support_snapshot_document_identity(
             schema_version,
             &schema_identity,
             &backend_posture,
             &source_matrix_digest,
             rows.iter(),
-        )
+        )?
         .terminal_projection_for_reporting()
         .to_string();
-        Self {
+        Ok(Self {
             schema_version,
             schema_identity: schema_identity
                 .terminal_projection_for_reporting()
@@ -52,7 +53,7 @@ impl WorthQuerySupportSnapshot {
             source_matrix_digest,
             rows,
             snapshot_digest,
-        }
+        })
     }
 
     pub(crate) fn from_document(
@@ -103,7 +104,7 @@ impl WorthQuerySupportSnapshot {
     }
 
     pub(crate) fn rebuild_digest(&self) -> Result<String, WorthQuerySupportSnapshotError> {
-        let schema_identity = self.schema_version.identity();
+        let schema_identity = self.schema_version.identity()?;
         let actual_schema_identity = schema_identity.terminal_projection_for_reporting();
         if self.schema_identity != actual_schema_identity {
             return Err(WorthQuerySupportSnapshotError::with_expected_found(
@@ -122,7 +123,7 @@ impl WorthQuerySupportSnapshot {
             &self.backend_posture,
             &self.source_matrix_digest,
             self.rows.iter(),
-        )
+        )?
         .terminal_projection_for_reporting()
         .to_string())
     }

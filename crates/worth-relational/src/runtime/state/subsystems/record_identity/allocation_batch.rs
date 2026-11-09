@@ -9,6 +9,7 @@ use super::pending_allocations::{PendingRecordAllocations, ReservedRecordAllocat
 mod sealed {
     pub trait Batch {}
     impl Batch for super::PendingRecordAllocations {}
+    #[cfg(test)]
     impl Batch for super::super::original_cursor::OriginalRecordAllocationCursor<'_> {}
 }
 
@@ -24,6 +25,7 @@ pub(crate) trait MutationRecordAllocations: sealed::Batch {
 
     fn record(&mut self, record: RecordRef) -> Result<(), RecordAllocationDenial>;
 
+    #[cfg(test)]
     fn finish_mutation(&self) -> Result<(), RecordAllocationDenial>;
 }
 
@@ -41,6 +43,7 @@ impl MutationRecordAllocations for PendingRecordAllocations {
         Ok(())
     }
 
+    #[cfg(test)]
     fn finish_mutation(&self) -> Result<(), RecordAllocationDenial> {
         PendingRecordAllocations::finish_mutation(self)
     }

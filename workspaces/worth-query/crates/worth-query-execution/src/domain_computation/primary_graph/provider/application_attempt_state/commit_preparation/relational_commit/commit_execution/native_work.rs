@@ -8,12 +8,14 @@ pub(super) fn prepare_before_native(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
     prepared: WorthQueryPreparedApplicationCommit,
+    owned_history: bool,
 ) -> Result<
     QueryPreparingApplicationCommit,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
 > {
     let WorthQueryPreparedApplicationCommit {
         mut attempt,
+        members,
         candidate,
         predicate,
         work,
@@ -22,6 +24,8 @@ pub(super) fn prepare_before_native(
         source_fact_rebase,
         _completion,
     } = prepared;
+    let group_evidence = coupled::prepare_evidence_slots(execution, members.len())?;
+    let group_emissions = coupled::prepare_emissions(execution, &attempt, &members)?;
     let product = attempt.affinity().product_publication().clone();
     let before = precommit_snapshot::WorthQueryPrecommitSnapshot::acquire(
         execution,
@@ -37,12 +41,10 @@ pub(super) fn prepare_before_native(
     })?;
     let consumed_output::VerifiedConsumedOutputPublication {
         required_prerequisites,
-    } = consumed_output::verify(execution, provider, &mut attempt, before.as_snapshot())?;
+    } = consumed_output::verify(execution, provider, &mut attempt, before.as_snapshot())
+        .map_err(consumed_output::memory_stop)?;
     let availability_fence =
         availability::prepare(execution, provider, &attempt, before.as_snapshot())?;
-    let prepared_output_witness = crate::domain_computation::primary_graph::output_lineage::PreparedNativeOutputWitness::prepare(
-        &attempt, &provider.graph.layout,
-    ).map_err(native_output_witness_stop)?;
     let candidate = required_origin::bind(
         candidate,
         execution,
@@ -50,9 +52,27 @@ pub(super) fn prepare_before_native(
         provider,
         &attempt,
         required_prerequisites.as_ref(),
+        owned_history,
     )?;
+    let predecessor = match (
+        required_prerequisites.as_ref(),
+        attempt.idempotency().producer_dependency_identity(),
+    ) {
+        (Some(required), Some(dependency)) => {
+            let (producer, _) = required.native_prior_checkpoint_input();
+            candidate
+                .output_observation_predecessor(execution, producer, &dependency)
+                .map_err(transaction_commit_stop)?
+        }
+        _ => None,
+    };
+    let source_fact_rebase = source_fact_rebase.with_predecessor(predecessor);
     Ok(QueryPreparingApplicationCommit {
         attempt,
+        members,
+        group_evidence,
+        group_emissions,
+        prepared_group_publications: None,
         predicate,
         native: QueryNativeCustody::Proposal(candidate),
         work,
@@ -62,7 +82,7 @@ pub(super) fn prepare_before_native(
         before,
         required_prerequisites,
         availability_fence,
-        prepared_output_witness,
+        prepared_output_witness: None,
         source_fact_rebase: Some(source_fact_rebase),
         prepared_touched_records: None,
         index_maintenance_work: None,
@@ -114,6 +134,45 @@ pub(super) fn prepare_candidate_support(
         candidate,
     )
     .map_err(Denial::ManagedSource)?;
+    coupled::prepare_members(
+        execution,
+        provider,
+        &mut query.members,
+        candidate,
+        query.before.as_snapshot(),
+        allocation_policy,
+    )?;
+    query.prepared_group_publications = if query.members.is_empty() {
+        None
+    } else {
+        Some(
+            candidate
+                .prepare_required_output_publications(
+                    execution,
+                    &provider
+                        .graph
+                        .application_publication
+                        .as_ref()
+                        .expect("Native admitted the installed group issuer")
+                        .native,
+                )
+                .map_err(Denial::Native)?,
+        )
+    };
+    correspondence::admit(
+        execution,
+        provider,
+        &mut query.attempt,
+        &mut query.members,
+        candidate,
+        query.prepared_group_publications.as_ref(),
+    )
+    .map_err(Denial::Correspondence)?;
+    // Canonical correspondence is admitted before preparing its output witness.
+    query.prepared_output_witness =
+        crate::domain_computation::primary_graph::output_lineage::PreparedNativeOutputWitness::prepare(
+            &query.attempt, &provider.graph.layout,
+        ).map_err(Denial::OutputWitness)?;
     query.prepared_touched_records = Some(
         touched_records::PreparedTouchedRecords::prepare_retained(candidate, allocation_policy)
             .map_err(Denial::TouchedRecords)?,
@@ -128,20 +187,21 @@ pub(super) fn prepare_candidate_support(
             allocation_policy, Some(query.attempt.affinity().publication_request()),
         ),
     )).map_err(Denial::SourceFacts)?);
-    let budget = crate::domain_computation::primary_graph::index_maintenance_budget::ordinary_index_maintenance_budget();
-    let budget = if provider.take_tight_index_maintenance_budget() {
-        worth_relational::facade::indexes::DerivedIndexMaintenanceBudget {
-            maximum_work_units: Some(1),
-            ..budget
-        }
-    } else {
-        budget
-    };
-    query.index_maintenance_work = Some(provider.graph.with_runtime(execution, |runtime| {
-        crate::domain_computation::primary_graph::index_maintenance_budget::prepare_candidate_with_cold_fallback(
-            execution, runtime, candidate, &provider.graph.primary_index_ids, query.before.as_snapshot(), budget,
-        )
-    }).map_err(Denial::Index)?);
+    let index_maintenance_work = candidate.prepared_index_maintenance_work().ok_or_else(|| {
+        Denial::Index(worth_relational::facade::indexes::DerivedIndexMaintenanceDenial {
+            kind: worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind::CandidateUnavailable,
+            work: Default::default(),
+        })
+    })?;
+    // Native already prepared the indexes. Enforce the caller's tighter policy
+    // against that actual work before any World publication begins.
+    if provider.take_tight_index_maintenance_budget() && index_maintenance_work.work_units > 1 {
+        return Err(Denial::Index(worth_relational::facade::indexes::DerivedIndexMaintenanceDenial {
+            kind: worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind::WorkBudgetExceeded,
+            work: index_maintenance_work,
+        }));
+    }
+    query.index_maintenance_work = Some(index_maintenance_work);
     query.managed_views = managed_views::prepare(
         execution,
         provider,
@@ -159,6 +219,13 @@ pub(super) fn memory_stop(
 ) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
     use crate::domain_computation::WorthQueryProviderSessionCommitStop as Stop;
     match cause {
+        Denial::ConsumedOutput(cause) => consumed_output::memory_stop(cause),
+        Denial::CoupledSupport(cause) => cause.into_memory_stop(),
+        Denial::Dispatch(cause) => match cause {
+            crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveAdmissionDenial::Execution(cause) => crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_stop(cause, None),
+            crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveAdmissionDenial::Unavailable(detail) => crate::domain_computation::WorthQueryProviderSessionCommitStop::PreEffectDenied(failure(detail)),
+        },
+        Denial::Correspondence(cause) => cause.into_memory_stop(),
         Denial::Native(error) => match transaction_commit_stop(error) {
             Stop::ControlStopped(stopped)
                 if attempt

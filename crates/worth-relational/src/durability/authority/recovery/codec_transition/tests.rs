@@ -8,6 +8,7 @@ mod output_correspondence;
 mod publication_custody;
 mod related;
 mod source_head_admission;
+mod stale_codec_revision;
 use crate::durability::authority::{
     RecoveredCheckpointTransitionError, RecoveredRelationalRuntimeAuthority,
 };

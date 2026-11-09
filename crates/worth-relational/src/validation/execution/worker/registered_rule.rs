@@ -263,6 +263,7 @@ fn custom_invariant_failure_violation(
             ),
             phase: custom_invariant_failure_phase(failure.phase),
             failure: custom_invariant_failure_kind(failure.kind),
+            cause: failure.cause.clone(),
             detail: failure.detail.to_string(),
         },
     }

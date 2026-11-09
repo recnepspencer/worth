@@ -24,6 +24,7 @@ fn promotion_mints_query_admitted_graph_identity_and_rejects_the_wrong_publicati
         .to_owned();
     let promoted = published
         .admit_promotion_on_reference(reference_intent("vertex"))
+        .expect("fixture digest must fit")
         .unwrap();
     assert_eq!(
         promoted
@@ -37,18 +38,22 @@ fn promotion_mints_query_admitted_graph_identity_and_rejects_the_wrong_publicati
         expected_subject
     );
     assert!(matches!(
-        published.admit_promotion_on_reference(reference_intent("face")),
+        published
+            .admit_promotion_on_reference(reference_intent("face"))
+            .expect("fixture digest must fit"),
         TransitionOutcome::Denied(
             domain::WorthQueryPromotionOnReferenceDenial::CarryingPublicationMismatch
         )
     ));
     assert!(matches!(
-        published.admit_promotion_on_reference(domain::WorthQueryDurableReferenceIntent::new(
-            domain::WorthGraphDurableReferenceKind::PersistentSelection,
-            domain::WorthQueryOperationProjectionRole::new("vertex").unwrap(),
-            0,
-            1,
-        )),
+        published
+            .admit_promotion_on_reference(domain::WorthQueryDurableReferenceIntent::new(
+                domain::WorthGraphDurableReferenceKind::PersistentSelection,
+                domain::WorthQueryOperationProjectionRole::new("vertex").unwrap(),
+                0,
+                1,
+            ))
+            .expect("fixture digest must fit"),
         TransitionOutcome::Denied(
             domain::WorthQueryPromotionOnReferenceDenial::LineageSubjectMissing
         )
@@ -71,7 +76,9 @@ fn plural_lineage_cannot_invent_authority_to_entity_correspondence_by_position()
     let published = execute(&mut workspace).publish().unwrap();
 
     assert!(matches!(
-        published.admit_promotion_on_reference(reference_intent("vertex")),
+        published
+            .admit_promotion_on_reference(reference_intent("vertex"))
+            .expect("fixture digest must fit"),
         TransitionOutcome::Denied(
             domain::WorthQueryPromotionOnReferenceDenial::LineageSubjectEntityBindingUnavailable
         )

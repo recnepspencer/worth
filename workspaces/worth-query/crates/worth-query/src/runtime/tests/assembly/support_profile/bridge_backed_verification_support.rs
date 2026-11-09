@@ -68,7 +68,9 @@ fn runtime_authoritative_mutation_closeout_carries_bridge_backed_verification_gu
     let workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.bridge-backed-verification-closeout")
         .expect("workspace should open");
-    let closeout = workspace.public_authoritative_mutation_evidence_closeout();
+    let closeout = workspace
+        .public_authoritative_mutation_evidence_closeout()
+        .expect("fixture digest must fit");
 
     assert!(closeout.safe_to_build_now().iter().any(
         |line| line.contains("machine-readable by operation family and target-binding family")

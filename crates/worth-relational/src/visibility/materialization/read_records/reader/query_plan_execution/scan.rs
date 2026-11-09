@@ -8,17 +8,43 @@ impl RelationalPinnedRead {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> QueryReadResult {
         let basis = &self.basis;
+        let kind = query_kind(&plan.packet.scope);
+        // Kind candidates are authenticated root facts. Payload admission is
+        // deferred to each reached Head in the streamed reader.
+        if kind.is_none() {
+            if let Some(partitions) = query_partition_scope(&plan.packet.scope) {
+                basis
+                    .demand_regions_full(execution, partitions.iter().copied())
+                    .map_err(|cause| QueryReadExecutionStop::ReadRequest(cause.into()))?;
+            } else {
+                basis
+                    .demand_regions_full(execution, basis.root().partition_ids_iter())
+                    .map_err(|cause| QueryReadExecutionStop::ReadRequest(cause.into()))?;
+            }
+        }
+        let candidate_regions = kind.map_or_else(
+            || basis.root().region_count(),
+            |(entity, kind)| kind_regions(basis.root(), entity, kind).count(),
+        );
         let declared_bytes = super::super::query_preparation_extent::declared_bytes(
             &plan.packet,
-            basis.root().region_count(),
+            candidate_regions,
         )?;
         let (packets, preparation) =
             prepare_query_packets(execution, lease, declared_bytes, |budget| {
                 let (entities, relations) =
                     if query_has_explicit_partition_scope(&plan.packet.scope) {
                         (Vec::new(), Vec::new())
+                    } else if let Some((entity, kind)) = kind {
+                        let partitions =
+                            leased_kind_partitions(basis.root(), entity, kind, budget)?;
+                        if entity {
+                            (partitions, Vec::new())
+                        } else {
+                            (Vec::new(), partitions)
+                        }
                     } else {
-                        leased_scan_partitions(basis.root(), budget)?
+                        leased_scan_partitions(basis.root(), basis, budget)?
                     };
                 prepare_scan_packets(&plan.packet, &entities, &relations, budget)
             })?;
@@ -61,38 +87,41 @@ impl RelationalPinnedRead {
 }
 
 fn query_has_explicit_partition_scope(scope: &QueryScope) -> bool {
-    matches!(
-        scope,
+    query_partition_scope(scope).is_some()
+}
+fn query_partition_scope(scope: &QueryScope) -> Option<&[crate::identity::data::PartitionId]> {
+    match scope {
         QueryScope::EntityKindScan {
-            partition_scope: Some(_),
-            ..
-        } | QueryScope::RelationKindScan {
-            partition_scope: Some(_),
-            ..
-        } | QueryScope::EntityFieldEquals {
-            partition_scope: Some(_),
-            ..
-        } | QueryScope::RelationFieldEquals {
-            partition_scope: Some(_),
-            ..
-        } | QueryScope::EntityFieldAnyOf {
-            partition_scope: Some(_),
-            ..
-        } | QueryScope::RelationFieldAnyOf {
-            partition_scope: Some(_),
-            ..
-        } | QueryScope::AspectFilteredEntities {
-            partition_scope: Some(_),
-            ..
-        } | QueryScope::AspectFilteredRelations {
-            partition_scope: Some(_),
-            ..
+            partition_scope, ..
         }
-    )
+        | QueryScope::RelationKindScan {
+            partition_scope, ..
+        }
+        | QueryScope::EntityFieldEquals {
+            partition_scope, ..
+        }
+        | QueryScope::RelationFieldEquals {
+            partition_scope, ..
+        }
+        | QueryScope::EntityFieldAnyOf {
+            partition_scope, ..
+        }
+        | QueryScope::RelationFieldAnyOf {
+            partition_scope, ..
+        }
+        | QueryScope::AspectFilteredEntities {
+            partition_scope, ..
+        }
+        | QueryScope::AspectFilteredRelations {
+            partition_scope, ..
+        } => partition_scope.as_deref(),
+        _ => None,
+    }
 }
 
 fn leased_scan_partitions(
     root: &crate::branch::RelationalBranchRoot,
+    state: &dyn PartitionAccess,
     budget: &mut QueryPreparationBudget<'_, '_, '_>,
 ) -> Result<
     (
@@ -108,7 +137,7 @@ fn leased_scan_partitions(
     root.try_for_each_partition_id(
         |partition_id| -> Result<(), worth_execution::MapKernelFailure<()>> {
             budget.checkpoint(1)?;
-            let Some(partition) = root.get_partition(partition_id) else {
+            let Some(partition) = state.get_partition(partition_id) else {
                 return Ok(());
             };
             let entity_present = partition.entity_arena.live_bitset.count_ones() > 0;
@@ -123,4 +152,46 @@ fn leased_scan_partitions(
         },
     )?;
     Ok((entities, relations))
+}
+
+fn query_kind(scope: &QueryScope) -> Option<(bool, crate::identity::data::KindId)> {
+    match scope {
+        QueryScope::EntityKindScan { kind_id, .. }
+        | QueryScope::AspectFilteredEntities {
+            kind_id: Some(kind_id),
+            ..
+        } => Some((true, *kind_id)),
+        QueryScope::RelationKindScan { kind_id, .. }
+        | QueryScope::AspectFilteredRelations {
+            kind_id: Some(kind_id),
+            ..
+        } => Some((false, *kind_id)),
+        _ => None,
+    }
+}
+fn kind_regions(
+    root: &crate::branch::RelationalBranchRoot,
+    entity: bool,
+    kind: crate::identity::data::KindId,
+) -> Box<dyn Iterator<Item = crate::identity::data::PartitionId> + '_> {
+    if entity {
+        Box::new(root.entity_regions_of_kind(kind))
+    } else {
+        Box::new(root.relation_regions_of_kind(kind))
+    }
+}
+fn leased_kind_partitions(
+    root: &crate::branch::RelationalBranchRoot,
+    entity: bool,
+    kind: crate::identity::data::KindId,
+    budget: &mut QueryPreparationBudget<'_, '_, '_>,
+) -> Result<Vec<crate::identity::data::PartitionId>, worth_execution::MapKernelFailure<()>> {
+    let count = kind_regions(root, entity, kind).count();
+    budget.claim_items::<crate::identity::data::PartitionId>(count)?;
+    let mut partitions = Vec::with_capacity(count);
+    for id in kind_regions(root, entity, kind) {
+        budget.checkpoint(1)?;
+        partitions.push(id);
+    }
+    Ok(partitions)
 }

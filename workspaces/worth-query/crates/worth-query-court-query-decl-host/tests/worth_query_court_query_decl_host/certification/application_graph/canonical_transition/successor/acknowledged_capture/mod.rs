@@ -1,4 +1,5 @@
 pub(crate) use worth_query_testkit_certification_canonical::facade::certification::canonical_transition::successor::acknowledged_capture::*;
+use worth_query_decl::facade::application_schema::ApplicationSchema;
 
 #[test]
 fn acknowledged_codec_successor_keeps_exact_capture_cause_and_repairs_without_reauthoring() {

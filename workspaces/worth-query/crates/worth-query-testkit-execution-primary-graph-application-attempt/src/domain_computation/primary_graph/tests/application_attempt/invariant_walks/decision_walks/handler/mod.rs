@@ -16,8 +16,8 @@ impl OperationHandler<WalkSchema, CheckWalkBinding> for CheckWalkHandler {
     ) -> HandlerResult<CheckWalkDecision, CheckWalkOutcome> {
         let result = (|| {
             let root = reader.scope().clone();
-            reader.field(&root, NodeKey::reference())?;
-            reader.field(&root, Active::reference())?;
+            reader.field(&root, NodeKey::at("NodeKey"))?;
+            reader.field(&root, Active::at("Active"))?;
             let walk = reader
                 .walk(Next::reference(), Forward, &root)
                 .map_err(HandlerExecutionDenial::new)?;
@@ -47,10 +47,10 @@ impl OperationHandler<WalkSchema, CheckWalkBinding> for CheckWalkHandler {
     ) -> HandlerResult<CheckWalkOutcome, CheckWalkOutcome> {
         let result = (|| {
             let root = candidate
-                .resolve_entity(NodeKey::reference(), decision.root)
+                .resolve_entity(NodeKey::at("NodeKey"), decision.root)
                 .map_err(HandlerExecutionDenial::new)?;
             candidate
-                .write_field(&root, Active::reference(), true)
+                .write_field(&root, Active::at("Active"), true)
                 .map_err(HandlerExecutionDenial::new)?;
             Ok::<_, HandlerExecutionDenial>(CheckWalkOutcome(decision.visited))
         })();

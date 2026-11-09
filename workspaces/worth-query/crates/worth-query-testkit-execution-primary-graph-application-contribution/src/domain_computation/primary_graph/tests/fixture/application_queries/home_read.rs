@@ -17,6 +17,6 @@ impl ApplicationQueryIntent<IdentityExecutionSchema> for AccountSummaryParameter
     fn into_scope(
         self,
     ) -> <Self::Binding as ApplicationQueryBinding<IdentityExecutionSchema>>::ScopeBinding {
-        ApplicationQueryFieldScope::new(AccountStatus::reference(), "open".to_owned())
+        ApplicationQueryFieldScope::new(AccountStatus::at("AccountStatus"), "open".to_owned())
     }
 }

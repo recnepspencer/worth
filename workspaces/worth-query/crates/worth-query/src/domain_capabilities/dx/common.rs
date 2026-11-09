@@ -6,9 +6,10 @@ mod intent_workflow;
 mod lower_runtime;
 mod lower_runtime_explanation_request;
 mod lower_runtime_invariant;
+mod materialization;
 mod projection_contract_request;
 mod root;
-mod shared;
+mod semantic_code;
 
 pub use admitted_plan::*;
 pub use aftermath::*;

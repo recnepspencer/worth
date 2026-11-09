@@ -15,7 +15,7 @@ pub(in crate::harness::milestone_eight_certification) fn support_profile_bundle(
         )
         .expect("disabled query config should still admit a support-report facade")
     };
-    let report = facade.support_report();
+    let report = facade.support_report().expect("fixture digest must fit");
     let composition_profile = report
         .query_composition_support_profile()
         .map(|profile| profile.profile_digest().to_string())

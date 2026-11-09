@@ -15,8 +15,8 @@ worth_query_structured_value_binding!(pub InputBinding for RequestItem { identit
 worth_query_structured_value_binding!(pub ResultBinding for Changed { identity: "maintained-generated.request-result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "maintained-generated.request-denial.v1" });
 worth_query_operation!(pub RequestGeneratedItem for Catalog, input InputBinding);
-worth_query_operation_reads!(RequestGeneratedItem => [Directory, DirectoryIdentity, DirectoryNote]);
-worth_query_operation_writes!(RequestGeneratedItem => [DirectoryNote]);
+worth_query_operation_reads!(RequestGeneratedItem => [Directory]);
+
 fn scope(input: &RequestItem) -> String {
     input.directory.clone()
 }
@@ -29,8 +29,8 @@ worth_query_mutation_binding!(pub Binding for RequestItem, schema Catalog, ident
     outputs NoApplicationMutationOutputs,
     principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit,
-    field DirectoryIdentity::reference(), value scope,
+    scope DirectoryIdentity,
+    field DirectoryIdentity::at("DirectoryIdentity"), value scope,
 );
 pub struct Handler;
 impl<B> OperationHandler<Catalog, B> for Handler
@@ -50,9 +50,11 @@ where
         reader: &mut DecisionReader<'_, '_, '_, Catalog, B>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<Catalog, Directory>, Denial> {
         HandlerResult::from_result((|| {
-            let directory =
-                reader.resolve_entity(DirectoryIdentity::reference(), input.directory.clone())?;
-            reader.field(&directory, DirectoryNote::reference())?;
+            let directory = reader.resolve_entity(
+                DirectoryIdentity::at("DirectoryIdentity"),
+                input.directory.clone(),
+            )?;
+            reader.field(&directory, DirectoryNote::at("DirectoryNote"))?;
             Ok(reader.mutation_target(&directory)?)
         })())
     }
@@ -67,7 +69,11 @@ where
                 .projected_entity(&target)
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .write_field(&directory, DirectoryNote::reference(), input.name.clone())
+                .write_field(
+                    &directory,
+                    DirectoryNote::at("DirectoryNote"),
+                    input.name.clone(),
+                )
                 .map_err(HandlerExecutionDenial::new)?;
             Ok(Changed)
         })())
@@ -87,8 +93,8 @@ pub(in super::super) fn declare(
         )
         .operation_projection_work_budget(operation, 64)
         .operation_read_entity(operation, Directory::reference())
-        .operation_read_field(operation, DirectoryIdentity::reference())
-        .operation_read_field(operation, DirectoryNote::reference())
-        .operation_write(operation, DirectoryNote::reference())
+        .operation_read_field(operation, DirectoryIdentity::at("DirectoryIdentity"))
+        .operation_read_field(operation, DirectoryNote::at("DirectoryNote"))
+        .operation_write(operation, DirectoryNote::at("DirectoryNote"))
         .application_mutation_binding::<Binding>()
 }

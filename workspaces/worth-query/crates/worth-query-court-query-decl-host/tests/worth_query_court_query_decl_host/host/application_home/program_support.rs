@@ -2,7 +2,7 @@
 use super::*;
 mod separate_process;
 use fixture::schema::HomeIdentitySchema;
-use worth_query_decl::facade::application_program::*;
+use worth_query_decl::facade::{application_program::*, application_schema::ApplicationSchema};
 use worth_query_host::facade::{
     application_installation::{
         WorthQueryApplicationLimits, WorthQueryApplicationProgramRoster,

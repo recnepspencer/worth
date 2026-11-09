@@ -11,6 +11,10 @@ pub(super) struct RuntimeHistoryRequest<'r, 'q, 'l> {
     execution: ExecutionRequest<'q, 'l>,
 }
 impl<'r, 'q, 'l> RuntimeHistoryRequest<'r, 'q, 'l> {
+    pub(super) fn execution(&self) -> ExecutionRequest<'q, 'l> {
+        self.execution
+    }
+
     pub(super) fn new(
         runtime: &'r RelationalRuntime,
         execution: &ExecutionRequest<'q, 'l>,

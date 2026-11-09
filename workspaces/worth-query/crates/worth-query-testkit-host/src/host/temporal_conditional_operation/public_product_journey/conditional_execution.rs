@@ -60,7 +60,7 @@ pub fn publishes_delivers_executes_and_cleans_up(
             warm_product
                 .resolve_entity(
                     &phase,
-                    IntentIdentityField::reference(),
+                    IntentIdentityField::at("IntentIdentityField"),
                     "intent-1".to_string(),
                     &request,
                     primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,

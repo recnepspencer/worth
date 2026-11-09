@@ -32,6 +32,7 @@ fn retained_history_preserves_current_result_meaning_on_the_same_truth_basis() {
     let historical = historical_declaration
         .using(historical_context)
         .run(request_execution, &mut workspace)
+        .expect("fixture digest must fit")
         .into_result()
         .expect("retained history should execute");
 
@@ -67,6 +68,7 @@ fn unavailable_replay_stops_before_context_planning_or_runtime_contact() {
     let stop = declaration
         .using(context)
         .run(request_execution, &mut workspace)
+        .expect("fixture digest must fit")
         .into_result()
         .expect_err("runtime replay should be explicitly unavailable");
 
@@ -115,6 +117,7 @@ fn stale_retained_context_stops_before_planning_or_runtime_contact() {
     let stop = declaration
         .using(context)
         .run(request_execution, &mut workspace)
+        .expect("fixture digest must fit")
         .into_result()
         .expect_err("stale history context must stop");
     assert_eq!(stop.source(), WorthQueryHistoricalStopSource::StaleContext);

@@ -18,11 +18,24 @@ fn residency_cold_index_frontier_prevents_reissue_before_any_image_demand() {
         let mut published = fixture.generation.as_ref().clone();
         published.generation_id = reserved;
         if admitted {
-            owner
-                .publish_generations_admitted(std::slice::from_ref(&published), |_, _| {
-                    Ok::<_, ()>(())
-                })
+            let mut total = 0u64;
+            let mut funding = execution.reserve_retained_memory(0).unwrap();
+            let mut pay = |work: u64, bytes: u64| {
+                crate::durability::artifact_payload_emission::request::account_work(
+                    execution, work,
+                )
                 .unwrap();
+                total = total.checked_add(bytes).unwrap();
+                if let Some(funding) = &mut funding {
+                    funding.resize(total).unwrap();
+                }
+                Ok::<_, ()>(())
+            };
+            let mut prepared = owner
+                .prepare_generation_batch(vec![published.clone()], None, &mut pay)
+                .unwrap();
+            prepared.admit_actual_geometry(&mut pay).unwrap();
+            prepared.publish_admitted();
         } else {
             owner.publish_generation(published.clone());
         }

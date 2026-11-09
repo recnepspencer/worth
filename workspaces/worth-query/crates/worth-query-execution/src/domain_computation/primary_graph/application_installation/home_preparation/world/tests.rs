@@ -6,6 +6,7 @@ use std::sync::{
     Arc,
 };
 use worth_query_declaration::facade::application_program::*;
+use worth_query_declaration::facade::application_schema::ApplicationSchema;
 #[path = "fixture.rs"]
 mod fixture;
 use fixture::{Catalog, Program, Provider};

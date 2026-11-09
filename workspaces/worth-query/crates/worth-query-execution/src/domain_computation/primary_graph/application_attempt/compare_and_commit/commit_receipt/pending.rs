@@ -113,8 +113,12 @@ impl WorthQueryPendingApplicationCommitReceipt {
             return None;
         }
         let mutation_work = self.provider.mutation_work()?.clone();
-        let performed_product_change = self.provider.take_fresh_product_change()?;
-        Some(WorthQueryApplicationCommitReceipt {
+        let performed_product_change = if self.provider.is_coupled_member() {
+            None
+        } else {
+            Some(self.provider.take_fresh_product_change()?)
+        };
+        let receipt = WorthQueryApplicationCommitReceipt {
             authoritative_provider_session: self
                 .provider
                 .commit_evidence()
@@ -140,7 +144,7 @@ impl WorthQueryPendingApplicationCommitReceipt {
             authority_binding: self.authority_binding,
             retained_preimage: self.retained_preimage,
             aftermath_causality: self.aftermath_causality,
-            performed_product_change: Some(performed_product_change),
+            performed_product_change,
             committed_changes: self.provider.commit_evidence().committed_changes().clone(),
             performed_output_fields: self
                 .provider
@@ -163,6 +167,8 @@ impl WorthQueryPendingApplicationCommitReceipt {
                 .rebased_source_facts()
                 .err()
                 .map(|failed| failed.own_effect),
-        })
+        };
+        super::recording::observe(&receipt);
+        Some(receipt)
     }
 }

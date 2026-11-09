@@ -1,5 +1,8 @@
 //! A genuine optional-aspect declaration and its installed Bank testkit views.
+#[path = "aspect_removal/records.rs"]
+mod storage_model;
 use std::collections::BTreeSet;
+pub use storage_model::*;
 
 use worth_foundational::facade::{AspectContractRevision, AspectIdentity};
 use worth_query_decl::facade::application_schema::*;
@@ -12,18 +15,12 @@ use super::{
 };
 
 struct RemovalSchema;
-worth_query_decl::facade::worth_query_entity!(Subject for RemovalSchema);
-worth_query_decl::facade::worth_query_aspect!(OptionalFacts for RemovalSchema, Subject;
-    identity = AspectIdentity(0xB4000001), revision = AspectContractRevision(1));
-worth_query_decl::facade::worth_query_field!(Value for RemovalSchema, Subject, OptionalFacts:
-    u64 => U64ApplicationValueBinding, read_write, equality);
-worth_query_decl::facade::worth_query_field!(Sibling for RemovalSchema, Subject, OptionalFacts:
-    u64 => U64ApplicationValueBinding, read_write, equality);
+
 worth_query_decl::facade::worth_query_structured_value_binding!(InputBinding for () {
     identity: "worth.rust.unit"
 });
 worth_query_decl::facade::worth_query_operation!(RemoveFacts for RemovalSchema, input InputBinding);
-worth_query_decl::facade::worth_query_operation_reads!(RemoveFacts => [Value, Sibling]);
+
 worth_query_decl::facade::worth_query_operation_removes_aspects!(RemoveFacts => [OptionalFacts]);
 
 impl ApplicationSchema for RemovalSchema {
@@ -34,11 +31,7 @@ impl ApplicationSchema for RemovalSchema {
 
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
-        ApplicationSchemaDeclarationBuilder::for_schema()
-            .entity(Subject::reference())
-            .optional_aspect(Subject::reference(), OptionalFacts::reference())
-            .field(Subject::reference(), Value::reference())
-            .field(Subject::reference(), Sibling::reference())
+        ApplicationSchemaDeclarationBuilder::from_fragment(RemovalRecords)?
             .operation(
                 RemoveFacts::reference()
                     .definition()
@@ -46,8 +39,8 @@ impl ApplicationSchema for RemovalSchema {
                     .no_aftermath()
                     .finish(),
             )
-            .operation_read_field(RemoveFacts::reference(), Value::reference())
-            .operation_read_field(RemoveFacts::reference(), Sibling::reference())
+            .operation_read_field(RemoveFacts::reference(), Value::at("Value"))
+            .operation_read_field(RemoveFacts::reference(), Sibling::at("Sibling"))
             .operation_remove_aspect(RemoveFacts::reference(), OptionalFacts::reference())
             .build()
     }
@@ -94,4 +87,9 @@ pub fn declared_and_installed_targets() -> (BTreeSet<String>, BTreeSet<Installed
         .installed_operation(RemoveFacts::reference())
         .unwrap();
     (declared, installed_program_targets(operation.contracts()))
+}
+
+/// Expected removal locus selected from the record declaration.
+pub fn optional_aspect_name() -> &'static str {
+    OptionalFacts::reference().name()
 }

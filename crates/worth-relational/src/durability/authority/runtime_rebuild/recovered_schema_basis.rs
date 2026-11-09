@@ -158,16 +158,24 @@ impl RecoveredSchemaBasis {
 fn canonical_authority_snapshot(
     envelope: &CanonicalCommitEnvelope,
 ) -> Result<SchemaAuthoritySnapshot, DurabilityError> {
-    let mut snapshot = envelope.schema_authority.clone();
-    snapshot.entity_kinds.sort_by_key(|kind| kind.kind_id);
-    snapshot.relation_kinds.sort_by_key(|kind| kind.kind_id);
-    snapshot
-        .derived_relations
-        .sort_by(|left, right| left.identity.cmp(&right.identity));
-    snapshot
-        .projected_member_domains
-        .sort_by(|left, right| left.identity.cmp(&right.identity));
-    if snapshot != envelope.schema_authority {
+    let snapshot = &envelope.schema_authority;
+    if snapshot
+        .entity_kinds
+        .windows(2)
+        .any(|pair| pair[0].kind_id > pair[1].kind_id)
+        || snapshot
+            .relation_kinds
+            .windows(2)
+            .any(|pair| pair[0].kind_id > pair[1].kind_id)
+        || snapshot
+            .derived_relations
+            .windows(2)
+            .any(|pair| pair[0].identity > pair[1].identity)
+        || snapshot
+            .projected_member_domains
+            .windows(2)
+            .any(|pair| pair[0].identity > pair[1].identity)
+    {
         return Err(schema_mismatch(
             envelope,
             "schema authority rows are not canonical",
@@ -227,7 +235,7 @@ fn canonical_authority_snapshot(
             ));
         }
     }
-    Ok(snapshot)
+    Ok(snapshot.clone())
 }
 
 fn canonical_basis_version(

@@ -4,6 +4,7 @@
     python scripts/ci/query_gate.py                  current workspace ordinary cases (partial)
     python scripts/ci/query_gate.py --full           complete existing Query-line gate
     python scripts/ci/query_gate.py relational,bank  the named suites
+    python scripts/ci/query_gate.py root-landing     full root qualification with compiler/proof receipts
     python scripts/ci/query_gate.py query-landing    all normal Query suites and docs
     python scripts/ci/query_gate.py bank-landing     all normal Bank suites and docs
     python scripts/ci/query_gate.py --list           suite names
@@ -87,6 +88,12 @@ def consumer_doctest_commands():
 
 # suite -> [(label, command)], one command at a time
 COMMAND_SUITES = {
+    "tooling": [
+        ("qualification-harness", [sys.executable, "-m", "unittest", "discover", "-s", "scripts/ci", "-p", "test_*.py"]),
+        ("compiler-receipts", [sys.executable, "-m", "unittest", "discover", "-s", "scripts/test_cost", "-p", "test_*.py"]),
+        ("macos-link", [sys.executable, "-m", "unittest", "discover", "-s", "scripts/macos_link", "-t", "."]),
+        ("exact-child-accounting", [sys.executable, "-m", "unittest", "discover", "-s", "scripts/test_cost", "-p", "test_account.py"]),
+    ],
     "fmt": [
         ("fmt-root", ["cargo", "fmt", "--all", "--", "--check"]),
         ("fmt-query", ["cargo", "fmt", "--manifest-path", QUERY, "--all", "--", "--check"]),
@@ -140,7 +147,7 @@ COMMAND_ENV = {
     "check-ui-workspace": {"RUSTC_WRAPPER": ""},
 }
 
-ORDER = ["fmt", "lint-lower", "lint-query", "lint-fixture", "lint-bank",
+ORDER = ["tooling", "fmt", "lint-lower", "lint-query", "lint-fixture", "lint-bank",
          "relational", "signal", "execution", "root-rest", "query-execution", "query-rest",
          "query-process", "query-exhaustive", "fixture", "bank", "bank-process",
          "root-doc", "query-doc", "bank-doc", "wasm", "boundary", "boundary-tests", "extra"]
@@ -339,7 +346,7 @@ class Gate:
 def main(argv=None, default_suites=None, default_out=None, allowed_suites=None):
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("suites", nargs="?",
-                        help="suite names or query-landing, bank-landing, doc")
+                        help="suite names or root-landing, query-landing, bank-landing, doc")
     parser.add_argument("--full", action="store_true", help="the complete existing gate (Root wrapper stays Root-only)")
     parser.add_argument("--out", type=Path, default=default_out or ROOT / "target" / "query-gate")
     parser.add_argument("--list", action="store_true", help="print suite names")

@@ -13,6 +13,7 @@ use crate::continuation_pipeline::{
     WorthQueryPreparedContinuation, WorthQueryPreparedContinuationChecked,
     WorthQueryPreparedContinuationOutcome, WorthQueryPreparedContinuationTranscript,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::ordinary_outcome::WorthQueryOrdinaryOutcome;
 
 use super::WorthQueryInstalledDomainDeclarationContext;
@@ -23,146 +24,155 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
     pub fn prepare_continuation_from_target<I>(
         &self,
         request: WorthQueryResolveContinuationFromTargetRequest<D, I>,
-    ) -> WorthQueryPreparedContinuationOutcome<D, I>
+    ) -> Result<WorthQueryPreparedContinuationOutcome<D, I>, IdentityDerivationDenial>
     where
         I: WorthQueryDeclarationInput<D>,
     {
-        prepare_continuation_from_target_on_handle(self, request)
+        Ok(prepare_continuation_from_target_on_handle(self, request)?
             .into_checked()
-            .into_outcome()
+            .into_outcome())
     }
 
     pub fn prepare_continuation_from_target_outcome<I>(
         &self,
         request: WorthQueryResolveContinuationFromTargetRequest<D, I>,
-    ) -> WorthQueryOrdinaryOutcome<WorthQueryPreparedContinuation<D, I>>
+    ) -> Result<
+        WorthQueryOrdinaryOutcome<WorthQueryPreparedContinuation<D, I>>,
+        IdentityDerivationDenial,
+    >
     where
         I: WorthQueryDeclarationInput<D>,
     {
-        ordinary_outcome_from_continuation_checked(
-            prepare_continuation_from_target_on_handle(self, request).into_checked(),
-        )
+        Ok(ordinary_outcome_from_continuation_checked(
+            prepare_continuation_from_target_on_handle(self, request)?.into_checked(),
+        ))
     }
 
     pub fn prepare_continuation_from_target_checked<I>(
         &self,
         request: WorthQueryResolveContinuationFromTargetRequest<D, I>,
-    ) -> WorthQueryPreparedContinuationChecked<D, I>
+    ) -> Result<WorthQueryPreparedContinuationChecked<D, I>, IdentityDerivationDenial>
     where
         I: WorthQueryDeclarationInput<D>,
     {
-        prepare_continuation_from_target_on_handle(self, request).into_checked()
+        Ok(prepare_continuation_from_target_on_handle(self, request)?.into_checked())
     }
 
     pub fn prepare_continuation_from_target_proof<I>(
         &self,
         request: WorthQueryResolveContinuationFromTargetRequest<D, I>,
-    ) -> WorthQueryPreparedContinuationTranscript<D, I>
+    ) -> Result<WorthQueryPreparedContinuationTranscript<D, I>, IdentityDerivationDenial>
     where
         I: WorthQueryDeclarationInput<D>,
     {
-        prepare_continuation_from_target_on_handle(self, request)
+        Ok(prepare_continuation_from_target_on_handle(self, request)?)
     }
 
     pub fn prepare_continuation_from_context<I>(
         &self,
         request: WorthQueryContinuationBindingRequest<D, I>,
-    ) -> WorthQueryPreparedContinuationOutcome<D, I>
+    ) -> Result<WorthQueryPreparedContinuationOutcome<D, I>, IdentityDerivationDenial>
     where
         I: WorthQueryDeclarationInput<D>,
     {
-        prepare_continuation_from_context_on_handle(self, request)
+        Ok(prepare_continuation_from_context_on_handle(self, request)?
             .into_checked()
-            .into_outcome()
+            .into_outcome())
     }
 
     pub fn prepare_continuation_from_context_outcome<I>(
         &self,
         request: WorthQueryContinuationBindingRequest<D, I>,
-    ) -> WorthQueryOrdinaryOutcome<WorthQueryPreparedContinuation<D, I>>
+    ) -> Result<
+        WorthQueryOrdinaryOutcome<WorthQueryPreparedContinuation<D, I>>,
+        IdentityDerivationDenial,
+    >
     where
         I: WorthQueryDeclarationInput<D>,
     {
-        ordinary_outcome_from_continuation_checked(
-            prepare_continuation_from_context_on_handle(self, request).into_checked(),
-        )
+        Ok(ordinary_outcome_from_continuation_checked(
+            prepare_continuation_from_context_on_handle(self, request)?.into_checked(),
+        ))
     }
 
     pub fn prepare_continuation_from_context_checked<I>(
         &self,
         request: WorthQueryContinuationBindingRequest<D, I>,
-    ) -> WorthQueryPreparedContinuationChecked<D, I>
+    ) -> Result<WorthQueryPreparedContinuationChecked<D, I>, IdentityDerivationDenial>
     where
         I: WorthQueryDeclarationInput<D>,
     {
-        prepare_continuation_from_context_on_handle(self, request).into_checked()
+        Ok(prepare_continuation_from_context_on_handle(self, request)?.into_checked())
     }
 
     pub fn prepare_continuation_from_context_proof<I>(
         &self,
         request: WorthQueryContinuationBindingRequest<D, I>,
-    ) -> WorthQueryPreparedContinuationTranscript<D, I>
+    ) -> Result<WorthQueryPreparedContinuationTranscript<D, I>, IdentityDerivationDenial>
     where
         I: WorthQueryDeclarationInput<D>,
     {
-        prepare_continuation_from_context_on_handle(self, request)
+        Ok(prepare_continuation_from_context_on_handle(self, request)?)
     }
 
     pub fn execute_prepared_continuation<I>(
         &self,
         prepared: WorthQueryPreparedContinuation<D, I>,
-    ) -> WorthQueryContinuationExecutionOutcome<D, I>
+    ) -> Result<WorthQueryContinuationExecutionOutcome<D, I>, IdentityDerivationDenial>
     where
         I: WorthQueryDeclarationInput<D>,
     {
-        execute_prepared_continuation_on_handle(
+        Ok(execute_prepared_continuation_on_handle(
             self,
             WorthQueryExecutePreparedContinuationRequest::new(prepared),
-        )
+        )?
         .into_checked()
-        .into_outcome()
+        .into_outcome())
     }
 
     pub fn execute_prepared_continuation_outcome<I>(
         &self,
         prepared: WorthQueryPreparedContinuation<D, I>,
-    ) -> WorthQueryOrdinaryOutcome<WorthQueryContinuationExecution<D, I>>
+    ) -> Result<
+        WorthQueryOrdinaryOutcome<WorthQueryContinuationExecution<D, I>>,
+        IdentityDerivationDenial,
+    >
     where
         I: WorthQueryDeclarationInput<D>,
     {
-        ordinary_outcome_from_execution_checked(
+        Ok(ordinary_outcome_from_execution_checked(
             execute_prepared_continuation_on_handle(
                 self,
                 WorthQueryExecutePreparedContinuationRequest::new(prepared),
-            )
+            )?
             .into_checked(),
-        )
+        ))
     }
 
     pub fn execute_prepared_continuation_checked<I>(
         &self,
         prepared: WorthQueryPreparedContinuation<D, I>,
-    ) -> WorthQueryContinuationExecutionChecked<D, I>
+    ) -> Result<WorthQueryContinuationExecutionChecked<D, I>, IdentityDerivationDenial>
     where
         I: WorthQueryDeclarationInput<D>,
     {
-        execute_prepared_continuation_on_handle(
+        Ok(execute_prepared_continuation_on_handle(
             self,
             WorthQueryExecutePreparedContinuationRequest::new(prepared),
-        )
-        .into_checked()
+        )?
+        .into_checked())
     }
 
     pub fn execute_prepared_continuation_proof<I>(
         &self,
         prepared: WorthQueryPreparedContinuation<D, I>,
-    ) -> WorthQueryContinuationExecutionTranscript<D, I>
+    ) -> Result<WorthQueryContinuationExecutionTranscript<D, I>, IdentityDerivationDenial>
     where
         I: WorthQueryDeclarationInput<D>,
     {
-        execute_prepared_continuation_on_handle(
+        Ok(execute_prepared_continuation_on_handle(
             self,
             WorthQueryExecutePreparedContinuationRequest::new(prepared),
-        )
+        )?)
     }
 }

@@ -1,0 +1,230 @@
+Command: ["cargo", "nextest", "run", "--cargo-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\h8-outbox-focused\\query\\build\\cargo-metadata.json", "--binaries-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\h8-outbox-focused\\query\\build\\binaries.json", "--profile", "ci", "--config-file", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\h8-outbox-focused\\query\\nextest.toml", "--ignore-default-filter", "--no-fail-fast", "--no-tests=fail", "--message-format", "libtest-json", "--success-output", "immediate", "-E", "test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::the_recorded_intent_names_its_encoding_and_no_runtime) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_record_resolves_by_its_durable_parts) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_record_with_another_durable_part_is_drift) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_operation_without_a_mutation_binding_is_unverifiable) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_record_without_operation_or_scope_matches_exactly) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_record_in_neither_encoding_is_malformed_not_drift) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::original_lookup_scope_uses_only_the_validated_correction_slot) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::current_recorded_operation_definition_is_stable_descriptive_meaning) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::installation_seals_and_absent_operations_do_not_readmit_a_definition) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::recorded_operation_readmission_validates_the_complete_intent_grammar) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent::shape::tests::durable_intent_shape_refuses_unknown_reordered_and_nullable_optional_slots) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent::shape::tests::durable_and_legacy_scopes_and_complete_optional_suffix_are_exact) + test(=domain_computation::primary_graph::provider::committed_dispatch_outbox::restoration_tests::durable_field_restore_accepts_the_exact_committed_shape) + test(=domain_computation::primary_graph::provider::committed_dispatch_outbox::restoration_tests::durable_field_restore_rejects_every_omission_and_wrong_storage_type) + test(=domain_computation::primary_graph::provider::committed_dispatch_outbox::restoration_tests::durable_field_restore_rejects_malformed_protocol_and_encoded_bytes) + test(=domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::original_definition_rebinds_across_independent_real_installations) + test(=domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::equal_outbound_fields_cannot_rebind_changed_inbound_source_or_limits) + test(=domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::missing_or_unverifiable_binding_never_claims_no_inbound) + test(=domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::only_a_matching_installed_absence_is_no_inbound)"]
+Working directory: C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query
+HEAD: 5d41be299030a2e9d90dae61dfc36da9a86cb385
+Git status --short empty: False
+Start: 2026-11-08T23:32:04.282050+00:00
+
+{"type": "cargo-invocation", "command": ["cargo", "nextest", "run", "--cargo-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\h8-outbox-focused\\query\\build\\cargo-metadata.json", "--binaries-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\h8-outbox-focused\\query\\build\\binaries.json", "--profile", "ci", "--config-file", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\h8-outbox-focused\\query\\nextest.toml", "--ignore-default-filter", "--no-fail-fast", "--no-tests=fail", "--message-format", "libtest-json", "--success-output", "immediate", "-E", "test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::the_recorded_intent_names_its_encoding_and_no_runtime) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_record_resolves_by_its_durable_parts) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_record_with_another_durable_part_is_drift) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_operation_without_a_mutation_binding_is_unverifiable) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_record_without_operation_or_scope_matches_exactly) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_record_in_neither_encoding_is_malformed_not_drift) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::original_lookup_scope_uses_only_the_validated_correction_slot) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::current_recorded_operation_definition_is_stable_descriptive_meaning) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::installation_seals_and_absent_operations_do_not_readmit_a_definition) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::recorded_operation_readmission_validates_the_complete_intent_grammar) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent::shape::tests::durable_intent_shape_refuses_unknown_reordered_and_nullable_optional_slots) + test(=domain_computation::primary_graph::application_attempt::idempotency::recorded_intent::shape::tests::durable_and_legacy_scopes_and_complete_optional_suffix_are_exact) + test(=domain_computation::primary_graph::provider::committed_dispatch_outbox::restoration_tests::durable_field_restore_accepts_the_exact_committed_shape) + test(=domain_computation::primary_graph::provider::committed_dispatch_outbox::restoration_tests::durable_field_restore_rejects_every_omission_and_wrong_storage_type) + test(=domain_computation::primary_graph::provider::committed_dispatch_outbox::restoration_tests::durable_field_restore_rejects_malformed_protocol_and_encoded_bytes) + test(=domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::original_definition_rebinds_across_independent_real_installations) + test(=domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::equal_outbound_fields_cannot_rebind_changed_inbound_source_or_limits) + test(=domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::missing_or_unverifiable_binding_never_claims_no_inbound) + test(=domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::only_a_matching_installed_absence_is_no_inbound)"], "cwd": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query", "capture": "ordered", "mode": "build", "target_dir": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\target", "cargo_profile": "test"}
+info: experimental features enabled: wrapper-scripts
+────────────
+ Nextest run ID bc779da5-f5ad-4e43-a9a5-274f146cf5ea with nextest profile: ci
+    Starting 19 tests across 1 binary (576 tests skipped)
+        PASS [   2.123s] ( 1/19) worth-query-execution domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::missing_or_unverifiable_binding_never_claims_no_inbound
+  output ───
+
+    running 1 test
+    test domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::missing_or_unverifiable_binding_never_claims_no_inbound ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 594 filtered out; finished in 0.01s
+
+
+        PASS [   2.724s] ( 2/19) worth-query-execution domain_computation::primary_graph::application_attempt::idempotency::recorded_intent::shape::tests::durable_and_legacy_scopes_and_complete_optional_suffix_are_exact
+  output ───
+
+    running 1 test
+    test domain_computation::primary_graph::application_attempt::idempotency::recorded_intent::shape::tests::durable_and_legacy_scopes_and_complete_optional_suffix_are_exact ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 594 filtered out; finished in 0.00s
+
+
+        PASS [   3.783s] ( 3/19) worth-query-execution domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::the_recorded_intent_names_its_encoding_and_no_runtime
+  output ───
+
+    running 1 test
+    test domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::the_recorded_intent_names_its_encoding_and_no_runtime ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 594 filtered out; finished in 0.00s
+
+
+        PASS [   4.301s] ( 4/19) worth-query-execution domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_operation_without_a_mutation_binding_is_unverifiable
+  output ───
+
+    running 1 test
+    test domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_operation_without_a_mutation_binding_is_unverifiable ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 594 filtered out; finished in 0.00s
+
+
+        PASS [   4.743s] ( 5/19) worth-query-execution domain_computation::primary_graph::application_attempt::idempotency::recorded_intent::shape::tests::durable_intent_shape_refuses_unknown_reordered_and_nullable_optional_slots
+  output ───
+
+    running 1 test
+    test domain_computation::primary_graph::application_attempt::idempotency::recorded_intent::shape::tests::durable_intent_shape_refuses_unknown_reordered_and_nullable_optional_slots ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 594 filtered out; finished in 0.00s
+
+
+        PASS [   6.149s] ( 6/19) worth-query-execution domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::equal_outbound_fields_cannot_rebind_changed_inbound_source_or_limits
+  output ───
+
+    running 1 test
+    test domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::equal_outbound_fields_cannot_rebind_changed_inbound_source_or_limits ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 594 filtered out; finished in 0.01s
+
+
+        PASS [   6.852s] ( 7/19) worth-query-execution domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::original_definition_rebinds_across_independent_real_installations
+  output ───
+
+    running 1 test
+    test domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::original_definition_rebinds_across_independent_real_installations ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 594 filtered out; finished in 0.01s
+
+
+        PASS [   7.665s] ( 8/19) worth-query-execution domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::installation_seals_and_absent_operations_do_not_readmit_a_definition
+  output ───
+
+    running 1 test
+    test domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::installation_seals_and_absent_operations_do_not_readmit_a_definition ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 594 filtered out; finished in 0.00s
+
+
+        PASS [   8.389s] ( 9/19) worth-query-execution domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_record_in_neither_encoding_is_malformed_not_drift
+  output ───
+
+    running 1 test
+    test domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_record_in_neither_encoding_is_malformed_not_drift ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 594 filtered out; finished in 0.00s
+
+
+        PASS [   9.160s] (10/19) worth-query-execution domain_computation::primary_graph::provider::committed_dispatch_outbox::restoration_tests::durable_field_restore_rejects_malformed_protocol_and_encoded_bytes
+  output ───
+
+    running 1 test
+    test domain_computation::primary_graph::provider::committed_dispatch_outbox::restoration_tests::durable_field_restore_rejects_malformed_protocol_and_encoded_bytes ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 594 filtered out; finished in 0.00s
+
+
+        PASS [  10.050s] (11/19) worth-query-execution domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_record_with_another_durable_part_is_drift
+  output ───
+
+    running 1 test
+    test domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_record_with_another_durable_part_is_drift ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 594 filtered out; finished in 0.00s
+
+
+        PASS [  11.158s] (12/19) worth-query-execution domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_record_resolves_by_its_durable_parts
+  output ───
+
+    running 1 test
+    test domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_record_resolves_by_its_durable_parts ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 594 filtered out; finished in 0.00s
+
+
+        PASS [  11.894s] (13/19) worth-query-execution domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_record_without_operation_or_scope_matches_exactly
+  output ───
+
+    running 1 test
+    test domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_record_without_operation_or_scope_matches_exactly ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 594 filtered out; finished in 0.00s
+
+
+        PASS [  12.762s] (14/19) worth-query-execution domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::recorded_operation_readmission_validates_the_complete_intent_grammar
+  output ───
+
+    running 1 test
+    test domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::recorded_operation_readmission_validates_the_complete_intent_grammar ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 594 filtered out; finished in 0.00s
+
+
+        PASS [  13.497s] (15/19) worth-query-execution domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::current_recorded_operation_definition_is_stable_descriptive_meaning
+  output ───
+
+    running 1 test
+    test domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::current_recorded_operation_definition_is_stable_descriptive_meaning ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 594 filtered out; finished in 0.00s
+
+
+        PASS [  14.954s] (16/19) worth-query-execution domain_computation::primary_graph::provider::committed_dispatch_outbox::restoration_tests::durable_field_restore_rejects_every_omission_and_wrong_storage_type
+  output ───
+
+    running 1 test
+    test domain_computation::primary_graph::provider::committed_dispatch_outbox::restoration_tests::durable_field_restore_rejects_every_omission_and_wrong_storage_type ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 594 filtered out; finished in 0.00s
+
+
+        PASS [  15.353s] (17/19) worth-query-execution domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::original_lookup_scope_uses_only_the_validated_correction_slot
+  output ───
+
+    running 1 test
+    test domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::original_lookup_scope_uses_only_the_validated_correction_slot ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 594 filtered out; finished in 0.00s
+
+
+        PASS [  16.119s] (18/19) worth-query-execution domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::only_a_matching_installed_absence_is_no_inbound
+  output ───
+
+    running 1 test
+    test domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::only_a_matching_installed_absence_is_no_inbound ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 594 filtered out; finished in 0.01s
+
+
+        PASS [  16.319s] (19/19) worth-query-execution domain_computation::primary_graph::provider::committed_dispatch_outbox::restoration_tests::durable_field_restore_accepts_the_exact_committed_shape
+  output ───
+
+    running 1 test
+    test domain_computation::primary_graph::provider::committed_dispatch_outbox::restoration_tests::durable_field_restore_accepts_the_exact_committed_shape ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 594 filtered out; finished in 0.00s
+
+
+{"type":"suite","event":"started","test_count":19}
+{"type":"test","event":"started","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::application_attempt::idempotency::recorded_intent::shape::tests::durable_and_legacy_scopes_and_complete_optional_suffix_are_exact"}
+{"type":"test","event":"started","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::application_attempt::idempotency::recorded_intent::shape::tests::durable_intent_shape_refuses_unknown_reordered_and_nullable_optional_slots"}
+{"type":"test","event":"started","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_operation_without_a_mutation_binding_is_unverifiable"}
+{"type":"test","event":"started","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_record_resolves_by_its_durable_parts"}
+{"type":"test","event":"started","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_record_without_operation_or_scope_matches_exactly"}
+{"type":"test","event":"started","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::current_recorded_operation_definition_is_stable_descriptive_meaning"}
+{"type":"test","event":"started","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_record_with_another_durable_part_is_drift"}
+{"type":"test","event":"started","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_record_in_neither_encoding_is_malformed_not_drift"}
+{"type":"test","event":"started","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::original_lookup_scope_uses_only_the_validated_correction_slot"}
+{"type":"test","event":"started","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::installation_seals_and_absent_operations_do_not_readmit_a_definition"}
+{"type":"test","event":"started","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::the_recorded_intent_names_its_encoding_and_no_runtime"}
+{"type":"test","event":"started","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::recorded_operation_readmission_validates_the_complete_intent_grammar"}
+{"type":"test","event":"started","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::provider::committed_dispatch_outbox::restoration_tests::durable_field_restore_rejects_every_omission_and_wrong_storage_type"}
+{"type":"test","event":"started","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::provider::committed_dispatch_outbox::restoration_tests::durable_field_restore_accepts_the_exact_committed_shape"}
+{"type":"test","event":"started","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::equal_outbound_fields_cannot_rebind_changed_inbound_source_or_limits"}
+{"type":"test","event":"started","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::provider::committed_dispatch_outbox::restoration_tests::durable_field_restore_rejects_malformed_protocol_and_encoded_bytes"}
+{"type":"test","event":"started","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::missing_or_unverifiable_binding_never_claims_no_inbound"}
+{"type":"test","event":"started","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::only_a_matching_installed_absence_is_no_inbound"}
+{"type":"test","event":"started","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::original_definition_rebinds_across_independent_real_installations"}
+{"type":"test","event":"ok","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::missing_or_unverifiable_binding_never_claims_no_inbound","exec_time":2.1230081}
+{"type":"test","event":"ok","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::application_attempt::idempotency::recorded_intent::shape::tests::durable_and_legacy_scopes_and_complete_optional_suffix_are_exact","exec_time":2.7237535}
+{"type":"test","event":"ok","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::the_recorded_intent_names_its_encoding_and_no_runtime","exec_time":3.7829806}
+{"type":"test","event":"ok","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_operation_without_a_mutation_binding_is_unverifiable","exec_time":4.3011755}
+{"type":"test","event":"ok","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::application_attempt::idempotency::recorded_intent::shape::tests::durable_intent_shape_refuses_unknown_reordered_and_nullable_optional_slots","exec_time":4.7434773}
+{"type":"test","event":"ok","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::equal_outbound_fields_cannot_rebind_changed_inbound_source_or_limits","exec_time":6.1485596000000005}
+{"type":"test","event":"ok","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::original_definition_rebinds_across_independent_real_installations","exec_time":6.8516276000000005}
+{"type":"test","event":"ok","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::installation_seals_and_absent_operations_do_not_readmit_a_definition","exec_time":7.6653505}
+{"type":"test","event":"ok","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_record_in_neither_encoding_is_malformed_not_drift","exec_time":8.3892747}
+{"type":"test","event":"ok","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::provider::committed_dispatch_outbox::restoration_tests::durable_field_restore_rejects_malformed_protocol_and_encoded_bytes","exec_time":9.1599565}
+{"type":"test","event":"ok","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_record_with_another_durable_part_is_drift","exec_time":10.0502279}
+{"type":"test","event":"ok","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_record_resolves_by_its_durable_parts","exec_time":11.1579894}
+{"type":"test","event":"ok","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::a_first_encoding_record_without_operation_or_scope_matches_exactly","exec_time":11.8939237}
+{"type":"test","event":"ok","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::recorded_operation_readmission_validates_the_complete_intent_grammar","exec_time":12.7621973}
+{"type":"test","event":"ok","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::current_recorded_operation_definition_is_stable_descriptive_meaning","exec_time":13.4971049}
+{"type":"test","event":"ok","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::provider::committed_dispatch_outbox::restoration_tests::durable_field_restore_rejects_every_omission_and_wrong_storage_type","exec_time":14.9544295}
+{"type":"test","event":"ok","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::application_attempt::idempotency::recorded_intent_tests::original_lookup_scope_uses_only_the_validated_correction_slot","exec_time":15.3532992}
+{"type":"test","event":"ok","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::provider::idempotency::snapshot_resolution::original_receipt::outbox::tests::only_a_matching_installed_absence_is_no_inbound","exec_time":16.1190106}
+{"type":"test","event":"ok","name":"worth-query-execution::worth_query_execution$domain_computation::primary_graph::provider::committed_dispatch_outbox::restoration_tests::durable_field_restore_accepts_the_exact_committed_shape","exec_time":16.3193715}
+{"type":"suite","event":"ok","passed":19,"failed":0,"ignored":0,"measured":0,"filtered_out":576,"exec_time":177.9967179}
+────────────
+     Summary [  16.322s] 19 tests run: 19 passed, 576 skipped
+
+
+{"type": "cargo-result", "exit_code": 0}
+
+End: 2026-11-08T23:32:20.970456+00:00
+Exit code: 0

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
 use super::super::materialization::QueryCausalInspectionArtifact;
@@ -59,7 +60,7 @@ impl CausalInspectionHostileRow {
         )
         .field_shape(WorthQueryEvidenceTag::new("lane"), lane.as_str())
         .field_evidence_identity(WorthQueryEvidenceTag::new("evidence"), evidence_identity)
-        .seal();
+        .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens");
         Self {
             row_digest: row_identity.as_str().to_string(),
         }
@@ -68,7 +69,7 @@ impl CausalInspectionHostileRow {
     fn from_terminal_digest(
         lane: CausalInspectionCertificationLane,
         evidence_digest: &str,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let row_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::CausalInspectionCertificationFailureEvidence,
         )
@@ -81,10 +82,10 @@ impl CausalInspectionHostileRow {
             WorthQueryEvidenceTag::new("terminal_evidence_digest"),
             evidence_digest,
         )
-        .seal();
-        Self {
+        .seal()?;
+        Ok(Self {
             row_digest: row_identity.as_str().to_string(),
-        }
+        })
     }
 }
 
@@ -146,7 +147,7 @@ pub fn build_causal_inspection_certification_scope(
         &representative_matrix,
         &performance_certification,
         &proof_shape,
-    );
+    )?;
     let row_counts = certification_row_counts(&representative_matrix);
     let scope_digest = build_certification_scope_digest(
         &hostile_rows,
@@ -154,7 +155,7 @@ pub fn build_causal_inspection_certification_scope(
         &performance_certification,
         &proof_shape,
         &row_counts,
-    );
+    )?;
     Ok(CausalInspectionCertificationScope::from_parts(
         boundary_audit.audit_digest(),
         representative_matrix.matrix_digest(),
@@ -210,7 +211,7 @@ fn build_certification_hostile_rows(
     representative_matrix: &CausalInspectionRepresentativeMatrix,
     performance_certification: &CausalInspectionPerformanceCertificationBundle,
     proof_shape: &CausalInspectionProofShapeCertification,
-) -> CausalInspectionCertificationHostileRows {
+) -> Result<CausalInspectionCertificationHostileRows, IdentityDerivationDenial> {
     let changed_row = CausalInspectionHostileRow::from_artifact(
         CausalInspectionCertificationLane::ChangedResult,
         changed_artifact,
@@ -226,32 +227,32 @@ fn build_certification_hostile_rows(
     let missing_evidence_row = CausalInspectionHostileRow::from_terminal_digest(
         CausalInspectionCertificationLane::MissingEvidence,
         missing_evidence_failure_digest,
-    );
+    )?;
     let public_boundary_row = CausalInspectionHostileRow::from_terminal_digest(
         CausalInspectionCertificationLane::PublicBoundary,
         boundary_audit.audit_digest(),
-    );
+    )?;
     let representative_matrix_row = CausalInspectionHostileRow::from_terminal_digest(
         CausalInspectionCertificationLane::RepresentativeMatrix,
         representative_matrix.matrix_digest(),
-    );
+    )?;
     let scale_row = CausalInspectionHostileRow::from_terminal_digest(
         CausalInspectionCertificationLane::ScaleMaterialization,
         performance_certification.performance_certification_digest(),
-    );
+    )?;
     let proof_shape_row = CausalInspectionHostileRow::from_terminal_digest(
         CausalInspectionCertificationLane::ProofShape,
         proof_shape.proof_shape_digest(),
-    );
+    )?;
     let bridge_readmission_row = CausalInspectionHostileRow::from_terminal_digest(
         CausalInspectionCertificationLane::BridgeReadmission,
         performance_certification.bridge_readmission_proof_digest(),
-    );
+    )?;
     let artifact_serialization_row = CausalInspectionHostileRow::from_terminal_digest(
         CausalInspectionCertificationLane::ArtifactSerialization,
         performance_certification.artifact_serialization_slope_digest(),
-    );
-    CausalInspectionCertificationHostileRows {
+    )?;
+    Ok(CausalInspectionCertificationHostileRows {
         changed_row,
         redaction_row,
         denied_row,
@@ -262,7 +263,7 @@ fn build_certification_hostile_rows(
         proof_shape_row,
         bridge_readmission_row,
         artifact_serialization_row,
-    }
+    })
 }
 
 fn certification_row_counts(
@@ -281,8 +282,8 @@ fn build_certification_scope_digest(
     performance_certification: &CausalInspectionPerformanceCertificationBundle,
     proof_shape: &CausalInspectionProofShapeCertification,
     row_counts: &CausalInspectionCertificationRowCounts,
-) -> String {
-    WorthQueryEvidenceIdentity::compose(
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(WorthQueryEvidenceIdentity::compose(
         WorthQueryEvidenceScope::CausalInspectionCertificationFailureEvidence,
     )
     .field_shape(
@@ -389,7 +390,7 @@ fn build_certification_scope_digest(
         WorthQueryEvidenceTag::new("scale_count"),
         row_counts.scale_fixture_row_count,
     )
-    .seal()
+    .seal()?
     .as_str()
-    .to_string()
+    .to_string())
 }

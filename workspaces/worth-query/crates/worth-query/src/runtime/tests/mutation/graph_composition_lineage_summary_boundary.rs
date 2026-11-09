@@ -46,7 +46,10 @@ fn compose_graph_without_lineage_steps_fails_closed_on_lineage_summary() {
         })
         .expect("simple composition should execute");
 
-    assert!(receipt.graph_composition_lineage_summary().is_none());
+    assert!(receipt
+        .graph_composition_lineage_summary()
+        .expect("fixture digest must fit")
+        .is_none());
     match workspace
         .inspect(request_execution, &receipt)
         .expect("receipt should inspect")

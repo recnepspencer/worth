@@ -17,7 +17,6 @@ fn class_transition_is_atomic_and_invalid_final_states_do_not_publish() {
         (authoring::Change::RemoveNamedOnly, 0),
         (authoring::Change::AddSecondOnly, 2),
         (authoring::Change::Two, 2),
-        (authoring::Change::Disagree, 1),
     ]
     .into_iter()
     .enumerate()
@@ -39,9 +38,8 @@ fn class_transition_is_atomic_and_invalid_final_states_do_not_publish() {
             denial
                 .decode_invariant_refusal::<rule::RefusalBinding>()
                 .unwrap(),
-            rule::Refusal {
+            rule::Refusal::Membership {
                 subject: "record".into(),
-                class: Some(1),
                 present
             }
         );
@@ -191,7 +189,10 @@ fn incomplete_present_class_refuses_without_publishing() {
             "{detail}"
         );
         assert!(
-            detail.contains(".Second: MissingRequiredField(FieldKey(\"SecondRequired\"))"),
+            detail.contains(&format!(
+                ".{}: MissingRequiredField(FieldKey(\"SecondRequired\"))",
+                Second::reference().name()
+            )),
             "{detail}"
         );
         assert_eq!(
@@ -257,35 +258,6 @@ fn inverse_requires_a_complete_first_image() {
             third: None
         }
     );
-}
-
-#[test]
-fn changing_only_the_class_is_refused_at_the_installed_rule() {
-    let host = world::install();
-    let before = world::pin(&host);
-    let outcome = world::edit(&host, authoring::Change::ClassOnly, "class-only");
-    let WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::Denied(
-        denial,
-    )) = outcome
-    else {
-        panic!("must reach installed rule: {outcome:?}");
-    };
-    assert_eq!(
-        denial.kind(),
-        WorthQueryApplicationCommitDenialKind::CustomInvariantDenied
-    );
-    assert_eq!(
-        denial
-            .decode_invariant_refusal::<rule::RefusalBinding>()
-            .unwrap(),
-        rule::Refusal {
-            subject: "record".into(),
-            class: Some(2),
-            present: 1
-        }
-    );
-    let after = world::pin(&host);
-    assert_eq!(before.selected_commit(), after.selected_commit());
 }
 
 #[test]

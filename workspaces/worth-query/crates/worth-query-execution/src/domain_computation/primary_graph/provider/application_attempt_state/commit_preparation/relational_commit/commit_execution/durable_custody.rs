@@ -54,6 +54,10 @@ pub(in crate::domain_computation::primary_graph::provider) enum QueryDurableWorl
 pub(in crate::domain_computation) struct QueryPreparingApplicationCommit {
     pub(super) predicate: Option<crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationOwner>,
     pub(super) attempt: WorthQueryPrimaryGraphApplicationAttempt,
+    pub(super) members: Vec<crate::domain_computation::primary_graph::provider::CoupledApplicationMember>,
+    pub(super) group_emissions: Option<crate::domain_computation::primary_graph::application_attempt::WorthQueryAdmittedApplicationEmissionBatch>,
+    pub(super) group_evidence: Option<coupled::CoupledEvidenceSlots>,
+    pub(super) prepared_group_publications: Option<worth_relational::facade::mvcc::RelationalPreparedOutputPublications>,
     pub(super) native: QueryNativeCustody,
     pub(super) work: WorthQueryPrimaryMutationWorkCounters,
     pub(super) retained_preimage: Option<crate::domain_computation::application_aftermath::WorthQueryRetainedPreImage>,
@@ -111,6 +115,12 @@ pub(in crate::domain_computation::primary_graph::provider) enum QueryDurablePrep
 
 #[derive(Debug)]
 pub(super) enum QueryCandidatePreparationDenial {
+    ConsumedOutput(consumed_output::ConsumedOutputPreparationDenial),
+    CoupledSupport(coupled::CoupledSupportPreparationDenial),
+    Dispatch(
+        crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveAdmissionDenial,
+    ),
+    Correspondence(correspondence::OutputCorrespondencePreparationDenial),
     ManagedSource(managed_source::ManagedSourcePreparationDenial),
     Native(worth_relational::facade::mvcc::TransactionCommitError),
     OutputWitness(worth_relational::facade::mvcc::CompanionPreflightStop),

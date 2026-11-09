@@ -19,7 +19,8 @@ fn earlier_sorting_application_roles_preserve_every_retained_physical_role() {
     assert!(b.roles.entities["Earlier"] > a.roles.maximum_kind.unwrap());
     assert!(b.roles.relations["EarlierEdge"] > a.roles.maximum_kind.unwrap());
     // Check every actual fixed platform role, including appended workflow IDs.
-    for old in a.registry.authority_snapshot().entity_kinds {
+    let previous = a.registry.authority_snapshot();
+    for old in &previous.entity_kinds {
         if !a.roles.entity_ids.contains(&old.kind_id) {
             assert_eq!(
                 b.registry
@@ -30,7 +31,7 @@ fn earlier_sorting_application_roles_preserve_every_retained_physical_role() {
             );
         }
     }
-    for old in a.registry.authority_snapshot().relation_kinds {
+    for old in &previous.relation_kinds {
         if !a.roles.relation_ids.contains(&old.kind_id) {
             assert_eq!(
                 b.registry

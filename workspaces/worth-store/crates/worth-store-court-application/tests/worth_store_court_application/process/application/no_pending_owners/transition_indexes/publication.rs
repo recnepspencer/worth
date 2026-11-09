@@ -1,11 +1,12 @@
 //! Private definitions join the actual positioned Home Target effect.
+mod committed_indexes;
 use super::{target, Journey};
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::{
     HomeProgramTransitionPlanDigest, HomeProgramTransitionStepAssociation,
 };
 use worth_relational::facade::{
-    indexes::{DerivedIndexEntries, DerivedIndexMaintenanceBudget},
+    indexes::DerivedIndexMaintenanceBudget,
     mvcc::{
         RelationalCallerAssociation, RelationalPublicationDenial, RelationalPublicationOutcome,
         RelationalTransactionIntent,
@@ -157,6 +158,15 @@ pub(super) fn run(
             grant.original(),
             &association,
             grant.admission(),
+            DerivedIndexMaintenanceBudget {
+                maximum_work_units: Some(if matches!(journey, Journey::MaintenanceBudgetDenied) {
+                    0
+                } else {
+                    100_000
+                }),
+                maximum_cold_record_slots: Some(100),
+                maximum_derived_rows: Some(100),
+            },
         )
         .unwrap();
     transaction
@@ -164,29 +174,63 @@ pub(super) fn run(
         .unwrap();
     let proposal = transaction.validate(execution, native).unwrap();
     let (opened, proposal) = opened.bind_query_native_proposal(proposal).unwrap();
-    let mut candidate = native
-        .prepare_validated_proposal(execution, proposal)
-        .unwrap();
-    let requested = match journey {
-        Journey::IncompleteGenerations => &[][..],
-        Journey::Publish | Journey::Abandon | Journey::ChangedCatalog => {
-            std::slice::from_ref(&target_id)
-        }
-    };
-    native
-        .index_authority()
-        .prepare_for_candidate(
-            &mut candidate,
-            requested,
-            None,
-            DerivedIndexMaintenanceBudget {
-                maximum_work_units: Some(100_000),
-                maximum_cold_record_slots: Some(100),
-                maximum_derived_rows: Some(100),
-            },
-            execution,
-        )
-        .unwrap();
+    let preparation = native.prepare_validated_proposal(execution, proposal);
+    if matches!(journey, Journey::MaintenanceBudgetDenied) {
+        let cause = preparation.expect_err("the admitted zero budget must stop real preparation");
+        let worth_relational::facade::transactions::TransactionCommitError::Publication {
+            error,
+            ..
+        } = cause
+        else {
+            panic!("the real index budget must retain its original publication cause: {cause:?}");
+        };
+        let denial = error
+            .index_maintenance_denial()
+            .expect("original maintenance denial");
+        assert_eq!(denial.kind, worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind::WorkBudgetExceeded);
+        assert_eq!(
+            denial.work.work_units, 0,
+            "no semantic maintenance unit was admitted"
+        );
+        drop(opened.retain());
+        assert_eq!(
+            native
+                .index_access()
+                .definition_lookup_snapshot()
+                .definition_count(),
+            before_count
+        );
+        assert_eq!(
+            native
+                .index_access()
+                .matching_definition(&old_definition)
+                .unwrap()
+                .index_id,
+            old_id
+        );
+        assert!(native
+            .index_access()
+            .matching_definition(&target_definition)
+            .is_none());
+        assert_eq!(native.history().historical_latest_commit(), before_history);
+        assert_eq!(
+            fixture
+                .home
+                .world()
+                .observation_port()
+                .observe_root_product_branch()
+                .unwrap(),
+            source
+        );
+        drop((grant, contracts, source, fixture));
+        return None;
+    }
+    let mut candidate = preparation.unwrap();
+    if matches!(journey, Journey::IncompleteGenerations) {
+        candidate
+            .omit_prepared_index_generations_for_test()
+            .expect("the fault must remove this candidate's automatically prepared batch");
+    }
     assert!(native
         .index_access()
         .matching_definition(&target_definition)
@@ -199,82 +243,14 @@ pub(super) fn run(
                 .unwrap();
             let performed = fixture.publish(execution, prepared, &cancellation.token());
             assert_eq!(performed.new_product_head().reference_generation().get(), 1);
-            assert_eq!(
-                native
-                    .index_access()
-                    .matching_definition(&old_definition)
-                    .unwrap()
-                    .index_id,
-                old_id
+            let lookup = committed_indexes::observe(
+                native,
+                execution,
+                &old_definition,
+                old_id,
+                &target_definition,
+                target_id,
             );
-            assert_eq!(
-                native
-                    .index_access()
-                    .matching_definition(&target_definition)
-                    .unwrap()
-                    .index_id,
-                target_id
-            );
-            let (_, basis) = native
-                .observe_branch(&native.main_branch_identity())
-                .unwrap();
-            let observation = basis.observation();
-            let generation = native
-                .index_access()
-                .read_published_generation_for_observation(execution, target_id, &observation)
-                .unwrap()
-                .unwrap();
-            let DerivedIndexEntries::EntityField(entries) = &generation.entries else {
-                panic!("actual B field generation");
-            };
-            assert_eq!(
-                entries
-                    .values()
-                    .map(|entities| entities.len())
-                    .sum::<usize>(),
-                1
-            );
-            let receipt = native.history().historical_latest_commit().unwrap();
-            let envelope = native
-                .replay()
-                .canonical_commit_envelope(execution, receipt.commit_id)
-                .unwrap()
-                .unwrap();
-            let wire: serde_json::Value =
-                serde_json::from_str(&serde_json::to_string(&envelope).unwrap()).unwrap();
-            let definitions = wire["index_definition_delta"]["definitions"]
-                .as_array()
-                .unwrap();
-            assert!(definitions
-                .iter()
-                .any(|definition| definition["index_id"] == target_id.0
-                    && definition["name"] == "target-label"));
-            let view = native
-                .read_truth()
-                .project_observation(&observation)
-                .unwrap();
-            let worth_relational::facade::indexes::DerivedIndexKind::EntityField { field_locator } =
-                &target_definition.kind
-            else {
-                unreachable!();
-            };
-            let value = worth_foundational::facade::AspectValue::String("target-value".into());
-            let lookup = native
-                .index_access()
-                .execute_bounded_entity_field_lookup(
-                    worth_relational::facade::indexes::BoundedEntityFieldSelectedLookup::new(
-                        &view,
-                        target_id,
-                        worth_relational::facade::identity::KindId(2000),
-                        field_locator,
-                        &value,
-                        10,
-                    ),
-                    worth_relational::facade::indexes::BoundedIndexParityMode::Production,
-                    execution,
-                )
-                .unwrap();
-            assert_eq!(lookup.candidate_entity_ids().len(), 1);
             retained = Some(lookup.retain_definition());
             drop(performed.consume());
         }
@@ -328,6 +304,10 @@ pub(super) fn run(
                 source
             );
         }
+        Journey::MaintenanceBudgetDenied => unreachable!(
+            /* Proof: The zero-budget journey returned immediately after checking its preparation denial. */
+            "zero-budget journey cannot publish"
+        ),
         Journey::ChangedCatalog => {
             let concurrent = target::definition("concurrent-name", "name", "name");
             native

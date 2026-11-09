@@ -251,7 +251,7 @@ fn compat_http_cross_surface_parity_matrix_stays_narrow_and_retry_honest() {
     let direct_mutation_bundle = crate::shared_support_compat_http_phase_thirteen_bundle::WorthServerPhaseThirteenBundle::new()
         .with_digest(
             MUTATION_RESULT_DIGEST,
-            direct_mutation.mutation_result().result_digest(),
+            direct_mutation.mutation_result().result_digest().expect("admitted mutation result identity"),
         )
         .with_digest(
             SUPPORT_POSTURE_DIGEST,
@@ -266,7 +266,7 @@ fn compat_http_cross_surface_parity_matrix_stays_narrow_and_retry_honest() {
     let compat_mutation_bundle = crate::shared_support_compat_http_phase_thirteen_bundle::WorthServerPhaseThirteenBundle::new()
         .with_digest(
             MUTATION_RESULT_DIGEST,
-            compat_mutation.mutation_result().result_digest(),
+            compat_mutation.mutation_result().result_digest().expect("admitted mutation result identity"),
         )
         .with_digest(
             SUPPORT_POSTURE_DIGEST,

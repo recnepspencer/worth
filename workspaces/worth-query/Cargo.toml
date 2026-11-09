@@ -86,6 +86,7 @@ worth-runtime-bridge.opt-level = 0
 worth-runtime-world.opt-level = 0
 worth-harness.opt-level = 0
 worth-schema-graph.opt-level = 0
+worth-testkit-compiler.opt-level = 0
 # Certification targets monomorphize the whole Query runtime once per
 # certification schema (native_operation_bodies alone has 33 const-generic
 # schemas). With line tables their CodeView symbol records reach 12.5 GB, past
@@ -114,6 +115,7 @@ worth-runtime-bridge.opt-level = 0
 worth-runtime-world.opt-level = 0
 worth-harness.opt-level = 0
 worth-schema-graph.opt-level = 0
+worth-testkit-compiler.opt-level = 0
 # Certification symbols exceed the PDB limit; see [profile.dev.package].
 worth-query-certification.debug = false
 worth-query-execution.debug = false

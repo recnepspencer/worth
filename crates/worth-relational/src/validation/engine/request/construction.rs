@@ -22,7 +22,10 @@ impl<'state> InvariantExecutionRequest<'state> {
         'runtime: 'state,
     {
         let view = crate::validation::engine::InvariantRuntimeView::from_runtime(runtime);
+        let backing = crate::test_execution_policy::serial_request();
+        let execution = worth_execution::ExecutionRequest::serial(&backing);
         Self::from_profile_with_contract_at_current_version(
+            &execution,
             profile,
             &view,
             observation,
@@ -40,6 +43,7 @@ impl<'state> InvariantExecutionRequest<'state> {
     }
 
     pub(crate) fn from_profile_with_contract_at_current_version<'runtime>(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         profile: InvariantRequestProfile,
         runtime: &crate::validation::engine::InvariantRuntimeView<'runtime>,
         observation: InvariantObservation<'state>,
@@ -50,6 +54,7 @@ impl<'state> InvariantExecutionRequest<'state> {
         control: &InvariantPreparationControl<'_, '_>,
     ) -> Result<Self, crate::transactions::data::TransactionCommitError> {
         Self::from_semantic_plan(
+            execution,
             profile,
             runtime,
             observation,
@@ -62,6 +67,7 @@ impl<'state> InvariantExecutionRequest<'state> {
     }
 
     pub(crate) fn from_semantic_plan<'runtime>(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         profile: InvariantRequestProfile,
         runtime: &crate::validation::engine::InvariantRuntimeView<'runtime>,
         observation: InvariantObservation<'state>,
@@ -89,17 +95,45 @@ impl<'state> InvariantExecutionRequest<'state> {
             .unwrap_or(consumed_groups);
         let relation_scope_requirements =
             relation_scope_requirements_for(runtime, profile, control)?;
-        let relation_integrity_scopes = prepare_relation_integrity_scopes(
-            semantic_plan,
-            runtime.home_target.is_some(),
-            observation.committed_partition_access(),
-            version_id,
-            relation_scope_requirements,
-            &runtime.performance_access(),
-            control,
-        )?;
+        // The boundary prefix already judged the business before-image. The
+        // remaining families traverse the completed physical candidate, including
+        // created endpoints and Native aggregate records.
+        let scope_state = if profile == InvariantRequestProfile::ProposedState {
+            observation.enforcement_partition_access()
+        } else {
+            observation.committed_partition_access()
+        };
+        let relation_integrity_scopes = super::scope_admission::prepare(execution, |admit| {
+            prepare_relation_integrity_scopes(
+                semantic_plan,
+                runtime.home_target.is_some(),
+                super::relation_integrity_scopes::RelationScopeState {
+                    current: super::super::state_view::InvariantStateView::new(
+                        scope_state,
+                        version_id,
+                    ),
+                    predecessor: super::super::state_view::InvariantStateView::new(
+                        observation
+                            .before_image_partition_access()
+                            .unwrap_or(scope_state),
+                        observation.before_image_version_id(current_version_id),
+                    ),
+                    candidate_is_applied: observation.applied_created_entities().is_some(),
+                },
+                relation_scope_requirements,
+                &runtime.performance_access(),
+                control,
+                admit,
+            )
+        })?;
         let proposal_identity = observation.proposal_identity().cloned();
+        let applied_declaration_view = if profile == InvariantRequestProfile::ProposedState {
+            observation.applied_declaration_view(current_version_id)
+        } else {
+            None
+        };
         Ok(Self {
+            applied_declaration_view,
             observation,
             version_id,
             current_version_id,
@@ -123,18 +157,13 @@ fn relation_scope_requirements_for(
     BTreeMap<crate::identity::data::KindId, super::RelationScopeRequirement>,
     crate::transactions::data::TransactionCommitError,
 > {
-    runtime
-        .config
-        .schema
-        .invariant_catalog
-        .registrations_for_execution_point(profile.execution_point())
-        .chain(
-            runtime
-                .schema_contract_runtime
-                .relation_integrity_registrations
-                .iter()
-                .filter(|registration| registration.execution_point == profile.execution_point()),
-        )
+    runtime.schema_contract_runtime.invariant_points[profile.execution_point() as usize]
+        .iter()
+        .filter(|registration| {
+            profile != InvariantRequestProfile::ProposedState
+                || registration.execution_point
+                    != crate::validation::data::InvariantExecutionPoint::CommitBoundary
+        })
         .try_fold(BTreeMap::new(), |mut requirements, registration| {
             control.check()?;
             let Some((kind_id, requirement)) =

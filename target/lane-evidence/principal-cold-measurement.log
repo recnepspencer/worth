@@ -1,0 +1,33 @@
+Command: ["C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\principal_cold_measure.py", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\topology-funding\\build\\binaries.json", "worth_query_topology_entry", "checkpoint_recovery::computation_partition::oracle::absence::serial::checkpoint_absence_rebuilds_every_owner_call_like_fresh"]
+Working directory: C:\programming\worth worktees\worktrees\m3-host-home
+HEAD: dbe3280daa804f95a9ec6375f85ae78d1cbcc6dd
+Git status --short empty: False
+Start: 2026-11-08T18:54:20.742512+00:00
+
+{"type": "cargo-invocation", "command": ["C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\principal_cold_measure.py", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\topology-funding\\build\\binaries.json", "worth_query_topology_entry", "checkpoint_recovery::computation_partition::oracle::absence::serial::checkpoint_absence_rebuilds_every_owner_call_like_fresh"], "cwd": "C:\\programming\\worth worktees\\worktrees\\m3-host-home", "capture": "separate", "mode": "build", "target_dir": null, "cargo_profile": null}
+DEBUG_COMMAND "C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-certification\fixtures\consumer_entry\target\debug\deps\worth_query_topology_entry-66cad83484de97d5.exe" --exact checkpoint_recovery::computation_partition::oracle::absence::serial::checkpoint_absence_rebuilds_every_owner_call_like_fresh --nocapture
+
+running 1 test
+MEASURE_PROGRESS {'calls': 20000, 'units': 6262737, 'last_units': 1}
+EXHAUSTION_CAPTURED {'calls': 36263, 'units': 8000096, 'last_units': 111} full 1
+test checkpoint_recovery::computation_partition::oracle::absence::serial::checkpoint_absence_rebuilds_every_owner_call_like_fresh has been running for over 60 seconds
+test checkpoint_recovery::computation_partition::oracle::absence::serial::checkpoint_absence_rebuilds_every_owner_call_like_fresh ... FAILED
+
+failures:
+
+failures:
+    checkpoint_recovery::computation_partition::oracle::absence::serial::checkpoint_absence_rebuilds_every_owner_call_like_fresh
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 319 filtered out; finished in 60.58s
+
+MEASUREMENT {"checkpoints": {"calls": 36263, "units": 8000096, "last_units": 111}, "full_entries": 1, "collections": [{"full": 1, "partition_address": 96606920792, "calls": 1894, "units": 155300, "inserts": 1961, "unique_symbols": 45}], "captured_exhaustion": true, "child_exit": 101, "seconds": 61.538076899945736}
+
+
+thread 'checkpoint_recovery::computation_partition::oracle::absence::serial::checkpoint_absence_rebuilds_every_owner_call_like_fresh' (26996) panicked at topology_entry\src\checkpoint_recovery\computation_partition\oracle\demand.rs:92:5:
+the edit EntryEdit { scope_key: "anchor-isolated", set: "even", entry: 7, fact: 2, value: 4612811918334230528, other: 0, work: 0, sets: [], command: 0, count: 1 } commits: Err(PrincipalResolution(WorthQueryPrincipalResolutionDenial { kind: Stopped(Ok(ExecutionResource { denial: WorkExhausted, partition_identity: None, policy_ancestor: None })), binding: "ConsumerPrincipalBinding", native_query_read_stop: None }))
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+{"type": "cargo-result", "exit_code": 101}
+
+End: 2026-11-08T18:55:23.913995+00:00
+Exit code: 101

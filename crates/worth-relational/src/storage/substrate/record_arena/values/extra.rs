@@ -136,6 +136,20 @@ impl RelationExtra {
             _funding: memory,
         })
     }
+    pub(crate) fn copy_for_request(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<Self, crate::execution::RelationalExecutionDenialCause> {
+        funding::copy(
+            execution,
+            self.authoritative_aspect_state(),
+            |state, memory| Self {
+                endpoints: self.endpoints.clone(),
+                authoritative_aspect_state: state,
+                _funding: memory,
+            },
+        )
+    }
 }
 impl Clone for EntityExtra {
     fn clone(&self) -> Self {

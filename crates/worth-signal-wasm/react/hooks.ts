@@ -67,7 +67,7 @@ export function useOptionalSignalValue<TValue = unknown, TInactive = undefined>(
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
   return useMemo(() => {
     if (snapshot === inactiveSnapshot) {
-      return Object.freeze({
+      return Object.freeze<OptionalSignalValueResult<TValue, TInactive>>({
         kind: "inactive",
         reason: "authorInactive",
         value: inactiveValue,

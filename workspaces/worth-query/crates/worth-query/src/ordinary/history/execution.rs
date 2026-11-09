@@ -5,6 +5,7 @@ use super::{
 };
 use crate::basis::{preflight_execution_basis, resolve_runtime_historical_snapshot_basis};
 use crate::basis_lifecycle::basis_lifecycle;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::historical::{
     admit_historical_evaluation_path, materialization_metadata_from_resolved,
     resolve_historical_materialization_path, HistoricalCapabilityDescriptor,
@@ -26,15 +27,15 @@ impl WorthQueryHistoricalRequest {
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         workspace: &mut WorthQueryWorkspace,
-    ) -> WorthQueryHistoricalOutcome {
+    ) -> Result<WorthQueryHistoricalOutcome, IdentityDerivationDenial> {
         let counters = WorthQueryHistoricalJourneyCounters::begin();
         if self.declaration.path != WorthQueryHistoricalPathKind::RetainedSnapshot {
-            return stopped(
+            return Ok(stopped(
                 WorthQueryHistoricalStopSource::HistoryUnavailable,
                 WorthQueryHistoricalNextAction::SupplyAvailableHistory,
                 "the in-memory runtime has no replay or reconstruction materialization",
                 counters,
-            );
+            ));
         }
         let counters = counters.admit_path();
         if self.context.workspace_name() != workspace.name()
@@ -42,12 +43,12 @@ impl WorthQueryHistoricalRequest {
                 .context
                 .admits_snapshot(&workspace.snapshot_identity_with_request(execution))
         {
-            return stopped(
+            return Ok(stopped(
                 WorthQueryHistoricalStopSource::StaleContext,
                 WorthQueryHistoricalNextAction::RefreshContext,
                 "the captured retained snapshot does not belong to the current workspace truth basis",
                 counters,
-            );
+            ));
         }
 
         let intent = self.declaration.read.into_declared_intent();
@@ -56,12 +57,12 @@ impl WorthQueryHistoricalRequest {
         let admitted = match admit_read_context_declaration(&intent, current().into()) {
             Ok(admitted) => admitted,
             Err(error) => {
-                return stopped(
+                return Ok(stopped(
                     WorthQueryHistoricalStopSource::ContextAdmission,
                     WorthQueryHistoricalNextAction::ResolveAuthority,
                     format!("historical query context was denied: {error:?}"),
                     counters,
-                );
+                ));
             }
         };
         let (_, planning_authority, context_receipt) = admitted.into_parts();
@@ -69,12 +70,12 @@ impl WorthQueryHistoricalRequest {
         let graph = match intent.plan_runtime_historical(planning_authority) {
             Ok(graph) => graph,
             Err(error) => {
-                return stopped(
+                return Ok(stopped(
                     WorthQueryHistoricalStopSource::Planning,
                     WorthQueryHistoricalNextAction::ReviseDeclaration,
                     format!("historical query planning was denied: {error:?}"),
                     counters,
-                );
+                ));
             }
         };
 
@@ -82,17 +83,17 @@ impl WorthQueryHistoricalRequest {
             self.context.snapshot_identity().evidence_identity(),
             schema_basis,
             self.context.workspace_name(),
-        );
+        )?;
         let query_preflight =
             match preflight_execution_basis(graph.execution_plan().clone(), basis.clone()) {
                 Ok(preflight) => preflight,
                 Err(error) => {
-                    return stopped(
+                    return Ok(stopped(
                         WorthQueryHistoricalStopSource::BasisAdmission,
                         WorthQueryHistoricalNextAction::ResolveAuthority,
                         format!("historical basis preflight was denied: {error:?}"),
                         counters,
-                    );
+                    ));
                 }
             };
         let counters = counters.bind_basis();
@@ -105,36 +106,38 @@ impl WorthQueryHistoricalRequest {
         ) {
             Ok(parts) => parts,
             Err(reason) => {
-                return stopped(
+                return Ok(stopped(
                     WorthQueryHistoricalStopSource::BasisAdmission,
                     WorthQueryHistoricalNextAction::ResolveAuthority,
                     reason,
                     counters,
-                );
+                ));
             }
         };
 
         let counters = counters.execute();
-        match workspace.execute_declared_read_graph_in_basis_context(
-            execution,
-            graph,
-            &basis_context,
-        ) {
-            Ok(result) => {
-                WorthQueryHistoricalOutcome::Completed(WorthQueryHistoricalCompletion::new(
-                    result,
-                    context_receipt,
-                    materialization,
+        Ok(
+            match workspace.execute_declared_read_graph_in_basis_context(
+                execution,
+                graph,
+                &basis_context,
+            ) {
+                Ok(result) => {
+                    WorthQueryHistoricalOutcome::Completed(WorthQueryHistoricalCompletion::new(
+                        result,
+                        context_receipt,
+                        materialization,
+                        counters,
+                    ))
+                }
+                Err(error) => stopped(
+                    WorthQueryHistoricalStopSource::Runtime,
+                    WorthQueryHistoricalNextAction::RetryRuntime,
+                    format!("historical lower-runtime execution failed: {error:?}"),
                     counters,
-                ))
-            }
-            Err(error) => stopped(
-                WorthQueryHistoricalStopSource::Runtime,
-                WorthQueryHistoricalNextAction::RetryRuntime,
-                format!("historical lower-runtime execution failed: {error:?}"),
-                counters,
-            ),
-        }
+                ),
+            },
+        )
     }
 }
 

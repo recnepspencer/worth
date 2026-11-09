@@ -11,20 +11,11 @@ use worth_query_decl::facade::{
         WorthQueryApplicationOutputRoleFamily, WorthQueryExactlyOneOutput,
         WorthQueryPreserveOutput,
     },
-    application_schema::{NoApplicationUnit, ReadOnly},
     worth_query_structured_value_binding,
 };
 worth_query_structured_value_binding!(pub PlanarMutationResultBinding for PlanarAdjustmentResult { identity: "worth.query.certification.planar-mutation-result.v1" });
 worth_query_structured_value_binding!(pub PlanarMutationDenialBinding for PlanarMutationDenial { identity: "worth.query.certification.planar-mutation-denial.v2" });
-pub type PlanarMutationScope<Schema> = ApplicationMutationFieldScope<
-    Schema,
-    Body,
-    PlanarPosition,
-    BodyKey,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type PlanarMutationScope = ApplicationMutationFieldScope<BodyKey>;
 
 /// The output contract of every planar mutation.
 ///

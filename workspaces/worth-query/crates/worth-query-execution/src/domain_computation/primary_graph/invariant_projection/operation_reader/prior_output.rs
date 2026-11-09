@@ -311,9 +311,8 @@ where
     {
         let projected = self
             .reader
-            .runtime
-            .read_truth()
-            .project_snapshot(self.reader.snapshot)
+            .native
+            .projection(self.reader.snapshot)
             .map(|view| {
                 view.entity_record_with_projection_scope(
                     execution,
@@ -353,6 +352,11 @@ where
             kind: projected.0,
             entity: Arc::from(entity),
             authority_identity: self.reader.authority_identity,
+            phase: self
+                .reader
+                .native
+                .candidate_identity()
+                .map(|id| id.qualification()),
             _marker: PhantomData,
         };
         self.require_decision_entity(

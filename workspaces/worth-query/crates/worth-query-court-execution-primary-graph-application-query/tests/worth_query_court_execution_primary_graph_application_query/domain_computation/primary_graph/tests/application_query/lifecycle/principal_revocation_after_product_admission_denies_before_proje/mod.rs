@@ -49,7 +49,7 @@ fn principal_revocation_after_product_admission_denies_before_projection() {
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_string(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

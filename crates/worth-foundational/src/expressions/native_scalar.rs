@@ -38,7 +38,6 @@ impl ExpressionValue {
     /// Interprets an actual native scalar without a domain projector. Presence
     /// and nominal/unit meaning remain the surrounding contract's concern.
     pub fn from_aspect_value(value: &AspectValue) -> Result<Self, ExpressionDenial> {
-        use crate::values::InternedString;
         Ok(match value {
             AspectValue::Bool(value) => Self::bool(*value),
             AspectValue::Int8(value) => Self::integer(i128::from(*value)),
@@ -52,7 +51,7 @@ impl ExpressionValue {
             AspectValue::Float32(value) => return Self::float32(*value),
             AspectValue::Float64(value) => return Self::float64(*value),
             AspectValue::Decimal(value) => return Self::decimal(value),
-            AspectValue::String(InternedString::Raw(value)) => Self::string(value.as_str()),
+            AspectValue::String(value) => Self::string(value.raw_text().ok_or_else(unsupported)?),
             _ => return Err(unsupported()),
         })
     }

@@ -16,9 +16,6 @@ impl RegionCellWeak {
     pub(in crate::storage::residency) fn as_ptr(&self) -> *const RelationalRegionResidency {
         self.raw.as_ptr()
     }
-    pub(in crate::storage::residency) fn ptr_eq(&self, other: &Self) -> bool {
-        Weak::ptr_eq(&self.raw, &other.raw)
-    }
 }
 
 impl RelationalRegionResidency {

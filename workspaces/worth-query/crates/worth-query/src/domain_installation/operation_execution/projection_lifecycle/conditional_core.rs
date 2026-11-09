@@ -136,6 +136,16 @@ where
     retain_conditional_counters(evaluation.counters, operation_counters);
     match outcome {
         Ok(mut provenance) => evaluation.retained.append(&mut provenance),
+        Err(WorthQueryConditionalEvaluationStop::EvidenceIdentityDerivationDenied(cause)) => {
+            return Err(WorthQueryLifecycleConditionalCoreStop {
+                class: WorthQueryLifecycleConditionalStopClass::Denied,
+                kind: WorthQueryProjectionPromotionDenialKind::EvidenceIdentityDerivationDenied(
+                    cause,
+                ),
+                detail: "conditional evidence identity exceeded its digest bounds".into(),
+                counters: *evaluation.counters,
+            });
+        }
         Err(WorthQueryConditionalEvaluationStop::Deferred(mut provenance)) => {
             evaluation.retained.append(&mut provenance);
             evaluation.counters.fresh_conditional_decisions = evaluation.retained.len();

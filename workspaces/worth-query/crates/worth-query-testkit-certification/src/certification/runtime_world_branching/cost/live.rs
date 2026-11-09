@@ -173,7 +173,7 @@ pub fn live_scope(
                 .unwrap()
                 .resolve_entity(
                     &host_phase,
-                    IntentIdentityField::reference(),
+                    IntentIdentityField::at("IntentIdentityField"),
                     "intent-1".to_owned(),
                     request,
                     primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,

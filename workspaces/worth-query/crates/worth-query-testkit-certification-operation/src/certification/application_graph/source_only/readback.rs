@@ -26,31 +26,25 @@ pub fn retention_field() -> ApplicationQueryResultFieldRef<
     RetentionQuery,
     RetentionSlot,
     SourceOnlyRetentionSchema,
-    Document,
-    DocumentFacts,
     DocumentRetentionField,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("retention", DocumentRetentionField::reference())
+    ApplicationQueryResultFieldRef::new(
+        "retention",
+        DocumentRetentionField::at("DocumentRetentionField"),
+    )
 }
 pub fn identity_field() -> ApplicationQueryResultFieldRef<
     RetentionQuery,
     IdentitySlot,
     SourceOnlyRetentionSchema,
-    Document,
-    DocumentFacts,
     DocumentIdentityField,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("identity", DocumentIdentityField::reference())
+    ApplicationQueryResultFieldRef::new(
+        "identity",
+        DocumentIdentityField::at("DocumentIdentityField"),
+    )
 }
-pub fn definition() -> ApplicationQueryDefinition<
+pub fn definition() -> ApplicationQueryDefinitionBuilder<
     SourceOnlyRetentionSchema,
     RetentionQuery,
     DocumentQueryParameters,
@@ -76,8 +70,6 @@ pub fn definition() -> ApplicationQueryDefinition<
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<SourceOnlyRetentionSchema, RetentionQuery>
     for DocumentRetentionRow
@@ -93,15 +85,7 @@ impl WorthQueryApplicationProjection<SourceOnlyRetentionSchema, RetentionQuery>
 }
 pub use worth_query_testkit_document_retention::facade::document_retention_model::retention_entry::DocumentRetentionRead as ReadRetention;
 pub struct ReadBinding;
-pub type ReadScope = ApplicationQueryFieldScope<
-    SourceOnlyRetentionSchema,
-    Document,
-    DocumentFacts,
-    DocumentIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type ReadScope = ApplicationQueryFieldScope<DocumentIdentityField>;
 impl ApplicationQueryBinding<SourceOnlyRetentionSchema> for ReadBinding {
     type Input = worth_query_testkit_document_retention::facade::document_retention_model::retention_entry::DocumentRetentionRead;
     type InputBinding =
@@ -117,17 +101,8 @@ impl ApplicationQueryBinding<SourceOnlyRetentionSchema> for ReadBinding {
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "source-only-retention.read-binding.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        SourceOnlyRetentionSchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         SourceOnlyRetentionSchema,
@@ -146,7 +121,10 @@ impl ApplicationQueryIntent<SourceOnlyRetentionSchema> for ReadRetention {
         ApplicationQueryParameterSet::new()
     }
     fn into_scope(self) -> ReadScope {
-        ReadScope::new(DocumentIdentityField::reference(), self.identity)
+        ReadScope::new(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            self.identity,
+        )
     }
 }
 pub fn read_retention(

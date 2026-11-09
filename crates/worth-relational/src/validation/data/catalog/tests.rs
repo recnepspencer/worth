@@ -114,7 +114,8 @@ fn catalog_for_unique_field(aspect_key: AspectKey, field_key: FieldKey) -> Invar
 
 fn effect_supported_by_execution_point(point: InvariantExecutionPoint) -> InvariantFailureEffect {
     match point {
-        InvariantExecutionPoint::MutationSensitive
+        InvariantExecutionPoint::ProposedState
+        | InvariantExecutionPoint::MutationSensitive
         | InvariantExecutionPoint::CommitBoundary
         | InvariantExecutionPoint::GraphComposition
         | InvariantExecutionPoint::HarnessAudit => InvariantFailureEffect::BlockCommit,

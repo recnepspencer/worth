@@ -42,16 +42,18 @@ impl OperationHandler<BankSchema, OpenEstateCaseMutationBinding> for OpenEstateC
         let EstateAction::OpenEstateCase { estate, .. } = decision else {
             return HandlerResult::DomainDenied(EstateMutationDenial::InputVariant);
         };
-        let estate_entity =
-            match candidate.resolve_entity(EstateCaseIdentityField::reference(), estate) {
-                Ok(entity) => entity,
-                Err(denial) => {
-                    return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(denial))
-                }
-            };
+        let estate_entity = match candidate.resolve_entity(
+            EstateCaseIdentityField::at("EstateCaseIdentityField"),
+            estate,
+        ) {
+            Ok(entity) => entity,
+            Err(denial) => {
+                return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(denial))
+            }
+        };
         if let Err(denial) = candidate.write_field(
             &estate_entity,
-            EstateCaseStatusField::reference(),
+            EstateCaseStatusField::at("EstateCaseStatusField"),
             EstateCaseStatus::Open,
         ) {
             return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(denial));

@@ -53,7 +53,7 @@ impl WorthQueryRuntimeWriteAuthorityAdapter for TranscriptWriteAuthority {
                 entity_identity,
                 WorthQueryMutationKind::Updated,
                 aspect_touches,
-            )],
+            )?],
             bridge_authority,
         );
         Ok(self.build_write_authority_execution_receipt(&mutation, receipt))

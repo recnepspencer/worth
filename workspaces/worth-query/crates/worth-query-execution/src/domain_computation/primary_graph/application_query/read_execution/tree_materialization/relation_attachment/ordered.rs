@@ -20,7 +20,7 @@ use crate::domain_computation::primary_graph::application_query::read_execution:
 #[allow(clippy::too_many_arguments)]
 pub(super) fn attach_ordered_relation(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
+    read: &crate::domain_computation::primary_graph::application_query::read_execution::tree_materialization::read_basis::ResultTreeRead<'_>,
     projection: &worth_relational::facade::runtime::VisibilityProjectionView,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     contract: &WorthQueryInstalledGraphReadContract,
@@ -57,7 +57,9 @@ pub(super) fn attach_ordered_relation(
         lookup = lookup.expect_generation(expected_generation);
     }
     work.checkpoint(relation.result_path())?;
-    let page = runtime
+    let page = read
+        .committed_ordering
+        .ok_or_else(|| traversal_denial(relation.result_path()))?
         .execute_bounded_related_entity_ordered_lookup(
             lookup,
             BoundedIndexParityMode::Production,
@@ -69,7 +71,7 @@ pub(super) fn attach_ordered_relation(
     let mut nested_selection = ActiveResultTreeCollectionSelection::Complete;
     let children = project_nodes(
         execution,
-        runtime,
+        read,
         projection,
         graph,
         contract,

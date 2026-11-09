@@ -26,9 +26,8 @@ pub(super) fn complete(
         mutation: proposed_mutation,
         identity: proposal_identity,
         validation_input,
-        commit_boundary,
-        mutation_sensitive,
-        publication,
+        coupled_publication,
+        invariants,
     } = round.into_inner();
     let branch = basis.identity().branch_id().clone();
     require_not_interrupted(
@@ -38,14 +37,10 @@ pub(super) fn complete(
     )?;
     let transaction_id = transaction.transaction_id;
     let proposed_version = proposal_identity.proposed_version_id();
-    let summary = CommitValidation::summarize(&[
-        commit_boundary.clone(),
-        mutation_sensitive.clone(),
-        publication.clone(),
-    ]);
+    let summary = CommitValidation::summarize(std::slice::from_ref(&invariants));
     let custom_invariant_execution_receipts =
         super::custom_invariant_execution_receipt::collect_custom_invariant_execution_receipts(
-            [&commit_boundary, &mutation_sensitive, &publication],
+            [&invariants],
             &owner.schema_contract_runtime.custom_invariant_registries,
         );
     let strategy = source.into_strategy();
@@ -57,7 +52,7 @@ pub(super) fn complete(
                 prepared.structural_summary.touched_partitions.len(),
                 prepared.structural_summary.bulk_entity_slots_reserved,
                 prepared.structural_summary.bulk_relation_slots_reserved,
-                2,
+                1,
             );
         strategy.artifacts.clone().with_preview_validation(
             summary,
@@ -82,7 +77,7 @@ pub(super) fn complete(
         execution,
         ValidatedProposalState {
             caller_association: None,
-            required_output_publication: None,
+            required_output_publication: coupled_publication,
             required_output_materialization: None,
             commit_work_budget: owner.commit_work_budget.clone(),
             mutation_authority: transaction.mutation_authority,
@@ -90,9 +85,7 @@ pub(super) fn complete(
             validation_input,
             prepared,
             proposed_mutation,
-            commit_boundary,
-            mutation_sensitive,
-            snapshot_publication: publication,
+            invariants,
             evidence: RelationalMutationInvariantEvidence {
                 branch,
                 proposed_version,

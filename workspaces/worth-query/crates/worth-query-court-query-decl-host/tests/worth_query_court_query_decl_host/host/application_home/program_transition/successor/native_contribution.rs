@@ -1,27 +1,92 @@
 //! Successor-owned native contribution for the additive B application.
-use super::schema::{Account, AccountNumber, SuccessorSchema};
+use super::schema::{
+    Account, AccountIdentity, HomeRecords, IdentityBinding, LaterRecords, SuccessorSchema,
+};
 use super::{balance_query, native_mutation::*};
-use worth_query_decl::facade::worth_query_application_contribution;
+use worth_query_decl::facade::application_schema::{
+    fragment::{FieldSelection, Registration},
+    *,
+};
 use worth_query_host::facade::{
     application_contribution::{
         WorthQueryApplicationContribution, WorthQueryApplicationContributionSetup,
     },
     primary_graph::WorthQueryPrimaryGraphInstallationDenial,
 };
-worth_query_application_contribution! {
-    pub contribution ExtendedSurface in SuccessorSchema {
-        identity: "worth.query.host.home.native-surface.v1",
-        members: |schema| {
-            super::schema::declare(schema).field(Account::reference(), Balance::reference())
-                .operation(SetBalance::reference().definition().no_external_effect().no_aftermath().finish())
-                .operation_projection_work_budget(SetBalance::reference(), 4)
-                .operation_read_field(SetBalance::reference(), AccountNumber::reference())
-                .operation_read_field(SetBalance::reference(), Balance::reference())
-                .operation_write(SetBalance::reference(), Balance::reference())
-                .application_mutation_binding::<SetBalanceBinding>()
-                .application_query(balance_query::definition())
-                .application_query_binding::<balance_query::AccountReadBinding>()
-        }
+pub struct ExtendedSurface;
+impl ApplicationSchemaContribution<SuccessorSchema> for ExtendedSurface {
+    const IDENTITY: ApplicationSchemaContributionIdentity =
+        ApplicationSchemaContributionIdentity::new("worth.query.host.home.native-surface.v1");
+    type Members = (
+        HomeRecords,
+        LaterRecords,
+        IdentityBinding,
+        SetBalance,
+        SetBalanceBinding,
+        balance_query::AccountQuery,
+        balance_query::AccountReadBinding,
+    );
+}
+impl Registration<SuccessorSchema> for SetBalance {
+    fn register(
+        builder: ApplicationSchemaDeclarationBuilder<SuccessorSchema>,
+    ) -> Result<
+        ApplicationSchemaDeclarationBuilder<SuccessorSchema>,
+        ApplicationSchemaDeclarationDenial,
+    > {
+        Ok(builder
+            .operation(
+                SetBalance::reference()
+                    .definition()
+                    .no_external_effect()
+                    .no_aftermath()
+                    .finish(),
+            )
+            .operation_projection_work_budget(SetBalance::reference(), 4)
+            .operation_read_field(
+                SetBalance::reference(),
+                FieldSelection::<HomeRecords, Account, AccountIdentity, String>::at(
+                    "AccountNumber",
+                ),
+            )
+            .operation_read_field(
+                SetBalance::reference(),
+                FieldSelection::<HomeRecords, Account, AccountIdentity, u64>::at("Balance"),
+            )
+            .operation_write(
+                SetBalance::reference(),
+                FieldSelection::<HomeRecords, Account, AccountIdentity, u64>::at("Balance"),
+            ))
+    }
+}
+impl Registration<SuccessorSchema> for SetBalanceBinding {
+    fn register(
+        builder: ApplicationSchemaDeclarationBuilder<SuccessorSchema>,
+    ) -> Result<
+        ApplicationSchemaDeclarationBuilder<SuccessorSchema>,
+        ApplicationSchemaDeclarationDenial,
+    > {
+        Ok(builder.application_mutation_binding::<Self>())
+    }
+}
+impl Registration<SuccessorSchema> for balance_query::AccountQuery {
+    fn register(
+        builder: ApplicationSchemaDeclarationBuilder<SuccessorSchema>,
+    ) -> Result<
+        ApplicationSchemaDeclarationBuilder<SuccessorSchema>,
+        ApplicationSchemaDeclarationDenial,
+    > {
+        Ok(builder.application_query(balance_query::definition()))
+    }
+}
+impl Registration<SuccessorSchema> for balance_query::AccountReadBinding {
+    fn register(
+        builder: ApplicationSchemaDeclarationBuilder<SuccessorSchema>,
+    ) -> Result<
+        ApplicationSchemaDeclarationBuilder<SuccessorSchema>,
+        ApplicationSchemaDeclarationDenial,
+    > {
+        Ok(builder.application_query_binding::<Self>())
     }
 }
 impl WorthQueryApplicationContribution<SuccessorSchema> for ExtendedSurface {

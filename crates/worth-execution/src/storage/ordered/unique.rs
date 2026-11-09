@@ -40,7 +40,7 @@ impl<K: Copy, V: Copy> ExecutionOrderedMapCell<K, V> {
         policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<Self, ExecutionOrderedMapDenial> {
         policy.check_live()?;
-        let node = node::prepared_copy(key, value, policy.into())?;
+        let node = node::prepared_copy(key, value, &policy)?;
         policy.check_live()?;
         Ok(Self { node })
     }

@@ -56,8 +56,8 @@ pub fn install(fault: Fault, hashes: Hashes) -> Host {
                         Source::reference(),
                         WorthQueryApplicationEntityKey::new(key).unwrap(),
                     )
-                    .field(SourceKey::reference(), key.to_owned())
-                    .field(SourceValue::reference(), value),
+                    .field(SourceKey::at("SourceKey"), key.to_owned())
+                    .field(SourceValue::at("SourceValue"), value),
                 )?;
             }
             for key in ["left", "right"] {

@@ -106,7 +106,7 @@ impl worth_query_decl::facade::application_operation::ApplicationMutationIntent<
     fn input(&self) -> &PlanarInitialAdjustment {
         &self.0
     }
-    fn scope_binding(&self) -> worth_query_topology_entry::PlanarMutationScope<ConsumerSchema> {
+    fn scope_binding(&self) -> worth_query_topology_entry::PlanarMutationScope {
         <PlanarInitialAdjustment as worth_query_decl::facade::application_operation::ApplicationMutationIntent<ConsumerSchema>>::scope_binding(&self.0)
     }
 }

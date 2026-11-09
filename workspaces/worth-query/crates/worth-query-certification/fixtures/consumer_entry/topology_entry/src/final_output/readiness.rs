@@ -15,7 +15,13 @@ worth_query_host::facade::worth_query_conditional_node!(
 );
 
 impl<Schema: TopologySchemaBinding> PlanarFinalOutputReadiness<Schema> {
-    fn conditional_binding() -> domain::WorthQueryApplicationConditionalOperationBinding<
+    fn conditional_binding(
+        definition: &domain::WorthQueryDomainOperationDefinition<
+            PlanarFinalReadinessDomain,
+            PlanarFinalReadinessOperation,
+            PlanarFinalReadinessFamily,
+        >,
+    ) -> domain::WorthQueryApplicationConditionalOperationBinding<
         Schema,
         PublishFinalPlanarOutput,
         FinalPlanarMutation,
@@ -25,7 +31,7 @@ impl<Schema: TopologySchemaBinding> PlanarFinalOutputReadiness<Schema> {
     > {
         domain::WorthQueryApplicationConditionalOperationBinding::declare(
             PublishFinalPlanarOutput::reference::<Schema>(),
-            final_readiness_definition().reference(),
+            definition.reference(),
         )
     }
 }
@@ -41,18 +47,14 @@ impl<Schema: TopologySchemaBinding>
     const IDENTITY: &'static str = "worth.query.certification.planar-final-output-readiness.v1";
 
     fn package_contract(
-        _declaration: &worth_query_host::facade::declaration::application_schema::ErasedApplicationSchemaDeclaration,
+        declaration: &worth_query_host::facade::declaration::application_schema::ErasedApplicationSchemaDeclaration,
     ) -> Result<
         application_contribution::WorthQueryApplicationConditionalPackageContract,
         worth_query_host::facade::application_contribution::WorthQueryOutputReadinessContractDenial,
     > {
-        Ok({
-            application_contribution::WorthQueryApplicationConditionalPackageContract::new(
-                final_readiness_definition().into_portable(),
-                Self::conditional_binding().portable().clone(),
-                PlanarFinalReadyNode::reference().node_identity(),
-            )
-        })
+        let contract = operation_contract(declaration)?;
+        let binding = Self::conditional_binding(contract.definition());
+        Ok(contract.into_package_contract(binding.portable().clone()))
     }
 
     fn install(
@@ -63,13 +65,16 @@ impl<Schema: TopologySchemaBinding>
         (),
         worth_query_host::facade::primary_graph::WorthQueryConditionalRuntimeInstallationDenial,
     > {
+        let contract = operation_contract(installation.installed_schema().installed_declaration())?;
+        let binding = Self::conditional_binding(contract.definition());
+
         let operation = installation
             .installed_schema()
             .installed_operation(PublishFinalPlanarOutput::reference::<Schema>())
             .unwrap();
         let node = installation
             .installed_packages()
-            .bind_conditional_application_operation(operation, &Self::conditional_binding())
+            .bind_conditional_application_operation(operation, &binding)
             .unwrap()
             .bind_node(PlanarFinalReadyNode::reference())
             .unwrap();
@@ -78,24 +83,24 @@ impl<Schema: TopologySchemaBinding>
     }
 }
 
-fn final_readiness_definition() -> domain::WorthQueryDomainOperationDefinition<
-    PlanarFinalReadinessDomain,
-    PlanarFinalReadinessOperation,
-    PlanarFinalReadinessFamily,
+fn operation_contract(
+    declaration: &worth_query_decl::facade::application_schema::ErasedApplicationSchemaDeclaration,
+) -> Result<
+    worth_query_host::facade::application_contribution::WorthQueryOutputReadinessContract<
+        PlanarFinalReadinessDomain,
+        PlanarFinalReadinessOperation,
+        PlanarFinalReadinessFamily,
+    >,
+    worth_query_host::facade::application_contribution::WorthQueryOutputReadinessContractDenial,
 > {
-    let dependency = super::super::readiness::output_change_dependency();
-    application_contribution::WorthQueryOutputReadinessContractBuilder::new(
-        domain::WorthQueryDomainOperationIdentity::new("planar-final-output-readiness", 1),
-        "planar-final-output-ready",
-        super::super::readiness::output_change_projection(),
-        super::super::readiness::canonical_query(),
-        domain::WorthQueryOperationProjectionRole::new("anchor").unwrap(),
-        domain::WorthQueryExecutionStrategyName::new("planar-final-readiness").unwrap(),
-        "planar-final-readiness-v1",
-    )
-    .semantic_reads([super::super::readiness::output_change_projection()])
-    .dependencies([dependency.clone()])
-    .readiness_dependencies([dependency])
-    .build()
-    .expect("final planar readiness declaration is canonical")
+    worth_query_host::facade::application_contribution::WorthQueryOutputReadinessContractBuilder::for_field(declaration,
+super::super::readiness::delivery_field(),
+domain::WorthQueryDomainOperationIdentity::new("planar-final-output-readiness", 1),
+"planar-final-output-ready",
+super::super::readiness::canonical_query(),
+domain::WorthQueryOperationProjectionRole::new("anchor").unwrap(),
+domain::WorthQueryExecutionStrategyName::new("planar-final-readiness").unwrap(),
+"planar-final-readiness-v1")?
+.field_dependency(declaration, super::super::readiness::delivery_field(), worth_query_host::facade::application_contribution::WorthQueryReadinessFieldUse::DeliveryAndEligibility)?
+.build_typed()
 }

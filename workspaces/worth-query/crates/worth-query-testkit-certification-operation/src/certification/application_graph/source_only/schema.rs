@@ -1,4 +1,7 @@
 //! Authored retention meaning for this court; canonical P0 is untouched.
+#[path = "schema/records.rs"]
+mod storage_model;
+pub use storage_model::*;
 pub use worth_query_testkit_document_retention::facade::document_retention_model::retention_entry::{
     DocumentRetentionWritten, DocumentRetentionWrittenBinding, SetRetentionDenial,
     SetRetentionDenialBinding, DOCUMENT_IDENTITY,
@@ -10,52 +13,132 @@ pub use declaration::application_schema::*;
 pub use worth_query_decl::facade::worth_query_mutation_binding;
 pub use worth_query_host::facade::{declaration, *};
 
-worth_query_application! {
-    pub SourceOnlyRetentionSchema {
-        owner: "source_only_retention_courtroom", version: (1, 0),
-        contributions: [SourceOnlyRetentionContribution],
+use worth_query_decl::facade::application_schema::{
+    fragment::{self, *},
+    *,
+};
+#[derive(Clone, Copy)]
+pub struct SourceOnlyRetentionSchema;
+impl Fragment for SourceOnlyRetentionSchema {
+    const NAME: &'static str = "SourceOnlyRetentionSchema";
+    type Bindings = NoBindings;
+    type Members = (SourceOnlyRetentionContribution,);
+}
+impl ApplicationSchema for SourceOnlyRetentionSchema {
+    const OWNER: &'static str = "source_only_retention_courtroom";
+    const NAME: &'static str = <Self as Fragment>::NAME;
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        fragment::declare(Self)
+    }
+    fn visit_correction<
+        V: worth_query_decl::facade::application_aftermath::ApplicationCorrectionVisitor<Self>,
+    >(
+        source: std::any::TypeId,
+        visitor: V,
+    ) -> V::Output {
+        fragment::visit_correction(Self, source, visitor)
     }
 }
-worth_query_application_contribution! {
-    pub contribution SourceOnlyRetentionContribution in SourceOnlyRetentionSchema {
-        identity: "source-only-retention.application.v1",
-        members: |schema| {
-            schema.entity(ExternalMapping::reference()).entity(Principal::reference()).entity(Document::reference())
-                .aspect(ExternalMapping::reference(), ExternalIdentity::reference())
-                .aspect(Principal::reference(), PrincipalFacts::reference()).aspect(Document::reference(), DocumentFacts::reference())
-                .field(ExternalMapping::reference(), ExternalIdentityField::reference()).field(ExternalMapping::reference(), MappingStatusField::reference())
-                .field(Principal::reference(), PrincipalIdentityField::reference())
-                .field(Document::reference(), DocumentIdentityField::reference()).field(Document::reference(), DocumentRetentionField::reference())
-                .relation(MappingTarget::reference(), ExternalMapping::reference(), Principal::reference())
-                .principal_binding(DocumentPrincipalBinding::reference())
-                .operation(SetRetention::reference().definition().no_external_effect().no_aftermath().finish())
-                .operation_projection_work_budget(SetRetention::reference(), 8)
-                .operation_read_field(SetRetention::reference(), DocumentIdentityField::reference())
-                .operation_read_field(SetRetention::reference(), DocumentRetentionField::reference())
-                .operation_write(SetRetention::reference(), DocumentRetentionField::reference())
-                .operation_expected_fact(SetRetention::reference(), DocumentIdentityField::reference())
-                .operation_expected_fact(SetRetention::reference(), DocumentRetentionField::reference())
-                .application_mutation_binding::<SetRetentionBinding>().application_query_binding::<super::readback::ReadBinding>()
-                .application_query(super::readback::definition())
-        }
+impl SourceOnlyRetentionSchema {
+    pub fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        <Self as ApplicationSchema>::declaration()
     }
 }
-worth_query_entity!(pub ExternalMapping for SourceOnlyRetentionSchema);
-worth_query_entity!(pub Principal for SourceOnlyRetentionSchema);
-worth_query_entity!(pub Document for SourceOnlyRetentionSchema);
-worth_query_aspect!(pub ExternalIdentity for SourceOnlyRetentionSchema, ExternalMapping; identity = AspectIdentity(0x91764001), revision = AspectContractRevision(1));
-worth_query_aspect!(pub PrincipalFacts for SourceOnlyRetentionSchema, Principal; identity = AspectIdentity(0x91764002), revision = AspectContractRevision(1));
-worth_query_aspect!(pub DocumentFacts for SourceOnlyRetentionSchema, Document; identity = AspectIdentity(0x91764003), revision = AspectContractRevision(1));
-worth_query_field!(pub ExternalIdentityField for SourceOnlyRetentionSchema, ExternalMapping, ExternalIdentity: declaration::authentication::WorthQueryExternalPrincipalIdentity => declaration::authentication::WorthQueryExternalPrincipalIdentityBinding, read_only, equality);
-worth_query_field!(pub MappingStatusField for SourceOnlyRetentionSchema, ExternalMapping, ExternalIdentity: declaration::authentication::WorthQueryPrincipalMappingStatus => declaration::authentication::WorthQueryPrincipalMappingStatusBinding, read_write, equality);
-worth_query_field!(pub PrincipalIdentityField for SourceOnlyRetentionSchema, Principal, PrincipalFacts: u64 => declaration::application_schema::U64ApplicationValueBinding, read_only, equality);
-worth_query_field!(pub DocumentIdentityField for SourceOnlyRetentionSchema, Document, DocumentFacts: String => declaration::application_schema::StringApplicationValueBinding, read_only, equality);
-worth_query_field!(pub DocumentRetentionField for SourceOnlyRetentionSchema, Document, DocumentFacts: u64 => declaration::application_schema::U64ApplicationValueBinding, read_write, equality);
-worth_query_relation!(pub MappingTarget in SourceOnlyRetentionSchema, ExternalMapping => Principal; integrity = same_context_unbounded_retain_dangling);
-worth_query_principal_binding!(pub DocumentPrincipalBinding in SourceOnlyRetentionSchema, mapping ExternalMapping { identity: ExternalIdentityField, status: MappingStatusField, target: MappingTarget => Principal, principal_identity: PrincipalIdentityField });
+impl ApplicationSchemaComposition for SourceOnlyRetentionSchema {
+    type Contributions = <Self as Fragment>::Members;
+}
+
+pub struct SourceOnlyRetentionContribution;
+impl ApplicationSchemaContribution<SourceOnlyRetentionSchema> for SourceOnlyRetentionContribution {
+    const IDENTITY: ApplicationSchemaContributionIdentity =
+        ApplicationSchemaContributionIdentity::new("source-only-retention.application.v1");
+    type Members = (RetentionModel, Contracts);
+}
+impl SourceOnlyRetentionContribution {
+    pub const fn reference() -> ApplicationSchemaContributionRef<SourceOnlyRetentionSchema, Self> {
+        ApplicationSchemaContributionRef::from_contribution()
+    }
+}
+pub struct Contracts;
+impl Registration<SourceOnlyRetentionSchema> for Contracts {
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<SourceOnlyRetentionSchema>,
+    ) -> Result<
+        ApplicationSchemaDeclarationBuilder<SourceOnlyRetentionSchema>,
+        ApplicationSchemaDeclarationDenial,
+    > {
+        Ok(schema
+            .principal_binding(DocumentPrincipalBinding::reference())
+            .operation(
+                SetRetention::reference()
+                    .definition()
+                    .no_external_effect()
+                    .no_aftermath()
+                    .finish(),
+            )
+            .operation_projection_work_budget(SetRetention::reference(), 8)
+            .operation_read_field(
+                SetRetention::reference(),
+                DocumentIdentityField::at("DocumentIdentityField"),
+            )
+            .operation_read_field(
+                SetRetention::reference(),
+                DocumentRetentionField::at("DocumentRetentionField"),
+            )
+            .operation_write(
+                SetRetention::reference(),
+                DocumentRetentionField::at("DocumentRetentionField"),
+            )
+            .operation_expected_fact(
+                SetRetention::reference(),
+                DocumentIdentityField::at("DocumentIdentityField"),
+            )
+            .operation_expected_fact(
+                SetRetention::reference(),
+                DocumentRetentionField::at("DocumentRetentionField"),
+            )
+            .application_mutation_binding::<SetRetentionBinding>()
+            .application_query_binding::<super::readback::ReadBinding>()
+            .application_query(super::readback::definition()))
+    }
+}
+
+pub struct DocumentPrincipalBinding;
+impl DocumentPrincipalBinding {
+    pub fn reference() -> ApplicationPrincipalBindingRef<
+        SourceOnlyRetentionSchema,
+        Self,
+        ExternalMapping,
+        Principal,
+        <PrincipalIdentityField as RecordSelection>::Value,
+        <PrincipalIdentityField as RecordSelection>::Binding,
+    > {
+        ApplicationPrincipalBindingRef::from_requirements(
+            "DocumentPrincipalBinding",
+            ApplicationPrincipalBindingRequirements {
+                mapping_identity: ApplicationPrincipalMappingIdentityRequirement::from_field(
+                    ExternalIdentityField::at("ExternalIdentityField"),
+                ),
+                mapping_status: ApplicationPrincipalMappingStatusRequirement::from_field(
+                    MappingStatusField::at("MappingStatusField"),
+                ),
+                target: ApplicationPrincipalTargetRequirement::from_relation(
+                    MappingTarget::reference(),
+                ),
+                principal_identity: ApplicationPrincipalIdentityRequirement::from_field(
+                    PrincipalIdentityField::at("PrincipalIdentityField"),
+                ),
+            },
+        )
+    }
+}
+
 worth_query_operation!(pub SetRetention for SourceOnlyRetentionSchema, input SetRetentionInputBinding);
-worth_query_operation_reads!(SetRetention => [DocumentIdentityField, DocumentRetentionField]);
-worth_query_operation_writes!(SetRetention => [DocumentRetentionField]);
+
 impl OperationExpectsFact<SetRetention> for DocumentIdentityField {}
 impl OperationExpectsFact<SetRetention> for DocumentRetentionField {}
 
@@ -72,6 +155,6 @@ worth_query_mutation_binding!(
     outputs declaration::application_operation::NoApplicationMutationOutputs,
     principal DocumentPrincipalBinding, mapping ExternalMapping, principal_entity Principal,
         principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Document, DocumentFacts, DocumentIdentityField, String, ReadOnly, NoApplicationUnit,
-    field DocumentIdentityField::reference(), value document_identity,
+    scope DocumentIdentityField,
+    field DocumentIdentityField::at("DocumentIdentityField"), value document_identity,
 );

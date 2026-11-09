@@ -58,8 +58,12 @@ impl FrozenCustomInvariantRegistry {
         // Preserve the original public-Source-before-duplicate refusal order.
         let public = SourcePreparationGroup::for_public_sources(registry, public_sources, control)?;
         let mut index = BTreeMap::new();
+        let mut model_ownership_index = None;
         for (slot, registration) in registrations.iter().enumerate() {
             control.checkpoint().map_err(Denial::Execution)?;
+            if registration.model_ownership.is_some() {
+                model_ownership_index = Some(slot);
+            }
             let identity = registration.descriptor().identity.clone();
             let execution_point = registration.execution_point();
             if index
@@ -90,7 +94,26 @@ impl FrozenCustomInvariantRegistry {
             crate::validation::candidate_source::routing::SourceProgramPostings::compile(
                 &groups, control,
             )?;
+        let mut points: [Vec<usize>; InvariantExecutionPoint::COUNT] =
+            std::array::from_fn(|point| {
+                Vec::with_capacity(
+                    registrations
+                        .iter()
+                        .filter(|registration| includes(point, registration.execution_point()))
+                        .count(),
+                )
+            });
+        for (point, slots) in points.iter_mut().enumerate() {
+            for (slot, registration) in registrations.iter().enumerate() {
+                control.checkpoint().map_err(Denial::Execution)?;
+                if includes(point, registration.execution_point()) {
+                    slots.push(slot);
+                }
+            }
+        }
         let result = Self {
+            points: Arc::new(points),
+            model_ownership_index,
             registrations: registrations.into(),
             source_groups: Arc::new(SourcePreparationInventory::new(groups, funding.clone())),
             source_postings: Arc::new(postings),
@@ -100,4 +123,10 @@ impl FrozenCustomInvariantRegistry {
         };
         Ok(result)
     }
+}
+
+fn includes(point: usize, actual: InvariantExecutionPoint) -> bool {
+    point == actual as usize
+        || (point == InvariantExecutionPoint::ProposedState as usize
+            && InvariantExecutionPoint::ProposedState.includes(actual))
 }

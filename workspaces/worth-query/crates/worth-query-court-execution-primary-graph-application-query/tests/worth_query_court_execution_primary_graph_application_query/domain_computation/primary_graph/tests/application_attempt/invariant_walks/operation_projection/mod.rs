@@ -67,7 +67,7 @@ fn operation_walks_preserve_pinned_results_and_exact_acquisitions() {
                 .project(
                     &phase,
                     |reader| {
-                        let root = reader.resolve_entity(NodeKey::reference(), 0).unwrap();
+                        let root = reader.resolve_entity(NodeKey::at("NodeKey"), 0).unwrap();
                         reader.walk(Next::reference(), Forward, &root).unwrap()
                     },
                     Allocation::SystemAllocation,
@@ -95,8 +95,8 @@ fn operation_walks_preserve_pinned_results_and_exact_acquisitions() {
                     &phase,
                     &admission,
                     |reader, root| {
-                        let leaf = reader.resolve_entity(NodeKey::reference(), 4).unwrap();
-                        let detached = reader.resolve_entity(NodeKey::reference(), 5).unwrap();
+                        let leaf = reader.resolve_entity(NodeKey::at("NodeKey"), 4).unwrap();
+                        let detached = reader.resolve_entity(NodeKey::at("NodeKey"), 5).unwrap();
                         let roots = [root.clone(), leaf.clone(), root.clone()];
                         let closure = reader.closure(Next::reference(), Forward, &roots).unwrap();
                         assert_eq!(
@@ -137,7 +137,7 @@ fn operation_walks_keep_foreign_checks_and_original_cancellation() {
                 .invariant
                 .project(
                     &phase,
-                    |reader| reader.resolve_entity(NodeKey::reference(), 0).unwrap(),
+                    |reader| reader.resolve_entity(NodeKey::at("NodeKey"), 0).unwrap(),
                     Allocation::SystemAllocation,
                 )
                 .unwrap()

@@ -2,6 +2,7 @@
 
 mod builder;
 mod expression;
+mod record_authoring;
 mod value;
 pub use expression::ApplicationOperationBodyExpression;
 pub use value::{
@@ -101,6 +102,10 @@ pub struct ApplicationOperationBody<Schema, Operation, Input> {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ApplicationOperationBodyAuthoringDenial {
     Value(ApplicationValueEncodeDenial),
+    InvalidRecordField {
+        field: crate::application_schema::ApplicationFieldBindingLocus,
+    },
+    RecordField(crate::application_schema::fragment::FieldEncodeRefusal),
     Empty,
     MultipleScopeEntities,
     DuplicateAssignment,

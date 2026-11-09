@@ -12,25 +12,37 @@ pub fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<DocumentRetentionSchema>
                 entity_key("program-adoption-grant"),
             )
             .field(
-                WorkflowGrantIdentityField::reference(),
-                "program-adoption-grant".to_owned(),
+                WorkflowGrantIdentityField::at("WorkflowGrantIdentityField"),
+                "program-adoption-grant".to_owned().into(),
             )
             .field(
-                WorkflowGrantActionField::reference(),
+                WorkflowGrantActionField::at("WorkflowGrantActionField"),
                 "adopt-program".to_owned(),
             )
             .field(
-                WorkflowGrantPurposeField::reference(),
+                WorkflowGrantPurposeField::at("WorkflowGrantPurposeField"),
                 "reviewed-document".to_owned(),
             )
-            .field(WorkflowGrantStatusField::reference(), "active".to_owned())
             .field(
-                WorkflowGrantWorkflowField::reference(),
+                WorkflowGrantStatusField::at("WorkflowGrantStatusField"),
+                "active".to_owned(),
+            )
+            .field(
+                WorkflowGrantWorkflowField::at("WorkflowGrantWorkflowField"),
                 DOCUMENT_IDENTITY.to_owned(),
             )
-            .field(WorkflowGrantNotBeforeField::reference(), 0_u64)
-            .field(WorkflowGrantNotAfterField::reference(), u64::MAX)
-            .field(WorkflowGrantDelegationLimitField::reference(), 0_u64),
+            .field(
+                WorkflowGrantNotBeforeField::at("WorkflowGrantNotBeforeField"),
+                0_u64,
+            )
+            .field(
+                WorkflowGrantNotAfterField::at("WorkflowGrantNotAfterField"),
+                u64::MAX,
+            )
+            .field(
+                WorkflowGrantDelegationLimitField::at("WorkflowGrantDelegationLimitField"),
+                0_u64,
+            ),
         )
         .expect("workflow authoring grant must seed");
     graph

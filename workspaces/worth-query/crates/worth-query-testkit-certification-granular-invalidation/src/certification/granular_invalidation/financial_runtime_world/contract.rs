@@ -89,7 +89,6 @@ pub fn operation_definition(
                 financial_node(
                     "quote-risk",
                     price_contract(),
-                    "PriceFacts",
                     "QuoteMidField",
                     domain::WorthQueryOutputEquivalenceRequirement::registered::<
                         QuoteToleranceComparatorFamily,
@@ -152,16 +151,15 @@ pub fn operation_definition(
 pub fn financial_node(
     identity: &'static str,
     contract: AspectContract,
-    aspect: &'static str,
     field: &'static str,
     output_equivalence: domain::WorthQueryOutputEquivalenceRequirement,
 ) -> domain::WorthQueryPortableConditionalNodeDeclaration {
     let dependency = domain::WorthQuerySemanticTruthDependency::new(
         domain::WorthQueryConditionalGraphReadRole::new("primary").unwrap(),
-        contract,
+        contract.clone(),
         field_mask(field),
         AspectBinding::EntityField {
-            field: FieldKey::new(aspect).unwrap(),
+            field: FieldKey::new(contract.key().as_str()).unwrap(),
         },
         domain::WorthQuerySemanticLocality::SourceRecord,
         [AuthoritativeAspectChangeKind::FieldSet],
@@ -214,7 +212,7 @@ pub fn portfolio_node(identity: &str) -> domain::WorthQueryPortableConditionalNo
             contract.clone(),
             field_mask(field),
             AspectBinding::EntityField {
-                field: FieldKey::new("PortfolioFacts").unwrap(),
+                field: FieldKey::new(contract.key().as_str()).unwrap(),
             },
             domain::WorthQuerySemanticLocality::SourcePartition(
                 worth_foundational::facade::TruthPartitionRole::new("usd-rates").unwrap(),
@@ -260,12 +258,25 @@ pub fn portfolio_node(identity: &str) -> domain::WorthQueryPortableConditionalNo
 pub fn canonical_query(
 ) -> worth_query_host::facade::declaration::canonicalization::CanonicalQueryBundle {
     let query = DetailQueryBuilder::new(RootEntityKey::new("MarketObservation").unwrap())
-        .project(AspectFieldSelector::new("RiskFacts", "RiskValueField").unwrap())
+        .project(
+            AspectFieldSelector::new(
+                super::schema::RiskValueField::at("RiskValueField").aspect(),
+                "RiskValueField",
+            )
+            .unwrap(),
+        )
         .build()
         .unwrap()
         .into_raw();
     let shape = DetailResultShapeBuilder::new()
-        .field(AuthoredResultShapeField::new("RiskFacts", "RiskValueField", "risk").unwrap())
+        .field(
+            AuthoredResultShapeField::new(
+                super::schema::RiskValueField::at("RiskValueField").aspect(),
+                "RiskValueField",
+                "risk",
+            )
+            .unwrap(),
+        )
         .build()
         .unwrap()
         .into_raw();

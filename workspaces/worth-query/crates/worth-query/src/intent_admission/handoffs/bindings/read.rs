@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::query_context::ScopedQueryBasisContext;
 use crate::runtime::{
     WorthQueryAdmittedGraphReadAccessPlan, WorthQueryLiveGraphReadAccessPlan, WorthQueryReadFamily,
@@ -29,7 +30,7 @@ impl WorthQueryReadExecutionBinding {
     pub(crate) fn from_handoff(
         handoff: WorthQueryReadExecutionHandoff,
         graph_read_access_plan: WorthQueryAdmittedGraphReadAccessPlan,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let binding_digest = handoff_execution_binding_identity(
             "read-execution",
             &format!(
@@ -37,12 +38,12 @@ impl WorthQueryReadExecutionBinding {
                 handoff.handoff_digest(),
                 graph_read_access_plan.digest()
             ),
-        );
-        Self {
+        )?;
+        Ok(Self {
             handoff,
             graph_read_access_plan,
             binding_digest,
-        }
+        })
     }
 
     pub fn family(&self) -> WorthQueryIntentAdmissionFamily {
@@ -82,7 +83,7 @@ impl WorthQueryLiveReadExecutionBinding {
     pub(crate) fn from_handoff(
         handoff: WorthQueryLiveReadExecutionHandoff,
         live_graph_read_access_plan: WorthQueryLiveGraphReadAccessPlan,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let binding_digest = handoff_execution_binding_identity(
             "live-read-execution",
             &format!(
@@ -90,12 +91,12 @@ impl WorthQueryLiveReadExecutionBinding {
                 handoff.handoff_digest(),
                 live_graph_read_access_plan.digest()
             ),
-        );
-        Self {
+        )?;
+        Ok(Self {
             handoff,
             live_graph_read_access_plan,
             binding_digest,
-        }
+        })
     }
 
     pub fn family(&self) -> WorthQueryIntentAdmissionFamily {

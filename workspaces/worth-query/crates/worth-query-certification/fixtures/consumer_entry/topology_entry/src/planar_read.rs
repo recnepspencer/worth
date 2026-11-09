@@ -44,8 +44,13 @@ impl<Schema: TopologyModelBinding> ApplicationQueryMarkerIdentity<Schema> for Pl
     const QUERY_TYPE_NAME: &'static str = "worth.query.certification.planar-query.v1";
     const SCOPE_TYPE_NAME: &'static str = "Body";
 }
-pub fn planar_query_definition<Schema: TopologyModelBinding>(
-) -> ApplicationQueryDefinition<Schema, PlanarQuery, PlanarReadParameters, PlanarReadResult, Body> {
+pub fn planar_query_definition<Schema: TopologyModelBinding>() -> ApplicationQueryDefinitionBuilder<
+    Schema,
+    PlanarQuery,
+    PlanarReadParameters,
+    PlanarReadResult,
+    Body,
+> {
     let second_successor_shape = ApplicationQueryResultShapeBuilder::<
         Schema,
         PlanarQuery,
@@ -89,22 +94,10 @@ pub fn planar_query_definition<Schema: TopologyModelBinding>(
     .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
     .lanes(ApplicationQueryLaneEligibility::one_shot())
     .public()
-    .build()
-    .expect("planar query is canonical")
 }
-fn successor_position_y_result<Schema: TopologyModelBinding>() -> ApplicationQueryResultFieldRef<
-    PlanarQuery,
-    SuccessorPositionYSlot,
-    Schema,
-    Body,
-    PlanarPosition,
-    PositionY,
-    PositiveLength,
-    ReadWrite,
-    EqualityPredicate,
-    DeclaredApplicationUnit<Metre, <TopologyLengthBinding as ApplicationScalarValueBinding>::Unit>,
-> {
-    ApplicationQueryResultFieldRef::new("successor_y", PositionY::reference())
+fn successor_position_y_result<Schema: TopologyModelBinding>(
+) -> ApplicationQueryResultFieldRef<PlanarQuery, SuccessorPositionYSlot, Schema, PositionY> {
+    ApplicationQueryResultFieldRef::new("successor_y", PositionY::at("PositionY"))
 }
 fn planar_successor_result<Schema: TopologyModelBinding>() -> ApplicationQueryResultRelationRef<
     PlanarQuery,
@@ -131,33 +124,12 @@ fn second_successor_result<Schema: TopologyModelBinding>() -> ApplicationQueryRe
     ApplicationQueryResultRelationRef::forward_one("second_successor", PlanarSuccessor::reference())
 }
 fn second_successor_position_y_result<Schema: TopologyModelBinding>(
-) -> ApplicationQueryResultFieldRef<
-    PlanarQuery,
-    SecondSuccessorPositionYSlot,
-    Schema,
-    Body,
-    PlanarPosition,
-    PositionY,
-    PositiveLength,
-    ReadWrite,
-    EqualityPredicate,
-    DeclaredApplicationUnit<Metre, <TopologyLengthBinding as ApplicationScalarValueBinding>::Unit>,
-> {
-    ApplicationQueryResultFieldRef::new("second_successor_y", PositionY::reference())
+) -> ApplicationQueryResultFieldRef<PlanarQuery, SecondSuccessorPositionYSlot, Schema, PositionY> {
+    ApplicationQueryResultFieldRef::new("second_successor_y", PositionY::at("PositionY"))
 }
-fn position_y_result<Schema: TopologyModelBinding>() -> ApplicationQueryResultFieldRef<
-    PlanarQuery,
-    PositionYSlot,
-    Schema,
-    Body,
-    PlanarPosition,
-    PositionY,
-    PositiveLength,
-    ReadWrite,
-    EqualityPredicate,
-    DeclaredApplicationUnit<Metre, <TopologyLengthBinding as ApplicationScalarValueBinding>::Unit>,
-> {
-    ApplicationQueryResultFieldRef::new("y", PositionY::reference())
+fn position_y_result<Schema: TopologyModelBinding>(
+) -> ApplicationQueryResultFieldRef<PlanarQuery, PositionYSlot, Schema, PositionY> {
+    ApplicationQueryResultFieldRef::new("y", PositionY::at("PositionY"))
 }
 impl<Schema: TopologyModelBinding> WorthQueryApplicationProjection<Schema, PlanarQuery>
     for PlanarReadResult
@@ -171,37 +143,19 @@ impl<Schema: TopologyModelBinding> WorthQueryApplicationProjection<Schema, Plana
         })
     }
 }
-fn body_key_result<Schema: TopologyModelBinding>() -> ApplicationQueryResultFieldRef<
-    PlanarQuery,
-    BodyKeySlot,
-    Schema,
-    Body,
-    PlanarPosition,
-    BodyKey,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("body_key", BodyKey::reference())
+fn body_key_result<Schema: TopologyModelBinding>(
+) -> ApplicationQueryResultFieldRef<PlanarQuery, BodyKeySlot, Schema, BodyKey> {
+    ApplicationQueryResultFieldRef::new("body_key", BodyKey::at("BodyKey"))
 }
 pub struct PlanarReadBinding<Schema>(PhantomData<fn() -> Schema>);
-pub type PlanarReadScope<Schema> = ApplicationQueryFieldScope<
-    Schema,
-    Body,
-    PlanarPosition,
-    BodyKey,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type PlanarReadScope = ApplicationQueryFieldScope<BodyKey>;
 impl<Schema: TopologyModelBinding> ApplicationQueryBinding<Schema> for PlanarReadBinding<Schema> {
     type Input = PlanarRead;
     type InputBinding = PlanarReadInputBinding;
     type Query = PlanarQuery;
     type ParameterBinding = PlanarReadParametersBinding;
     type ResultBinding = PlanarReadResultBinding;
-    type ScopeBinding = PlanarReadScope<Schema>;
+    type ScopeBinding = PlanarReadScope;
     type PrincipalBinding = ConsumerPrincipalBinding;
     type Mapping = ExternalPrincipalMapping;
     type Principal = Principal;
@@ -209,17 +163,8 @@ impl<Schema: TopologyModelBinding> ApplicationQueryBinding<Schema> for PlanarRea
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "worth.query.certification.planar-read.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Body,
-        PlanarPosition,
-        BodyKey,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        BodyKey::reference()
+    fn scope_field() -> BodyKey {
+        BodyKey::at("BodyKey")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         Schema,
@@ -237,7 +182,7 @@ impl<Schema: TopologyModelBinding> ApplicationQueryIntent<Schema> for PlanarRead
     fn parameters(&self) -> ApplicationQueryParameterSet<PlanarQuery> {
         ApplicationQueryParameterSet::new()
     }
-    fn into_scope(self) -> PlanarReadScope<Schema> {
-        PlanarReadScope::new(BodyKey::reference(), self.body_key)
+    fn into_scope(self) -> PlanarReadScope {
+        PlanarReadScope::new(BodyKey::at("BodyKey"), self.body_key)
     }
 }

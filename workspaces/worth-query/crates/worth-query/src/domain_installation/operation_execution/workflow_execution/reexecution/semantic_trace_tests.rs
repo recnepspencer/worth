@@ -1,5 +1,6 @@
 use super::super::workflow_conditional_trace::WorthQueryConditionalObservationMeaning;
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[test]
 fn omitted_stage_and_typed_output_drift_localize_without_digest_oracles() {
@@ -123,13 +124,14 @@ fn only_explicit_diagnostic_noise_can_converge() {
 }
 
 #[test]
-fn lineage_divergence_is_typed_and_localized_to_its_stage() {
+fn lineage_divergence_is_typed_and_localized_to_its_stage() -> Result<(), IdentityDerivationDenial>
+{
     let original = trace(vec![stage("publish")]);
     let mut changed = trace(vec![stage("publish")]);
     changed.stages[0]
         .lineage
         .push(WorthQueryLineageTraceMeaning {
-            outcome: lineage_outcome(),
+            outcome: lineage_outcome()?,
             effect_indices: vec![0],
         });
     assert_eq!(
@@ -138,6 +140,8 @@ fn lineage_divergence_is_typed_and_localized_to_its_stage() {
             stage: "publish".into()
         })
     );
+
+    Ok(())
 }
 
 #[test]
@@ -292,7 +296,7 @@ fn validated_truth(truth: &str) -> worth_foundational::facade::ContractValidated
     .unwrap()
 }
 
-fn lineage_outcome() -> InstalledIdentityEvolutionOutcome {
+fn lineage_outcome() -> Result<InstalledIdentityEvolutionOutcome, IdentityDerivationDenial> {
     let continuity = crate::runtime::WorthQueryContinuityMutationEvidence::test_only(
         crate::runtime::WorthQueryContinuityMutationFamily::RebindExistingTarget,
         crate::runtime::WorthQueryContinuityOutcomeClass::ContinuesAsSingleSuccessor,
@@ -300,7 +304,7 @@ fn lineage_outcome() -> InstalledIdentityEvolutionOutcome {
         vec!["entity:2".into()],
         None,
         Some("Vertex"),
-    );
+    )?;
     let context =
         crate::identity_evolution::IdentityEvolutionQueryContext::lineage_traversal_for_test(
             crate::identity::CanonicalQueryDigest::from_parts(&["semantic-trace-query".into()]),
@@ -319,7 +323,7 @@ fn lineage_outcome() -> InstalledIdentityEvolutionOutcome {
         .expect("test lineage admission");
     let artifact = crate::identity_evolution::execute_admitted_identity_evolution_query(&admitted)
         .expect("test lineage execution");
-    InstalledIdentityEvolutionOutcome::from_execution(
+    Ok(InstalledIdentityEvolutionOutcome::from_execution(
         artifact,
         Some(continuity),
         None,
@@ -332,6 +336,7 @@ fn lineage_outcome() -> InstalledIdentityEvolutionOutcome {
         },
     )
     .expect("matching engine and mutation continuity evidence")
+    .expect("fixture digest must fit"))
 }
 
 fn trace(stages: Vec<WorthQueryWorkflowStageTraceSemantics>) -> WorthQueryWorkflowTraceSemantics {

@@ -1,10 +1,10 @@
 //! Complete membership selection is independent of each member's latest write.
 use super::{
-    charge, intent_writes_entity, require_linear_history, reserve,
-    CodecRetirementClosureStop as Stop,
+    charge, intent_writes_entity, require_linear_history, CodecRetirementClosureStop as Stop,
 };
+use crate::history::data::canonical_commit_envelope::CanonicalRequiredOutputOrigin;
 use crate::history::data::canonical_commit_envelope::{
-    CanonicalOutputPublication, CanonicalRequiredOutputOrigin,
+    OutputOriginHistory, OwnedValidatedOutputOrigins,
 };
 use crate::history::data::CanonicalCommitEnvelope;
 use crate::publication::patch::data::RecordStructuralChange;
@@ -18,31 +18,48 @@ pub(super) fn latest(
     runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     id: EntityId,
+    validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
-) -> Result<Arc<CanonicalCommitEnvelope>, Stop> {
+) -> Result<OwnedValidatedOutputOrigins, Stop> {
     let mut next = basis.inner.root.commit_id();
     let bound = runtime.runtime.history.catalog_len();
     for _ in 0..bound {
         charge(context, bound.saturating_add(1))?;
         let commit = next.ok_or("output correspondence has no complete native publication")?;
-        let envelope = runtime
-            .commit(commit)?
+        let envelope = validated_history
+            .by_commit(
+                commit,
+                &mut |commit| runtime.commit(commit),
+                &runtime.execution(),
+                context,
+            )?
             .ok_or("output correspondence lost native history")?;
         require_linear_history(&envelope)?;
         for origin in envelope.output_origins() {
             charge(context, origin.outputs.len())?;
             if origin.outputs.binary_search(&id).is_ok() {
                 envelope.output_origin_for_entity(id, context)?;
-                return Ok(Arc::clone(&envelope));
+                return Ok(envelope.clone());
             }
         }
         if writes(&envelope, id, context)? {
             if let Some(event) = &envelope.required_output_materialization {
-                super::materialization::validate_semantics(runtime, &envelope, context, lease)?;
+                super::materialization::validate_semantics(
+                    runtime,
+                    &envelope,
+                    context,
+                    lease,
+                    basis.inner.root.schema_authority(),
+                )?;
                 for publication in &event.producer_publications {
-                    let original = runtime
-                        .commit(*publication)?
+                    let original = validated_history
+                        .by_commit(
+                            *publication,
+                            &mut |commit| runtime.commit(commit),
+                            &runtime.execution(),
+                            context,
+                        )?
                         .ok_or("maintenance producer history absent")?;
                     let origin = original.validate_output_membership_header()?;
                     if origin.outputs.binary_search(&id).is_ok() {
@@ -60,13 +77,20 @@ pub(super) fn latest(
 pub(super) fn validate_member(
     runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
-    selected: &Arc<CanonicalCommitEnvelope>,
+    selected: &OwnedValidatedOutputOrigins,
     id: EntityId,
     payload: Option<&AuthoritativeRecordAspectState>,
+    validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Result<Arc<CanonicalRequiredOutputOrigin>, Stop> {
-    super::restoration_payload::validate_groups(runtime, selected, context)?;
+    super::restoration_payload::validate_groups(
+        runtime,
+        selected,
+        validated_history,
+        context,
+        basis.inner.root.schema_authority(),
+    )?;
     let origin = selected.output_origin_for_entity(id, context)?;
     let member = origin
         .members
@@ -103,6 +127,7 @@ pub(super) fn validate_member(
             &mut |commit| runtime.commit(commit),
             &mut |version, context| runtime.version(version, context),
             runtime.runtime.history.catalog_len(),
+            &runtime.execution(),
             context,
         )?
     {
@@ -116,7 +141,16 @@ pub(super) fn validate_member(
     let plan = schema
         .entity_aspect_plan(member.kind)
         .ok_or("output physical contract plan absent")?;
-    let reconstructed = reconstruct(runtime, selected, id, plan, context, lease)?;
+    let reconstructed = reconstruct(
+        runtime,
+        selected,
+        id,
+        plan,
+        validated_history,
+        context,
+        lease,
+        basis.inner.root.schema_authority(),
+    )?;
     charge(
         context,
         payload.map_or(0, |payload| payload.owned_allocation_capacity_bytes()),
@@ -132,191 +166,11 @@ pub(super) fn validate_member(
     Ok(Arc::clone(selected.output_origin_for_entity(id, context)?))
 }
 
-pub(super) fn reconstruct(
-    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
-    selected: &Arc<CanonicalCommitEnvelope>,
-    id: EntityId,
-    plan: &crate::schema::data::LoweredAspectContractPlan,
-    context: &mut MapKernelContext<'_, '_>,
-    lease: Option<&ExecutionResourceLease<'_>>,
-) -> Result<Option<super::payload_reconstruction::ReconstructedPayload>, Stop> {
-    reconstruct_chain(runtime, selected, id, plan, context, lease, true)
-}
-
-/// Canonical producer patches supply expected bytes; their maintenance gaps
-/// are validated by the enclosing semantic pass rather than recursively replayed.
-pub(super) fn reconstruct_canonical_payload(
-    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
-    selected: &Arc<CanonicalCommitEnvelope>,
-    id: EntityId,
-    plan: &crate::schema::data::LoweredAspectContractPlan,
-    context: &mut MapKernelContext<'_, '_>,
-    lease: Option<&ExecutionResourceLease<'_>>,
-) -> Result<Option<super::payload_reconstruction::ReconstructedPayload>, Stop> {
-    reconstruct_chain(runtime, selected, id, plan, context, lease, false)
-}
-
-#[allow(clippy::too_many_arguments)]
-fn reconstruct_chain(
-    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
-    selected: &Arc<CanonicalCommitEnvelope>,
-    id: EntityId,
-    plan: &crate::schema::data::LoweredAspectContractPlan,
-    context: &mut MapKernelContext<'_, '_>,
-    lease: Option<&ExecutionResourceLease<'_>>,
-    validate_gap_payload: bool,
-) -> Result<Option<super::payload_reconstruction::ReconstructedPayload>, Stop> {
-    super::restoration_payload::validate_groups(runtime, selected, context)?;
-    let origin = selected.output_origin_for_entity(id, context)?;
-    let _member = origin
-        .members
-        .iter()
-        .find(|member| member.id == id)
-        .ok_or("publication omits exact member")?;
-    let bound = runtime.runtime.history.catalog_len();
-    let _chain_memory = reserve(
-        lease,
-        bound
-            .checked_mul(std::mem::size_of::<Arc<CanonicalCommitEnvelope>>())
-            .ok_or_else(super::memory_overflow)?,
-    )?;
-    let mut chain = Vec::with_capacity(bound);
-    let mut current = Arc::clone(selected);
-    loop {
-        if chain.len() >= bound {
-            return Err("publication succession is cyclic or incomplete".into());
-        }
-        charge(context, bound)?;
-        let current_origin = current.output_origin_for_route(&origin.meaning, context)?;
-        chain.push(Arc::clone(&current));
-        match current_origin.publication {
-            CanonicalOutputPublication::Birth
-            | CanonicalOutputPublication::BirthAfterCodecRetirement { .. } => {
-                if current_origin.birth != current.commit.commit_id
-                    || current_origin.birth_producer != current_origin.producer
-                    || current_origin.birth_dependency != current_origin.dependency_identity
-                {
-                    return Err("publication birth identity differs".into());
-                }
-                super::codec_disposition::validate_birth(runtime, &current, context, lease)?;
-                break;
-            }
-            CanonicalOutputPublication::AuthoredRestoration {
-                retirement,
-                predecessor,
-            } => {
-                super::restoration_payload::validate_member(
-                    runtime,
-                    &current,
-                    id,
-                    retirement,
-                    predecessor,
-                    plan,
-                    context,
-                    lease,
-                )?;
-                break;
-            }
-            CanonicalOutputPublication::Preserve { predecessor }
-            | CanonicalOutputPublication::AuthoredRetirement { predecessor }
-            | CanonicalOutputPublication::ProducerRetirement { predecessor } => {
-                let previous = runtime
-                    .commit(predecessor)?
-                    .ok_or("publication predecessor history missing")?;
-                let prior = previous.output_origin_for_route(&current_origin.meaning, context)?;
-                super::publication_succession::validate_succession(
-                    runtime, &current, prior, context,
-                )?;
-                super::publication_succession::validate_gap(
-                    runtime,
-                    &current,
-                    predecessor,
-                    current_origin,
-                    context,
-                    lease,
-                    validate_gap_payload,
-                )?;
-                current = previous;
-            }
-        }
-    }
-    let mut reconstructed: Option<super::payload_reconstruction::ReconstructedPayload> = None;
-    for envelope in chain.iter().rev() {
-        let membership = envelope.output_origin_for_route(&origin.meaning, context)?;
-        let member = membership.members.iter().find(|member| member.id == id);
-        let Some(member) = member else { continue };
-        let patch = envelope
-            .patch
-            .authoritative_record_patches
-            .iter()
-            .find(|patch| patch.target == RecordRef::Entity(id));
-        let creation = member.posture == crate::mvcc::RequiredOutputRolePosture::Create;
-        let wrote = writes(envelope, id, context)?;
-        if creation {
-            if envelope
-                .record_allocations
-                .iter()
-                .filter(|allocation| allocation.record() == &RecordRef::Entity(id))
-                .count()
-                != 1
-                || member.birth != envelope.commit.commit_id
-                || member.birth_producer != membership.producer
-                || member.birth_dependency != membership.dependency_identity
-                || member.before_write.is_some()
-                || patch
-                    .is_none_or(|patch| patch.structural_change != RecordStructuralChange::Created)
-                || member.after_write != envelope.commit.version_id
-            {
-                return Err("output lacks actual native birth allocation/patch".into());
-            }
-        } else if member.posture == crate::mvcc::RequiredOutputRolePosture::Retire {
-            if member.after_write != envelope.commit.version_id
-                || patch
-                    .is_none_or(|patch| patch.structural_change != RecordStructuralChange::Deleted)
-            {
-                return Err("Retire differs from its actual native deletion".into());
-            }
-            continue;
-        } else if wrote {
-            if member.after_write != envelope.commit.version_id
-                || patch
-                    .is_some_and(|patch| patch.structural_change != RecordStructuralChange::Updated)
-            {
-                return Err("Preserve write differs from its actual native operation".into());
-            }
-        } else if member.before_write != Some(member.after_write) {
-            return Err("unpatched Preserve member changed native write position".into());
-        }
-        if let Some(patch) = patch {
-            if patch.contains_opaque_aspect {
-                return Err("output has unclassified opaque cells".into());
-            }
-            let next = super::payload_reconstruction::apply(
-                reconstructed
-                    .as_ref()
-                    .and_then(|state| state.state.as_ref()),
-                &patch.authoritative_patch,
-                plan,
-                creation,
-                lease,
-                context,
-            )?;
-            if creation {
-                envelope.validate_required_output_entity_create(
-                    id,
-                    plan,
-                    next.state.as_ref(),
-                    context,
-                )?;
-            }
-            reconstructed = Some(next);
-        }
-    }
-    Ok(reconstructed)
-}
+mod reconstruction;
+pub(super) use reconstruction::{reconstruct, reconstruct_canonical_payload};
 
 pub(super) fn writes(
-    envelope: &CanonicalCommitEnvelope,
+    envelope: &crate::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBody,
     id: EntityId,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<bool, Stop> {

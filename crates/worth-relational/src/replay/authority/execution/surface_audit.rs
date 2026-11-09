@@ -259,16 +259,14 @@ pub(super) fn compare_replay_surfaces(
         );
     }
     if compared_surfaces.contains(&DERIVED_INDEX_SURFACE) {
-        let original_derived_index_artifacts = crate::indexes::data::DerivedIndexArtifacts::new(
-            runtime
-                .read_index_generations_at_version(execution, envelope.commit.version_id)
-                .map_err(crate::durability::data::RelationalRecoveryStop::Request)?,
-        );
-        let replayed_derived_index_artifacts = crate::indexes::data::DerivedIndexArtifacts::new(
-            replay_runtime
-                .read_index_generations_at_version(execution, envelope.commit.version_id)
-                .map_err(crate::durability::data::RelationalRecoveryStop::Request)?,
-        );
+        let original_derived_index_artifacts = runtime
+            .index_access()
+            .read_artifacts_for_commit(execution, envelope.commit.commit_id)
+            .map_err(crate::durability::data::RelationalRecoveryStop::Request)?;
+        let replayed_derived_index_artifacts = replay_runtime
+            .index_access()
+            .read_artifacts_for_commit(execution, envelope.commit.commit_id)
+            .map_err(crate::durability::data::RelationalRecoveryStop::Request)?;
         compare_replay_surface(
             runtime,
             verification_plan,

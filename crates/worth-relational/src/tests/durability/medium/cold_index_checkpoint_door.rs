@@ -51,7 +51,7 @@ pub(super) fn read(
         .derived_index_checkpoint
         .as_ref()
         .expect("captured checkpoint uses native generation encoding")
-        .readmit()
+        .readmit(&crate::storage::substrate::maintenance::ReconstructionLane::oracle())
         .unwrap()
         .iter()
         .any(|generation| generation == expected))

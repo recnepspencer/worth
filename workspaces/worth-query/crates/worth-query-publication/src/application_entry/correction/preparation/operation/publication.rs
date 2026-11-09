@@ -14,7 +14,7 @@ where
     A: ApplicationAction<S, B>,
     Mode<S, B, A>: WorthQuerySourceDeliveryMode,
 {
-    pub(super) action: PreparedCorrectionAction<'a, S, B>,
+    pub(super) action: Box<PreparedCorrectionAction<'a, S, B>>,
     pub(super) operation: Operation<S, B, P, A>,
 }
 
@@ -40,7 +40,7 @@ where
             identities,
             result,
             source,
-        } = action;
+        } = *action;
         let scope = program.request_scope().clone();
         application
             .with_application_advancement(&scope, |phase| {

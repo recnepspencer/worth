@@ -38,6 +38,14 @@ fn controlled_resident_cell_keeps_exact_charge_until_last_real_weak() {
     let lease = RelationalRegionResidency::resident_for_request(
         partition(),
         PartitionContentCommitment::default(),
+        Arc::new(
+            crate::storage::residency::kind_incremental::RegionKindIndexes::capture(
+                &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+                &partition(),
+            )
+            .unwrap(),
+        ),
+        None,
         &ExecutionRequest::serial(&host),
     )
     .unwrap();
@@ -81,6 +89,14 @@ fn controlled_resident_cell_refuses_exact_control_before_any_new_arc() {
     let result = RelationalRegionResidency::resident_for_request(
         partition(),
         PartitionContentCommitment::default(),
+        Arc::new(
+            crate::storage::residency::kind_incremental::RegionKindIndexes::capture(
+                &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+                &partition(),
+            )
+            .unwrap(),
+        ),
+        None,
         &ExecutionRequest::serial(&host),
     );
     let Err(RegionContentFailure::Execution(cause)) = result else {
@@ -106,6 +122,14 @@ fn controlled_resident_cell_refuses_exact_control_before_any_new_arc() {
         RelationalRegionResidency::resident_for_request(
             partition(),
             PartitionContentCommitment::default(),
+            Arc::new(
+                crate::storage::residency::kind_incremental::RegionKindIndexes::capture(
+                    &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+                    &partition()
+                )
+                .unwrap()
+            ),
+            None,
             &ExecutionRequest::serial(&host)
         ),
         Err(RegionContentFailure::Execution(_))

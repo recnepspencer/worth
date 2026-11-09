@@ -16,6 +16,8 @@ pub(crate) struct RelationalRootRegion {
     allocation_inventory: Option<crate::storage::overlay::RelationalPartitionAllocationInventory>,
     pub(super) content_digest: [u8; 32],
     pub(super) kind_commitment: crate::storage::residency::RelationalRegionKindCommitment,
+    pub(super) directory: std::sync::Arc<crate::storage::residency::RegionRecordDirectory>,
+    pub(super) live_counts: crate::storage::residency::LiveRecordCounts,
     pub(super) entity_slots: usize,
     pub(super) relation_slots: usize,
     pub(super) content_values_hashed: u64,
@@ -24,30 +26,16 @@ pub(crate) struct RelationalRootRegion {
 }
 
 impl RelationalRootRegion {
-    pub(in crate::branch) fn new_for_request(
-        creation_root_id: u64,
-        id: u64,
-        partition: PartitionState,
-        symbols: &dyn crate::symbols::data::SymbolTextLookup,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<std::sync::Arc<Self>, RelationalBranchRootCaptureDenial> {
-        let partition_id = partition.partition_id;
-        let memory = super::root::reserve_arc_memory::<Self>(Some(execution))?;
-        let prepared = PreparedResidentRegion::initial_for_request(execution, partition, symbols)
-            .map_err(|failure| capture_failure(partition_id, failure))?;
-        let mut region = Self::from_prepared(creation_root_id, id, prepared);
-        region._memory = memory;
-        Ok(std::sync::Arc::new(region))
-    }
-
     pub(super) fn new(
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         creation_root_id: u64,
         id: u64,
         partition: PartitionState,
         symbols: &crate::symbols::data::StringInterner,
     ) -> Result<Self, RelationalBranchRootCaptureDenial> {
         let partition_id = partition.partition_id;
-        let prepared = PreparedResidentRegion::initial(partition, symbols)
+        let prepared = PreparedResidentRegion::initial(lane, execution, partition, symbols)
             .map_err(|failure| capture_failure(partition_id, failure))?;
         Ok(Self::from_prepared(creation_root_id, id, prepared))
     }
@@ -64,6 +52,8 @@ impl RelationalRootRegion {
             allocation_inventory: Some(prepared.inventory),
             content_digest: prepared.content_digest,
             kind_commitment: prepared.kind_commitment,
+            directory: prepared.directory,
+            live_counts: prepared.live_counts,
             entity_slots: prepared.entity_slots,
             relation_slots: prepared.relation_slots,
             partition: prepared.retention,
@@ -74,6 +64,7 @@ impl RelationalRootRegion {
     }
 
     pub(super) fn from_checkpoint(
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         creation_root_id: u64,
         id: u64,
         checkpoint: super::root_checkpoint::RelationalRootRegionCheckpoint,
@@ -86,6 +77,8 @@ impl RelationalRootRegion {
             allocation_inventory: None,
             content_digest: checkpoint.content_digest,
             kind_commitment: checkpoint.kind_commitment,
+            directory: checkpoint.directory,
+            live_counts: checkpoint.live_counts,
             entity_slots: checkpoint.entity_slots,
             relation_slots: checkpoint.relation_slots,
             content_values_hashed: 0,
@@ -95,13 +88,14 @@ impl RelationalRootRegion {
     }
 
     pub(in crate::branch) fn from_checkpoint_for_request(
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         creation_root_id: u64,
         id: u64,
         checkpoint: super::root_checkpoint::RelationalRootRegionCheckpoint,
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<std::sync::Arc<Self>, RelationalBranchRootCaptureDenial> {
         let memory = super::root::reserve_arc_memory::<Self>(Some(request))?;
-        let mut region = Self::from_checkpoint(creation_root_id, id, checkpoint);
+        let mut region = Self::from_checkpoint(lane, creation_root_id, id, checkpoint);
         region._memory = memory;
         Ok(std::sync::Arc::new(region))
     }
@@ -177,6 +171,9 @@ pub(super) fn capture_failure(
         RegionContentFailure::Adjacency => {
             RelationalBranchRootCaptureDenial::InvalidAdjacencyProjection(partition)
         }
+        RegionContentFailure::Content(
+            crate::storage::overlay::PartitionContentDigestError::Execution(cause),
+        ) => RelationalBranchRootCaptureDenial::Execution(cause),
         RegionContentFailure::Content(
             crate::storage::overlay::PartitionContentDigestError::UnresolvedContentSymbol(symbol),
         ) => RelationalBranchRootCaptureDenial::UnresolvedContentSymbol(symbol),

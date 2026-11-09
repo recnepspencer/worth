@@ -49,11 +49,11 @@ impl ApplicationProgramDefinition<CheckpointSchema> for Unowned {
 
 pub(super) fn install_rostered(model: &Model) -> Application {
     let initial = ApplicationProgramAuthoring::<CheckpointSchema, OracleProgram>::begin()
-        .with_schema(&CheckpointSchema::declaration().expect("the completed schema is valid"))
+        .with_schema(&<CheckpointSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let adopted = ApplicationProgramAuthoring::<CheckpointSchema, Adopted>::begin()
-        .with_schema(&CheckpointSchema::declaration().expect("the completed schema is valid"))
+        .with_schema(&<CheckpointSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let roster = application_installation::WorthQueryApplicationProgramRoster::new()
@@ -61,7 +61,7 @@ pub(super) fn install_rostered(model: &Model) -> Application {
         .support(
             ApplicationProgramAuthoring::<CheckpointSchema, Unowned>::begin()
                 .with_schema(
-                    &CheckpointSchema::declaration().expect("the completed schema is valid"),
+                    &<CheckpointSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the completed schema is valid"),
                 )
                 .validated_program()
                 .unwrap(),
@@ -78,7 +78,7 @@ pub(super) fn install_rostered(model: &Model) -> Application {
     };
 
     let limits = support::limits_with_room(32, 16, 64, support::invalidation());
-    application_installation::in_memory_rostered_program(initial, roster, CheckpointSchema::declaration().unwrap(), (configuration,), ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(), limits, |_bootstrap_phase, graph, installed| {
+    application_installation::in_memory_rostered_program(initial, roster, <CheckpointSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap(), (configuration,), ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(), limits, |_bootstrap_phase, graph, installed| {
         let binding = installed.principal_binding(ConsumerPrincipalBinding::reference::<CheckpointSchema>()).unwrap();
         let external = worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentity::new("https://checkpoint.invalid/local", "model-owner").unwrap();
         graph.bind_principal(&binding, primary_graph::WorthQueryApplicationPrincipalKey::new("model-owner").unwrap(), 1_u64, external, worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatus::Enabled)?;

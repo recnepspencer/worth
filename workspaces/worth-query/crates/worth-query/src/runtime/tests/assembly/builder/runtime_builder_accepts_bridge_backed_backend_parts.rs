@@ -96,7 +96,9 @@ fn runtime_builder_accepts_bridge_backed_backend_parts() {
     assert_eq!(
         view.subscription_installation()
             .subscription_budget_policy(),
-        runtime_subscription_budget_policy().policy_label()
+        runtime_subscription_budget_policy()
+            .expect("fixture digest must fit")
+            .policy_label()
     );
     assert_eq!(
         view.subscription_installation()
@@ -110,7 +112,7 @@ fn runtime_builder_accepts_bridge_backed_backend_parts() {
     );
     assert_eq!(
         view.subscription_installation().runtime_budget_identity(),
-        &runtime_subscription_budget_digest()
+        &runtime_subscription_budget_digest().expect("fixture budget identity must fit")
     );
     let live_inspection = runtime
         .inspect_live_view(&view)

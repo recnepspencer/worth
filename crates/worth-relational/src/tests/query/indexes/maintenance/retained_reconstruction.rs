@@ -63,19 +63,18 @@ fn retained_commit_reconstruction_uses_its_own_root_and_finite_cold_budget() {
         .unwrap();
     let cold_current = runtime
         .index_authority()
-        .refresh_for_basis(
+        .reconstruct_for_basis(
+            execution,
             current_request,
             &basis,
-            None,
             DerivedIndexMaintenanceBudget {
                 maximum_work_units: Some(100_000),
                 maximum_cold_record_slots: Some(1_000),
                 maximum_derived_rows: Some(1_000),
             },
-            execution,
         )
         .unwrap();
-    assert_eq!(cold_current.work.entry_edits, 1);
+    assert!(cold_current.work.cold_record_slots > 0);
     let third = update_entity(execution, &runtime, entity, "later");
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())

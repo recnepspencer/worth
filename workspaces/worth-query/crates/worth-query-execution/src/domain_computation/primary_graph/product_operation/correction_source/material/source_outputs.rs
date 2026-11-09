@@ -77,7 +77,11 @@ where
         let fields = C::source_output_fields();
         content::retain(&self.request, fields.len(), &mut |index| {
             let field = &fields[index];
-            if field.content_recipe().is_none() {
+            if field
+                .content_recipe()
+                .map_err(|_| WorthQueryCorrectionOutputProjectionDenial::FieldMeaningMismatch)?
+                .is_none()
+            {
                 return Ok(None);
             }
             self.read(field)?
@@ -114,7 +118,10 @@ where
                 .value_bindings(),
             field,
         )?;
-        let parts = field.declaration().parts();
+        let parts = field
+            .declaration()
+            .map_err(|_| D::FieldMeaningMismatch)?
+            .parts();
         let correspondence = evidence.correspondence();
         correspondence
             .require_source_binding::<C::Source>()
@@ -148,7 +155,9 @@ where
                 entity,
                 &parts.entity,
                 &locator,
-                field.content_recipe(),
+                field
+                    .content_recipe()
+                    .map_err(|_| D::FieldMeaningMismatch)?,
             )?,
             None => content::certify_retained(
                 &self.request,
@@ -159,7 +168,9 @@ where
                     .ready
                     .content,
                 value,
-                field.content_recipe(),
+                field
+                    .content_recipe()
+                    .map_err(|_| D::FieldMeaningMismatch)?,
             )?,
         };
         Ok((value, content))

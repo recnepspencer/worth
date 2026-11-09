@@ -1,33 +1,84 @@
 //! Real handler writes test the sealed-observation and installed-parent boundary.
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::*;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::own_effect::SourceWrite;
-macro_rules! schema {
-    ($schema:ident, $owner:literal, $write:ident) => {
-        worth_query_decl::facade::worth_query_application! {
-            pub $schema { owner: $owner, version: (1, 0), contributions: [crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::installation::Members], }
-        }
-        impl TopologyModelBinding for $schema {}
-        impl BirthSchema for $schema {
-            const REQUIRED: bool = false;
-            const SOURCE_WRITE: SourceWrite = SourceWrite::$write;
-        }
-    };
+
+#[derive(Clone, Copy, Debug)]
+pub struct UnobservedSchema;
+impl worth_query_decl::facade::application_schema::fragment::Fragment for UnobservedSchema {
+    const NAME: &'static str = "UnobservedSchema";
+    type Bindings = worth_query_decl::facade::application_schema::fragment::NoBindings;
+    type Members = (installation::Members,);
 }
-schema!(
-    UnobservedSchema,
-    "worth.query.test.optional-unobserved-write",
-    Unobserved
-);
-schema!(
-    IncompleteSchema,
-    "worth.query.test.optional-incomplete-initialization",
-    Incomplete
-);
-schema!(
-    PresentSchema,
-    "worth.query.test.optional-present-patch",
-    Select
-);
+impl ApplicationSchema for UnobservedSchema {
+    const OWNER: &'static str = "worth.query.test.optional-unobserved-write";
+    const NAME: &'static str = "UnobservedSchema";
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        worth_query_decl::facade::application_schema::fragment::declare(Self)
+    }
+}
+impl ApplicationSchemaComposition for UnobservedSchema {
+    type Contributions =
+        <Self as worth_query_decl::facade::application_schema::fragment::Fragment>::Members;
+}
+
+impl TopologyModelBinding for UnobservedSchema {}
+impl BirthSchema for UnobservedSchema {
+    type Nodes = NodeRecords<false>;
+    const SOURCE_WRITE: SourceWrite = SourceWrite::Unobserved;
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct IncompleteSchema;
+impl worth_query_decl::facade::application_schema::fragment::Fragment for IncompleteSchema {
+    const NAME: &'static str = "IncompleteSchema";
+    type Bindings = worth_query_decl::facade::application_schema::fragment::NoBindings;
+    type Members = (installation::Members,);
+}
+impl ApplicationSchema for IncompleteSchema {
+    const OWNER: &'static str = "worth.query.test.optional-incomplete-initialization";
+    const NAME: &'static str = "IncompleteSchema";
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        worth_query_decl::facade::application_schema::fragment::declare(Self)
+    }
+}
+impl ApplicationSchemaComposition for IncompleteSchema {
+    type Contributions =
+        <Self as worth_query_decl::facade::application_schema::fragment::Fragment>::Members;
+}
+
+impl TopologyModelBinding for IncompleteSchema {}
+impl BirthSchema for IncompleteSchema {
+    type Nodes = NodeRecords<false>;
+    const SOURCE_WRITE: SourceWrite = SourceWrite::Incomplete;
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct PresentSchema;
+impl worth_query_decl::facade::application_schema::fragment::Fragment for PresentSchema {
+    const NAME: &'static str = "PresentSchema";
+    type Bindings = worth_query_decl::facade::application_schema::fragment::NoBindings;
+    type Members = (installation::Members,);
+}
+impl ApplicationSchema for PresentSchema {
+    const OWNER: &'static str = "worth.query.test.optional-present-patch";
+    const NAME: &'static str = "PresentSchema";
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        worth_query_decl::facade::application_schema::fragment::declare(Self)
+    }
+}
+impl ApplicationSchemaComposition for PresentSchema {
+    type Contributions =
+        <Self as worth_query_decl::facade::application_schema::fragment::Fragment>::Members;
+}
+
+impl TopologyModelBinding for PresentSchema {}
+impl BirthSchema for PresentSchema {
+    type Nodes = NodeRecords<false>;
+    const SOURCE_WRITE: SourceWrite = SourceWrite::Select;
+}
 
 #[test]
 fn absent_parent_write_requires_each_actual_target_observation() {
@@ -47,7 +98,11 @@ fn absent_parent_write_requires_each_actual_target_observation() {
         cause.locator(),
         (*(*(*(*runtime.runtime_for_test()).primary_provider_for_test()).graph_for_test())
             .layout_for_test())
-        .field_locator_for_test("Body", "SourceNotes", "SourceContent")
+        .field_locator_for_test(
+            "Body",
+            SourceContent::at("SourceContent").aspect(),
+            "SourceContent"
+        )
         .unwrap()
     );
     assert_eq!(
@@ -124,7 +179,7 @@ pub fn source_values<Schema: BirthSchema>(
             let source = selected
                 .resolve_entity(
                     &phase,
-                    BodyKey::reference(),
+                    BodyKey::at("BodyKey"),
                     crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::installation::ANCHOR.to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -152,11 +207,13 @@ pub fn source_values<Schema: BirthSchema>(
                     |reader, root| {
                         (
                             reader
-                                .decision_field(root, SourceContent::reference())
-                                .unwrap(),
+                                .decision_field(root, SourceContent::at("SourceContent"))
+                                .unwrap()
+                                .map(Into::into),
                             reader
-                                .decision_field(root, SourceSelection::reference())
-                                .unwrap(),
+                                .decision_field(root, SourceSelection::at("SourceSelection"))
+                                .unwrap()
+                                .map(Into::into),
                         )
                     },
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,

@@ -31,19 +31,14 @@ pub(crate) struct PreparedRecoveredRelationalPublication {
 
 pub(crate) struct PreparedRelationalPublicationAccelerators {
     publication: crate::runtime::PreparedVersionedArtifactAccelerators,
-    index_refresh_basis: PreparedIndexRefreshBasis,
-}
-
-#[derive(Clone)]
-pub(crate) struct PreparedIndexRefreshBasis {
-    branch_id: crate::history::data::BranchId,
-    version_id: crate::identity::data::VersionId,
-    root: Arc<crate::branch::RelationalBranchRoot>,
 }
 
 impl PreparedRelationalPublication {
     pub(crate) fn caller_association(&self) -> Option<&crate::mvcc::RelationalCallerAssociation> {
         self.publication.envelope.caller_association()
+    }
+    pub(crate) fn canonical_envelope(&self) -> &Arc<CanonicalCommitEnvelope> {
+        &self.publication.envelope
     }
     pub(crate) fn envelope_residency(
         &self,
@@ -60,14 +55,6 @@ impl PreparedRelationalPublication {
         &self.publication.root
     }
 
-    pub(crate) fn index_refresh_basis(&self) -> PreparedIndexRefreshBasis {
-        PreparedIndexRefreshBasis {
-            branch_id: self.publication.branch_id.clone(),
-            version_id: self.publication.commit_reference.version_id,
-            root: Arc::clone(&self.publication.root),
-        }
-    }
-
     pub(crate) fn into_canonical_parts(
         self,
     ) -> (
@@ -76,17 +63,13 @@ impl PreparedRelationalPublication {
         Arc<CanonicalCommitEnvelope>,
         PreparedRelationalPublicationAccelerators,
     ) {
-        let index_refresh_basis = self.index_refresh_basis();
         let (next_cell, root, envelope, publication) =
             self.publication.into_canonical_and_accelerators();
         (
             next_cell,
             root,
             envelope,
-            PreparedRelationalPublicationAccelerators {
-                publication,
-                index_refresh_basis,
-            },
+            PreparedRelationalPublicationAccelerators { publication },
         )
     }
 
@@ -110,10 +93,6 @@ impl PreparedRecoveredRelationalPublication {
 }
 
 impl PreparedRelationalPublicationAccelerators {
-    pub(crate) fn index_refresh_basis(&self) -> &PreparedIndexRefreshBasis {
-        &self.index_refresh_basis
-    }
-
     pub(crate) fn install(
         self,
         runtime: &RelationalRuntime,
@@ -122,20 +101,6 @@ impl PreparedRelationalPublicationAccelerators {
         runtime
             .history
             .install_prepared_versioned_accelerators(self.publication, position);
-    }
-}
-
-impl PreparedIndexRefreshBasis {
-    pub(crate) fn branch_id(&self) -> &crate::history::data::BranchId {
-        &self.branch_id
-    }
-
-    pub(crate) const fn version_id(&self) -> crate::identity::data::VersionId {
-        self.version_id
-    }
-
-    pub(crate) fn root(&self) -> &crate::branch::RelationalBranchRoot {
-        &self.root
     }
 }
 

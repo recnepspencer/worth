@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::ordinary_outcome::WorthQueryOrdinaryRuntimePosture;
 
 use super::super::evidence_identities::{
@@ -54,7 +55,9 @@ pub struct WorthQueryLiveViewInspection {
 }
 
 impl WorthQueryLiveViewInspection {
-    pub(in crate::runtime) fn from_state(state: &WorthQueryRuntimeLiveSubscriptionState) -> Self {
+    pub(in crate::runtime) fn from_state(
+        state: &WorthQueryRuntimeLiveSubscriptionState,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let installation = &state.installation;
         let counters =
             WorthQueryLiveSubscriptionInspectionCounters::from_installation(installation);
@@ -75,7 +78,7 @@ impl WorthQueryLiveViewInspection {
             .last_delivery
             .as_ref()
             .map(|delivery| delivery.mixed_cause_delivery().clone());
-        let ordinary_runtime_posture = project_live_subscription_ordinary_runtime_posture(state);
+        let ordinary_runtime_posture = project_live_subscription_ordinary_runtime_posture(state)?;
         let async_result_state = state.async_result_state.clone();
         let remask_posture = state.remask_posture.clone();
         let mixed_cause_identity = mixed_cause_delivery
@@ -113,9 +116,9 @@ impl WorthQueryLiveViewInspection {
                 remask_posture: remask_posture.as_ref(),
                 installation_identity: installation.installation_identity(),
                 counter_inspection_identity: counters.counter_inspection_identity(),
-            });
+            })?;
 
-        Self {
+        Ok(Self {
             view_name: installation.view_name().to_string(),
             authority_lane: installation.authority_lane(),
             query_identity: installation.query_identity().clone(),
@@ -153,7 +156,7 @@ impl WorthQueryLiveViewInspection {
             installation_identity: installation.installation_identity().clone(),
             counters,
             inspection_identity,
-        }
+        })
     }
 
     pub fn view_name(&self) -> &str {

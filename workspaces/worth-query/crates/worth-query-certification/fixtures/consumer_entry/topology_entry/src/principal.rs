@@ -1,27 +1,23 @@
-use super::TopologyModelBinding;
-use worth_query_decl::facade::{
-    application_schema::*, authentication::*, worth_query_aspect, worth_query_entity,
-    worth_query_field,
+use super::{TopologyModelBinding, TopologyRecords};
+use worth_query_decl::facade::application_schema::*;
+use worth_query_decl::facade::application_schema::{
+    fragment, ApplicationRelationCardinality, ApplicationRelationDeletionPolicy,
 };
 
-worth_query_entity!(pub ExternalPrincipalMapping for Schema: TopologyModelBinding);
-worth_query_entity!(pub Principal for Schema: TopologyModelBinding);
-worth_query_aspect!(pub ExternalIdentity for Schema: TopologyModelBinding, ExternalPrincipalMapping; identity = AspectIdentity(0x9174_1021), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub PrincipalFacts for Schema: TopologyModelBinding, Principal; identity = AspectIdentity(0x9174_1022), revision = AspectContractRevision(1),);
-worth_query_field!(pub ExternalIdentityField for Schema: TopologyModelBinding, ExternalPrincipalMapping, ExternalIdentity: WorthQueryExternalPrincipalIdentity => WorthQueryExternalPrincipalIdentityBinding, read_only, equality);
-worth_query_field!(pub MappingStatusField for Schema: TopologyModelBinding, ExternalPrincipalMapping, ExternalIdentity: WorthQueryPrincipalMappingStatus => WorthQueryPrincipalMappingStatusBinding, read_write, equality);
-worth_query_field!(pub PrincipalIdentity for Schema: TopologyModelBinding, Principal, PrincipalFacts: u64 => U64ApplicationValueBinding, read_only, equality);
-
 pub struct MappingTarget;
+impl fragment::Relation for MappingTarget {
+    const NAME: &'static str = "MappingTarget";
+    type To = Principal;
+    const SELF_EDGES: bool = true;
+    const CARDINALITY: ApplicationRelationCardinality =
+        ApplicationRelationCardinality::new(None, None, None, None, None, None);
+    const DELETION: ApplicationRelationDeletionPolicy =
+        ApplicationRelationDeletionPolicy::RetainDanglingForAudit;
+}
 impl MappingTarget {
-    pub fn reference<Schema: TopologyModelBinding>(
-    ) -> ApplicationRelationRef<Schema, Self, ExternalPrincipalMapping, Principal> {
-        ApplicationRelationRef::from_schema_identifiers(
-            "MappingTarget",
-            "ExternalPrincipalMapping",
-            "Principal",
-            ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
-        )
+    pub fn reference<S: TopologyModelBinding>(
+    ) -> ApplicationRelationRef<S, Self, ExternalPrincipalMapping, Principal> {
+        fragment::relation(TopologyRecords, ExternalPrincipalMapping, Self)
     }
 }
 
@@ -39,18 +35,23 @@ impl ConsumerPrincipalBinding {
             "ConsumerPrincipalBinding",
             ApplicationPrincipalBindingRequirements {
                 mapping_identity: ApplicationPrincipalMappingIdentityRequirement::from_field(
-                    ExternalIdentityField::reference::<Schema>(),
+                    ExternalIdentityField::at("ExternalIdentityField"),
                 ),
                 mapping_status: ApplicationPrincipalMappingStatusRequirement::from_field(
-                    MappingStatusField::reference::<Schema>(),
+                    MappingStatusField::at("MappingStatusField"),
                 ),
                 target: ApplicationPrincipalTargetRequirement::from_relation(
                     MappingTarget::reference::<Schema>(),
                 ),
                 principal_identity: ApplicationPrincipalIdentityRequirement::from_field(
-                    PrincipalIdentity::reference::<Schema>(),
+                    PrincipalIdentity::at("PrincipalIdentity"),
                 ),
             },
         )
     }
 }
+
+pub use super::storage_model::{
+    ExternalIdentityField, ExternalPrincipalMapping, MappingStatusField, Principal,
+    PrincipalIdentity,
+};

@@ -50,6 +50,15 @@ impl CandidateTouchedKinds {
             pay_visit(budget)?;
             kinds.entities.insert(selection.kind());
         }
+        if let Some(selection) = semantic.graph_selection() {
+            for target in selection.targets() {
+                pay_visit(budget)?;
+                match target {
+                    RecordRef::Entity(id) => kinds.entity(id, &proposed, before.as_ref())?,
+                    RecordRef::Relation(id) => kinds.relation(id, &proposed, before.as_ref())?,
+                }
+            }
+        }
         for partition in partitions {
             proposed.state().get_current_partition(partition)?;
             for slot in proposed.state().touched_entity_slots(partition)? {

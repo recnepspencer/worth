@@ -1,4 +1,7 @@
-use worth_server::{WorthServerDenialBoundary, WorthServerDenialCause, WorthServerDenialEnvelope, WorthServerResponseReceipt, WorthServerResponseTransform};
+use worth_server::{
+    WorthServerDenialBoundary, WorthServerDenialCause, WorthServerDenialEnvelope,
+    WorthServerResponseReceipt, WorthServerResponseTransform,
+};
 
 fn main() {
     let cause = WorthServerDenialCause::RequestContext {
@@ -10,8 +13,13 @@ fn main() {
         transform: WorthServerResponseTransform::compat_http(),
         diagnostics_profile: worth_server::request_context::DiagnosticRichnessProfile::Standard,
         cause,
-        provenance: loop {},
-        receipt: WorthServerResponseReceipt::Completed(loop {}),
+        provenance: supplied(),
+        receipt: WorthServerResponseReceipt::Completed(supplied()),
         canonical_digest: format!("{:?}", WorthServerDenialBoundary::RequestContext),
     };
+}
+
+// Type-check the forbidden action without a divergent argument lint.
+fn supplied<T>() -> T {
+    loop {}
 }

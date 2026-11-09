@@ -1,5 +1,6 @@
 use crate::runtime::{RelationalPreparationOwnerBinding, RelationalPreparationRuntime};
 use crate::transactions::data::TransactionCommitError;
+mod owned_graph_selection;
 #[path = "preparation_port/selection_admission.rs"]
 mod selection_admission;
 #[path = "preparation_port/selection_preparation.rs"]
@@ -12,7 +13,7 @@ mod selection_preparation;
 /// settlement remains exclusively owned by [`crate::mvcc::RelationalPublicationPort`].
 #[derive(Debug, Clone)]
 pub struct RelationalPreparationPort {
-    binding: RelationalPreparationOwnerBinding,
+    pub(in crate::mvcc) binding: RelationalPreparationOwnerBinding,
 }
 
 impl RelationalPreparationPort {

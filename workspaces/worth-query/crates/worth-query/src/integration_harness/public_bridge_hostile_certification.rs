@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -38,54 +39,56 @@ pub fn public_bridge_hostile_published_artifact_component_digest(
     snapshot_identity: &WorthQueryEvidenceIdentity,
     binding_for_reporting: &str,
     title: &str,
-) -> String {
-    public_bridge_hostile_certification_evidence_label(
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(public_bridge_hostile_certification_evidence_label(
         &worth_query_evidence_identity(
             WorthQueryEvidenceScope::RuntimeHostileCertificationArtifact,
         )
         .field_evidence_identity(WorthQueryEvidenceTag::new("snapshot"), snapshot_identity)
         .field_value(WorthQueryEvidenceTag::new("binding"), binding_for_reporting)
         .field_shape(WorthQueryEvidenceTag::new("title"), title)
-        .seal(),
-    )
+        .seal()?,
+    ))
 }
 
 pub fn compose_public_bridge_hostile_certification_digest(
     input: PublicBridgeHostileCertificationComposeInput,
-) -> WorthQueryEvidenceIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::RuntimeHostileCertificationArtifact)
-        .field_value(
-            WorthQueryEvidenceTag::new("pending_artifact"),
-            input.pending_artifact,
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("branch_basis_a"),
-            input.branch_basis_a,
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("branch_basis_b"),
-            input.branch_basis_b,
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("preview_discard"),
-            input.preview_discard,
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("receipt_one"),
-            &input.receipt_one,
-        )
-        .field_shape(WorthQueryEvidenceTag::new("title_one"), input.title_one)
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("receipt_two"),
-            &input.receipt_two,
-        )
-        .field_shape(WorthQueryEvidenceTag::new("title_two"), input.title_two)
-        .field_value(
-            WorthQueryEvidenceTag::new("preview_promote"),
-            input.preview_promote,
-        )
-        .field_shape(WorthQueryEvidenceTag::new("title_three"), input.title_three)
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        worth_query_evidence_identity(WorthQueryEvidenceScope::RuntimeHostileCertificationArtifact)
+            .field_value(
+                WorthQueryEvidenceTag::new("pending_artifact"),
+                input.pending_artifact,
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("branch_basis_a"),
+                input.branch_basis_a,
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("branch_basis_b"),
+                input.branch_basis_b,
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("preview_discard"),
+                input.preview_discard,
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("receipt_one"),
+                &input.receipt_one,
+            )
+            .field_shape(WorthQueryEvidenceTag::new("title_one"), input.title_one)
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("receipt_two"),
+                &input.receipt_two,
+            )
+            .field_shape(WorthQueryEvidenceTag::new("title_two"), input.title_two)
+            .field_value(
+                WorthQueryEvidenceTag::new("preview_promote"),
+                input.preview_promote,
+            )
+            .field_shape(WorthQueryEvidenceTag::new("title_three"), input.title_three)
+            .seal()?,
+    )
 }
 
 pub fn public_bridge_hostile_title_projection_artifacts(

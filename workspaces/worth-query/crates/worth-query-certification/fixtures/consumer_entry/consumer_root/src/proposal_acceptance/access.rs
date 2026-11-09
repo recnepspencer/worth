@@ -39,7 +39,7 @@ pub struct ReadAccess {
 }
 worth_query_structured_value_binding!(pub InputBinding for ReadAccess {identity:"proposal-application.read-access.v1"});
 worth_query_operation!(pub InspectDomain for Schema,input InputBinding);
-worth_query_operation_reads!(InspectDomain=>[ModelName,grants::GrantDisclosure]);
+worth_query_operation_reads!(InspectDomain => [grants::GrantDisclosure]);
 pub fn encoded(value: u64) -> ApplicationEncodedScalarValue<U64ApplicationValueBinding> {
     ApplicationEncodedScalarValue::try_new(value).unwrap()
 }
@@ -54,12 +54,13 @@ impl ApplicationCapabilityRequest<Schema, ReadDomain> for ReadAccess {
     > {
         Ok(ApplicationCapabilityRequestProjection::new(
             ApplicationCapabilityEntitySelector::new(
-                ModelName::reference(),
+                ModelName::at("ModelName"),
                 ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
                     self.model.clone(),
                 )
                 .unwrap(),
-            ),
+            )
+            .unwrap(),
             encoded(1),
             encoded(1),
             ApplicationCapabilityRequestContext::new(ReadContext::reference()),
@@ -74,8 +75,10 @@ pub fn declare(
     let read_path = |kind: ReadKind| {
         ApplicationAuthorizationPathBuilder::from_principal(Principal::reference())
             .forward(GrantGrantee::reference())
-            .where_equal(GrantReadKind::reference(), encoded(kind.code()))
-            .where_equal(GrantReadStatus::reference(), encoded(1))
+            .where_equal(GrantReadKind::at("GrantReadKind"), encoded(kind.code()))
+            .expect("owned record field matches its declaration")
+            .where_equal(GrantReadStatus::at("GrantReadStatus"), encoded(1))
+            .expect("owned record field matches its declaration")
             .forward(GrantResource::reference())
             .allow(Model::reference())
     };
@@ -123,7 +126,7 @@ pub fn declare(
                     .finish(),
             )
             .operation_projection_work_budget(InspectDomain::reference(), 32)
-            .operation_read_field(InspectDomain::reference(), ModelName::reference())
+            .operation_read_field(InspectDomain::reference(), ModelName::at("ModelName"))
             .capability(contract::definition()),
     )
 }

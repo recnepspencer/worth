@@ -1,31 +1,28 @@
 //! Typed references attach shared value meaning, never caller-provided results.
 use super::*;
 use crate::application_schema::{
-    ApplicationFieldBindingLocus, ApplicationFieldRef,
     ApplicationOperationBodyAuthoringDenial as AuthoringDenial, ApplicationOperationBodyBuilder,
     ApplicationOperationBodyCreatedField, ApplicationOperationBodyCreationBuilder,
-    ApplicationOperationBodyScopeField, DeclaredApplicationFieldValue, NoApplicationUnit,
-    OperationWrites, WritableCapability,
+    ApplicationOperationBodyScopeField,
 };
 impl<S, O, I> ApplicationOperationBodyBuilder<S, O, I> {
-    pub fn assign_value<E, A, F, V, W, Q, B>(
+    pub fn assign_value<F, B>(
         mut self,
-        field: ApplicationFieldRef<S, E, A, F, V, W, Q, NoApplicationUnit>,
+        field: F,
         value: &ApplicationOperationBodyValue<S, O, B>,
     ) -> Result<Self, AuthoringDenial>
     where
-        F: OperationWrites<O> + DeclaredApplicationFieldValue<Value = V, Binding = B>,
-        W: WritableCapability,
-        B: ApplicationScalarValueBinding<Value = V>,
+        F: crate::application_schema::fragment::RecordSelection<Binding = B>,
+        B: crate::application_schema::ApplicationReadableScalarValueBinding,
     {
+        let field = super::super::record_authoring::resolve(field)?;
+        if !field.writable() {
+            return Err(AuthoringDenial::IncompatibleSourceBinding);
+        }
         self.retain_value(&value.program)?;
         self.steps
             .push(ApplicationOperationBodyScopeField::AssignValue {
-                field: ApplicationFieldBindingLocus::new(
-                    field.entity(),
-                    field.aspect(),
-                    field.field(),
-                ),
+                field: field.locus().clone(),
                 binding: B::IDENTITY,
                 value: value.program.identity.clone(),
             });
@@ -50,23 +47,20 @@ impl<S, O, I> ApplicationOperationBodyBuilder<S, O, I> {
     }
 }
 impl<S, O, I, E> ApplicationOperationBodyCreationBuilder<S, O, I, E> {
-    pub fn initialize_value<A, F, V, W, Q, B>(
+    pub fn initialize_value<F, B>(
         mut self,
-        field: ApplicationFieldRef<S, E, A, F, V, W, Q, NoApplicationUnit>,
+        field: F,
         value: &ApplicationOperationBodyValue<S, O, B>,
     ) -> Result<Self, AuthoringDenial>
     where
-        F: OperationWrites<O> + DeclaredApplicationFieldValue<Value = V, Binding = B>,
-        B: ApplicationScalarValueBinding<Value = V>,
+        F: crate::application_schema::fragment::RecordSelection<Entity = E, Binding = B>,
+        B: crate::application_schema::ApplicationReadableScalarValueBinding,
     {
+        let field = super::super::record_authoring::resolve(field)?;
         self.parent.retain_value(&value.program)?;
         self.fields
             .push(ApplicationOperationBodyCreatedField::Computed {
-                field: ApplicationFieldBindingLocus::new(
-                    field.entity(),
-                    field.aspect(),
-                    field.field(),
-                ),
+                field: field.locus().clone(),
                 binding: B::IDENTITY,
                 value: value.program.identity.clone(),
             });

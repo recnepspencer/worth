@@ -25,7 +25,7 @@ fn member(content_format: Option<[u8; 32]>, frame: Option<String>) -> Applicatio
         source_query: Some("amount-before.v1".to_owned()),
         inverse_query: Some("amount-current.v2".to_owned()),
         reapplication_source: Some(identity("set-amount.v1")),
-        completed_external_reconciliation: Some(worth_query_declaration::facade::application_aftermath::DeclaredReconciliationProcedure::new("settled-source-local-compensation").unwrap()),
+        completed_external_reconciliation: Some(worth_query_declaration::facade::application_aftermath::DeclaredReconciliationProcedure::new("settled-source-local-compensation")),
         authored_identity: Some(worth_query_declaration::facade::application_aftermath::DeclaredAuthoredCorrection::from_untrusted_parts(
             worth_query_declaration::facade::application_aftermath::DeclaredAuthoredCorrectionParts {
                 family: identity("authored-account.v1"), source_role: "retired".to_owned(), inverse_role: "restored".to_owned(),
@@ -55,8 +55,7 @@ fn member(content_format: Option<[u8; 32]>, frame: Option<String>) -> Applicatio
             scope: identity("Account"), scope_entity: "Account".to_owned(),
             scope_aspect: "State".to_owned(), scope_field: "id".to_owned(),
             scope_value: identity("worth.u64"),
-            scope_resolution: worth_query_declaration::facade::application_query::ApplicationQueryScopeResolutionMode::InputField,
-            scope_writable: false, principal_binding: "HistoryPrincipal".to_owned(),
+            scope_resolution: worth_query_declaration::facade::application_query::ApplicationQueryScopeResolutionMode::InputField, principal_binding: "HistoryPrincipal".to_owned(),
         }),
     });
     let contract = PortableApplicationAftermathContract::from_untrusted_fields(

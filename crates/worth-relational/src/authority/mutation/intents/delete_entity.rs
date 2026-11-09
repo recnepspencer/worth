@@ -1,7 +1,5 @@
 use crate::authority::mutation::outcomes::MutationOutcome;
-use crate::authority::mutation::record_changes::{
-    delete_entity_with_cascade, delete_entity_with_cascade_original,
-};
+use crate::authority::mutation::record_changes::delete_entity_with_cascade;
 use crate::authority::mutation::stale_targets::ensure_entity_target_is_current;
 use crate::authority::mutation::MutationWorkspace;
 use crate::transactions::data::DeleteEntityIntent;
@@ -14,6 +12,7 @@ pub(super) type DeleteEntity = fn(
     &crate::schema::data::RelationalSchemaRegistry,
     crate::config::data::CascadeDeletePolicy,
     &mut MutationOutcome,
+    Option<&std::collections::BTreeSet<crate::identity::data::RelationId>>,
 ) -> Result<(), crate::transactions::data::TransactionCommitError>;
 
 pub(super) fn apply(
@@ -21,12 +20,6 @@ pub(super) fn apply(
     workspace: &mut MutationWorkspace<'_>,
 ) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
     apply_using(intent, workspace, delete_entity_with_cascade)
-}
-pub(super) fn apply_original(
-    intent: &DeleteEntityIntent,
-    workspace: &mut MutationWorkspace<'_>,
-) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
-    apply_using(intent, workspace, delete_entity_with_cascade_original)
 }
 fn apply_using(
     intent: &DeleteEntityIntent,
@@ -52,6 +45,7 @@ fn apply_using(
             context.schema,
             cascade_delete_policy,
             &mut outcome,
+            context.deferred_publication_edges,
         )?;
         Ok::<(), crate::transactions::data::TransactionCommitError>(())
     })?;

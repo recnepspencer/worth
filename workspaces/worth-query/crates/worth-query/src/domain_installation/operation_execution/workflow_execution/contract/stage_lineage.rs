@@ -1,5 +1,7 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowStageLineageDenial {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     RuntimeMutationEvidenceRequired,
     AuthoritativeContinuityEvidenceRequired,
     IdentityEvolutionAdmission(crate::identity_evolution::IdentityEvolutionAdmissionError),
@@ -95,5 +97,11 @@ fn authoritative_continuity_descriptor(
         | Outcome::RejectedHistoricalResolutionFailure => {
             Err(WorthQueryWorkflowStageLineageDenial::AuthoritativeContinuityEvidenceRequired)
         }
+    }
+}
+
+impl From<IdentityDerivationDenial> for WorthQueryWorkflowStageLineageDenial {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
     }
 }

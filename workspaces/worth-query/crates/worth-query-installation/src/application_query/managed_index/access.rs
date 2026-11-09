@@ -42,6 +42,7 @@ pub struct WorthQueryInstalledManagedIndexAccessContract {
 
 impl WorthQueryInstalledManagedIndexAccessContract {
     pub(super) fn compile(
+        budget: worth_foundational::facade::CanonicalDigestWorkBudget,
         schema: ApplicationSchemaBindingIdentity,
         recipe: &ApplicationManagedIndexBindingDescriptor,
         source: &Binding,
@@ -64,7 +65,7 @@ impl WorthQueryInstalledManagedIndexAccessContract {
             && meaning.predicate_profile.is_err() {
             return Err(super::denied(super::Kind::ManagedIndexParentUnsupported, &recipe.meaning().parts().name));
         }
-        let obligations = bind_managed_index_obligations(&meaning).map_err(|cause| {
+        let obligations = bind_managed_index_obligations(budget, &meaning).map_err(|cause| {
             super::super::denial::graph_obligation_denial(&recipe.meaning().parts().name, cause)
         })?;
         Ok(Self {

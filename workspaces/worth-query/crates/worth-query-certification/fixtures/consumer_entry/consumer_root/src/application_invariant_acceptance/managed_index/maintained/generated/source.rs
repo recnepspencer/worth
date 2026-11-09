@@ -23,35 +23,14 @@ pub struct IdentitySlot;
 pub struct NoteSlot;
 worth_query_portable_type!(IdentitySlot => "maintained-generated.directory-identity.v1");
 worth_query_portable_type!(NoteSlot => "maintained-generated.directory-note.v1");
-fn identity() -> ApplicationQueryResultFieldRef<
-    Query,
-    IdentitySlot,
-    Catalog,
-    Directory,
-    DirectoryFacts,
-    DirectoryIdentity,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("directory", DirectoryIdentity::reference())
+fn identity() -> ApplicationQueryResultFieldRef<Query, IdentitySlot, Catalog, DirectoryIdentity> {
+    ApplicationQueryResultFieldRef::new("directory", DirectoryIdentity::at("DirectoryIdentity"))
 }
-fn note() -> ApplicationQueryResultFieldRef<
-    Query,
-    NoteSlot,
-    Catalog,
-    Directory,
-    DirectoryFacts,
-    DirectoryNote,
-    String,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("note", DirectoryNote::reference())
+fn note() -> ApplicationQueryResultFieldRef<Query, NoteSlot, Catalog, DirectoryNote> {
+    ApplicationQueryResultFieldRef::new("note", DirectoryNote::at("DirectoryNote"))
 }
-pub fn definition() -> ApplicationQueryDefinition<Catalog, Query, Parameters, Row, Directory> {
+pub fn definition() -> ApplicationQueryDefinitionBuilder<Catalog, Query, Parameters, Row, Directory>
+{
     ApplicationQueryDefinitionBuilder::declare(Query::reference())
         .root(Directory::reference())
         .scope(Directory::reference())
@@ -66,8 +45,6 @@ pub fn definition() -> ApplicationQueryDefinition<Catalog, Query, Parameters, Ro
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<Catalog, Query> for Row {
     fn project(
@@ -92,6 +69,6 @@ worth_query_query_binding!(pub Binding for ReadDirectory, schema Catalog,
     query Query, parameters ParametersBinding => |_| ApplicationQueryParameterSet::new(),
     result ResultBinding, principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit,
-    field DirectoryIdentity::reference(), value scope, limits results 1
+    scope DirectoryIdentity,
+    field DirectoryIdentity::at("DirectoryIdentity"), value scope, limits results 1
 );

@@ -94,3 +94,6 @@ pub(crate) mod work_ceiling;
 
 #[path = "worth_court_execution/supported_programs/mod.rs"]
 mod supported_programs;
+
+#[path = "worth_court_execution/cost/mod.rs"]
+mod cost;

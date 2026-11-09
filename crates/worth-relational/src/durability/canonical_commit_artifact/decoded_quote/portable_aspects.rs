@@ -131,6 +131,8 @@ pub(super) fn structure(
                     worth_execution::ExecutionOrderedMapDenial::CapacityOverflow => malformed(),
                 })
         })?;
+        // The raw count bounds staging/build peak; only unique winners retain
+        // tree nodes. Duplicate nested heaps stay in the transient difference.
         let backing = StructAspectValue::decode_storage_bounds(count).ok_or_else(malformed)?;
         let final_backing =
             StructAspectValue::decode_storage_bounds(final_values.len()).ok_or_else(malformed)?;

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::view_shape_live::ViewShapePatchEnvelope;
 use worth_foundational::facade::{CanonicalFieldPath, FieldKey};
 use worth_query_execution::facade::integration::WorthQueryRelationalSourceOwner;
@@ -140,17 +141,17 @@ impl WorthQueryMutationDelta {
         entity_identity: WorthQueryEntityIdentity,
         kind: WorthQueryMutationKind,
         touched_aspects: Vec<crate::runtime::WorthQueryAspectTouch>,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let collection = collection.into();
-        Self {
+        Ok(Self {
             collection_identity: crate::runtime::WorthQueryMutationTargetCollectionIdentity::new(
                 "mutation-delta-collection",
                 collection,
-            ),
+            )?,
             entity_identity,
             kind,
             touched_aspects,
-        }
+        })
     }
 
     pub(crate) fn from_collection_identity(
@@ -348,6 +349,7 @@ pub struct WorthQueryMemoryWorkspace {
     runtime: WorthQueryRelationalSourceOwner,
     kind_id: KindId,
     kind_name: String,
+    mutation_delta_collection_identity: crate::runtime::WorthQueryMutationTargetCollectionIdentity,
     aspects: Vec<WorthQueryAspect>,
     aspect_contracts:
         crate::runtime::native_aspect_contracts::WorthQueryNativeAspectContractRegistry,
@@ -370,3 +372,12 @@ impl
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
+
+impl From<IdentityDerivationDenial> for WorthQueryWorkspaceError {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::with_kind(
+            WorthQueryWorkspaceErrorKind::EvidenceIdentityDerivationDenied(cause),
+            "evidence identity derivation refused",
+        )
+    }
+}

@@ -1,4 +1,5 @@
 use crate::domain_capabilities::identity::domain_capability_scope_encoder;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceTag};
 
 use super::super::payloads::{
@@ -31,21 +32,21 @@ where
             P,
             T,
         >,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let category = contribution.payload().payload().category();
         let semantic_posture = contribution.payload().payload().semantic_posture();
         let semantic_code = contribution.payload().payload().semantic_code().to_string();
         let detail = contribution.payload().payload().detail().to_string();
         let target_kind = contribution.payload().target().kind();
-        let target_identity = contribution.payload().target().target_identity();
-        let binding_identity = contribution.payload().target().binding_identity();
+        let target_identity = contribution.payload().target().target_identity()?;
+        let binding_identity = contribution.payload().target().binding_identity()?;
         let request_identity = contribution.payload().request_identity();
         let semantic_identity = canonical_runtime_semantic_identity(
             category,
             semantic_posture,
             &semantic_code,
             &detail,
-        );
+        )?;
         let materialization_identity = domain_capability_scope_encoder(
             "worth_query_domain_capability_canonical_runtime_materialization_v1",
         )
@@ -61,13 +62,13 @@ where
         .field_evidence_identity(WorthQueryEvidenceTag::new("binding"), &binding_identity)
         .field_evidence_identity(WorthQueryEvidenceTag::new("request"), request_identity)
         .field_evidence_identity(WorthQueryEvidenceTag::new("semantic"), &semantic_identity)
-        .seal();
-        Self {
+        .seal()?;
+        Ok(Self {
             contribution,
             canonical_family: canonical_family_for(category),
             semantic_identity,
             materialization_identity,
-        }
+        })
     }
 
     pub fn contribution(
@@ -129,26 +130,30 @@ fn canonical_runtime_semantic_identity(
     semantic_posture: WorthQueryDomainCapabilitySemanticPosture,
     semantic_code: &str,
     detail: &str,
-) -> WorthQueryEvidenceIdentity {
-    domain_capability_scope_encoder("worth_query_domain_capability_semantic_identity_v1")
-        .field_shape(WorthQueryEvidenceTag::new("category"), category.as_str())
-        .field_shape(
-            WorthQueryEvidenceTag::new("posture"),
-            semantic_posture.as_str(),
-        )
-        .field_shape(WorthQueryEvidenceTag::new("code"), semantic_code)
-        .field_shape(WorthQueryEvidenceTag::new("detail"), detail)
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        domain_capability_scope_encoder("worth_query_domain_capability_semantic_identity_v1")
+            .field_shape(WorthQueryEvidenceTag::new("category"), category.as_str())
+            .field_shape(
+                WorthQueryEvidenceTag::new("posture"),
+                semantic_posture.as_str(),
+            )
+            .field_shape(WorthQueryEvidenceTag::new("code"), semantic_code)
+            .field_shape(WorthQueryEvidenceTag::new("detail"), detail)
+            .seal()?,
+    )
 }
 
 pub fn materialize_domain_capability_canonical_runtime_artifact<P, T>(
     contribution: super::super::WorthQueryMaterializationReadyDomainCapabilityContribution<P, T>,
-) -> WorthQueryCanonicalRuntimeMaterialization<P, T>
+) -> Result<WorthQueryCanonicalRuntimeMaterialization<P, T>, IdentityDerivationDenial>
 where
     P: WorthQueryDomainCapabilityPayload,
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    WorthQueryCanonicalRuntimeMaterialization::new(contribution)
+    Ok(WorthQueryCanonicalRuntimeMaterialization::new(
+        contribution,
+    )?)
 }
 
 pub type WorthQueryCanonicalAdmissionArtifact<T> =

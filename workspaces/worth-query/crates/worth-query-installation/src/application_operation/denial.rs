@@ -1,5 +1,6 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationOperationInstallationDenialKind {
+    PreImageDemandNotCoveredByAuthoredAnchors,
     MutationBindingIdentityCollision,
     MutationBindingNotInstalled,
     MutationBindingMeaningChanged,

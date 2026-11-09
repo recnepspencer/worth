@@ -13,7 +13,7 @@ pub(super) fn candidate_entity_bytes(
                 record
                     .extra()
                     .authoritative_aspect_state()
-                    .map_or(0, |state| state.owned_allocation_capacity_bytes() as u64),
+                    .map_or(0, |state| state.clone_allocation_capacity_bytes() as u64),
             ))
         })
     } else {
@@ -26,7 +26,7 @@ pub(super) fn candidate_entity_bytes(
                     metadata.kind_id,
                     metadata
                         .authoritative_aspect_state()
-                        .map_or(0, |state| state.owned_allocation_capacity_bytes() as u64),
+                        .map_or(0, |state| state.clone_allocation_capacity_bytes() as u64),
                 )
             })
     };
@@ -59,7 +59,7 @@ pub(super) fn candidate_relation_bytes(
                 record
                     .extra()
                     .authoritative_aspect_state()
-                    .map_or(0, |state| state.owned_allocation_capacity_bytes() as u64),
+                    .map_or(0, |state| state.clone_allocation_capacity_bytes() as u64),
             ))
         })
     } else {
@@ -68,7 +68,7 @@ pub(super) fn candidate_relation_bytes(
                 metadata.kind_id,
                 metadata
                     .authoritative_aspect_state()
-                    .map_or(0, |state| state.owned_allocation_capacity_bytes() as u64),
+                    .map_or(0, |state| state.clone_allocation_capacity_bytes() as u64),
             )
         })
     };

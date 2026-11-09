@@ -55,6 +55,7 @@ pub(super) fn request_scope() -> authentication::WorthQueryRequestScope {
     authentication::WorthQueryRequestScope::new(
         Some(Instant::now() + Duration::from_secs(120)),
         cancellation.token(),
+        authentication::WorthQueryAdmissionClock::system(),
     )
 }
 
@@ -72,6 +73,7 @@ pub(super) fn authenticate(
                 .expect("the local UI audience is canonical"),
             authentication::WorthQueryAuthenticationMethod::new("local-source-owner")
                 .expect("the local UI method is canonical"),
+            authentication::WorthQueryAdmissionClock::system(),
         ),
         WorthUiLocalSourceAdapter,
     )

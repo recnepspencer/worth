@@ -1,7 +1,9 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum EffectExecutionOracleErrorKind {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     RelationalObservationMissingBranchHead,
     RelationalOracleUnsupportedEffect,
     RelationalOracleBranchMismatch,
@@ -18,6 +20,7 @@ pub enum EffectExecutionOracleErrorKind {
 impl EffectExecutionOracleErrorKind {
     pub fn as_str(&self) -> &'static str {
         match self {
+            Self::EvidenceIdentityDerivationDenied(_) => "evidence_identity_derivation_denied",
             Self::RelationalObservationMissingBranchHead => {
                 "relational_observation_missing_branch_head"
             }
@@ -43,12 +46,47 @@ impl EffectExecutionOracleErrorKind {
 pub struct EffectExecutionOracleError {
     kind: EffectExecutionOracleErrorKind,
     message: String,
-    execution_subject_identity: WorthQueryEvidenceIdentity,
+    execution_subject_identity: Option<WorthQueryEvidenceIdentity>,
     oracle_identity: Option<WorthQueryEvidenceIdentity>,
-    error_identity: WorthQueryEvidenceIdentity,
+    error_identity: Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial>,
 }
 
 impl EffectExecutionOracleError {
+    pub(crate) fn with_subject_derivation(
+        kind: EffectExecutionOracleErrorKind,
+        message: impl Into<String>,
+        subject: Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial>,
+        oracle: Option<&WorthQueryEvidenceIdentity>,
+    ) -> Self {
+        match subject {
+            Ok(subject) => Self::new(kind, message, &subject, oracle),
+            Err(cause) => Self {
+                kind,
+                message: message.into(),
+                execution_subject_identity: None,
+                oracle_identity: oracle.cloned(),
+                error_identity: Err(cause),
+            },
+        }
+    }
+    pub(crate) fn with_oracle_derivation(
+        kind: EffectExecutionOracleErrorKind,
+        message: impl Into<String>,
+        subject: &WorthQueryEvidenceIdentity,
+        oracle: Result<Option<WorthQueryEvidenceIdentity>, IdentityDerivationDenial>,
+    ) -> Self {
+        match oracle {
+            Ok(oracle) => Self::new(kind, message, subject, oracle.as_ref()),
+            Err(cause) => Self {
+                kind,
+                message: message.into(),
+                execution_subject_identity: Some(subject.clone()),
+                oracle_identity: None,
+                error_identity: Err(cause),
+            },
+        }
+    }
+
     pub(crate) fn new(
         kind: EffectExecutionOracleErrorKind,
         message: impl Into<String>,
@@ -73,7 +111,7 @@ impl EffectExecutionOracleError {
         Self {
             kind,
             message,
-            execution_subject_identity: execution_subject_identity.clone(),
+            execution_subject_identity: Some(execution_subject_identity.clone()),
             oracle_identity: oracle_identity.cloned(),
             error_identity,
         }
@@ -87,12 +125,14 @@ impl EffectExecutionOracleError {
         &self.message
     }
 
-    pub fn execution_subject_identity(&self) -> &WorthQueryEvidenceIdentity {
-        &self.execution_subject_identity
+    /// Present once the execution subject has been admitted.
+    pub fn execution_subject_identity(&self) -> Option<&WorthQueryEvidenceIdentity> {
+        self.execution_subject_identity.as_ref()
     }
 
-    pub fn execution_subject_for_reporting(&self) -> &str {
-        self.execution_subject_identity.as_str()
+    pub fn execution_subject_for_reporting(&self) -> Option<&str> {
+        self.execution_subject_identity()
+            .map(WorthQueryEvidenceIdentity::as_str)
     }
 
     pub fn oracle_identity(&self) -> Option<&WorthQueryEvidenceIdentity> {
@@ -105,12 +145,12 @@ impl EffectExecutionOracleError {
             .map(WorthQueryEvidenceIdentity::as_str)
     }
 
-    pub fn error_identity(&self) -> &WorthQueryEvidenceIdentity {
-        &self.error_identity
+    pub fn error_identity(&self) -> Result<&WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        self.error_identity.as_ref().map_err(|cause| *cause)
     }
 
-    pub fn error_for_reporting(&self) -> &str {
-        self.error_identity.as_str()
+    pub fn error_for_reporting(&self) -> Result<&str, IdentityDerivationDenial> {
+        Ok(self.error_identity()?.as_str())
     }
 }
 
@@ -122,4 +162,17 @@ pub(crate) fn bridge_oracle_observation_subject() -> WorthQueryEvidenceIdentity 
         )
         .field_shape(WorthQueryEvidenceTag::new("kind"), "last_writeback")
         .seal()
+        .expect("private bridge observation descriptor contains two fixed literal entries")
+}
+
+impl From<IdentityDerivationDenial> for EffectExecutionOracleError {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self {
+            kind: EffectExecutionOracleErrorKind::EvidenceIdentityDerivationDenied(cause),
+            message: "effect oracle evidence identity refused".to_owned(),
+            execution_subject_identity: None,
+            oracle_identity: None,
+            error_identity: Err(cause),
+        }
+    }
 }

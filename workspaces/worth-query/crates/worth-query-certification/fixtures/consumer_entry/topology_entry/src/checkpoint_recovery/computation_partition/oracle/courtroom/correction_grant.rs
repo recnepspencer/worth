@@ -28,13 +28,16 @@ pub(in crate::checkpoint_recovery::computation_partition::oracle) fn seed_grant(
     graph
         .bind_entity(
             Seed::new(CorrectionGrant::reference(), key(grant))
-                .field(CorrectionAction::reference(), action)
-                .field(CorrectionPurpose::reference(), action)
-                .field(CorrectionStatus::reference(), 1)
-                .field(CorrectionScopeKey::reference(), scope.to_owned())
-                .field(CorrectionNotBefore::reference(), 0)
-                .field(CorrectionNotAfter::reference(), u64::MAX)
-                .field(CorrectionDepth::reference(), 0),
+                .field(CorrectionAction::at("CorrectionAction"), action)
+                .field(CorrectionPurpose::at("CorrectionPurpose"), action)
+                .field(CorrectionStatus::at("CorrectionStatus"), 1)
+                .field(
+                    CorrectionScopeKey::at("CorrectionScopeKey"),
+                    scope.to_owned(),
+                )
+                .field(CorrectionNotBefore::at("CorrectionNotBefore"), 0)
+                .field(CorrectionNotAfter::at("CorrectionNotAfter"), u64::MAX)
+                .field(CorrectionDepth::at("CorrectionDepth"), 0),
         )
         .unwrap();
     graph

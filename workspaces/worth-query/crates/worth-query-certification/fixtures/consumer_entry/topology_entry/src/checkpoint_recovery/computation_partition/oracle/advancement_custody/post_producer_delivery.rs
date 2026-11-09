@@ -27,7 +27,7 @@ fn refused_delivery(placement: Placement) {
     place(placement);
     let ceiling = CALLER_WORK;
     bound(None);
-    let application = application_fixture::application();
+    let application = application_fixture::application::<PRODUCER_WORK>(ENTRY_WORK);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let mut interest = request
@@ -98,7 +98,7 @@ fn funded_delivery(placement: Placement) {
             .expect("checkpoint fixture explicitly chooses a finite request")
             > CALLER_WORK
     );
-    let application = application_fixture::application();
+    let application = application_fixture::application::<PRODUCER_WORK>(ENTRY_WORK);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let mut interest = request

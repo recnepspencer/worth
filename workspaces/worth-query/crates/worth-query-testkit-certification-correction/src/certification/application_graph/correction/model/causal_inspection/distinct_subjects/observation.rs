@@ -42,7 +42,7 @@ pub(in super::super) fn read(
             let entity = selected
                 .resolve_entity(
                     &phase,
-                    Key::reference(),
+                    Key::at("Key"),
                     key.to_owned(),
                     scope,
                     WorthQueryPrincipalResolutionMode::Ordinary,

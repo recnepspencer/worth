@@ -1,8 +1,7 @@
 mod leased;
-mod original;
+mod row;
 use leased::stage_leased_entity_rows;
-pub(super) use original::apply_original;
-use original::apply_prepared_row;
+use row::apply_prepared_row;
 
 use worth_execution::ExecutionResourceLease;
 use worth_foundational::PartitionIdentity;

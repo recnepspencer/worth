@@ -3,7 +3,7 @@ use super::*;
 use worth_query_declaration::facade::{
     application_capability::{ApplicationCapabilityRef, ApplicationCapabilityRequest},
     application_history::ApplicationHistoryModel,
-    application_operation::{ApplicationMutationScopeBinding, NoApplicationMutationSource},
+    application_operation::NoApplicationMutationSource,
     application_schema::{ApplicationOperationMarkerIdentity, ApplicationOperationRef},
 };
 
@@ -16,10 +16,9 @@ where
     P: ApplicationProgramDefinition<S>,
     A: ApplicationAction<S, I::Binding>,
     Mode<S, I, A>: WorthQueryHistoryOperationMode<S, I, P, A>,
+    Outputs: WorthQueryHistoryOutputsMode<S, H>,
     I::Binding: crate::application_entry::WorthQuerySourceOperationBinding<S>
         + ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
-    <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding:
-        ApplicationMutationScopeBinding<S, Scope = ApplicationHistoryModel<S, H>>,
     Scope<S, H>: ApplicationQueryScopeResolution<S, Principal<S, H>>,
     Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
 {

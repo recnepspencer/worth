@@ -1,7 +1,6 @@
 //! Reached incidence distinguishes ownership from independently committed references.
 use super::{
-    charge, creation, endpoints, CanonicalCommitEnvelope, CanonicalCommitEnvelopeBody,
-    CanonicalRequiredOutputOrigin, Stop,
+    charge, creation, endpoints, CanonicalCommitEnvelope, CanonicalRequiredOutputOrigin, Stop,
 };
 use crate::branch::RelationalBranchRoot;
 use crate::identity::data::VersionId;
@@ -16,12 +15,14 @@ pub(super) fn validate(
     state: &dyn CurrentPartitionAccess,
     root: &RelationalBranchRoot,
     origin: &CanonicalRequiredOutputOrigin,
-    current: Option<&CanonicalCommitEnvelopeBody>,
+    current: Option<super::CurrentPublicationFrame<'_>>,
     lookup: &mut impl FnMut(
         VersionId,
         &mut MapKernelContext<'_, '_>,
     ) -> Result<Option<Arc<CanonicalCommitEnvelope>>, Stop>,
     lease: Option<&ExecutionResourceLease<'_>>,
+    validated_history: &mut crate::history::data::canonical_commit_envelope::OutputOriginHistory,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), Stop> {
     for output in &origin.outputs {
@@ -69,6 +70,19 @@ pub(super) fn validate(
                 if !row.is_live() {
                     continue;
                 }
+                // Publication completion adds its own current-custody links
+                // after producer membership capture. These are Native records,
+                // protected and authenticated by that storage owner; they are
+                // not business edges created by the producer.
+                if row.kind_id().is_some_and(|kind| {
+                    root.schema_authority()
+                        .registry()
+                        .current_publication_storage
+                        .as_ref()
+                        .is_some_and(|storage| storage.metadata_kinds().contains(&kind))
+                }) {
+                    continue;
+                }
                 if origin
                     .relations
                     .binary_search_by_key(id, |entry| entry.id)
@@ -86,7 +100,16 @@ pub(super) fn validate(
                 if source == target {
                     return Err("unclaimed internal or misindexed incident relation lacks producer provenance".into());
                 }
-                creation::validate(state, *id, origin, current, lookup, context)?;
+                creation::validate(
+                    state,
+                    *id,
+                    origin,
+                    current,
+                    lookup,
+                    validated_history,
+                    execution,
+                    context,
+                )?;
                 let kind = row.kind_id().ok_or("incident relation kind absent")?;
                 if root.schema_authority().relation_aspect_plan(kind).is_none() {
                     return Err("incident relation installed plan absent".into());

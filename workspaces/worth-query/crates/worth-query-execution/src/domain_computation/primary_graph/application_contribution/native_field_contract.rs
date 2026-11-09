@@ -23,30 +23,27 @@ impl NativeFieldBindingExpectation {
         clippy::disallowed_methods,
         reason = "Type identity serves point lookup; canonical order uses declared identity"
     )]
-    pub(super) fn of<S, E, A, F, V: 'static, W, Q, U>(
-        field: schema::ApplicationFieldRef<S, E, A, F, V, W, Q, U>,
-    ) -> Self
-    where
-        F: schema::DeclaredApplicationFieldValue<Value = V>,
-        U: schema::ApplicationFieldUnit,
-    {
+    pub(super) fn of<F: schema::fragment::RecordSelection>(
+        field: F,
+    ) -> Result<Self, schema::ApplicationSchemaDeclarationDenial> {
+        let metadata = field.checked()?;
         use schema::ApplicationScalarValueBinding;
-        Self {
+        Ok(Self {
             locus: schema::ApplicationFieldBindingLocus::new(
                 field.entity(),
                 field.aspect(),
                 field.field(),
             ),
             binding: TypeId::of::<F::Binding>(),
-            value: TypeId::of::<V>(),
+            value: TypeId::of::<F::Value>(),
             identity: F::Binding::IDENTITY,
             scalar: F::Binding::SCALAR_FAMILY,
             unit: F::Binding::UNIT,
             frame: F::Binding::FRAME,
             canonical: F::Binding::canonical_contract(),
-            presence: F::PRESENCE,
+            presence: metadata.presence(),
             identity_name: F::Binding::IDENTITY_NAME,
-        }
+        })
     }
 }
 
@@ -81,15 +78,22 @@ pub struct FieldExpectation {
 }
 
 impl FieldExpectation {
-    pub(super) fn declared<S, E, A, F, V: 'static, W, Q, U>(
+    pub(super) fn declared<F: schema::fragment::RecordSelection>(
         declaration: &schema::ErasedApplicationSchemaDeclaration,
-        field: schema::ApplicationFieldRef<S, E, A, F, V, W, Q, U>,
-    ) -> Result<Self, NativeFieldContractDenial>
-    where
-        F: schema::DeclaredApplicationFieldValue<Value = V>,
-        U: schema::ApplicationFieldUnit,
-    {
-        NativeFieldBindingExpectation::of(field).declare(declaration)
+        field: F,
+    ) -> Result<Self, NativeFieldContractDenial> {
+        NativeFieldBindingExpectation::of(field)
+            .map_err(|cause| {
+                field_denial(
+                    schema::ApplicationFieldBindingLocus::new(
+                        field.entity(),
+                        field.aspect(),
+                        field.field(),
+                    ),
+                    &format!("{cause:?}"),
+                )
+            })?
+            .declare(declaration)
     }
 }
 

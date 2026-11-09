@@ -1,20 +1,20 @@
 use worth_foundational::facade::{AspectValue, BoundaryProtocolVersion, InternedString};
 
-use super::restoration::{hex_bytes, restore_record};
+use super::restoration::{decode_fields, hex_bytes};
 use super::Denial;
 
 #[test]
 fn durable_field_restore_accepts_the_exact_committed_shape() {
-    let restored = restore_record(valid_restored_fields()).unwrap();
-    assert_eq!(restored.correlation().bytes(), &[7; 32]);
-    assert_eq!(restored.correlation_family().as_str(), "family");
-    assert_eq!(restored.effect(), "effect");
-    assert_eq!(restored.protocol_identity().as_str(), "test.effect");
-    assert_eq!(restored.protocol_version(), BoundaryProtocolVersion::new(1));
-    assert_eq!(restored.maximum_payload_bytes(), 24);
-    assert_eq!(restored.payload(), [1, 2]);
-    assert_eq!(restored.outcome_identity(), 9);
-    assert_eq!(restored.operation_slot(), Some("notify"));
+    let restored = decode_fields(valid_restored_fields()).unwrap();
+    assert_eq!(restored.correlation.bytes(), &[7; 32]);
+    assert_eq!(restored.correlation_family.as_str(), "family");
+    assert_eq!(restored.effect, "effect");
+    assert_eq!(restored.protocol_identity.as_str(), "test.effect");
+    assert_eq!(restored.protocol_version, BoundaryProtocolVersion::new(1));
+    assert_eq!(restored.maximum_payload_bytes, 24);
+    assert_eq!(restored.payload, [1, 2]);
+    assert_eq!(restored.outcome_identity, 9);
+    assert_eq!(restored.operation_slot.as_deref(), Some("notify"));
 }
 
 #[test]
@@ -23,7 +23,7 @@ fn durable_field_restore_rejects_every_omission_and_wrong_storage_type() {
     for omitted in 0..valid.len() {
         let mut values = valid.clone();
         values.remove(omitted);
-        assert_eq!(restore_record(values), Err(Denial::Malformed));
+        assert_eq!(decode_fields(values), Err(Denial::Malformed));
     }
     for corrupted in 0..valid.len() {
         let mut values = valid.clone();
@@ -32,7 +32,7 @@ fn durable_field_restore_rejects_every_omission_and_wrong_storage_type() {
         } else {
             AspectValue::UInt64(17)
         };
-        assert_eq!(restore_record(values), Err(Denial::Malformed));
+        assert_eq!(decode_fields(values), Err(Denial::Malformed));
     }
 }
 
@@ -50,7 +50,7 @@ fn durable_field_restore_rejects_malformed_protocol_and_encoded_bytes() {
     ] {
         let mut values = valid_restored_fields();
         values[field] = invalid;
-        assert_eq!(restore_record(values), Err(Denial::Malformed));
+        assert_eq!(decode_fields(values), Err(Denial::Malformed));
     }
 }
 

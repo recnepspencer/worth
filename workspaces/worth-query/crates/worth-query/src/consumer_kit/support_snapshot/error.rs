@@ -1,5 +1,7 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQuerySupportSnapshotErrorKind {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     JsonDecodeFailed,
     JsonEncodeFailed,
     SchemaVersionMismatch,
@@ -133,3 +135,12 @@ impl std::fmt::Display for WorthQuerySupportSnapshotError {
 }
 
 impl std::error::Error for WorthQuerySupportSnapshotError {}
+
+impl From<IdentityDerivationDenial> for WorthQuerySupportSnapshotError {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::new(
+            WorthQuerySupportSnapshotErrorKind::EvidenceIdentityDerivationDenied(cause),
+            "support snapshot digest exceeded its bounds",
+        )
+    }
+}

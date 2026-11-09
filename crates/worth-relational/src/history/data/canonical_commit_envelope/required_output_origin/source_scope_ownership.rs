@@ -36,6 +36,7 @@ pub(super) fn validate(
         return Err(invalid());
     }
     let Some(kind) = kind else { return Ok(()) };
+    installed.require_current_ownership_storage(basis, meaning.source_scope)?;
     let row = basis
         .inner
         .root

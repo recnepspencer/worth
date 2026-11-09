@@ -119,8 +119,7 @@ pub(super) fn installed_preimage_demand(
 ) -> Option<InstalledPreImageDemand> {
     match aftermath?.mechanism()? {
         InstalledCorrectionMechanism::RecordedInverse(inverse) => {
-            (!inverse.preimage_demand().loci().is_empty())
-                .then(|| inverse.preimage_demand().clone())
+            (!inverse.preimage_demand().is_empty()).then(|| inverse.preimage_demand().clone())
         }
         InstalledCorrectionMechanism::Compensation(_) => None,
     }

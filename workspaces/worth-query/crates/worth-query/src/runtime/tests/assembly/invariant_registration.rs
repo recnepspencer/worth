@@ -230,16 +230,19 @@ fn query_builder_canonicalizes_and_deduplicates_merged_invariant_catalog_sources
         "runtime.artifact.invariant-registration.merge",
         "merged invariant sources should preserve one canonical catalog identity",
     )
-    .for_intent_declaration(&declaration);
+    .expect("fixture digest must fit")
+    .for_intent_declaration(&declaration)
+    .expect("fixture digest must fit");
     let eligible = success(evaluate_requested_domain_capability_contribution(requested));
     let admitted = success(admit_eligible_domain_capability_contribution(eligible));
     let ready = success(prepare_admitted_domain_capability_contribution_for_materialization(
         admitted,
         crate::domain_capabilities::WorthQueryDeclarationBoundContributionTarget::for_intent_declaration(&declaration),
-    ));
-    let artifact = success(materialize_query_invariant_catalog_registration_artifact(
-        ready,
-    ));
+    ).expect("fixture digest must fit"));
+    let artifact = success(
+        materialize_query_invariant_catalog_registration_artifact(ready)
+            .expect("fixture digest must fit"),
+    );
 
     let expected_catalog = InvariantCatalog {
         registrations: vec![

@@ -5,9 +5,13 @@ pub fn probe(
     ApplicationQueryParameterRef::from_query_identifier("probe")
 }
 // compiled-example: begin
-pub fn definition(
-) -> ApplicationQueryDefinition<Catalog, ExactQuery, source::Parameters, source::ItemRow, Directory>
-{
+pub fn definition() -> ApplicationQueryDefinitionBuilder<
+    Catalog,
+    ExactQuery,
+    source::Parameters,
+    source::ItemRow,
+    Directory,
+> {
     source::base(
         ExactQuery::reference(),
         ApplicationQueryLaneEligibility::one_shot().with_live(),
@@ -17,8 +21,6 @@ pub fn definition(
         source::identity(),
         ApplicationQueryOrderingDirection::Ascending,
     )
-    .build()
-    .unwrap()
 }
 // compiled-example: end
 
@@ -38,6 +40,6 @@ worth_query_query_binding!(pub ExactBinding for FindExact, schema Catalog,
     },
     result source::ResultBinding, principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit,
-    field DirectoryIdentity::reference(), value scope, limits results 16
+    scope DirectoryIdentity,
+    field DirectoryIdentity::at("DirectoryIdentity"), value scope, limits results 16
 );

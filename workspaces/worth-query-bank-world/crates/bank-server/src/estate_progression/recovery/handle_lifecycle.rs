@@ -184,9 +184,8 @@ impl BankIdentityRuntime {
                 denial, owned.take().expect("admission refusal retains original handle"),
             )),
             Err(cause) => Err(BankRecoveryDisposalDenial::retained(
-                BankEstateProgressionDenial::ApplicationEntry(
-                    worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause),
-                ),
+                BankEstateProgressionDenial::ApplicationEntry(Box::new(
+                    worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause))),
                 owned.take().expect("opening refusal retains original handle"),
             )),
         }
@@ -209,7 +208,7 @@ impl BankIdentityRuntime {
             .map_err(BankEstateProgressionDenial::from_recovery)?;
         Ok(BankRecoveryTransitionReceipt::new(operation))
 
-        }).map_err(|cause| BankEstateProgressionDenial::ApplicationEntry(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)))?
+        }).map_err(|cause| BankEstateProgressionDenial::ApplicationEntry(Box::new(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause))))?
     }
 
     pub fn compensate_commit_recovery(
@@ -229,7 +228,7 @@ impl BankIdentityRuntime {
             .map_err(BankEstateProgressionDenial::from_recovery)?;
         Ok(BankRecoveryTransitionReceipt::new(operation))
 
-        }).map_err(|cause| BankEstateProgressionDenial::ApplicationEntry(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)))?
+        }).map_err(|cause| BankEstateProgressionDenial::ApplicationEntry(Box::new(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause))))?
     }
 
     pub fn inspect_commit_recovery(
@@ -248,7 +247,7 @@ impl BankIdentityRuntime {
             .map(BankRecoveryInspection::from_query)
             .map_err(BankEstateProgressionDenial::from_recovery)
 
-        }).map_err(|cause| BankEstateProgressionDenial::ApplicationEntry(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)))?
+        }).map_err(|cause| BankEstateProgressionDenial::ApplicationEntry(Box::new(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause))))?
     }
 
     pub fn evaluate_commit_recovery_expiry(

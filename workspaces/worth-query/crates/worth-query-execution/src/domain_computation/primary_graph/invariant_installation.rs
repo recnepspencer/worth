@@ -57,6 +57,9 @@ type Factory<Schema> = Box<
 >;
 
 pub struct WorthQueryApplicationInvariantFactories<Schema> {
+    histories: Vec<
+        worth_query_declaration::facade::application_history::ErasedApplicationHistoryDefinition,
+    >,
     binding_identity: ApplicationSchemaBindingIdentity,
     expected: BTreeMap<
         (String, ApplicationInvariantExecutionPoint),
@@ -66,6 +69,7 @@ pub struct WorthQueryApplicationInvariantFactories<Schema> {
     installed_order: Vec<(String, ApplicationInvariantExecutionPoint)>,
     program_basis: Option<WorthQueryInvariantProgramBasis<Schema>>,
     managed_indexes: super::application_query::managed_index::ManagedIndexProviderCatalog<Schema>,
+    current_publication_ownership: bool,
     _schema: PhantomData<fn() -> Schema>,
 }
 
@@ -88,12 +92,18 @@ where
             })
             .collect();
         Self {
+            histories: schema.installed_declaration().members().iter().filter_map(|member| {
+                if let worth_query_installation::facade::ApplicationSchemaMember::ApplicationHistory { definition } = member {
+                    Some(definition.clone())
+                } else { None }
+            }).collect(),
             binding_identity: schema.binding_identity(),
             expected,
             factories: BTreeMap::new(),
             installed_order: Vec::new(),
             program_basis: None,
             managed_indexes: Default::default(),
+            current_publication_ownership: false,
             _schema: PhantomData,
         }
     }
@@ -104,6 +114,14 @@ where
     ) -> Self {
         self.managed_indexes = catalog;
         self
+    }
+
+    pub(super) fn install_current_publication_ownership(&mut self, required: bool) {
+        self.current_publication_ownership = required;
+    }
+
+    pub(super) const fn current_publication_ownership(&self) -> bool {
+        self.current_publication_ownership
     }
 
     /// Binds the admitted support roster this installation lowers under, so a
@@ -270,6 +288,24 @@ where
             lowered.push(registration);
         }
         lowered.push(workflow_publication::registration(layout.workflow())?);
+        if self
+            .histories
+            .iter()
+            .any(|history| !history.parts().ownership.is_empty()
+                || history.parts().model_domain == worth_query_declaration::facade::application_history::ApplicationHistoryModelDomain::OwnedModelGraph)
+        {
+            lowered.push(
+                layout
+                    .all_history_ownership()
+                    .invariant_registration()
+                    .map_err(|cause| {
+                        denial(
+                            WorthQueryPrimaryGraphInstallationDenialKind::InvariantFactoryRejected,
+                            format!("model ownership: {cause:?}"),
+                        )
+                    })?,
+            );
+        }
         Ok((lowered, sources, initializer))
     }
 }

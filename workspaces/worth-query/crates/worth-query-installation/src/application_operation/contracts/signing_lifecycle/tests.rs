@@ -1,17 +1,12 @@
 //! Contract compilation only: inert capture records never represent signing authority.
+#[path = "tests/records.rs"]
+mod storage_model;
 use super::*;
+use storage_model::*;
 use worth_foundational::facade::CanonicalDigestId;
-use worth_query_declaration::{
-    facade::{application_query::*, application_schema::*},
-    worth_query_aspect, worth_query_entity, worth_query_field,
-};
+use worth_query_declaration::facade::{application_query::*, application_schema::*};
 struct Schema;
-worth_query_entity!(Parent for Schema);
-worth_query_entity!(Consequence for Schema);
-worth_query_aspect!(ParentFacts for Schema, Parent; identity = AspectIdentity(0x9175_E001), revision = AspectContractRevision(1),);
-worth_query_aspect!(ConsequenceFacts for Schema, Consequence; identity = AspectIdentity(0x9175_E002), revision = AspectContractRevision(1),);
-worth_query_field!(Revision for Schema, Parent, ParentFacts: u64 => U64ApplicationValueBinding, read_write, equality);
-worth_query_field!(Record for Schema, Consequence, ConsequenceFacts: ApplicationSigningSupersession => ApplicationSigningSupersessionBinding, read_only, equality);
+
 impl ApplicationSchema for Schema {
     const OWNER: &'static str = "worth.query.lifecycle-path-contract";
     const NAME: &'static str = "LifecyclePathContract";
@@ -19,14 +14,7 @@ impl ApplicationSchema for Schema {
     const MINOR: u32 = 0;
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
-        ApplicationSchemaDeclarationBuilder::<Self>::for_schema()
-            .entity(Parent::reference())
-            .aspect(Parent::reference(), ParentFacts::reference())
-            .field(Parent::reference(), Revision::reference())
-            .entity(Consequence::reference())
-            .aspect(Consequence::reference(), ConsequenceFacts::reference())
-            .field(Consequence::reference(), Record::reference())
-            .build()
+        worth_query_declaration::facade::application_schema::fragment::declare(Self)
     }
 }
 struct Fixture {
@@ -53,7 +41,7 @@ impl Fixture {
         let catalog =
             crate::application_schema::compile_native_contract_catalog(&binding, &native, work)
                 .unwrap();
-        let field = Locus::new("Parent", "ParentFacts", "Revision");
+        let field = Locus::new("Parent", Revision::at("Revision").aspect(), "Revision");
         let source = ApplicationOperationBodyPathFieldSource {
             path: ApplicationQueryRootPathMeaning::from_untrusted_parts(
                 WorthQueryPortableApplicationQueryRootPathParts {
@@ -76,7 +64,9 @@ impl Fixture {
             scopes: vec![Touch::WriteField(WorthQueryOperationFieldTouchScope::new(
                 binding.clone(),
                 "Parent".into(),
-                catalog.aspect("Parent", "ParentFacts").unwrap(),
+                catalog
+                    .aspect("Parent", Revision::at("Revision").aspect())
+                    .unwrap(),
                 CanonicalFieldPath::single(FieldKey::new("Revision").unwrap()),
             ))],
         };
@@ -114,7 +104,7 @@ impl Fixture {
             current_relation: "Current".into(),
             source_entity: "Row".into(),
             consequence_relation: "Consequences".into(),
-            consequence_field: Locus::new("Consequence", "ConsequenceFacts", "Record"),
+            consequence_field: Locus::new("Consequence", Record::at("Record").aspect(), "Record"),
             maximum_evidence: 2,
         }))
         .with_untrusted_subject_impact_bound(maximum_subjects);
@@ -185,4 +175,10 @@ fn path_only_subject_writes_compile_lifecycle_consequences_but_audit_context_doe
     let audit = f.derive(Role::AuditContext, None);
     assert!(audit.rules.is_empty());
     assert_eq!(audit.publication_touches, f.touches);
+}
+
+impl worth_query_declaration::facade::application_schema::fragment::Fragment for Schema {
+    const NAME: &'static str = "lifecycle";
+    type Bindings = worth_query_declaration::facade::application_schema::fragment::NoBindings;
+    type Members = (LifecycleRecords,);
 }

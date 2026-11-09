@@ -1,72 +1,36 @@
-use crate::application_schema::{
-    ApplicationFieldRef, ApplicationFieldUnit, DeclaredApplicationFieldValue, EqualityPredicate,
-    WritePosture,
-};
-
+//! Scope resolution retains the field selection until installed access.
 use super::{
     ApplicationMutationFieldScope, ApplicationMutationPrincipalScope,
     ApplicationMutationScopeBinding,
 };
+use crate::application_schema::fragment::RecordSelection;
 
-type MutationResolvedFieldParts<Schema, Binding> = (
-    ApplicationFieldRef<
-        Schema,
-        <Binding as ApplicationMutationScopeBinding<Schema>>::Scope,
-        <Binding as ApplicationMutationScopeBinding<Schema>>::Aspect,
-        <Binding as ApplicationMutationScopeBinding<Schema>>::Field,
-        <Binding as ApplicationMutationScopeBinding<Schema>>::Value,
-        <Binding as ApplicationMutationScopeBinding<Schema>>::Write,
-        EqualityPredicate,
-        <Binding as ApplicationMutationScopeBinding<Schema>>::Unit,
-    >,
+type ResolvedFieldParts<Schema, Binding> = (
+    <Binding as ApplicationMutationScopeBinding<Schema>>::Field,
     <Binding as ApplicationMutationScopeBinding<Schema>>::Value,
 );
-
-/// Resolves a declared mutation scope using the current borrowed principal.
 pub trait ApplicationMutationScopeResolution<Schema, PrincipalIdentity>:
     ApplicationMutationScopeBinding<Schema>
 {
     fn into_field_parts(
         self,
         principal_identity: &PrincipalIdentity,
-    ) -> MutationResolvedFieldParts<Schema, Self>;
+    ) -> ResolvedFieldParts<Schema, Self>;
 }
-
-impl<Schema, Scope, Aspect, Field, Value, Write, Unit, PrincipalIdentity>
+impl<Schema, Field: RecordSelection, PrincipalIdentity>
     ApplicationMutationScopeResolution<Schema, PrincipalIdentity>
-    for ApplicationMutationFieldScope<Schema, Scope, Aspect, Field, Value, Write, Unit>
-where
-    Field: DeclaredApplicationFieldValue<Value = Value>,
-    Write: WritePosture,
-    Unit: ApplicationFieldUnit,
+    for ApplicationMutationFieldScope<Field>
 {
-    fn into_field_parts(
-        self,
-        _principal_identity: &PrincipalIdentity,
-    ) -> (
-        ApplicationFieldRef<Schema, Scope, Aspect, Field, Value, Write, EqualityPredicate, Unit>,
-        Value,
-    ) {
-        (self.field, self.value)
+    fn into_field_parts(self, principal: &PrincipalIdentity) -> (Field, Field::Value) {
+        ApplicationMutationFieldScope::into_field_parts(self, principal)
     }
 }
-
-impl<Schema, Scope, Aspect, Field, Value, Write, Unit>
-    ApplicationMutationScopeResolution<Schema, Value>
-    for ApplicationMutationPrincipalScope<Schema, Scope, Aspect, Field, Value, Write, Unit>
+impl<Schema, Field: RecordSelection> ApplicationMutationScopeResolution<Schema, Field::Value>
+    for ApplicationMutationPrincipalScope<Field>
 where
-    Field: DeclaredApplicationFieldValue<Value = Value>,
-    Value: Clone,
-    Write: WritePosture,
-    Unit: ApplicationFieldUnit,
+    Field::Value: Clone,
 {
-    fn into_field_parts(
-        self,
-        principal_identity: &Value,
-    ) -> (
-        ApplicationFieldRef<Schema, Scope, Aspect, Field, Value, Write, EqualityPredicate, Unit>,
-        Value,
-    ) {
-        (self.field, principal_identity.clone())
+    fn into_field_parts(self, principal: &Field::Value) -> (Field, Field::Value) {
+        ApplicationMutationPrincipalScope::into_field_parts(self, principal)
     }
 }

@@ -1,26 +1,22 @@
-use worth_query_decl::facade::worth_query_application_query;
-use worth_query_decl::facade::{
-    application_query::{
-        ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-        ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
-        ApplicationQueryLaneEligibility, ApplicationQueryOrderingDirection,
-        ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
-        ApplicationQueryResultShapeBuilder, ExactlyOneResult, ManyResults, ReverseResultTraversal,
-    },
-    application_schema::{EqualityPredicate, NoApplicationUnit, ReadOnly, ReadWrite},
+use worth_query_decl::facade::application_query::{
+    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
+    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
+    ApplicationQueryOrderingDirection, ApplicationQueryResultFieldRef,
+    ApplicationQueryResultRelationRef, ApplicationQueryResultShapeBuilder, ExactlyOneResult,
+    ManyResults, ReverseResultTraversal,
 };
+use worth_query_decl::facade::worth_query_application_query;
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationProjection, WorthQueryApplicationProjectionDenial,
     WorthQueryApplicationProjectionRow,
 };
 
 use crate::authorization::ViewAccountAccess;
-use crate::model::{AccountAuthorizationId, AccountId, BankPrincipalId, CustomerRole};
+use crate::model::AccountId;
 use crate::reads::AuthorizedAccountUser;
 use crate::schema::{
     Account, AccountAuthorization, AccountAuthorizationIdentity, AccountAuthorizedUser,
-    AuthorizationAccount, AuthorizationIdentity, AuthorizationRole, AuthorizationScope, BankSchema,
-    Principal, PrincipalIdentity, PrincipalIdentityField,
+    AuthorizationAccount, AuthorizationRole, BankSchema, Principal, PrincipalIdentityField,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -80,9 +76,8 @@ worth_query_decl::facade::worth_query_query_binding!(
     result AccountAuthorizedUsersQueryResultBinding,
     principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
         principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
-    scope Account, crate::schema::Identity, crate::schema::AccountIdentity, AccountId,
-        ReadOnly, NoApplicationUnit,
-    field crate::schema::AccountIdentity::reference(),
+    scope crate::schema::AccountIdentity,
+    field crate::schema::AccountIdentity::at("AccountIdentity"),
     value AccountAuthorizedUsersRequest::account,
     limits results 1_024
 
@@ -103,42 +98,24 @@ type AuthorizationIdentitySelector = ApplicationQueryResultFieldRef<
     AccountAuthorizedUsersQuery,
     AuthorizationIdentitySlot,
     BankSchema,
-    AccountAuthorization,
-    AuthorizationIdentity,
     AccountAuthorizationIdentity,
-    AccountAuthorizationId,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
 >;
 
 type AuthorizationRoleSelector = ApplicationQueryResultFieldRef<
     AccountAuthorizedUsersQuery,
     AuthorizationRoleSlot,
     BankSchema,
-    AccountAuthorization,
-    AuthorizationScope,
     AuthorizationRole,
-    CustomerRole,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
 >;
 
 type PrincipalIdentitySelector = ApplicationQueryResultFieldRef<
     AccountAuthorizedUsersQuery,
     PrincipalIdentitySlot,
     BankSchema,
-    Principal,
-    PrincipalIdentity,
     PrincipalIdentityField,
-    BankPrincipalId,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
 >;
 
-pub fn account_authorized_users_definition() -> ApplicationQueryDefinition<
+pub fn account_authorized_users_definition() -> ApplicationQueryDefinitionBuilder<
     BankSchema,
     AccountAuthorizedUsersQuery,
     AccountAuthorizedUsersQueryParameters,
@@ -186,8 +163,6 @@ pub fn account_authorized_users_definition() -> ApplicationQueryDefinition<
             ApplicationQueryOrderingDirection::Ascending,
         )
         .continue_by(account_authorizations())
-        .build()
-        .expect("bank authorized account users query is statically canonical")
 }
 
 impl WorthQueryApplicationProjection<BankSchema, AccountAuthorizedUsersQuery>
@@ -214,15 +189,21 @@ impl WorthQueryApplicationProjection<BankSchema, AccountAuthorizedUsersQuery>
 }
 
 fn authorization_identity() -> AuthorizationIdentitySelector {
-    ApplicationQueryResultFieldRef::new("authorization", AccountAuthorizationIdentity::reference())
+    ApplicationQueryResultFieldRef::new(
+        "authorization",
+        AccountAuthorizationIdentity::at("AccountAuthorizationIdentity"),
+    )
 }
 
 fn authorization_role() -> AuthorizationRoleSelector {
-    ApplicationQueryResultFieldRef::new("role", AuthorizationRole::reference())
+    ApplicationQueryResultFieldRef::new("role", AuthorizationRole::at("AuthorizationRole"))
 }
 
 fn principal_identity() -> PrincipalIdentitySelector {
-    ApplicationQueryResultFieldRef::new("principal", PrincipalIdentityField::reference())
+    ApplicationQueryResultFieldRef::new(
+        "principal",
+        PrincipalIdentityField::at("PrincipalIdentityField"),
+    )
 }
 
 fn account_authorizations() -> ApplicationQueryResultRelationRef<

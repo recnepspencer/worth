@@ -42,36 +42,40 @@ impl BridgeCausalEvidenceBinding {
     pub(super) fn retained(
         reference: &BridgeCausalEvidenceReference,
         retained_record_identity: BridgeIdentityEvidence,
-    ) -> Self {
-        Self::new(
+    ) -> Result<Self, crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal> {
+        Ok(Self::new(
             reference,
             BridgeCausalEvidenceBindingClass::RetainedBridgeRecord,
             Some(retained_record_identity),
-        )
+        )?)
     }
 
-    pub(super) fn external(reference: &BridgeCausalEvidenceReference) -> Self {
-        Self::new(
+    pub(super) fn external(
+        reference: &BridgeCausalEvidenceReference,
+    ) -> Result<Self, crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal> {
+        Ok(Self::new(
             reference,
             BridgeCausalEvidenceBindingClass::ExternalAuthorityReference,
             None,
-        )
+        )?)
     }
 
-    pub(super) fn native(reference: &BridgeCausalEvidenceReference) -> Self {
-        Self::new(
+    pub(super) fn native(
+        reference: &BridgeCausalEvidenceReference,
+    ) -> Result<Self, crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal> {
+        Ok(Self::new(
             reference,
             BridgeCausalEvidenceBindingClass::RetainedNativeObservation,
             None,
-        )
+        )?)
     }
 
     fn new(
         reference: &BridgeCausalEvidenceReference,
         binding_class: BridgeCausalEvidenceBindingClass,
         retained_record_identity: Option<BridgeIdentityEvidence>,
-    ) -> Self {
-        let external_retained_identity = external_retained_record_identity();
+    ) -> Result<Self, crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal> {
+        let external_retained_identity = external_retained_record_identity()?;
         let retained_identity = retained_record_identity
             .as_ref()
             .unwrap_or(&external_retained_identity);
@@ -88,15 +92,15 @@ impl BridgeCausalEvidenceBinding {
         } else {
             BridgeCausalEnvelopeDigestArtifact::EvidenceBinding
         };
-        let binding_identity = compose_bridge_causal_envelope_evidence_identity(domain, &parts);
-        Self {
+        let binding_identity = compose_bridge_causal_envelope_evidence_identity(domain, &parts)?;
+        Ok(Self {
             owner: reference.owner(),
             family: reference.family(),
             binding_class,
             reference_identity: reference.reference_evidence_identity().clone(),
             retained_record_identity,
             binding_identity,
-        }
+        })
     }
 
     pub fn owner(&self) -> BridgeCausalEvidenceOwner {
@@ -139,9 +143,11 @@ impl BridgeCausalEvidenceBinding {
     }
 }
 
-fn external_retained_record_identity() -> BridgeIdentityEvidence {
-    compose_bridge_causal_envelope_evidence_identity(
+fn external_retained_record_identity(
+) -> Result<BridgeIdentityEvidence, crate::diagnostics::causal_envelope::BridgeCausalDigestRefusal>
+{
+    Ok(compose_bridge_causal_envelope_evidence_identity(
         BridgeCausalEnvelopeDigestArtifact::EvidenceBinding,
         &[shape_part("external-authority-reference")],
-    )
+    )?)
 }

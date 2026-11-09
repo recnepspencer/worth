@@ -41,7 +41,8 @@ fn activation_for(
         live_family,
         view_family,
         QuerySubscriptionConstructionSource::FacadeLive,
-    );
+    )
+    .expect("fixture digest must fit");
     let selection = select_query_subscription_family(input, roomy_budget()).unwrap();
     let declaration = declare_query_subscription(selection, roomy_slice_budget()).unwrap();
     let lowering =
@@ -65,7 +66,8 @@ fn attached_consumer(
     attach_subscription_consumer(
         runtime,
         &handle,
-        SubscriptionConsumerAttachmentRequest::admitted("consumer-a", "cursor-a"),
+        SubscriptionConsumerAttachmentRequest::admitted("consumer-a", "cursor-a")
+            .expect("fixture digest must fit"),
         attachment_budget(),
     )
     .unwrap()
@@ -87,7 +89,8 @@ fn emit_for_delta(
         attachment.lane_digest().clone(),
         scope,
         MaintenanceDeltaWidth::measured(1),
-    );
+    )
+    .expect("fixture digest must fit");
     let (delta, lowering_report, lowering_counters) =
         lower_query_subscription_maintenance_delta(delta).unwrap();
     assert_eq!(lowering_counters.maintenance_delta_lowering_count(), 1);
@@ -255,7 +258,8 @@ fn delivery_batch_denies_work_packet_that_exceeds_opened_window_budget() {
         attachment.lane_digest().clone(),
         "employee.name",
         MaintenanceDeltaWidth::measured(1),
-    );
+    )
+    .expect("fixture digest must fit");
     let (delta, lowering_report, _) = lower_query_subscription_maintenance_delta(delta).unwrap();
     let packet = build_active_delivery_work_packet(
         &mut runtime,
@@ -300,7 +304,8 @@ fn work_packet_denies_delta_from_another_active_lane() {
         collection_attachment.lane_digest().clone(),
         "employee.active",
         MaintenanceDeltaWidth::measured(1),
-    );
+    )
+    .expect("fixture digest must fit");
     let (foreign_delta, foreign_lowering_report, _) =
         lower_query_subscription_maintenance_delta(foreign_delta).unwrap();
 

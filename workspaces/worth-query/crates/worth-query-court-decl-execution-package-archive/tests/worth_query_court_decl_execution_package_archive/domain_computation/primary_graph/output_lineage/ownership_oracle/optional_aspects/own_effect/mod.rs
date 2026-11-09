@@ -11,29 +11,121 @@ pub enum SourceWrite {
     Incomplete,
     Select,
 }
-worth_query_decl::facade::worth_query_application! {
-    pub MaterializingSchema { owner: "worth.query.test.optional-own-materialize", version: (1, 0), contributions: [crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::installation::Members], }
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct MaterializingSchema;
+impl worth_query_decl::facade::application_schema::fragment::Fragment for MaterializingSchema {
+    const NAME: &'static str = "MaterializingSchema";
+    type Bindings = worth_query_decl::facade::application_schema::fragment::NoBindings;
+    type Members = (installation::Members,);
 }
-worth_query_decl::facade::worth_query_application! {
-    pub ClearingSchema { owner: "worth.query.test.optional-own-clear", version: (1, 0), contributions: [crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::installation::Members], }
+impl worth_query_decl::facade::application_schema::ApplicationSchema for MaterializingSchema {
+    const OWNER: &'static str = "worth.query.test.optional-own-materialize";
+    const NAME: &'static str = "MaterializingSchema";
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration() -> Result<
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclaration<Self>,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationDenial,
+    > {
+        worth_query_decl::facade::application_schema::fragment::declare(Self)
+    }
+    fn visit_correction<
+        V: worth_query_decl::facade::application_aftermath::ApplicationCorrectionVisitor<Self>,
+    >(
+        source: std::any::TypeId,
+        visitor: V,
+    ) -> V::Output {
+        worth_query_decl::facade::application_schema::fragment::visit_correction(
+            Self, source, visitor,
+        )
+    }
 }
-worth_query_decl::facade::worth_query_application! {
-    pub RenewingSchema { owner: "worth.query.test.optional-own-renew", version: (1, 0), contributions: [crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::installation::Members], }
+impl worth_query_decl::facade::application_schema::ApplicationSchemaComposition
+    for MaterializingSchema
+{
+    type Contributions = (installation::Members,);
 }
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ClearingSchema;
+impl worth_query_decl::facade::application_schema::fragment::Fragment for ClearingSchema {
+    const NAME: &'static str = "ClearingSchema";
+    type Bindings = worth_query_decl::facade::application_schema::fragment::NoBindings;
+    type Members = (installation::Members,);
+}
+impl worth_query_decl::facade::application_schema::ApplicationSchema for ClearingSchema {
+    const OWNER: &'static str = "worth.query.test.optional-own-clear";
+    const NAME: &'static str = "ClearingSchema";
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration() -> Result<
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclaration<Self>,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationDenial,
+    > {
+        worth_query_decl::facade::application_schema::fragment::declare(Self)
+    }
+    fn visit_correction<
+        V: worth_query_decl::facade::application_aftermath::ApplicationCorrectionVisitor<Self>,
+    >(
+        source: std::any::TypeId,
+        visitor: V,
+    ) -> V::Output {
+        worth_query_decl::facade::application_schema::fragment::visit_correction(
+            Self, source, visitor,
+        )
+    }
+}
+impl worth_query_decl::facade::application_schema::ApplicationSchemaComposition for ClearingSchema {
+    type Contributions = (installation::Members,);
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct RenewingSchema;
+impl worth_query_decl::facade::application_schema::fragment::Fragment for RenewingSchema {
+    const NAME: &'static str = "RenewingSchema";
+    type Bindings = worth_query_decl::facade::application_schema::fragment::NoBindings;
+    type Members = (installation::Members,);
+}
+impl worth_query_decl::facade::application_schema::ApplicationSchema for RenewingSchema {
+    const OWNER: &'static str = "worth.query.test.optional-own-renew";
+    const NAME: &'static str = "RenewingSchema";
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration() -> Result<
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclaration<Self>,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationDenial,
+    > {
+        worth_query_decl::facade::application_schema::fragment::declare(Self)
+    }
+    fn visit_correction<
+        V: worth_query_decl::facade::application_aftermath::ApplicationCorrectionVisitor<Self>,
+    >(
+        source: std::any::TypeId,
+        visitor: V,
+    ) -> V::Output {
+        worth_query_decl::facade::application_schema::fragment::visit_correction(
+            Self, source, visitor,
+        )
+    }
+}
+impl worth_query_decl::facade::application_schema::ApplicationSchemaComposition for RenewingSchema {
+    type Contributions = (installation::Members,);
+}
+
 impl TopologyModelBinding for MaterializingSchema {}
 impl TopologyModelBinding for ClearingSchema {}
 impl TopologyModelBinding for RenewingSchema {}
 impl BirthSchema for RenewingSchema {
-    const REQUIRED: bool = false;
+    type Nodes = NodeRecords<false>;
     const SOURCE_WRITE: SourceWrite = SourceWrite::Materialize;
     const RENEW_OUTPUT: bool = true;
 }
 impl BirthSchema for MaterializingSchema {
-    const REQUIRED: bool = false;
+    type Nodes = NodeRecords<false>;
     const SOURCE_WRITE: SourceWrite = SourceWrite::Materialize;
 }
 impl BirthSchema for ClearingSchema {
-    const REQUIRED: bool = false;
+    type Nodes = NodeRecords<false>;
     const SOURCE_WRITE: SourceWrite = SourceWrite::Clear;
 }
 
@@ -45,12 +137,14 @@ pub fn source_target<Schema: BirthSchema>(
         return Ok(None);
     }
     let source = reader
-        .resolve_entity(BodyKey::reference(), key.to_owned())
+        .resolve_entity(BodyKey::at("BodyKey"), key.to_owned())
         .map_err(HandlerExecutionDenial::new)?;
     // Only own-effect work observes every target it writes. The decisive
     // checkpoint/race handler still reads Selection alone.
     if matches!(Schema::SOURCE_WRITE, SourceWrite::Materialize) {
-        assert!(reader.field(&source, SourceContent::reference())?.is_none());
+        assert!(reader
+            .field(&source, SourceContent::at("SourceContent"))?
+            .is_none());
     }
     reader.mutation_target(&source).map(Some)
 }
@@ -67,25 +161,29 @@ pub fn apply<Schema: BirthSchema>(
                 // A legitimate complete struct: Required content accompanies
                 // the selected Optional field. Both write targets were read.
                 writer
-                    .write_field(&target, SourceContent::reference(), "complete".to_owned())
+                    .write_field(
+                        &target,
+                        SourceContent::at("SourceContent"),
+                        "complete".to_owned().into(),
+                    )
                     .map_err(HandlerExecutionDenial::new)?;
                 writer
                     .write_optional_field(
                         &target,
-                        SourceSelection::reference(),
-                        Some("selected".to_owned()),
+                        SourceSelection::at("SourceSelection"),
+                        Some("selected".to_owned().into()),
                     )
                     .map_err(HandlerExecutionDenial::new)?;
             }
             SourceWrite::Incomplete | SourceWrite::Select => writer
                 .write_optional_field(
                     &target,
-                    SourceSelection::reference(),
-                    Some("selected".to_owned()),
+                    SourceSelection::at("SourceSelection"),
+                    Some("selected".to_owned().into()),
                 )
                 .map_err(HandlerExecutionDenial::new)?,
             SourceWrite::Clear => writer
-                .write_optional_field(&target, SourceSelection::reference(), None)
+                .write_optional_field(&target, SourceSelection::at("SourceSelection"), None)
                 .map_err(HandlerExecutionDenial::new)?,
             SourceWrite::None => unreachable!("no source target was requested"),
         }
@@ -135,7 +233,11 @@ fn ordinary_handler_clear_of_absent_field_retains_aspect_absence() {
     let aspect = (*(*(*(*clearing.runtime_for_test()).primary_provider_for_test())
         .graph_for_test())
     .layout_for_test())
-    .field_locator_for_test("Body", "SourceNotes", "SourceSelection")
+    .field_locator_for_test(
+        "Body",
+        SourceContent::at("SourceContent").aspect(),
+        "SourceSelection",
+    )
     .unwrap()
     .aspect()
     .aspect_key();
@@ -160,7 +262,7 @@ fn ordinary_handler_clear_of_absent_field_retains_aspect_absence() {
             let execution = phase.execution_request_for_for_test((*clearing.runtime_for_test()).product_runtime_for_test()).unwrap();
             let selected = clearing.on_branch(clearing.current_world()).select(&phase).unwrap();
             let field = (*(*(*(*clearing.runtime_for_test()).primary_provider_for_test()).graph_for_test()).layout_for_test())
-                .field_locator_for_test("Body", "SourceNotes", "SourceSelection").unwrap()
+                .field_locator_for_test("Body", SourceContent::at("SourceContent").aspect(), "SourceSelection").unwrap()
                 .field_path().fields()[0].clone();
             (*(*(*clearing.runtime_for_test()).primary_provider_for_test()).graph_for_test()).with_runtime(&execution, |native| {
                 let view = native.read_truth()

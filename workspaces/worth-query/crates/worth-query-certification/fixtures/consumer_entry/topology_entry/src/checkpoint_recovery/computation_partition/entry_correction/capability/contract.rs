@@ -10,59 +10,6 @@ pub(in super::super::super) fn declare<Schema: TopologySchemaBinding>(
         1,
     );
     let schema = schema
-        .entity(CorrectionGrant::reference::<Schema>())
-        .aspect(
-            CorrectionGrant::reference::<Schema>(),
-            CorrectionGrantFacts::reference::<Schema>(),
-        )
-        .field(
-            CorrectionGrant::reference::<Schema>(),
-            CorrectionAction::reference::<Schema>(),
-        )
-        .field(
-            CorrectionGrant::reference::<Schema>(),
-            CorrectionPurpose::reference::<Schema>(),
-        )
-        .field(
-            CorrectionGrant::reference::<Schema>(),
-            CorrectionStatus::reference::<Schema>(),
-        )
-        .field(
-            CorrectionGrant::reference::<Schema>(),
-            CorrectionScopeKey::reference::<Schema>(),
-        )
-        .field(
-            CorrectionGrant::reference::<Schema>(),
-            CorrectionNotBefore::reference::<Schema>(),
-        )
-        .field(
-            CorrectionGrant::reference::<Schema>(),
-            CorrectionNotAfter::reference::<Schema>(),
-        )
-        .field(
-            CorrectionGrant::reference::<Schema>(),
-            CorrectionDepth::reference::<Schema>(),
-        )
-        .relation(
-            CorrectionResource::reference::<Schema>(),
-            CorrectionGrant::reference::<Schema>(),
-            Body::reference::<Schema>(),
-        )
-        .relation(
-            CorrectionGrantee::reference::<Schema>(),
-            Principal::reference::<Schema>(),
-            CorrectionGrant::reference::<Schema>(),
-        )
-        .relation(
-            CorrectionGrantor::reference::<Schema>(),
-            Principal::reference::<Schema>(),
-            CorrectionGrant::reference::<Schema>(),
-        )
-        .relation(
-            CorrectionParent::reference::<Schema>(),
-            CorrectionGrant::reference::<Schema>(),
-            CorrectionGrant::reference::<Schema>(),
-        )
         .capability_context(CorrectionContext::<Schema>::reference())
         .capability_provenance(CorrectionProvenance::<Schema>::reference())
         .capability(contract);
@@ -101,41 +48,37 @@ where
     )
     .target(ApplicationCapabilityTargetDefinition::new(
         ApplicationCapabilityValueBinding::new(
-            CorrectionAction::reference::<Schema>(),
+            CorrectionAction::at("CorrectionAction"),
             encoded(action),
-        ),
+        ).unwrap(),
         ApplicationCapabilityRelationBinding::from_reference(
             CorrectionResource::reference::<Schema>(),
         ),
         ApplicationCapabilityRelationDimension::not_applicable(),
         ApplicationCapabilityFieldDimension::not_applicable(),
         ApplicationCapabilityValueBinding::new(
-            CorrectionPurpose::reference::<Schema>(),
+            CorrectionPurpose::at("CorrectionPurpose"),
             encoded(purpose),
-        ),
+        ).unwrap(),
     ))
     .constraints(ApplicationCapabilityConstraintDefinition::new(
         ApplicationCapabilityMagnitudeDimension::not_applicable(),
         ApplicationCapabilityCardinalityDimension::One,
         ApplicationCapabilityCurrentnessDefinition::new(
             ApplicationCapabilityValueBinding::new(
-                CorrectionStatus::reference::<Schema>(),
+                CorrectionStatus::at("CorrectionStatus"),
                 scalar(),
-            ),
+            ).unwrap(),
             ApplicationCapabilityWorkflowDefinition::new(
-                ApplicationCapabilityFieldBinding::from_reference(CorrectionScopeKey::reference::<
-                    Schema,
-                >()),
-                ApplicationCapabilityFieldBinding::from_reference(BodyKey::reference::<Schema>()),
+                ApplicationCapabilityFieldBinding::from_reference(CorrectionScopeKey::at("CorrectionScopeKey")).unwrap(),
+                ApplicationCapabilityFieldBinding::from_reference(BodyKey::at("BodyKey")).unwrap(),
             ),
             ApplicationCapabilityValidityDefinition::new(
                 ApplicationCapabilityValidityTimeline::UnixEpochSeconds,
                 ApplicationCapabilityFieldBinding::from_reference(
-                    CorrectionNotBefore::reference::<Schema>(),
-                ),
-                ApplicationCapabilityFieldBinding::from_reference(CorrectionNotAfter::reference::<
-                    Schema,
-                >()),
+                    CorrectionNotBefore::at("CorrectionNotBefore"),
+                ).unwrap(),
+                ApplicationCapabilityFieldBinding::from_reference(CorrectionNotAfter::at("CorrectionNotAfter")).unwrap(),
             ),
         ),
         CorrectionContext::<Schema>::reference(),
@@ -150,7 +93,7 @@ where
         ApplicationCapabilityRelationBinding::from_reference(
             CorrectionGrantee::reference::<Schema>(),
         ),
-        ApplicationCapabilityFieldBinding::from_reference(CorrectionDepth::reference::<Schema>()),
+        ApplicationCapabilityFieldBinding::from_reference(CorrectionDepth::at("CorrectionDepth")).unwrap(),
         CorrectionProvenance::<Schema>::reference(),
     ))
     .composition(ApplicationCapabilityComposition::new(

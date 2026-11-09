@@ -82,23 +82,6 @@ impl CanonicalCommitEnvelopeBody {
             && self.merge_base_commits.is_empty()
     }
 
-    pub(crate) fn validate_output_membership_header(
-        &self,
-    ) -> Result<&CanonicalRequiredOutputOrigin, Stop> {
-        let origin = self
-            .required_output_origin
-            .as_deref()
-            .ok_or("present output has no installed producer publication")?;
-        if matches!(
-            origin.publication,
-            CanonicalOutputPublication::ProducerRetirement { .. }
-        ) {
-            return Err("producer retirement cannot be a standalone publication".into());
-        }
-        self.validate_output_origin_header(origin)?;
-        Ok(origin)
-    }
-
     pub(super) fn validate_output_origin_header(
         &self,
         origin: &CanonicalRequiredOutputOrigin,
@@ -143,6 +126,16 @@ impl CanonicalCommitEnvelopeBody {
                         | CanonicalOutputPublication::ProducerRetirement { .. } => {
                             member.posture != Posture::Retire || member.before_write.is_none()
                         }
+                        CanonicalOutputPublication::HistoricalSelection {
+                            selected,
+                            generation,
+                            ..
+                        } => {
+                            member.posture != Posture::Preserve
+                                || member.after_write != self.commit.version_id
+                                || selected == self.commit.commit_id
+                                || generation.0 == 0
+                        }
                         CanonicalOutputPublication::Preserve { .. } => {
                             (member.posture == Posture::Create) != member.before_write.is_none()
                         }
@@ -153,5 +146,25 @@ impl CanonicalCommitEnvelopeBody {
             return Err("copied or incomplete native output publication membership".into());
         }
         Ok(())
+    }
+}
+
+impl<'a> ValidatedOutputOrigins<'a> {
+    pub(crate) fn validate_output_membership_header(
+        &self,
+    ) -> Result<&'a CanonicalRequiredOutputOrigin, Stop> {
+        let origin = self
+            .envelope()
+            .required_output_origin
+            .as_deref()
+            .ok_or("present output has no installed producer publication")?;
+        if matches!(
+            origin.publication,
+            CanonicalOutputPublication::ProducerRetirement { .. }
+                | CanonicalOutputPublication::HistoricalSelection { .. }
+        ) {
+            return Err("producer retirement cannot be a standalone publication".into());
+        }
+        Ok(origin)
     }
 }

@@ -23,7 +23,7 @@ pub fn run() {
                 let parts = selected
                     .resolve_entity(
                         &phase,
-                        DocumentIdentityField::reference(),
+                        DocumentIdentityField::at("DocumentIdentityField"),
                         DOCUMENT_IDENTITY.to_owned(),
                         &scope,
                         WorthQueryPrincipalResolutionMode::Ordinary,

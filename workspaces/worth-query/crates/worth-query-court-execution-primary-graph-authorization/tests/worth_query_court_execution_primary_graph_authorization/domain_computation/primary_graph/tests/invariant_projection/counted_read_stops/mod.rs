@@ -28,7 +28,7 @@ pub fn check_snapshot_door(door: u8) {
                         .relations(execution, AccountOwner::reference())
                         .map(|rows| rows.len()),
                     _ => snapshot
-                        .field(execution, &account, AccountStatus::reference())
+                        .field(execution, &account, AccountStatus::at("AccountStatus"))
                         .map(|value| usize::from(value.is_some())),
                 }
                 .map_err(|denial| denial.kind())

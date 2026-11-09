@@ -31,7 +31,7 @@ impl HistorySubsystem {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         content_records: &crate::content::RelationalContentAttachments,
         regions: worth_execution::ExecutionArray<crate::branch::RelationalRootRegionCheckpoint>,
-        envelope: Arc<CanonicalCommitEnvelope>,
+        original: Arc<crate::branch::RelationalOriginalRootCommitEvidence>,
         descriptor: crate::branch::RelationalBranchRootDescriptor,
         schema: Arc<crate::branch::RelationalBranchRootSchemaAuthority>,
     ) -> Result<Arc<RelationalBranchRoot>, RelationalBranchRootCaptureDenial> {
@@ -40,7 +40,7 @@ impl HistorySubsystem {
             execution,
             content_records,
             regions,
-            envelope,
+            original,
             descriptor,
             schema,
         )
@@ -90,7 +90,7 @@ impl HistorySubsystem {
             crate::identity::data::PartitionId,
             crate::storage::overlay::PartitionState,
         >,
-        envelope: Arc<CanonicalCommitEnvelope>,
+        original: Arc<crate::branch::RelationalOriginalRootCommitEvidence>,
         descriptor: crate::branch::RelationalBranchRootDescriptor,
         schema_authority: Arc<crate::branch::RelationalBranchRootSchemaAuthority>,
         symbols: &crate::symbols::data::StringInterner,
@@ -100,10 +100,40 @@ impl HistorySubsystem {
             execution,
             content_records,
             partitions,
-            envelope,
+            original,
             descriptor,
             schema_authority,
             symbols,
         )
+    }
+}
+
+impl HistorySubsystem {
+    /// Initial image binding uses the actual catalog owner before considering encoding.
+    /// Source-backed rows demand their admitted original once on this caller's request.
+    pub(crate) fn original_root_evidence_for_request(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        commit: crate::history::data::CommitId,
+    ) -> Result<
+        Arc<crate::branch::RelationalOriginalRootCommitEvidence>,
+        super::history_catalog_recovery::RelationalHistoryRecoveryDenial,
+    > {
+        use super::history_catalog_recovery::RelationalHistoryRecoveryDenial as Denial;
+        let artifact = self
+            .commit_artifact(commit)
+            .ok_or_else(|| Denial::Invalid("root has no actual admitted catalog entry".into()))?;
+        let residency = artifact.envelope_residency();
+        if let Some(original) = residency.original_owner() {
+            return Ok(original);
+        }
+        let positioned = residency
+            .demand_positioned(execution, 1 << 30)
+            .map_err(Denial::Source)?;
+        crate::branch::RelationalOriginalRootCommitEvidence::prepare(
+            execution,
+            positioned.canonical_arc().clone(),
+        )
+        .map_err(Denial::Root)
     }
 }

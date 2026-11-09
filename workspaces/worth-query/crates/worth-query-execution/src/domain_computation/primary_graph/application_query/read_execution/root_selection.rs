@@ -96,14 +96,9 @@ pub(super) fn select_bounded_roots(
                 spent.charge(1, plan.name)?;
                 spent.root(1);
             }
-            let result_set_source = if capture_result_set {
-                let mut source =
-                    RootPathSourceBuilder::for_material_source(execution, plan.material_source)?;
-                source.observe_entity(execution, plan.root)?;
-                Some(source.finish(execution)?)
-            } else {
-                None
-            };
+            let result_set_source = capture_result_set
+                .then(|| direct_root_source(execution, plan))
+                .transpose()?;
             Ok(BoundedRootSelection {
                 candidates: vec![plan.root],
                 selected_predicate_source: None,
@@ -119,6 +114,9 @@ pub(super) fn select_bounded_roots(
         }
         [predicate] => select_scoped_root(
             runtime,
+            &runtime
+                .project_snapshot(plan.snapshot)
+                .ok_or_else(|| plan.snapshot_unavailable_denial())?,
             execution,
             graph,
             plan,
@@ -134,8 +132,9 @@ pub(super) fn select_bounded_roots(
     }
 }
 
-fn select_scoped_root(
-    runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
+fn select_scoped_root<ReadIdentity>(
+    runtime: &worth_relational::facade::runtime::RelationalPinnedRead<ReadIdentity>,
+    projection: &worth_relational::facade::runtime::VisibilityProjectionView,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     plan: &ReadPlan<'_>,
@@ -185,12 +184,6 @@ fn select_scoped_root(
             )
         })?;
     let mut work = RootSelectionWork::new(interruption, spent);
-    let projection = runtime.project_snapshot(plan.snapshot).ok_or_else(|| {
-        read_execution_denial(
-            WorthQueryApplicationReadExecutionDenialKind::ProjectionUnavailable,
-            field,
-        )
-    })?;
     let mut set_source =
         RootPathSourceBuilder::for_material_source(execution, plan.material_source)?;
     // Observe both matching and filtered subjects: a later guard change can
@@ -199,7 +192,7 @@ fn select_scoped_root(
         set_source.observe_entity(execution, plan.root)?;
         set_source.observe_guard_field(
             execution,
-            &projection,
+            projection,
             graph,
             plan.root,
             entity,
@@ -244,4 +237,65 @@ fn select_scoped_root(
         reads: work.reads,
         root_path_steps: work.take_steps(),
     })
+}
+
+/// Opted-in source queries are installed as direct entity-scope reads. Their
+/// actual candidate projection shares guard and result-tree evaluators with
+/// the committed path, while carrying no committed index generation.
+pub(super) fn select_applied_source_root(
+    runtime: &worth_relational::facade::runtime::RelationalPinnedRead<
+        worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+    >,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+    permission: &ReadPlan<'_>,
+    interruption: super::ReadInterruption<'_>,
+) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
+    let contract = permission.contract;
+    if !contract.root_paths().is_empty()
+        || contract.component_selection().is_some()
+        || contract.orbit().is_some()
+        || contract.managed_index_selection().is_some()
+    {
+        return Err(path_union::traversal_denial(permission.name));
+    }
+    let projection = runtime.project_candidate();
+    match contract.predicates() {
+        [] => Ok(BoundedRootSelection {
+            candidates: vec![permission.root],
+            selected_predicate_source: None,
+            root_path_source: None,
+            result_set_source: Some(direct_root_source(execution, permission)?),
+            examined_candidates: 1,
+            predicate_work_units: 0,
+            work_units: 1,
+            predicate_index_generation: None,
+            reads: WorthQueryInvariantProjectionWork::default(),
+            root_path_steps: None,
+        }),
+        [predicate] => select_scoped_root(
+            runtime,
+            &projection,
+            execution,
+            graph,
+            permission,
+            predicate,
+            true,
+            None,
+            interruption,
+        ),
+        _ => Err(permission.predicate_unavailable_denial()),
+    }
+}
+
+fn direct_root_source(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    plan: &ReadPlan<'_>,
+) -> Result<
+    std::sync::Arc<super::super::observed_source::WorthQueryObservedRootSelection>,
+    WorthQueryApplicationReadExecutionDenial,
+> {
+    let mut source = RootPathSourceBuilder::for_material_source(execution, plan.material_source)?;
+    source.observe_entity(execution, plan.root)?;
+    source.finish(execution)
 }

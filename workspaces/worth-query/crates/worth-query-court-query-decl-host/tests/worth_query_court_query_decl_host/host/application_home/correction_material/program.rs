@@ -15,11 +15,9 @@ pub(super) struct HomeLabelProgram;
 pub(super) struct LabelSurface;
 impl ApplicationSchemaContribution<IdentityExecutionSchema> for LabelSurface {
     const IDENTITY: ApplicationSchemaContributionIdentity = <IdentityExecutionContribution as ApplicationSchemaContribution<IdentityExecutionSchema>>::IDENTITY;
-    fn register_members(
-        builder: ApplicationSchemaDeclarationBuilder<IdentityExecutionSchema>,
-    ) -> ApplicationSchemaDeclarationBuilder<IdentityExecutionSchema> {
-        IdentityExecutionContribution::register_members(builder)
-    }
+    type Members = <IdentityExecutionContribution as ApplicationSchemaContribution<
+        IdentityExecutionSchema,
+    >>::Members;
 }
 impl WorthQueryApplicationContribution<IdentityExecutionSchema> for LabelSurface {
     type Configuration = ();

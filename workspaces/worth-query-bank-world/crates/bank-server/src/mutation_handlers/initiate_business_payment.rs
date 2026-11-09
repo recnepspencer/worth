@@ -76,16 +76,25 @@ fn author_candidate(
 ) -> Result<InitiateBusinessPaymentResult, HandlerExecutionDenial> {
     let (payment, approval_grantees) = decision.into_parts();
     let business = candidate
-        .resolve_entity(BusinessIdentityField::reference(), payment.business())
+        .resolve_entity(
+            BusinessIdentityField::at("BusinessIdentityField"),
+            payment.business(),
+        )
         .map_err(HandlerExecutionDenial::new)?;
     let source = candidate
-        .resolve_entity(AccountIdentity::reference(), payment.source())
+        .resolve_entity(AccountIdentity::at("AccountIdentity"), payment.source())
         .map_err(HandlerExecutionDenial::new)?;
     let destination = candidate
-        .resolve_entity(AccountIdentity::reference(), payment.destination())
+        .resolve_entity(
+            AccountIdentity::at("AccountIdentity"),
+            payment.destination(),
+        )
         .map_err(HandlerExecutionDenial::new)?;
     let initiator = candidate
-        .resolve_entity(PrincipalIdentityField::reference(), payment.initiator())
+        .resolve_entity(
+            PrincipalIdentityField::at("PrincipalIdentityField"),
+            payment.initiator(),
+        )
         .map_err(HandlerExecutionDenial::new)?;
     let key = WorthQueryApplicationEntityKey::<BankSchema, PaymentIntent>::new(
         payment_key(payment.id()).into_boxed_str().into_string(),
@@ -95,13 +104,25 @@ fn author_candidate(
         .create_entity_in_context(&business, PaymentIntent::reference(), key)
         .map_err(HandlerExecutionDenial::new)?;
     candidate
-        .initialize_field(&created, PaymentIdentityField::reference(), payment.id())
+        .initialize_field(
+            &created,
+            PaymentIdentityField::at("PaymentIdentityField"),
+            payment.id(),
+        )
         .map_err(HandlerExecutionDenial::new)?;
     candidate
-        .initialize_field(&created, PaymentAmount::reference(), payment.amount())
+        .initialize_field(
+            &created,
+            PaymentAmount::at("PaymentAmount"),
+            payment.amount(),
+        )
         .map_err(HandlerExecutionDenial::new)?;
     candidate
-        .initialize_field(&created, PaymentStatusField::reference(), payment.status())
+        .initialize_field(
+            &created,
+            PaymentStatusField::at("PaymentStatusField"),
+            payment.status(),
+        )
         .map_err(HandlerExecutionDenial::new)?;
     candidate
         .link(

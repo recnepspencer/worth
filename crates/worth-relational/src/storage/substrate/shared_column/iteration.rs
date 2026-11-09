@@ -40,6 +40,7 @@ impl<'a, T: StoredValue> Iterator for SharedColumnIter<'a, T> {
         if self.remaining == 0 {
             return None;
         }
+        super::iteration_observation::visited::<T>();
         loop {
             if self.default_run != 0 {
                 self.default_run -= 1;
@@ -84,6 +85,7 @@ impl<'a, T: StoredValue> DoubleEndedIterator for SharedColumnIter<'a, T> {
         if self.remaining == 0 {
             return None;
         }
+        super::iteration_observation::visited::<T>();
         self.remaining -= 1;
         self.back -= 1;
         self.root

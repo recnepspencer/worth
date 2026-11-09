@@ -13,9 +13,29 @@ pub struct PublicationError {
     authored_retirement_refusal: Option<super::AuthoredRetirementRefusal>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     invariant_violation: Option<Box<crate::validation::data::InvariantViolation>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    index_maintenance_denial: Option<Box<crate::indexes::data::DerivedIndexMaintenanceDenial>>,
 }
 
 impl PublicationError {
+    /// Original index preparation stop, including work performed before refusal.
+    pub fn index_maintenance_denial(
+        &self,
+    ) -> Option<&crate::indexes::data::DerivedIndexMaintenanceDenial> {
+        self.index_maintenance_denial.as_deref()
+    }
+
+    pub(crate) fn from_index_maintenance(
+        cause: crate::indexes::data::DerivedIndexMaintenanceDenial,
+    ) -> Self {
+        let mut error = Self::new(
+            PublicationStage::BundleAssembly,
+            format!("derived index maintenance denied: {:?}", cause.kind),
+        );
+        error.index_maintenance_denial = Some(Box::new(cause));
+        error
+    }
+
     pub fn authored_retirement_refusal(&self) -> Option<super::AuthoredRetirementRefusal> {
         self.authored_retirement_refusal
     }
@@ -33,6 +53,19 @@ impl PublicationError {
         error
     }
 
+    pub(crate) fn ordinary_metadata_write(
+        kind: crate::identity::data::KindId,
+        record: Option<crate::transactions::data::RecordRef>,
+    ) -> Self {
+        let mut error = Self::new(
+            PublicationStage::BundleAssembly,
+            format!("ordinary write to Native-private kind {kind:?}"),
+        );
+        error.authored_retirement_refusal =
+            Some(super::AuthoredRetirementRefusal::OrdinaryMetadataWrite);
+        error.context.affected_records = record.into_iter().collect();
+        error
+    }
     pub(crate) fn owned_publication(
         cause: super::AuthoredRetirementRefusal,
         member: crate::identity::data::EntityId,
@@ -70,6 +103,7 @@ impl PublicationError {
             stage,
             detail: detail.into(),
             invariant_violation: None,
+            index_maintenance_denial: None,
             authored_retirement_refusal: None,
             context: ErrorContext::new(RelationalSubsystem::Publication, ErrorOperation::Publish)
                 .with_fix(SuggestedFix::InspectDiagnostics),

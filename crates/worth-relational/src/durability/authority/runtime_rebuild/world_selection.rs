@@ -232,6 +232,7 @@ impl WorldSelectionReplay {
         {
             crate::branch::RelationalRootCommitEvidence::Original(original) => {
                 let checkpoint = original
+                    .envelope()
                     .branch_cell_checkpoint
                     .clone()
                     .ok_or_else(|| corrupt("released Native original has no predecessor cell"))?;

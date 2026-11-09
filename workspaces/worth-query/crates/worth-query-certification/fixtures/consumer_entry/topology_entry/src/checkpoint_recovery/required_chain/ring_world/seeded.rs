@@ -45,13 +45,10 @@ pub(in super::super) fn seed<const RINGS: usize>(
                         Body::reference::<CheckpointSchema>(),
                         entity_key(&body_key),
                     )
-                    .field(BodyKey::reference::<CheckpointSchema>(), body_key)
-                    .field(Length::reference::<CheckpointSchema>(), length(y + 1))
-                    .field(
-                        PositionX::reference::<CheckpointSchema>(),
-                        length(x + offset),
-                    )
-                    .field(PositionY::reference::<CheckpointSchema>(), length(y)),
+                    .field(BodyKey::at("BodyKey"), body_key)
+                    .field(Length::at("Length"), length(y + 1))
+                    .field(PositionX::at("PositionX"), length(x + offset))
+                    .field(PositionY::at("PositionY"), length(y)),
                 )
                 .unwrap();
         }

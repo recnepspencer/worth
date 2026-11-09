@@ -1,24 +1,28 @@
 use worth_runtime_bridge::facade::{
-    BridgeAsyncForwardCausalityClass, BridgeAsyncForwardCausalityReceipt,
-    BridgeAsyncRetryLineage,
+    BridgeAsyncForwardCausalityClass, BridgeAsyncForwardCausalityReceipt, BridgeAsyncRetryLineage,
 };
 
 fn main() {
     let _ = BridgeAsyncRetryLineage {
-        causality_identity: todo!(),
-        prior_request: todo!(),
-        newer_request: todo!(),
+        causality_identity: supplied(),
+        prior_request: supplied(),
+        newer_request: supplied(),
         class: BridgeAsyncForwardCausalityClass::RetryAfterTimeout,
-        counters: todo!(),
-        receipt: todo!(),
-        canonical_basis: todo!(),
-        digest: todo!(),
+        counters: supplied(),
+        receipt: supplied(),
+        canonical_basis: supplied(),
+        digest: supplied(),
     };
     let _ = BridgeAsyncForwardCausalityReceipt {
-        receipt_identity: todo!(),
-        causality_identity: todo!(),
+        receipt_identity: supplied(),
+        causality_identity: supplied(),
         class: BridgeAsyncForwardCausalityClass::RetryAfterTimeout,
-        canonical_basis: todo!(),
-        digest: todo!(),
+        canonical_basis: supplied(),
+        digest: supplied(),
     };
+}
+
+// Type-check the forbidden action without a divergent argument lint.
+fn supplied<T>() -> T {
+    loop {}
 }

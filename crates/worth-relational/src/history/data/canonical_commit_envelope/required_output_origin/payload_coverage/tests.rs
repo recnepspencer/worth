@@ -80,20 +80,17 @@ fn classified_empty_birth_refuses_missing_or_corrupt_native_create_evidence() {
         .authoritative_record_patches[0]
         .structural_change = RecordStructuralChange::Updated;
     let mut missing_schema = envelope.copy_original_for_test(execution);
-    missing_schema
-        .body_mut_for_test()
-        .schema_authority
-        .entity_kinds
-        .clear();
+    let mut parts = (*missing_schema.schema_authority).clone();
+    parts.entity_kinds.clear();
+    missing_schema.body_mut_for_test().schema_authority = parts.into();
     let mut wrong_kind = envelope.copy_original_for_test(execution);
-    wrong_kind.body_mut_for_test().schema_authority.entity_kinds[0].kind_id = KindId(99);
+    let mut parts = (*wrong_kind.schema_authority).clone();
+    parts.entity_kinds[0].kind_id = KindId(99);
+    wrong_kind.body_mut_for_test().schema_authority = parts.into();
     let mut wrong_revision = envelope.copy_original_for_test(execution);
-    wrong_revision
-        .body_mut_for_test()
-        .schema_authority
-        .entity_kinds[0]
-        .aspect_plan_revision
-        .0 ^= 1;
+    let mut parts = (*wrong_revision.schema_authority).clone();
+    parts.entity_kinds[0].aspect_plan_revision.0 ^= 1;
+    wrong_revision.body_mut_for_test().schema_authority = parts.into();
     for corrupt in [
         missing_allocation,
         duplicate_allocation,

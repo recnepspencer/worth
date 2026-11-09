@@ -15,10 +15,13 @@ pub(super) fn declare_identity_effect(
         )
         .expect("live should declare");
     runtime
-        .declare_effect::<WorthQueryUnrefinedLiveShape>(WorthQueryEffectDeclaration::write_intent(
-            effect_name,
-            WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title.value"])),
-            "strategy.intent.reconcile",
-        ))
+        .declare_effect::<WorthQueryUnrefinedLiveShape>(
+            WorthQueryEffectDeclaration::write_intent(
+                effect_name,
+                WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title.value"])),
+                "strategy.intent.reconcile",
+            )
+            .expect("fixture digest must fit"),
+        )
         .expect("write-intent effect should declare")
 }

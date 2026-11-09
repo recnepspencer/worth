@@ -20,7 +20,7 @@ use super::support::{
 
 #[test]
 fn support_matrix_includes_admitted_rebind_and_deferred_rows() {
-    let matrix = effect_lifecycle_support_matrix();
+    let matrix = effect_lifecycle_support_matrix().expect("fixture digest must fit");
 
     assert!(matrix.rows().iter().any(|row| {
         row.basis_family() == BasisFamily::CurrentHead
@@ -54,7 +54,8 @@ fn support_matrix_includes_admitted_rebind_and_deferred_rows() {
 #[test]
 fn support_discovery_and_eligibility_agree_for_deferred_neighbors() {
     let store_backed =
-        discover_effect_lifecycle_support(BasisFamily::StoreBacked, EffectFamily::Writeback);
+        discover_effect_lifecycle_support(BasisFamily::StoreBacked, EffectFamily::Writeback)
+            .expect("fixture digest must fit");
     assert_eq!(store_backed.posture(), EffectSupportPosture::Deferred);
     assert_eq!(
         store_backed.cause(),
@@ -62,7 +63,8 @@ fn support_discovery_and_eligibility_agree_for_deferred_neighbors() {
     );
 
     let durable =
-        discover_effect_lifecycle_support(BasisFamily::DurableReload, EffectFamily::Writeback);
+        discover_effect_lifecycle_support(BasisFamily::DurableReload, EffectFamily::Writeback)
+            .expect("fixture digest must fit");
     assert_eq!(durable.posture(), EffectSupportPosture::Deferred);
     assert_eq!(durable.cause(), EffectSupportCause::DurableReplayDeferred);
 }
@@ -70,7 +72,8 @@ fn support_discovery_and_eligibility_agree_for_deferred_neighbors() {
 #[test]
 fn support_discovery_exposes_caller_contract_for_runtime_writeback() {
     let support =
-        discover_effect_lifecycle_support(BasisFamily::CurrentHead, EffectFamily::Writeback);
+        discover_effect_lifecycle_support(BasisFamily::CurrentHead, EffectFamily::Writeback)
+            .expect("fixture digest must fit");
 
     assert_eq!(support.posture(), EffectSupportPosture::Admitted);
     assert_eq!(
@@ -98,7 +101,8 @@ fn support_discovery_exposes_caller_contract_for_runtime_writeback() {
 
 #[test]
 fn support_discovery_exposes_denial_and_rebind_expectations() {
-    let denied = discover_effect_lifecycle_support(BasisFamily::TenantScoped, EffectFamily::Merge);
+    let denied = discover_effect_lifecycle_support(BasisFamily::TenantScoped, EffectFamily::Merge)
+        .expect("fixture digest must fit");
     assert_eq!(denied.posture(), EffectSupportPosture::Denied);
     assert_eq!(
         denied.supported_lowering(),
@@ -113,7 +117,8 @@ fn support_discovery_exposes_denial_and_rebind_expectations() {
         &[DeniedEffectEligibilityKind::BranchAuthorityRequired]
     );
 
-    let rebind = discover_effect_lifecycle_support(BasisFamily::Preview, EffectFamily::Mutation);
+    let rebind = discover_effect_lifecycle_support(BasisFamily::Preview, EffectFamily::Mutation)
+        .expect("fixture digest must fit");
     assert_eq!(rebind.posture(), EffectSupportPosture::RebindRequired);
     assert!(rebind.requires_rebind());
     assert_eq!(
@@ -128,7 +133,8 @@ fn support_discovery_exposes_denial_and_rebind_expectations() {
 
 #[test]
 fn unsupported_support_discovery_fails_closed_without_artifacts() {
-    let support = discover_effect_lifecycle_support(BasisFamily::Preview, EffectFamily::Merge);
+    let support = discover_effect_lifecycle_support(BasisFamily::Preview, EffectFamily::Merge)
+        .expect("fixture digest must fit");
 
     assert_eq!(support.posture(), EffectSupportPosture::Unsupported);
     assert_eq!(support.authority_owner(), None);
@@ -162,8 +168,9 @@ fn preview_derived_mutation_returns_real_advisory_effect_posture() {
     .expect("preview-derived advisory mutation should normalize");
 
     let discovery =
-        discover_effect_lifecycle_support(BasisFamily::PreviewDerived, EffectFamily::Mutation);
-    let advisory = match evaluate_effect_eligibility(normalized) {
+        discover_effect_lifecycle_support(BasisFamily::PreviewDerived, EffectFamily::Mutation)
+            .expect("fixture digest must fit");
+    let advisory = match evaluate_effect_eligibility(normalized).expect("fixture digest must fit") {
         EffectEligibilityOutcome::Advisory(advisory) => advisory,
         other => panic!("expected advisory effect, got {other:?}"),
     };

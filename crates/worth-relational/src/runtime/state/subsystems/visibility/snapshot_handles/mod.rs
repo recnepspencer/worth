@@ -4,6 +4,7 @@ mod published_closeout;
 mod published_registry;
 mod published_release;
 pub(crate) use published_release::PublishedSnapshotReleaseObservation;
+mod version_counts;
 
 #[cfg(test)]
 mod cross_registry_composition_tests;
@@ -190,10 +191,13 @@ impl SnapshotHandles {
         self.active.retains_handle(snapshot_id) || self.published.retains_handle(snapshot_id)
     }
 
-    /// Every version an active handle currently retains, collected so no caller
-    /// scans the registry while holding its lock.
-    pub(crate) fn active_versions(&self) -> Vec<VersionId> {
-        self.active.versions()
+    /// Copy the oldest active version without collecting the registry.
+    pub(crate) fn oldest_active_version(&self) -> Option<VersionId> {
+        self.active.oldest_version()
+    }
+
+    pub(crate) fn oldest_published_version(&self) -> Option<VersionId> {
+        self.published.oldest_version()
     }
 
     pub(crate) fn insert_published(&self, snapshot_id: SnapshotId, binding: SnapshotHandleBinding) {
@@ -217,10 +221,6 @@ impl SnapshotHandles {
         capacity: &PublishedSnapshotCapacityOwner,
     ) -> Result<Option<bool>, ()> {
         self.published.try_remove_original(original, capacity)
-    }
-
-    pub(crate) fn published_versions(&self) -> Vec<VersionId> {
-        self.published.versions()
     }
 
     pub(crate) fn published_binding(

@@ -11,7 +11,10 @@ pub(crate) use lane::{assert_external_cut_and_lane_busy, assert_recovered_cut_an
 mod lease;
 mod obligation;
 mod owner;
+mod publication_basis;
+mod publication_basis_tree;
 mod publication_reclamation;
+pub(crate) use publication_basis::{PublicationBasisAccess, PublicationBasisImage};
 mod reclamation;
 mod root_locators;
 mod storage_inventory;

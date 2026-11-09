@@ -11,10 +11,12 @@ impl OperationReads<RenameOperation> for Accounts {}
 struct Coupled;
 fn typed_scope() -> ApplicationOperationComponentReadMeaning {
     let path = || {
-        ApplicationQueryRootPath::from(Account::reference()).where_equal(
-            AccountIdField::reference(),
-            ApplicationEncodedScalarValue::try_new(7).unwrap(),
-        )
+        ApplicationQueryRootPath::from(Account::reference())
+            .where_equal(
+                AccountIdField::at("AccountIdField"),
+                ApplicationEncodedScalarValue::try_new(7).unwrap(),
+            )
+            .unwrap()
     };
     ApplicationOperationComponentReadDefinition::new(
         RenameOperation::reference(),

@@ -34,7 +34,7 @@ impl WorthQueryRuntime {
         declaration: WorthQueryIntentDeclaration,
     ) -> Result<WorthQueryIntentReceipt, WorthQueryRuntimeError> {
         let handoff = self.admit_authoritative_intent_for_execution(declaration)?;
-        let binding = self.prepare_authoritative_intent_execution_binding(handoff);
+        let binding = self.prepare_authoritative_intent_execution_binding(handoff)?;
         self.execute_authoritative_intent_execution_binding(execution, binding)
     }
 
@@ -50,7 +50,7 @@ impl WorthQueryRuntime {
             strategy_version.into(),
             input_contract.into(),
         )?;
-        let binding = self.prepare_effect_intent_execution_binding(handoff, &pending_delivery);
+        let binding = self.prepare_effect_intent_execution_binding(handoff, &pending_delivery)?;
         self.execute_effect_intent_execution_binding(execution, binding)
     }
 
@@ -86,7 +86,7 @@ impl WorthQueryRuntime {
         let review =
             crate::intent_admission::dx::WorthQueryRuntimeIntentAdmissionReviewData::from_request(
                 request,
-            );
+            )?;
         let handoff = self.resolve_reviewed_admitted_effect_intent_handoff(review)?;
         Ok((pending_delivery, handoff))
     }
@@ -103,7 +103,7 @@ impl WorthQueryRuntime {
         Ok(
             crate::intent_admission::dx::WorthQueryRuntimeIntentAdmissionReviewData::from_request(
                 request,
-            ),
+            )?,
         )
     }
 
@@ -132,7 +132,7 @@ impl WorthQueryRuntime {
             pending_delivery,
             crate::intent_admission::dx::WorthQueryRuntimeIntentAdmissionReviewData::from_request(
                 request,
-            ),
+            )?,
         ))
     }
 

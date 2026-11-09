@@ -116,7 +116,7 @@ pub fn assert_retained_status(
     );
     assert_eq!(
         retained
-            .field_for(AccountStatus::reference())
+            .field_for(AccountStatus::at("AccountStatus"))
             .unwrap()
             .value(),
         &worth_foundational::facade::AspectValue::String(
@@ -244,16 +244,19 @@ fn build_retained_status_program(
             &admission,
             |reader, projected| {
                 reader
-                    .require_decision_field(projected, AccountStatus::reference())
+                    .require_decision_field(projected, AccountStatus::at("AccountStatus"))
                     .unwrap();
                 match breadth {
                     RetentionMutationBreadth::Narrow => {}
                     RetentionMutationBreadth::CrossRecordLabel => {
                         let other = reader
-                            .resolve_entity(AccountStatus::reference(), "unrelated".to_owned())
+                            .resolve_entity(
+                                AccountStatus::at("AccountStatus"),
+                                "unrelated".to_owned(),
+                            )
                             .unwrap();
                         reader
-                            .require_decision_field(&other, AccountLabel::reference())
+                            .require_decision_field(&other, AccountLabel::at("AccountLabel"))
                             .unwrap();
                     }
                 }
@@ -285,14 +288,18 @@ fn build_retained_status_program(
         .bind_output_for_test(OutputRoleUse::fixed_for_test::<RetainedAccount>(), &account)
         .expect("retained account output belongs to this effect program");
     effects
-        .write_field(&account, AccountStatus::reference(), replacement.to_owned())
+        .write_field(
+            &account,
+            AccountStatus::at("AccountStatus"),
+            replacement.to_owned(),
+        )
         .unwrap();
     if let Some(other) = other {
         let other = effects.existing_entity(&other).unwrap();
         effects
             .write_field(
                 &other,
-                AccountLabel::reference(),
+                AccountLabel::at("AccountLabel"),
                 "retention-breadth".to_owned(),
             )
             .unwrap();

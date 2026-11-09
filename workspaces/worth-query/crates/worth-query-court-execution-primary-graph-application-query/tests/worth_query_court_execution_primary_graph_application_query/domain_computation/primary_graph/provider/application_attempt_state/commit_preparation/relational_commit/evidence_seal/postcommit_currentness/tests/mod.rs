@@ -60,7 +60,7 @@ fn a_source_revision_the_effect_moved_is_kept_and_reported_superseded() {
                         .primary_graph_for_test()
                         .unwrap()
                         .layout_for_test())
-                    .entity_kind_for_test(AccountIdentity::reference().entity())
+                    .entity_kind_for_test(AccountIdentity::at("AccountIdentity").entity())
                     .unwrap(),
                     locator: planned(&locator),
                 }],
@@ -147,7 +147,7 @@ fn unavailable_native_revision_never_authorizes_output_reuse() {
                         .primary_graph_for_test()
                         .unwrap()
                         .layout_for_test())
-                    .entity_kind_for_test(AccountIdentity::reference().entity())
+                    .entity_kind_for_test(AccountIdentity::at("AccountIdentity").entity())
                     .unwrap(),
                     locator: undeclared,
                 }],
@@ -177,14 +177,14 @@ pub fn account_note(
         .selected_product(&(phase_custody).test_host_request_for_test())
         .resolve_entity(
             phase_custody,
-            AccountIdentity::reference(),
+            AccountIdentity::at("AccountIdentity"),
             key.to_owned(),
             &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap()
         .entity_id_for_test();
-    let note = AccountNote::reference();
+    let note = AccountNote::at("AccountNote");
     let locator = (*(*world.application.runtime_for_test())
         .primary_graph_for_test()
         .unwrap()

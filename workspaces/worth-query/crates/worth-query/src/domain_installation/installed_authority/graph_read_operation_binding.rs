@@ -49,6 +49,9 @@ impl WorthQueryInstalledGraphReadOperation {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInstalledGraphReadOperationBindingDenial {
+    EvidenceIdentityDerivationDenied(
+        crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
+    ),
     DeclarationMissingFromReadGraph,
     ConflictingInstalledAuthority,
 }

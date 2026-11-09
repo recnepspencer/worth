@@ -25,7 +25,7 @@ worth_query_structured_value_binding!(pub Parameters for () { identity: "worth.q
 worth_query_structured_value_binding!(pub ResultBinding for Row { identity: "worth.query.record-history.node-row.v1" });
 worth_query_structured_value_binding!(pub ChildResultBinding for u64 { identity: "worth.query.record-history.node-child.v1" });
 worth_query_application_query!(pub Query for Schema, identity "RecordHistorySubjects", parameters Parameters,
-    result ResultBinding, scope Node => "Node", name "record_history_subjects");
+    result ResultBinding, scope GraphNode<Schema> => "Node", name "record_history_subjects");
 pub struct KeySlot;
 pub struct ChildKeySlot;
 pub struct Children;
@@ -33,40 +33,28 @@ worth_query_portable_type!(KeySlot => "worth.query.record-history.node-key.v1");
 worth_query_portable_type!(ChildKeySlot => "worth.query.record-history.child-key.v1");
 worth_query_portable_type!(Children => "worth.query.record-history.children.v1");
 
-pub type Field<Slot> = ApplicationQueryResultFieldRef<
-    Query,
-    Slot,
-    Schema,
-    Node,
-    NodeFacts,
-    NodeKey,
-    u64,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
->;
+pub type Field<Slot> = ApplicationQueryResultFieldRef<Query, Slot, Schema, GraphKey<Schema>>;
 pub fn key() -> Field<KeySlot> {
-    ApplicationQueryResultFieldRef::new("key", NodeKey::reference())
+    ApplicationQueryResultFieldRef::new("key", node_key::<Schema>())
 }
 pub fn child_key() -> Field<ChildKeySlot> {
-    ApplicationQueryResultFieldRef::new("child_key", NodeKey::reference())
+    ApplicationQueryResultFieldRef::new("child_key", node_key::<Schema>())
 }
 pub fn children() -> ApplicationQueryResultRelationRef<
     Query,
     Children,
     Schema,
-    Precedes,
-    Node,
-    Node,
+    GraphPrecedes<Schema>,
+    GraphNode<Schema>,
+    GraphNode<Schema>,
     ForwardResultTraversal,
     ManyResults,
 > {
-    ApplicationQueryResultRelationRef::forward_many("children", Precedes::reference())
+    ApplicationQueryResultRelationRef::forward_many("children", precedes::<Schema>())
 }
 
 pub struct Binding;
-pub type Scope =
-    ApplicationQueryFieldScope<Schema, Node, NodeFacts, NodeKey, u64, ReadOnly, NoApplicationUnit>;
+pub type Scope = ApplicationQueryFieldScope<GraphKey<Schema>>;
 impl ApplicationQueryBinding<Schema> for Binding {
     type Input = ReadInput;
     type InputBinding = InputBinding;
@@ -81,17 +69,8 @@ impl ApplicationQueryBinding<Schema> for Binding {
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "worth.query.record-history.node-read.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Node,
-        NodeFacts,
-        NodeKey,
-        u64,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        NodeKey::reference()
+    fn scope_field() -> GraphKey<Schema> {
+        node_key::<Schema>()
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         Schema,
@@ -136,52 +115,59 @@ impl ApplicationHistoryQueryBinding<Schema> for Relations {
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    let nested =
-        ApplicationQueryResultShapeBuilder::<Schema, Query, Node, u64, ChildResultBinding>::new(
-            Node::reference(),
-        )
-        .field(child_key());
-    let shape = ApplicationQueryResultShapeBuilder::<Schema, Query, Node, Row, ResultBinding>::new(
-        Node::reference(),
-    )
+    let nested = ApplicationQueryResultShapeBuilder::<
+        Schema,
+        Query,
+        GraphNode<Schema>,
+        u64,
+        ChildResultBinding,
+    >::new(node::<Schema>())
+    .field(child_key());
+    let shape = ApplicationQueryResultShapeBuilder::<
+        Schema,
+        Query,
+        GraphNode<Schema>,
+        Row,
+        ResultBinding,
+    >::new(node::<Schema>())
     .field(key())
     .relation(children(), nested)
     .build();
     let query = ApplicationQueryDefinitionBuilder::declare(Query::reference())
-        .root(Node::reference())
-        .scope(Node::reference())
+        .root(node::<Schema>())
+        .scope(node::<Schema>())
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .order_by(child_key(), ApplicationQueryOrderingDirection::Descending)
-        .build()
-        .unwrap();
+        .order_by(child_key(), ApplicationQueryOrderingDirection::Descending);
+    let entities = ApplicationHistoryQueryDefinition::<Schema, Entities>::entity(
+        node::<Schema>(),
+        ApplicationQueryDisclosureContract::public(),
+    )
+    .aspect(aspect(PayloadRecords, PayloadNode, NodeFacts), &schema)
+    .unwrap()
+    .finish()
+    .unwrap();
+    let relations = ApplicationHistoryQueryDefinition::<Schema, Relations>::relation(
+        children(),
+        ApplicationQueryDisclosureContract::public(),
+    )
+    .aspect(
+        relation_aspect(PayloadRecords, PayloadNode, PayloadPrecedes, EdgeFacts),
+        &schema,
+    )
+    .unwrap()
+    .finish()
+    .unwrap();
     filtered::declare(schema)
         .application_query(query)
         .application_query_binding::<Binding>()
-        .application_history_query(
-            ApplicationHistoryQueryDefinition::<Schema, Entities>::entity(
-                Node::reference(),
-                ApplicationQueryDisclosureContract::public(),
-            )
-            .aspect(NodeFacts::reference())
-            .finish()
-            .unwrap(),
-        )
-        .application_history_query(
-            ApplicationHistoryQueryDefinition::<Schema, Relations>::relation(
-                children(),
-                ApplicationQueryDisclosureContract::public(),
-            )
-            .aspect(EdgeFacts::reference())
-            .finish()
-            .unwrap(),
-        )
+        .application_history_query(entities)
+        .application_history_query(relations)
 }
-
 #[path = "history/access.rs"]
 pub mod access;
 #[path = "history/court.rs"]

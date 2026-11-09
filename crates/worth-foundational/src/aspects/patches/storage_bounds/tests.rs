@@ -7,10 +7,9 @@ fn owned_patch_storage_bounds_cover_actual_backings_and_checked_overflow() {
         PortableRecordAspectPatch::new([]).readmission_storage_bounds(),
         Some(AspectPatchStorageBounds::default())
     );
-    assert_eq!(
-        CanonicalAspectStateMap::construction_storage_bytes(0),
-        Some(0)
-    );
+    // c65d042399: an empty persistent map and its derived width index
+    // each own a root. An absent optional state still allocates neither.
+    assert!(CanonicalAspectStateMap::construction_storage_bytes(0).unwrap() > 0);
     for count in [1, 2, 3, 4, 7, 8, 9, 65] {
         let bounds =
             AuthoritativeRecordAspectPatch::construction_storage_bounds(count, 0, 0).unwrap();
@@ -64,16 +63,21 @@ fn application_allocation_bounds_follow_selected_output_and_cloned_string_length
         AuthoritativeRecordAspectState::from_validated_entries([value.into_parts().into_parts().0])
             .unwrap();
     let patch = AuthoritativeRecordAspectPatch::empty();
-    let bounds = patch.application_allocation_bounds(Some(&current)).unwrap();
+    let bounds = patch
+        .application_retained_storage_bounds(Some(&current))
+        .unwrap();
     let TransitionOutcome::Success(result) = patch.apply_to(&current) else {
         panic!("copy current")
     };
     let actual = result.into_parts().into_parts().0;
-    assert_eq!(
-        bounds.retained_bytes,
-        actual.owned_allocation_capacity_bytes()
-    );
-    assert!(bounds.retained_bytes < current.owned_allocation_capacity_bytes());
+    assert!(bounds.retained_bytes >= actual.aspects().retained_storage_bytes().unwrap());
+    // c65d042399 shares rather than trims spare capacity. Independent
+    // successor custody funds that reachable backing after the source retires.
+    assert!(bounds.retained_bytes >= current.owned_allocation_capacity_bytes());
+    assert!(std::ptr::eq(
+        actual.get(&key).unwrap(),
+        current.get(&key).unwrap()
+    ));
 }
 
 #[test]
@@ -121,16 +125,15 @@ fn application_allocation_bounds_count_struct_winners_once_with_sets_after_clear
     ) else {
         panic!("genuine set and clear")
     };
-    let bounds = patch.application_allocation_bounds(Some(&current)).unwrap();
+    let bounds = patch
+        .application_retained_storage_bounds(Some(&current))
+        .unwrap();
     let TransitionOutcome::Success(result) = patch.apply_to(&current) else {
         panic!("apply")
     };
     let actual = result.into_parts().into_parts().0;
-    assert_eq!(
-        bounds.retained_bytes,
-        actual.owned_allocation_capacity_bytes()
-    );
-    assert!(bounds.retained_bytes < current.owned_allocation_capacity_bytes());
+    assert!(bounds.retained_bytes >= actual.aspects().retained_storage_bytes().unwrap());
+    assert!(actual.owned_allocation_capacity_bytes() < current.owned_allocation_capacity_bytes());
     let ContractValidatedAspectValueView::Struct(value) =
         actual.get(contract.key()).unwrap().view()
     else {

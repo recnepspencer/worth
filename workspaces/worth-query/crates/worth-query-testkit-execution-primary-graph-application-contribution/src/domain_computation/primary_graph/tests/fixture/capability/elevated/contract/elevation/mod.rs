@@ -49,25 +49,30 @@ use crate::domain_computation::primary_graph::tests::fixture::capability::elevat
 pub fn definition() -> ApplicationCapabilityElevationRule {
     let state = |value| {
         ApplicationCapabilityValueBinding::new(
-            CapabilityElevationStatusField::reference(),
+            CapabilityElevationStatusField::at("CapabilityElevationStatusField"),
             ApplicationEncodedScalarValue::<CapabilityElevationStatusBinding>::try_new(value)
                 .expect("fixture elevation status must encode"),
         )
+        .unwrap()
     };
     ApplicationCapabilityElevationRule::governed(
         ApplicationCapabilityElevationDefinition::new(
-            ApplicationCapabilityFieldBinding::from_reference(
-                CapabilityElevationIdentity::reference(),
-            ),
-            ApplicationCapabilityFieldBinding::from_reference(
-                CapabilityElevationReason::reference(),
-            ),
-            ApplicationCapabilityFieldBinding::from_reference(
-                CapabilityElevationStatusField::reference(),
-            ),
-            ApplicationCapabilityFieldBinding::from_reference(
-                CapabilityElevationClosedAt::reference(),
-            ),
+            ApplicationCapabilityFieldBinding::from_reference(CapabilityElevationIdentity::at(
+                "CapabilityElevationIdentity",
+            ))
+            .unwrap(),
+            ApplicationCapabilityFieldBinding::from_reference(CapabilityElevationReason::at(
+                "CapabilityElevationReason",
+            ))
+            .unwrap(),
+            ApplicationCapabilityFieldBinding::from_reference(CapabilityElevationStatusField::at(
+                "CapabilityElevationStatusField",
+            ))
+            .unwrap(),
+            ApplicationCapabilityFieldBinding::from_reference(CapabilityElevationClosedAt::at(
+                "CapabilityElevationClosedAt",
+            ))
+            .unwrap(),
             ApplicationCapabilityElevationStates::new(
                 state(CapabilityElevationStatus::Requested),
                 state(CapabilityElevationStatus::Approved),
@@ -77,11 +82,13 @@ pub fn definition() -> ApplicationCapabilityElevationRule {
             ApplicationCapabilityValidityDefinition::new(
                 ApplicationCapabilityValidityTimeline::UnixEpochSeconds,
                 ApplicationCapabilityFieldBinding::from_reference(
-                    CapabilityElevationNotBefore::reference(),
-                ),
-                ApplicationCapabilityFieldBinding::from_reference(
-                    CapabilityElevationNotAfter::reference(),
-                ),
+                    CapabilityElevationNotBefore::at("CapabilityElevationNotBefore"),
+                )
+                .unwrap(),
+                ApplicationCapabilityFieldBinding::from_reference(CapabilityElevationNotAfter::at(
+                    "CapabilityElevationNotAfter",
+                ))
+                .unwrap(),
             ),
             std::time::Duration::from_secs(20 * 60),
             ApplicationCapabilityRelationBinding::from_reference(
@@ -121,42 +128,48 @@ pub fn definition() -> ApplicationCapabilityElevationRule {
                 ApplicationCapabilityRelationBinding::from_reference(
                     CapabilityElevationReview::reference(),
                 ),
-                ApplicationCapabilityFieldBinding::from_reference(
-                    CapabilityReviewIdentity::reference(),
-                ),
+                ApplicationCapabilityFieldBinding::from_reference(CapabilityReviewIdentity::at(
+                    "CapabilityReviewIdentity",
+                ))
+                .unwrap(),
                 ApplicationCapabilityValueBinding::new(
-                    CapabilityReviewKindField::reference(),
+                    CapabilityReviewKindField::at("CapabilityReviewKindField"),
                     ApplicationEncodedScalarValue::<CapabilityReviewKindBinding>::try_new(
                         CapabilityReviewKind::Elevation,
                     )
                     .expect("fixture review kind must encode"),
-                ),
+                )
+                .unwrap(),
                 ApplicationCapabilityRelationBinding::from_reference(
                     CapabilityReviewResource::reference(),
                 ),
                 ApplicationCapabilityRelationBinding::from_reference(
                     CapabilityReviewer::reference(),
                 ),
-                ApplicationCapabilityFieldBinding::from_reference(
-                    CapabilityReviewStatusField::reference(),
-                ),
-                ApplicationCapabilityFieldBinding::from_reference(
-                    CapabilityReviewReviewedAt::reference(),
-                ),
+                ApplicationCapabilityFieldBinding::from_reference(CapabilityReviewStatusField::at(
+                    "CapabilityReviewStatusField",
+                ))
+                .unwrap(),
+                ApplicationCapabilityFieldBinding::from_reference(CapabilityReviewReviewedAt::at(
+                    "CapabilityReviewReviewedAt",
+                ))
+                .unwrap(),
                 ApplicationCapabilityValueBinding::new(
-                    CapabilityReviewStatusField::reference(),
+                    CapabilityReviewStatusField::at("CapabilityReviewStatusField"),
                     ApplicationEncodedScalarValue::<CapabilityReviewStatusBinding>::try_new(
                         CapabilityReviewStatus::Required,
                     )
                     .expect("fixture review status must encode"),
-                ),
+                )
+                .unwrap(),
                 ApplicationCapabilityValueBinding::new(
-                    CapabilityReviewStatusField::reference(),
+                    CapabilityReviewStatusField::at("CapabilityReviewStatusField"),
                     ApplicationEncodedScalarValue::<CapabilityReviewStatusBinding>::try_new(
                         CapabilityReviewStatus::Completed,
                     )
                     .expect("fixture review status must encode"),
-                ),
+                )
+                .unwrap(),
             ),
         )
         .with_resource_relation(ApplicationCapabilityRelationBinding::from_reference(

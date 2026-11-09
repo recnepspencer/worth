@@ -1,3 +1,6 @@
+mod effective_records;
+mod staged_mutations;
+pub use staged_mutations::RelationalTransactionStagedMutations;
 mod admission;
 mod bound;
 mod commit;

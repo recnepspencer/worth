@@ -27,7 +27,7 @@ where
         Ok(hit) => hit.complete::<Binding>(&mut reader.realized_scope),
         Err(miss) => completed_scan::complete(
             execution,
-            reader.runtime,
+            &reader.native,
             reader.snapshot,
             miss,
             &mut accounting,

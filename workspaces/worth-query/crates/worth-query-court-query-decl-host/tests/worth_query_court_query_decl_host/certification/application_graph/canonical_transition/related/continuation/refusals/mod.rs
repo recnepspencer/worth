@@ -6,6 +6,7 @@ fn changed_codec_continuation_swallowed_refusal_and_original_cancellation_never_
     let original = host::install(journey::heavy()).unwrap();
     let _settled = host::produce(&original);
     // All tokens are issued before adoption by real first pages, never copied.
+    let prime_token = journey::page(&original).into_parts().1.unwrap();
     let token = journey::page(&original).into_parts().1.unwrap();
     let narrow_token = journey::page(&original).into_parts().1.unwrap();
     let retry_token = journey::page(&original).into_parts().1.unwrap();
@@ -20,18 +21,24 @@ fn changed_codec_continuation_swallowed_refusal_and_original_cancellation_never_
     let _target_settled = successor::host::produce(&target);
     projection::reset();
     output::reset_decodes();
+    let (primed, _) = native::resume(&original, prime_token, &request_scope(), 8_000_000);
+    assert!(primed.unwrap().continuation().is_none());
+    projection::reset();
+    output::reset_decodes();
     let (funded, report) = native::resume(&original, token, &request_scope(), 8_000_000);
     assert!(funded.unwrap().continuation().is_none());
     assert_eq!(output::ignored_refusals(), 0);
-    let worth_foundational::facade::AspectValue::String(
-        worth_foundational::facade::InternedString::Raw(wire),
-    ) = output::DerivedBinding::encode(&output::calculate(&journey::heavy())).unwrap()
+    let worth_foundational::facade::AspectValue::String(wire) =
+        output::DerivedBinding::encode(&output::calculate(&journey::heavy())).unwrap()
     else {
         panic!("canonical carrier is a string")
     };
+    let wire = wire
+        .raw_text()
+        .expect("canonical string carrier is textual");
     let narrow = report
         .charged_work()
-        .checked_sub(u64::try_from(wire.len() * 3 / 2).unwrap())
+        .checked_sub(u64::try_from(wire.len() / 2).unwrap())
         .unwrap();
     projection::reset();
     output::reset_decodes();

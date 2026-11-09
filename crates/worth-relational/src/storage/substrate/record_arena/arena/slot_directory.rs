@@ -41,7 +41,10 @@ impl RecordSlotDirectory {
         }
     }
 
-    pub(crate) fn restore(slots: Vec<u64>) -> Result<Self, &'static str> {
+    pub(crate) fn restore(
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        slots: Vec<u64>,
+    ) -> Result<Self, &'static str> {
         let mut directory = Self::with_capacity(slots.len());
         for slot in slots {
             directory.insert(slot)?;
@@ -50,6 +53,7 @@ impl RecordSlotDirectory {
     }
 
     pub(crate) fn restore_for_request(
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         slots: Vec<u64>,
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Self, super::MetadataWriteDenial> {

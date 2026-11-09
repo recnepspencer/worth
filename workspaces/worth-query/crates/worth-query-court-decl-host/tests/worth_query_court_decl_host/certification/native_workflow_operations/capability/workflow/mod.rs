@@ -109,10 +109,15 @@ fn completed_workflow_owner_acceptance_requires_fresh_selected_capability() {
         let owner = request
             .mutate(Effect(input()))
             .without_source()
-            .preconditions(TypedMutationPreconditions::new().expect_fact(
-                DocumentIdentityField::reference(),
-                ApplicationEncodedScalarValue::try_new(DOCUMENT_IDENTITY.to_owned()).unwrap(),
-            ))
+            .preconditions(
+                TypedMutationPreconditions::new()
+                    .expect_fact(
+                        DocumentIdentityField::at("DocumentIdentityField"),
+                        ApplicationEncodedScalarValue::try_new(DOCUMENT_IDENTITY.to_owned())
+                            .unwrap(),
+                    )
+                    .expect("record precondition"),
+            )
             .idempotency_owned(0x9176ca04_u64)
             .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
             .for_workflow_operation(&workflow, &required)
@@ -122,10 +127,15 @@ fn completed_workflow_owner_acceptance_requires_fresh_selected_capability() {
         let competitor = request
             .mutate(Effect(input()))
             .without_source()
-            .preconditions(TypedMutationPreconditions::new().expect_fact(
-                DocumentIdentityField::reference(),
-                ApplicationEncodedScalarValue::try_new(DOCUMENT_IDENTITY.to_owned()).unwrap(),
-            ))
+            .preconditions(
+                TypedMutationPreconditions::new()
+                    .expect_fact(
+                        DocumentIdentityField::at("DocumentIdentityField"),
+                        ApplicationEncodedScalarValue::try_new(DOCUMENT_IDENTITY.to_owned())
+                            .unwrap(),
+                    )
+                    .expect("record precondition"),
+            )
             .idempotency_owned(0x9176ca08_u64)
             .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
             .for_workflow_operation(&workflow, &required)

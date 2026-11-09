@@ -124,12 +124,16 @@ where
                 cause,
             ))
         })?;
-    let output_source_memory = if output_profile.is_some() {
+    let output_source_memory = if output_profile.is_some() || installed.definition().parts().model_domain == worth_query_declaration::facade::application_history::ApplicationHistoryModelDomain::OwnedModelGraph {
         reserve_arc::<crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation>(&execution)
             .map_err(|cause| Denial::Document(super::super::WorthQueryDocumentHistoryDenial::Recording(cause)))?
     } else {
         None
     };
+    let output_basis_memory = if installed.definition().parts().model_domain == worth_query_declaration::facade::application_history::ApplicationHistoryModelDomain::OwnedModelGraph {
+        reserve_arc::<super::output_authority::OwnedOutputSelection>(&execution)
+            .map_err(|cause| Denial::Document(super::super::WorthQueryDocumentHistoryDenial::Recording(cause)))?
+    } else { None };
     let mut selected = document.selection.lock();
     if let Some(existing) = selected
         .navigation
@@ -180,12 +184,18 @@ where
             output_profile,
             output_source: None,
             output_source_memory,
+            output_basis_memory,
             expected,
             model: document.model.clone(),
+            ownership: (installed.definition().parts().model_domain
+                == worth_query_declaration::facade::application_history::ApplicationHistoryModelDomain::OwnedModelGraph)
+                .then(|| application.runtime.primary_provider.graph.layout.history_ownership(
+                    &installed.definition().parts().identity).expect("eligibility admitted the installed recipe")),
             source: Some(source),
             requested,
             intent,
             phase: NavigationPhase::Prepared,
+            output_transport: None,
             head_slot: Some(head_slot),
             prior_cleanup: None,
             selection_pause: None,

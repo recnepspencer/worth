@@ -32,7 +32,7 @@ fn support_report_tracks_disabled_signal_section_posture() {
         WorthQueryConfig::runtime_backed_default().with_signal(WorthQuerySignalConfig::disabled()),
     )
     .expect("signal-disabled facade config should still validate");
-    let report = facade.support_report();
+    let report = facade.support_report().expect("fixture digest must fit");
 
     let signal_posture = report
         .section_postures()

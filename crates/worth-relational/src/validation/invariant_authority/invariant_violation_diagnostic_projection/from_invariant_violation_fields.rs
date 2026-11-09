@@ -188,6 +188,7 @@ impl<'a> InvariantViolationDiagnosticProjection<'a> {
                 phase,
                 failure,
                 detail,
+                ..
             } => Self::CustomInvariantFailure {
                 identity,
                 phase: *phase,

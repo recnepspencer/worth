@@ -346,40 +346,5 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
     );
 }
 
-fn run(
-    execution: &ExecutionRequest<'_, '_>,
-    state: &dyn CurrentPartitionAccess,
-    id: RelationId,
-    selected: &CanonicalRequiredOutputOrigin,
-    birth: &Arc<CanonicalCommitEnvelope>,
-    write: &Arc<CanonicalCommitEnvelope>,
-    owned: bool,
-) -> Result<(), Stop> {
-    execution
-        .in_scope(|lease| {
-            ExecutionWorkCeiling::new(execution.work_ceiling()).run_with_checkpoint(
-                lease,
-                None,
-                |context| {
-                    let mut lookup =
-                        |version, _context: &mut worth_execution::MapKernelContext<'_, '_>| {
-                            Ok(if version == birth.commit.version_id {
-                                Some(Arc::clone(birth))
-                            } else if version == write.commit.version_id {
-                                Some(Arc::clone(write))
-                            } else {
-                                None
-                            })
-                        };
-                    if owned {
-                        validate_owned(state, id, selected, &mut lookup, context)
-                    } else {
-                        validate(state, id, selected, None, &mut lookup, context)
-                    }
-                },
-            )
-        })
-        .unwrap()
-        .unwrap()
-        .0
-}
+mod creation_probe;
+use creation_probe::run;

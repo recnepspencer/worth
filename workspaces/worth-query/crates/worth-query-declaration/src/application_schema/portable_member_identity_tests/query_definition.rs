@@ -15,15 +15,12 @@ pub(super) fn query_definition<Query>(
         QueryEntity,
     >,
     entity: ApplicationEntityRef<Schema, QueryEntity>,
-) -> Result<
-    crate::application_query::ApplicationQueryDefinition<
-        Schema,
-        Query,
-        QueryParameters,
-        (),
-        QueryEntity,
-    >,
-    crate::application_query::ApplicationQueryDefinitionDenial,
+) -> crate::application_query::ApplicationQueryDefinitionBuilder<
+    Schema,
+    Query,
+    QueryParameters,
+    (),
+    QueryEntity,
 >
 where
     Query: crate::application_query::ApplicationQueryMarkerIdentity<Schema>,
@@ -47,5 +44,4 @@ where
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
 }

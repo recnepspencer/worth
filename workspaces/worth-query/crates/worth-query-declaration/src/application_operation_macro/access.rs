@@ -4,10 +4,10 @@
 #[macro_export]
 macro_rules! __worth_query_operation_access {
     (@generic $Operation:ident for $Schema:ident: $Binding:path;
-        { $($kind:ident: [$($Member:ty),* $(,)?];)* }
+        { $($kind:ident: [$($Member:tt)*];)* }
         $(; inherited_access: |$schema:ident, $operation:ident| $inherited:block)?
     ) => {
-        $($crate::__worth_query_operation_access!(@capabilities $kind $Operation [$($Member),*]);)*
+        $($crate::__worth_query_operation_access!(@capabilities $kind $Operation [$($Member)*]);)*
         impl<$Schema: $Binding> $crate::facade::application_schema::ApplicationDeclaredOperation<$Schema>
             for $Operation
         {
@@ -16,7 +16,7 @@ macro_rules! __worth_query_operation_access {
             ) -> $crate::facade::application_schema::ApplicationSchemaDeclarationBuilder<$Schema> {
                 let operation = Self::reference::<$Schema>();
                 $(let schema = $crate::__worth_query_operation_access!(
-                    @register $kind schema operation [$($Member),*]
+                    @register $kind schema operation [$($Member)*]
                 );)*
                 let _ = operation;
                 $(let schema = { let $schema = schema; let $operation = operation; $inherited };)?
@@ -25,9 +25,9 @@ macro_rules! __worth_query_operation_access {
         }
     };
     ($Operation:ident for $Schema:ty, input $InputBinding:path;
-        { $($kind:ident: [$($Member:ty),* $(,)?];)* }
+        { $($kind:ident: [$($Member:tt)*];)* }
     ) => {
-        $( $crate::__worth_query_operation_access!(@capabilities $kind $Operation [$($Member),*]); )*
+        $( $crate::__worth_query_operation_access!(@capabilities $kind $Operation [$($Member)*]); )*
         impl $crate::facade::application_schema::ApplicationDeclaredOperation<$Schema>
             for $Operation
         {
@@ -36,7 +36,7 @@ macro_rules! __worth_query_operation_access {
             ) -> $crate::facade::application_schema::ApplicationSchemaDeclarationBuilder<$Schema> {
                 let operation = Self::reference();
                 $( let schema = $crate::__worth_query_operation_access!(
-                    @register $kind schema operation [$($Member),*]
+                    @register $kind schema operation [$($Member)*]
                 ); )*
                 let _ = operation;
                 schema
@@ -47,13 +47,13 @@ macro_rules! __worth_query_operation_access {
         $( impl $crate::facade::application_schema::OperationReads<$Operation> for $Member {} )*
     };
     (@register read_entities $schema:ident $operation:ident [$($Member:ty),*]) => {
-        $schema$(.operation_read_entity($operation, <$Member>::reference()))*
+        $schema$(.operation_read_entity($operation, $crate::facade::application_schema::ApplicationEntityRef::<_, $Member>::from_schema_identifier(
+            <$Member as $crate::facade::application_schema::fragment::Entity>::NAME
+        )))*
     };
-    (@capabilities read_fields $Operation:ident [$($Member:ty),*]) => {
-        $( impl $crate::facade::application_schema::OperationReads<$Operation> for $Member {} )*
-    };
-    (@register read_fields $schema:ident $operation:ident [$($Member:ty),*]) => {
-        $schema$(.operation_read_field($operation, <$Member>::reference()))*
+    (@capabilities read_fields $Operation:ident [$($Member:expr),* $(,)?]) => {};
+    (@register read_fields $schema:ident $operation:ident [$($Member:expr),* $(,)?]) => {
+        $schema$(.operation_read_field($operation, $Member))*
     };
     (@capabilities read_relations $Operation:ident [$($Member:ty),*]) => {
         $( impl $crate::facade::application_schema::OperationReads<$Operation> for $Member {} )*
@@ -61,35 +61,33 @@ macro_rules! __worth_query_operation_access {
     (@register read_relations $schema:ident $operation:ident [$($Member:ty),*]) => {
         $schema$(.operation_read_relation($operation, <$Member>::reference()))*
     };
-    (@capabilities writes $Operation:ident [$($Member:ty),*]) => {
-        $( impl $crate::facade::application_schema::OperationWrites<$Operation> for $Member {} )*
+    (@capabilities writes $Operation:ident [$($Member:expr),* $(,)?]) => {};
+    (@register writes $schema:ident $operation:ident [$($Member:expr),* $(,)?]) => {
+        $schema$(.operation_write($operation, $Member))*
     };
-    (@register writes $schema:ident $operation:ident [$($Member:ty),*]) => {
-        $schema$(.operation_write($operation, <$Member>::reference()))*
+    (@capabilities expects_version $Operation:ident [$($Member:expr),* $(,)?]) => {};
+    (@register expects_version $schema:ident $operation:ident [$($Member:expr),* $(,)?]) => {
+        $schema$(.operation_expected_version($operation, $Member))*
     };
-    (@capabilities expects_version $Operation:ident [$($Member:ty),*]) => {
-        $( impl $crate::facade::application_schema::OperationExpectsVersion<$Operation> for $Member {} )*
-    };
-    (@register expects_version $schema:ident $operation:ident [$($Member:ty),*]) => {
-        $schema$(.operation_expected_version($operation, <$Member>::reference()))*
-    };
-    (@capabilities expects_fact $Operation:ident [$($Member:ty),*]) => {
-        $( impl $crate::facade::application_schema::OperationExpectsFact<$Operation> for $Member {} )*
-    };
-    (@register expects_fact $schema:ident $operation:ident [$($Member:ty),*]) => {
-        $schema$(.operation_expected_fact($operation, <$Member>::reference()))*
+    (@capabilities expects_fact $Operation:ident [$($Member:expr),* $(,)?]) => {};
+    (@register expects_fact $schema:ident $operation:ident [$($Member:expr),* $(,)?]) => {
+        $schema$(.operation_expected_fact($operation, $Member))*
     };
     (@capabilities creates $Operation:ident [$($Member:ty),*]) => {
         $( impl $crate::facade::application_schema::OperationCreates<$Operation> for $Member {} )*
     };
     (@register creates $schema:ident $operation:ident [$($Member:ty),*]) => {
-        $schema$(.operation_create($operation, <$Member>::reference()))*
+        $schema$(.operation_create($operation, $crate::facade::application_schema::ApplicationEntityRef::<_, $Member>::from_schema_identifier(
+            <$Member as $crate::facade::application_schema::fragment::Entity>::NAME
+        )))*
     };
     (@capabilities deletes $Operation:ident [$($Member:ty),*]) => {
         $( impl $crate::facade::application_schema::OperationDeletes<$Operation> for $Member {} )*
     };
     (@register deletes $schema:ident $operation:ident [$($Member:ty),*]) => {
-        $schema$(.operation_delete($operation, <$Member>::reference()))*
+        $schema$(.operation_delete($operation, $crate::facade::application_schema::ApplicationEntityRef::<_, $Member>::from_schema_identifier(
+            <$Member as $crate::facade::application_schema::fragment::Entity>::NAME
+        )))*
     };
     (@capabilities links $Operation:ident [$($Member:ty),*]) => {
         $( impl $crate::facade::application_schema::OperationLinks<$Operation> for $Member {} )*

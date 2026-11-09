@@ -22,7 +22,10 @@ fn continuity_update_denies_missing_binding_typed_and_early() {
                 denial.kind(),
                 WorthQueryContinuityMutationDenialKind::RequiresExistingTruthBinding
             );
-            assert!(!denial.denial_digest().is_empty());
+            assert!(!denial
+                .denial_digest()
+                .expect("fixture digest must fit")
+                .is_empty());
         }
         other => panic!("expected typed continuity denial, got {other:?}"),
     }
@@ -50,7 +53,10 @@ fn continuity_insert_denies_non_update_family_typed_and_early() {
                 denial.kind(),
                 WorthQueryContinuityMutationDenialKind::RequiresUpdateFamily
             );
-            assert!(!denial.denial_digest().is_empty());
+            assert!(!denial
+                .denial_digest()
+                .expect("fixture digest must fit")
+                .is_empty());
         }
         other => panic!("expected typed continuity denial, got {other:?}"),
     }
@@ -127,7 +133,10 @@ fn preview_update_existing_denies_continuity_without_authoritative_lane() {
                 WorthQueryContinuityMutationDenialKind::RequiresAuthoritativeLane
             );
             assert_eq!(denial.basis_binding_digest(), Some(binding_digest.as_str()));
-            assert!(!denial.denial_digest().is_empty());
+            assert!(!denial
+                .denial_digest()
+                .expect("fixture digest must fit")
+                .is_empty());
         }
         other => panic!("expected typed continuity denial, got {other:?}"),
     }
@@ -209,7 +218,10 @@ fn preview_batch_denies_continuity_without_authoritative_lane() {
                 WorthQueryContinuityMutationDenialKind::RequiresAuthoritativeLane
             );
             assert_eq!(denial.basis_binding_digest(), Some(binding_digest.as_str()));
-            assert!(!denial.denial_digest().is_empty());
+            assert!(!denial
+                .denial_digest()
+                .expect("fixture digest must fit")
+                .is_empty());
         }
         other => panic!("expected typed continuity denial, got {other:?}"),
     }

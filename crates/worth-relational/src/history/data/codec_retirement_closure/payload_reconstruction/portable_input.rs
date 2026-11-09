@@ -1,4 +1,4 @@
-//! Owned portable construction follows the published operations without trees.
+//! Fund owned portable construction and independent retained shared payloads.
 use super::*;
 use crate::publication::patch::data::{
     PublishedAuthoritativePatchOperation as Op, PublishedAuthoritativePatchValue as Value,
@@ -48,7 +48,9 @@ pub(super) fn quote(
             Op::WholeAspectSet { value, .. } => add(
                 &mut quote.retained_bytes,
                 match value {
-                    Value::Scalar(value) => value.owned_allocation_capacity_bytes(),
+                    Value::Scalar(value) => value
+                        .clone_retained_storage_bytes()
+                        .ok_or_else(super::super::memory_overflow)?,
                     Value::Struct(value) => value.owned_allocation_capacity_bytes(),
                 },
             )?,
@@ -61,11 +63,14 @@ pub(super) fn quote(
                 if creation {
                     add(
                         &mut quote.retained_bytes,
-                        backing::<(FieldKey, AspectValue)>(field_sets.len())?,
+                        StructAspectValue::sorted_construction_storage_bytes(field_sets.len())
+                            .ok_or_else(super::super::memory_overflow)?,
                     )?;
                     add(
                         &mut quote.transient_bytes,
-                        backing::<(FieldKey, AspectValue)>(field_sets.len())?,
+                        backing::<(FieldKey, AspectValue)>(field_sets.len())?
+                            .checked_mul(2)
+                            .ok_or_else(super::super::memory_overflow)?,
                     )?;
                 } else {
                     let count = field_sets
@@ -101,7 +106,9 @@ pub(super) fn quote(
                     )?;
                     add(
                         &mut quote.retained_bytes,
-                        set.value.owned_allocation_capacity_bytes(),
+                        set.value
+                            .clone_retained_storage_bytes()
+                            .ok_or_else(super::super::memory_overflow)?,
                     )?;
                 }
             }

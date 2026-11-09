@@ -94,7 +94,7 @@ pub fn declare_writeback(trigger: WorthQueryWritebackTrigger) -> WorthQueryWrite
             WorthQueryEvidenceTag::new("family"),
             trigger.family().as_str(),
         )
-        .seal(),
+        .seal().expect("fixed digest grammar: literal tags, primitive values, closed enum labels, or sealed digest tokens"),
     };
     WorthQueryWritebackDeclaration {
         identity,

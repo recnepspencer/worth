@@ -20,6 +20,7 @@ pub struct ApplicationHistoryBindingDescriptor {
     navigation_resources: super::ApplicationHistoryNavigationResources,
     retention_resources: super::ApplicationHistoryRetentionResources,
     operations: Vec<ApplicationMutationBindingDescriptor>,
+    ownership: Vec<super::ApplicationHistoryOwnershipRelation>,
     navigation: Option<ApplicationHistoryNavigationBindingDescriptor>,
     window: Option<super::ApplicationHistoryRetentionBindingDescriptor>,
     bookmarks: Option<super::ApplicationHistoryRetentionBindingDescriptor>,
@@ -36,6 +37,7 @@ impl ApplicationHistoryBindingDescriptor {
             navigation_resources: H::NAVIGATION_RESOURCES,
             retention_resources: H::RETENTION_RESOURCES,
             operations: Vec::new(),
+            ownership: Vec::new(),
             navigation: None,
             window: None,
             bookmarks: None,
@@ -44,6 +46,14 @@ impl ApplicationHistoryBindingDescriptor {
 
     pub(super) fn push_operation(&mut self, operation: ApplicationMutationBindingDescriptor) {
         self.operations.push(operation);
+    }
+
+    pub(super) fn push_ownership(&mut self, relation: super::ApplicationHistoryOwnershipRelation) {
+        self.ownership.push(relation);
+    }
+
+    pub fn ownership(&self) -> &[super::ApplicationHistoryOwnershipRelation] {
+        &self.ownership
     }
 
     pub(super) fn set_navigation(

@@ -149,7 +149,7 @@ impl LiveContext {
             .expect("the selected product branch remains admitted")
             .resolve_entity(
                 &phase_custody.phase_for_application_for_test(&self.world.application),
-                AccountIdentity::reference(),
+                AccountIdentity::at("AccountIdentity"),
                 "account-1".to_owned(),
                 &self.request,
                 WorthQueryPrincipalResolutionMode::Ordinary,

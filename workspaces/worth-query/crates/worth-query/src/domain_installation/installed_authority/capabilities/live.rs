@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::marker::PhantomData;
 
 use crate::ordinary::live::{
@@ -60,7 +61,26 @@ impl<D: 'static> WorthQueryInstalledDomainLiveRequest<D> {
         let declaration_identity = WorthQueryInstalledDomainExecutionReceipt::label_identity(
             "live-declaration",
             self.request.declaration_identity().as_str(),
-        );
+        )
+        .map_err(|cause| {
+            WorthQueryInstalledDomainCapabilityStop::identity_refused(
+                self.witness.clone(),
+                WorthQueryInstalledDomainCapabilityKind::LiveOpen,
+                None,
+                cause,
+            )
+        })?;
+        let refusal_witness = self.witness.clone();
+        let refusal_declaration = declaration_identity.clone();
+        let identity_refused = |cause| {
+            WorthQueryInstalledDomainCapabilityStop::identity_refused(
+                refusal_witness.clone(),
+                WorthQueryInstalledDomainCapabilityKind::LiveOpen,
+                Some(refusal_declaration.clone()),
+                cause,
+            )
+        };
+
         WorthQueryInstalledDomainExecutionDrift::validate::<D>(&self.witness, workspace).map_err(
             |drift| {
                 WorthQueryInstalledDomainCapabilityStop::new(
@@ -86,7 +106,8 @@ impl<D: 'static> WorthQueryInstalledDomainLiveRequest<D> {
                     WorthQueryInstalledDomainExecutionReceipt::label_identity(
                         "live-context-admission",
                         &context_receipt_digest,
-                    ),
+                    )
+                    .map_err(&identity_refused)?,
                     handle.resource_identity().clone(),
                 );
                 WorthQueryInstalledDomainLiveOpenOutcome::Opened(
@@ -147,7 +168,7 @@ impl<D: 'static> WorthQueryInstalledDomainLiveHandle<D> {
             WorthQueryInstalledDomainExecutionReceipt::label_identity(
                 "live-read-result",
                 result.receipt().result_digest(),
-            ),
+            )?,
         );
         Ok(WorthQueryInstalledDomainLiveRead { result, receipt })
     }
@@ -213,15 +234,17 @@ impl<D: 'static> WorthQueryInstalledDomainLiveHandle<D> {
     pub fn checkpoint(
         self,
         workspace: &mut WorthQueryWorkspace,
-    ) -> WorthQueryInstalledDomainLiveCheckpointOutcome<D> {
+    ) -> Result<WorthQueryInstalledDomainLiveCheckpointOutcome<D>, IdentityDerivationDenial> {
         if let Err(drift) = WorthQueryInstalledDomainExecutionDrift::validate::<D>(
             self.receipt.installed_authority(),
             workspace,
         ) {
-            return WorthQueryInstalledDomainLiveCheckpointOutcome::AuthorityStopped(self, drift);
+            return Ok(
+                WorthQueryInstalledDomainLiveCheckpointOutcome::AuthorityStopped(self, drift),
+            );
         }
         let receipt = self.receipt;
-        match self.handle.checkpoint(workspace) {
+        Ok(match self.handle.checkpoint(workspace)? {
             WorthQueryManagedLiveCheckpointOutcome::Checkpointed(completion) => {
                 let operational = completion.checkpoint().continuation_identity().clone();
                 WorthQueryInstalledDomainLiveCheckpointOutcome::Checkpointed(
@@ -244,7 +267,7 @@ impl<D: 'static> WorthQueryInstalledDomainLiveHandle<D> {
                     },
                 )
             }
-        }
+        })
     }
 
     pub fn close(
@@ -298,6 +321,7 @@ impl<D: 'static> WorthQueryInstalledDomainLiveHandle<D> {
 }
 
 pub enum WorthQueryInstalledDomainLiveOperationError {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     Authority(WorthQueryInstalledDomainCapabilityStop<WorthQueryInstalledDomainExecutionDrift>),
     Runtime(WorthQueryInstalledDomainCapabilityStop<WorthQueryRuntimeError>),
 }
@@ -343,5 +367,11 @@ impl<D> WorthQueryInstalledDomainHandle<D> {
             declaration,
             marker: PhantomData,
         })
+    }
+}
+
+impl From<IdentityDerivationDenial> for WorthQueryInstalledDomainLiveOperationError {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
     }
 }

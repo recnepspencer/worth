@@ -11,10 +11,25 @@ pub(super) fn install(
     let operation = OpenEstateCaseOperation::reference();
     schema
         .operation_projection_work_budget(operation, 40)
-        .operation_read_field(operation, EstateCaseIdentityField::reference())
-        .operation_read_field(operation, EstateCaseStatusField::reference())
-        .operation_read_field(operation, DeathNoticeIdentityField::reference())
-        .operation_read_field(operation, DeathNoticeStatusField::reference())
+        .operation_read_field(
+            operation,
+            EstateCaseIdentityField::at("EstateCaseIdentityField"),
+        )
+        .operation_read_field(
+            operation,
+            EstateCaseStatusField::at("EstateCaseStatusField"),
+        )
+        .operation_read_field(
+            operation,
+            DeathNoticeIdentityField::at("DeathNoticeIdentityField"),
+        )
+        .operation_read_field(
+            operation,
+            DeathNoticeStatusField::at("DeathNoticeStatusField"),
+        )
         .operation_read_relation(operation, EstateDeathNotice::reference())
-        .operation_write(operation, EstateCaseStatusField::reference())
+        .operation_write(
+            operation,
+            EstateCaseStatusField::at("EstateCaseStatusField"),
+        )
 }

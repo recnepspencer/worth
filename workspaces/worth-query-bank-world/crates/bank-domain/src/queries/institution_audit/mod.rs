@@ -4,9 +4,9 @@ mod relations;
 mod shape;
 
 use worth_query_decl::facade::application_query::{
-    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
-    ApplicationQueryLaneEligibility, ApplicationQueryOrderingDirection,
+    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
+    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
+    ApplicationQueryOrderingDirection,
 };
 use worth_query_decl::facade::worth_query_application_query;
 
@@ -60,17 +60,14 @@ worth_query_decl::facade::worth_query_query_binding!(
     result InstitutionAuditQueryResultBinding,
     principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
         principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
-    scope Institution, crate::schema::InstitutionIdentity,
-        crate::schema::InstitutionIdentityField, InstitutionId,
-        worth_query_decl::facade::application_schema::ReadOnly,
-        worth_query_decl::facade::application_schema::NoApplicationUnit,
-    field crate::schema::InstitutionIdentityField::reference(),
+    scope crate::schema::InstitutionIdentityField,
+    field crate::schema::InstitutionIdentityField::at("InstitutionIdentityField"),
     value InstitutionAuditRequest::institution,
     limits results 1_024
 
 );
 
-pub fn institution_audit_definition() -> ApplicationQueryDefinition<
+pub fn institution_audit_definition() -> ApplicationQueryDefinitionBuilder<
     BankSchema,
     InstitutionAuditQuery,
     InstitutionAuditQueryParameters,
@@ -90,6 +87,4 @@ pub fn institution_audit_definition() -> ApplicationQueryDefinition<
             posting_sequence(),
             ApplicationQueryOrderingDirection::Ascending,
         )
-        .build()
-        .expect("bank institution audit query is statically canonical")
 }

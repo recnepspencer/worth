@@ -102,8 +102,11 @@ pub(in crate::domain_computation::primary_graph) fn install_pending_bindings<Sch
 pub(in crate::domain_computation::primary_graph) fn publication_denial(
     denial: WorthQueryPrimaryGraphInstallationDenial,
 ) -> WorthQueryConditionalRuntimeInstallationDenial {
+    let subject = denial.to_string();
     WorthQueryConditionalRuntimeInstallationDenial::new(
-        WorthQueryConditionalRuntimeInstallationDenialKind::PrimaryGraphPublication,
-        denial.to_string(),
+        WorthQueryConditionalRuntimeInstallationDenialKind::PrimaryGraphPublication(Box::new(
+            denial,
+        )),
+        subject,
     )
 }

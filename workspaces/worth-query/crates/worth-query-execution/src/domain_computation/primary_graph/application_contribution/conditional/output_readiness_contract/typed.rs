@@ -68,9 +68,9 @@ impl FieldExpectation {
 
 impl WorthQueryOutputReadinessContractBuilder {
     #[allow(clippy::too_many_arguments)]
-    pub fn for_field<S, E, A, F, V: 'static, W, Q, U>(
+    pub fn for_field<F>(
         declaration: &schema::ErasedApplicationSchemaDeclaration,
-        primary: schema::ApplicationFieldRef<S, E, A, F, V, W, Q, U>,
+        primary: F,
         identity: domain::WorthQueryDomainOperationIdentity,
         node: impl Into<String>,
         query: CanonicalQueryBundle,
@@ -79,8 +79,7 @@ impl WorthQueryOutputReadinessContractBuilder {
         family: impl Into<String>,
     ) -> Result<Self, WorthQueryOutputReadinessContractDenial>
     where
-        F: schema::DeclaredApplicationFieldValue<Value = V>,
-        U: schema::ApplicationFieldUnit,
+        F: schema::fragment::RecordSelection,
     {
         let expected = FieldExpectation::declared(declaration, primary)?;
         let mut builder = Self::new(
@@ -96,15 +95,14 @@ impl WorthQueryOutputReadinessContractBuilder {
         Ok(builder)
     }
 
-    pub fn field_dependency<S, E, A, F, V: 'static, W, Q, U>(
+    pub fn field_dependency<F>(
         mut self,
         declaration: &schema::ErasedApplicationSchemaDeclaration,
-        field: schema::ApplicationFieldRef<S, E, A, F, V, W, Q, U>,
+        field: F,
         usage: WorthQueryReadinessFieldUse,
     ) -> Result<Self, WorthQueryOutputReadinessContractDenial>
     where
-        F: schema::DeclaredApplicationFieldValue<Value = V>,
-        U: schema::ApplicationFieldUnit,
+        F: schema::fragment::RecordSelection,
     {
         let expected = FieldExpectation::declared(declaration, field)?;
         let dependency = expected.dependency()?;
@@ -168,16 +166,15 @@ impl<D, O, F> WorthQueryOutputReadinessContract<D, O, F> {
         contract
     }
     /// Resolve a declared delivery field only after canonical ordering.
-    pub fn delivery_ordinal<S, E, A, Field, V: 'static, W, Q, U>(
+    pub fn delivery_ordinal<S, Field>(
         &self,
         installed: &domain::WorthQueryInstalledApplicationSchema<S>,
         node: &domain::WorthQueryPortableConditionalNodeDeclaration,
-        field: schema::ApplicationFieldRef<S, E, A, Field, V, W, Q, U>,
+        field: Field,
     ) -> Result<usize, WorthQueryOutputReadinessContractDenial>
     where
         S: schema::ApplicationSchema,
-        Field: schema::DeclaredApplicationFieldValue<Value = V>,
-        U: schema::ApplicationFieldUnit,
+        Field: schema::fragment::RecordSelection,
     {
         let expected = FieldExpectation::declared(installed.installed_declaration(), field)?;
         if !self.delivery_fields.contains(&expected.binding.locus) {

@@ -29,8 +29,22 @@ pub struct QueryPlanContextId {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum QueryPlanEvidenceBasis {
-    CanonicalCommitEnvelope { commit_id: CommitId },
-    CheckpointAdmissionImage { commit_id: CommitId },
+    /// Unpublished source data from a real applied proposal, never a snapshot.
+    AppliedMutationCandidate {
+        proposal_ordinal: u64,
+        revision: u64,
+    },
+    /// Complete unpublished image after canonical Native consequences.
+    PreparedMutationCandidate {
+        proposal_ordinal: u64,
+        candidate_id: u64,
+    },
+    CanonicalCommitEnvelope {
+        commit_id: CommitId,
+    },
+    CheckpointAdmissionImage {
+        commit_id: CommitId,
+    },
     GenesisRuntimeBootstrap,
 }
 

@@ -1,29 +1,29 @@
 //! Convert one validated complete source under its borrowed request controls.
 use super::*;
 
-impl<Query> PreparedSourceFactMaterialization<'_, '_, '_, Query> {
+impl PreparedSourceFactMaterialization<'_, '_, '_> {
     pub(in crate::domain_computation::primary_graph::application_query) fn into_facts(
         self,
     ) -> Result<Vec<Fact>, WorthQuerySourceExpectationDenial> {
-        let source = self.source;
+        let subject = self.subject;
         let control = self.control;
-        control.poll(&source.query_identifier)?;
-        let mut facts = reserve_facts(self.fact_count, &source.query_identifier)?;
-        if let Some(observation) = source.invocation_managed_source()? {
-            control.poll(&source.query_identifier)?;
+        control.poll(subject)?;
+        let mut facts = reserve_facts(self.fact_count, subject)?;
+        if let Some(observation) = self.managed {
+            control.poll(subject)?;
             facts.push(Fact::ManagedIndexSource {
                 observation: std::sync::Arc::clone(observation),
             });
         }
-        if let Some(observation) = source.invocation_source_authorization()? {
-            control.poll(&source.query_identifier)?;
+        if let Some(observation) = self.authorization {
+            control.poll(subject)?;
             facts.push(Fact::SourceReadAuthorization {
                 observation: std::sync::Arc::clone(observation),
             });
         }
         let mut fields = self.fields.iter();
-        for observed in source.source_meaning.footprint().fact_sources() {
-            control.poll(&source.query_identifier)?;
+        for observed in self.footprint.fact_sources() {
+            control.poll(subject)?;
             if let Some(observation) = observed.aggregate {
                 facts.push(Fact::Aggregate {
                     observation: std::sync::Arc::clone(observation),
@@ -39,43 +39,40 @@ impl<Query> PreparedSourceFactMaterialization<'_, '_, '_, Query> {
                 .into_iter()
                 .flat_map(|derived| derived.values())
             {
-                control.poll(&source.query_identifier)?;
+                control.poll(subject)?;
                 facts.push(Fact::DerivedSource {
                     observation: std::sync::Arc::clone(observation),
                 });
             }
             for observation in observed.walks.into_iter().flat_map(|walks| walks.values()) {
-                control.poll(&source.query_identifier)?;
+                control.poll(subject)?;
                 facts.push(Fact::StructuralWalk {
                     observation: std::sync::Arc::clone(observation),
                 });
             }
             for entity_id in observed.entities {
-                control.poll(&source.query_identifier)?;
+                control.poll(subject)?;
                 facts.push(Fact::SourceEntity {
                     entity_id: *entity_id,
                 });
             }
             for _ in observed.aspects {
-                control.poll(&source.query_identifier)?;
+                control.poll(subject)?;
                 fields
                     .next()
                     .expect("every source field was validated")
                     .append(&mut facts);
             }
             for adjacency in observed.adjacencies {
-                control.poll(&source.query_identifier)?;
+                control.poll(subject)?;
                 facts.push(
                     adjacency_fact(adjacency, control.storage()).map_err(|denial| {
-                        WorthQuerySourceExpectationDenial::source_retention_denied(
-                            &source.query_identifier,
-                            denial,
-                        )
+                        WorthQuerySourceExpectationDenial::source_retention_denied(subject, denial)
                     })?,
                 );
             }
         }
-        merge_facts(facts, control, &source.query_identifier)
+        merge_facts(facts, control, subject)
     }
 }
 

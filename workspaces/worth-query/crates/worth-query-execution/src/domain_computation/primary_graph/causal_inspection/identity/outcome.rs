@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial;
 
 pub(in crate::domain_computation::primary_graph::causal_inspection) fn compose_causal_outcome_identity(
     kind: CausalInspectionAdmissionDecisionKind,
@@ -6,27 +7,29 @@ pub(in crate::domain_computation::primary_graph::causal_inspection) fn compose_c
     decision_identity: &CausalInspectionAdmissionDecisionIdentity,
     trace_identity: &CausalInspectionDecisionTraceIdentity,
     receipt_identity: &CausalInspectionAdmissionReceiptIdentity,
-) -> CausalInspectionOutcomeIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::CausalInspectionOutcome)
-        .field_shape(WorthQueryEvidenceTag::new("kind"), kind.as_str())
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("subject"),
-            subject_identity.evidence_identity(),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("decision"),
-            decision_identity.evidence_identity(),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("trace"),
-            trace_identity.evidence_identity(),
-        )
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("receipt"),
-            receipt_identity.evidence_identity(),
-        )
-        .seal()
-        .into()
+) -> Result<CausalInspectionOutcomeIdentity, WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(
+        worth_query_evidence_identity(WorthQueryEvidenceScope::CausalInspectionOutcome)
+            .field_shape(WorthQueryEvidenceTag::new("kind"), kind.as_str())
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("subject"),
+                subject_identity.evidence_identity(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("decision"),
+                decision_identity.evidence_identity(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("trace"),
+                trace_identity.evidence_identity(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("receipt"),
+                receipt_identity.evidence_identity(),
+            )
+            .seal()?
+            .into(),
+    )
 }
 
 pub(in crate::domain_computation::primary_graph::causal_inspection) fn compose_causal_materialized_detail_identity(
@@ -36,33 +39,36 @@ pub(in crate::domain_computation::primary_graph::causal_inspection) fn compose_c
     evidence_references: &[QueryCausalEvidenceReferenceArtifact],
     redaction_policy: CausalInspectionRedactionPolicy,
     materialization_policy: CausalInspectionMaterializationPolicy,
-) -> CausalInspectionMaterializedDetailIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::CausalInspectionMaterializedDetail)
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("query_observation"),
-            query_observation_identity,
-        )
-        .optional_shape(WorthQueryEvidenceTag::new("advisory"), advisory_reason)
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("readmission"),
-            readmission_proof.readmission_proof_identity(),
-        )
-        .field_evidence_identity_sequence(
-            WorthQueryEvidenceTag::new("references"),
-            evidence_references
-                .iter()
-                .map(QueryCausalEvidenceReferenceArtifact::reference_receipt_evidence_identity),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("redaction"),
-            redaction_policy.as_str(),
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("materialization"),
-            materialization_policy.as_str(),
-        )
-        .seal()
-        .into()
+) -> Result<CausalInspectionMaterializedDetailIdentity, WorthQueryEvidenceIdentityDerivationDenial>
+{
+    Ok(
+        worth_query_evidence_identity(WorthQueryEvidenceScope::CausalInspectionMaterializedDetail)
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("query_observation"),
+                query_observation_identity,
+            )
+            .optional_shape(WorthQueryEvidenceTag::new("advisory"), advisory_reason)
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("readmission"),
+                readmission_proof.readmission_proof_identity(),
+            )
+            .field_evidence_identity_sequence(
+                WorthQueryEvidenceTag::new("references"),
+                evidence_references
+                    .iter()
+                    .map(QueryCausalEvidenceReferenceArtifact::reference_receipt_evidence_identity),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("redaction"),
+                redaction_policy.as_str(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("materialization"),
+                materialization_policy.as_str(),
+            )
+            .seal()?
+            .into(),
+    )
 }
 
 pub(in crate::domain_computation::primary_graph::causal_inspection) fn compose_causal_denied_artifact_detail_identity(
@@ -72,8 +78,12 @@ pub(in crate::domain_computation::primary_graph::causal_inspection) fn compose_c
     bridge_denial_identity: Option<&WorthQueryEvidenceIdentity>,
     bridge_denial_kind: Option<BridgeCausalEnvelopeDenialKind>,
     bridge_denial_family: Option<BridgeCausalEvidenceFamily>,
-) -> CausalInspectionDeniedArtifactDetailIdentity {
-    worth_query_evidence_identity(WorthQueryEvidenceScope::CausalInspectionDeniedArtifactDetail)
+) -> Result<CausalInspectionDeniedArtifactDetailIdentity, WorthQueryEvidenceIdentityDerivationDenial>
+{
+    Ok(
+        worth_query_evidence_identity(
+            WorthQueryEvidenceScope::CausalInspectionDeniedArtifactDetail,
+        )
         .field_evidence_identity(
             WorthQueryEvidenceTag::new("query_observation"),
             query_observation_identity,
@@ -99,6 +109,7 @@ pub(in crate::domain_computation::primary_graph::causal_inspection) fn compose_c
                 .as_ref()
                 .map(BridgeCausalEvidenceFamily::as_str),
         )
-        .seal()
-        .into()
+        .seal()?
+        .into(),
+    )
 }

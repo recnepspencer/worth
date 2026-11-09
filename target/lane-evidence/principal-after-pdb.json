@@ -1,0 +1,724 @@
+{
+  "symbols": [
+    {
+      "name": "std::thread::local::LocalKey::with<core::cell::RefCell<enum2$<core::option::Option<worth_execution::authority::request::consult_observation::Probe> > >,worth_execution::authority::request::consult_observation::charged_prefix::closure_env$0<worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure_env$0>,tuple$<> >",
+      "rva": 237075376,
+      "size": 51
+    },
+    {
+      "name": "std::thread::local::LocalKey::try_with<core::cell::RefCell<enum2$<core::option::Option<worth_execution::authority::request::consult_observation::Probe> > >,worth_execution::authority::request::consult_observation::charged_prefix::closure_env$0<worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure_env$0>,tuple$<> >",
+      "rva": 237075760,
+      "size": 123
+    },
+    {
+      "name": "worth_execution::authority::request::consult_observation::charged_prefix::closure$0<worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure_env$0>",
+      "rva": 228375888,
+      "size": 282
+    },
+    {
+      "name": "core::iter::traits::iterator::Iterator::try_fold<core::slice::iter::Iter<alloc::rc::Rc<core::cell::RefCell<worth_execution::backend::meter::KernelState>,alloc::alloc::Global> >,u64,worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure$0::closure_env$0,enum2$<core::option::Option<u64> > >",
+      "rva": 228369232,
+      "size": 197
+    },
+    {
+      "name": "worth_execution::authority::request::consult_observation::charged_prefix<worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure_env$0>",
+      "rva": 228375760,
+      "size": 58
+    },
+    {
+      "name": "core::option::Option::is_some_and<u64,worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$1::closure_env$0>",
+      "rva": 228093680,
+      "size": 69
+    },
+    {
+      "name": "worth_execution::backend::meter::KernelContext::checkpoint_inner",
+      "rva": 228400352,
+      "size": 490
+    },
+    {
+      "name": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure$0::closure$0",
+      "rva": 284908336,
+      "size": 158
+    },
+    {
+      "name": "std::thread::local::LocalKey::try_with<core::cell::RefCell<alloc::vec::Vec<alloc::rc::Rc<core::cell::RefCell<worth_execution::backend::meter::KernelState>,alloc::alloc::Global>,alloc::alloc::Global> >,worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure_env$0,u64>",
+      "rva": 237080208,
+      "size": 140
+    },
+    {
+      "name": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$1",
+      "rva": 284909520,
+      "size": 320
+    },
+    {
+      "name": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure$0",
+      "rva": 284908656,
+      "size": 257
+    },
+    {
+      "name": "std::thread::local::LocalKey::with<core::cell::RefCell<alloc::vec::Vec<alloc::rc::Rc<core::cell::RefCell<worth_execution::backend::meter::KernelState>,alloc::alloc::Global>,alloc::alloc::Global> >,worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure_env$0,u64>",
+      "rva": 237077280,
+      "size": 54
+    },
+    {
+      "name": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0",
+      "rva": 284909488,
+      "size": 25
+    },
+    {
+      "name": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$1::closure$0",
+      "rva": 284908928,
+      "size": 9
+    }
+  ],
+  "locations": [
+    {
+      "symbol": "std::thread::local::LocalKey::with<core::cell::RefCell<enum2$<core::option::Option<worth_execution::authority::request::consult_observation::Probe> > >,worth_execution::authority::request::consult_observation::charged_prefix::closure_env$0<worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure_env$0>,tuple$<> >",
+      "rva": 237075376,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\std\\src\\thread\\local.rs",
+      "line": 423
+    },
+    {
+      "symbol": "std::thread::local::LocalKey::with<core::cell::RefCell<enum2$<core::option::Option<worth_execution::authority::request::consult_observation::Probe> > >,worth_execution::authority::request::consult_observation::charged_prefix::closure_env$0<worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure_env$0>,tuple$<> >",
+      "rva": 237075380,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\std\\src\\thread\\local.rs",
+      "line": 427
+    },
+    {
+      "symbol": "std::thread::local::LocalKey::with<core::cell::RefCell<enum2$<core::option::Option<worth_execution::authority::request::consult_observation::Probe> > >,worth_execution::authority::request::consult_observation::charged_prefix::closure_env$0<worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure_env$0>,tuple$<> >",
+      "rva": 237075408,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\std\\src\\thread\\local.rs",
+      "line": 429
+    },
+    {
+      "symbol": "std::thread::local::LocalKey::with<core::cell::RefCell<enum2$<core::option::Option<worth_execution::authority::request::consult_observation::Probe> > >,worth_execution::authority::request::consult_observation::charged_prefix::closure_env$0<worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure_env$0>,tuple$<> >",
+      "rva": 237075422,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\std\\src\\thread\\local.rs",
+      "line": 431
+    },
+    {
+      "symbol": "std::thread::local::LocalKey::try_with<core::cell::RefCell<enum2$<core::option::Option<worth_execution::authority::request::consult_observation::Probe> > >,worth_execution::authority::request::consult_observation::charged_prefix::closure_env$0<worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure_env$0>,tuple$<> >",
+      "rva": 237075760,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\std\\src\\thread\\local.rs",
+      "line": 458
+    },
+    {
+      "symbol": "std::thread::local::LocalKey::try_with<core::cell::RefCell<enum2$<core::option::Option<worth_execution::authority::request::consult_observation::Probe> > >,worth_execution::authority::request::consult_observation::charged_prefix::closure_env$0<worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure_env$0>,tuple$<> >",
+      "rva": 237075772,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\std\\src\\thread\\local.rs",
+      "line": 462
+    },
+    {
+      "symbol": "std::thread::local::LocalKey::try_with<core::cell::RefCell<enum2$<core::option::Option<worth_execution::authority::request::consult_observation::Probe> > >,worth_execution::authority::request::consult_observation::charged_prefix::closure_env$0<worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure_env$0>,tuple$<> >",
+      "rva": 237075832,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\std\\src\\thread\\local.rs",
+      "line": 463
+    },
+    {
+      "symbol": "std::thread::local::LocalKey::try_with<core::cell::RefCell<enum2$<core::option::Option<worth_execution::authority::request::consult_observation::Probe> > >,worth_execution::authority::request::consult_observation::charged_prefix::closure_env$0<worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure_env$0>,tuple$<> >",
+      "rva": 237075847,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\std\\src\\thread\\local.rs",
+      "line": 464
+    },
+    {
+      "symbol": "std::thread::local::LocalKey::try_with<core::cell::RefCell<enum2$<core::option::Option<worth_execution::authority::request::consult_observation::Probe> > >,worth_execution::authority::request::consult_observation::charged_prefix::closure_env$0<worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure_env$0>,tuple$<> >",
+      "rva": 237075849,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\std\\src\\thread\\local.rs",
+      "line": 462
+    },
+    {
+      "symbol": "std::thread::local::LocalKey::try_with<core::cell::RefCell<enum2$<core::option::Option<worth_execution::authority::request::consult_observation::Probe> > >,worth_execution::authority::request::consult_observation::charged_prefix::closure_env$0<worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure_env$0>,tuple$<> >",
+      "rva": 237075872,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\std\\src\\thread\\local.rs",
+      "line": 464
+    },
+    {
+      "symbol": "worth_execution::authority::request::consult_observation::charged_prefix::closure$0<worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure_env$0>",
+      "rva": 228375888,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\authority\\request\\consult_observation.rs",
+      "line": 111
+    },
+    {
+      "symbol": "worth_execution::authority::request::consult_observation::charged_prefix::closure$0<worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure_env$0>",
+      "rva": 228375927,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\authority\\request\\consult_observation.rs",
+      "line": 112
+    },
+    {
+      "symbol": "worth_execution::authority::request::consult_observation::charged_prefix::closure$0<worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure_env$0>",
+      "rva": 228376030,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\authority\\request\\consult_observation.rs",
+      "line": 113
+    },
+    {
+      "symbol": "worth_execution::authority::request::consult_observation::charged_prefix::closure$0<worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure_env$0>",
+      "rva": 228376058,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\authority\\request\\consult_observation.rs",
+      "line": 114
+    },
+    {
+      "symbol": "worth_execution::authority::request::consult_observation::charged_prefix::closure$0<worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure_env$0>",
+      "rva": 228376069,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\authority\\request\\consult_observation.rs",
+      "line": 113
+    },
+    {
+      "symbol": "worth_execution::authority::request::consult_observation::charged_prefix::closure$0<worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure_env$0>",
+      "rva": 228376089,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\authority\\request\\consult_observation.rs",
+      "line": 114
+    },
+    {
+      "symbol": "worth_execution::authority::request::consult_observation::charged_prefix::closure$0<worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure_env$0>",
+      "rva": 228376098,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\authority\\request\\consult_observation.rs",
+      "line": 115
+    },
+    {
+      "symbol": "worth_execution::authority::request::consult_observation::charged_prefix::closure$0<worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure_env$0>",
+      "rva": 228376145,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\authority\\request\\consult_observation.rs",
+      "line": 114
+    },
+    {
+      "symbol": "worth_execution::authority::request::consult_observation::charged_prefix::closure$0<worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure_env$0>",
+      "rva": 228376154,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\authority\\request\\consult_observation.rs",
+      "line": 115
+    },
+    {
+      "symbol": "worth_execution::authority::request::consult_observation::charged_prefix::closure$0<worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure_env$0>",
+      "rva": 228376162,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\authority\\request\\consult_observation.rs",
+      "line": 111
+    },
+    {
+      "symbol": "worth_execution::authority::request::consult_observation::charged_prefix::closure$0<worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure_env$0>",
+      "rva": 228376168,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\authority\\request\\consult_observation.rs",
+      "line": 115
+    },
+    {
+      "symbol": "core::iter::traits::iterator::Iterator::try_fold<core::slice::iter::Iter<alloc::rc::Rc<core::cell::RefCell<worth_execution::backend::meter::KernelState>,alloc::alloc::Global> >,u64,worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure$0::closure_env$0,enum2$<core::option::Option<u64> > >",
+      "rva": 228369232,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\core\\src\\iter\\traits\\iterator.rs",
+      "line": 2482
+    },
+    {
+      "symbol": "core::iter::traits::iterator::Iterator::try_fold<core::slice::iter::Iter<alloc::rc::Rc<core::cell::RefCell<worth_execution::backend::meter::KernelState>,alloc::alloc::Global> >,u64,worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure$0::closure_env$0,enum2$<core::option::Option<u64> > >",
+      "rva": 228369241,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\core\\src\\iter\\traits\\iterator.rs",
+      "line": 2488
+    },
+    {
+      "symbol": "core::iter::traits::iterator::Iterator::try_fold<core::slice::iter::Iter<alloc::rc::Rc<core::cell::RefCell<worth_execution::backend::meter::KernelState>,alloc::alloc::Global> >,u64,worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure$0::closure_env$0,enum2$<core::option::Option<u64> > >",
+      "rva": 228369251,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\core\\src\\iter\\traits\\iterator.rs",
+      "line": 2489
+    },
+    {
+      "symbol": "core::iter::traits::iterator::Iterator::try_fold<core::slice::iter::Iter<alloc::rc::Rc<core::cell::RefCell<worth_execution::backend::meter::KernelState>,alloc::alloc::Global> >,u64,worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure$0::closure_env$0,enum2$<core::option::Option<u64> > >",
+      "rva": 228369299,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\core\\src\\iter\\traits\\iterator.rs",
+      "line": 2490
+    },
+    {
+      "symbol": "core::iter::traits::iterator::Iterator::try_fold<core::slice::iter::Iter<alloc::rc::Rc<core::cell::RefCell<worth_execution::backend::meter::KernelState>,alloc::alloc::Global> >,u64,worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure$0::closure_env$0,enum2$<core::option::Option<u64> > >",
+      "rva": 228369350,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\core\\src\\iter\\traits\\iterator.rs",
+      "line": 2492
+    },
+    {
+      "symbol": "core::iter::traits::iterator::Iterator::try_fold<core::slice::iter::Iter<alloc::rc::Rc<core::cell::RefCell<worth_execution::backend::meter::KernelState>,alloc::alloc::Global> >,u64,worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure$0::closure_env$0,enum2$<core::option::Option<u64> > >",
+      "rva": 228369375,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\core\\src\\iter\\traits\\iterator.rs",
+      "line": 2493
+    },
+    {
+      "symbol": "core::iter::traits::iterator::Iterator::try_fold<core::slice::iter::Iter<alloc::rc::Rc<core::cell::RefCell<worth_execution::backend::meter::KernelState>,alloc::alloc::Global> >,u64,worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure$0::closure_env$0,enum2$<core::option::Option<u64> > >",
+      "rva": 228369377,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\core\\src\\iter\\traits\\iterator.rs",
+      "line": 2490
+    },
+    {
+      "symbol": "core::iter::traits::iterator::Iterator::try_fold<core::slice::iter::Iter<alloc::rc::Rc<core::cell::RefCell<worth_execution::backend::meter::KernelState>,alloc::alloc::Global> >,u64,worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure$0::closure_env$0,enum2$<core::option::Option<u64> > >",
+      "rva": 228369392,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\core\\src\\iter\\traits\\iterator.rs",
+      "line": 2493
+    },
+    {
+      "symbol": "core::iter::traits::iterator::Iterator::try_fold<core::slice::iter::Iter<alloc::rc::Rc<core::cell::RefCell<worth_execution::backend::meter::KernelState>,alloc::alloc::Global> >,u64,worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure$0::closure_env$0,enum2$<core::option::Option<u64> > >",
+      "rva": 228369394,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\core\\src\\iter\\traits\\iterator.rs",
+      "line": 2490
+    },
+    {
+      "symbol": "core::iter::traits::iterator::Iterator::try_fold<core::slice::iter::Iter<alloc::rc::Rc<core::cell::RefCell<worth_execution::backend::meter::KernelState>,alloc::alloc::Global> >,u64,worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure$0::closure_env$0,enum2$<core::option::Option<u64> > >",
+      "rva": 228369409,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\core\\src\\iter\\traits\\iterator.rs",
+      "line": 2489
+    },
+    {
+      "symbol": "core::iter::traits::iterator::Iterator::try_fold<core::slice::iter::Iter<alloc::rc::Rc<core::cell::RefCell<worth_execution::backend::meter::KernelState>,alloc::alloc::Global> >,u64,worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure$0::closure_env$0,enum2$<core::option::Option<u64> > >",
+      "rva": 228369414,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\core\\src\\iter\\traits\\iterator.rs",
+      "line": 2493
+    },
+    {
+      "symbol": "worth_execution::authority::request::consult_observation::charged_prefix<worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure_env$0>",
+      "rva": 228375760,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\authority\\request\\consult_observation.rs",
+      "line": 107
+    },
+    {
+      "symbol": "worth_execution::authority::request::consult_observation::charged_prefix<worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure_env$0>",
+      "rva": 228375769,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\authority\\request\\consult_observation.rs",
+      "line": 108
+    },
+    {
+      "symbol": "worth_execution::authority::request::consult_observation::charged_prefix<worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure_env$0>",
+      "rva": 228375788,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\authority\\request\\consult_observation.rs",
+      "line": 116
+    },
+    {
+      "symbol": "worth_execution::authority::request::consult_observation::charged_prefix<worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure_env$0>",
+      "rva": 228375790,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\authority\\request\\consult_observation.rs",
+      "line": 111
+    },
+    {
+      "symbol": "worth_execution::authority::request::consult_observation::charged_prefix<worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure_env$0>",
+      "rva": 228375813,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\authority\\request\\consult_observation.rs",
+      "line": 116
+    },
+    {
+      "symbol": "core::option::Option::is_some_and<u64,worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$1::closure_env$0>",
+      "rva": 228093680,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\core\\src\\option.rs",
+      "line": 659
+    },
+    {
+      "symbol": "core::option::Option::is_some_and<u64,worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$1::closure_env$0>",
+      "rva": 228093699,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\core\\src\\option.rs",
+      "line": 660
+    },
+    {
+      "symbol": "core::option::Option::is_some_and<u64,worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$1::closure_env$0>",
+      "rva": 228093710,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\core\\src\\option.rs",
+      "line": 662
+    },
+    {
+      "symbol": "core::option::Option::is_some_and<u64,worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$1::closure_env$0>",
+      "rva": 228093733,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\core\\src\\option.rs",
+      "line": 661
+    },
+    {
+      "symbol": "core::option::Option::is_some_and<u64,worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$1::closure_env$0>",
+      "rva": 228093738,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\core\\src\\option.rs",
+      "line": 664
+    },
+    {
+      "symbol": "worth_execution::backend::meter::KernelContext::checkpoint_inner",
+      "rva": 228400352,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 123
+    },
+    {
+      "symbol": "worth_execution::backend::meter::KernelContext::checkpoint_inner",
+      "rva": 228400388,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 124
+    },
+    {
+      "symbol": "worth_execution::backend::meter::KernelContext::checkpoint_inner",
+      "rva": 228400404,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 125
+    },
+    {
+      "symbol": "worth_execution::backend::meter::KernelContext::checkpoint_inner",
+      "rva": 228400465,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 126
+    },
+    {
+      "symbol": "worth_execution::backend::meter::KernelContext::checkpoint_inner",
+      "rva": 228400478,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 127
+    },
+    {
+      "symbol": "worth_execution::backend::meter::KernelContext::checkpoint_inner",
+      "rva": 228400497,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 129
+    },
+    {
+      "symbol": "worth_execution::backend::meter::KernelContext::checkpoint_inner",
+      "rva": 228400506,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 163
+    },
+    {
+      "symbol": "worth_execution::backend::meter::KernelContext::checkpoint_inner",
+      "rva": 228400518,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 140
+    },
+    {
+      "symbol": "worth_execution::backend::meter::KernelContext::checkpoint_inner",
+      "rva": 228400553,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 141
+    },
+    {
+      "symbol": "worth_execution::backend::meter::KernelContext::checkpoint_inner",
+      "rva": 228400569,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 130
+    },
+    {
+      "symbol": "worth_execution::backend::meter::KernelContext::checkpoint_inner",
+      "rva": 228400580,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 141
+    },
+    {
+      "symbol": "worth_execution::backend::meter::KernelContext::checkpoint_inner",
+      "rva": 228400599,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 142
+    },
+    {
+      "symbol": "worth_execution::backend::meter::KernelContext::checkpoint_inner",
+      "rva": 228400670,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 144
+    },
+    {
+      "symbol": "worth_execution::backend::meter::KernelContext::checkpoint_inner",
+      "rva": 228400720,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 143
+    },
+    {
+      "symbol": "worth_execution::backend::meter::KernelContext::checkpoint_inner",
+      "rva": 228400724,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 161
+    },
+    {
+      "symbol": "worth_execution::backend::meter::KernelContext::checkpoint_inner",
+      "rva": 228400744,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 144
+    },
+    {
+      "symbol": "worth_execution::backend::meter::KernelContext::checkpoint_inner",
+      "rva": 228400752,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 162
+    },
+    {
+      "symbol": "worth_execution::backend::meter::KernelContext::checkpoint_inner",
+      "rva": 228400776,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 163
+    },
+    {
+      "symbol": "worth_execution::backend::meter::KernelContext::checkpoint_inner",
+      "rva": 228400825,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 123
+    },
+    {
+      "symbol": "worth_execution::backend::meter::KernelContext::checkpoint_inner",
+      "rva": 228400831,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 163
+    },
+    {
+      "symbol": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure$0::closure$0",
+      "rva": 284908336,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 135
+    },
+    {
+      "symbol": "std::thread::local::LocalKey::try_with<core::cell::RefCell<alloc::vec::Vec<alloc::rc::Rc<core::cell::RefCell<worth_execution::backend::meter::KernelState>,alloc::alloc::Global>,alloc::alloc::Global> >,worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure_env$0,u64>",
+      "rva": 237080208,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\std\\src\\thread\\local.rs",
+      "line": 458
+    },
+    {
+      "symbol": "std::thread::local::LocalKey::try_with<core::cell::RefCell<alloc::vec::Vec<alloc::rc::Rc<core::cell::RefCell<worth_execution::backend::meter::KernelState>,alloc::alloc::Global>,alloc::alloc::Global> >,worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure_env$0,u64>",
+      "rva": 237080220,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\std\\src\\thread\\local.rs",
+      "line": 462
+    },
+    {
+      "symbol": "std::thread::local::LocalKey::try_with<core::cell::RefCell<alloc::vec::Vec<alloc::rc::Rc<core::cell::RefCell<worth_execution::backend::meter::KernelState>,alloc::alloc::Global>,alloc::alloc::Global> >,worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure_env$0,u64>",
+      "rva": 237080280,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\std\\src\\thread\\local.rs",
+      "line": 463
+    },
+    {
+      "symbol": "std::thread::local::LocalKey::try_with<core::cell::RefCell<alloc::vec::Vec<alloc::rc::Rc<core::cell::RefCell<worth_execution::backend::meter::KernelState>,alloc::alloc::Global>,alloc::alloc::Global> >,worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure_env$0,u64>",
+      "rva": 237080304,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\std\\src\\thread\\local.rs",
+      "line": 464
+    },
+    {
+      "symbol": "std::thread::local::LocalKey::try_with<core::cell::RefCell<alloc::vec::Vec<alloc::rc::Rc<core::cell::RefCell<worth_execution::backend::meter::KernelState>,alloc::alloc::Global>,alloc::alloc::Global> >,worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure_env$0,u64>",
+      "rva": 237080306,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\std\\src\\thread\\local.rs",
+      "line": 462
+    },
+    {
+      "symbol": "std::thread::local::LocalKey::try_with<core::cell::RefCell<alloc::vec::Vec<alloc::rc::Rc<core::cell::RefCell<worth_execution::backend::meter::KernelState>,alloc::alloc::Global>,alloc::alloc::Global> >,worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure_env$0,u64>",
+      "rva": 237080333,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\std\\src\\thread\\local.rs",
+      "line": 464
+    },
+    {
+      "symbol": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$1",
+      "rva": 284909520,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 144
+    },
+    {
+      "symbol": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$1",
+      "rva": 284909535,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 145
+    },
+    {
+      "symbol": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$1",
+      "rva": 284909541,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 147
+    },
+    {
+      "symbol": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$1",
+      "rva": 284909566,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 148
+    },
+    {
+      "symbol": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$1",
+      "rva": 284909582,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 145
+    },
+    {
+      "symbol": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$1",
+      "rva": 284909614,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 148
+    },
+    {
+      "symbol": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$1",
+      "rva": 284909618,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 145
+    },
+    {
+      "symbol": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$1",
+      "rva": 284909654,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 149
+    },
+    {
+      "symbol": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$1",
+      "rva": 284909679,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 152
+    },
+    {
+      "symbol": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$1",
+      "rva": 284909691,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 154
+    },
+    {
+      "symbol": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$1",
+      "rva": 284909716,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 155
+    },
+    {
+      "symbol": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$1",
+      "rva": 284909732,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 152
+    },
+    {
+      "symbol": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$1",
+      "rva": 284909766,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 150
+    },
+    {
+      "symbol": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$1",
+      "rva": 284909771,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\lib.rs",
+      "line": 1
+    },
+    {
+      "symbol": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$1",
+      "rva": 284909773,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 155
+    },
+    {
+      "symbol": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$1",
+      "rva": 284909777,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 152
+    },
+    {
+      "symbol": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$1",
+      "rva": 284909805,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 156
+    },
+    {
+      "symbol": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$1",
+      "rva": 284909816,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 157
+    },
+    {
+      "symbol": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$1",
+      "rva": 284909823,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 158
+    },
+    {
+      "symbol": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$1",
+      "rva": 284909828,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 159
+    },
+    {
+      "symbol": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure$0",
+      "rva": 284908656,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 131
+    },
+    {
+      "symbol": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure$0",
+      "rva": 284908695,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 133
+    },
+    {
+      "symbol": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure$0",
+      "rva": 284908715,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 132
+    },
+    {
+      "symbol": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure$0",
+      "rva": 284908751,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 134
+    },
+    {
+      "symbol": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure$0",
+      "rva": 284908775,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 132
+    },
+    {
+      "symbol": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure$0",
+      "rva": 284908795,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 135
+    },
+    {
+      "symbol": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure$0",
+      "rva": 284908818,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 136
+    },
+    {
+      "symbol": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure$0",
+      "rva": 284908858,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 137
+    },
+    {
+      "symbol": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure$0",
+      "rva": 284908901,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 136
+    },
+    {
+      "symbol": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure$0",
+      "rva": 284908907,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 131
+    },
+    {
+      "symbol": "std::thread::local::LocalKey::with<core::cell::RefCell<alloc::vec::Vec<alloc::rc::Rc<core::cell::RefCell<worth_execution::backend::meter::KernelState>,alloc::alloc::Global>,alloc::alloc::Global> >,worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure_env$0,u64>",
+      "rva": 237077280,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\std\\src\\thread\\local.rs",
+      "line": 423
+    },
+    {
+      "symbol": "std::thread::local::LocalKey::with<core::cell::RefCell<alloc::vec::Vec<alloc::rc::Rc<core::cell::RefCell<worth_execution::backend::meter::KernelState>,alloc::alloc::Global>,alloc::alloc::Global> >,worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure_env$0,u64>",
+      "rva": 237077284,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\std\\src\\thread\\local.rs",
+      "line": 427
+    },
+    {
+      "symbol": "std::thread::local::LocalKey::with<core::cell::RefCell<alloc::vec::Vec<alloc::rc::Rc<core::cell::RefCell<worth_execution::backend::meter::KernelState>,alloc::alloc::Global>,alloc::alloc::Global> >,worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure_env$0,u64>",
+      "rva": 237077310,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\std\\src\\thread\\local.rs",
+      "line": 429
+    },
+    {
+      "symbol": "std::thread::local::LocalKey::with<core::cell::RefCell<alloc::vec::Vec<alloc::rc::Rc<core::cell::RefCell<worth_execution::backend::meter::KernelState>,alloc::alloc::Global>,alloc::alloc::Global> >,worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure_env$0,u64>",
+      "rva": 237077324,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\std\\src\\thread\\local.rs",
+      "line": 428
+    },
+    {
+      "symbol": "std::thread::local::LocalKey::with<core::cell::RefCell<alloc::vec::Vec<alloc::rc::Rc<core::cell::RefCell<worth_execution::backend::meter::KernelState>,alloc::alloc::Global>,alloc::alloc::Global> >,worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0::closure_env$0,u64>",
+      "rva": 237077329,
+      "file": "/rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\\std\\src\\thread\\local.rs",
+      "line": 431
+    },
+    {
+      "symbol": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0",
+      "rva": 284909488,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 130
+    },
+    {
+      "symbol": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0",
+      "rva": 284909495,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 131
+    },
+    {
+      "symbol": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$0",
+      "rva": 284909508,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 138
+    },
+    {
+      "symbol": "worth_execution::backend::meter::checkpoint::impl$0::checkpoint_inner::closure$1::closure$0",
+      "rva": 284908928,
+      "file": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-execution\\src\\backend\\meter\\checkpoint.rs",
+      "line": 149
+    }
+  ]
+}

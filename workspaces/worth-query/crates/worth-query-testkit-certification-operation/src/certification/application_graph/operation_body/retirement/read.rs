@@ -23,21 +23,11 @@ worth_query_portable_type!(IdentitySlot => "worth.query.body-court.snapshot-iden
 worth_query_application_query!(pub SnapshotQuery for Schema: BodySchemaBinding,
     identity "SnapshotQuery", parameters DocumentQueryParametersBinding,
     result SnapshotRowBinding, scope Snapshot => "Snapshot", name "body_snapshot_read");
-pub fn identity<S: BodySchemaBinding>() -> ApplicationQueryResultFieldRef<
-    SnapshotQuery,
-    IdentitySlot,
-    S,
-    Snapshot,
-    SnapshotFacts,
-    SnapshotIdentity,
-    u64,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("identity", SnapshotIdentity::reference())
+pub fn identity<S: BodySchemaBinding>(
+) -> ApplicationQueryResultFieldRef<SnapshotQuery, IdentitySlot, S, SnapshotIdentity> {
+    ApplicationQueryResultFieldRef::new("identity", SnapshotIdentity::at("SnapshotIdentity"))
 }
-pub fn definition<const M: u64>() -> ApplicationQueryDefinition<
+pub fn definition<const M: u64>() -> ApplicationQueryDefinitionBuilder<
     DocumentRetentionSchema<M>,
     SnapshotQuery,
     DocumentQueryParameters,
@@ -62,8 +52,6 @@ pub fn definition<const M: u64>() -> ApplicationQueryDefinition<
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 impl<const M: u64> WorthQueryApplicationProjection<DocumentRetentionSchema<M>, SnapshotQuery>
     for SnapshotRow
@@ -74,15 +62,7 @@ impl<const M: u64> WorthQueryApplicationProjection<DocumentRetentionSchema<M>, S
         Ok(Self(row.field(identity())?))
     }
 }
-pub type Scope<const M: u64> = ApplicationQueryFieldScope<
-    DocumentRetentionSchema<M>,
-    Snapshot,
-    SnapshotFacts,
-    SnapshotIdentity,
-    u64,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type Scope<const M: u64> = ApplicationQueryFieldScope<SnapshotIdentity>;
 pub struct SnapshotQueryBinding<const M: u64>;
 impl<const M: u64> ApplicationQueryBinding<DocumentRetentionSchema<M>> for SnapshotQueryBinding<M> {
     type Input = SnapshotRead;
@@ -98,17 +78,8 @@ impl<const M: u64> ApplicationQueryBinding<DocumentRetentionSchema<M>> for Snaps
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "worth.query.body-court.snapshot-query-binding.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        DocumentRetentionSchema<M>,
-        Snapshot,
-        SnapshotFacts,
-        SnapshotIdentity,
-        u64,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        SnapshotIdentity::reference()
+    fn scope_field() -> SnapshotIdentity {
+        SnapshotIdentity::at("SnapshotIdentity")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         DocumentRetentionSchema<M>,
@@ -127,6 +98,6 @@ impl<const M: u64> ApplicationQueryIntent<DocumentRetentionSchema<M>> for Snapsh
         ApplicationQueryParameterSet::new()
     }
     fn into_scope(self) -> Scope<M> {
-        Scope::new(SnapshotIdentity::reference(), self.0)
+        Scope::new(SnapshotIdentity::at("SnapshotIdentity"), self.0)
     }
 }

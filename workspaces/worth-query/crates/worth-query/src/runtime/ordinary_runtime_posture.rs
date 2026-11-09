@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::ordinary_outcome::{
     WorthQueryOrdinaryRuntimeAsyncPostureKind, WorthQueryOrdinaryRuntimeBasisPostureKind,
     WorthQueryOrdinaryRuntimeCausePostureKind, WorthQueryOrdinaryRuntimePosture,
@@ -12,7 +13,7 @@ use super::{
 
 pub(in crate::runtime) fn project_live_subscription_ordinary_runtime_posture(
     state: &WorthQueryRuntimeLiveSubscriptionState,
-) -> WorthQueryOrdinaryRuntimePosture {
+) -> Result<WorthQueryOrdinaryRuntimePosture, IdentityDerivationDenial> {
     let cause_posture = state
         .last_delivery
         .as_ref()
@@ -105,14 +106,14 @@ pub(in crate::runtime) fn project_live_subscription_ordinary_runtime_posture(
             None => WorthQueryOrdinaryRuntimePostureKind::Current,
         },
     };
-    WorthQueryOrdinaryRuntimePosture::new_with_support_identity(
+    Ok(WorthQueryOrdinaryRuntimePosture::new_with_support_identity(
         kind,
         cause_posture,
         async_posture,
         basis_posture,
         remask_posture,
         state.installation.support_identity().clone(),
-    )
+    )?)
 }
 
 fn ordinary_async_posture_kind(

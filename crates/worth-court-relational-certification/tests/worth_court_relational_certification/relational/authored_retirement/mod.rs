@@ -1,9 +1,13 @@
 //! Atomic source/realization retirement through the public Native boundary.
+mod application_delta;
 mod corruption_subjects;
 mod independent_source;
+mod legacy_history_open;
+mod legacy_history_recorder;
 mod live_members;
 mod owned_routes;
 mod refusals;
+mod registration;
 mod restoration;
 use worth_execution::{CancellationToken, ExecutionRequest, SerialMemoryBudget, SerialRequest};
 use worth_relational::facade::{
@@ -104,10 +108,7 @@ fn require_atomic_retirement(depth: usize) {
         None,
     );
     let execution = &ExecutionRequest::serial(&request);
-    let mut runtime = AspectSchemaFixture::with_default_declared_aspects(
-        worth_relational::facade::config::CascadeDeletePolicy::RetainDanglingForAudit,
-    )
-    .build_runtime();
+    let mut runtime = registration::runtime();
     let receipt = runtime
         .prepare_initial_schema_installation()
         .unwrap()
@@ -354,9 +355,7 @@ fn require_atomic_retirement(depth: usize) {
     for meaning in selected_meanings {
         assert!(
             runtime
-                .readmit_authored_output_retirement_successor(
-                    execution, &installed, &basis, &meaning
-                )
+                .readmit_native_output_transition_successor(execution, &installed, &basis, &meaning)
                 .unwrap()
                 .is_some(),
             "each original route retains its distinct retirement successor"

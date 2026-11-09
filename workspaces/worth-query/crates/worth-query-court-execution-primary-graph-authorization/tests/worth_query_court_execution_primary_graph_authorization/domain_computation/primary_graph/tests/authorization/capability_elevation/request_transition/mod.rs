@@ -227,7 +227,7 @@ pub fn request_reads(
             &admission,
             |reader, account| {
                 reader
-                    .require_decision_field(account, AccountLabel::reference())
+                    .require_decision_field(account, AccountLabel::at("AccountLabel"))
                     .unwrap();
             },
             AllocationPolicy::SystemAllocation,
@@ -336,8 +336,8 @@ pub fn resolve_created_identities(
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             &phase_custody.phase_for_application_for_test(&world.application),
-            CapabilityElevationIdentity::reference(),
-            "elevation-2".to_owned(),
+            CapabilityElevationIdentity::at("CapabilityElevationIdentity"),
+            "elevation-2".into(),
             request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
@@ -354,7 +354,7 @@ pub fn resolve_created_identities(
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             &phase_custody.phase_for_application_for_test(&world.application),
-            CapabilityReviewIdentity::reference(),
+            CapabilityReviewIdentity::at("CapabilityReviewIdentity"),
             "review-2".to_owned(),
             request,
             WorthQueryPrincipalResolutionMode::Ordinary,

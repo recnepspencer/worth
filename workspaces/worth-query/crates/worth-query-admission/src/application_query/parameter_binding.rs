@@ -3,9 +3,11 @@ mod layout_validation;
 mod selector_comparison;
 use layout_validation::validate_parameter_layout;
 mod preparation;
+mod source_request;
 pub use preparation::{
     admit_application_query_parameters_admitted, WorthQueryParameterPreparationStop,
 };
+pub use source_request::WorthQueryCanonicalSourceRequest;
 use worth_foundational::facade::{AspectValue, CanonicalDigestDerivationDenial, CanonicalDigestId};
 use worth_query_declaration::facade::application_query::ApplicationQueryParameterSet;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;

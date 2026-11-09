@@ -135,6 +135,7 @@ fn effect_triggered_trace_eligibility_preserves_write_adjacent_trigger_proof() {
                 WorthQueryEffectTrigger::live_view(&live, test_aspect_touches(["title.value"])),
                 "strategy.intent.reconcile",
             )
+            .expect("fixture digest must fit")
             .with_write_adjacent_trigger(
                 WorthQueryEffectWriteAdjacentTriggerClass::RemaskDrift,
                 origin_identity.clone(),
@@ -146,7 +147,8 @@ fn effect_triggered_trace_eligibility_preserves_write_adjacent_trigger_proof() {
         .write(
             request_execution,
             test_update_string_aspect_command(
-                crate::memory_workspace::admit_authored_entity_label("task-1"),
+                crate::memory_workspace::admit_authored_entity_label("task-1")
+                    .expect("fixture digest must fit"),
                 "title.value",
                 "title from remask drift",
             ),

@@ -183,7 +183,7 @@ impl
     ) -> Result<Self::Projection, primary_graph::WorthQueryTemporalInvocationFailure> {
         self.contacts.projection.fetch_add(1, Ordering::SeqCst);
         reader
-            .require_decision_field(scope, IntentIdentityField::reference())
+            .require_decision_field(scope, IntentIdentityField::at("IntentIdentityField"))
             .map_err(|denial| {
                 primary_graph::WorthQueryTemporalInvocationFailure::new(
                     primary_graph::WorthQueryTemporalInvocationFailureKind::ProjectionRejected,
@@ -191,7 +191,7 @@ impl
                 )
             })?;
         let identity = reader
-            .decision_field(scope, IntentIdentityField::reference())
+            .decision_field(scope, IntentIdentityField::at("IntentIdentityField"))
             .map_err(|denial| {
                 primary_graph::WorthQueryTemporalInvocationFailure::new(
                     primary_graph::WorthQueryTemporalInvocationFailureKind::ProjectionRejected,
@@ -205,7 +205,7 @@ impl
                 )
             })?;
         reader
-            .decision_field(scope, IntentEffectField::reference())
+            .decision_field(scope, IntentEffectField::at("IntentEffectField"))
             .map_err(|denial| {
                 primary_graph::WorthQueryTemporalInvocationFailure::new(
                     primary_graph::WorthQueryTemporalInvocationFailureKind::ProjectionRejected,
@@ -240,7 +240,7 @@ impl
             )
         })?;
         effects
-            .write_field(&target, IntentEffectField::reference(), input.0)
+            .write_field(&target, IntentEffectField::at("IntentEffectField"), input.0)
             .map_err(|denial| {
                 primary_graph::WorthQueryTemporalInvocationFailure::new(
                     primary_graph::WorthQueryTemporalInvocationFailureKind::InvocationRejected,

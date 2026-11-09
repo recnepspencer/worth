@@ -6,9 +6,8 @@ use worth_query_declaration::facade::application_program::{
     ApplicationProgramIdentity, ApplicationProgramOutputs, ApplicationRuleLeaf,
 };
 use worth_query_declaration::facade::application_schema::{
-    ApplicationEntityMarkerIdentity, ApplicationEntityRef, ApplicationSchema,
-    ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
-    ApplicationSchemaDeclarationDenial,
+    fragment::{self, Fragment, NoBindings},
+    ApplicationSchema, ApplicationSchemaDeclaration, ApplicationSchemaDeclarationDenial,
 };
 use worth_query_installation::facade::{
     WorthQueryInstallationAdmissionProfile, WorthQueryInstallationGeneration,
@@ -24,8 +23,15 @@ struct Program;
 struct Successor;
 struct OtherSuccessor;
 
-impl ApplicationEntityMarkerIdentity<HomeSchema> for Record {
-    const IDENTIFIER: &'static str = "Record";
+impl fragment::Entity for Record {
+    const NAME: &'static str = "Record";
+    type Aspects = ();
+    type Relations = ();
+}
+impl Fragment for HomeSchema {
+    const NAME: &'static str = "HomeSchema";
+    type Bindings = NoBindings;
+    type Members = (Record,);
 }
 impl ApplicationSchema for HomeSchema {
     const OWNER: &'static str = "store-home-journey";
@@ -34,9 +40,7 @@ impl ApplicationSchema for HomeSchema {
     const MINOR: u32 = 0;
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
-        ApplicationSchemaDeclarationBuilder::<Self>::for_schema()
-            .entity(ApplicationEntityRef::<Self, Record>::from_schema_identifier("Record"))
-            .build()
+        fragment::declare(Self)
     }
 }
 impl ApplicationFeature<HomeSchema> for NativeFeature {

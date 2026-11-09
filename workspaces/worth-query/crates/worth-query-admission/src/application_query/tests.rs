@@ -1,3 +1,6 @@
+#[path = "tests/records.rs"]
+pub(super) mod storage_model;
+pub use storage_model::{Account, AccountActivity, AccountId, Activity, PlanningModel, Sequence};
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
     ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
@@ -5,10 +8,7 @@ use worth_query_declaration::facade::application_query::{
     ApplicationQueryReference, ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
     ApplicationQueryResultShapeBuilder, ForwardResultTraversal, ManyResults,
 };
-use worth_query_declaration::{
-    worth_query_application_query, worth_query_application_schema, worth_query_aspect,
-    worth_query_entity, worth_query_field, worth_query_portable_type, worth_query_relation,
-};
+use worth_query_declaration::{worth_query_application_query, worth_query_portable_type};
 use worth_query_installation::facade::{
     WorthQueryInstallationAdmissionProfile, WorthQueryInstallationGeneration,
     WorthQueryInstallationRuntimeIdentity, WorthQueryInstalledPackageIndex,
@@ -70,25 +70,51 @@ fn admitted_requirements(
     .expect("the application-query fixture fits its installed canonical budget")
 }
 
-worth_query_application_schema! {
-    pub schema PlanningTestSchema {
-        owner: application_query_planning_test,
-        version: (1, 0),
-        members: |schema| {
-            schema
-                .entity(Account::reference())
-                .entity(Activity::reference())
-                .aspect(Account::reference(), AccountFacts::reference())
-                .aspect(Activity::reference(), ActivityFacts::reference())
-                .field(Account::reference(), AccountId::reference())
-                .field(Activity::reference(), Sequence::reference())
-                .relation(
-                    AccountActivity::reference(),
-                    Account::reference(),
-                    Activity::reference(),
-                )
+use worth_query_declaration::facade::application_schema::{
+    fragment::{self, *},
+    *,
+};
+#[derive(Clone, Copy)]
+pub struct PlanningTestSchema;
+impl Fragment for PlanningTestSchema {
+    const NAME: &'static str = "PlanningTestSchema";
+    type Bindings = NoBindings;
+    type Members = (PlanningModel, Contracts);
+}
+impl ApplicationSchema for PlanningTestSchema {
+    const OWNER: &'static str = "application_query_planning_test";
+    const NAME: &'static str = <Self as Fragment>::NAME;
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        fragment::declare(Self)
+    }
+}
+impl PlanningTestSchema {
+    pub fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        <Self as ApplicationSchema>::declaration()
+    }
+}
+pub struct Contracts;
+impl Registration<PlanningTestSchema> for Contracts {
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<PlanningTestSchema>,
+    ) -> Result<
+        ApplicationSchemaDeclarationBuilder<PlanningTestSchema>,
+        ApplicationSchemaDeclarationDenial,
+    > {
+        Ok(schema
+
+
+
+
+
+
+
                 .effect(live_lane::PlanningLiveEffect::reference())
-                .relation(complete_closure::AccountNext::reference(), Account::reference(), Account::reference())
+
                 .application_query(complete_closure::definition(complete_closure::ClosureQuery::reference(), false))
                 .application_query(complete_closure::definition(complete_closure::ReverseClosureQuery::reference(), true))
                 .derived_relation(
@@ -98,25 +124,9 @@ worth_query_application_schema! {
                 )
                 .application_query(complete_closure::derived_definition(complete_closure::ForwardQuery::reference(), false))
                 .application_query(complete_closure::derived_definition(complete_closure::ReverseQuery::reference(), true))
-                .application_query(query_definition())
-        }
+                .application_query(query_definition()))
     }
 }
-
-worth_query_entity!(pub Account for PlanningTestSchema);
-worth_query_entity!(pub Activity for PlanningTestSchema);
-worth_query_aspect!(pub AccountFacts for PlanningTestSchema, Account; identity = AspectIdentity(0x91611019), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub ActivityFacts for PlanningTestSchema, Activity; identity = AspectIdentity(0x9161101a), revision = AspectContractRevision(1),);
-worth_query_field!(
-    pub AccountId for PlanningTestSchema, Account, AccountFacts:
-    u64 => worth_query_declaration::facade::application_schema::U64ApplicationValueBinding, read_only, equality
-);
-worth_query_field!(
-    pub Sequence for PlanningTestSchema, Activity, ActivityFacts:
-    u64 => worth_query_declaration::facade::application_schema::U64ApplicationValueBinding, read_only, equality
-);
-worth_query_relation!(
-    pub AccountActivity in PlanningTestSchema, Account => Activity; integrity = same_context_unbounded_retain_dangling);
 
 struct ActivityParameters;
 struct ActivityResult;

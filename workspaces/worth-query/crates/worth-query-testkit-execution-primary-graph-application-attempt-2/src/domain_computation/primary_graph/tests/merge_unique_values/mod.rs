@@ -2,6 +2,7 @@
 //! is looked up at the target head and must be free or held only by the
 //! entity the merge writes, and one merge writes each value at most once.
 
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::storage_model::{Account, AccountPolicy, AccountPolicyValue, AccountMembership, AccountMembershipValue, AccountAnnotations, AccountAnnotationsValue, AnnotationText, ExecutionRecords, ExecutionRecordsBindings, AccountLabel, AccountStatus, AccountIdentity, AccountMembershipTag, AccountAnnotation};
 use std::collections::BTreeMap;
 use worth_foundational::facade::AspectFieldLocator;
 use worth_foundational::facade::AspectValue;
@@ -40,6 +41,11 @@ pub struct MergeWorld {
     pub required: [AspectFieldLocator; 3],
     pub index: DerivedIndexId,
 }
+impl Default for MergeWorld {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl MergeWorld {
     pub fn new() -> Self {
         let world = installed_world(&[("merge-unique", WorthQueryPrincipalMappingStatus::Enabled)]);
@@ -53,12 +59,24 @@ impl MergeWorld {
                 .expect("the schema declares the field")
                 .clone()
         };
-        let label = field("AccountPolicy", "AccountLabel");
-        let status = field("AccountPolicy", "AccountStatus");
+        let label = field(AccountLabel::at("AccountLabel").aspect(), "AccountLabel");
+        let status = field(AccountStatus::at("AccountStatus").aspect(), "AccountStatus");
         let required = [
-            field("AccountPolicy", "AccountIdentity").locator_into_for_test(),
-            field("AccountMembership", "AccountMembershipTag").locator_into_for_test(),
-            field("AccountAnnotations", "AccountAnnotation").locator_into_for_test(),
+            field(
+                AccountIdentity::at("AccountIdentity").aspect(),
+                "AccountIdentity",
+            )
+            .locator_into_for_test(),
+            field(
+                AccountMembershipTag::at("AccountMembershipTag").aspect(),
+                "AccountMembershipTag",
+            )
+            .locator_into_for_test(),
+            field(
+                AccountAnnotation::at("AccountAnnotation").aspect(),
+                "AccountAnnotation",
+            )
+            .locator_into_for_test(),
         ];
         Self {
             kind: (*label.entity_kind_for_test()),
@@ -135,17 +153,63 @@ impl MergeWorld {
     }
 
     pub fn created_fields(&self, key: &str, label: u64) -> AspectFieldPatch {
-        let [identity, membership, annotation] = self.required.clone();
-        AspectFieldPatch::from(BTreeMap::from([
-            (self.label.clone(), value(label)),
-            (self.status.clone(), value(1)),
+        let fragment = self
+            ._world
+            .application
+            .installed_schema()
+            .value_bindings()
+            .fragment(ExecutionRecords)
+            .unwrap();
+        let policy = fragment.aspect::<Account, AccountPolicy>().unwrap();
+        let membership = fragment.aspect::<Account, AccountMembership>().unwrap();
+        let annotations = fragment.aspect::<Account, AccountAnnotations>().unwrap();
+        let rows = [
             (
-                identity,
-                AspectValue::String(InternedString::from(key.to_owned())),
+                policy,
+                policy
+                    .encode::<ExecutionRecordsBindings, _>(&AccountPolicyValue {
+                        account_identity: key.to_owned(),
+                        account_status: "value-1".to_owned(),
+                        account_label: format!("value-{label}"),
+                        account_note: None,
+                        account_score: None,
+                    })
+                    .unwrap(),
             ),
-            (membership, value(1)),
-            (annotation, value(1)),
-        ]))
+            (
+                membership,
+                membership
+                    .encode::<ExecutionRecordsBindings, _>(&AccountMembershipValue {
+                        account_membership_tag: "value-1".to_owned(),
+                    })
+                    .unwrap(),
+            ),
+            (
+                annotations,
+                annotations
+                    .encode::<ExecutionRecordsBindings, _>(&AccountAnnotationsValue {
+                        account_annotation: Some(AnnotationText::from("value-1")),
+                    })
+                    .unwrap(),
+            ),
+        ];
+        let mut values = BTreeMap::new();
+        for (definition, mut encoded) in rows {
+            for field in definition.fields() {
+                if let Some(value) = encoded.remove(field.path()) {
+                    let locus = field.recipe().locus();
+                    let locator = self
+                        .handle
+                        .layout_for_test()
+                        .field_for_test(locus.entity(), locus.aspect(), locus.field())
+                        .unwrap()
+                        .locator_for_test()
+                        .clone();
+                    values.insert(locator, value);
+                }
+            }
+        }
+        AspectFieldPatch::from(values)
     }
 
     pub fn mutate<T>(
@@ -160,11 +224,6 @@ impl MergeWorld {
     }
 }
 
-impl Default for MergeWorld {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 pub fn prepared_merge(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,

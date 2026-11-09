@@ -28,16 +28,7 @@ impl ApplicationQueryBinding<Schema> for Uninstalled {
         <Base as ApplicationQueryBinding<Schema>>::PrincipalIdentityBinding;
     const IDENTITY: &'static str = "worth.query.test.host-uninstalled-inspection.v1";
     const LIMITS: ApplicationQueryBindingLimits = Base::LIMITS;
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Feature,
-        FeatureFacts,
-        FeatureKey,
-        u64,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
+    fn scope_field() -> FeatureKey {
         Base::scope_field()
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<

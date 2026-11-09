@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -18,7 +19,7 @@ impl WorthQueryRuntimePublicApiNamingRow {
         preferred_name: impl Into<String>,
         alternate_names: impl IntoIterator<Item = impl Into<String>>,
         boundary_crossing: bool,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let concept = concept.into();
         let preferred_name = preferred_name.into();
         let alternate_names = alternate_names
@@ -40,14 +41,14 @@ impl WorthQueryRuntimePublicApiNamingRow {
                     WorthQueryEvidenceTag::new("alternate_name"),
                     alternate_names.iter().map(String::as_str),
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             concept,
             preferred_name,
             alternate_names,
             boundary_crossing,
             naming_identity,
-        }
+        })
     }
 
     pub fn concept(&self) -> &str {
@@ -85,26 +86,26 @@ pub struct WorthQueryRuntimePublicApiNamingContract {
 }
 
 impl WorthQueryRuntimePublicApiNamingContract {
-    pub fn standard() -> Self {
+    pub fn standard() -> Result<Self, IdentityDerivationDenial> {
         let rows = vec![
             WorthQueryRuntimePublicApiNamingRow::new(
                 "workspace",
                 "workspace",
                 std::iter::empty::<&str>(),
                 false,
-            ),
+            )?,
             WorthQueryRuntimePublicApiNamingRow::new(
                 "live-view",
                 "live_view",
                 ["live_view_request", "declare_live_view"],
                 true,
-            ),
+            )?,
             WorthQueryRuntimePublicApiNamingRow::new(
                 "live-view-builder",
                 "live_view closure",
                 std::iter::empty::<&str>(),
                 true,
-            ),
+            )?,
             WorthQueryRuntimePublicApiNamingRow::new(
                 "computed",
                 "computed",
@@ -115,63 +116,68 @@ impl WorthQueryRuntimePublicApiNamingContract {
                     "declare_derived_view",
                 ],
                 true,
-            ),
+            )?,
             WorthQueryRuntimePublicApiNamingRow::new(
                 "computed-builder",
                 "computed closure",
                 std::iter::empty::<&str>(),
                 true,
-            ),
-            WorthQueryRuntimePublicApiNamingRow::new("effect", "effect", ["declare_effect"], true),
+            )?,
+            WorthQueryRuntimePublicApiNamingRow::new("effect", "effect", ["declare_effect"], true)?,
             WorthQueryRuntimePublicApiNamingRow::new(
                 "preview",
                 "preview",
                 ["preview_with_options"],
                 true,
-            ),
+            )?,
             WorthQueryRuntimePublicApiNamingRow::new(
                 "branch",
                 "branch",
                 ["branch_with_options"],
                 true,
-            ),
+            )?,
             WorthQueryRuntimePublicApiNamingRow::new(
                 "state",
                 "state",
                 std::iter::empty::<&str>(),
                 false,
-            ),
+            )?,
             WorthQueryRuntimePublicApiNamingRow::new(
                 "inspect",
                 "inspect",
                 std::iter::empty::<&str>(),
                 false,
-            ),
+            )?,
             WorthQueryRuntimePublicApiNamingRow::new(
                 "read",
                 "read",
                 std::iter::empty::<&str>(),
                 false,
-            ),
-            WorthQueryRuntimePublicApiNamingRow::new("observe", "observe", ["drain_patches"], true),
+            )?,
+            WorthQueryRuntimePublicApiNamingRow::new(
+                "observe",
+                "observe",
+                ["drain_patches"],
+                true,
+            )?,
             WorthQueryRuntimePublicApiNamingRow::new(
                 "materialize",
                 "materialize",
                 ["snapshot_rows"],
                 true,
-            ),
+            )?,
             WorthQueryRuntimePublicApiNamingRow::new(
                 "write",
                 "write",
                 ["WorthQueryWriteCommand"],
                 false,
-            ),
+            )?,
             WorthQueryRuntimePublicApiNamingRow::new(
                 "insert",
                 "insert",
                 ["WorthQueryWriteCommand::InsertAspects"],
                 false,
-            ),
+            )?,
             WorthQueryRuntimePublicApiNamingRow::new(
                 "update",
                 "update",
@@ -180,25 +186,25 @@ impl WorthQueryRuntimePublicApiNamingContract {
                     "WorthQueryWriteCommand::UpdateAspects",
                 ],
                 false,
-            ),
+            )?,
             WorthQueryRuntimePublicApiNamingRow::new(
                 "delete",
                 "delete",
                 ["WorthQueryWriteCommand::Delete"],
                 false,
-            ),
+            )?,
             WorthQueryRuntimePublicApiNamingRow::new(
                 "batch",
                 "batch",
                 ["workspace.write(...)"],
                 false,
-            ),
+            )?,
             WorthQueryRuntimePublicApiNamingRow::new(
                 "replay",
                 "replay_journal_segment",
                 ["WorthQueryJournalReplayRequest"],
                 true,
-            ),
+            )?,
         ];
         let preferred_entrypoint_count = rows.len();
         let alternate_name_count = rows.iter().map(|row| row.alternate_names().len()).sum();
@@ -223,14 +229,14 @@ impl WorthQueryRuntimePublicApiNamingContract {
                     rows.iter()
                         .map(WorthQueryRuntimePublicApiNamingRow::naming_digest),
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             rows,
             preferred_entrypoint_count,
             alternate_name_count,
             boundary_crossing_name_count,
             contract_identity,
-        }
+        })
     }
 
     pub fn rows(&self) -> &[WorthQueryRuntimePublicApiNamingRow] {

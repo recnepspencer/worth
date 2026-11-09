@@ -1,9 +1,12 @@
 mod caller_association;
 mod changed_records;
+mod coupled_read;
 mod current_read;
+mod index_omission;
 mod managed_source;
 mod publication_parts;
 mod read_condition;
+mod required_outputs;
 mod retained_selection;
 use std::cell::Cell;
 use std::marker::PhantomData;
@@ -32,6 +35,7 @@ pub struct PreparedRelationalCommitCandidate {
 }
 
 pub(crate) struct CandidatePayload {
+    coupled_read: Option<coupled_read::CoupledCandidateReadContext>,
     current_read: Option<crate::branch::AdmittedRelationalBranchBasis>,
     managed_source_reads: Option<super::companion::ManagedSourceReadConditions>,
     companion_read: Option<super::companion::CompanionReadCondition>,
@@ -91,6 +95,7 @@ impl PreparedRelationalCommitCandidate {
             .unwrap_or_else(std::time::Instant::now);
         let reservation_count = execution.reservation_count();
         let payload = std::sync::Arc::new(std::sync::Mutex::new(Some(CandidatePayload {
+            coupled_read: None,
             current_read: None,
             companion_read: None,
             managed_source_reads: None,
@@ -195,14 +200,6 @@ impl PreparedRelationalCommitCandidate {
             std::sync::Arc::clone(&payload.expected_root),
             std::sync::Arc::clone(payload.execution.prepared_root()),
         ))
-    }
-
-    pub(crate) fn index_preparation_symbols(&self) -> Option<crate::runtime::RuntimeSymbolTable> {
-        self._payload
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .as_ref()
-            .map(|payload| payload.execution.candidate_symbols())
     }
 
     pub(crate) fn change_summary_basis_and_roots(

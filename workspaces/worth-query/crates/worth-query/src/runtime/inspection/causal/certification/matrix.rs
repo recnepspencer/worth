@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
 use super::super::inventory::CausalEvidenceFamily;
@@ -28,7 +29,7 @@ impl CausalInspectionRepresentativeEvidence {
     ) -> Result<Self, CausalInspectionCertificationError> {
         let artifact_digest = artifact.artifact_identity().as_str().to_string();
         let row_digest_set =
-            CausalInspectionRepresentativeRowDigestSet::from_query_artifact(kind, artifact);
+            CausalInspectionRepresentativeRowDigestSet::from_query_artifact(kind, artifact)?;
         validate_kind_matches_artifact(kind, artifact, &row_digest_set)?;
         let representative_digest = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::CausalInspectionCertificationFailureEvidence,
@@ -51,7 +52,7 @@ impl CausalInspectionRepresentativeEvidence {
             WorthQueryEvidenceTag::new("row_digest_set"),
             row_digest_set.row_digest(),
         )
-        .seal()
+        .seal()?
         .as_str()
         .to_string();
         Ok(Self {
@@ -75,13 +76,13 @@ impl CausalInspectionRepresentativeEvidence {
             kind,
             family,
             failure_digest,
-        );
+        )?;
         Ok(Self::failure_row(
             kind,
             Some(family),
             failure_digest,
             row_digest_set,
-        ))
+        )?)
     }
 
     pub fn from_failure(
@@ -106,13 +107,13 @@ impl CausalInspectionRepresentativeEvidence {
             kind,
             expected.kind().as_str(),
             failure_digest,
-        );
+        )?;
         Ok(Self::failure_row(
             kind,
             None,
             failure_digest,
             row_digest_set,
-        ))
+        )?)
     }
 
     pub fn from_failure_evidence(
@@ -125,13 +126,13 @@ impl CausalInspectionRepresentativeEvidence {
             kind,
             evidence.kind().as_str(),
             evidence.failure_digest(),
-        );
+        )?;
         Ok(Self::failure_row(
             kind,
             None,
             evidence.failure_digest(),
             row_digest_set,
-        ))
+        )?)
     }
 
     fn failure_row(
@@ -139,7 +140,7 @@ impl CausalInspectionRepresentativeEvidence {
         family: Option<CausalEvidenceFamily>,
         failure_digest: &str,
         row_digest_set: CausalInspectionRepresentativeRowDigestSet,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let representative_digest = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::CausalInspectionCertificationFailureEvidence,
         )
@@ -159,17 +160,17 @@ impl CausalInspectionRepresentativeEvidence {
             WorthQueryEvidenceTag::new("row_digest_set"),
             row_digest_set.row_digest(),
         )
-        .seal()
+        .seal()?
         .as_str()
         .to_string();
-        Self {
+        Ok(Self {
             kind,
             artifact_digest: None,
             failure_digest: Some(failure_digest.to_string()),
             missing_evidence_family: family,
             row_digest_set,
             representative_digest,
-        }
+        })
     }
 
     pub fn kind(&self) -> CausalInspectionRepresentativeKind {
@@ -243,7 +244,7 @@ impl CausalInspectionRepresentativeMatrix {
             representative_count,
             missing_evidence_row_count,
             query_only_consumer_row_count,
-        );
+        )?;
         Ok(Self {
             representative_count,
             missing_evidence_row_count,
@@ -291,8 +292,8 @@ fn matrix_digest(
     representative_count: usize,
     missing_evidence_row_count: usize,
     query_only_consumer_row_count: usize,
-) -> String {
-    WorthQueryEvidenceIdentity::compose(
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(WorthQueryEvidenceIdentity::compose(
         WorthQueryEvidenceScope::CausalInspectionCertificationFailureEvidence,
     )
     .field_shape(
@@ -326,9 +327,9 @@ fn matrix_digest(
         WorthQueryEvidenceTag::new("query_only_count"),
         query_only_consumer_row_count,
     )
-    .seal()
+    .seal()?
     .as_str()
-    .to_string()
+    .to_string())
 }
 
 fn validate_non_empty_failure(

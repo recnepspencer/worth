@@ -59,6 +59,7 @@ impl<'run> WorthQueryRegisteredProviderSession<'run> {
     pub fn progress_for_test<Schema, Operation, Input, Scope>(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
+        phase: &'run crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         authority: &super::super::WorthQueryApplicationCommitProgressionAuthority<
             '_,
             '_,
@@ -76,6 +77,7 @@ impl<'run> WorthQueryRegisteredProviderSession<'run> {
         Self::progress::<Schema, Operation, Input, Scope>(
             self,
             execution,
+            phase,
             authority,
             allocation_policy,
         )

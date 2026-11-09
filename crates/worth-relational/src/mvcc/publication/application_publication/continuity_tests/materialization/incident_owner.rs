@@ -180,10 +180,7 @@ fn run(replace_endpoint: bool) {
             .expect(
                 "both complete groups retain custody, including the retained relation producer",
             );
-        assert_eq!(
-            cold.envelope.required_output_origin.as_ref().unwrap().birth,
-            birth
-        );
+        assert_eq!(cold.origin.as_ref().birth, birth);
     }
 }
 
@@ -290,7 +287,7 @@ fn replace_birth_endpoint(
             ),
         )
         .expect("the later complete publication is valid before materialization");
-    assert_eq!(cold.envelope.commit.commit_id, current.commit.commit_id);
+    assert_eq!(cold.origin.commit.commit_id, current.commit.commit_id);
     joined
 }
 
@@ -300,13 +297,7 @@ fn complete(
     roles: Vec<RequiredOutputRoleTarget>,
     dependency: u8,
 ) -> RequiredOutputPublication {
-    let meaning = previous
-        .envelope
-        .required_output_origin
-        .as_ref()
-        .unwrap()
-        .meaning
-        .clone();
+    let meaning = previous.origin.as_ref().meaning.clone();
     let admission = owner
         .admit_required_output_succession(
             owner.admit_required_output("group-a-current", [dependency; 32]),

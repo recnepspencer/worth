@@ -5,7 +5,12 @@ use std::path::PathBuf;
 pub enum CompilerFixtureRefusal {
     Multiple(Vec<CompilerFixtureRefusal>),
     MissingPrebuild,
+    SnapshotWarning(PathBuf),
     Read {
+        path: PathBuf,
+        reason: String,
+    },
+    Write {
         path: PathBuf,
         reason: String,
     },
@@ -51,8 +56,10 @@ impl std::fmt::Display for CompilerFixtureRefusal {
                 }
                 Ok(())
             }
-            Self::MissingPrebuild => write!(formatter, "missing WORTH_PREBUILT_COMPILER_OUTCOMES; run the workspace gate prebuild"),
+            Self::MissingPrebuild => write!(formatter, "missing WORTH_PREBUILT_COMPILER_OUTCOMES; run python3 scripts/ci/query_gate.py root-landing (Query: query-landing)"),
+            Self::SnapshotWarning(path) => write!(formatter, "{} contains an incidental compiler warning; make the fixture warning-free before recording", path.display()),
             Self::Read { path, reason } => write!(formatter, "read {}: {reason}", path.display()),
+            Self::Write { path, reason } => write!(formatter, "write {}: {reason}", path.display()),
             Self::InvalidPrebuild(reason) => write!(formatter, "invalid compiler prebuild: {reason}"),
             Self::ChangedPrebuild { original, observed } => write!(formatter, "compiler prebuild changed during one court process: {} -> {}", original.display(), observed.display()),
             Self::UnobservedFixture(path) => write!(formatter, "compiler did not observe {}", path.display()),

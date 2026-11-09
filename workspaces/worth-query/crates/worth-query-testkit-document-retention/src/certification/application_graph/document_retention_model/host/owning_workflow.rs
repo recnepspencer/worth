@@ -63,12 +63,15 @@ pub fn read_owner_approval_grant(
                     |reader| {
                         let grant = reader
                             .resolve_entity(
-                                WorkflowGrantIdentityField::reference(),
-                                "workflow-approval-grant".to_owned(),
+                                WorkflowGrantIdentityField::at("WorkflowGrantIdentityField"),
+                                "workflow-approval-grant".to_owned().into(),
                             )
                             .unwrap();
                         reader
-                            .field(&grant, WorkflowGrantStatusField::reference())
+                            .field(
+                                &grant,
+                                WorkflowGrantStatusField::at("WorkflowGrantStatusField"),
+                            )
                             .unwrap()
                     },
                     runtime::ExecutionAllocationPolicy::SystemAllocation,

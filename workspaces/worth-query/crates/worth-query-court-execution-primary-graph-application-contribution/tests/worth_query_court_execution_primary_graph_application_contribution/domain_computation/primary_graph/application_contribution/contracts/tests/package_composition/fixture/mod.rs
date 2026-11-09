@@ -47,7 +47,7 @@ pub fn definition(name: &str, lowering: &str) -> Definition {
     .bind_application_schema(Schema::declaration().unwrap())
     .unwrap();
     let field =
-        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountStatus::reference();
+        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountStatus::at("AccountStatus");
     let native = index
         .native_contracts()
         .aspect(field.entity(), field.aspect())

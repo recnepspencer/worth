@@ -119,7 +119,7 @@ impl FinancialCourtroomWorld {
                     .expect("the selected product branch remains admitted")
                     .resolve_entity(
                         &host_phase,
-                        MarketIdentityField::reference(),
+                        MarketIdentityField::at("MarketIdentityField"),
                         self.record_identity.to_string(),
                         &super::adapters::request_scope(),
                         primary_graph::WorthQueryPrincipalResolutionMode::Certification,
@@ -141,7 +141,7 @@ impl FinancialCourtroomWorld {
                     .expect("the selected product branch remains admitted")
                     .resolve_entity(
                         &host_phase,
-                        MarketIdentityField::reference(),
+                        MarketIdentityField::at("MarketIdentityField"),
                         "curve-usd-rates-10y".to_string(),
                         &super::adapters::request_scope(),
                         primary_graph::WorthQueryPrincipalResolutionMode::Certification,

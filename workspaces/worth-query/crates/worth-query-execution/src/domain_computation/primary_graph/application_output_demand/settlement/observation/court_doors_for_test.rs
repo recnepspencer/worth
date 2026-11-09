@@ -52,6 +52,7 @@ impl OriginalSettledProducerObservation {
             read,
             source,
             correspondence,
+            historical_reads: None,
             _memory,
         }
     }

@@ -13,6 +13,7 @@ mod publication;
 mod read_closure;
 mod reconstruction;
 mod registry;
+mod schema_transition;
 pub use read_closure::RelationalContentReadClosure;
 mod resolution;
 mod schema;
@@ -23,6 +24,7 @@ pub use schema::{
 mod historical;
 mod preimage;
 mod projection;
+mod restoration;
 mod source;
 mod transaction;
 pub(crate) use publication::{commit_denial, prepare_publication, ContentPublication};

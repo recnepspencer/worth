@@ -105,13 +105,7 @@ fn dynamic_create_preserve_retire_tracks_member_birth_and_requires_prior_live_co
             original.authority(),
         )
         .unwrap();
-    let meaning = original
-        .envelope
-        .required_output_origin
-        .as_ref()
-        .unwrap()
-        .meaning
-        .clone();
+    let meaning = original.origin.as_ref().meaning.clone();
     let roles = [
         (
             "root",
@@ -152,7 +146,7 @@ fn dynamic_create_preserve_retire_tracks_member_birth_and_requires_prior_live_co
     let joined_id = changed.created_entity(&joined).unwrap();
     let joined_edge_id = changed.created_relation(&joined_edge).unwrap();
     let successor = changed.required_output_publication(&installed).unwrap();
-    let origin = successor.envelope.required_output_origin.as_ref().unwrap();
+    let origin = successor.origin.as_ref();
     assert_eq!(origin.birth, family_birth);
     assert!(!origin.relations.iter().any(|edge| edge.id == retired_edge));
     assert_eq!(origin.relations.len(), 1);

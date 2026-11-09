@@ -1,3 +1,4 @@
+use crate::facade::certification::granular_invalidation::financial_runtime_world::schema as stored;
 pub use std::sync::OnceLock;
 
 pub use worth_query::facade::{domain, read};
@@ -23,18 +24,25 @@ pub fn read_declaration() -> &'static read::WorthQueryReadDeclaration {
                         .project(field("PortfolioValueField"))
                         .project(field("PortfolioDeskField"))
                         .where_equal(
-                            EqualityPredicate::new("PortfolioFacts", "PortfolioDeskField", "rates")
-                                .unwrap(),
+                            EqualityPredicate::new(
+                                stored::PortfolioFacts::reference().name(),
+                                "PortfolioDeskField",
+                                "rates",
+                            )
+                            .unwrap(),
                         )
                         .order_by(
-                            OrderingSelector::ascending("PortfolioFacts", "PortfolioRankField")
-                                .unwrap(),
+                            OrderingSelector::ascending(
+                                stored::PortfolioFacts::reference().name(),
+                                "PortfolioRankField",
+                            )
+                            .unwrap(),
                         )
                 },
                 |shape| {
                     shape.field(
                         AuthoredResultShapeField::new(
-                            "PortfolioFacts",
+                            stored::PortfolioFacts::reference().name(),
                             "PortfolioValueField",
                             "position_value",
                         )
@@ -52,16 +60,27 @@ pub fn canonical_query() -> CanonicalQueryBundle {
         .project(field("PortfolioValueField"))
         .project(field("PortfolioDeskField"))
         .where_equal(
-            EqualityPredicate::new("PortfolioFacts", "PortfolioDeskField", "rates").unwrap(),
+            EqualityPredicate::new(
+                stored::PortfolioFacts::reference().name(),
+                "PortfolioDeskField",
+                "rates",
+            )
+            .unwrap(),
         )
-        .order_by(OrderingSelector::ascending("PortfolioFacts", "PortfolioRankField").unwrap())
+        .order_by(
+            OrderingSelector::ascending(
+                stored::PortfolioFacts::reference().name(),
+                "PortfolioRankField",
+            )
+            .unwrap(),
+        )
         .build()
         .unwrap()
         .into_raw();
     let shape = CollectionResultShapeBuilder::new()
         .field(
             AuthoredResultShapeField::new(
-                "PortfolioFacts",
+                stored::PortfolioFacts::reference().name(),
                 "PortfolioValueField",
                 "position_value",
             )
@@ -78,13 +97,15 @@ pub fn canonical_query() -> CanonicalQueryBundle {
 }
 
 pub fn collection_contract() -> domain::WorthQueryOperationCollectionContract {
-    let desk = domain::WorthQueryOperationCollectionField::from_dotted(
-        "PortfolioFacts.PortfolioDeskField",
-    )
+    let desk = domain::WorthQueryOperationCollectionField::from_dotted(&format!(
+        "{}.PortfolioDeskField",
+        stored::PortfolioFacts::reference().name()
+    ))
     .unwrap();
-    let rank = domain::WorthQueryOperationCollectionField::from_dotted(
-        "PortfolioFacts.PortfolioRankField",
-    )
+    let rank = domain::WorthQueryOperationCollectionField::from_dotted(&format!(
+        "{}.PortfolioRankField",
+        stored::PortfolioFacts::reference().name()
+    ))
     .unwrap();
     domain::WorthQueryOperationCollectionContract::Collection {
         row_identity_field: desk.clone(),
@@ -111,7 +132,7 @@ pub fn schema_view() -> read::QuerySchemaView {
 
 pub fn schema_field(name: &str, family: read::ScalarAspectType) -> read::SchemaFieldView {
     read::SchemaFieldView::new(
-        read::AspectName::new("PortfolioFacts").unwrap(),
+        read::AspectName::new(stored::PortfolioFacts::reference().name()).unwrap(),
         read::FieldName::new(name).unwrap(),
         family,
     )
@@ -122,5 +143,5 @@ pub fn root() -> RootEntityKey {
 }
 
 pub fn field(name: &str) -> AspectFieldSelector {
-    AspectFieldSelector::new("PortfolioFacts", name).unwrap()
+    AspectFieldSelector::new(stored::PortfolioFacts::reference().name(), name).unwrap()
 }

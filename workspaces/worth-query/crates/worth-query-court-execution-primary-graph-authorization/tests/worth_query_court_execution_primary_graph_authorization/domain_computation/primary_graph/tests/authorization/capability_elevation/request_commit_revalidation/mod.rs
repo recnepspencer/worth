@@ -132,8 +132,8 @@ fn provider_time_rejects_a_request_program_after_its_exact_window_expires() {
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &phase,
-                    CapabilityElevationIdentity::reference(),
-                    "elevation-2".to_owned(),
+                    CapabilityElevationIdentity::at("CapabilityElevationIdentity"),
+                    "elevation-2".to_owned().into(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
@@ -160,7 +160,7 @@ fn provider_time_rejects_a_request_program_after_its_exact_window_expires() {
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &phase,
-                    CapabilityReviewIdentity::reference(),
+                    CapabilityReviewIdentity::at("CapabilityReviewIdentity"),
                     "review-2".to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

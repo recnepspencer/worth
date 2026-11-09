@@ -19,6 +19,7 @@ worth-query-declaration = { path = "../worth-query-declaration" }
 zeroize = "1.8"
 
 [dev-dependencies]
+worth-query-testkit-decl = { path = "../worth-query-testkit-decl" }
 serde = { version = "1", features = ["derive"] }
 
 [lints]

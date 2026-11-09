@@ -38,6 +38,7 @@ impl WorthQueryJournalReplayCounters {
             stale_basis_replay_denial_count: state.stale_basis_replay_denial_count,
             cross_scheme_replay_denial_count: state.cross_scheme_replay_denial_count,
             journal_gap_denial_count: state.journal_gap_denial_count,
+            identity_derivation_denial_count: state.identity_derivation_denial_count,
             replay_scanned_entry_count: state.replay_scanned_entry_count,
             replay_resolved_entry_count: state.replay_resolved_entry_count,
             replay_gap_count: state.replay_gap_count,
@@ -55,6 +56,7 @@ struct WorthQueryJournalReplayCounterState {
     stale_basis_replay_denial_count: usize,
     cross_scheme_replay_denial_count: usize,
     journal_gap_denial_count: usize,
+    identity_derivation_denial_count: usize,
     replay_scanned_entry_count: usize,
     replay_resolved_entry_count: usize,
     replay_gap_count: usize,
@@ -78,6 +80,9 @@ impl WorthQueryJournalReplayCounterState {
                 &mut self.cross_scheme_replay_denial_count
             }
             WorthQueryJournalReplayDenialKind::JournalGap => &mut self.journal_gap_denial_count,
+            WorthQueryJournalReplayDenialKind::EvidenceIdentityDerivationDenied(_) => {
+                &mut self.identity_derivation_denial_count
+            }
         }
     }
 }
@@ -91,6 +96,7 @@ pub struct WorthQueryJournalReplayCounterSnapshot {
     stale_basis_replay_denial_count: usize,
     cross_scheme_replay_denial_count: usize,
     journal_gap_denial_count: usize,
+    identity_derivation_denial_count: usize,
     replay_scanned_entry_count: usize,
     replay_resolved_entry_count: usize,
     replay_gap_count: usize,
@@ -122,6 +128,9 @@ impl WorthQueryJournalReplayCounterSnapshot {
                 self.cross_scheme_replay_denial_count
             }
             WorthQueryJournalReplayDenialKind::JournalGap => self.journal_gap_denial_count,
+            WorthQueryJournalReplayDenialKind::EvidenceIdentityDerivationDenied(_) => {
+                self.identity_derivation_denial_count
+            }
         }
     }
 

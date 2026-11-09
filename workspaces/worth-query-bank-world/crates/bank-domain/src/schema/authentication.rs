@@ -1,44 +1,40 @@
-use worth_query_decl::facade::authentication::{
-    WorthQueryExternalPrincipalIdentity, WorthQueryExternalPrincipalIdentityBinding,
-    WorthQueryPrincipalMappingStatus, WorthQueryPrincipalMappingStatusBinding,
-};
-use worth_query_decl::facade::{
-    worth_query_aspect, worth_query_field, worth_query_principal_binding,
-};
-
-use crate::model::BankPrincipalId;
+use worth_query_decl::facade::application_schema::{fragment::RecordSelection, *};
 
 use super::entities::{ExternalPrincipalMapping, Principal};
 use super::relations::ExternalPrincipal;
-use super::{BankPrincipalIdBinding, BankSchema};
+use super::BankSchema;
 
-worth_query_aspect!(pub ExternalPrincipalIdentity for BankSchema,
-    ExternalPrincipalMapping; identity = AspectIdentity(0x91611001), revision = AspectContractRevision(1),);
-worth_query_field!(
-    pub ExternalIdentityKey for BankSchema,
-    ExternalPrincipalMapping,
-    ExternalPrincipalIdentity:
-    WorthQueryExternalPrincipalIdentity => WorthQueryExternalPrincipalIdentityBinding, read_only, equality
-);
-worth_query_field!(
-    pub ExternalMappingStatus for BankSchema,
-    ExternalPrincipalMapping,
-    ExternalPrincipalIdentity:
-    WorthQueryPrincipalMappingStatus => WorthQueryPrincipalMappingStatusBinding, read_write, equality
-);
-worth_query_aspect!(pub PrincipalIdentity for BankSchema, Principal; identity = AspectIdentity(0x91611002), revision = AspectContractRevision(1),);
-worth_query_field!(
-    pub PrincipalIdentityField for BankSchema,
-    Principal,
-    PrincipalIdentity:
-    BankPrincipalId => BankPrincipalIdBinding, read_only, equality
-);
-worth_query_principal_binding!(
-    pub BankPrincipalBinding in BankSchema,
-    mapping ExternalPrincipalMapping {
-        identity: ExternalIdentityKey,
-        status: ExternalMappingStatus,
-        target: ExternalPrincipal => Principal,
-        principal_identity: PrincipalIdentityField
+pub struct BankPrincipalBinding;
+impl BankPrincipalBinding {
+    pub fn reference() -> ApplicationPrincipalBindingRef<
+        BankSchema,
+        Self,
+        ExternalPrincipalMapping,
+        Principal,
+        <PrincipalIdentityField as RecordSelection>::Value,
+        <PrincipalIdentityField as RecordSelection>::Binding,
+    > {
+        ApplicationPrincipalBindingRef::from_requirements(
+            "BankPrincipalBinding",
+            ApplicationPrincipalBindingRequirements {
+                mapping_identity: ApplicationPrincipalMappingIdentityRequirement::from_field(
+                    ExternalIdentityKey::at("ExternalIdentityKey"),
+                ),
+                mapping_status: ApplicationPrincipalMappingStatusRequirement::from_field(
+                    ExternalMappingStatus::at("ExternalMappingStatus"),
+                ),
+                target: ApplicationPrincipalTargetRequirement::from_relation(
+                    ExternalPrincipal::reference(),
+                ),
+                principal_identity: ApplicationPrincipalIdentityRequirement::from_field(
+                    PrincipalIdentityField::at("PrincipalIdentityField"),
+                ),
+            },
+        )
     }
-);
+}
+
+pub use crate::schema::entities::storage_model::{
+    ExternalIdentityKey, ExternalMappingStatus, ExternalPrincipalIdentity, PrincipalIdentity,
+    PrincipalIdentityField,
+};

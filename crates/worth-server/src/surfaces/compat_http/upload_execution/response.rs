@@ -12,7 +12,8 @@ pub struct WorthServerCompatibilityUpload {
     mutation: crate::WorthServerCompatibilityMutation,
     file_envelope: WorthServerCompatibilityFileEnvelope,
     certification_bundle: WorthServerBinaryCertificationBundle,
-    canonical_digest: String,
+    canonical_digest:
+        Result<String, worth_query::facade::runtime::WorthQueryEvidenceIdentityDerivationDenial>,
 }
 
 impl WorthServerCompatibilityUpload {
@@ -24,15 +25,15 @@ impl WorthServerCompatibilityUpload {
         file_envelope: WorthServerCompatibilityFileEnvelope,
         certification_bundle: WorthServerBinaryCertificationBundle,
     ) -> Self {
-        let canonical_digest = format!(
+        let canonical_digest = mutation.canonical_digest().map(|mutation_digest| format!(
             "worth-server-compat-upload-v4|upload={}|integrity={}|ingress_performance={}|mutation={}|file_envelope={}|certification={}",
             upload.canonical_digest(),
             ingress_integrity.canonical_digest(),
             ingress_performance_digest(&ingress_performance),
-            mutation.canonical_digest(),
+            mutation_digest,
             file_envelope.canonical_digest(),
             certification_bundle.canonical_digest(),
-        );
+        ));
         Self {
             upload,
             ingress_integrity,
@@ -68,8 +69,11 @@ impl WorthServerCompatibilityUpload {
         &self.certification_bundle
     }
 
-    pub fn canonical_digest(&self) -> &str {
-        &self.canonical_digest
+    pub fn canonical_digest(
+        &self,
+    ) -> Result<&str, worth_query::facade::runtime::WorthQueryEvidenceIdentityDerivationDenial>
+    {
+        self.canonical_digest.as_deref().map_err(|cause| *cause)
     }
 }
 

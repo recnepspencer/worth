@@ -129,7 +129,16 @@ fn normalize(
         request,
         operation_input,
         source_path,
-    ))
+    )
+    .map_err(|cause| {
+        EffectIntentDenial::new(
+            EffectIntentDenialKind::EvidenceIdentityDerivationDenied(cause),
+            "normalized effect identity exceeded its digest bounds",
+            source_path,
+            1,
+            basis_pairing_check_width(authoring_basis),
+        )
+    })?)
 }
 
 fn binding_matches_basis(

@@ -14,7 +14,7 @@ use worth_relational::facade::{
 
 pub struct SourceReadVerification<'runtime> {
     runtime: &'runtime RelationalRuntime,
-    pin: RelationalPinnedRead,
+    pin: image::VerificationImage<'runtime>,
     completed: BTreeMap<usize, (Arc<StructuralWalkObservation>, bool)>,
     derived: BTreeMap<usize, (Arc<super::derived_source::DerivedSourceObservation>, bool)>,
     aggregates: BTreeMap<usize, (Arc<AggregateObservation>, bool)>,
@@ -23,6 +23,7 @@ pub struct SourceReadVerification<'runtime> {
 }
 mod components;
 mod derived;
+mod image;
 impl<'runtime> SourceReadVerification<'runtime> {
     pub(in crate::domain_computation::primary_graph) fn open(
         runtime: &'runtime RelationalRuntime,
@@ -41,7 +42,31 @@ impl<'runtime> SourceReadVerification<'runtime> {
             Ok((value, _)) => value?,
             Err(stop) => return Err(Failure::Execution(stop.into())),
         };
-        Ok(Self {
+        Ok(Self::from_image(
+            runtime,
+            image::VerificationImage::Committed(pin),
+        ))
+    }
+    pub(in crate::domain_computation::primary_graph) fn open_applied(
+        runtime: &'runtime RelationalRuntime,
+        snapshot: &'runtime SnapshotHandle,
+        candidate: &worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+    ) -> Self {
+        Self::from_image(
+            runtime,
+            image::VerificationImage::Applied {
+                pin: candidate.clone(),
+                authorization: snapshot,
+            },
+        )
+    }
+    fn from_image(
+        runtime: &'runtime RelationalRuntime,
+        pin: image::VerificationImage<'runtime>,
+    ) -> Self {
+        Self {
             runtime,
             pin,
             completed: BTreeMap::new(),
@@ -49,7 +74,7 @@ impl<'runtime> SourceReadVerification<'runtime> {
             aggregates: BTreeMap::new(),
             bytes: 0,
             _memory: None,
-        })
+        }
     }
 
     pub(in crate::domain_computation::primary_graph) fn answers_image(
@@ -57,7 +82,8 @@ impl<'runtime> SourceReadVerification<'runtime> {
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
     ) -> bool {
-        std::ptr::eq(self.runtime, runtime) && self.pin.snapshot() == snapshot
+        std::ptr::eq(self.runtime, runtime)
+            && matches!(&self.pin, image::VerificationImage::Committed(pin) if pin.snapshot() == snapshot)
     }
 
     #[expect(
@@ -82,7 +108,18 @@ impl<'runtime> SourceReadVerification<'runtime> {
                 }
                 *equal
             } else {
-                let equal = body.remains_equal_at(&self.pin, execution, context, control)?;
+                let equal = match &self.pin {
+                    image::VerificationImage::Committed(pin) => {
+                        body.remains_equal_at(pin, execution, context, control)
+                    }
+                    image::VerificationImage::Applied { pin, .. } => body.remains_equal_on_pin(
+                        pin,
+                        self.pin.origin(),
+                        execution,
+                        context,
+                        control,
+                    ),
+                }?;
                 memory::grow_tree::<(usize, (Arc<StructuralWalkObservation>, bool))>(
                     &mut self._memory,
                     &mut self.bytes,
@@ -127,7 +164,18 @@ impl<'runtime> SourceReadVerification<'runtime> {
                 }
                 *equal
             } else {
-                let equal = body.remains_equal_at(&self.pin, execution, context, control)?;
+                let equal = match &self.pin {
+                    image::VerificationImage::Committed(pin) => {
+                        body.remains_equal_at(pin, execution, context, control)
+                    }
+                    image::VerificationImage::Applied { pin, .. } => body.remains_equal_on_pin(
+                        pin,
+                        self.pin.origin(),
+                        execution,
+                        context,
+                        control,
+                    ),
+                }?;
 
                 self.aggregates.insert(address, (Arc::clone(body), equal));
                 equal

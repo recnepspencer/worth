@@ -1,5 +1,6 @@
 mod authority;
 pub(crate) mod producer_identity;
+mod route;
 use producer_identity::SettlementProducerIdentity;
 mod current_commit;
 use current_commit::reacquire_current_committed_output;
@@ -58,6 +59,7 @@ pub enum WorthQueryOutputSettlementPosture {
     StableReused,
     RecoveredPerformed,
     RecoveredStableReused,
+    HistoricallySelected,
 }
 
 impl WorthQueryOutputDemandSettlement {
@@ -186,6 +188,19 @@ impl WorthQueryOutputDemandSettlement {
         WorthQueryApplicationOutputProjectionDenial,
     > {
         self.output_correspondence.outputs_of()
+    }
+
+    /// Retired descendant witnesses used only to admit this performed succession.
+    /// They are not canonical roles returned by `outputs_of`.
+    pub fn closure_evidence_of<Contract: 'static>(
+        &self,
+    ) -> Result<
+        super::super::WorthQueryApplicationTypedClosureEvidence<'_, Contract>,
+        WorthQueryApplicationOutputProjectionDenial,
+    > {
+        self.output_correspondence
+            .outputs_of::<Contract>()
+            .map(|roles| roles.closure_evidence())
     }
 
     pub fn producer_identity(&self) -> &str {

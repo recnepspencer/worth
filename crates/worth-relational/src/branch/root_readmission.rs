@@ -24,14 +24,27 @@ mod region_binding;
 use region_binding::ReadmittedRegionSet;
 
 impl RelationalBranchRoot {
+    /// Closed corruption recorders use the same content owner as publication.
+    pub(crate) fn reconstruct_storage_root_for_test(
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        partitions: BTreeMap<PartitionId, PartitionState>,
+        symbols: &crate::symbols::data::StringInterner,
+    ) -> Result<[u8; 32], RelationalBranchRootCaptureDenial> {
+        let issuer = RelationalBranchRootIdentityIssuer::default();
+        let (regions, _) =
+            capture::build_initial_regions_owned(lane, execution, &issuer, 0, partitions, symbols)?;
+        Ok(axes::storage_root_for(&regions).0)
+    }
     /// Recovery can replace a reconstructed envelope with its durable
     /// canonical peer without rebuilding immutable storage regions.
     pub(crate) fn relink_canonical_envelope(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        envelope: Arc<CanonicalCommitEnvelope>,
+        original: Arc<super::RelationalOriginalRootCommitEvidence>,
         symbols: &crate::symbols::data::StringInterner,
     ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
+        let envelope = Arc::clone(original.envelope());
         let mut committed = self
             .committed
             .clone()
@@ -43,8 +56,7 @@ impl RelationalBranchRoot {
         }
         validate_schema_root(&envelope, &committed.descriptor)?;
         require_schema_authority(&self.schema_authority, &envelope, &committed.descriptor)?;
-        self.require_current_content_binding(&committed, symbols)?;
-        require_visibility_commitment(&committed, &envelope)?;
+        self.require_current_content_binding(execution, &committed, symbols)?;
         self.content
             .certify_records(
                 execution,
@@ -52,8 +64,26 @@ impl RelationalBranchRoot {
                 envelope.content.records(),
             )
             .map_err(RelationalBranchRootCaptureDenial::Content)?;
-        committed.evidence = super::RelationalRootCommitEvidence::Original(envelope);
-        Ok(self.with_committed(committed))
+        // Readmission replaces the envelope owner, so the old change proof is discarded.
+        committed.commit_change = None;
+        let evidence = super::RelationalRootCommitEvidence::Original(Arc::clone(&original));
+        let visibility = RelationalBranchVisibilityCommitment::for_payload_for_request(
+            original.payload(),
+            committed.axes.storage_root,
+            committed.axes.schema_root,
+            committed.axes.correctness_index,
+            execution,
+        )?;
+        if visibility != committed.axes.visibility {
+            return Err(
+                RelationalBranchRootCaptureDenial::VisibilityCommitmentMismatch {
+                    committed: committed.axes.visibility.digest(),
+                    reconstructed: visibility.digest(),
+                },
+            );
+        }
+        committed.evidence = evidence;
+        self.with_committed(execution, committed)
     }
 
     /// Recovery binds admitted source authority after replay reconstructs storage.
@@ -62,8 +92,12 @@ impl RelationalBranchRoot {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: &crate::history::data::PositionedCanonicalCommit,
+        original: Arc<super::RelationalOriginalRootCommitEvidence>,
         symbols: &crate::symbols::data::StringInterner,
     ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
+        if !Arc::ptr_eq(original.envelope(), source.canonical_arc()) {
+            return Err(RelationalBranchRootCaptureDenial::CanonicalEnvelopeMismatch);
+        }
         let mut committed = self
             .committed
             .clone()
@@ -78,7 +112,7 @@ impl RelationalBranchRoot {
             source.envelope(),
             &committed.descriptor,
         )?;
-        self.require_current_content_binding(&committed, symbols)?;
+        self.require_current_content_binding(execution, &committed, symbols)?;
         self.content
             .certify_records(
                 execution,
@@ -86,21 +120,24 @@ impl RelationalBranchRoot {
                 source.envelope().content.records(),
             )
             .map_err(RelationalBranchRootCaptureDenial::Content)?;
-        committed.axes.visibility = RelationalBranchVisibilityCommitment::for_root(
-            source.envelope(),
+        let evidence = super::RelationalRootCommitEvidence::Original(Arc::clone(&original));
+        committed.axes.visibility = RelationalBranchVisibilityCommitment::for_payload_for_request(
+            original.payload(),
             committed.axes.storage_root,
             committed.axes.schema_root,
             committed.axes.correctness_index,
-        );
-        committed.evidence =
-            super::RelationalRootCommitEvidence::Original(source.canonical_arc().clone());
-        Ok(self.with_committed(committed))
+            execution,
+        )?;
+        committed.commit_change = None;
+        committed.evidence = evidence;
+        self.with_committed(execution, committed)
     }
 
     /// Readmit the durable descriptor learned from the next exact branch-cell
     /// checkpoint without rebuilding the reconstructed storage regions.
     pub(crate) fn readmit_descriptor(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         descriptor: RelationalBranchRootDescriptor,
         symbols: &crate::symbols::data::StringInterner,
     ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
@@ -116,9 +153,9 @@ impl RelationalBranchRoot {
                 canonical_root: self.schema_authority.authority_digest(),
             });
         }
-        self.require_current_content_binding(&committed, symbols)?;
+        self.require_current_content_binding(execution, &committed, symbols)?;
         let (reconstructed_root, reconstructed_accumulator) =
-            axes::storage_root_from_authoritative_regions(&self.regions, symbols)?;
+            self.verify_resident_storage_content(execution, symbols)?;
         require_descriptor_content(&descriptor, reconstructed_root)?;
         debug_assert_eq!(
             /* Proof: readmit rebuilds both the region set and accumulator from the same checked immutable regions before installing the new root; no caller can set the private accumulator independently. */
@@ -126,16 +163,17 @@ impl RelationalBranchRoot {
             reconstructed_accumulator
         );
         committed.descriptor = descriptor;
-        Ok(self.with_committed(committed))
+        self.with_committed(execution, committed)
     }
 
     fn require_current_content_binding(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         committed: &RelationalCommittedBranchRoot,
         symbols: &crate::symbols::data::StringInterner,
     ) -> Result<(), RelationalBranchRootCaptureDenial> {
         let (reconstructed_root, reconstructed_accumulator) =
-            axes::storage_root_from_authoritative_regions(&self.regions, symbols)?;
+            self.verify_resident_storage_content(execution, symbols)?;
         if self.content_accumulator != reconstructed_accumulator
             || committed.axes.storage_root != reconstructed_root
         {
@@ -146,8 +184,8 @@ impl RelationalBranchRoot {
         }
         require_descriptor_content(&committed.descriptor, reconstructed_root)?;
         match &committed.evidence {
-            super::RelationalRootCommitEvidence::Original(envelope) => {
-                require_visibility_commitment(committed, envelope)
+            super::RelationalRootCommitEvidence::Original(original) => {
+                require_visibility_commitment(committed, original.envelope())
             }
             super::RelationalRootCommitEvidence::Checkpoint(commit) => {
                 if committed.axes.visibility != commit.visibility() {
@@ -163,8 +201,14 @@ impl RelationalBranchRoot {
         }
     }
 
-    fn with_committed(&self, committed: RelationalCommittedBranchRoot) -> Arc<Self> {
-        Arc::new(Self {
+    fn with_committed(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        committed: RelationalCommittedBranchRoot,
+    ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
+        let memory = super::reserve_arc_memory::<Self>(Some(execution))?;
+        Ok(Arc::new(Self {
+            publication_bases: Default::default(),
             content: self.content.clone(),
             // The callers preserve this exact root, schema and content binding.
             managed_source_image: self.managed_source_image.clone(),
@@ -174,9 +218,9 @@ impl RelationalBranchRoot {
             relation_slot_count: self.relation_slot_count,
             content_accumulator: self.content_accumulator,
             output_publication_positions: match &committed.evidence {
-                super::RelationalRootCommitEvidence::Original(envelope) => {
+                super::RelationalRootCommitEvidence::Original(original) => {
                     crate::history::data::RequiredOutputPublicationPositions::unresolved_at(
-                        envelope.commit.commit_id,
+                        original.envelope().commit.commit_id,
                     )
                 }
                 super::RelationalRootCommitEvidence::Checkpoint(_) => {
@@ -186,8 +230,8 @@ impl RelationalBranchRoot {
             execution_contracts: self.execution_contracts.clone(),
             schema_authority: Arc::clone(&self.schema_authority),
             committed: Some(committed),
-            _memory: None,
-        })
+            _memory: memory,
+        }))
     }
 }
 

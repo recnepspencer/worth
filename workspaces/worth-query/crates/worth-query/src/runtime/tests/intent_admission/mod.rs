@@ -143,7 +143,9 @@ fn current_context_for_family(
     let identity = ResolvedSnapshotIdentity::new(
         BasisAuthorityFamily::Runtime,
         None,
-        crate::memory_workspace::admit_external_snapshot_label(snapshot_token).evidence_identity(),
+        crate::memory_workspace::admit_external_snapshot_label(snapshot_token)
+            .expect("fixture digest must fit")
+            .evidence_identity(),
         family.read_graph().schema_basis().clone(),
         SnapshotLineageClass::CurrentHead,
     );

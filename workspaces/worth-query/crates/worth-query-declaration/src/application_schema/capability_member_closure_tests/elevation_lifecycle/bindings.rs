@@ -1,23 +1,10 @@
 use super::*;
 use crate::application_capability::ApplicationCapabilityFieldBinding;
-use crate::application_schema::{
-    ApplicationFieldRef, EqualityPredicate, NoApplicationUnit, ReadOnly,
-};
 
 pub(super) struct Elevation;
 pub(super) struct ElevationFacts;
 pub(super) struct Review;
 pub(super) struct ReviewFacts;
-pub(super) struct ElevationIdentity;
-pub(super) struct ElevationReason;
-pub(super) struct ElevationStatus;
-pub(super) struct ElevationClosedAt;
-pub(super) struct ElevationNotBefore;
-pub(super) struct ElevationNotAfter;
-pub(super) struct ReviewIdentity;
-pub(super) struct ReviewKind;
-pub(super) struct ReviewStatus;
-pub(super) struct ReviewReviewedAt;
 pub(super) struct Requester;
 pub(super) struct Approver;
 pub(super) struct ElevationGrant;
@@ -40,19 +27,6 @@ pub(super) struct ApproveCapability;
 pub(super) struct RevokeCapability;
 pub(super) struct CompleteReviewCapability;
 
-declare_u64_field!(
-    ElevationIdentity,
-    ElevationReason,
-    ElevationStatus,
-    ElevationClosedAt,
-    ElevationNotBefore,
-    ElevationNotAfter,
-    ReviewIdentity,
-    ReviewKind,
-    ReviewStatus,
-    ReviewReviewedAt,
-);
-
 macro_rules! operation_identity {
     ($operation:ty => $identifier:literal) => {
         impl ApplicationOperationMarkerIdentity<Schema> for $operation {
@@ -72,69 +46,30 @@ operation_identity!(SwappedRequestOperation => "Approve");
 operation_identity!(SwappedApproveOperation => "Request");
 
 pub(super) fn elevation_value(value: u64) -> ApplicationCapabilityValueBinding {
-    ApplicationCapabilityValueBinding::new(
-        elevation_field::<ElevationStatus>("ElevationStatus"),
-        encoded(value),
-    )
+    ApplicationCapabilityValueBinding::new(elevation_field("ElevationStatus"), encoded(value))
+        .unwrap()
 }
 
 pub(super) fn review_value(value: u64) -> ApplicationCapabilityValueBinding {
-    ApplicationCapabilityValueBinding::new(
-        review_field::<ReviewStatus>("ReviewStatus"),
-        encoded(value),
-    )
+    ApplicationCapabilityValueBinding::new(review_field("ReviewStatus"), encoded(value)).unwrap()
 }
 
-pub(super) fn elevation_binding<
-    Field: crate::application_schema::DeclaredApplicationFieldValue<Value = u64>,
->(
+pub(super) fn elevation_field(
     name: &'static str,
-) -> ApplicationCapabilityFieldBinding {
-    ApplicationCapabilityFieldBinding::from_reference(elevation_field::<Field>(name))
+) -> fragment::FieldSelection<ElevationModel, Elevation, ElevationFacts, u64> {
+    fragment::FieldSelection::at(name)
 }
-
-pub(super) fn review_binding<
-    Field: crate::application_schema::DeclaredApplicationFieldValue<Value = u64>,
->(
+pub(super) fn elevation_binding(name: &'static str) -> ApplicationCapabilityFieldBinding {
+    ApplicationCapabilityFieldBinding::from_reference(elevation_field(name)).unwrap()
+}
+pub(super) fn review_field(
     name: &'static str,
-) -> ApplicationCapabilityFieldBinding {
-    ApplicationCapabilityFieldBinding::from_reference(review_field::<Field>(name))
+) -> fragment::FieldSelection<ElevationModel, Review, ReviewFacts, u64> {
+    fragment::FieldSelection::at(name)
 }
-
-pub(super) fn elevation_field<
-    Field: crate::application_schema::DeclaredApplicationFieldValue<Value = u64>,
->(
-    name: &'static str,
-) -> ApplicationFieldRef<
-    Schema,
-    Elevation,
-    ElevationFacts,
-    Field,
-    u64,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationFieldRef::from_schema_identifiers("Elevation", "ElevationFacts", name)
+pub(super) fn review_binding(name: &'static str) -> ApplicationCapabilityFieldBinding {
+    ApplicationCapabilityFieldBinding::from_reference(review_field(name)).unwrap()
 }
-
-pub(super) fn review_field<
-    Field: crate::application_schema::DeclaredApplicationFieldValue<Value = u64>,
->(
-    name: &'static str,
-) -> ApplicationFieldRef<
-    Schema,
-    Review,
-    ReviewFacts,
-    Field,
-    u64,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationFieldRef::from_schema_identifiers("Review", "ReviewFacts", name)
-}
-
 pub(super) fn context_slot<Slot, Entity>(
     slot: &'static str,
     entity: &'static str,
@@ -196,4 +131,80 @@ fn encoded(
     crate::application_schema::U64ApplicationValueBinding,
 > {
     crate::application_schema::ApplicationEncodedScalarValue::try_new(value).unwrap()
+}
+
+use crate::application_schema::{fragment, U64ApplicationValueBinding, ValueDecodeAdmission};
+pub(super) struct ElevationModel;
+impl fragment::Fragment for ElevationModel {
+    const NAME: &'static str = "ElevationModel";
+    type Bindings = ElevationBindings;
+    type Members = (Elevation, Review);
+}
+pub(super) struct ElevationBindings;
+impl fragment::BindingSet for ElevationBindings {
+    type Work<'a> = ValueDecodeAdmission<'a>;
+    fn with_admission<T>(
+        work: &mut Self::Work<'_>,
+        run: impl FnOnce(&mut ValueDecodeAdmission<'_>) -> T,
+    ) -> T {
+        run(work)
+    }
+}
+impl fragment::Scalar<u64> for ElevationBindings {
+    type Binding = U64ApplicationValueBinding;
+    const WRITABLE: bool = false;
+}
+impl fragment::Entity for Elevation {
+    const NAME: &'static str = "Elevation";
+    type Aspects = (ElevationFacts,);
+    type Relations = ();
+}
+impl fragment::Aspect for ElevationFacts {
+    const NAME: &'static str = "ElevationFacts";
+    type Row = ElevationRow;
+}
+pub(super) struct ElevationRow(u64, u64, u64, u64, u64, u64);
+impl fragment::Record<ElevationRow> for ElevationBindings {
+    fn record() -> impl fragment::Shape<ElevationRow, Self> {
+        fragment::field("ElevationStatus", |row: &ElevationRow| row.0)
+            .equality_queryable(true)
+            .and("ElevationClosedAt", |row: &ElevationRow| row.1)
+            .equality_queryable(true)
+            .and("ElevationIdentity", |row: &ElevationRow| row.2)
+            .equality_queryable(true)
+            .and("ElevationNotAfter", |row: &ElevationRow| row.3)
+            .equality_queryable(true)
+            .and("ElevationNotBefore", |row: &ElevationRow| row.4)
+            .equality_queryable(true)
+            .and("ElevationReason", |row: &ElevationRow| row.5)
+            .equality_queryable(true)
+            .build(|v0, v1, v2, v3, v4, v5, _: &mut ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(ElevationRow(v0, v1, v2, v3, v4, v5))
+            })
+    }
+}
+impl fragment::Entity for Review {
+    const NAME: &'static str = "Review";
+    type Aspects = (ReviewFacts,);
+    type Relations = ();
+}
+impl fragment::Aspect for ReviewFacts {
+    const NAME: &'static str = "ReviewFacts";
+    type Row = ReviewRow;
+}
+pub(super) struct ReviewRow(u64, u64, u64, u64);
+impl fragment::Record<ReviewRow> for ElevationBindings {
+    fn record() -> impl fragment::Shape<ReviewRow, Self> {
+        fragment::field("ReviewKind", |row: &ReviewRow| row.0)
+            .equality_queryable(true)
+            .and("ReviewStatus", |row: &ReviewRow| row.1)
+            .equality_queryable(true)
+            .and("ReviewIdentity", |row: &ReviewRow| row.2)
+            .equality_queryable(true)
+            .and("ReviewReviewedAt", |row: &ReviewRow| row.3)
+            .equality_queryable(true)
+            .build(|v0, v1, v2, v3, _: &mut ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(ReviewRow(v0, v1, v2, v3))
+            })
+    }
 }

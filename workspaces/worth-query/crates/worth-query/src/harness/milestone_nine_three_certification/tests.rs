@@ -7,7 +7,7 @@ use crate::harness::certification::{
 #[test]
 fn rows_enforce_required_assertion_classes() {
     let matrix = MilestoneNineThreeCertificationAdapter::
-        query_subscription_bridge_parity_and_diagnostic_sufficiency_test();
+        query_subscription_bridge_parity_and_diagnostic_sufficiency_test().expect("fixture digest must fit");
     let mut covered = Vec::new();
 
     for row in &matrix.rows {
@@ -49,7 +49,7 @@ fn rows_enforce_required_assertion_classes() {
 #[test]
 fn grouped_and_inspector_rows_preserve_query_family_distinction() {
     let matrix = MilestoneNineThreeCertificationAdapter::
-        query_subscription_bridge_parity_and_diagnostic_sufficiency_test();
+        query_subscription_bridge_parity_and_diagnostic_sufficiency_test().expect("fixture digest must fit");
 
     let detail = matrix
         .rows
@@ -101,7 +101,7 @@ fn grouped_and_inspector_rows_preserve_query_family_distinction() {
 #[test]
 fn support_scale_row_keeps_query_meaning_fixed_while_cost_posture_changes() {
     let matrix = MilestoneNineThreeCertificationAdapter::
-        query_subscription_bridge_parity_and_diagnostic_sufficiency_test();
+        query_subscription_bridge_parity_and_diagnostic_sufficiency_test().expect("fixture digest must fit");
     let row = matrix
         .rows
         .iter()
@@ -174,7 +174,7 @@ fn support_scale_row_keeps_query_meaning_fixed_while_cost_posture_changes() {
 #[test]
 fn declaration_family_drift_row_distinguishes_runtime_churn_from_declaration_identity() {
     let matrix = MilestoneNineThreeCertificationAdapter::
-        query_subscription_bridge_parity_and_diagnostic_sufficiency_test();
+        query_subscription_bridge_parity_and_diagnostic_sufficiency_test().expect("fixture digest must fit");
     let row = matrix
         .rows
         .iter()

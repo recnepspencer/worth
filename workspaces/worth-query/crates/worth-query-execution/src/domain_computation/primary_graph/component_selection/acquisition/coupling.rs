@@ -8,21 +8,18 @@ use worth_relational::facade::{
     transactions::RelationalExecutionDenialCause,
 };
 pub(in crate::domain_computation::primary_graph) enum CouplingObservationDenial {
-    Unavailable,
     Execution(RelationalExecutionDenialCause),
     Source(SourceFactReadDenial),
 }
-pub(in crate::domain_computation::primary_graph) fn observe_coupling(
+pub(in crate::domain_computation::primary_graph) fn observe_coupling<Phase>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    pin: &RelationalPinnedRead,
+    pin: &RelationalPinnedRead<Phase>,
     allocation: &Arc<crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation>,
     layout: &ComponentSetLayout,
     aggregate: &AggregateObservation,
     context: &mut worth_execution::MapKernelContext<'_, '_>,
 ) -> Result<SourceFacts, CouplingObservationDenial> {
-    let projection = pin
-        .project_snapshot(pin.snapshot())
-        .ok_or(CouplingObservationDenial::Unavailable)?;
+    let projection = pin.project_read();
     let mut facts = SourceFactsBuilder::default();
     facts
         .protect(execution, allocation)

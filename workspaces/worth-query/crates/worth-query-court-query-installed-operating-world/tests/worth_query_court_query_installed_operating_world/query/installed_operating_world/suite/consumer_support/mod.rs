@@ -168,6 +168,7 @@ fn equivalent_runtime_paths_and_rebuilt_indexes_preserve_support_truth() {
     .unwrap();
     assert!(rebuilt
         .verify_domain_execution_index_rebuild()
+        .expect("fixture digest must fit")
         .is_equivalent());
     let direct_domain = direct.domain(GeometryDomain).unwrap();
     let rebuilt_domain = rebuilt.domain(GeometryDomain).unwrap();

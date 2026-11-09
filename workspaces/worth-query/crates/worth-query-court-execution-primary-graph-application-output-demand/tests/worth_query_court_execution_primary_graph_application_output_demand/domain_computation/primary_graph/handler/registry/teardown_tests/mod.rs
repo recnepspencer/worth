@@ -153,7 +153,7 @@ fn erased_slot_and_active_handler_aliases_refuse_while_the_same_query_serves() {
                     .selected_product(&phase.test_host_request_for_test())
                     .resolve_entity(
                         &phase,
-                        AccountStatus::reference(),
+                        AccountStatus::at("AccountStatus"),
                         "open".to_owned(),
                         &scope,
                         WorthQueryPrincipalResolutionMode::Ordinary,

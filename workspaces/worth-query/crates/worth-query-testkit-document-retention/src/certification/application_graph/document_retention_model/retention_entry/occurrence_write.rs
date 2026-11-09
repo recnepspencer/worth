@@ -32,7 +32,7 @@ worth_query_decl::facade::worth_query_mutation_binding!(
     outputs NoApplicationMutationOutputs,
     principal DocumentPrincipalBinding, mapping ExternalMapping, principal_entity Principal,
         principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Document, DocumentFacts, DocumentIdentityField, String, ReadOnly, NoApplicationUnit,
-    field DocumentIdentityField::reference(),
+    scope DocumentIdentityField,
+    field DocumentIdentityField::at("DocumentIdentityField"),
     value document_identity,
 );

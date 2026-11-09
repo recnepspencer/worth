@@ -1,26 +1,22 @@
-use worth_query_decl::facade::worth_query_application_query;
-use worth_query_decl::facade::{
-    application_query::{
-        ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-        ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
-        ApplicationQueryLaneEligibility, ApplicationQueryResultFieldRef,
-        ApplicationQueryResultRelationRef, ApplicationQueryResultShapeBuilder, OptionalOneResult,
-        ReverseResultTraversal,
-    },
-    application_schema::{EqualityPredicate, NoApplicationUnit, ReadOnly},
+use worth_query_decl::facade::application_query::{
+    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
+    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
+    ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
+    ApplicationQueryResultShapeBuilder, OptionalOneResult, ReverseResultTraversal,
 };
+use worth_query_decl::facade::worth_query_application_query;
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationProjection, WorthQueryApplicationProjectionDenial,
     WorthQueryApplicationProjectionRow,
 };
 
 use crate::authorization::ViewAccount;
-use crate::model::{AccountId, BankPrincipalId, BusinessId, InstitutionId};
+use crate::model::AccountId;
 use crate::reads::AccountDetail;
 use crate::schema::{
-    Account, AccountKind, BankSchema, Business, BusinessAccount, BusinessIdentity,
-    BusinessIdentityField, Institution, InstitutionAccount, InstitutionIdentity,
-    InstitutionIdentityField, PersonalOwner, Principal, PrincipalIdentity, PrincipalIdentityField,
+    Account, AccountKind, BankSchema, Business, BusinessAccount, BusinessIdentityField,
+    Institution, InstitutionAccount, InstitutionIdentityField, PersonalOwner, Principal,
+    PrincipalIdentityField,
 };
 
 use super::account_summary_projection::{account_summary_shape, project_account_summary};
@@ -67,9 +63,8 @@ worth_query_decl::facade::worth_query_query_binding!(
     result AccountDetailQueryResultBinding,
     principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
         principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
-    scope Account, crate::schema::Identity, crate::schema::AccountIdentity, AccountId,
-        ReadOnly, NoApplicationUnit,
-    field crate::schema::AccountIdentity::reference(),
+    scope crate::schema::AccountIdentity,
+    field crate::schema::AccountIdentity::at("AccountIdentity"),
     value AccountDetailRequest::account,
     limits results 1_024
 
@@ -92,42 +87,24 @@ type InstitutionIdentitySelector = ApplicationQueryResultFieldRef<
     AccountDetailQuery,
     InstitutionIdentitySlot,
     BankSchema,
-    Institution,
-    InstitutionIdentity,
     InstitutionIdentityField,
-    InstitutionId,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
 >;
 
 type PrincipalIdentitySelector = ApplicationQueryResultFieldRef<
     AccountDetailQuery,
     PrincipalIdentitySlot,
     BankSchema,
-    Principal,
-    PrincipalIdentity,
     PrincipalIdentityField,
-    BankPrincipalId,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
 >;
 
 type BusinessIdentitySelector = ApplicationQueryResultFieldRef<
     AccountDetailQuery,
     BusinessIdentitySlot,
     BankSchema,
-    Business,
-    BusinessIdentity,
     BusinessIdentityField,
-    BusinessId,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
 >;
 
-pub fn account_detail_definition() -> ApplicationQueryDefinition<
+pub fn account_detail_definition() -> ApplicationQueryDefinitionBuilder<
     BankSchema,
     AccountDetailQuery,
     AccountDetailQueryParameters,
@@ -176,8 +153,6 @@ pub fn account_detail_definition() -> ApplicationQueryDefinition<
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .requires_ability(ViewAccount::reference())
-        .build()
-        .expect("bank account detail query is statically canonical")
 }
 
 impl WorthQueryApplicationProjection<BankSchema, AccountDetailQuery> for AccountDetail {
@@ -217,15 +192,24 @@ impl WorthQueryApplicationProjection<BankSchema, AccountDetailQuery> for Account
 }
 
 fn institution_identity() -> InstitutionIdentitySelector {
-    ApplicationQueryResultFieldRef::new("institution", InstitutionIdentityField::reference())
+    ApplicationQueryResultFieldRef::new(
+        "institution",
+        InstitutionIdentityField::at("InstitutionIdentityField"),
+    )
 }
 
 fn principal_identity() -> PrincipalIdentitySelector {
-    ApplicationQueryResultFieldRef::new("principal", PrincipalIdentityField::reference())
+    ApplicationQueryResultFieldRef::new(
+        "principal",
+        PrincipalIdentityField::at("PrincipalIdentityField"),
+    )
 }
 
 fn business_identity() -> BusinessIdentitySelector {
-    ApplicationQueryResultFieldRef::new("business", BusinessIdentityField::reference())
+    ApplicationQueryResultFieldRef::new(
+        "business",
+        BusinessIdentityField::at("BusinessIdentityField"),
+    )
 }
 
 fn account_institution() -> ApplicationQueryResultRelationRef<

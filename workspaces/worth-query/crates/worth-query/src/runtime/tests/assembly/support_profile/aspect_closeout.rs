@@ -8,10 +8,16 @@ fn runtime_public_aspect_api_finalization_closeout_answers_substrate_handoff_que
     let workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("task.aspect-api-closeout")
         .expect("task runtime should open a named workspace");
-    let closeout = workspace.public_aspect_api_finalization_closeout();
-    let report = workspace.public_mutation_surface_report();
-    let matrix = workspace.public_support_matrix();
-    let naming = WorthQueryRuntime::public_api_naming_contract();
+    let closeout = workspace
+        .public_aspect_api_finalization_closeout()
+        .expect("fixture digest must fit");
+    let report = workspace
+        .public_mutation_surface_report()
+        .expect("fixture digest must fit");
+    let matrix = workspace
+        .public_support_matrix()
+        .expect("fixture digest must fit");
+    let naming = WorthQueryRuntime::public_api_naming_contract().expect("fixture digest must fit");
 
     assert_eq!(
         closeout.backend_posture(),

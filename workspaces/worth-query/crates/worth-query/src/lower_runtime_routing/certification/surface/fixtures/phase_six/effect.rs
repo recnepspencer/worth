@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_relational::facade::history::BranchId;
 
 use crate::basis_lifecycle::{
@@ -33,13 +34,13 @@ use super::effect_support::{
 
 pub(crate) fn representative_effect_relational_mutation_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> RepresentativeArtifacts {
+) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let runtime = relational_runtime_with_intent_strategy();
     let entity_id = create_entity(execution, &runtime, "before", BranchId("main".to_string()));
     let raw = RawEffectIntent::Mutation {
         binding: runtime_workflow_binding_for_snapshot_identity(exact_branch_snapshot_identity(
             &runtime, "main",
-        )),
+        ))?,
         request: workflow_request(
             WorkflowDeclarationFamily::MutationLoweringNarrow,
             WorkflowAuthorityTargetFamily::RelationalMutation,
@@ -58,12 +59,12 @@ pub(crate) fn representative_effect_relational_mutation_row(
     let executed = scope_admitted_effect_plan(admit_effect(
         raw,
         EffectAuthoringBasis::from(branch_mutation_basis("main")),
-    ))
+    )?)
     .lower()
     .expect("relational mutation should lower")
     .execute_with(execution, EffectExecutionAuthority::relational(&runtime))
     .expect("relational mutation should execute");
-    route_planned_row(
+    Ok(route_planned_row(
         WorthQueryLowerRuntimeSeamKey::EffectBackedRelationalMutation,
         WorthQueryLowerRuntimeAuthorityOwner::Relational,
         "Effect-backed relational mutation",
@@ -73,13 +74,13 @@ pub(crate) fn representative_effect_relational_mutation_row(
                 .lowered()
                 .lowered_effect_execution_plan_for_reporting(),
             executed.receipt().receipt_for_reporting(),
-        ),
-    )
+        )?,
+    )?)
 }
 
 pub(crate) fn representative_effect_relational_merge_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> RepresentativeArtifacts {
+) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let runtime = relational_runtime_with_intent_strategy();
     create_entity(execution, &runtime, "main", BranchId("main".to_string()));
     crate::runtime::fork_branch_from_exact_source(
@@ -96,7 +97,7 @@ pub(crate) fn representative_effect_relational_merge_row(
         BranchId("candidate".to_string()),
     );
     let raw = RawEffectIntent::Merge {
-        binding: runtime_workflow_binding(),
+        binding: runtime_workflow_binding()?,
         request: workflow_request(
             WorkflowDeclarationFamily::MergeLoweringNarrow,
             WorkflowAuthorityTargetFamily::RelationalMerge,
@@ -109,7 +110,7 @@ pub(crate) fn representative_effect_relational_merge_row(
     let executed = scope_admitted_effect_plan(admit_effect(
         raw,
         EffectAuthoringBasis::from(branch_mutation_basis("main")),
-    ))
+    )?)
     .lower()
     .expect("relational merge should lower")
     .execute_with(
@@ -117,7 +118,7 @@ pub(crate) fn representative_effect_relational_merge_row(
         EffectExecutionAuthority::crate_relational_without_application_schema(&runtime),
     )
     .expect("relational merge should execute");
-    route_planned_row(
+    Ok(route_planned_row(
         WorthQueryLowerRuntimeSeamKey::EffectBackedRelationalMerge,
         WorthQueryLowerRuntimeAuthorityOwner::Relational,
         "Effect-backed relational merge",
@@ -127,16 +128,16 @@ pub(crate) fn representative_effect_relational_merge_row(
                 .lowered()
                 .lowered_effect_execution_plan_for_reporting(),
             executed.receipt().receipt_for_reporting(),
-        ),
-    )
+        )?,
+    )?)
 }
 
 pub(crate) fn representative_effect_bridge_writeback_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> RepresentativeArtifacts {
+) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let bridge = test_bridge_with_writeback_authority();
     let raw = RawEffectIntent::Writeback {
-        binding: runtime_workflow_binding(),
+        binding: runtime_workflow_binding()?,
         request: workflow_request(
             WorkflowDeclarationFamily::WritebackLoweringNarrow,
             WorkflowAuthorityTargetFamily::BridgeWriteback,
@@ -146,12 +147,12 @@ pub(crate) fn representative_effect_bridge_writeback_row(
     let executed = scope_admitted_effect_plan(admit_effect(
         raw,
         EffectAuthoringBasis::from(branch_mutation_basis("branch-a")),
-    ))
+    )?)
     .lower()
     .expect("bridge writeback should lower")
     .execute_with(execution, EffectExecutionAuthority::bridge(&bridge))
     .expect("bridge writeback should execute");
-    route_planned_row(
+    Ok(route_planned_row(
         WorthQueryLowerRuntimeSeamKey::EffectBackedBridgeWriteback,
         WorthQueryLowerRuntimeAuthorityOwner::RuntimeBridge,
         "Effect-backed bridge writeback",
@@ -161,20 +162,20 @@ pub(crate) fn representative_effect_bridge_writeback_row(
                 .lowered()
                 .lowered_effect_execution_plan_for_reporting(),
             executed.receipt().receipt_for_reporting(),
-        ),
-    )
+        )?,
+    )?)
 }
 
 fn admit_effect(
     raw: RawEffectIntent,
     basis: EffectAuthoringBasis,
-) -> crate::effect_lifecycle::AdmittedEffectIntent {
+) -> Result<crate::effect_lifecycle::AdmittedEffectIntent, IdentityDerivationDenial> {
     let normalized =
         normalize_raw_effect_intent(&basis, raw).expect("effect fixture should normalize");
-    match evaluate_effect_eligibility(normalized) {
+    Ok(match evaluate_effect_eligibility(normalized)? {
         EffectEligibilityOutcome::Admitted(eligibility) => admit_effect_intent(eligibility),
         other => panic!("expected admitted effect fixture, got {other:?}"),
-    }
+    })
 }
 
 fn branch_mutation_basis(
@@ -193,20 +194,21 @@ fn branch_mutation_basis(
     scope_basis_for_mutation_preparation(admit_basis_capability(eligibility))
 }
 
-fn runtime_workflow_binding() -> crate::workflow::WorkflowContextBinding {
-    synthetic_runtime_workflow_binding_for_snapshot_identity(
+fn runtime_workflow_binding(
+) -> Result<crate::workflow::WorkflowContextBinding, IdentityDerivationDenial> {
+    Ok(synthetic_runtime_workflow_binding_for_snapshot_identity(
         "lower-runtime-effect-phase-six",
-        crate::memory_workspace::admit_external_snapshot_label("snapshot-1"),
-    )
+        crate::memory_workspace::admit_external_snapshot_label("snapshot-1")?,
+    )?)
 }
 
 fn runtime_workflow_binding_for_snapshot_identity(
     snapshot_identity: crate::memory_workspace::WorthQuerySnapshotIdentity,
-) -> crate::workflow::WorkflowContextBinding {
-    synthetic_runtime_workflow_binding_for_snapshot_identity(
+) -> Result<crate::workflow::WorkflowContextBinding, IdentityDerivationDenial> {
+    Ok(synthetic_runtime_workflow_binding_for_snapshot_identity(
         "lower-runtime-effect-phase-six",
         snapshot_identity,
-    )
+    )?)
 }
 
 fn workflow_request(
@@ -236,15 +238,17 @@ fn effect_execution_evidence_identity(
     execution_digest: &str,
     lowered_plan_digest: &str,
     receipt_digest: &str,
-) -> WorthQueryEvidenceIdentity {
-    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
-        .field_value(WorthQueryEvidenceTag::new("execution"), execution_digest)
-        .field_value(
-            WorthQueryEvidenceTag::new("lowered_plan"),
-            lowered_plan_digest,
-        )
-        .field_value(WorthQueryEvidenceTag::new("receipt"), receipt_digest)
-        .seal()
+) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+    Ok(
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+            .field_value(WorthQueryEvidenceTag::new("execution"), execution_digest)
+            .field_value(
+                WorthQueryEvidenceTag::new("lowered_plan"),
+                lowered_plan_digest,
+            )
+            .field_value(WorthQueryEvidenceTag::new("receipt"), receipt_digest)
+            .seal()?,
+    )
 }
 
 fn route_planned_row(
@@ -252,7 +256,7 @@ fn route_planned_row(
     owner: WorthQueryLowerRuntimeAuthorityOwner,
     capability_label: &str,
     evidence: WorthQueryEvidenceIdentity,
-) -> RepresentativeArtifacts {
+) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let request = WorthQueryLowerRuntimeCapabilityRequest::new(
         seam_key,
         WorthQueryLowerRuntimeRouteKind::RoutePlanning,
@@ -262,24 +266,24 @@ fn route_planned_row(
             "phase-six-effect-route-subject",
         )
         .field_evidence_identity(WorthQueryEvidenceTag::new("effect"), &evidence)
-        .seal(),
-    );
+        .seal()?,
+    )?;
     let eligibility = WorthQueryLowerRuntimeCapabilityEligibility::admitted_with_evidence_identity(
         request.clone(),
         &evidence,
-    );
+    )?;
     let route_plan = WorthQueryLowerRuntimeRoutePlan::new(
         eligibility.clone(),
         crate::lower_runtime_routing::WorthQueryLowerRuntimeRouteSubjectIdentity::from_evidence_identity(
             "phase-six-effect-route",
             &evidence,
-        ),
+        )?,
     );
     let retained_evidence_identity =
         crate::lower_runtime_routing::worth_query_lower_runtime_retained_evidence_identity(
             "phase-six-effect-route",
             &evidence,
-        );
+        )?;
     let boundary_receipt = WorthQueryLowerRuntimeBoundaryExecutionReceipt::from_route_plan(
         &route_plan,
         &retained_evidence_identity,
@@ -290,7 +294,7 @@ fn route_planned_row(
         &boundary_receipt,
         &retained_evidence_identity,
     );
-    RepresentativeArtifacts {
+    Ok(RepresentativeArtifacts {
         seam_key,
         request,
         eligibility,
@@ -298,5 +302,5 @@ fn route_planned_row(
         boundary_receipt,
         envelope,
         evidence_source: WorthQueryLowerRuntimeRepresentativeEvidenceSource::RuntimeBackedFixture,
-    }
+    })
 }

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -81,7 +82,7 @@ pub struct WorthQuerySharedReadPinningBoundaryClosure {
 impl WorthQuerySharedReadPinningBoundaryClosure {
     pub(crate) fn derive_from_evidence(
         evidence: &WorthQuerySharedReadPinningBoundaryEvidence,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let posture = classify_shared_read_pinning_boundary_posture(
             evidence.inventory_failure_count(),
             evidence.counter_residue_count(),
@@ -115,8 +116,8 @@ impl WorthQuerySharedReadPinningBoundaryClosure {
                     WorthQueryEvidenceTag::new("stale_basis_denial_proven"),
                     evidence.stale_basis_denial_proven(),
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             posture,
             inventory_failure_count: evidence.inventory_failure_count(),
             counter_residue_count: evidence.counter_residue_count(),
@@ -124,7 +125,7 @@ impl WorthQuerySharedReadPinningBoundaryClosure {
             send_sync_proven: evidence.send_sync_proven(),
             stale_basis_denial_proven: evidence.stale_basis_denial_proven(),
             closure_identity,
-        }
+        })
     }
 
     pub fn posture(&self) -> WorthQuerySharedReadPinningBoundaryPosture {

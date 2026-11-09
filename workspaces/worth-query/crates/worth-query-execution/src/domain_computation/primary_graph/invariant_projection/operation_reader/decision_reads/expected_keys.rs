@@ -1,4 +1,6 @@
 //! Exact sorted view of existing projected keys, without another key copy.
+#[cfg(test)]
+mod historical_retention_tests;
 use crate::domain_computation::primary_graph::application_attempt::{
     ComputationFactAttribution, WorthQueryApplicationFactKey as Key,
 };
@@ -34,18 +36,19 @@ impl ExpectedFactKeys {
             components,
         }
     }
-    pub(in crate::domain_computation::primary_graph) fn component(
+    pub(in crate::domain_computation::primary_graph) fn component<'a>(
         &self,
         key: &crate::domain_computation::primary_graph::component_selection::ComponentSelectionKey,
         admission: crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
         contracts: &Arc<
             worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
         >,
-        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        snapshot: impl Into<crate::domain_computation::primary_graph::projection_read_origin::ProjectionReadOriginRef<'a>>,
     ) -> Option<
         &Arc<crate::domain_computation::primary_graph::component_selection::ComponentSelection>,
     > {
-        self.components.get(key, admission, contracts, snapshot)
+        self.components
+            .get(key, admission, contracts, snapshot.into())
     }
     pub(in crate::domain_computation::primary_graph) fn source_authorization(
         &self,
@@ -76,34 +79,45 @@ impl ExpectedFactKeys {
     > {
         self.managed_sources.get(key, admission, contracts, source)
     }
-    pub(in crate::domain_computation::primary_graph) fn aggregate(
+    pub(in crate::domain_computation::primary_graph) fn aggregate<'a>(
         &self,
         key: &crate::domain_computation::primary_graph::aggregate_observation::AggregateKey,
         admission: crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
         contracts: &Arc<
             worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
         >,
-        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        snapshot: impl Into<crate::domain_computation::primary_graph::projection_read_origin::ProjectionReadOriginRef<'a>>,
     ) -> Option<
         &Arc<crate::domain_computation::primary_graph::aggregate_observation::AggregateObservation>,
     > {
-        self.aggregates.get(key, admission, contracts, snapshot)
+        self.aggregates
+            .get(key, admission, contracts, snapshot.into())
     }
-    pub(in crate::domain_computation::primary_graph) fn structural_walk(
+    pub(in crate::domain_computation::primary_graph) fn structural_walk<'a>(
         &self,
         key: &crate::domain_computation::primary_graph::structural_walk::StructuralWalkKey,
         admission: crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
         contracts: &Arc<
             worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
         >,
-        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        snapshot: impl Into<crate::domain_computation::primary_graph::projection_read_origin::ProjectionReadOriginRef<'a>>,
     ) -> Option<
         &Arc<crate::domain_computation::primary_graph::structural_walk::StructuralWalkObservation>,
     > {
-        self.walks.get(key, admission, contracts, snapshot)
+        self.walks.get(key, admission, contracts, snapshot.into())
     }
     pub(in crate::domain_computation::primary_graph) fn source_publication(&self,key:&crate::domain_computation::primary_graph::application_attempt::SourcePublicationRead)->Option<&Arc<crate::domain_computation::primary_graph::output_lineage::invalidation::ObservedSourcePublication>>{
         self.source_publications.as_deref()?.get(key)
+    }
+    /// Read-only predecessor projection has no computations or query witnesses.
+    /// Only its already recorded keys leave the read; no snapshot/root is retained.
+    pub(in crate::domain_computation::primary_graph::invariant_projection) fn into_historical_keys(
+        self,
+    ) -> Arc<ComputationFactAttribution> {
+        // The attribution already retains this same handler-key Arc and the
+        // original normalization/walk authoring payment. Moving only handler
+        // would release that payment while the historical keys remain alive.
+        self.computation
     }
     pub(in crate::domain_computation::primary_graph) fn iter(&self) -> impl Iterator<Item = &Key> {
         union(self.refresh_keys(), self.computation.carried_keys())

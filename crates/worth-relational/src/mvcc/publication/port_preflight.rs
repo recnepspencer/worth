@@ -31,7 +31,7 @@ impl PreparedCanonicalBranchMovement {
             expected_root,
             publication_cell,
             movement,
-            completion,
+            mut completion,
             candidate_retention,
             control,
             expires_at,
@@ -256,6 +256,7 @@ impl PreparedCanonicalBranchMovement {
             crate::visibility::snapshot_states::VisibilitySnapshotBasis::from_observation(
                 &next_basis.observation(),
             );
+        completion.admit_prepared_indexes(execution, expires_at, maximum_lifetime_millis)?;
         let settlement_reservation = match publication_binding.reserve_pending_settlement(
             movement.canonical_publication_route.commit_id(),
             runtime_instance_id,

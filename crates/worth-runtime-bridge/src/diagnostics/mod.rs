@@ -26,7 +26,8 @@ mod writeback;
 
 pub use bulk::BridgeBulkPlanExplanation;
 pub use causal_envelope::{
-    BridgeCausalEnvelopeAssemblyRequest, BridgeCausalEnvelopeCounters, BridgeCausalEnvelopeDenial,
+    BridgeCausalDigestRefusal, BridgeCausalEnvelopeAssemblyRequest,
+    BridgeCausalEnvelopeConstructionStop, BridgeCausalEnvelopeCounters, BridgeCausalEnvelopeDenial,
     BridgeCausalEnvelopeDenialKind, BridgeCausalEnvelopeIdentity, BridgeCausalEnvelopeReceipt,
     BridgeCausalEvidenceBinding, BridgeCausalEvidenceBindingClass, BridgeCausalEvidenceFamily,
     BridgeCausalEvidenceOwner, BridgeCausalEvidenceReference,

@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::declarative_live::{DeclarativeLiveQueryRequest, DeclarativeLiveViewShape};
@@ -31,9 +32,9 @@ impl WorthQueryLiveSubscriptionTargetIndex {
         &mut self,
         target: WorthQueryLiveArtifactTarget,
         request: &DeclarativeLiveQueryRequest,
-    ) {
+    ) -> Result<(), IdentityDerivationDenial> {
+        let collection = request.target_collection_identity()?.as_str().to_owned();
         self.unregister(&target);
-        let collection = request.target_collection_identity().as_str().to_owned();
         let entry = self.collections.entry(collection.clone()).or_default();
         entry.all.insert(target.clone());
         let routes = request_routes(request);
@@ -59,6 +60,8 @@ impl WorthQueryLiveSubscriptionTargetIndex {
                 .insert(path, target.clone());
         }
         self.routes_by_target.insert(target, (collection, routes));
+
+        Ok(())
     }
 
     pub(super) fn unregister(&mut self, target: &WorthQueryLiveArtifactTarget) {
@@ -249,40 +252,54 @@ mod tests {
     };
 
     #[test]
-    fn collection_field_and_whole_aspect_indexes_ignore_unrelated_target_scale() {
+    fn collection_field_and_whole_aspect_indexes_ignore_unrelated_target_scale(
+    ) -> Result<(), IdentityDerivationDenial> {
         let mut index = WorthQueryLiveSubscriptionTargetIndex::default();
         for ordinal in 0..64 {
-            index.register(
-                WorthQueryLiveArtifactTarget::from_view_name(format!("other-{ordinal}")),
-                &request("Other", "noise", "value"),
-            );
-            index.register(
-                WorthQueryLiveArtifactTarget::from_view_name(format!("vertex-noise-{ordinal}")),
-                &request("Vertex", "noise", "value"),
-            );
-            index.register(
-                WorthQueryLiveArtifactTarget::from_view_name(format!("vertex-name-{ordinal}")),
-                &request("Vertex", "identity", "name"),
-            );
+            index
+                .register(
+                    WorthQueryLiveArtifactTarget::from_view_name(format!("other-{ordinal}")),
+                    &request("Other", "noise", "value"),
+                )
+                .expect("fixture digest must fit");
+            index
+                .register(
+                    WorthQueryLiveArtifactTarget::from_view_name(format!("vertex-noise-{ordinal}")),
+                    &request("Vertex", "noise", "value"),
+                )
+                .expect("fixture digest must fit");
+            index
+                .register(
+                    WorthQueryLiveArtifactTarget::from_view_name(format!("vertex-name-{ordinal}")),
+                    &request("Vertex", "identity", "name"),
+                )
+                .expect("fixture digest must fit");
         }
         let first = WorthQueryLiveArtifactTarget::from_view_name("affected-first");
         let second = WorthQueryLiveArtifactTarget::from_view_name("affected-second");
-        index.register(first.clone(), &request("Vertex", "identity", "id"));
-        index.register(second.clone(), &request("Vertex", "identity", "id"));
+        index
+            .register(first.clone(), &request("Vertex", "identity", "id"))
+            .expect("fixture digest must fit");
+        index
+            .register(second.clone(), &request("Vertex", "identity", "id"))
+            .expect("fixture digest must fit");
 
         let affected = index
-            .affected_targets(&field_mutation("Vertex", "identity", &["id"]))
+            .affected_targets(&field_mutation("Vertex", "identity", &["id"])?)
             .targets;
         assert_eq!(affected, BTreeSet::from([first, second]));
 
         let whole_aspect = index
-            .affected_targets(&whole_aspect_mutation("Vertex", "identity"))
+            .affected_targets(&whole_aspect_mutation("Vertex", "identity")?)
             .targets;
         assert_eq!(whole_aspect.len(), 66);
+
+        Ok(())
     }
 
     #[test]
-    fn predicate_and_ordering_dependencies_route_when_projection_omits_them() {
+    fn predicate_and_ordering_dependencies_route_when_projection_omits_them(
+    ) -> Result<(), IdentityDerivationDenial> {
         let target = WorthQueryLiveArtifactTarget::from_view_name("filtered-and-ordered");
         let request = request("Vertex", "identity", "id")
             .where_equal(DeclarativeEqualityFilter::new(
@@ -293,20 +310,24 @@ mod tests {
                 "ranking", "position",
             )));
         let mut index = WorthQueryLiveSubscriptionTargetIndex::default();
-        index.register(target.clone(), &request);
+        index
+            .register(target.clone(), &request)
+            .expect("fixture digest must fit");
 
         assert_eq!(
             index
-                .affected_targets(&field_mutation("Vertex", "status", &["state"]))
+                .affected_targets(&field_mutation("Vertex", "status", &["state"])?)
                 .targets,
             BTreeSet::from([target.clone()])
         );
         assert_eq!(
             index
-                .affected_targets(&field_mutation("Vertex", "ranking", &["position"]))
+                .affected_targets(&field_mutation("Vertex", "ranking", &["position"])?)
                 .targets,
             BTreeSet::from([target])
         );
+
+        Ok(())
     }
 
     fn request(collection: &str, aspect: &str, field: &str) -> DeclarativeLiveQueryRequest {
@@ -322,8 +343,11 @@ mod tests {
             .clone()
     }
 
-    fn whole_aspect_mutation(collection: &str, aspect: &str) -> WorthQueryMutationDelta {
-        WorthQueryMutationDelta::from_touched_aspects(
+    fn whole_aspect_mutation(
+        collection: &str,
+        aspect: &str,
+    ) -> Result<WorthQueryMutationDelta, IdentityDerivationDenial> {
+        Ok(WorthQueryMutationDelta::from_touched_aspects(
             collection,
             crate::memory_workspace::WorthQueryEntityIdentity::from_relational_record(
                 worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts::entity(1, 1, 1),
@@ -332,11 +356,15 @@ mod tests {
             vec![crate::runtime::WorthQueryAspectTouch::whole_aspect(
                 worth_foundational::facade::AspectKey::new(aspect).unwrap(),
             )],
-        )
+        )?)
     }
 
-    fn field_mutation(collection: &str, aspect: &str, fields: &[&str]) -> WorthQueryMutationDelta {
-        WorthQueryMutationDelta::from_touched_aspects(
+    fn field_mutation(
+        collection: &str,
+        aspect: &str,
+        fields: &[&str],
+    ) -> Result<WorthQueryMutationDelta, IdentityDerivationDenial> {
+        Ok(WorthQueryMutationDelta::from_touched_aspects(
             collection,
             crate::memory_workspace::WorthQueryEntityIdentity::from_relational_record(
                 worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts::entity(1, 1, 1),
@@ -351,6 +379,6 @@ mod tests {
                 )
                 .unwrap(),
             )],
-        )
+        )?)
     }
 }

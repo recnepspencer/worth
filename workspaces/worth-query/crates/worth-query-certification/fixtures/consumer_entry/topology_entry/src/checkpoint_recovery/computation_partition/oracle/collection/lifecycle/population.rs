@@ -18,10 +18,10 @@ pub(super) fn seed(graph: &mut Graph, count: usize) {
             graph
                 .bind_entity(
                     Seed::new(Body::reference(), facts::key(name))
-                        .field(BodyKey::reference(), name.clone())
-                        .field(PositionX::reference(), length(x))
-                        .field(PositionY::reference(), length(y))
-                        .field(Length::reference(), length(1)),
+                        .field(BodyKey::at("BodyKey"), name.clone())
+                        .field(PositionX::at("PositionX"), length(x))
+                        .field(PositionY::at("PositionY"), length(y))
+                        .field(Length::at("Length"), length(1)),
                 )
                 .unwrap();
         }

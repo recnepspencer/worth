@@ -66,13 +66,18 @@ impl<'runtime> HistoryAuthority<'runtime> {
         };
         let mut replacement = envelope.copy_original_for_test(execution);
         mutate(&mut replacement.body_mut_for_test().patch);
-        let payload = replacement.authoritative_payload_observation().unwrap();
+        let original = crate::branch::RelationalOriginalRootCommitEvidence::prepare(
+            execution,
+            std::sync::Arc::new(replacement),
+        )
+        .expect(
+            "corruption fixture prepares its actual changed envelope under the supplied request",
+        );
         self.runtime.history.with_ledger_mut(|ledger| {
             ledger.commit_envelopes.insert(
                 commit_id,
                 std::sync::Arc::new(crate::history::RelationalCommitEnvelopeResidency::resident(
-                    std::sync::Arc::new(replacement),
-                    payload,
+                    original,
                 )),
             )
         });
@@ -102,13 +107,18 @@ impl<'runtime> HistoryAuthority<'runtime> {
                 crate::indexes::data::DerivedIndexArtifacts::new(generations);
         }
         mutate(replacement.body_mut_for_test());
-        let payload = replacement.authoritative_payload_observation().unwrap();
+        let original = crate::branch::RelationalOriginalRootCommitEvidence::prepare(
+            execution,
+            std::sync::Arc::new(replacement),
+        )
+        .expect(
+            "corruption fixture prepares its actual changed envelope under the supplied request",
+        );
         self.runtime.history.with_ledger_mut(|ledger| {
             ledger.commit_envelopes.insert(
                 commit_id,
                 std::sync::Arc::new(crate::history::RelationalCommitEnvelopeResidency::resident(
-                    std::sync::Arc::new(replacement),
-                    payload,
+                    original,
                 )),
             )
         });

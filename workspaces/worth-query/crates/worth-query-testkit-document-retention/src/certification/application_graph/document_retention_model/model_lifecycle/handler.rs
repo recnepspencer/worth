@@ -40,8 +40,10 @@ fn observe(
     input: &ModelLifecycleInput,
     reader: &mut DecisionReader<'_, '_, '_, DocumentRetentionSchema, ModelLifecycleBinding>,
 ) -> Result<Option<Targets>, HandlerExecutionDenial> {
-    let current = reader
-        .resolve_optional_entity(DocumentIdentityField::reference(), input.identity.clone())?;
+    let current = reader.resolve_optional_entity(
+        DocumentIdentityField::at("DocumentIdentityField"),
+        input.identity.clone(),
+    )?;
     if input.restore == current.is_some() || input.context == input.identity {
         return Ok(None);
     }
@@ -51,9 +53,12 @@ fn observe(
             .require_decision_entity(current, Document::reference())
             .map_err(HandlerExecutionDenial::new)?;
     }
-    let context =
-        reader.resolve_entity(DocumentIdentityField::reference(), input.context.clone())?;
-    let owner = reader.resolve_entity(PrincipalIdentityField::reference(), 1_u64)?;
+    let context = reader.resolve_entity(
+        DocumentIdentityField::at("DocumentIdentityField"),
+        input.context.clone(),
+    )?;
+    let owner =
+        reader.resolve_entity(PrincipalIdentityField::at("PrincipalIdentityField"), 1_u64)?;
     reader
         .reader()
         .require_decision_entity(&context, Document::reference())
@@ -113,12 +118,16 @@ fn apply(
         writer
             .initialize_field(
                 &created,
-                DocumentIdentityField::reference(),
+                DocumentIdentityField::at("DocumentIdentityField"),
                 input.identity.clone(),
             )
             .map_err(HandlerExecutionDenial::new)?;
         writer
-            .initialize_field(&created, DocumentRetentionField::reference(), 7_u64)
+            .initialize_field(
+                &created,
+                DocumentRetentionField::at("DocumentRetentionField"),
+                7_u64,
+            )
             .map_err(HandlerExecutionDenial::new)?;
         writer
             .link(

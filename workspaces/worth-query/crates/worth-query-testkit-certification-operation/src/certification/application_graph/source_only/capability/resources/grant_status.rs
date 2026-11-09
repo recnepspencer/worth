@@ -22,8 +22,7 @@ worth_query_structured_value_binding!(pub SetStatusInputBinding for SetStatus { 
 worth_query_structured_value_binding!(pub StatusChangedBinding for StatusChanged { identity: "resource-grant.status-result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "resource-grant.status-denial.v1" });
 worth_query_operation!(pub SetGrantStatus for CapabilitySchema, input SetStatusInputBinding);
-worth_query_operation_reads!(SetGrantStatus => [GrantIdentity, GrantStatus]);
-worth_query_operation_writes!(SetGrantStatus => [GrantStatus]);
+
 pub fn identity(input: &SetStatus) -> String {
     input.identity.clone()
 }
@@ -37,8 +36,8 @@ worth_query_mutation_binding!(
     outputs NoApplicationMutationOutputs,
     principal DocumentPrincipalBinding, mapping ExternalMapping, principal_entity Principal,
         principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Grant, GrantFacts, GrantIdentity, String, ReadOnly, NoApplicationUnit,
-    field GrantIdentity::reference(), value identity,
+    scope GrantIdentity,
+    field GrantIdentity::at("GrantIdentity"), value identity,
 );
 pub struct Handler;
 impl OperationHandler<CapabilitySchema, Binding> for Handler {
@@ -48,9 +47,11 @@ impl OperationHandler<CapabilitySchema, Binding> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, CapabilitySchema, Binding>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<CapabilitySchema, Grant>, Denial> {
         let mut observe = || -> Result<_, HandlerExecutionDenial> {
-            let grant =
-                reader.resolve_entity(GrantIdentity::reference(), input.identity.clone())?;
-            if reader.field(&grant, GrantStatus::reference())? == Some(u64::from(input.active)) {
+            let grant = reader
+                .resolve_entity(GrantIdentity::at("GrantIdentity"), input.identity.clone())?;
+            if reader.field(&grant, GrantStatus::at("GrantStatus"))?
+                == Some(u64::from(input.active))
+            {
                 return Ok(None);
             }
             reader.mutation_target(&grant).map(Some)
@@ -72,7 +73,11 @@ impl OperationHandler<CapabilitySchema, Binding> for Handler {
                 .projected_entity(&target)
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .write_field(&grant, GrantStatus::reference(), u64::from(input.active))
+                .write_field(
+                    &grant,
+                    GrantStatus::at("GrantStatus"),
+                    u64::from(input.active),
+                )
                 .map_err(HandlerExecutionDenial::new)
         };
         match apply() {
@@ -88,8 +93,8 @@ pub fn declare(
     schema
         .operation(op.definition().no_external_effect().no_aftermath().finish())
         .operation_projection_work_budget(op, 16)
-        .operation_read_field(op, GrantIdentity::reference())
-        .operation_read_field(op, GrantStatus::reference())
-        .operation_write(op, GrantStatus::reference())
+        .operation_read_field(op, GrantIdentity::at("GrantIdentity"))
+        .operation_read_field(op, GrantStatus::at("GrantStatus"))
+        .operation_write(op, GrantStatus::at("GrantStatus"))
         .application_mutation_binding::<Binding>()
 }

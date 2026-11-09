@@ -53,6 +53,35 @@ impl WorthQueryApplicationIdempotencyBinding {
             .split(':')
             .any(|slot| slot.starts_with("correction=")))
     }
+    /// Read descriptive operation meaning only from the current durable grammar.
+    /// A first-encoding installation seal cannot qualify installed meaning.
+    pub(in crate::domain_computation::primary_graph) fn recorded_operation_definition(
+        recorded: &str,
+    ) -> Result<Option<worth_foundational::facade::CanonicalDigestId>, &'static str> {
+        validate(recorded)?;
+        let Some(slots) = recorded.strip_prefix(DURABLE_ENCODING) else {
+            return Ok(None);
+        };
+        let value = slots
+            .split(':')
+            .find_map(|slot| slot.strip_prefix("operation="))
+            .ok_or(MALFORMED)?;
+        if value == "-" {
+            return Ok(None);
+        }
+        let mut bytes = [0; 32];
+        for (target, pair) in bytes.iter_mut().zip(value.as_bytes().as_chunks::<2>().0) {
+            let digit = |byte| match byte {
+                b'0'..=b'9' => Ok(byte - b'0'),
+                b'a'..=b'f' => Ok(byte - b'a' + 10),
+                _ => Err(MALFORMED),
+            };
+            *target = digit(pair[0])? * 16 + digit(pair[1])?;
+        }
+        Ok(Some(worth_foundational::facade::CanonicalDigestId::new(
+            bytes,
+        )))
+    }
     /// The intent this binding records under its key.
     pub(in crate::domain_computation::primary_graph) fn intent_text(self) -> String {
         format!("{DURABLE_ENCODING}{}", self.intent_slots())

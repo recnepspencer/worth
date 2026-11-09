@@ -7,14 +7,15 @@ pub fn propagation() -> ApplicationCapabilityPropagationComposition {
         ),
         ApplicationCapabilityDisclosureRule::permit([ApplicationCapabilityScopeGuard::requiring(
             [ApplicationCapabilityAcceptedValues::one_of(
-                CapabilityDisclosureField::reference(),
+                CapabilityDisclosureField::at("CapabilityDisclosureField"),
                 [
                     ApplicationEncodedScalarValue::<CapabilityDisclosureBinding>::try_new(
                         CapabilityDisclosure::AccountActivity,
                     )
                     .expect("fixture capability disclosure must encode"),
                 ],
-            )],
+            )
+            .unwrap()],
         )]),
     )
 }

@@ -12,6 +12,7 @@ use super::{
 };
 
 pub(crate) fn bind_query_obligations(
+    budget: worth_foundational::facade::CanonicalDigestWorkBudget,
     binding: &ApplicationSchemaBindingIdentity,
     name: &str,
     identity: &WorthQueryInstalledApplicationQueryIdentity,
@@ -49,6 +50,7 @@ pub(crate) fn bind_query_obligations(
         );
     }
     WorthQueryInstalledGraphObligationSet::for_query(
+        budget,
         binding,
         name.to_owned(),
         identity.clone(),

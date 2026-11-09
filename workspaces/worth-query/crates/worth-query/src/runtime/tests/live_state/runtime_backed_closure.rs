@@ -22,6 +22,7 @@ struct RemaskingSubscriptionActivation {
 impl WorthQueryRuntimeSubscriptionActivationAdapter for RemaskingSubscriptionActivation {
     fn support_evidence_identity(&self) -> WorthQueryEvidenceIdentity {
         runtime_subscription_support_evidence_identity("test-subscription-activation")
+            .expect("fixture digest must fit")
     }
 
     fn remask_projection(
@@ -37,8 +38,12 @@ impl WorthQueryRuntimeSubscriptionActivationAdapter for RemaskingSubscriptionAct
         view_name: &str,
         activation: &crate::subscription::SubscriptionActivationInput,
     ) -> Result<SubscriptionActivationBoundaryReceipt, WorthQueryWorkspaceError> {
-        let receipt = self.build_subscription_activation_receipt(view_name, activation);
-        Ok(self.build_subscription_activation_boundary_receipt(view_name, activation, receipt))
+        let receipt = self
+            .build_subscription_activation_receipt(view_name, activation)
+            .expect("fixture digest must fit");
+        Ok(self
+            .build_subscription_activation_boundary_receipt(view_name, activation, receipt)
+            .expect("fixture digest must fit"))
     }
 }
 
@@ -137,7 +142,8 @@ fn runtime_backed_reference_workload_exercises_temporal_async_preview_causal_and
             &WorthQueryRuntimeAsyncResultProjection::completion_state(
                 BridgeAsyncCompletionState::Admitted(BridgeAsyncCompletionClass::Fulfilled),
                 "async:phase26-current",
-            ),
+            )
+            .expect("fixture digest must fit"),
             &basis_digest,
             &generation_digest,
         )
@@ -209,6 +215,7 @@ fn runtime_backed_reference_workload_exercises_temporal_async_preview_causal_and
                 ),
                 "strategy.intent.reconcile",
             )
+            .expect("fixture digest must fit")
             .with_write_adjacent_trigger(
                 WorthQueryEffectWriteAdjacentTriggerClass::AsyncCompletion,
                 follow_on_origin_identity.clone(),
@@ -219,7 +226,8 @@ fn runtime_backed_reference_workload_exercises_temporal_async_preview_causal_and
         .write(
             request_execution,
             test_update_string_aspect_command(
-                crate::memory_workspace::admit_authored_entity_label("task-1"),
+                crate::memory_workspace::admit_authored_entity_label("task-1")
+                    .expect("fixture digest must fit"),
                 "title.value",
                 "title from phase26 async completion",
             ),
@@ -324,12 +332,18 @@ fn runtime_backed_closure_matrix_preserves_equivalent_and_distinct_public_meanin
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = stateful_bridge_task_runtime(request_execution);
-    let runtime_contract = runtime.public_downstream_delivery_contract();
+    let runtime_contract = runtime
+        .public_downstream_delivery_contract()
+        .expect("fixture digest must fit");
     let workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("phase26.runtime-backed-closure")
         .expect("workspace should open");
-    let workspace_contract = workspace.public_downstream_delivery_contract();
-    let support_matrix = workspace.public_support_matrix();
+    let workspace_contract = workspace
+        .public_downstream_delivery_contract()
+        .expect("fixture digest must fit");
+    let support_matrix = workspace
+        .public_support_matrix()
+        .expect("fixture digest must fit");
     let support_row = support_matrix
         .row("downstream-delivery-contract")
         .expect("downstream delivery contract row should stay explicit");

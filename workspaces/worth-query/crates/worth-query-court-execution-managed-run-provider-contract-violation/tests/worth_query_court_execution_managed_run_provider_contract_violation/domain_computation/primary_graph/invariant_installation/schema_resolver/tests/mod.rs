@@ -1,4 +1,5 @@
 //! Missing scheduling or source-read grants refuse genuine factory installation.
+use worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantError;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_query_declaration::facade::application_schema::*;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_invariant::WorthQueryEmptyInvariantRefusal;
@@ -12,22 +13,38 @@ use worth_query_execution::facade::domain_computation::WorthQueryExecutionRuntim
 use worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphInstallationDenial;
 use worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphInstallationDenialKind;
 use worth_query_installation::facade::*;
-use worth_relational::facade::runtime::CustomInvariantExecutionError as WorthQueryApplicationInvariantExecutionError;
-use worth_relational::facade::runtime::CustomInvariantPreparationError as WorthQueryApplicationInvariantPreparationError;
-pub struct BindingSchema<const PROFILE: u8>;
-pub struct Node;
-impl<const P: u8> ApplicationEntityMarkerIdentity<BindingSchema<P>> for Node {
-    const IDENTIFIER: &'static str = "Node";
+struct BindingSchema<const PROFILE: u8>;
+struct Node;
+use worth_query_declaration::facade::application_schema::fragment;
+impl fragment::Entity for Node {
+    const NAME: &'static str = "Node";
+    type Aspects = ();
+    type Relations = (A, B);
 }
-pub struct Coupling;
-pub struct Set;
-pub struct Rule;
+struct A;
+struct B;
+impl fragment::Relation for A {
+    const NAME: &'static str = "A";
+    type To = Node;
+}
+impl fragment::Relation for B {
+    const NAME: &'static str = "B";
+    type To = Node;
+}
+struct ResolverRecords;
+impl fragment::Fragment for ResolverRecords {
+    const NAME: &'static str = "resolver_records";
+    type Bindings = fragment::NoBindings;
+    type Members = (Node,);
+}
+struct Set;
+struct Rule;
 impl<const P: u8> ApplicationInvariantMarkerIdentity<BindingSchema<P>> for Rule {
     const IDENTIFIER: &'static str = "component-policy";
     const MAJOR: u16 = 1;
     const MINOR: u16 = 0;
 }
-pub fn set<const P: u8>() -> ApplicationComponentSetRef<BindingSchema<P>, Set, Node> {
+fn set<const P: u8>() -> ApplicationComponentSetRef<BindingSchema<P>, Set, Node> {
     ApplicationComponentSetRef::new("Set", ApplicationEntityRef::from_schema_identifier("Node"))
 }
 impl<const P: u8> ApplicationSchema for BindingSchema<P> {
@@ -37,17 +54,8 @@ impl<const P: u8> ApplicationSchema for BindingSchema<P> {
     const MINOR: u32 = 0;
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
-        let node = ApplicationEntityRef::<Self, Node>::from_schema_identifier("Node");
-        let relation = |name| {
-            ApplicationRelationRef::<Self, Coupling, Node, Node>::from_schema_identifiers(
-                name,
-                "Node",
-                "Node",
-                ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
-            )
-        };
-        let a = relation("A");
-        let b = relation("B");
+        let a = fragment::relation(ResolverRecords, Node, A);
+        let b = fragment::relation(ResolverRecords, Node, B);
         let mut reads = vec![
             ApplicationInvariantScopeTarget::Entity("Node".into()),
             ApplicationInvariantScopeTarget::Relation("A".into()),
@@ -64,10 +72,7 @@ impl<const P: u8> ApplicationSchema for BindingSchema<P> {
                 .retain(|target| target != &ApplicationInvariantScopeTarget::Relation("B".into())),
             _ => unreachable!(),
         }
-        ApplicationSchemaDeclarationBuilder::for_schema()
-            .entity(node)
-            .relation(a, node, node)
-            .relation(b, node, node)
+        ApplicationSchemaDeclarationBuilder::from_fragment(ResolverRecords)?
             .components(
                 ApplicationComponentSetDefinition::new(set())
                     .coupled_by(a)
@@ -96,17 +101,15 @@ impl<const P: u8> WorthQueryApplicationInvariantRule<BindingSchema<P>> for Rule 
     fn prepare_scope(
         &self,
         _: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, BindingSchema<P>>,
-    ) -> Result<(), WorthQueryApplicationInvariantPreparationError> {
+    ) -> Result<(), WorthQueryApplicationInvariantError> {
         Ok(())
     }
     fn evaluate(
         &self,
         _: &WorthQueryApplicationInvariantContext<'_, '_, BindingSchema<P>>,
         _: &(),
-    ) -> Result<
-        WorthQueryApplicationInvariantVerdict<()>,
-        WorthQueryApplicationInvariantExecutionError,
-    > {
+    ) -> Result<WorthQueryApplicationInvariantVerdict<()>, WorthQueryApplicationInvariantError>
+    {
         Ok(WorthQueryApplicationInvariantVerdict::Pass)
     }
 }

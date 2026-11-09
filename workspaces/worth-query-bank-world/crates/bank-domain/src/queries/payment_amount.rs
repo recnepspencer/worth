@@ -4,9 +4,9 @@
 use worth_foundational::expression_api::{ExpressionDenial, ExpressionType, ExpressionValue};
 use worth_query_decl::facade::application_program::ApplicationExpressionOperandValue;
 use worth_query_decl::facade::application_query::{
-    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
-    ApplicationQueryLaneEligibility, ApplicationQueryResultShapeBuilder,
+    ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
+    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
+    ApplicationQueryResultShapeBuilder,
 };
 use worth_query_decl::facade::worth_query_application_query;
 use worth_query_host::facade::primary_graph::{
@@ -62,16 +62,14 @@ worth_query_decl::facade::worth_query_query_binding!(
     result PaymentAmountQueryResultBinding,
     principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
         principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
-    scope PaymentIntent, crate::schema::PaymentIdentity, crate::schema::PaymentIdentityField,
-        PaymentId, worth_query_decl::facade::application_schema::ReadOnly,
-        worth_query_decl::facade::application_schema::NoApplicationUnit,
-    field crate::schema::PaymentIdentityField::reference(),
+    scope crate::schema::PaymentIdentityField,
+    field crate::schema::PaymentIdentityField::at("PaymentIdentityField"),
     value PaymentAmountRequest::payment,
     limits results 1
 
 );
 
-pub fn payment_amount_definition() -> ApplicationQueryDefinition<
+pub fn payment_amount_definition() -> ApplicationQueryDefinitionBuilder<
     BankSchema,
     PaymentAmountQuery,
     PaymentAmountQueryParameters,
@@ -97,8 +95,6 @@ pub fn payment_amount_definition() -> ApplicationQueryDefinition<
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .requires_ability(ViewPayment::reference())
-        .build()
-        .expect("bank payment amount query is statically canonical")
 }
 
 impl WorthQueryApplicationProjection<BankSchema, PaymentAmountQuery> for Money<USD> {

@@ -27,10 +27,8 @@ fn owned_boundary_and_independent_references_survive_cold_preserve_but_block_ret
     canonical_relations.sort_unstable();
     assert_eq!(
         warm_birth
-            .envelope
-            .required_output_origin
+            .origin
             .as_ref()
-            .unwrap()
             .relations
             .iter()
             .map(|entry| entry.id)
@@ -82,7 +80,7 @@ fn owned_boundary_and_independent_references_survive_cold_preserve_but_block_ret
         .unwrap();
     let (owner, installed) = receipt.issue_application_publication_owner();
     let previous = readmit(execution, &cold, &installed, &world.outputs, false);
-    let original = previous.envelope.required_output_origin.as_ref().unwrap();
+    let original = previous.origin.as_ref();
     assert_eq!(original.outputs.len(), 3);
     assert_eq!(
         original
@@ -170,7 +168,7 @@ fn owned_boundary_and_independent_references_survive_cold_preserve_but_block_ret
     canonical_relations.sort_unstable();
     assert_ne!(committed.commit.commit_id, born_at);
     let preserved = committed.required_output_publication(&installed).unwrap();
-    let origin = preserved.envelope.required_output_origin.as_ref().unwrap();
+    let origin = preserved.origin.as_ref();
     assert_eq!(origin.birth, born_at);
     assert_eq!(origin.outputs, original_ids(&world.outputs));
     assert_eq!(
@@ -230,10 +228,8 @@ fn owned_boundary_and_independent_references_survive_cold_preserve_but_block_ret
     let current = readmit(execution, &reopened, &installed, &world.outputs, true);
     assert_eq!(
         current
-            .envelope
-            .required_output_origin
+            .origin
             .as_ref()
-            .unwrap()
             .relations
             .iter()
             .map(|entry| entry.id)

@@ -3,7 +3,7 @@ use super::*;
 use crate::application_query::requirements::derive_graph_read_access_requirements_for_contract_admitted;
 use crate::graph_read_access::*;
 use worth_query_declaration::facade::application_query::*;
-worth_query_relation!(pub AccountNext in PlanningTestSchema, Account => Account; integrity = same_context_unbounded_retain_dangling);
+
 worth_query_application_query!(pub(super) ClosureQuery for PlanningTestSchema, identity "planning-complete-closure", parameters ActivityParametersBinding, result ActivityResultBinding, scope Account => "Account", name "planning_complete_closure");
 worth_query_application_query!(pub(super) ReverseClosureQuery for PlanningTestSchema, identity "planning-reverse-complete-closure", parameters ActivityParametersBinding, result ActivityResultBinding, scope Account => "Account", name "planning_reverse_complete_closure");
 pub(super) fn definition<Q: ApplicationQueryMarkerIdentity<PlanningTestSchema> + 'static>(
@@ -15,7 +15,13 @@ pub(super) fn definition<Q: ApplicationQueryMarkerIdentity<PlanningTestSchema> +
         Account,
     >,
     reverse: bool,
-) -> ApplicationQueryDefinition<PlanningTestSchema, Q, ActivityParameters, ActivityResult, Account>
+) -> ApplicationQueryDefinitionBuilder<
+    PlanningTestSchema,
+    Q,
+    ActivityParameters,
+    ActivityResult,
+    Account,
+>
 where
     Q::ResultBinding:
         worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding<
@@ -39,16 +45,22 @@ pub(super) fn definition_on_path<Q: ApplicationQueryMarkerIdentity<PlanningTestS
         Account,
     >,
     path: ApplicationQueryRootPath<PlanningTestSchema, Account, Account>,
-) -> ApplicationQueryDefinition<PlanningTestSchema, Q, ActivityParameters, ActivityResult, Account>
+) -> ApplicationQueryDefinitionBuilder<
+    PlanningTestSchema,
+    Q,
+    ActivityParameters,
+    ActivityResult,
+    Account,
+>
 where
     Q::ResultBinding:
         worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding<
             Value = ActivityResult,
         >,
 {
-    let field = ApplicationQueryResultFieldRef::<Q, AccountIdSlot, _, _, _, _, _, _, _, _>::new(
+    let field = ApplicationQueryResultFieldRef::<Q, AccountIdSlot, _, _>::new(
         "account_id",
-        AccountId::reference(),
+        AccountId::at("AccountId"),
     );
     let shape = ApplicationQueryResultShapeBuilder::<
         PlanningTestSchema,
@@ -69,8 +81,6 @@ where
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
         .root_path(path)
-        .build()
-        .unwrap()
 }
 #[test]
 fn complete_closure_installed_requirements_are_unbounded_and_currently_supported() {
@@ -187,7 +197,13 @@ pub(super) fn derived_definition<Q: ApplicationQueryMarkerIdentity<PlanningTestS
         Account,
     >,
     reverse: bool,
-) -> ApplicationQueryDefinition<PlanningTestSchema, Q, ActivityParameters, ActivityResult, Account>
+) -> ApplicationQueryDefinitionBuilder<
+    PlanningTestSchema,
+    Q,
+    ActivityParameters,
+    ActivityResult,
+    Account,
+>
 where
     Q::ResultBinding:
         worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding<
@@ -308,3 +324,5 @@ fn check_derived<Q: ApplicationQueryMarkerIdentity<PlanningTestSchema> + 'static
         &WorthQueryGraphIndexLifecycleOwner::LowerRuntime
     );
 }
+
+pub use super::storage_model::AccountNext;

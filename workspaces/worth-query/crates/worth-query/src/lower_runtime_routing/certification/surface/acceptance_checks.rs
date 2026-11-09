@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::collections::BTreeMap;
 
 use crate::identity::hash_parts;
@@ -15,16 +16,18 @@ use super::acceptance_policy::{
 use super::evidence::WorthQueryLowerRuntimeRepresentativeEvidenceSource;
 use super::evidence::WorthQueryLowerRuntimeRepresentativeSurface;
 
-pub(super) fn control_digest(surface: &WorthQueryLowerRuntimeRepresentativeSurface) -> String {
-    hash_parts(&[
+pub(super) fn control_digest(
+    surface: &WorthQueryLowerRuntimeRepresentativeSurface,
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(hash_parts(&[
         classification_exactness_digest(),
         deletable_seam_deletion_digest(),
         surviving_specialist_justification_digest(),
-        admitted_crossing_cardinality_digest(surface),
+        admitted_crossing_cardinality_digest(surface)?,
         support_behavior_agreement_digest(surface),
         required_concrete_seam_coverage_digest(surface),
         synthetic_tail_exactness_digest(surface),
-    ])
+    ]))
 }
 
 pub(super) fn hostile_digest(surface: &WorthQueryLowerRuntimeRepresentativeSurface) -> String {

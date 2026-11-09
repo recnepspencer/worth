@@ -1,5 +1,5 @@
 error[E0277]: the trait bound `ManagedSignalBranchReference: serde::Deserialize<'de>` is not satisfied
- --> tests/worth_court_signal_branch_retention_contract/sources/worth_signal/ui/branch_reference/managed_reference_cannot_deserialize.rs:5:9
+ --> tests/ui/branch_reference/managed_reference_cannot_deserialize.rs:5:9
   |
 5 |         serde_json::from_str("{}").expect("transport data cannot mint owner authority");
   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `serde_core::de::Deserialize<'_>` is not implemented for `ManagedSignalBranchReference`
@@ -8,8 +8,8 @@ error[E0277]: the trait bound `ManagedSignalBranchReference: serde::Deserialize<
   = note: for types from other crates check whether the crate offers a `serde` feature flag
   = help: the following other types implement trait `serde_core::de::Deserialize<'de>`:
             &'a Path
+            &'a RawValue
             &'a [u8]
-            &'a serde_json::value::RawValue
             &'a str
             ()
             (T,)

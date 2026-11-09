@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::any::TypeId;
 use std::collections::{BTreeMap, HashMap};
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -75,13 +76,13 @@ impl WorthQueryInstalledDomainExecutionIndex {
         artifacts: &[WorthQueryInstalledDomainArtifact],
         runtime_authority: crate::runtime::WorthQueryRuntimeAuthorityIdentity,
         portable_index: &WorthQueryInstalledPackageIndex,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let graph_read_operations = graph_read_operation_index(artifacts, portable_index);
         let domain_operations = domain_operation_index(artifacts, portable_index);
         let operation_graph_participations = operation_graph_participation_index(artifacts);
         let operation_required_domains = operation_required_domain_index(artifacts);
         let domain_operation_identity_parts = domain_operation_identity_parts(&domain_operations);
-        let semantics_by_marker = installed_domain_semantics_index(artifacts);
+        let semantics_by_marker = installed_domain_semantics_index(artifacts)?;
         let declaration_families = declaration_family_index(artifacts);
         let contribution_policies = contribution_policy_index(artifacts);
         let invariant_slots = invariant_slot_index(artifacts);
@@ -93,7 +94,7 @@ impl WorthQueryInstalledDomainExecutionIndex {
             &declaration_families,
             &contribution_policies,
             &invariant_slots,
-        );
+        )?;
         let shape = execution_index_shape(WorthQueryExecutionIndexShapeInputs {
             graph_read_operations: &graph_read_operations,
             domain_operations: &domain_operations,
@@ -103,7 +104,7 @@ impl WorthQueryInstalledDomainExecutionIndex {
             contribution_policies: &contribution_policies,
             invariant_slots: &invariant_slots,
         });
-        Self {
+        Ok(Self {
             runtime_authority,
             graph_read_operations,
             domain_operations,
@@ -113,7 +114,7 @@ impl WorthQueryInstalledDomainExecutionIndex {
             identity,
             shape,
             indexed_operation_lookups: AtomicUsize::new(0),
-        }
+        })
     }
 
     pub(crate) fn domain_semantics(
@@ -224,14 +225,14 @@ fn graph_read_operation_index(
 
 fn installed_domain_semantics_index(
     artifacts: &[WorthQueryInstalledDomainArtifact],
-) -> HashMap<TypeId, Arc<WorthQueryInstalledDomainSemantics>> {
+) -> Result<HashMap<TypeId, Arc<WorthQueryInstalledDomainSemantics>>, IdentityDerivationDenial> {
     artifacts
         .iter()
         .map(|artifact| {
-            (
+            Ok((
                 artifact.marker_type,
-                Arc::new(WorthQueryInstalledDomainSemantics::from_artifact(artifact)),
-            )
+                Arc::new(WorthQueryInstalledDomainSemantics::from_artifact(artifact)?),
+            ))
         })
         .collect()
 }

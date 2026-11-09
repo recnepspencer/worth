@@ -98,6 +98,7 @@ where
                     worth_relational::facade::mvcc::RelationalPublicationDenial::CutoverDeadlineElapsed => NoEffectCause::CurrentReadDependency(crate::publication::CurrentProductReadDependencyDenial::CutoverDeadlineElapsed),
                     worth_relational::facade::mvcc::RelationalPublicationDenial::CanonicalArtifactEncoding(_)
                     | worth_relational::facade::mvcc::RelationalPublicationDenial::RetainedEntitySelectionDurabilityUnsupported
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::OwnedGraphSelectionDurabilityUnsupported { .. }
                     | worth_relational::facade::mvcc::RelationalPublicationDenial::RecoveredCodecTransitionRequired
                     | worth_relational::facade::mvcc::RelationalPublicationDenial::HomeProgramContractsRequired
                     | worth_relational::facade::mvcc::RelationalPublicationDenial::HomeProgramIndexDefinitionsRequired

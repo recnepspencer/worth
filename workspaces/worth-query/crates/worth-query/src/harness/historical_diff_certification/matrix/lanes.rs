@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::facade::foundation::{
     admit_historical_evaluation_path, materialization_metadata_from_resolved,
     resolve_historical_materialization_path, HistoricalCapabilityDescriptor,
@@ -54,23 +55,23 @@ pub(super) fn branch_lane() -> HistoricalDiffLane {
     HistoricalDiffLane::from_basis_result_bundle(&bundle)
 }
 
-pub(super) fn historical_lane() -> HistoricalDiffLane {
+pub(super) fn historical_lane() -> Result<HistoricalDiffLane, IdentityDerivationDenial> {
     let preflight = execution_preflights::direct_runtime_preflight();
     let request = HistoricalEvaluationRequest::retained_snapshot_for_test(
         "history:snapshot-1",
         1,
         1,
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )?;
     let capability = HistoricalCapabilityDescriptor::retained_snapshot_for_test(
         "history:snapshot-1",
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )?;
     let admission =
         admit_historical_evaluation_path(request, capability).expect("history should admit");
     let resolved = resolve_historical_materialization_path(
         admission.clone(),
-        HistoricalMaterializationDescriptor::retained_snapshot_for_test("history:snapshot-1"),
+        HistoricalMaterializationDescriptor::retained_snapshot_for_test("history:snapshot-1")?,
     )
     .expect("history should resolve");
     let metadata = materialization_metadata_from_resolved(resolved);
@@ -91,26 +92,26 @@ pub(super) fn historical_lane() -> HistoricalDiffLane {
     let bundle = build_query_basis_result_bundle(&context, result)
         .expect("basis result bundle should shape");
 
-    HistoricalDiffLane::from_basis_result_bundle(&bundle)
+    Ok(HistoricalDiffLane::from_basis_result_bundle(&bundle))
 }
 
-pub(super) fn store_historical_lane() -> HistoricalDiffLane {
+pub(super) fn store_historical_lane() -> Result<HistoricalDiffLane, IdentityDerivationDenial> {
     let preflight = execution_preflights::store_detail_preflight();
     let request = HistoricalEvaluationRequest::retained_snapshot_for_test(
         "history:snapshot-1",
         1,
         1,
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )?;
     let capability = HistoricalCapabilityDescriptor::retained_snapshot_for_test(
         "history:snapshot-1",
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )?;
     let admission =
         admit_historical_evaluation_path(request, capability).expect("history should admit");
     let resolved = resolve_historical_materialization_path(
         admission.clone(),
-        HistoricalMaterializationDescriptor::retained_snapshot_for_test("history:snapshot-1"),
+        HistoricalMaterializationDescriptor::retained_snapshot_for_test("history:snapshot-1")?,
     )
     .expect("history should resolve");
     let metadata = materialization_metadata_from_resolved(resolved);
@@ -131,7 +132,7 @@ pub(super) fn store_historical_lane() -> HistoricalDiffLane {
     let bundle = build_query_basis_result_bundle(&context, result)
         .expect("basis result bundle should shape");
 
-    HistoricalDiffLane::from_basis_result_bundle(&bundle)
+    Ok(HistoricalDiffLane::from_basis_result_bundle(&bundle))
 }
 
 pub(super) fn preview_lane() -> HistoricalDiffLane {
@@ -209,7 +210,8 @@ pub(super) fn branch_diff_lane() -> HistoricalDiffLane {
     )
 }
 
-pub(super) fn current_historical_diff_lane() -> HistoricalDiffLane {
+pub(super) fn current_historical_diff_lane() -> Result<HistoricalDiffLane, IdentityDerivationDenial>
+{
     let current_preflight = execution_preflights::direct_runtime_preflight();
     let historical_preflight = execution_preflights::direct_runtime_preflight();
     let current = admit_and_scope_legacy_query_basis_context_for_test(
@@ -225,16 +227,16 @@ pub(super) fn current_historical_diff_lane() -> HistoricalDiffLane {
         1,
         1,
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )?;
     let capability = HistoricalCapabilityDescriptor::retained_snapshot_for_test(
         "history:snapshot-1",
         HistoricalPathReuseDescriptor::retained_reuse(),
-    );
+    )?;
     let admission =
         admit_historical_evaluation_path(request, capability).expect("history should admit");
     let resolved = resolve_historical_materialization_path(
         admission.clone(),
-        HistoricalMaterializationDescriptor::retained_snapshot_for_test("history:snapshot-1"),
+        HistoricalMaterializationDescriptor::retained_snapshot_for_test("history:snapshot-1")?,
     )
     .expect("history should resolve");
     let metadata = materialization_metadata_from_resolved(resolved);
@@ -261,11 +263,11 @@ pub(super) fn current_historical_diff_lane() -> HistoricalDiffLane {
         build_query_diff_result_bundle(&diff, change_set, &current_result, &historical_result)
             .expect("current-to-historical diff result bundle should shape");
 
-    HistoricalDiffLane::from_diff_result_bundle(
+    Ok(HistoricalDiffLane::from_diff_result_bundle(
         &bundle,
         current_result.counters().context_execution_count(),
         historical_result.counters().context_execution_count(),
         current_result.counters().executor_rediscovery_count()
             + historical_result.counters().executor_rediscovery_count(),
-    )
+    ))
 }

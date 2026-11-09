@@ -30,7 +30,8 @@ fn runtime_family_certification_preserves_matrix_scan_debt_posture() {
         QuerySubscriptionLifecycleCoverageClass::ActiveLifecycle,
     )
     .unwrap();
-    let matrix = build_query_subscription_family_coverage_matrix(vec![admitted_row, hostile_row]);
+    let matrix = build_query_subscription_family_coverage_matrix(vec![admitted_row, hostile_row])
+        .expect("fixture digest must fit");
     let handle = build_certified_family_coverage_handle(
         &matrix,
         artifacts.declaration.family(),

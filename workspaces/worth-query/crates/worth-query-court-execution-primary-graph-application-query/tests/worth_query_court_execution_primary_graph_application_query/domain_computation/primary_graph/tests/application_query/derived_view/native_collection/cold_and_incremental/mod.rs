@@ -29,7 +29,7 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
             let open = selected
                 .resolve_entity(
                     &host_custody.phase_for_application_for_test(&world.application),
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_string(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -38,7 +38,7 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
             let unrelated = selected
                 .resolve_entity(
                     &host_custody.phase_for_application_for_test(&world.application),
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "unrelated".to_string(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -207,7 +207,7 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
             ));
 
             let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
-            let field = AccountLabel::reference();
+            let field = AccountLabel::at("AccountLabel");
             let locator = (*graph
                 .layout_for_test())
                 .field_locator_for_test(field.entity(), field.aspect(), field.field())
@@ -295,7 +295,7 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
             let open = fresh
                 .resolve_entity(
                     &host_custody.phase_for_application_for_test(&world.application),
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_string(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -321,7 +321,7 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
                 let body_scope = fresh
                     .resolve_entity(
                         &host_custody.phase_for_application_for_test(&world.application),
-                        AccountStatus::reference(),
+                        AccountStatus::at("AccountStatus"),
                         row.status().to_string(),
                         &request,
                         WorthQueryPrincipalResolutionMode::Ordinary,

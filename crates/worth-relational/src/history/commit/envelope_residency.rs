@@ -5,6 +5,7 @@ mod selected_checkpoint;
 pub(crate) use selected_checkpoint::RetiredCanonicalPlacement;
 mod demand;
 mod interim_original;
+mod recovered_position;
 mod source_readmission;
 mod source_retirement;
 use super::RelationalCommitIndexEntry;
@@ -27,7 +28,7 @@ pub(crate) struct RelationalCommitEnvelopeResidency {
 #[derive(Debug)]
 enum EnvelopeBacking {
     Memory {
-        envelope: Arc<CanonicalCommitEnvelope>,
+        canonical: Arc<crate::branch::RelationalOriginalRootCommitEvidence>,
         original: Option<worth_execution::ExecutionImmutableBytes>,
     },
     SelectedCheckpoint {
@@ -53,7 +54,7 @@ struct EnvelopeState {
 impl EnvelopeState {
     fn resident_envelope(&self) -> Option<Arc<CanonicalCommitEnvelope>> {
         match &self.backing {
-            EnvelopeBacking::Memory { envelope, .. } => Some(envelope.clone()),
+            EnvelopeBacking::Memory { canonical, .. } => Some(Arc::clone(canonical.envelope())),
             EnvelopeBacking::Journal {
                 unsettled: Some(envelope),
                 ..
@@ -68,16 +69,18 @@ impl EnvelopeState {
 }
 impl RelationalCommitEnvelopeResidency {
     pub(crate) fn resident(
-        envelope: Arc<CanonicalCommitEnvelope>,
-        canonical_payload: (u64, [u8; 32]),
+        canonical: Arc<crate::branch::RelationalOriginalRootCommitEvidence>,
     ) -> Self {
-        let (canonical_payload_bytes, payload_digest) = canonical_payload;
+        let payload_digest = canonical.payload_digest();
+        let canonical_payload_bytes = canonical.payload().len() as u64;
+        let lineage = lineage_delta(canonical.envelope());
         Self {
             state: Mutex::new(EnvelopeState {
                 authored_writes: None,
-                lineage: Some(lineage_delta(&envelope)),
+                lineage: Some(lineage),
                 backing: EnvelopeBacking::Memory {
-                    envelope,
+                    canonical,
+                    // This is the separately admitted original artifact FRAME.
                     original: None,
                 },
                 position: None,
@@ -128,12 +131,24 @@ impl RelationalCommitEnvelopeResidency {
             .backing
         {
             EnvelopeBacking::Memory {
-                original: Some(bytes),
-                ..
-            } => bytes.len() as u64,
+                canonical,
+                original,
+            } => canonical
+                .payload_storage_bytes()
+                .saturating_add(original.as_ref().map_or(0, |bytes| bytes.len() as u64)),
             _ => 0,
         }
     }
+    pub(crate) fn original_owner(
+        &self,
+    ) -> Option<Arc<crate::branch::RelationalOriginalRootCommitEvidence>> {
+        let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
+        match &state.backing {
+            EnvelopeBacking::Memory { canonical, .. } => Some(Arc::clone(canonical)),
+            EnvelopeBacking::Journal { .. } | EnvelopeBacking::SelectedCheckpoint { .. } => None,
+        }
+    }
+
     pub(crate) fn payload_digest(&self) -> Option<[u8; 32]> {
         self.state
             .lock()

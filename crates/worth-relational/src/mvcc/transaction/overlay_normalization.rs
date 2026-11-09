@@ -155,6 +155,10 @@ impl DetachedRelationalTransactionOverlay {
                 self.normalized_client_keys = self.normalized_client_keys.replaced(normalized);
                 self.refund_replaced_inputs();
                 self.normalization_generation = generation;
+                self.effective_records = Default::default();
+                for batch in &self.batches {
+                    self.effective_records.stage(batch);
+                }
                 (entries, Ok(()))
             }
         }

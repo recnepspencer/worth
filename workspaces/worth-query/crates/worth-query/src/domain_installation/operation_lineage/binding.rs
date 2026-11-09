@@ -9,12 +9,14 @@ use crate::domain_installation::{
     WorthQueryCompletedWorkflowTrace, WorthQueryConditionalOutcomeClass,
     WorthQueryOperationLineageContract, WorthQueryWorkflowStageReceipt,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::report::{lineage_evidence, WorthQueryStageLineageDeclaration};
 use super::{WorthQueryTraceLineageCounters, WorthQueryTraceLineageReport};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryLineageBindingDenial {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     StaleInstallationGeneration,
     LineageAlreadyBound,
     LineageNotDeclared,
@@ -26,6 +28,15 @@ pub enum WorthQueryLineageBindingDenial {
     ConditionalStageDidNotEstablishFreshLineage,
     DependencyClosureUnavailable,
     ClosureEffectMismatch,
+}
+
+impl WorthQueryLineageBindingDenial {
+    pub(crate) fn identity_derivation_denial(self) -> Option<IdentityDerivationDenial> {
+        match self {
+            Self::EvidenceIdentityDerivationDenied(cause) => Some(cause),
+            _ => None,
+        }
+    }
 }
 
 type TraceLineageBindingResult<D, O, F, L> = Result<
@@ -77,7 +88,15 @@ fn bind_trace_lineage<D, O, F, L: BasisOperationLane>(
         }
     }
     let (evidence, counters) = binding.finish();
-    let identity = lineage_report_identity(trace.identity(), &evidence);
+    let identity = match lineage_report_identity(trace.identity(), &evidence) {
+        Ok(identity) => identity,
+        Err(cause) => {
+            return Err((
+                trace,
+                WorthQueryLineageBindingDenial::EvidenceIdentityDerivationDenied(cause),
+            ))
+        }
+    };
     let proof = mint_operation_phase_proof(
         identity.clone(),
         Some(trace.phase_proof().payload().identity()),
@@ -245,8 +264,8 @@ impl<'a> TraceLineageBinding<'a> {
 fn lineage_report_identity(
     trace_identity: &str,
     evidence: &[super::WorthQueryTraceLineageEvidence],
-) -> String {
-    canonical_operation_identity(
+) -> Result<String, IdentityDerivationDenial> {
+    Ok(canonical_operation_identity(
         "trace-lineage-report-v2",
         vec![
             ("lineage.trace", trace_identity.to_owned()),
@@ -271,5 +290,5 @@ fn lineage_report_identity(
                 ),
             ),
         ],
-    )
+    )?)
 }

@@ -30,13 +30,8 @@ pub(super) struct HistoryContribution;
 impl ApplicationSchemaContribution<CheckpointSchema> for HistoryContribution {
     const IDENTITY: ApplicationSchemaContributionIdentity =
         <TopologyContribution as ApplicationSchemaContribution<CheckpointSchema>>::IDENTITY;
-    fn register_members(
-        builder: ApplicationSchemaDeclarationBuilder<CheckpointSchema>,
-    ) -> ApplicationSchemaDeclarationBuilder<CheckpointSchema> {
-        <TopologyContribution as ApplicationSchemaContribution<CheckpointSchema>>::register_members(
-            builder,
-        )
-    }
+    type Members =
+        <TopologyContribution as ApplicationSchemaContribution<CheckpointSchema>>::Members;
 }
 impl WorthQueryApplicationContribution<CheckpointSchema> for HistoryContribution {
     type Configuration = HistoryConfiguration;
@@ -172,7 +167,7 @@ fn install_configured(
     const RETAINED_COMMITS: u64 = 32;
     let invalidation = support::invalidation();
     let limits = support::limits_with_room(RETAINED_COMMITS, 16, 64, invalidation);
-    let declaration = CheckpointSchema::declaration().unwrap();
+    let declaration = <CheckpointSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap();
     let program = ApplicationProgramAuthoring::<CheckpointSchema, HistoryProgram>::begin()
         .with_schema(&declaration)
         .validated_program()

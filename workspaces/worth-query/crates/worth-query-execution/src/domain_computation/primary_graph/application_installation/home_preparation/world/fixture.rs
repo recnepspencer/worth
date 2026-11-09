@@ -1,33 +1,33 @@
 //! Installed source query and configured provider for the attachment custody proof.
 use super::*;
 use worth_foundational::facade::WorthValue;
+use worth_query_declaration::facade::application_schema::fragment::{self, *};
 use worth_query_declaration::facade::{
     application_query::*, application_schema::*, authentication::*,
 };
 use worth_query_declaration::{
-    worth_query_application, worth_query_application_contribution, worth_query_application_query,
-    worth_query_aspect, worth_query_entity, worth_query_field, worth_query_portable_type,
-    worth_query_structured_value_binding,
+    worth_query_application_query, worth_query_portable_type, worth_query_structured_value_binding,
 };
+#[path = "fixture/records.rs"]
+mod records;
+use records::*;
 
-worth_query_application!(pub(super) Catalog { owner: "worth.query.home-custody", version: (1,0), contributions: [Contribution], });
-worth_query_entity!(Mapping for Catalog);
-worth_query_entity!(Principal for Catalog);
-worth_query_aspect!(MappingFacts for Catalog, Mapping; identity = AspectIdentity(0x77190001), revision = AspectContractRevision(1));
-worth_query_aspect!(Facts for Catalog, Principal; identity = AspectIdentity(0x77190002), revision = AspectContractRevision(1));
-worth_query_field!(External for Catalog, Mapping, MappingFacts: WorthQueryExternalPrincipalIdentity => WorthQueryExternalPrincipalIdentityBinding, read_only, equality);
-worth_query_field!(Status for Catalog, Mapping, MappingFacts: WorthQueryPrincipalMappingStatus => WorthQueryPrincipalMappingStatusBinding, read_write, equality);
-worth_query_field!(Value for Catalog, Principal, Facts: u64 => U64ApplicationValueBinding, read_only, equality);
-struct Target;
-impl Target {
-    fn reference() -> ApplicationRelationRef<Catalog, Self, Mapping, Principal> {
-        ApplicationRelationRef::from_schema_identifiers(
-            "Target",
-            "Mapping",
-            "Principal",
-            ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
-        )
+pub(super) struct Catalog;
+impl Fragment for Catalog {
+    const NAME: &'static str = "Catalog";
+    type Bindings = NoBindings;
+    type Members = (Contribution,);
+}
+impl ApplicationSchema for Catalog {
+    const OWNER: &'static str = "worth.query.home-custody";
+    const NAME: &'static str = <Self as Fragment>::NAME;
+    fn declaration(
+    ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        fragment::declare(Self)
     }
+}
+impl ApplicationSchemaComposition for Catalog {
+    type Contributions = (Contribution,);
 }
 struct PrincipalBinding;
 fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -42,15 +42,15 @@ fn principal_binding() -> ApplicationPrincipalBindingRef<
         "PrincipalBinding",
         ApplicationPrincipalBindingRequirements {
             mapping_identity: ApplicationPrincipalMappingIdentityRequirement::from_field(
-                External::reference(),
+                External::at("External"),
             ),
-            mapping_status: ApplicationPrincipalMappingStatusRequirement::from_field(
-                Status::reference(),
-            ),
+            mapping_status: ApplicationPrincipalMappingStatusRequirement::from_field(Status::at(
+                "Status",
+            )),
             target: ApplicationPrincipalTargetRequirement::from_relation(Target::reference()),
-            principal_identity: ApplicationPrincipalIdentityRequirement::from_field(
-                Value::reference(),
-            ),
+            principal_identity: ApplicationPrincipalIdentityRequirement::from_field(Value::at(
+                "Value",
+            )),
         },
     )
 }
@@ -64,24 +64,13 @@ worth_query_application_query!(SourceQuery for Catalog, identity "worth.query.ho
     result RowBinding, scope Principal => "Principal", name "source");
 struct ValueSlot;
 worth_query_portable_type!(ValueSlot => "worth.query.home-custody.value.v1");
-fn source() -> ApplicationQueryDefinition<Catalog, SourceQuery, (), Row, Principal> {
+fn source() -> ApplicationQueryDefinitionBuilder<Catalog, SourceQuery, (), Row, Principal> {
     ApplicationQueryDefinitionBuilder::declare(SourceQuery::reference())
         .root(Principal::reference())
         .scope(Principal::reference())
         .result_shape(
-            ApplicationQueryResultShapeBuilder::new(Principal::reference())
-                .field(ApplicationQueryResultFieldRef::<
-                    SourceQuery,
-                    ValueSlot,
-                    Catalog,
-                    Principal,
-                    Facts,
-                    Value,
-                    u64,
-                    ReadOnly,
-                    EqualityPredicate,
-                    NoApplicationUnit,
-                >::new("value", Value::reference()))
+            ApplicationQueryResultShapeBuilder::<Catalog, SourceQuery, Principal, Row, RowBinding>::new(Principal::reference())
+                .field(ApplicationQueryResultFieldRef::<SourceQuery, ValueSlot, Catalog, Value>::new("value", Value::at("Value")))
                 .build(),
         )
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
@@ -89,8 +78,6 @@ fn source() -> ApplicationQueryDefinition<Catalog, SourceQuery, (), Row, Princip
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 struct SourceBinding;
 impl ApplicationQueryBinding<Catalog> for SourceBinding {
@@ -99,15 +86,7 @@ impl ApplicationQueryBinding<Catalog> for SourceBinding {
     type Query = SourceQuery;
     type ParameterBinding = ParametersBinding;
     type ResultBinding = RowBinding;
-    type ScopeBinding = ApplicationQueryPrincipalScope<
-        Catalog,
-        Principal,
-        Facts,
-        Value,
-        u64,
-        ReadOnly,
-        NoApplicationUnit,
-    >;
+    type ScopeBinding = ApplicationQueryPrincipalScope<Value>;
     type PrincipalBinding = PrincipalBinding;
     type Mapping = Mapping;
     type Principal = Principal;
@@ -115,17 +94,8 @@ impl ApplicationQueryBinding<Catalog> for SourceBinding {
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "worth.query.home-custody.source-binding.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(8);
-    fn scope_field() -> ApplicationFieldRef<
-        Catalog,
-        Principal,
-        Facts,
-        Value,
-        u64,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        Value::reference()
+    fn scope_field() -> Value {
+        Value::at("Value")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         Catalog,
@@ -155,16 +125,25 @@ impl ApplicationManagedIndexBinding<Catalog> for Index {
     const PROVIDER: &'static str = "worth.query.home-custody.provider.v1";
     const PROVIDER_VERSION: u32 = 1;
 }
-worth_query_application_contribution!(pub(super) contribution Contribution in Catalog {
-    identity: "worth.query.home-custody.members.v1", members: |schema| {
-        schema.entity(Mapping::reference()).entity(Principal::reference())
-            .aspect(Mapping::reference(), MappingFacts::reference()).aspect(Principal::reference(), Facts::reference())
-            .field(Mapping::reference(), External::reference()).field(Mapping::reference(), Status::reference())
-            .field(Principal::reference(), Value::reference()).relation(Target::reference(), Mapping::reference(), Principal::reference())
-            .principal_binding(principal_binding()).application_query(source()).application_query_binding::<SourceBinding>()
-            .managed_index(ApplicationManagedIndexDefinition::<Catalog, Index>::new())
+pub(super) struct Contribution;
+impl ApplicationSchemaContribution<Catalog> for Contribution {
+    const IDENTITY: ApplicationSchemaContributionIdentity =
+        ApplicationSchemaContributionIdentity::new("worth.query.home-custody.members.v1");
+    type Members = (IdentityRecords, SourceContracts);
+}
+pub(super) struct SourceContracts;
+impl Registration<Catalog> for SourceContracts {
+    fn register(
+        builder: ApplicationSchemaDeclarationBuilder<Catalog>,
+    ) -> Result<ApplicationSchemaDeclarationBuilder<Catalog>, ApplicationSchemaDeclarationDenial>
+    {
+        Ok(builder
+            .principal_binding(principal_binding())
+            .application_query(source())
+            .application_query_binding::<SourceBinding>()
+            .managed_index(ApplicationManagedIndexDefinition::<Catalog, Index>::new()))
     }
-});
+}
 
 pub(super) struct Program;
 struct Feature;

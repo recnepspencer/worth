@@ -4,8 +4,7 @@ use super::*;
 use worth_query_decl::facade::application_operation::*;
 use worth_query_decl::facade::application_schema::*;
 use worth_query_decl::facade::{
-    worth_query_operation, worth_query_operation_reads, worth_query_operation_writes,
-    worth_query_structured_value_binding,
+    worth_query_operation, worth_query_operation_reads, worth_query_structured_value_binding,
 };
 use worth_query_host::facade::primary_graph::HandlerExecutionDenial;
 
@@ -16,8 +15,7 @@ pub(super) struct Input {
 }
 worth_query_structured_value_binding!(pub(super) InputBinding for Input { identity: "courtroom-equal-dependent-input" });
 worth_query_operation!(pub(super) PublishDependent for Schema: TopologySchemaBinding, input InputBinding);
-worth_query_operation_reads!(PublishDependent => [Body, BodyKey, Length, PositionY]);
-worth_query_operation_writes!(PublishDependent => [Length]);
+worth_query_operation_reads!(PublishDependent =>[Body]);
 
 pub(super) struct Binding;
 impl ApplicationMutationBinding<Schema> for Binding {
@@ -37,7 +35,7 @@ impl ApplicationMutationBinding<Schema> for Binding {
     type Denial = PlanarMutationDenial;
     type DenialBinding = PlanarMutationDenialBinding;
     type Output = PlanarOutputs;
-    type ScopeBinding = PlanarMutationScope<Schema>;
+    type ScopeBinding = PlanarMutationScope;
     type PrincipalBinding = ConsumerPrincipalBinding;
     type Mapping = ExternalPrincipalMapping;
     type Principal = Principal;
@@ -48,17 +46,8 @@ impl ApplicationMutationBinding<Schema> for Binding {
     const HANDLER_IDENTITY: &'static str = "courtroom-equal-dependent-handler";
     const IDEMPOTENCY_IDENTITY: &'static str = "courtroom-equal-dependent-command";
 
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Body,
-        PlanarPosition,
-        BodyKey,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        BodyKey::reference()
+    fn scope_field() -> BodyKey {
+        BodyKey::at("BodyKey")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         Schema,
@@ -76,8 +65,8 @@ impl ApplicationMutationIntent<Schema> for Input {
     fn input(&self) -> &Self {
         self
     }
-    fn scope_binding(&self) -> PlanarMutationScope<Schema> {
-        PlanarMutationScope::new(BodyKey::reference(), self.scope_key.clone())
+    fn scope_binding(&self) -> PlanarMutationScope {
+        PlanarMutationScope::new(BodyKey::at("BodyKey"), self.scope_key.clone())
     }
 }
 
@@ -107,16 +96,16 @@ impl OperationHandler<Schema, Binding> for Handler {
     ) -> HandlerResult<PositiveLength, PlanarMutationDenial> {
         CALLS.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         let value = (|| {
-            let own = reader.resolve_entity(BodyKey::reference(), input.scope_key.clone())?;
+            let own = reader.resolve_entity(BodyKey::at("BodyKey"), input.scope_key.clone())?;
 
-            let _ = reader.field(&own, Length::reference())?;
-            let entity = reader.resolve_entity(BodyKey::reference(), OUTPUT.to_owned())?;
+            let _ = reader.field(&own, Length::at("Length"))?;
+            let entity = reader.resolve_entity(BodyKey::at("BodyKey"), OUTPUT.to_owned())?;
             let output = match reader.current_output::<Family, Body>(&entity)? {
                 worth_query_host::facade::primary_graph::WorthQueryCurrentOutputSelection::Unique(output) => output,
                 _ => return Ok(None),
             };
             if self.indexed_selection {
-                let matches = reader.select_entities(PositionY::reference(), length(10), 8)?;
+                let matches = reader.select_entities(PositionY::at("PositionY"), length(10), 8)?;
                 INDEXED_SELECTIONS
                     .lock()
                     .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -124,10 +113,11 @@ impl OperationHandler<Schema, Binding> for Handler {
                 return Ok(Some(length(matches.len() as u64)));
             }
             if self.witnesses == 0 {
-                return reader.field(&output, Length::reference());
+                return reader.field(&output, Length::at("Length"));
             }
             if self.witnesses == 2 {
-                let second = reader.resolve_entity(BodyKey::reference(), "anchor-c".to_owned())?;
+                let second =
+                    reader.resolve_entity(BodyKey::at("BodyKey"), "anchor-c".to_owned())?;
                 match reader.current_output::<Family, Body>(&second)? {
                     worth_query_host::facade::primary_graph::WorthQueryCurrentOutputSelection::Unique(_) => {},
                     _ => return Ok(None),
@@ -150,13 +140,13 @@ impl OperationHandler<Schema, Binding> for Handler {
     ) -> HandlerResult<PlanarAdjustmentResult, PlanarMutationDenial> {
         let result = (|| {
             let entity = writer
-                .resolve_entity(BodyKey::reference(), input.scope_key.clone())
+                .resolve_entity(BodyKey::at("BodyKey"), input.scope_key.clone())
                 .map_err(HandlerExecutionDenial::new)?;
             writer
                 .preserve_output::<PlanarAnchorOutput<Schema>>(&entity)
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .write_field(&entity, Length::reference(), value)
+                .write_field(&entity, Length::at("Length"), value)
                 .map_err(HandlerExecutionDenial::new)?;
             Ok(PlanarAdjustmentResult {
                 changed_vertices: 1,
@@ -182,9 +172,9 @@ pub(super) fn declare(
         )
         .operation_projection_work_budget(operation, 4096)
         .operation_read_entity(operation, Body::reference())
-        .operation_read_field(operation, BodyKey::reference())
-        .operation_read_field(operation, Length::reference())
-        .operation_read_field(operation, PositionY::reference())
-        .operation_write(operation, Length::reference())
+        .operation_read_field(operation, BodyKey::at("BodyKey"))
+        .operation_read_field(operation, Length::at("Length"))
+        .operation_read_field(operation, PositionY::at("PositionY"))
+        .operation_write(operation, Length::at("Length"))
         .application_mutation_binding::<Binding>()
 }

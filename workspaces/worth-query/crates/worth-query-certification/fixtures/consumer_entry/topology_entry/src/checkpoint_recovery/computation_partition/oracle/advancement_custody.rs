@@ -31,17 +31,19 @@ fn run() {
         application_contribution::WorthQueryAdvancementDenial as Denial,
         application_entry::WorthQueryApplicationOutputDemandDenial as OutputDenial,
     };
-    // Retry-only calibration: first publication and refresh fit; two actual
-    // million-unit producer checkpoints still cannot fit this finite caller.
-    let ceiling = 2 * ENTRY_WORK as u64 - 1;
-    assert!(ceiling < 2 * ENTRY_WORK as u64);
+    // Fund record admission and the refresh before the second producer starts.
+    // Two actual producer checkpoints still cannot fit this finite caller.
+    const RETRY_ENTRY_WORK: usize = 2 * ENTRY_WORK;
+    const RETRY_PRODUCER_WORK: usize = RETRY_ENTRY_WORK + WORK_BESIDE_ENTRIES;
+    let ceiling = 2 * RETRY_ENTRY_WORK as u64 - 1;
+    assert!(ceiling < 2 * RETRY_ENTRY_WORK as u64);
     bound(None);
-    let application = application_fixture::application();
+    let application = application_fixture::application::<RETRY_PRODUCER_WORK>(RETRY_ENTRY_WORK);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let mut interest = request
         .demand(RegionOutputDemand(SCOPE.to_owned()))
-        .start_dependent_in_program::<OracleProgram<false, PRODUCER_WORK, RUNS>, RegionConnection>(
+        .start_dependent_in_program::<OracleProgram<false, RETRY_PRODUCER_WORK, RUNS>, RegionConnection>(
             &application,
         )
         .unwrap();

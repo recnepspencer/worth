@@ -1,10 +1,8 @@
+use super::fragment;
 use std::marker::PhantomData;
 
 use worth_foundational::facade::AspectValue;
 
-use super::capabilities::{ApplicationFieldUnit, OperationExpectsFact, OperationExpectsVersion};
-use super::field_reference::ApplicationFieldRef;
-use super::values::DeclaredApplicationFieldValue;
 use super::ApplicationEncodedScalarValue;
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -126,14 +124,13 @@ impl<Schema, Operation, Scope> TypedMutationPreconditions<Schema, Operation, Sco
         }
     }
 
-    pub fn expect_version<Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn expect_version<Aspect, Field, Value>(
         self,
-        field: ApplicationFieldRef<Schema, Scope, Aspect, Field, Value, Write, Equality, Unit>,
+        field: Field,
         expected: ApplicationEncodedScalarValue<Field::Binding>,
-    ) -> Self
+    ) -> Result<Self, super::ApplicationSchemaDeclarationDenial>
     where
-        Field: OperationExpectsVersion<Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
+        Field: fragment::RecordSelection<Entity = Scope, Aspect = Aspect, Value = Value>,
     {
         self.push(
             ApplicationMutationPreconditionFamily::ExpectedVersion,
@@ -142,14 +139,13 @@ impl<Schema, Operation, Scope> TypedMutationPreconditions<Schema, Operation, Sco
         )
     }
 
-    pub fn expect_fact<Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn expect_fact<Aspect, Field, Value>(
         self,
-        field: ApplicationFieldRef<Schema, Scope, Aspect, Field, Value, Write, Equality, Unit>,
+        field: Field,
         expected: ApplicationEncodedScalarValue<Field::Binding>,
-    ) -> Self
+    ) -> Result<Self, super::ApplicationSchemaDeclarationDenial>
     where
-        Field: OperationExpectsFact<Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
+        Field: fragment::RecordSelection<Entity = Scope, Aspect = Aspect, Value = Value>,
     {
         self.push(
             ApplicationMutationPreconditionFamily::ExpectedFact,
@@ -167,16 +163,17 @@ impl<Schema, Operation, Scope> TypedMutationPreconditions<Schema, Operation, Sco
         self.entries
     }
 
-    fn push<Aspect, Field, Value, Write, Equality, Unit>(
+    fn push<Aspect, Field, Value>(
         mut self,
         family: ApplicationMutationPreconditionFamily,
-        field: ApplicationFieldRef<Schema, Scope, Aspect, Field, Value, Write, Equality, Unit>,
+        field: Field,
         expected: ApplicationEncodedScalarValue<Field::Binding>,
-    ) -> Self
+    ) -> Result<Self, super::ApplicationSchemaDeclarationDenial>
     where
-        Field: DeclaredApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
+        Field: fragment::RecordSelection<Entity = Scope, Aspect = Aspect, Value = Value>,
     {
+        field.checked()?;
+
         let expected_value = expected.into_foundational_value();
         self.entries.push(TypedMutationPrecondition {
             target: ApplicationMutationPreconditionTarget::field(
@@ -187,6 +184,6 @@ impl<Schema, Operation, Scope> TypedMutationPreconditions<Schema, Operation, Sco
             ),
             expected_value,
         });
-        self
+        Ok(self)
     }
 }

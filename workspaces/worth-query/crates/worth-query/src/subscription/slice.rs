@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::evidence_identities::slice_intent_identity;
 
@@ -56,14 +57,16 @@ pub struct QuerySubscriptionSliceIntent {
 }
 
 impl QuerySubscriptionSliceIntent {
-    pub(super) fn from_canonical_parts(mut parts: Vec<QuerySubscriptionSlicePart>) -> Self {
+    pub(super) fn from_canonical_parts(
+        mut parts: Vec<QuerySubscriptionSlicePart>,
+    ) -> Result<Self, IdentityDerivationDenial> {
         parts.sort();
         parts.dedup();
-        let slice_intent_identity = slice_intent_identity(&parts);
-        Self {
+        let slice_intent_identity = slice_intent_identity(&parts)?;
+        Ok(Self {
             parts,
             slice_intent_identity,
-        }
+        })
     }
 
     pub fn parts(&self) -> &[QuerySubscriptionSlicePart] {

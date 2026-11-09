@@ -39,13 +39,22 @@ pub fn seed_graph(
                     TemporalIntent::reference(),
                     primary_graph::WorthQueryApplicationEntityKey::new(row.clone()).unwrap(),
                 )
-                .field(IntentIdentityField::reference(), identity)
-                .field(IntentRevisionField::reference(), 1_u64)
-                .field(IntentDueField::reference(), 5_u64)
-                .field(IntentLifecycleField::reference(), "active".to_string())
-                .field(IntentInputField::reference(), "payload".to_string())
-                .field(IntentGateField::reference(), gate.to_string())
-                .field(IntentEffectField::reference(), "pending".to_string()),
+                .field(IntentIdentityField::at("IntentIdentityField"), identity)
+                .field(IntentRevisionField::at("IntentRevisionField"), 1_u64)
+                .field(IntentDueField::at("IntentDueField"), 5_u64)
+                .field(
+                    IntentLifecycleField::at("IntentLifecycleField"),
+                    "active".to_string(),
+                )
+                .field(
+                    IntentInputField::at("IntentInputField"),
+                    "payload".to_string(),
+                )
+                .field(IntentGateField::at("IntentGateField"), gate.to_string())
+                .field(
+                    IntentEffectField::at("IntentEffectField"),
+                    "pending".to_string(),
+                ),
             )
             .unwrap();
         if include_live_relations {
@@ -69,7 +78,10 @@ pub fn seed_graph(
                     ))
                     .unwrap(),
                 )
-                .field(UnrelatedValueField::reference(), ordinal as u64),
+                .field(
+                    UnrelatedValueField::at("UnrelatedValueField"),
+                    ordinal as u64,
+                ),
             )
             .unwrap();
     }

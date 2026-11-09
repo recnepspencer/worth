@@ -13,32 +13,35 @@ impl DeclaredCompensation {
     pub fn new(
         compensating_operation_slot: impl Into<String>,
         postcondition: DeclaredAftermathPostcondition,
-    ) -> Result<Self, &'static str> {
-        let compensating_operation_slot = compensating_operation_slot.into();
-        if compensating_operation_slot.trim().is_empty() {
-            return Err("empty-compensating-operation");
+    ) -> Self {
+        Self {
+            compensating_operation_slot: compensating_operation_slot.into(),
+            postcondition,
         }
-        match &postcondition {
+    }
+
+    /// Checks descriptive meaning without granting schema admission.
+    pub fn validate(&self) -> Result<(), super::DeclaredCorrectionMechanismDenial> {
+        use super::DeclaredCorrectionMechanismDenial as Cause;
+        if self.compensating_operation_slot.trim().is_empty() {
+            return Err(Cause::EmptyCompensatingOperation);
+        }
+        match &self.postcondition {
             DeclaredAftermathPostcondition::ExactPriorTruth => {
-                return Err("compensation-rejects-exact-prior-truth");
+                Err(Cause::CompensationRejectsExactPriorTruth)
             }
             DeclaredAftermathPostcondition::InvariantRestored { invariant }
                 if invariant.trim().is_empty() =>
             {
-                return Err("empty-compensation-postcondition");
+                Err(Cause::EmptyCompensationPostcondition)
             }
             DeclaredAftermathPostcondition::BusinessPostcondition { identity }
                 if identity.trim().is_empty() =>
             {
-                return Err("empty-compensation-postcondition");
+                Err(Cause::EmptyCompensationPostcondition)
             }
-            DeclaredAftermathPostcondition::InvariantRestored { .. }
-            | DeclaredAftermathPostcondition::BusinessPostcondition { .. } => {}
+            _ => Ok(()),
         }
-        Ok(Self {
-            compensating_operation_slot,
-            postcondition,
-        })
     }
 
     pub fn compensating_operation_slot(&self) -> &str {

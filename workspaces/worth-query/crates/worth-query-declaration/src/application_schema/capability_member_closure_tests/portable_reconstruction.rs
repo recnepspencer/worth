@@ -38,9 +38,10 @@ fn forged_operation_identity_is_not_admitted_as_authored_capability_meaning() {
 #[test]
 fn noncanonical_accepted_values_are_preserved_then_denied() {
     let canonical = ApplicationCapabilityAcceptedValues::one_of(
-        field::<Field>("Field"),
+        field("Field"),
         [encoded(1_u64), encoded(2_u64)],
-    );
+    )
+    .unwrap();
     let mut parts = canonical.parts();
     parts.values.reverse();
     let requirement = ApplicationCapabilityAcceptedValues::from_untrusted_parts(

@@ -61,8 +61,10 @@ pub(crate) fn project_estate_disbursement(
 ) -> Result<BankEstateDisbursementDecision, BankEstateDisbursementProjectionDenial> {
     project_estate(reader, estate, input.estate)?;
     let source = project_estate_source(reader, estate, input)?;
-    let destination =
-        reader.resolve_entity(AccountIdentity::reference(), input.destination_account)?;
+    let destination = reader.resolve_entity(
+        AccountIdentity::at("AccountIdentity"),
+        input.destination_account,
+    )?;
     let mut state = BoundedProjectionState::new(reader)?;
     let source_revision = state.project_admitted_account(reader, &source, input.source_account)?;
     let destination_revision =
@@ -74,7 +76,7 @@ pub(crate) fn project_estate_disbursement(
         source_revision,
         reader.summarize_exclusive_incoming(
             PostingAccount::reference(),
-            PostingAmount::reference(),
+            PostingAmount::at("PostingAmount"),
             &source,
         )?,
     )?;
@@ -83,7 +85,7 @@ pub(crate) fn project_estate_disbursement(
         destination_revision,
         reader.summarize_exclusive_incoming(
             PostingAccount::reference(),
-            PostingAmount::reference(),
+            PostingAmount::at("PostingAmount"),
             &destination,
         )?,
     )?;
@@ -110,13 +112,16 @@ fn project_estate(
     expected: EstateCaseId,
 ) -> Result<(), BankEstateDisbursementProjectionDenial> {
     let identity = reader
-        .decision_field(estate, EstateCaseIdentityField::reference())?
+        .decision_field(
+            estate,
+            EstateCaseIdentityField::at("EstateCaseIdentityField"),
+        )?
         .ok_or(BankEstateDisbursementProjectionDenial::EstateIdentityMissing)?;
     if identity != expected {
         return Err(BankEstateDisbursementProjectionDenial::EstateIdentityMismatch);
     }
     let status = reader
-        .decision_field(estate, EstateCaseStatusField::reference())?
+        .decision_field(estate, EstateCaseStatusField::at("EstateCaseStatusField"))?
         .ok_or(BankEstateDisbursementProjectionDenial::EstateStatusMissing)?;
     if status != EstateCaseStatus::Open {
         return Err(BankEstateDisbursementProjectionDenial::EstateNotOpen(
@@ -137,7 +142,8 @@ fn project_estate_source(
             BankEstateDisbursementProjectionDenial::EstateAccountCardinality(relations.len()),
         );
     };
-    let source = reader.resolve_entity(AccountIdentity::reference(), input.source_account)?;
+    let source =
+        reader.resolve_entity(AccountIdentity::at("AccountIdentity"), input.source_account)?;
     if relation.to() != &source {
         return Err(BankEstateDisbursementProjectionDenial::EstateAccountMismatch);
     }
@@ -182,7 +188,10 @@ fn require_recognized_executor_authority(
         let authority = relation.from();
         let authority_id = validate_authority_identity(reader, authority)?;
         let recognized = reader
-            .decision_field(authority, LegalAuthorityRecognizedField::reference())?
+            .decision_field(
+                authority,
+                LegalAuthorityRecognizedField::at("LegalAuthorityRecognizedField"),
+            )?
             .ok_or(BankEstateDisbursementProjectionDenial::LegalAuthorityRecognitionMissing)?;
         if !recognized {
             continue;
@@ -200,9 +209,14 @@ fn require_recognized_executor_authority(
     }
     let (authority_id, executor_id) = selected
         .ok_or(BankEstateDisbursementProjectionDenial::RecognizedExecutorAuthorityMissing)?;
-    let authority =
-        reader.resolve_entity(LegalAuthorityIdentityField::reference(), authority_id)?;
-    let executor = reader.resolve_entity(PrincipalIdentityField::reference(), executor_id)?;
+    let authority = reader.resolve_entity(
+        LegalAuthorityIdentityField::at("LegalAuthorityIdentityField"),
+        authority_id,
+    )?;
+    let executor = reader.resolve_entity(
+        PrincipalIdentityField::at("PrincipalIdentityField"),
+        executor_id,
+    )?;
     reader.require_decision_relation(LegalAuthorityEstate::reference(), &authority, estate)?;
     reader.require_decision_relation(LegalAuthorityHolder::reference(), &authority, &executor)?;
     reader.require_decision_relation(EstateExecutor::reference(), &executor, estate)?;
@@ -214,9 +228,15 @@ fn validate_authority_identity(
     authority: &WorthQueryInvariantEntityIdentity<BankSchema, LegalAuthority>,
 ) -> Result<LegalAuthorityId, BankEstateDisbursementProjectionDenial> {
     let identity = reader
-        .decision_field(authority, LegalAuthorityIdentityField::reference())?
+        .decision_field(
+            authority,
+            LegalAuthorityIdentityField::at("LegalAuthorityIdentityField"),
+        )?
         .ok_or(BankEstateDisbursementProjectionDenial::LegalAuthorityIdentityMissing)?;
-    let canonical = reader.resolve_entity(LegalAuthorityIdentityField::reference(), identity)?;
+    let canonical = reader.resolve_entity(
+        LegalAuthorityIdentityField::at("LegalAuthorityIdentityField"),
+        identity,
+    )?;
     if &canonical != authority {
         return Err(BankEstateDisbursementProjectionDenial::LegalAuthorityIdentityMismatch);
     }
@@ -258,9 +278,15 @@ fn exact_authority_holder(
     };
     let holder = holder.to().clone();
     let identity = reader
-        .decision_field(&holder, PrincipalIdentityField::reference())?
+        .decision_field(
+            &holder,
+            PrincipalIdentityField::at("PrincipalIdentityField"),
+        )?
         .ok_or(BankEstateDisbursementProjectionDenial::LegalAuthorityHolderIdentityMissing)?;
-    let canonical = reader.resolve_entity(PrincipalIdentityField::reference(), identity)?;
+    let canonical = reader.resolve_entity(
+        PrincipalIdentityField::at("PrincipalIdentityField"),
+        identity,
+    )?;
     if canonical != holder {
         return Err(BankEstateDisbursementProjectionDenial::LegalAuthorityHolderIdentityMismatch);
     }

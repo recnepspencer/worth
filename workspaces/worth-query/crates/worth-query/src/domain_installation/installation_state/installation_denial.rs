@@ -1,5 +1,7 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryDomainInstallationDenialKind {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     DuplicateMarkerType,
     DuplicatePackageIdentity,
     ConflictingDomainOwner,
@@ -51,6 +53,9 @@ impl std::error::Error for WorthQueryDomainInstallationDenial {}
 
 fn installation_denial_stage(kind: WorthQueryDomainInstallationDenialKind) -> &'static str {
     match kind {
+        WorthQueryDomainInstallationDenialKind::EvidenceIdentityDerivationDenied(_) => {
+            "identity materialization"
+        }
         WorthQueryDomainInstallationDenialKind::DuplicateMarkerType => "marker admission",
         WorthQueryDomainInstallationDenialKind::DuplicatePackageIdentity => "package admission",
         WorthQueryDomainInstallationDenialKind::ConflictingDomainOwner => "owner admission",
@@ -65,5 +70,14 @@ fn installation_denial_stage(kind: WorthQueryDomainInstallationDenialKind) -> &'
             "declaration-family lowering"
         }
         WorthQueryDomainInstallationDenialKind::InvariantLoweringFailed => "invariant compilation",
+    }
+}
+
+impl From<IdentityDerivationDenial> for WorthQueryDomainInstallationDenial {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::new(
+            WorthQueryDomainInstallationDenialKind::EvidenceIdentityDerivationDenied(cause),
+            format!("{:?}", cause.scope),
+        )
     }
 }

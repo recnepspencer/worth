@@ -9,8 +9,7 @@ use super::BankMutationControls;
 use crate::{BankAuthenticatedPrincipal, BankIdentityRuntime};
 use bank_domain::schema::BankSchema;
 use worth_query_host::facade::declaration::application_schema::{
-    ApplicationEncodedScalarValue, ApplicationFieldRef, ApplicationFieldUnit,
-    ApplicationValueEncodeDenial, DeclaredApplicationFieldValue, OperationExpectsFact,
+    ApplicationEncodedScalarValue, ApplicationValueEncodeDenial, OperationExpectsFact,
     OperationExpectsVersion, TypedMutationPreconditions,
 };
 
@@ -88,7 +87,7 @@ impl<'runtime, 'principal, Mutation, Operation, Scope>
     ///     runtime
     ///         .mutate(mutations::send_money(input))
     ///         .as_principal(principal)
-    ///         .expect_version(Status::reference(), AccountStatus::Open);
+    ///         .expect_version(Status::at("Status"), AccountStatus::Open);
     /// }
     /// ```
     ///
@@ -108,36 +107,44 @@ impl<'runtime, 'principal, Mutation, Operation, Scope>
     ///         .mutate(mutations::deposit(input))
     ///         .as_principal(principal)
     ///         .expect_version(
-    ///             AccountingRevision::reference(),
+    ///             AccountingRevision::at("AccountingRevision"),
     ///             AccountJournalRevision::default(),
     ///         );
     /// }
     /// ```
-    pub fn expect_version<Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn expect_version<Aspect, Field, Value>(
         mut self,
-        field: ApplicationFieldRef<BankSchema, Scope, Aspect, Field, Value, Write, Equality, Unit>,
+        field: Field,
         expected: Value,
-    ) -> Result<Self, ApplicationValueEncodeDenial>
+    ) -> Result<Self, BankMutationPreconditionDenial>
     where
-        Field: OperationExpectsVersion<Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
+        Field: OperationExpectsVersion<Operation>
+            + RecordSelection<Entity = Scope, Aspect = Aspect, Value = Value>,
     {
-        let expected = ApplicationEncodedScalarValue::<Field::Binding>::try_new(expected)?;
-        self.preconditions = self.preconditions.expect_version(field, expected);
+        let expected = ApplicationEncodedScalarValue::<Field::Binding>::try_new(expected)
+            .map_err(BankMutationPreconditionDenial::Encoding)?;
+        self.preconditions = self
+            .preconditions
+            .expect_version(field, expected)
+            .map_err(|denial| BankMutationPreconditionDenial::Selection(Box::new(denial)))?;
         Ok(self)
     }
 
-    pub fn expect_fact<Aspect, Field, Value, Write, Equality, Unit>(
+    pub fn expect_fact<Aspect, Field, Value>(
         mut self,
-        field: ApplicationFieldRef<BankSchema, Scope, Aspect, Field, Value, Write, Equality, Unit>,
+        field: Field,
         expected: Value,
-    ) -> Result<Self, ApplicationValueEncodeDenial>
+    ) -> Result<Self, BankMutationPreconditionDenial>
     where
-        Field: OperationExpectsFact<Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Unit: ApplicationFieldUnit,
+        Field: OperationExpectsFact<Operation>
+            + RecordSelection<Entity = Scope, Aspect = Aspect, Value = Value>,
     {
-        let expected = ApplicationEncodedScalarValue::<Field::Binding>::try_new(expected)?;
-        self.preconditions = self.preconditions.expect_fact(field, expected);
+        let expected = ApplicationEncodedScalarValue::<Field::Binding>::try_new(expected)
+            .map_err(BankMutationPreconditionDenial::Encoding)?;
+        self.preconditions = self
+            .preconditions
+            .expect_fact(field, expected)
+            .map_err(|denial| BankMutationPreconditionDenial::Selection(Box::new(denial)))?;
         Ok(self)
     }
 
@@ -154,3 +161,18 @@ impl<'runtime, 'principal, Mutation, Operation, Scope>
         }
     }
 }
+
+use worth_query_host::facade::declaration::application_schema::fragment::RecordSelection;
+#[derive(Debug)]
+pub enum BankMutationPreconditionDenial {
+    Encoding(ApplicationValueEncodeDenial),
+    Selection(
+        Box<worth_query_host::facade::declaration::application_schema::ApplicationSchemaDeclarationDenial>,
+    ),
+}
+impl std::fmt::Display for BankMutationPreconditionDenial {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "mutation precondition refused: {self:?}")
+    }
+}
+impl std::error::Error for BankMutationPreconditionDenial {}

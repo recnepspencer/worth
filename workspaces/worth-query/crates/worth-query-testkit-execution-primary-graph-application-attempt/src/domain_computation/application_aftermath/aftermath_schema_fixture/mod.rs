@@ -92,6 +92,10 @@ pub fn freeze_note() -> WorthQueryInstalledAftermathContract {
     aftermath_of::<FreezeNote>()
 }
 
+pub fn aspect_name() -> &'static str {
+    declaration::FrozenField::at("frozen").aspect()
+}
+
 pub fn freeze_account_fields_read_scope(field: &str) -> WorthQueryOperationGraphReadScope {
     installed_schema()
         .installed_operation(op::<FreezeAccountFields>())
@@ -106,7 +110,7 @@ pub fn freeze_account_fields_read_scope(field: &str) -> WorthQueryOperationGraph
                 return false;
             };
             scope.entity().semantic_key() == "FixtureEntity"
-                && scope.aspect().as_str() == "IdentityAspect"
+                && scope.aspect().as_str() == aspect_name()
                 && scope.projection().mask().paths().iter().any(|path| {
                     path.fields()
                         .first()

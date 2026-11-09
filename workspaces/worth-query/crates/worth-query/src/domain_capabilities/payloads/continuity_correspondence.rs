@@ -3,6 +3,7 @@ use crate::correspondence::{
     StructuralCandidateOrderingContract,
 };
 use crate::domain_capabilities::identity::domain_capability_scope_encoder;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{WorthQueryEvidenceIdentity, WorthQueryEvidenceTag};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -118,7 +119,9 @@ impl WorthQueryContinuityCorrespondenceSemantics {
         }
     }
 
-    pub fn semantics_identity(&self) -> WorthQueryEvidenceIdentity {
+    pub fn semantics_identity(
+        &self,
+    ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
         let mut identity =
             domain_capability_scope_encoder("worth_query_continuity_correspondence_semantics_v1");
         identity = match self {
@@ -196,10 +199,10 @@ impl WorthQueryContinuityCorrespondenceSemantics {
                     ordering_contract.as_str(),
                 ),
         };
-        identity.seal()
+        Ok(identity.seal()?)
     }
 
-    pub fn digest_fragment(&self) -> String {
-        self.semantics_identity().as_str().to_string()
+    pub fn digest_fragment(&self) -> Result<String, IdentityDerivationDenial> {
+        Ok(self.semantics_identity()?.as_str().to_string())
     }
 }

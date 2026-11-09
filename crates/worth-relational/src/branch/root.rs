@@ -1,4 +1,6 @@
 use std::sync::Arc;
+type OncePublicationBases =
+    std::sync::OnceLock<std::sync::Weak<dyn crate::history::retention::PublicationBasisAccess>>;
 
 use super::target::RelationalBranchRootDescriptor;
 use super::RelationalPersistentRegionSet;
@@ -14,6 +16,8 @@ mod allocation;
 mod authoritative_payload_tests;
 #[path = "root_axes.rs"]
 mod axes;
+#[path = "root_candidate.rs"]
+mod candidate;
 #[path = "root_capture.rs"]
 mod capture;
 #[path = "root_capture_preparation.rs"]
@@ -24,10 +28,13 @@ mod commit_evidence;
 mod completeness;
 #[path = "root_empty.rs"]
 mod empty;
-pub(crate) use commit_evidence::RelationalRootCommitEvidence;
+pub(crate) use commit_evidence::{
+    RelationalOriginalRootCommitEvidence, RelationalRootCommitEvidence,
+};
 #[cfg(test)]
 #[path = "root_content_tests.rs"]
 mod content_tests;
+mod court_doors_for_test;
 #[path = "root_identity.rs"]
 mod identity;
 #[path = "root_output_publication.rs"]
@@ -79,6 +86,7 @@ pub(crate) enum RelationalBranchRootCaptureDenial {
     AllocationLayoutOverflow,
     Request(crate::execution::RelationalExecutionDenialCause),
     CanonicalEnvelopeMismatch,
+    CanonicalPayloadBacking(worth_execution::ExecutionAllocationDenial),
     UnadmittedContent,
     Content(crate::content::RelationalContentDenial),
     StorageContentMismatch {
@@ -131,6 +139,7 @@ pub(crate) struct RelationalBranchRootAxes {
 
 #[derive(Debug, Clone)]
 struct RelationalCommittedBranchRoot {
+    commit_change: Option<Arc<crate::storage::substrate::maintenance::CommitChange>>,
     descriptor: RelationalBranchRootDescriptor,
     evidence: RelationalRootCommitEvidence,
     axes: RelationalBranchRootAxes,
@@ -145,6 +154,7 @@ struct RelationalCommittedBranchRoot {
 /// reuse.
 #[derive(Debug)]
 pub(crate) struct RelationalBranchRoot {
+    pub(crate) publication_bases: OncePublicationBases,
     content: crate::content::ContentDirectory,
     id: u64,
     regions: Arc<RelationalPersistentRegionSet>,
@@ -242,6 +252,10 @@ impl RelationalBranchRoot {
         self.committed.as_ref().map(|root| root.axes)
     }
 
+    pub(crate) fn canonical_payload(&self) -> Option<Arc<RelationalOriginalRootCommitEvidence>> {
+        self.commit_evidence()?.original_payload()
+    }
+
     pub(crate) fn commit_id(&self) -> Option<CommitId> {
         self.committed
             .as_ref()
@@ -317,13 +331,9 @@ impl RelationalBranchRoot {
                 .is_some_and(|original| Arc::ptr_eq(original, envelope))
                 && root.axes.storage_root == *root.descriptor.truth_root()
                 && root.axes.schema_root == *root.descriptor.schema_root()
-                && root.axes.visibility
-                    == RelationalBranchVisibilityCommitment::for_root(
-                        envelope,
-                        root.axes.storage_root,
-                        root.axes.schema_root,
-                        root.axes.correctness_index,
-                    )
+            // Exact immutable envelope custody carries root admission's
+            // visibility proof. Cold readmission and is_complete verify
+            // it independently; artifact linkage does not reconstruct it.
         })
     }
 

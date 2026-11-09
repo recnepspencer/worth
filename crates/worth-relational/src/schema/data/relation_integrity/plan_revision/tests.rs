@@ -95,6 +95,7 @@ fn aggregate_revision_streaming_preserves_the_recorded_canonical_byte_sequence()
                 &[],
                 &[],
                 Some(&aggregate),
+                None,
             );
             assert_eq!(actual.0, hash);
             let mut emitted = Vec::new();

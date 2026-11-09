@@ -6,6 +6,9 @@ use super::*;
 
 pub(super) fn classify_stop_class(error: &WorthQueryRuntimeError) -> WorthQueryStopClass<'_> {
     match error {
+        WorthQueryRuntimeError::EvidenceIdentityDerivationDenied(denial) => {
+            WorthQueryStopClass::EvidenceIdentityDerivationDenied { denial }
+        }
         WorthQueryRuntimeError::Advancement(denial) => WorthQueryStopClass::Advancement { denial },
         WorthQueryRuntimeError::ForeignPhase(denial) => {
             WorthQueryStopClass::ForeignPhase { denial }

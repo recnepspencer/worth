@@ -15,9 +15,8 @@ pub(super) struct PreparedProposalRound {
     pub(super) mutation: AppliedMutationDraft,
     pub(super) identity: RelationalMutationProposalIdentity,
     pub(super) validation_input: RelationalTransactionValidationInput,
-    pub(super) commit_boundary: crate::validation::engine::InvariantExecutionResult,
-    pub(super) mutation_sensitive: crate::validation::engine::InvariantExecutionResult,
-    pub(super) publication: crate::validation::engine::InvariantExecutionResult,
+    pub(super) coupled_publication: Option<crate::mvcc::RequiredOutputPublicationAdmission>,
+    pub(super) invariants: crate::validation::engine::InvariantExecutionResult,
 }
 
 impl RelationalPreparationRuntime {
@@ -34,7 +33,9 @@ impl RelationalPreparationRuntime {
             execution,
             &selected.with_symbol_admission(&self.services.symbols),
             |partitions| {
-                let round = self.preparation_round();
+                let round = self
+                    .preparation_round()
+                    .with_authored_coupling(transaction.authored_coupling.clone());
                 let read =
                     crate::branch::SelectedRelationalBranchRead::in_round(&selected, partitions);
                 let answer = round.prepare_proposal_symbol_round(

@@ -1,12 +1,16 @@
 //! Existing Query admission over genuine physical Home and Native artifacts.
 use super::bootstrap_publication::{build, meaning, prepared, DirectoryHome};
-use fixture::{schema::HomeIdentitySchema, HomeProgram};
+use fixture::{
+    schema::{Account, AccountIdentity, HomeIdentitySchema, HomeRecords},
+    HomeProgram,
+};
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
 };
 use worth_execution::ExecutionRequest;
 use worth_query_execution::facade::application_home_integration::*;
+use worth_query_host::facade::declaration::application_schema::fragment::FieldSelection;
 use worth_query_host::facade::{
     application_contribution::{
         with_bootstrap_advancement_from_request, WorthQueryBootstrapAdvancementPhase,
@@ -184,13 +188,18 @@ fn unassociated_native_nine_cannot_replace_selected_world_eight_or_preflight_bri
             native,
             &execution,
             account.entity_id,
-            "AccountIdentity",
+            FieldSelection::<HomeRecords, Account, AccountIdentity, u64>::at("Balance").aspect(),
             "Balance",
             AspectValue::UInt64(9),
         );
         let rows = administration::rows(native, &execution, "Account");
         assert_eq!(
-            administration::field(&rows[0], "AccountIdentity", "Balance"),
+            administration::field(
+                &rows[0],
+                FieldSelection::<HomeRecords, Account, AccountIdentity, u64>::at("Balance")
+                    .aspect(),
+                "Balance"
+            ),
             &AspectValue::UInt64(9)
         );
         drop(query);

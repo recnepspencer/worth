@@ -1,3 +1,4 @@
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::WorthQueryEntityIdentity;
 use crate::runtime::{
     WorthQueryMutationAuthorityIdentity, WorthQueryMutationTargetCollectionIdentity,
@@ -38,16 +39,18 @@ pub struct WorthQueryNamingMutationEvidence {
 
 impl WorthQueryNamingMutationEvidence {
     #[cfg(test)]
-    pub(in crate::runtime) fn from_bridge(bundle: &BridgeNamingMutationBundle) -> Self {
-        Self::from_bridge_with_query_context(bundle, None, None)
+    pub(in crate::runtime) fn from_bridge(
+        bundle: &BridgeNamingMutationBundle,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::from_bridge_with_query_context(bundle, None, None)?)
     }
 
     pub(in crate::runtime) fn from_bridge_with_query_context(
         bundle: &BridgeNamingMutationBundle,
         resolved_target_entity_identity: Option<&WorthQueryEntityIdentity>,
         target_collection: Option<&WorthQueryMutationTargetCollectionIdentity>,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self {
             family: match bundle.family() {
                 BridgeNamingMutationFamily::AttachNewTarget => {
                     crate::runtime::WorthQueryNamingMutationFamily::AttachNewTarget
@@ -74,26 +77,29 @@ impl WorthQueryNamingMutationEvidence {
                 }
                 BridgeNamingMutationOutcome::Removed => WorthQueryNamingMutationOutcome::Removed,
             },
-            attachment_identity: WorthQueryMutationAuthorityIdentity::from_bridge_naming_attachment(
-                "naming-attachment",
-                bundle.attachment_identity_handle(),
-            ),
-            prior_authoritative_identity: bundle.prior_authoritative_identity_handle().map(
-                |identity| {
+            attachment_identity:
+                WorthQueryMutationAuthorityIdentity::from_bridge_naming_attachment(
+                    "naming-attachment",
+                    bundle.attachment_identity_handle(),
+                )?,
+            prior_authoritative_identity: bundle
+                .prior_authoritative_identity_handle()
+                .map(|identity| {
                     WorthQueryMutationAuthorityIdentity::from_bridge_naming_authority(
                         "naming-prior",
                         identity,
                     )
-                },
-            ),
-            target_authoritative_identity: bundle.target_authoritative_identity_handle().map(
-                |identity| {
+                })
+                .transpose()?,
+            target_authoritative_identity: bundle
+                .target_authoritative_identity_handle()
+                .map(|identity| {
                     WorthQueryMutationAuthorityIdentity::from_bridge_naming_authority(
                         "naming-target",
                         identity,
                     )
-                },
-            ),
+                })
+                .transpose()?,
             resolved_target_entity_identity: bundle
                 .resolved_target_entity_identity_handle()
                 .map(|identity| {
@@ -107,8 +113,9 @@ impl WorthQueryNamingMutationEvidence {
                 .map(|collection| {
                     WorthQueryMutationTargetCollectionIdentity::new("naming-target", collection)
                 })
+                .transpose()?
                 .or_else(|| target_collection.cloned()),
-        }
+        })
     }
 
     pub(in crate::runtime) fn from_intent(

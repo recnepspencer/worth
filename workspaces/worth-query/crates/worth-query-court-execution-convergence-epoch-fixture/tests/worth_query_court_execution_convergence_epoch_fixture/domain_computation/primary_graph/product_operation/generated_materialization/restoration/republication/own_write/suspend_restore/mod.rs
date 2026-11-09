@@ -71,10 +71,10 @@ pub fn suspend_restore_and_read() {
             })
             .expect("the fixture read owns its installed host call");
         let layout = graph.layout_for_test();
-        let label = AccountLabel::reference();
-        let status = AccountStatus::reference();
-        let identity = AccountIdentity::reference();
-        let tag = AccountMembershipTag::reference();
+        let label = AccountLabel::at("AccountLabel");
+        let status = AccountStatus::at("AccountStatus");
+        let identity = AccountIdentity::at("AccountIdentity");
+        let tag = AccountMembershipTag::at("AccountMembershipTag");
         let fields = [
             (
                 layout

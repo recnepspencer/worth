@@ -65,17 +65,20 @@ pub fn physical(world: &World<Payload>) -> Vec<(u64, RelationId, u64)> {
                 .project(
                     &phase,
                     |reader| {
-                        let source = reader.resolve_entity(NodeKey::reference(), 0).unwrap();
+                        let source = reader.resolve_entity(node_key::<Schema>(), 0).unwrap();
                         let mut ids = reader
-                            .relations_from(Precedes::reference(), &source)
+                            .relations_from(precedes::<Schema>(), &source)
                             .unwrap()
                             .into_iter()
                             .map(|edge| {
                                 (
-                                    reader.field(edge.to(), NodeKey::reference()).unwrap(),
+                                    reader.field(edge.to(), node_key::<Schema>()).unwrap(),
                                     edge.relation_id(),
                                     reader
-                                        .relation_field(&edge, EdgeWeight::reference())
+                                        .relation_field(
+                                            &edge,
+                                            edge_weight::<Schema>().expect("payload record field"),
+                                        )
                                         .unwrap(),
                                 )
                             })

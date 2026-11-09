@@ -7,36 +7,48 @@ use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::storage::overlay::CurrentPartitionAccess;
 use crate::transactions::data::{EntityReference, MergedCommitPlan};
 
+mod candidate_sources;
 mod home_target;
 mod incidence_collection;
+mod owned_graph;
+mod planned_incidence;
 mod relation_changes;
 mod scope_completion;
+mod successor_scope;
 use super::preparation_control::InvariantPreparationControl;
 use crate::transactions::data::TransactionCommitError;
 
-pub(crate) fn prepare_relation_integrity_scopes(
+pub(super) struct RelationScopeState<'state> {
+    pub(super) current: crate::validation::engine::state_view::InvariantStateView<'state>,
+    pub(super) predecessor: crate::validation::engine::state_view::InvariantStateView<'state>,
+    pub(super) candidate_is_applied: bool,
+}
+
+pub(super) fn prepare_relation_integrity_scopes(
     semantic_plan: Option<RelationalSemanticPlan<'_>>,
     whole_home_target: bool,
-    partitions: &dyn CurrentPartitionAccess,
-    version_id: crate::identity::data::VersionId,
+    state: RelationScopeState<'_>,
     requirements: BTreeMap<KindId, RelationScopeRequirement>,
     performance: &crate::performance::PerformanceAccess<'_>,
     control: &InvariantPreparationControl<'_, '_>,
+    admit: &dyn Fn(u64, u64) -> Result<(), TransactionCommitError>,
 ) -> Result<Option<PreparedRelationIntegrityScopes>, TransactionCommitError> {
     control.check()?;
     if requirements.is_empty() {
         return Ok(None);
     }
-    let mut accumulator = RelationIntegrityScopeAccumulator::new(
-        partitions,
-        version_id,
-        requirements,
-        performance,
-        control,
-    );
+    let mut accumulator =
+        RelationIntegrityScopeAccumulator::new(state, requirements, performance, control, admit);
+    for scope in accumulator.scopes.values_mut() {
+        scope.complete_source_set = semantic_plan.is_none();
+    }
+    accumulator.collect_candidate_slots()?;
     if let Some(plan) = semantic_plan {
         if let Some(selection) = plan.selection() {
             accumulator.collect_revalidated_entity(selection.entity())?;
+        }
+        if let Some(selection) = plan.graph_selection() {
+            accumulator.collect_owned_graph(selection)?;
         }
         accumulator.collect_plan(plan.commands())?;
     }
@@ -50,25 +62,29 @@ pub(crate) fn prepare_relation_integrity_scopes(
 }
 
 fn include_existing_entity_reference(
-    touched_entities: &mut BTreeSet<EntityId>,
+    touched_entities: &mut BTreeSet<(KindId, EntityId)>,
+    kind: KindId,
     entity_reference: &EntityReference,
 ) {
     if let EntityReference::Existing(entity_id) = entity_reference {
-        touched_entities.insert(*entity_id);
+        touched_entities.insert((kind, *entity_id));
     }
 }
 
 struct RelationIntegrityScopeAccumulator<'access, 'runtime, 'scope, 'authority> {
     partitions: &'access dyn CurrentPartitionAccess,
     state_view: crate::validation::engine::state_view::InvariantStateView<'access>,
+    predecessor: crate::validation::engine::state_view::InvariantStateView<'access>,
     performance: &'access crate::performance::PerformanceAccess<'runtime>,
     control: &'access InvariantPreparationControl<'scope, 'authority>,
+    admit: &'access dyn Fn(u64, u64) -> Result<(), TransactionCommitError>,
     scopes: BTreeMap<KindId, PreparedRelationIntegrityScope>,
     created_key_count: usize,
+    candidate_is_applied: bool,
     minimum_candidate_kinds: BTreeMap<KindId, BTreeSet<KindId>>,
     create_scan_directions: BTreeMap<KindId, (bool, bool, bool, bool)>,
-    touched_relation_sources: BTreeSet<EntityId>,
-    touched_relation_targets: BTreeSet<EntityId>,
+    touched_relation_sources: BTreeSet<(KindId, EntityId)>,
+    touched_relation_targets: BTreeSet<(KindId, EntityId)>,
     deleted_entities: BTreeSet<EntityId>,
     revalidated_entities: Option<BTreeSet<EntityId>>,
     deleted_relations: BTreeSet<RelationId>,
@@ -79,11 +95,11 @@ impl<'access, 'runtime, 'scope, 'authority>
     RelationIntegrityScopeAccumulator<'access, 'runtime, 'scope, 'authority>
 {
     fn new(
-        partitions: &'access dyn CurrentPartitionAccess,
-        version_id: crate::identity::data::VersionId,
+        state: RelationScopeState<'access>,
         requirements: BTreeMap<KindId, RelationScopeRequirement>,
         performance: &'access crate::performance::PerformanceAccess<'runtime>,
         control: &'access InvariantPreparationControl<'scope, 'authority>,
+        admit: &'access dyn Fn(u64, u64) -> Result<(), TransactionCommitError>,
     ) -> Self {
         let minimum_candidate_kinds = requirements
             .iter()
@@ -108,13 +124,14 @@ impl<'access, 'runtime, 'scope, 'authority>
             .any(|requirement| requirement.requires_affected_pairs)
             .then(BTreeSet::new);
         Self {
-            partitions,
-            state_view: crate::validation::engine::state_view::InvariantStateView::new(
-                partitions, version_id,
-            ),
+            partitions: state.current.state(),
+            state_view: state.current,
+            predecessor: state.predecessor,
             performance,
             control,
+            admit,
             created_key_count: 0,
+            candidate_is_applied: state.candidate_is_applied,
             scopes: requirements
                 .into_iter()
                 .map(|(kind_id, requirement)| {
@@ -243,7 +260,9 @@ impl<'access, 'runtime, 'scope, 'authority>
         };
         for (relation_kind, kinds) in &self.minimum_candidate_kinds {
             self.check_live()?;
-            if kinds.contains(&kind_id) {
+            if kinds.contains(&kind_id)
+                || (kinds.is_empty() && self.scopes[relation_kind].requires_global_evaluation)
+            {
                 self.scopes
                     .get_mut(relation_kind)
                     .expect(/* Proof: RelationIntegrityScopeAccumulator::new installs a scope for every requirement and derives minimum_candidate_kinds from that same set. Collection does not remove scopes. */ "minimum scope prepared")
@@ -275,8 +294,16 @@ impl<'access, 'runtime, 'scope, 'authority>
                     .insert(entity_id);
             }
         }
-        self.touched_relation_sources.insert(entity_id);
-        self.touched_relation_targets.insert(entity_id);
+        for scope in self
+            .scopes
+            .values_mut()
+            .filter(|scope| scope.requires_visible_successors)
+        {
+            scope
+                .connectivity_sources
+                .insert(EntityReference::Existing(entity_id));
+        }
+        self.touch_entity_incidence(entity_id);
         self.check_live()
     }
 
@@ -285,14 +312,21 @@ impl<'access, 'runtime, 'scope, 'authority>
         entity_id: EntityId,
     ) -> Result<(), TransactionCommitError> {
         self.check_live()?;
-        self.touched_relation_sources.insert(entity_id);
-        self.touched_relation_targets.insert(entity_id);
+        self.touch_entity_incidence(entity_id);
         self.deleted_entities.insert(entity_id);
         self.check_live()
     }
 
+    fn touch_entity_incidence(&mut self, entity: EntityId) {
+        for &kind in self.scopes.keys() {
+            self.touched_relation_sources.insert((kind, entity));
+            self.touched_relation_targets.insert((kind, entity));
+        }
+    }
+
     fn check_live(&self) -> Result<(), TransactionCommitError> {
-        self.control.check()
+        self.control.check()?;
+        (self.admit)(1, 0)
     }
 }
 

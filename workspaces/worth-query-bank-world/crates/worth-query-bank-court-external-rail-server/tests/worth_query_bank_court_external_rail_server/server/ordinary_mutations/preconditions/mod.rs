@@ -20,11 +20,11 @@ fn ordinary_send_money_carries_typed_preconditions_through_retry_receipts() {
         .mutate(mutations::send_money(send.clone()))
         .as_principal(&owner)
         .expect_version(
-            AccountingRevision::reference(),
+            AccountingRevision::at("AccountingRevision"),
             before.accounting_revision(),
         )
         .unwrap()
-        .expect_fact(Status::reference(), AccountStatus::Closed)
+        .expect_fact(Status::at("Status"), AccountStatus::Closed)
         .unwrap()
         .controls(BankMutationControls::new(
             request_scope(),
@@ -62,11 +62,11 @@ fn ordinary_send_money_carries_typed_preconditions_through_retry_receipts() {
         .mutate(mutations::send_money(send.clone()))
         .as_principal(&owner)
         .expect_version(
-            AccountingRevision::reference(),
+            AccountingRevision::at("AccountingRevision"),
             before.accounting_revision(),
         )
         .unwrap()
-        .expect_fact(Status::reference(), before.status())
+        .expect_fact(Status::at("Status"), before.status())
         .unwrap()
         .controls(BankMutationControls::new(
             request_scope(),
@@ -102,11 +102,11 @@ fn ordinary_send_money_carries_typed_preconditions_through_retry_receipts() {
         .mutate(mutations::send_money(send.clone()))
         .as_principal(&owner)
         .expect_version(
-            AccountingRevision::reference(),
+            AccountingRevision::at("AccountingRevision"),
             before.accounting_revision(),
         )
         .unwrap()
-        .expect_fact(Status::reference(), before.status())
+        .expect_fact(Status::at("Status"), before.status())
         .unwrap()
         .controls(BankMutationControls::new(
             request_scope(),
@@ -164,11 +164,11 @@ fn ordinary_send_money_carries_typed_preconditions_through_retry_receipts() {
         .mutate(mutations::send_money(send))
         .as_principal(&owner)
         .expect_version(
-            AccountingRevision::reference(),
+            AccountingRevision::at("AccountingRevision"),
             before.accounting_revision().next().unwrap(),
         )
         .unwrap()
-        .expect_fact(Status::reference(), before.status())
+        .expect_fact(Status::at("Status"), before.status())
         .unwrap()
         .controls(BankMutationControls::new(
             request_scope(),

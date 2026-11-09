@@ -35,6 +35,7 @@ impl InstalledLoweringCorrespondenceRef {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct InstalledPreImageDemand {
     loci: Vec<InstalledPreImageLocus>,
+    relations: Vec<super::InstalledPreImageRelationLocus>,
     maximum_encoded_bytes: usize,
 }
 
@@ -46,8 +47,25 @@ impl InstalledPreImageDemand {
                 .iter()
                 .map(InstalledPreImageLocus::from_portable)
                 .collect(),
+            relations: portable
+                .relations()
+                .iter()
+                .map(super::InstalledPreImageRelationLocus::from_portable)
+                .collect(),
             maximum_encoded_bytes: portable.maximum_encoded_bytes(),
         }
+    }
+
+    pub fn relations(&self) -> &[super::InstalledPreImageRelationLocus] {
+        &self.relations
+    }
+
+    /// True when the inverse demands no prior truth at all: neither a field
+    /// locus nor a relation locus. Only the created-entity inverse is empty;
+    /// it derives from the original's outputs instead of a retained pre-image.
+    /// A relation-only demand is not empty.
+    pub fn is_empty(&self) -> bool {
+        self.loci.is_empty() && self.relations.is_empty()
     }
 
     pub fn loci(&self) -> &[InstalledPreImageLocus] {

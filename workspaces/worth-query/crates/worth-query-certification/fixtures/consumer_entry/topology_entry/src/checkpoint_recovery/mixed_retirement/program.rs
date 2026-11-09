@@ -6,14 +6,42 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryRequiredOutputConnectionDenial,
 };
 
-worth_query_decl::facade::worth_query_application! {
-    pub(super) MixedSchema {
-        owner: "worth.query.certification.mixed-retirement",
-        version: (1, 0),
-        contributions: [TopologyContribution],
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) struct MixedSchema;
+impl worth_query_decl::facade::application_schema::fragment::Fragment for MixedSchema {
+    const NAME: &'static str = "MixedSchema";
+    type Bindings = worth_query_decl::facade::application_schema::fragment::NoBindings;
+    type Members = (TopologyContribution,);
+}
+impl worth_query_decl::facade::application_schema::ApplicationSchema for MixedSchema {
+    const OWNER: &'static str = "worth.query.certification.mixed-retirement";
+    const NAME: &'static str = "MixedSchema";
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
+    fn declaration() -> Result<
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclaration<Self>,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationDenial,
+    > {
+        worth_query_decl::facade::application_schema::fragment::declare(Self)
+    }
+    fn visit_correction<
+        V: worth_query_decl::facade::application_aftermath::ApplicationCorrectionVisitor<Self>,
+    >(
+        source: std::any::TypeId,
+        visitor: V,
+    ) -> V::Output {
+        worth_query_decl::facade::application_schema::fragment::visit_correction(
+            Self, source, visitor,
+        )
     }
 }
-impl TopologySchemaBinding for MixedSchema {}
+impl worth_query_decl::facade::application_schema::ApplicationSchemaComposition for MixedSchema {
+    type Contributions = (TopologyContribution,);
+}
+
+impl TopologySchemaBinding for MixedSchema {
+    type PrincipalFragment = crate::PrincipalRecords;
+}
 pub(super) struct ReplacementFeature;
 pub(super) struct ReplacementInput;
 pub(super) struct ReplacementOutput;

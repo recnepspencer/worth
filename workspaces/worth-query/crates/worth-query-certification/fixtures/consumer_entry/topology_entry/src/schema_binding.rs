@@ -10,6 +10,8 @@ use worth_query_host::facade::application_contribution::{
 use super::base_model::TopologyModelBinding;
 
 pub trait TopologySchemaBinding: ApplicationSchema {
+    /// The application owns the complete outgoing relation roster of its principal.
+    type PrincipalFragment: worth_query_decl::facade::application_schema::fragment::Fragment;
     /// Install the separately declared external producer in this fixture schema.
     const ESCAPING_PLANAR_OUTPUT: bool = false;
     /// Isolated consumer variants can require the real planar producer binding

@@ -182,7 +182,7 @@ pub fn assert_computed_changed(
 ) {
     let receipt = observe(request_execution, &world);
     assert_oracle(SignalClass::ComputedChanged, &receipt);
-    assert_authoritative_value(&world, IntentEffectField::reference(), {
+    assert_authoritative_value(&world, IntentEffectField::at("IntentEffectField"), {
         let [lineage] = receipt.execution_provenance() else {
             panic!("committed lineage")
         };
@@ -202,7 +202,11 @@ pub fn assert_no_effect(
     let receipt = observe(request_execution, world);
     assert_eq!(receipt.committed_operation_count(), 0);
     assert!(receipt.execution_provenance().is_empty());
-    assert_authoritative_value(world, IntentEffectField::reference(), "pending".to_string());
+    assert_authoritative_value(
+        world,
+        IntentEffectField::at("IntentEffectField"),
+        "pending".to_string(),
+    );
 }
 
 pub fn assert_oracle(

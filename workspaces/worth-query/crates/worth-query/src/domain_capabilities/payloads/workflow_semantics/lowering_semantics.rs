@@ -1,4 +1,5 @@
 use crate::domain_capabilities::identity::domain_capability_scope_encoder;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{WorthQueryEvidenceIdentity, WorthQueryEvidenceTag};
 use worth_relational::facade::transactions::AspectFieldPatch;
 
@@ -61,8 +62,10 @@ impl WorthQueryWorkflowLoweringSemantics {
         }
     }
 
-    pub(crate) fn semantics_identity(&self) -> WorthQueryEvidenceIdentity {
-        match self {
+    pub(crate) fn semantics_identity(
+        &self,
+    ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(match self {
             Self::Mutation {
                 authority_binding_identity,
                 input,
@@ -100,7 +103,7 @@ impl WorthQueryWorkflowLoweringSemantics {
                             aspect_field_patch_identity_text(desired_aspect_fields),
                         ),
                 };
-                encoder.seal()
+                encoder.seal()?
             }
             Self::Merge { input } => {
                 domain_capability_scope_encoder("worth_query_workflow_lowering_v1")
@@ -117,7 +120,7 @@ impl WorthQueryWorkflowLoweringSemantics {
                         WorthQueryEvidenceTag::new("source_branch"),
                         &input.source_branch().0,
                     )
-                    .seal()
+                    .seal()?
             }
             Self::Writeback { input } => {
                 domain_capability_scope_encoder("worth_query_workflow_lowering_v1")
@@ -126,9 +129,9 @@ impl WorthQueryWorkflowLoweringSemantics {
                         WorthQueryEvidenceTag::new("family"),
                         input.family().as_str(),
                     )
-                    .seal()
+                    .seal()?
             }
-        }
+        })
     }
 }
 

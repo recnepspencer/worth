@@ -40,7 +40,10 @@ pub(super) fn scalar(
                     let mut bytes = OwnerAllocation::default();
                     value.fields(request, |variant, value| {
                         if variant == "Raw" {
-                            add(&mut bytes, text(value, request)?)?;
+                            let capacity = value.text(request)?.len();
+                            let stored = worth_foundational::facade::StoredValueText::fresh_decode_allocation_bytes(capacity)
+                                .and_then(|n| u64::try_from(n).ok()).ok_or_else(malformed)?;
+                            add(&mut bytes, stored)?;
                         }
                         Ok(())
                     })?;

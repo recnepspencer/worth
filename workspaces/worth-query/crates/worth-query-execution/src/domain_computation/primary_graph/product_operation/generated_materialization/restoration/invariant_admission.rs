@@ -18,8 +18,7 @@ where
         return Err(Denial::ForeignBranchEvidence);
     }
     let summary = evidence.summary();
-    if summary.execution_count != 3
-        || !summary.commit_boundary_seen
+    if !summary.commit_boundary_seen
         || !summary.mutation_sensitive_seen
         || !summary.snapshot_publication_seen
     {

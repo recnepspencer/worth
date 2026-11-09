@@ -3,6 +3,7 @@ use super::super::super::contracts::{BoundProjectionFactFamily, MaterializedProj
 use super::super::super::facts::{ProjectionFactFieldPath, ProjectionFactKind};
 use super::super::super::identity::compose_scoped_row_source_identity;
 use super::super::ProjectionFactExtractionError;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_foundational::facade::AspectValuePosture;
 
 pub(in crate::projection_consumption::extraction) fn native_value_or_absence(
@@ -29,12 +30,12 @@ pub(in crate::projection_consumption::extraction) fn native_value_or_absence(
                     source_identity: compose_scoped_row_source_identity(
                         contract.source_identity(),
                         row_identity,
-                    ),
+                    )?,
                     field_path: native_contract.field_path().clone(),
                     contract_key: native_contract.contract().key().clone(),
                     contract_revision: native_contract.contract().revision(),
                     projection_authority: contract.contract_digest().to_string(),
-                })
+                })?
             }
             posture => Ok(ConsumedNativeValue::absent(posture)),
         };
@@ -50,7 +51,7 @@ pub(in crate::projection_consumption::extraction) fn native_value_or_absence(
                 source_identity: compose_scoped_row_source_identity(
                     contract.source_identity(),
                     row_identity,
-                ),
+                )?,
                 field_path: native_contract.field_path().clone(),
                 contract_key: native_contract.contract().key().clone(),
                 contract_revision: native_contract.contract().revision(),
@@ -58,7 +59,7 @@ pub(in crate::projection_consumption::extraction) fn native_value_or_absence(
                 actual,
                 projection_authority: contract.contract_digest().to_string(),
             },
-        );
+        )?;
     }
     Ok(value.clone())
 }
@@ -87,7 +88,7 @@ fn validate_whole_aspect_value(
                 source_identity: compose_scoped_row_source_identity(
                     materialized.source_identity(),
                     row_identity,
-                ),
+                )?,
                 field_path: native.field_path().clone(),
                 contract_key: native.contract().key().clone(),
                 contract_revision: native.contract().revision(),
@@ -113,13 +114,18 @@ pub(super) fn missing_declared_field(
     field_path: &ProjectionFactFieldPath,
     fact_kind: ProjectionFactKind,
 ) -> ProjectionFactExtractionError {
-    ProjectionFactExtractionError::MissingDeclaredFieldEvidence {
-        source_family: contract.source_family(),
-        source_identity: compose_scoped_row_source_identity(
-            contract.source_identity(),
-            row_identity,
-        ),
-        field_key: field_path.terminal_projection_for_boundary().to_string(),
-        fact_kind,
-    }
+    (|| -> Result<ProjectionFactExtractionError, IdentityDerivationDenial> {
+        Ok(
+            ProjectionFactExtractionError::MissingDeclaredFieldEvidence {
+                source_family: contract.source_family(),
+                source_identity: compose_scoped_row_source_identity(
+                    contract.source_identity(),
+                    row_identity,
+                )?,
+                field_key: field_path.terminal_projection_for_boundary().to_string(),
+                fact_kind,
+            },
+        )
+    })()
+    .unwrap_or_else(ProjectionFactExtractionError::from)
 }

@@ -22,24 +22,33 @@ impl AspectContract {
         &self,
         mask: &AspectMask<ProjectionMask>,
     ) -> Result<(), MaskAdmissibilityDenial> {
-        self.masks
-            .admit_paths_for_shape(mask.paths(), self.shape(), MaskModeAdmission::Projection)
+        self.definition.masks.admit_paths_for_shape(
+            mask.paths(),
+            self.shape(),
+            MaskModeAdmission::Projection,
+        )
     }
 
     pub fn admits_mutation_mask(
         &self,
         mask: &AspectMask<MutationMask>,
     ) -> Result<(), MaskAdmissibilityDenial> {
-        self.masks
-            .admit_paths_for_shape(mask.paths(), self.shape(), MaskModeAdmission::Mutation)
+        self.definition.masks.admit_paths_for_shape(
+            mask.paths(),
+            self.shape(),
+            MaskModeAdmission::Mutation,
+        )
     }
 
     pub fn admits_diagnostic_mask(
         &self,
         mask: &AspectMask<DiagnosticMask>,
     ) -> Result<(), MaskAdmissibilityDenial> {
-        self.masks
-            .admit_paths_for_shape(mask.paths(), self.shape(), MaskModeAdmission::Diagnostic)
+        self.definition.masks.admit_paths_for_shape(
+            mask.paths(),
+            self.shape(),
+            MaskModeAdmission::Diagnostic,
+        )
     }
 }
 

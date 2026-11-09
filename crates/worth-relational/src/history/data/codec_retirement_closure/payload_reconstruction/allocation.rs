@@ -26,27 +26,55 @@ pub(super) fn admission(
             .find(|binding| binding.contract.key() == operation.basis().key())
             .ok_or("output patch has no installed physical contract")?
             .contract;
-        // The closed lookup clones once; validation keeps one distinct cloned
-        // contract in the admitted patch. Portable values themselves MOVE.
+        // Lookup clones share the definition without allocating. The admitted
+        // successor independently funds all reachable backing until its drop.
+        // Portable payloads move, but outlive their candidate holder's grant.
         let contract_bytes = contract.owned_allocation_capacity_bytes();
-        lookup_peak = lookup_peak.max(contract_bytes);
+        lookup_peak = lookup_peak.max(
+            contract
+                .clone_allocation_bytes()
+                .ok_or_else(super::super::memory_overflow)?,
+        );
         add(&mut bounds.retained_bytes, contract_bytes)?;
         match operation {
-            PortableAspectPatchOperation::SetWhole { .. } => add(
-                &mut bounds.retained_bytes,
-                contract.key().owned_allocation_capacity_bytes(),
-            )?,
+            PortableAspectPatchOperation::SetWhole { value, .. } => {
+                add(
+                    &mut bounds.retained_bytes,
+                    ContractValidatedAspectValue::admission_storage_bytes(contract)
+                        .ok_or_else(super::super::memory_overflow)?,
+                )?;
+                add(
+                    &mut bounds.retained_bytes,
+                    value.owned_allocation_capacity_bytes(),
+                )?;
+            }
             PortableAspectPatchOperation::ClearWhole { .. } => {}
             PortableAspectPatchOperation::PatchFields {
-                selected_fields, ..
+                selected_fields,
+                field_sets,
+                field_clears,
+                ..
             } => {
-                // The first mask consumes these owned keys; the admitted
-                // mask clones them. Its typed backing is already quoted above.
-                for key in selected_fields {
+                for field in field_sets {
+                    add(
+                        &mut bounds.retained_bytes,
+                        field.field().owned_allocation_capacity_bytes(),
+                    )?;
+                    add(
+                        &mut bounds.retained_bytes,
+                        field.value().owned_allocation_capacity_bytes(),
+                    )?;
+                }
+                for key in field_clears {
                     add(
                         &mut bounds.retained_bytes,
                         key.owned_allocation_capacity_bytes(),
                     )?;
+                }
+                // The first mask consumes these owned keys; the admitted
+                // mask clones them. Its typed backing is already quoted above.
+                for key in selected_fields {
+                    add(&mut bounds.retained_bytes, key.as_str().len())?;
                 }
             }
         }

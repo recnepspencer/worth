@@ -29,7 +29,10 @@ fn delegated_chain_expiry_between_access_and_governed_query_sessions_denies() {
                 &phase,
                 &world,
                 "capability-parent",
-                field(&world, CapabilityNotAfterField::reference()),
+                field(
+                    &world,
+                    CapabilityNotAfterField::at("CapabilityNotAfterField"),
+                ),
                 worth_foundational::facade::AspectValue::UInt64(101),
             )
         })
@@ -41,7 +44,10 @@ fn delegated_chain_expiry_between_access_and_governed_query_sessions_denies() {
                 &phase,
                 &world,
                 "capability-child",
-                field(&world, CapabilityNotAfterField::reference()),
+                field(
+                    &world,
+                    CapabilityNotAfterField::at("CapabilityNotAfterField"),
+                ),
                 worth_foundational::facade::AspectValue::UInt64(101),
             )
         })
@@ -81,7 +87,7 @@ fn delegated_chain_expiry_between_access_and_governed_query_sessions_denies() {
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &phase,
-                    AccountIdentity::reference(),
+                    AccountIdentity::at("AccountIdentity"),
                     "account-1".to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

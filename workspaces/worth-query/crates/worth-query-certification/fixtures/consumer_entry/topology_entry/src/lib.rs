@@ -6,7 +6,6 @@ use fixture_values::PositiveLength;
 use worth_query_consumer_values as fixture_values;
 #[cfg(test)]
 use worth_query_decl::facade::application_schema::ApplicationSchema;
-use worth_query_decl::facade::worth_query_application_contribution;
 use worth_query_host::facade as runtime_api;
 use worth_query_host::facade::domain as runtime_domain;
 #[cfg(test)]
@@ -57,6 +56,8 @@ mod planar_read;
 mod planar_topology;
 mod planar_vertex;
 mod principal;
+mod principal_records;
+pub use principal_records::*;
 mod prior_cycle_adjustment;
 mod producer;
 mod readiness;
@@ -83,6 +84,8 @@ pub use readiness::InitialPlanarReadiness;
 pub use source_adjustment::*;
 
 mod base_model;
+#[path = "base_model/records.rs"]
+mod storage_model;
 pub use base_model::*;
 pub mod domain_values;
 mod length_binding;
@@ -90,14 +93,51 @@ pub use length_binding::TopologyLengthBinding;
 mod schema_binding;
 pub use schema_binding::TopologySchemaBinding;
 
-worth_query_application_contribution! {
-    pub contribution TopologyContribution for Schema: TopologySchemaBinding {
-        identity: "worth.query.certification.topology.v2",
-        members: |schema| {
+use worth_query_decl::facade::application_schema::{fragment::*, *};
+pub(crate) type TopologyCoreMembers<S, R = TopologyRecords> = (
+    R,
+    <S as TopologySchemaBinding>::PrincipalFragment,
+    document_history::HistoryGrantRecords,
+    TopologyContracts,
+);
+#[cfg(test)]
+pub(crate) type CheckpointRecords = (checkpoint_recovery::computation_partition::facts::FactsRecords, checkpoint_recovery::computation_partition::oracle::collection::lifecycle::members::SupportRecords, checkpoint_recovery::computation_partition::entry_correction::capability::CorrectionGrantRecords);
+#[cfg(test)]
+pub(crate) type CheckpointMembers<S> = (
+    CheckpointRecords,
+    checkpoint_recovery::computation_partition::entry_correction::recorded::RecordedEntryCorrection<
+        S,
+    >,
+);
+pub struct TopologyContribution;
+impl<S: TopologySchemaBinding> ApplicationSchemaContribution<S> for TopologyContribution {
+    const IDENTITY: ApplicationSchemaContributionIdentity =
+        ApplicationSchemaContributionIdentity::new("worth.query.certification.topology.v2");
+    #[cfg(not(test))]
+    type Members = TopologyCoreMembers<S>;
+    #[cfg(test)]
+    type Members = (TopologyCoreMembers<S>, CheckpointMembers<S>);
+}
+impl TopologyContribution {
+    pub fn reference<S: TopologySchemaBinding>() -> ApplicationSchemaContributionRef<S, Self> {
+        ApplicationSchemaContributionRef::from_contribution()
+    }
+}
+pub struct TopologyContracts;
+impl<Schema: TopologySchemaBinding> Registration<Schema> for TopologyContracts {
+    fn register(
+        schema: ApplicationSchemaDeclarationBuilder<Schema>,
+    ) -> Result<ApplicationSchemaDeclarationBuilder<Schema>, ApplicationSchemaDeclarationDenial>
+    {
+        Ok({
             #[cfg(test)]
             let schema = checkpoint_recovery::required_chain::declare(schema);
             let schema = alternate_output::declare_alternate_output(schema);
-            let schema = if Schema::ESCAPING_PLANAR_OUTPUT { escaping_output::declare(schema) } else { schema };
+            let schema = if Schema::ESCAPING_PLANAR_OUTPUT {
+                escaping_output::declare(schema)
+            } else {
+                schema
+            };
             let schema = island_coupling::declare(schema);
             let schema = vertex_replacement::declare_vertex_replacement(schema);
             let schema = prior_cycle_adjustment::declare_prior_cycle_adjustment(schema);
@@ -107,42 +147,108 @@ worth_query_application_contribution! {
             let schema = owner_discovery::declare(schema);
             let schema = <PlanarFinalFeatureDefinition<Schema> as worth_query_decl::facade::application_program::ApplicationFeatureDefinition<Schema>>::declare_members(schema);
             let schema = match Schema::PLANAR_EDIT_PROJECTION_WORK {
-                Some(work) => schema.operation_projection_work_budget(EditPlanar::reference::<Schema>(), work),
+                Some(work) => {
+                    schema.operation_projection_work_budget(EditPlanar::reference::<Schema>(), work)
+                }
                 None => schema,
             };
             let schema = base_model::declare(schema)
-                .operation(MutatePlanar::reference::<Schema>().definition().no_external_effect().no_aftermath().finish())
-
+                .operation(
+                    MutatePlanar::reference::<Schema>()
+                        .definition()
+                        .no_external_effect()
+                        .no_aftermath()
+                        .finish(),
+                )
                 .operation_projection_work_budget(MutatePlanar::reference::<Schema>(), 256)
-                .operation_read_entity(MutatePlanar::reference::<Schema>(), Body::reference::<Schema>())
-                .operation_read_field(MutatePlanar::reference::<Schema>(), BodyKey::reference::<Schema>())
-                .operation_read_field(MutatePlanar::reference::<Schema>(), PositionX::reference::<Schema>())
-                .operation_read_field(MutatePlanar::reference::<Schema>(), PositionY::reference::<Schema>())
-                .operation_read_field(MutatePlanar::reference::<Schema>(), Length::reference::<Schema>())
-                .operation_read_relation(MutatePlanar::reference::<Schema>(), PlanarSuccessor::reference::<Schema>())
-                .operation_create(MutatePlanar::reference::<Schema>(), Body::reference::<Schema>())
-                .operation_write(MutatePlanar::reference::<Schema>(), BodyKey::reference::<Schema>())
-                .operation_write(MutatePlanar::reference::<Schema>(), PositionX::reference::<Schema>())
-                .operation_write(MutatePlanar::reference::<Schema>(), PositionY::reference::<Schema>())
-                .operation_write(MutatePlanar::reference::<Schema>(), Length::reference::<Schema>())
-                .operation_link(MutatePlanar::reference::<Schema>(), PlanarSuccessor::reference::<Schema>())
-                .operation_unlink(MutatePlanar::reference::<Schema>(), PlanarSuccessor::reference::<Schema>())
+                .operation_read_entity(
+                    MutatePlanar::reference::<Schema>(),
+                    Body::reference::<Schema>(),
+                )
+                .operation_read_field(MutatePlanar::reference::<Schema>(), BodyKey::at("BodyKey"))
+                .operation_read_field(
+                    MutatePlanar::reference::<Schema>(),
+                    PositionX::at("PositionX"),
+                )
+                .operation_read_field(
+                    MutatePlanar::reference::<Schema>(),
+                    PositionY::at("PositionY"),
+                )
+                .operation_read_field(MutatePlanar::reference::<Schema>(), Length::at("Length"))
+                .operation_read_relation(
+                    MutatePlanar::reference::<Schema>(),
+                    PlanarSuccessor::reference::<Schema>(),
+                )
+                .operation_create(
+                    MutatePlanar::reference::<Schema>(),
+                    Body::reference::<Schema>(),
+                )
+                .operation_write(MutatePlanar::reference::<Schema>(), BodyKey::at("BodyKey"))
+                .operation_write(
+                    MutatePlanar::reference::<Schema>(),
+                    PositionX::at("PositionX"),
+                )
+                .operation_write(
+                    MutatePlanar::reference::<Schema>(),
+                    PositionY::at("PositionY"),
+                )
+                .operation_write(MutatePlanar::reference::<Schema>(), Length::at("Length"))
+                .operation_link(
+                    MutatePlanar::reference::<Schema>(),
+                    PlanarSuccessor::reference::<Schema>(),
+                )
+                .operation_unlink(
+                    MutatePlanar::reference::<Schema>(),
+                    PlanarSuccessor::reference::<Schema>(),
+                )
                 .application_mutation_binding::<PlanarMutationBinding<Schema>>()
-                .operation(EditPlanar::reference::<Schema>().definition().no_external_effect().no_aftermath().finish())
-
-                .operation_read_entity(EditPlanar::reference::<Schema>(), Body::reference::<Schema>())
-                .operation_read_field(EditPlanar::reference::<Schema>(), BodyKey::reference::<Schema>())
-                .operation_read_field(EditPlanar::reference::<Schema>(), PositionX::reference::<Schema>())
-                .operation_read_field(EditPlanar::reference::<Schema>(), PositionY::reference::<Schema>())
-                .operation_read_field(EditPlanar::reference::<Schema>(), Length::reference::<Schema>())
-                .operation_read_relation(EditPlanar::reference::<Schema>(), PlanarSuccessor::reference::<Schema>())
-                .operation_create(EditPlanar::reference::<Schema>(), Body::reference::<Schema>())
-                .operation_write(EditPlanar::reference::<Schema>(), BodyKey::reference::<Schema>())
-                .operation_write(EditPlanar::reference::<Schema>(), PositionX::reference::<Schema>())
-                .operation_write(EditPlanar::reference::<Schema>(), PositionY::reference::<Schema>())
-                .operation_write(EditPlanar::reference::<Schema>(), Length::reference::<Schema>())
-                .operation_link(EditPlanar::reference::<Schema>(), PlanarSuccessor::reference::<Schema>())
-                .operation_unlink(EditPlanar::reference::<Schema>(), PlanarSuccessor::reference::<Schema>())
+                .operation(
+                    EditPlanar::reference::<Schema>()
+                        .definition()
+                        .no_external_effect()
+                        .no_aftermath()
+                        .finish(),
+                )
+                .operation_read_entity(
+                    EditPlanar::reference::<Schema>(),
+                    Body::reference::<Schema>(),
+                )
+                .operation_read_field(EditPlanar::reference::<Schema>(), BodyKey::at("BodyKey"))
+                .operation_read_field(
+                    EditPlanar::reference::<Schema>(),
+                    PositionX::at("PositionX"),
+                )
+                .operation_read_field(
+                    EditPlanar::reference::<Schema>(),
+                    PositionY::at("PositionY"),
+                )
+                .operation_read_field(EditPlanar::reference::<Schema>(), Length::at("Length"))
+                .operation_read_relation(
+                    EditPlanar::reference::<Schema>(),
+                    PlanarSuccessor::reference::<Schema>(),
+                )
+                .operation_create(
+                    EditPlanar::reference::<Schema>(),
+                    Body::reference::<Schema>(),
+                )
+                .operation_write(EditPlanar::reference::<Schema>(), BodyKey::at("BodyKey"))
+                .operation_write(
+                    EditPlanar::reference::<Schema>(),
+                    PositionX::at("PositionX"),
+                )
+                .operation_write(
+                    EditPlanar::reference::<Schema>(),
+                    PositionY::at("PositionY"),
+                )
+                .operation_write(EditPlanar::reference::<Schema>(), Length::at("Length"))
+                .operation_link(
+                    EditPlanar::reference::<Schema>(),
+                    PlanarSuccessor::reference::<Schema>(),
+                )
+                .operation_unlink(
+                    EditPlanar::reference::<Schema>(),
+                    PlanarSuccessor::reference::<Schema>(),
+                )
                 .application_mutation_binding::<PlanarEditBinding<Schema>>()
                 .application_query(planar_query_definition::<Schema>())
                 .application_query_binding::<PlanarReadBinding<Schema>>()
@@ -153,6 +259,6 @@ worth_query_application_contribution! {
             #[cfg(test)]
             let schema = checkpoint_recovery::computation_partition::declare(schema);
             schema
-        }
+        })
     }
 }

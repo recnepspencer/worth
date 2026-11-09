@@ -35,7 +35,10 @@ fn unrelated_field_indexes_do_not_reread_changed_records() {
         .index_authority()
         .build_for_commit(execution, request(first.commit.commit_id));
     assert!(initial.failed_indexes.is_empty());
-    let second = update_entity(execution, &runtime, entity, "after");
+    let candidate =
+        candidate_index_publication::candidate_for_update(execution, &runtime, entity, "after");
+    let native_work = candidate.prepared_index_maintenance_work().unwrap();
+    let second = candidate_index_publication::publish_native(execution, &runtime, candidate);
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
@@ -54,8 +57,8 @@ fn unrelated_field_indexes_do_not_reread_changed_records() {
         )
         .unwrap();
     assert_eq!(refreshed.work.patch_records, 1);
-    assert_eq!(refreshed.work.record_reads, 2);
-    assert_eq!(refreshed.work.entry_edits, 2);
+    assert_eq!(native_work.record_reads, 2);
+    assert_eq!(native_work.entry_edits, 2);
     release_test_commit_snapshot(&runtime, &first);
     release_test_commit_snapshot(&runtime, &second);
 }
@@ -90,7 +93,22 @@ fn relation_field_deletion_removes_the_old_entry_with_one_read_per_basis() {
         .index_authority()
         .build_for_commit(execution, request(first.commit.commit_id));
     assert!(initial.failed_indexes.is_empty());
-    let second = delete_relation_on_branch(execution, &runtime, relation, BranchId("main".into()));
+    let mut transaction = test_owner_begin_transaction_for_main(&runtime);
+    transaction
+        .push_batch(
+            WorkerIntentBatch::new("delete-indexed-relation").push(MutationIntent::Relation(
+                RelationMutationIntent::Delete(DeleteRelationIntent {
+                    relation_id: relation,
+                }),
+            )),
+            execution.allocation_policy(),
+        )
+        .unwrap();
+    let candidate = runtime
+        .prepare_branch_transaction(execution, transaction)
+        .unwrap();
+    let native_work = candidate.prepared_index_maintenance_work().unwrap();
+    let second = candidate_index_publication::publish_native(execution, &runtime, candidate);
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
@@ -104,8 +122,8 @@ fn relation_field_deletion_removes_the_old_entry_with_one_read_per_basis() {
             execution,
         )
         .unwrap();
-    assert_eq!(refreshed.work.record_reads, 2);
-    assert_eq!(refreshed.work.entry_edits, 1);
+    assert_eq!(native_work.record_reads, 2);
+    assert_eq!(native_work.entry_edits, 1);
     let DerivedIndexEntries::RelationField(entries) = &refreshed.generations[0].entries else {
         panic!("relation field index")
     };
@@ -115,7 +133,7 @@ fn relation_field_deletion_removes_the_old_entry_with_one_read_per_basis() {
 }
 
 #[test]
-fn mixed_patch_and_cold_field_generations_use_their_own_changes() {
+fn mixed_seeded_and_missing_fields_refuse_until_explicit_recovery() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -147,7 +165,54 @@ fn mixed_patch_and_cold_field_generations_use_their_own_changes() {
     );
     assert!(initial.failed_indexes.is_empty());
     let cold = register("name-cold", "name");
-    let second = update_entity(execution, &runtime, entity, "after");
+    let transaction =
+        candidate_index_publication::transaction_for_update(&runtime, entity, "after");
+    let refused = runtime
+        .prepare_branch_transaction(execution, transaction)
+        .unwrap_err();
+    assert!(
+        matches!(refused, crate::transactions::data::TransactionCommitError::Publication { ref error, .. } if error.detail.contains("ColdReconstructionRequired"))
+    );
+    assert_eq!(runtime.history().immutable_commit_count(), 1);
+    let (_, basis) = runtime
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap();
+    let refused = runtime
+        .index_authority()
+        .refresh_for_basis(
+            request(first.commit.commit_id, vec![name.index_id, cold.index_id]),
+            &basis,
+            None,
+            DerivedIndexMaintenanceBudget {
+                maximum_work_units: None,
+                maximum_cold_record_slots: None,
+                maximum_derived_rows: None,
+            },
+            execution,
+        )
+        .unwrap_err();
+    assert_eq!(
+        refused.kind,
+        crate::indexes::data::DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired
+    );
+    assert_eq!(refused.work.cold_record_slots, 0);
+    runtime
+        .index_authority()
+        .reconstruct_for_basis(
+            execution,
+            request(first.commit.commit_id, vec![cold.index_id]),
+            &basis,
+            DerivedIndexMaintenanceBudget {
+                maximum_work_units: None,
+                maximum_cold_record_slots: None,
+                maximum_derived_rows: None,
+            },
+        )
+        .unwrap();
+    let candidate =
+        candidate_index_publication::candidate_for_update(execution, &runtime, entity, "after");
+    let native_work = candidate.prepared_index_maintenance_work().unwrap();
+    let second = candidate_index_publication::publish_native(execution, &runtime, candidate);
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
@@ -165,9 +230,9 @@ fn mixed_patch_and_cold_field_generations_use_their_own_changes() {
             execution,
         )
         .unwrap();
-    assert!(refreshed.work.cold_record_slots > 0);
-    assert_eq!(refreshed.work.record_reads, 4);
-    assert_eq!(refreshed.work.entry_edits, 3);
+    assert_eq!(refreshed.work.cold_record_slots, 0);
+    assert_eq!(native_work.record_reads, 2);
+    assert_eq!(native_work.entry_edits, 4);
     let name_generation = refreshed
         .generations
         .iter()

@@ -54,7 +54,7 @@ pub fn installed_world_with_verifier(
                     Target::reference(),
                     WorthQueryApplicationEntityKey::new("target").unwrap(),
                 )
-                .field(TargetKey::reference(), "target".to_owned()),
+                .field(TargetKey::at("TargetKey"), "target".to_owned()),
             )
             .unwrap();
         let invariant = bootstrap.retain_invariant_projection_authority();

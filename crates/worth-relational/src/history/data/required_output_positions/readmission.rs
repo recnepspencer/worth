@@ -66,6 +66,9 @@ impl RequiredOutputPublicationPositions {
         let root = node::read(&mut cursor, &mut context, 0)?;
         cursor.finish().map_err(projected_stop)?;
         Ok(Self {
+            // The warm image is rebuilt by current-fact completion; cold reads
+            // authenticate the independent durable roster directly.
+            current_owned: Default::default(),
             root,
             unresolved_prefix,
         })

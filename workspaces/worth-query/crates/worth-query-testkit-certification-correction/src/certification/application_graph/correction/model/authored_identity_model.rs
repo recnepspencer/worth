@@ -63,15 +63,13 @@ input!(
     RestoreOperation,
     "authored-identity.restore.input.v1"
 );
-worth_query_operation_reads!(CreateOperation => [Key, Primary]);
-worth_query_operation_writes!(CreateOperation => [Key, Primary, Secondary, ReadEnabled, Ceiling, Calculated]);
+
 impl OperationCreates<CreateOperation> for Number {}
-worth_query_relation!(pub AuthoredReference in NumericSchema, Number => Number; integrity = same_context_unbounded_retain_dangling);
+
 impl OperationLinks<CreateOperation> for AuthoredReference {}
-worth_query_operation_reads!(RestoreOperation => [Key, Primary]);
-worth_query_operation_writes!(RestoreOperation => [Key, Primary, Secondary, ReadEnabled, Ceiling, Calculated]);
+
 impl OperationCreates<RestoreOperation> for Number {}
-worth_query_operation_reads!(RetireAuthoredEntity => [Number, Key, Primary, Secondary, ReadEnabled, Ceiling, Calculated]);
+worth_query_operation_reads!(RetireAuthoredEntity => [Number]);
 impl OperationDeletes<RetireAuthoredEntity> for Number {}
 
 pub struct CreatedOutputs;
@@ -144,8 +142,8 @@ macro_rules! worlds_certification_application_graph_correction_model_authored_id
             handler identity $id, outputs $Output,
             principal ActorBinding, mapping ExternalMapping, principal_entity Principal,
             principal_identity u64, identity_binding U64ApplicationValueBinding,
-            scope Number, NumberFacts, Key, String, ReadOnly, NoApplicationUnit,
-            field Key::reference(), value $Input::scope_key,
+            scope Key,
+            field Key::at("Key"), value $Input::scope_key,
         );
     }
 }
@@ -186,14 +184,14 @@ macro_rules! worlds_certification_application_graph_correction_model_authored_id
                 schema: ApplicationSchemaDeclarationBuilder<NumericSchema>,
             ) -> ApplicationSchemaDeclarationBuilder<NumericSchema> {
                 schema
-                    .operation_read_field(Self::reference(), Key::reference())
-                    .operation_read_field(Self::reference(), Primary::reference())
-                    .operation_write(Self::reference(), Key::reference())
-                    .operation_write(Self::reference(), Primary::reference())
-                    .operation_write(Self::reference(), Secondary::reference())
-                    .operation_write(Self::reference(), ReadEnabled::reference())
-                    .operation_write(Self::reference(), Ceiling::reference())
-                    .operation_write(Self::reference(), Calculated::reference())
+                    .operation_read_field(Self::reference(), Key::at("Key"))
+                    .operation_read_field(Self::reference(), Primary::at("Primary"))
+                    .operation_write(Self::reference(), Key::at("Key"))
+                    .operation_write(Self::reference(), Primary::at("Primary"))
+                    .operation_write(Self::reference(), Secondary::at("Secondary"))
+                    .operation_write(Self::reference(), ReadEnabled::at("ReadEnabled"))
+                    .operation_write(Self::reference(), Ceiling::at("Ceiling"))
+                    .operation_write(Self::reference(), Calculated::at("Calculated"))
                     .operation_create(Self::reference(), Number::reference())
                     $($link)*
             }
@@ -209,12 +207,12 @@ impl ApplicationDeclaredOperation<NumericSchema> for RetireAuthoredEntity {
     ) -> ApplicationSchemaDeclarationBuilder<NumericSchema> {
         schema
             .operation_read_entity(Self::reference(), Number::reference())
-            .operation_read_field(Self::reference(), Key::reference())
-            .operation_read_field(Self::reference(), Primary::reference())
-            .operation_read_field(Self::reference(), Secondary::reference())
-            .operation_read_field(Self::reference(), ReadEnabled::reference())
-            .operation_read_field(Self::reference(), Ceiling::reference())
-            .operation_read_field(Self::reference(), Calculated::reference())
+            .operation_read_field(Self::reference(), Key::at("Key"))
+            .operation_read_field(Self::reference(), Primary::at("Primary"))
+            .operation_read_field(Self::reference(), Secondary::at("Secondary"))
+            .operation_read_field(Self::reference(), ReadEnabled::at("ReadEnabled"))
+            .operation_read_field(Self::reference(), Ceiling::at("Ceiling"))
+            .operation_read_field(Self::reference(), Calculated::at("Calculated"))
             .operation_delete(Self::reference(), Number::reference())
     }
 }
@@ -231,11 +229,6 @@ pub fn declare(
         ),
     )
     .application_mutation_binding::<RestoreBinding>()
-    .relation(
-        AuthoredReference::reference(),
-        Number::reference(),
-        Number::reference(),
-    )
 }
 pub struct Feature;
 impl ApplicationFeature<NumericSchema> for Feature {
@@ -268,3 +261,5 @@ pub fn feature() -> ApplicationFeatureSpec {
         .finish_action()
         .finish()
 }
+
+pub use crate::facade::certification::application_graph::correction::model::schema::storage_model::AuthoredReference;

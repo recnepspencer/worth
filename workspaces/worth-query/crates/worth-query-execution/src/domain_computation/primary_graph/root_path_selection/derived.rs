@@ -4,8 +4,8 @@ use super::super::read_observation::WorthQueryInvariantProjectionWork;
 use super::*;
 use std::cell::RefCell;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
-pub(super) fn advance<E>(
-    basis: &RootPathReadBasis<'_, '_, '_>,
+pub(super) fn advance<E, Phase>(
+    basis: &RootPathReadBasis<'_, '_, '_, Phase>,
     located: PathStep<'_>,
     frontier: &mut Frontier,
     ports: &mut RootPathReadPorts<'_, E>,
@@ -49,8 +49,9 @@ pub(super) fn advance<E>(
         let mut step_reads = WorthQueryInvariantProjectionWork::default();
         for (root, mut predecessor) in std::mem::take(frontier) {
             ports.check(subject)?;
-            let observed = DerivedSourceObservation::read(
+            let observed = DerivedSourceObservation::read_projected(
                 basis.runtime,
+                basis.origin,
                 basis.execution,
                 DerivedSourceQuery {
                     relation: subject,

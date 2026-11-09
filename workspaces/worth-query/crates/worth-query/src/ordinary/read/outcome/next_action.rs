@@ -115,7 +115,8 @@ fn next_action_for_read_denial(kind: &WorthQueryReadDenialKind) -> WorthQueryRea
         | WorthQueryReadDenialKind::BasisPreflightDenied => {
             WorthQueryReadNextAction::SupplyFreshBasis
         }
-        WorthQueryReadDenialKind::InvalidRoot
+        WorthQueryReadDenialKind::EvidenceIdentityDerivationDenied(_)
+        | WorthQueryReadDenialKind::InvalidRoot
         | WorthQueryReadDenialKind::BuiltInOperatorDenied
         | WorthQueryReadDenialKind::RelationshipProofAdmissionDenied
         | WorthQueryReadDenialKind::ScopeShapeDenied

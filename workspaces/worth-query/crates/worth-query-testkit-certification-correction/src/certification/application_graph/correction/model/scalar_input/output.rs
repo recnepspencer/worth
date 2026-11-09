@@ -14,17 +14,15 @@ pub fn scalar_output_uses_its_own_performed_revision() {
     let native = application
         .installed_schema()
         .native_contracts()
-        .aspect("Number", "ScalarResult")
+        .aspect("Number", crate::facade::certification::application_graph::correction::model::scalar_input::ScalarResult::reference().name())
         .unwrap();
     assert!(matches!(
         native.contract().shape(),
-        worth_foundational::facade::AspectShape::Scalar(
-            worth_foundational::facade::ScalarAspectType::UInt64
-        )
+        worth_foundational::facade::AspectShape::Struct(_)
     ));
     assert!(matches!(native.binding(),
         worth_foundational::facade::AspectBinding::EntityField { field }
-            if field.as_str() == "Total"));
+            if field.as_str() == native.contract().key().as_str()));
     let readers = application.application_query_basis_observer();
     let baseline = readers.observe().active();
     let scope = request_scope();

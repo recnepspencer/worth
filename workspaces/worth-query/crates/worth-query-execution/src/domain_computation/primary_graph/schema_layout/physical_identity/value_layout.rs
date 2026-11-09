@@ -4,20 +4,9 @@ use super::super::registry_lowering::{
 };
 use super::*;
 use worth_query_declaration::facade::application_schema::*;
+mod roles;
+use roles::*;
 struct Schema;
-struct Zulu;
-struct Lookalike;
-struct Earlier;
-struct Edge;
-impl ApplicationEntityMarkerIdentity<Schema> for Zulu {
-    const IDENTIFIER: &'static str = "Zulu";
-}
-impl ApplicationEntityMarkerIdentity<Schema> for Lookalike {
-    const IDENTIFIER: &'static str = "worth-query-provider-idempotency";
-}
-impl ApplicationEntityMarkerIdentity<Schema> for Earlier {
-    const IDENTIFIER: &'static str = "Earlier";
-}
 impl ApplicationSchema for Schema {
     const OWNER: &'static str = "worth.tests.physical.roles";
     const NAME: &'static str = "RoleAllocation";
@@ -33,39 +22,34 @@ fn declaration(
     edge: bool,
     orbit: bool,
 ) -> Result<ApplicationSchemaDeclaration<Schema>, ApplicationSchemaDeclarationDenial> {
-    let zulu = ApplicationEntityRef::<Schema, Zulu>::from_schema_identifier("Zulu");
-    let lookalike = ApplicationEntityRef::<Schema, Lookalike>::from_schema_identifier(
-        "worth-query-provider-idempotency",
-    );
-    let mut builder = ApplicationSchemaDeclarationBuilder::<Schema>::for_schema()
-        .entity(zulu)
-        .entity(lookalike);
-    if earlier {
-        builder = builder
-            .entity(ApplicationEntityRef::<Schema, Earlier>::from_schema_identifier("Earlier"));
+    match (earlier, edge, orbit) {
+        (false, false, false) => {
+            ApplicationSchemaDeclarationBuilder::<Schema>::from_fragment(BaseRoles)?.build()
+        }
+        (true, false, false) => {
+            ApplicationSchemaDeclarationBuilder::<Schema>::from_fragment(EarlierRoles)?.build()
+        }
+        (false, true, false) => {
+            ApplicationSchemaDeclarationBuilder::<Schema>::from_fragment(ExtraEdgeRoles)?.build()
+        }
+        (true, true, false) => {
+            ApplicationSchemaDeclarationBuilder::<Schema>::from_fragment(ExtendedRoles)?.build()
+        }
+        (false, false, true) => {
+            ApplicationSchemaDeclarationBuilder::<Schema>::from_fragment(OrbitRoles)?.build()
+        }
+        (true, false, true) => {
+            ApplicationSchemaDeclarationBuilder::<Schema>::from_fragment(EarlierOrbitRoles)?.build()
+        }
+        (false, true, true) => {
+            ApplicationSchemaDeclarationBuilder::<Schema>::from_fragment(ExtraEdgeOrbitRoles)?
+                .build()
+        }
+        (true, true, true) => {
+            ApplicationSchemaDeclarationBuilder::<Schema>::from_fragment(ExtendedOrbitRoles)?
+                .build()
+        }
     }
-    let base = ApplicationRelationIntegrity::same_context_unbounded_retain_dangling();
-    let integrity = if orbit { base.orbit() } else { base };
-    builder = builder.relation(
-        ApplicationRelationRef::<Schema, Edge, Zulu, Zulu>::from_schema_identifiers(
-            "Next", "Zulu", "Zulu", integrity,
-        ),
-        zulu,
-        zulu,
-    );
-    if edge {
-        builder = builder.relation(
-            ApplicationRelationRef::<Schema, Edge, Zulu, Zulu>::from_schema_identifiers(
-                "EarlierEdge",
-                "Zulu",
-                "Zulu",
-                integrity,
-            ),
-            zulu,
-            zulu,
-        );
-    }
-    builder.build()
 }
 pub(super) fn schema(earlier: bool, edge: bool, orbit: bool) -> ErasedApplicationSchemaDeclaration {
     declaration(earlier, edge, orbit).unwrap().into_erased()
@@ -150,19 +134,8 @@ pub(super) fn contracts() -> super::super::registry_lowering::LoweredApplication
 }
 
 pub(super) fn same_named_classes() -> ErasedApplicationSchemaDeclaration {
-    let zulu = ApplicationEntityRef::<Schema, Zulu>::from_schema_identifier("Zulu");
-    ApplicationSchemaDeclarationBuilder::<Schema>::for_schema()
-        .entity(zulu)
-        .relation(
-            ApplicationRelationRef::<Schema, Edge, Zulu, Zulu>::from_schema_identifiers(
-                "Zulu",
-                "Zulu",
-                "Zulu",
-                ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
-            ),
-            zulu,
-            zulu,
-        )
+    ApplicationSchemaDeclarationBuilder::<Schema>::from_fragment(SameNamedRoles)
+        .unwrap()
         .build()
         .unwrap()
         .into_erased()

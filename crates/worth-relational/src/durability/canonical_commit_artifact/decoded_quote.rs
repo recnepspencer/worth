@@ -13,14 +13,17 @@ mod cascades;
 pub(super) mod codec_retirements;
 mod content_schema;
 mod contracts;
+mod coupled_publication;
 mod diagnostics;
 mod envelope;
+mod historical_selection;
 mod identities;
 mod indexes;
 mod lineage;
 pub(super) mod merge;
 #[cfg(test)]
 mod nonmerge_tests;
+mod owned_graph_selection;
 mod patch;
 mod plan;
 mod portable_aspects;
@@ -125,6 +128,19 @@ fn vector<T>(
     add(&mut bytes, backing)?;
     // A relocating growth may simultaneously own old and new buffers. Keep
     // that additional concrete backing in the transient admission.
+    bytes.transient = bytes.transient.checked_add(backing).ok_or_else(malformed)?;
+    Ok(bytes)
+}
+fn vector_with_storage(
+    value: BorrowedPayload<'_>,
+    request: &ExecutionRequest<'_, '_>,
+    storage: impl FnOnce(usize) -> Option<u64>,
+    mut nested: impl FnMut(BorrowedPayload<'_>) -> Result<OwnerAllocation, Refusal>,
+) -> Result<OwnerAllocation, Refusal> {
+    let mut bytes = OwnerAllocation::default();
+    let count = value.elements(request, |element| add(&mut bytes, nested(element)?))?;
+    let backing = storage(vector_capacity(count)?).ok_or_else(malformed)?;
+    add(&mut bytes, backing)?;
     bytes.transient = bytes.transient.checked_add(backing).ok_or_else(malformed)?;
     Ok(bytes)
 }

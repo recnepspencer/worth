@@ -69,7 +69,8 @@ fn ordinary_batch_reuses_touch_vocabulary_without_graph_lifecycle_overclaim() {
         collection: crate::runtime::WorthQueryMutationTargetCollectionIdentity::new(
             "write-command-declared",
             "Task",
-        ),
+        )
+        .expect("fixture digest must fit"),
         aspects: vec![
             WorthQueryAuthoredAspectMutation::new(
                 test_aspect_touch("identity.id"),
@@ -136,6 +137,7 @@ fn admitted_batch_plan(
 
 fn target_collection(value: &str) -> WorthQueryMutationTargetCollectionIdentity {
     WorthQueryMutationTargetCollectionIdentity::new("graph-touch-descriptor-test", value)
+        .expect("fixture digest must fit")
 }
 
 fn mixed_graph_program() -> (

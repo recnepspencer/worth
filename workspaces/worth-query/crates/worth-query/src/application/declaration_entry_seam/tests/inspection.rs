@@ -156,20 +156,24 @@ fn relational_and_bridge_checked_inspection_expose_authority_specific_posture() 
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let handle = handle(request_execution, "preview");
-    let relational = handle.route_relational_truth_checked(
-        WorthQueryDeclarationRelationalRoutingInput::envelope_checked(
-            crate::application::WorthQueryDeclarationEnvelopeChecked::Enveloped(
-                authority_rich_envelope(&handle, "edge:42"),
+    let relational = handle
+        .route_relational_truth_checked(
+            WorthQueryDeclarationRelationalRoutingInput::envelope_checked(
+                crate::application::WorthQueryDeclarationEnvelopeChecked::Enveloped(
+                    authority_rich_envelope(&handle, "edge:42"),
+                ),
             ),
-        ),
-    );
-    let bridge = handle.route_bridge_continuation_checked(
-        WorthQueryDeclarationBridgeRoutingInput::envelope_checked(
-            crate::application::WorthQueryDeclarationEnvelopeChecked::Enveloped(
-                authority_rich_envelope(&handle, "edge:42"),
+        )
+        .expect("fixture digest must fit");
+    let bridge = handle
+        .route_bridge_continuation_checked(
+            WorthQueryDeclarationBridgeRoutingInput::envelope_checked(
+                crate::application::WorthQueryDeclarationEnvelopeChecked::Enveloped(
+                    authority_rich_envelope(&handle, "edge:42"),
+                ),
             ),
-        ),
-    );
+        )
+        .expect("fixture digest must fit");
 
     let relational_inspection = match handle.inspect_declaration_entry(
         WorthQueryDeclarationEntryInspectionInput::relational_routing_checked(relational),
@@ -226,9 +230,11 @@ fn denied_relational_inspection_keeps_unproven_authority_metadata_absent() {
 
     let handle = handle(request_execution, "preview");
     let envelope = bridge_signal_envelope(&handle, "edge:42");
-    let checked = handle.route_relational_truth_checked(
-        WorthQueryDeclarationRelationalRoutingInput::enveloped(envelope),
-    );
+    let checked = handle
+        .route_relational_truth_checked(WorthQueryDeclarationRelationalRoutingInput::enveloped(
+            envelope,
+        ))
+        .expect("fixture digest must fit");
 
     let inspection = match handle.inspect_declaration_entry(
         WorthQueryDeclarationEntryInspectionInput::relational_routing_checked(checked),

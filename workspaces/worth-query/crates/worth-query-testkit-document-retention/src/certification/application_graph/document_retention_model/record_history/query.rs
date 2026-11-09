@@ -35,48 +35,37 @@ pub fn identity() -> ApplicationQueryResultFieldRef<
     Query,
     IdentitySlot,
     DocumentRetentionSchema,
-    Document,
-    DocumentFacts,
     DocumentIdentityField,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("identity", DocumentIdentityField::reference())
+    ApplicationQueryResultFieldRef::new(
+        "identity",
+        DocumentIdentityField::at("DocumentIdentityField"),
+    )
 }
 pub fn retention() -> ApplicationQueryResultFieldRef<
     Query,
     RetentionSlot,
     DocumentRetentionSchema,
-    Document,
-    DocumentFacts,
     DocumentRetentionField,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("retention", DocumentRetentionField::reference())
+    ApplicationQueryResultFieldRef::new(
+        "retention",
+        DocumentRetentionField::at("DocumentRetentionField"),
+    )
 }
 
 pub struct Binding;
-pub type Scope = ApplicationQueryFieldScope<
-    DocumentRetentionSchema,
-    Document,
-    DocumentFacts,
-    DocumentIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type Scope = ApplicationQueryFieldScope<DocumentIdentityField>;
 impl ApplicationQueryIntent<DocumentRetentionSchema> for Input {
     type Binding = Binding;
     fn parameters(&self) -> ApplicationQueryParameterSet<Query> {
         parameters(&self.identity)
     }
     fn into_scope(self) -> Scope {
-        Scope::new(DocumentIdentityField::reference(), self.identity)
+        Scope::new(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            self.identity,
+        )
     }
 }
 impl ApplicationQueryBinding<DocumentRetentionSchema> for Binding {
@@ -93,17 +82,8 @@ impl ApplicationQueryBinding<DocumentRetentionSchema> for Binding {
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "worth.query.certification.record-history.governed-subject.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        DocumentRetentionSchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         DocumentRetentionSchema,
@@ -134,22 +114,24 @@ pub fn parameters(identity: &str) -> ApplicationQueryParameterSet<Query> {
         .unwrap()
 }
 pub fn definition(
-) -> ApplicationQueryDefinition<DocumentRetentionSchema, Query, Parameters, Row, Document> {
+) -> ApplicationQueryDefinitionBuilder<DocumentRetentionSchema, Query, Parameters, Row, Document> {
     let influence = ApplicationQueryInfluenceContract::permit_all();
     let disclosure = ApplicationQueryDisclosureContract::governed_by(
         "record-history-subject",
         super::capability::PayloadCapability::reference(),
     )
     .use_field_by(
-        DocumentIdentityField::reference(),
+        DocumentIdentityField::at("DocumentIdentityField"),
         super::capability::encoded(),
         influence.clone(),
     )
+    .unwrap()
     .use_field_by(
-        DocumentRetentionField::reference(),
+        DocumentRetentionField::at("DocumentRetentionField"),
         super::capability::encoded(),
         influence.clone(),
     )
+    .unwrap()
     .disclose_field_by(identity(), super::capability::encoded(), influence.clone())
     .disclose_field_by(retention(), super::capability::encoded(), influence);
     let shape = ApplicationQueryResultShapeBuilder::<
@@ -172,9 +154,10 @@ pub fn definition(
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
         .parameter(parameter())
-        .where_equal(DocumentIdentityField::reference(), parameter())
-        .build()
-        .unwrap()
+        .where_equal(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            parameter(),
+        )
 }
 impl WorthQueryApplicationProjection<DocumentRetentionSchema, Query> for Row {
     fn project(

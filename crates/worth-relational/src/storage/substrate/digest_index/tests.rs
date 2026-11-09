@@ -1,0 +1,95 @@
+use super::DigestIndex;
+use proptest::prelude::*;
+use sha2::{Digest, Sha256};
+use std::collections::BTreeMap;
+
+proptest! {
+    #[test]
+    fn commitment_matches_sorted_content_reconstruction(
+        actions in prop::collection::vec((any::<u128>(), prop::option::of(any::<[u8;32]>())), 0..150),
+    ) {
+        let mut index = DigestIndex::default();
+        let mut expected = BTreeMap::new();
+        for (draw, value) in actions {
+            // Deletion must target the maintained set, not almost surely miss a
+            // freshly sampled 128-bit key. Retain random misses when empty.
+            let key = if value.is_none() && !expected.is_empty() {
+                *expected.keys().nth((draw % expected.len() as u128) as usize).unwrap()
+            } else { draw };
+            let retained = index.clone();
+            let before = retained.digest();
+            index.set(key, value).unwrap();
+            if let Some(value) = value { expected.insert(key, value); } else { expected.remove(&key); }
+            prop_assert_eq!(index.digest(), reference(&expected.iter().map(|(&k, &v)| (k,v)).collect::<Vec<_>>()));
+            prop_assert_eq!(retained.digest(), before);
+        }
+        let mut reversed = DigestIndex::default();
+        for (&key, &value) in expected.iter().rev() { reversed.set(key, Some(value)).unwrap(); }
+        prop_assert_eq!(reversed.digest(), index.digest());
+        let ordered = expected.iter().map(|(&key, &value)| (key, value)).collect::<Vec<_>>();
+        let bulk = DigestIndex::from_sorted_entries(&crate::storage::substrate::maintenance::ReconstructionLane::oracle(), &ordered);
+        prop_assert!(bulk.root.as_ref().is_none_or(|root| root.digest.get().is_some()),
+            "cold reconstruction carries a settled digest before ordinary use");
+        prop_assert_eq!(bulk.digest(), reference(&ordered));
+        prop_assert_eq!(bulk.digest(), index.digest());
+        prop_assert_eq!(bulk.allocation_bytes(), index.allocation_bytes());
+        let remaining = expected.keys().copied().collect::<Vec<_>>();
+        for key in remaining {
+            let retained = index.clone();
+            let before = retained.digest();
+            index.set(key, None).unwrap();
+            expected.remove(&key);
+            prop_assert_eq!(index.digest(), reference(&expected.iter().map(|(&k, &v)| (k,v)).collect::<Vec<_>>()));
+            prop_assert_eq!(retained.digest(), before);
+        }
+        prop_assert_eq!(index.digest(), reference(&[]));
+        prop_assert_eq!(index.allocation_bytes(), 0);
+    }
+}
+
+// Independent sorted-key reconstruction; no production node, insertion, or
+// balancing helper participates in the expected commitment.
+fn reference(entries: &[(u128, [u8; 32])]) -> [u8; 32] {
+    let mut hash = Sha256::new();
+    hash.update(b"worth.relational.content-index.v1\0");
+    match entries.len() {
+        0 => hash.update([0]),
+        1 => {
+            hash.update([1]);
+            hash.update(entries[0].0.to_be_bytes());
+            hash.update(entries[0].1);
+        }
+        _ => {
+            let bit = (entries[0].0 ^ entries.last().unwrap().0).leading_zeros();
+            let split = entries.partition_point(|(key, _)| key & (1 << (127 - bit)) == 0);
+            hash.update([2]);
+            hash.update(bit.to_be_bytes());
+            hash.update(reference(&entries[..split]));
+            hash.update(reference(&entries[split..]));
+        }
+    }
+    hash.finalize().into()
+}
+
+#[test]
+fn explicit_cold_reconstruction_refuses_noncanonical_keys() {
+    let lane = crate::storage::substrate::maintenance::ReconstructionLane::oracle();
+    for entries in [
+        vec![(1, [1; 32]), (1, [2; 32])],
+        vec![(2, [1; 32]), (1, [2; 32])],
+    ] {
+        assert!(matches!(
+            DigestIndex::cold(&lane, &entries),
+            Err(super::DigestIndexError::NonCanonicalKeys)
+        ));
+    }
+    let entries = [(1, [1; 32]), (2, [2; 32])];
+    let cold = DigestIndex::cold(&lane, &entries).unwrap();
+    let mut updated = DigestIndex::default();
+    for (key, value) in entries.into_iter().rev() {
+        updated.set(key, Some(value)).unwrap();
+    }
+    assert_eq!(cold.digest(), updated.digest());
+}
+
+mod cost;

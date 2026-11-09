@@ -92,14 +92,21 @@ impl WorthServerCompatibilityFacade {
         integrity_digest: WorthServerIngressIntegrityDigest,
         performance_receipt: WorthServerIngressPerformanceReceipt,
     ) -> WorthServerCompatibilityUploadOutcome<WorthServerCompatibilityUpload> {
-        crate::surfaces::compat_http::mutation_execution::execute_compatibility_mutation_request(
+        match crate::surfaces::compat_http::mutation_execution::execute_compatibility_mutation_request(
             self,
             prepared_request,
             operation_request,
             mutation_request,
-        )
-        .map_success(|mutation| {
-            let file_envelope = project_upload_envelope(session, &mutation);
+        ) {
+        TransitionOutcome::Success(mutation) => {
+            let file_envelope = match project_upload_envelope(session, &mutation) {
+                Ok(envelope) => envelope,
+                Err(cause) => return TransitionOutcome::Denied(WorthServerQueryHandoffDenial::new(
+                    crate::WorthServerQueryHandoffDenialCode::EvidenceIdentityDerivationDenied(cause),
+                    mutation.envelope().response_envelope().diagnostics_profile(),
+                    "upload truth envelope identity was refused",
+                )),
+            };
             let certification_bundle = build_upload_certification_bundle(
                 &self.operator_evidence,
                 mutation.envelope().support_posture(),
@@ -107,15 +114,21 @@ impl WorthServerCompatibilityFacade {
                 mutation.envelope().response_envelope(),
                 &performance_receipt,
             );
-            WorthServerCompatibilityUpload::new(
+            TransitionOutcome::Success(WorthServerCompatibilityUpload::new(
                 upload,
                 integrity_digest,
                 performance_receipt,
                 mutation,
                 file_envelope,
                 certification_bundle,
-            )
-        })
+            ))
+        },
+        TransitionOutcome::Denied(value) => TransitionOutcome::Denied(value),
+        TransitionOutcome::Deferred(value) => TransitionOutcome::Deferred(value),
+        TransitionOutcome::Stale(value) => TransitionOutcome::Stale(value),
+        TransitionOutcome::RebindRequired(value) => TransitionOutcome::RebindRequired(value),
+        TransitionOutcome::Failed(value) => TransitionOutcome::Failed(value),
+        }
     }
 
     pub fn execute_upload(

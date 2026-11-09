@@ -1,6 +1,6 @@
 //! Successor-owned native mutation for the additive B application.
 use super::schema::{
-    Account, AccountIdentity, AccountNumber, ExternalMapping, IdentityBinding, Principal,
+    Account, AccountIdentity, ExternalMapping, HomeRecords, IdentityBinding, Principal,
     SuccessorSchema,
 };
 use std::sync::{
@@ -8,8 +8,9 @@ use std::sync::{
     Arc,
 };
 use worth_query_decl::facade::{
-    application_operation::*, application_schema::*, worth_query_field, worth_query_operation,
-    worth_query_operation_reads, worth_query_operation_writes,
+    application_operation::*,
+    application_schema::{fragment::FieldSelection, *},
+    worth_query_operation, worth_query_operation_reads, worth_query_operation_writes,
     worth_query_structured_value_binding,
 };
 use worth_query_host::facade::primary_graph::{
@@ -17,23 +18,15 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryInvariantMutationTarget, WorthQueryOperationDurableCapability,
 };
 
-worth_query_field!(pub Balance for SuccessorSchema, Account, AccountIdentity: u64 => U64ApplicationValueBinding, read_write, equality);
 worth_query_structured_value_binding!(pub BalanceValueBinding for u64 { identity: "worth.query.host.home.balance-value.v1" });
 worth_query_structured_value_binding!(pub BalanceDenialBinding for () { identity: "worth.query.host.home.balance-denial.v1" });
 worth_query_operation!(pub SetBalance for SuccessorSchema, input BalanceValueBinding);
-worth_query_operation_reads!(SetBalance => [AccountNumber, Balance]);
-worth_query_operation_writes!(SetBalance => [Balance]);
+worth_query_operation_reads!(SetBalance => [FieldSelection<HomeRecords, Account, AccountIdentity, String>, FieldSelection<HomeRecords, Account, AccountIdentity, u64>]);
+worth_query_operation_writes!(SetBalance => [FieldSelection<HomeRecords, Account, AccountIdentity, u64>]);
 
 pub struct SetBalanceBinding;
-pub type BalanceScope = ApplicationMutationFieldScope<
-    SuccessorSchema,
-    Account,
-    AccountIdentity,
-    AccountNumber,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type BalanceScope =
+    ApplicationMutationFieldScope<FieldSelection<HomeRecords, Account, AccountIdentity, String>>;
 impl ApplicationMutationAdmissionBinding<SuccessorSchema> for SetBalanceBinding {
     type Admission = ApplicationConventionalAdmission;
 }
@@ -61,17 +54,8 @@ impl ApplicationMutationBinding<SuccessorSchema> for SetBalanceBinding {
     const IDENTITY: &'static str = "worth.query.host.home.set-balance.v1";
     const HANDLER_IDENTITY: &'static str = "worth.query.host.home.set-balance-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.host.home.set-balance-command.v1";
-    fn scope_field() -> ApplicationFieldRef<
-        SuccessorSchema,
-        Account,
-        AccountIdentity,
-        AccountNumber,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        AccountNumber::reference()
+    fn scope_field() -> FieldSelection<HomeRecords, Account, AccountIdentity, String> {
+        FieldSelection::<HomeRecords, Account, AccountIdentity, String>::at("AccountNumber")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         SuccessorSchema,
@@ -95,7 +79,10 @@ impl ApplicationMutationIntent<SuccessorSchema> for SetAccountBalance {
         &self.balance
     }
     fn scope_binding(&self) -> BalanceScope {
-        BalanceScope::new(AccountNumber::reference(), self.account.clone())
+        BalanceScope::new(
+            FieldSelection::<HomeRecords, Account, AccountIdentity, String>::at("AccountNumber"),
+            self.account.clone(),
+        )
     }
 }
 pub struct BalanceHandler(pub Arc<AtomicUsize>);
@@ -109,12 +96,17 @@ impl OperationHandler<SuccessorSchema, SetBalanceBinding> for BalanceHandler {
         reader: &mut DecisionReader<'_, '_, '_, SuccessorSchema, SetBalanceBinding>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<SuccessorSchema, Account>, ()> {
         self.0.fetch_add(1, Ordering::SeqCst);
-        let entity =
-            match reader.resolve_entity(AccountNumber::reference(), "account-001".to_owned()) {
-                Ok(entity) => entity,
-                Err(cause) => return HandlerResult::ExecutionDenied(cause),
-            };
-        if let Err(cause) = reader.field(&entity, Balance::reference()) {
+        let entity = match reader.resolve_entity(
+            FieldSelection::<HomeRecords, Account, AccountIdentity, String>::at("AccountNumber"),
+            "account-001".to_owned(),
+        ) {
+            Ok(entity) => entity,
+            Err(cause) => return HandlerResult::ExecutionDenied(cause),
+        };
+        if let Err(cause) = reader.field(
+            &entity,
+            FieldSelection::<HomeRecords, Account, AccountIdentity, u64>::at("Balance"),
+        ) {
             return HandlerResult::ExecutionDenied(cause);
         }
         match reader.mutation_target(&entity) {
@@ -134,7 +126,11 @@ impl OperationHandler<SuccessorSchema, SetBalanceBinding> for BalanceHandler {
                 return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause))
             }
         };
-        match writer.write_field(&entity, Balance::reference(), *value) {
+        match writer.write_field(
+            &entity,
+            FieldSelection::<HomeRecords, Account, AccountIdentity, u64>::at("Balance"),
+            *value,
+        ) {
             Ok(()) => HandlerResult::Completed(*value),
             Err(cause) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause)),
         }

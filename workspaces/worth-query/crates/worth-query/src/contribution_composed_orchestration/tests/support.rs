@@ -243,7 +243,9 @@ pub(super) fn target_for_envelope(
     let progressed = handle
         .declare_review_and_progress(ContributionInput::new(id))
         .unwrap_or_else(|_| panic!("expected progressed declaration"));
-    handle.contribution_target(progressed.canonical_declaration())
+    handle
+        .contribution_target(progressed.canonical_declaration())
+        .expect("fixture digest must fit")
 }
 
 pub(super) fn standard_profile() -> FoundationalProfileSet {

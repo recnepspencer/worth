@@ -10,61 +10,17 @@ worth_query_portable_type!(MemberValueSlot => "source-subgraph.member-value-slot
 worth_query_portable_type!(KeySlot => "source-subgraph.key-slot.v1");
 worth_query_portable_type!(ValueSlot => "source-subgraph.value-slot.v1");
 worth_query_portable_type!(MemberSlot => "source-subgraph.member-slot.v1");
-fn key() -> ApplicationQueryResultFieldRef<
-    Query,
-    KeySlot,
-    Schema,
-    Entity,
-    Facts,
-    Key,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("key", Key::reference())
+fn key() -> ApplicationQueryResultFieldRef<Query, KeySlot, Schema, Key> {
+    ApplicationQueryResultFieldRef::new("key", key_field())
 }
-fn value() -> ApplicationQueryResultFieldRef<
-    Query,
-    ValueSlot,
-    Schema,
-    Entity,
-    Facts,
-    Value,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("value", Value::reference())
+fn value() -> ApplicationQueryResultFieldRef<Query, ValueSlot, Schema, Value> {
+    ApplicationQueryResultFieldRef::new("value", value_field())
 }
-fn member_key() -> ApplicationQueryResultFieldRef<
-    Query,
-    MemberKeySlot,
-    Schema,
-    Entity,
-    Facts,
-    Key,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("member_key", Key::reference())
+fn member_key() -> ApplicationQueryResultFieldRef<Query, MemberKeySlot, Schema, Key> {
+    ApplicationQueryResultFieldRef::new("member_key", key_field())
 }
-fn member_value() -> ApplicationQueryResultFieldRef<
-    Query,
-    MemberValueSlot,
-    Schema,
-    Entity,
-    Facts,
-    Value,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("member_value", Value::reference())
+fn member_value() -> ApplicationQueryResultFieldRef<Query, MemberValueSlot, Schema, Value> {
+    ApplicationQueryResultFieldRef::new("member_value", value_field())
 }
 fn members() -> ApplicationQueryResultRelationRef<
     Query,
@@ -103,9 +59,7 @@ pub fn declare(
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
-        .public()
-        .build()
-        .unwrap();
+        .public();
     schema
         .application_query(definition)
         .application_query_binding::<Binding>()
@@ -143,8 +97,7 @@ impl WorthQueryApplicationProjection<Schema, Query> for GraphRow {
 pub struct Read(pub String);
 worth_query_structured_value_binding!(pub ReadInput for Read { identity: "source-subgraph.read-input.v1" });
 pub struct Binding;
-type Scope =
-    ApplicationQueryFieldScope<Schema, Entity, Facts, Key, String, ReadOnly, NoApplicationUnit>;
+type Scope = ApplicationQueryFieldScope<Key>;
 impl ApplicationQueryBinding<Schema> for Binding {
     type Input = Read;
     type InputBinding = ReadInput;
@@ -159,17 +112,8 @@ impl ApplicationQueryBinding<Schema> for Binding {
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = BINDING_ID;
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Entity,
-        Facts,
-        Key,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        Key::reference()
+    fn scope_field() -> Key {
+        key_field()
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         Schema,
@@ -188,6 +132,6 @@ impl ApplicationQueryIntent<Schema> for Read {
         ApplicationQueryParameterSet::new()
     }
     fn into_scope(self) -> Scope {
-        Scope::new(Key::reference(), self.0)
+        Scope::new(key_field(), self.0)
     }
 }

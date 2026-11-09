@@ -1,14 +1,13 @@
 use worth_query_declaration::facade::application_aftermath::DeclaredApplicationAftermathContract;
 use worth_query_declaration::facade::application_schema::{
-    ApplicationAbilityRef, ApplicationAspectRef, ApplicationAuthorizationPathBuilder,
-    ApplicationEffectRef, ApplicationEntityMarkerIdentity, ApplicationEntityRef,
-    ApplicationFieldRef, ApplicationOperationMarkerIdentity, ApplicationOperationRef,
+    ApplicationAbilityRef, ApplicationAuthorizationPathBuilder, ApplicationEffectRef,
+    ApplicationEntityRef, ApplicationOperationMarkerIdentity, ApplicationOperationRef,
     ApplicationPolicyRef, ApplicationPrincipalBindingRef, ApplicationPrincipalBindingRequirements,
     ApplicationPrincipalIdentityRequirement, ApplicationPrincipalMappingIdentityRequirement,
     ApplicationPrincipalMappingStatusRequirement, ApplicationPrincipalTargetRequirement,
     ApplicationRelationRef, ApplicationSchema, ApplicationSchemaDeclaration,
-    ApplicationSchemaDeclarationBuilder, EqualityPredicate, NoEqualityPredicate, OperationCreates,
-    OperationExpectsFact, OperationReads, OperationRequiresAbility, ReadOnly, ReadWrite,
+    ApplicationSchemaDeclarationBuilder, OperationCreates, OperationReads,
+    OperationRequiresAbility,
 };
 use worth_query_declaration::facade::authentication::{
     WorthQueryExternalPrincipalIdentity, WorthQueryPrincipalMappingStatus,
@@ -49,8 +48,16 @@ struct TestSchema;
 struct DriftedSchema;
 struct AddedEntity;
 
-impl ApplicationEntityMarkerIdentity<DriftedSchema> for AddedEntity {
-    const IDENTIFIER: &'static str = "AddedEntity";
+impl worth_query_declaration::facade::application_schema::fragment::Entity for AddedEntity {
+    const NAME: &'static str = "AddedEntity";
+    type Aspects = ();
+    type Relations = ();
+}
+struct DriftedFields;
+impl worth_query_declaration::facade::application_schema::fragment::Fragment for DriftedFields {
+    const NAME: &'static str = "drifted_fields";
+    type Bindings = worth_query_declaration::facade::application_schema::fragment::NoBindings;
+    type Members = (InstallationFields, AddedEntity);
 }
 struct TestAbility;
 struct TestOperation<Schema>(std::marker::PhantomData<Schema>);
@@ -97,11 +104,11 @@ impl ApplicationSchema for DriftedSchema {
         ApplicationSchemaDeclaration<Self>,
         worth_query_declaration::facade::application_schema::ApplicationSchemaDeclarationDenial,
     > {
-        test_schema_members::<Self>(None)
-            .entity(
-                ApplicationEntityRef::<Self, AddedEntity>::from_schema_identifier("AddedEntity"),
-            )
-            .build()
+        test_schema_members_for::<Self, TestOperation<Self>>(
+            None,
+            ApplicationSchemaDeclarationBuilder::from_fragment(DriftedFields)?,
+        )
+        .build()
     }
 }
 
@@ -111,27 +118,30 @@ fn test_schema_members<Schema>(
 where
     Schema: ApplicationSchema,
 {
-    test_schema_members_for::<Schema, TestOperation<Schema>>(aftermath)
+    test_schema_members_for::<Schema, TestOperation<Schema>>(
+        aftermath,
+        ApplicationSchemaDeclarationBuilder::from_fragment(InstallationFields).unwrap(),
+    )
 }
 
 fn test_schema_members_for<Schema, Operation>(
     aftermath: Option<DeclaredApplicationAftermathContract<Schema>>,
+    storage: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema>
 where
     Schema: ApplicationSchema,
     Operation:
         ApplicationOperationMarkerIdentity<Schema, InputBinding = TestInputBinding> + 'static,
     TestAbility: OperationRequiresAbility<Operation>,
-    FixtureEntity<Schema>: OperationCreates<Operation>,
-    FixturePrincipalIdentityField<Schema>:
-        OperationReads<Operation> + OperationExpectsFact<Operation>,
+    FixtureEntity: OperationCreates<Operation>,
 {
     let entity =
-        ApplicationEntityRef::<Schema, FixtureEntity<Schema>>::from_schema_identifier("TestEntity");
-    let ability = ApplicationAbilityRef::<Schema, TestAbility, FixtureEntity<Schema>>::from_schema_identifiers(
-        "TestAbility",
-        "TestEntity",
-            );
+        ApplicationEntityRef::<Schema, FixtureEntity>::from_schema_identifier("TestEntity");
+    let ability =
+        ApplicationAbilityRef::<Schema, TestAbility, FixtureEntity>::from_schema_identifiers(
+            "TestAbility",
+            "TestEntity",
+        );
     let operation = ApplicationOperationRef::<Schema, Operation, TestInput>::from_declaration();
     let operation_definition = match aftermath {
         Some(contract) => operation
@@ -145,67 +155,14 @@ where
             .no_aftermath()
             .finish(),
     };
-    ApplicationSchemaDeclarationBuilder::<Schema>::for_schema()
-        .entity(entity)
-        .aspect(
-            entity,
-            ApplicationAspectRef::<Schema, FixtureEntity<Schema>, FixtureIdentityAspect<Schema>>::from_schema_identifier(
-                "IdentityAspect",
-            ),
-        )
-        .field(
-            entity,
-            ApplicationFieldRef::<
-                Schema,
-                FixtureEntity<Schema>,
-                FixtureIdentityAspect<Schema>,
-                FixtureExternalIdentityField<Schema>,
-                WorthQueryExternalPrincipalIdentity,
-                ReadOnly,
-                EqualityPredicate,
-            >::from_schema_types(),
-        )
-        .field(
-            entity,
-            ApplicationFieldRef::<
-                Schema,
-                FixtureEntity<Schema>,
-                FixtureIdentityAspect<Schema>,
-                FixtureMappingStatusField<Schema>,
-                WorthQueryPrincipalMappingStatus,
-                ReadWrite,
-                NoEqualityPredicate,
-            >::from_schema_types(),
-        )
-        .field(
-            entity,
-            ApplicationFieldRef::<
-                Schema,
-                FixtureEntity<Schema>,
-                FixtureIdentityAspect<Schema>,
-                FixturePrincipalIdentityField<Schema>,
-                u64,
-                ReadOnly,
-                EqualityPredicate,
-            >::from_schema_types(),
-        )
-        .relation(
-            ApplicationRelationRef::<Schema, MappingTarget, FixtureEntity<Schema>, FixtureEntity<Schema>>::from_schema_identifiers(
-                "MappingTarget",
-                "TestEntity",
-                "TestEntity",
-                worth_query_declaration::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
-            ),
-            entity,
-            entity,
-        )
+    storage
         .principal_binding(test_principal_binding::<Schema>())
-        .policy(ApplicationPolicyRef::<Schema, TestPolicy>::from_schema_identifier(
-            "TestPolicy",
-        ))
-        .effect(
-            ApplicationEffectRef::<Schema, TestEffect<Schema>, TestPayload>::from_declaration(),
-        )
+        .policy(ApplicationPolicyRef::<Schema, TestPolicy>::from_schema_identifier("TestPolicy"))
+        .effect(ApplicationEffectRef::<
+            Schema,
+            TestEffect<Schema>,
+            TestPayload,
+        >::from_declaration())
         .ability(ability)
         .ability_policy(
             ability,
@@ -213,27 +170,25 @@ where
             [ApplicationAuthorizationPathBuilder::from_principal(entity).allow(entity)],
         )
         .operation(operation_definition)
-
         .operation_projection_work_budget(operation, 32)
         .operation_requires_ability(operation, ability)
         .operation_read_field(
             operation,
-            ApplicationFieldRef::<
-                Schema, FixtureEntity<Schema>, FixtureIdentityAspect<Schema>, FixturePrincipalIdentityField<Schema>, u64, ReadOnly,
-                EqualityPredicate,
-            >::from_schema_types(),
+            worth_query_declaration::facade::application_schema::fragment::FieldSelection::<
+                InstallationFields,
+                FixtureEntity,
+                FixtureIdentityAspect,
+                u64,
+            >::at("PrincipalIdentityField"),
         )
         .operation_expected_fact(
             operation,
-            ApplicationFieldRef::<
-                Schema,
-                FixtureEntity<Schema>,
-                FixtureIdentityAspect<Schema>,
-                FixturePrincipalIdentityField<Schema>,
+            worth_query_declaration::facade::application_schema::fragment::FieldSelection::<
+                InstallationFields,
+                FixtureEntity,
+                FixtureIdentityAspect,
                 u64,
-                ReadOnly,
-                EqualityPredicate,
-            >::from_schema_types(),
+            >::at("PrincipalIdentityField"),
         )
         .operation_create(operation, entity)
 }

@@ -4,8 +4,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use worth_query_consumer_values::{PlanarAdjustmentResult, PlanarMutationDenial};
 use worth_query_decl::facade::{
     application_operation::*, worth_query_mutation_binding, worth_query_operation,
-    worth_query_operation_reads, worth_query_operation_writes,
-    worth_query_structured_value_binding,
+    worth_query_operation_reads, worth_query_structured_value_binding,
 };
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
@@ -26,11 +25,10 @@ pub struct Edit {
 worth_query_structured_value_binding!(pub InputValue for Input {identity:"quote-count.operation-input"});
 worth_query_structured_value_binding!(pub EditValue for Edit {identity:"quote-count.edit-input"});
 worth_query_operation!(pub Produce for Schema: TopologySchemaBinding, input InputValue);
-worth_query_operation_reads!(Produce=>[Body,BodyKey,RequestedRows,CountedTotal]);
-worth_query_operation_writes!(Produce=>[CountedTotal]);
+worth_query_operation_reads!(Produce =>[Body]);
+
 worth_query_operation!(pub EditCount for Schema: TopologySchemaBinding, input EditValue);
-worth_query_operation_reads!(EditCount=>[Body,BodyKey,RequestedRows]);
-worth_query_operation_writes!(EditCount=>[RequestedRows]);
+worth_query_operation_reads!(EditCount =>[Body]);
 
 worth_query_mutation_binding! {
     pub ProduceBinding for Input, schema generic S:TopologySchemaBinding,
@@ -42,8 +40,8 @@ worth_query_mutation_binding! {
     principal binding ConsumerPrincipalBinding::reference(),binding_type ConsumerPrincipalBinding,
         mapping ExternalPrincipalMapping,principal_entity Principal,principal_identity u64,
         identity_binding U64ApplicationValueBinding,
-    scope Body,PlanarPosition,BodyKey,String,ReadOnly,NoApplicationUnit,
-    field BodyKey::reference(),value_field scope_key,
+    scope BodyKey,
+    field BodyKey::at("BodyKey"),value_field scope_key,
 }
 worth_query_mutation_binding! {
     pub EditBinding for Edit,schema generic S:TopologySchemaBinding,
@@ -55,8 +53,8 @@ worth_query_mutation_binding! {
     principal binding ConsumerPrincipalBinding::reference(),binding_type ConsumerPrincipalBinding,
         mapping ExternalPrincipalMapping,principal_entity Principal,principal_identity u64,
         identity_binding U64ApplicationValueBinding,
-    scope Body,PlanarPosition,BodyKey,String,ReadOnly,NoApplicationUnit,
-    field BodyKey::reference(),value_field scope_key,
+    scope BodyKey,
+    field BodyKey::at("BodyKey"),value_field scope_key,
 }
 pub(super) fn declare<S: TopologySchemaBinding>(
     schema: ApplicationSchemaDeclarationBuilder<S>,
@@ -66,16 +64,16 @@ pub(super) fn declare<S: TopologySchemaBinding>(
     schema
         .operation(p.definition().no_external_effect().no_aftermath().finish())
         .operation_read_entity(p, Body::reference())
-        .operation_read_field(p, BodyKey::reference())
-        .operation_read_field(p, RequestedRows::reference())
-        .operation_read_field(p, CountedTotal::reference())
-        .operation_write(p, CountedTotal::reference())
+        .operation_read_field(p, BodyKey::at("BodyKey"))
+        .operation_read_field(p, RequestedRows::at("RequestedRows"))
+        .operation_read_field(p, CountedTotal::at("CountedTotal"))
+        .operation_write(p, CountedTotal::at("CountedTotal"))
         .application_mutation_binding::<ProduceBinding<S>>()
         .operation(e.definition().no_external_effect().no_aftermath().finish())
         .operation_read_entity(e, Body::reference())
-        .operation_read_field(e, BodyKey::reference())
-        .operation_read_field(e, RequestedRows::reference())
-        .operation_write(e, RequestedRows::reference())
+        .operation_read_field(e, BodyKey::at("BodyKey"))
+        .operation_read_field(e, RequestedRows::at("RequestedRows"))
+        .operation_write(e, RequestedRows::at("RequestedRows"))
         .application_mutation_binding::<EditBinding<S>>()
 }
 pub struct Handler;
@@ -87,9 +85,9 @@ impl<S: TopologySchemaBinding> OperationHandler<S, ProduceBinding<S>> for Handle
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<S, Body>, PlanarMutationDenial> {
         OPERATIONS.fetch_add(1, Ordering::SeqCst);
         let result = (|| {
-            let entity = reader.resolve_entity(BodyKey::reference(), input.scope_key.clone())?;
-            reader.field(&entity, RequestedRows::reference())?;
-            reader.field(&entity, CountedTotal::reference())?;
+            let entity = reader.resolve_entity(BodyKey::at("BodyKey"), input.scope_key.clone())?;
+            reader.field(&entity, RequestedRows::at("RequestedRows"))?;
+            reader.field(&entity, CountedTotal::at("CountedTotal"))?;
             reader.mutation_target(&entity)
         })();
         match result {
@@ -110,7 +108,7 @@ impl<S: TopologySchemaBinding> OperationHandler<S, ProduceBinding<S>> for Handle
                 .map_err(HandlerExecutionDenial::new)?;
             let total = input.count;
             writer
-                .write_field(&entity, CountedTotal::reference(), total)
+                .write_field(&entity, CountedTotal::at("CountedTotal"), total.into())
                 .map_err(HandlerExecutionDenial::new)?;
             writer
                 .preserve_output::<PlanarAnchorOutput<S>>(&entity)
@@ -132,8 +130,8 @@ impl<S: TopologySchemaBinding> OperationHandler<S, EditBinding<S>> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, S, EditBinding<S>>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<S, Body>, PlanarMutationDenial> {
         let result = (|| {
-            let entity = reader.resolve_entity(BodyKey::reference(), input.scope_key.clone())?;
-            reader.field(&entity, RequestedRows::reference())?;
+            let entity = reader.resolve_entity(BodyKey::at("BodyKey"), input.scope_key.clone())?;
+            reader.field(&entity, RequestedRows::at("RequestedRows"))?;
             reader.mutation_target(&entity)
         })();
         match result {
@@ -153,7 +151,11 @@ impl<S: TopologySchemaBinding> OperationHandler<S, EditBinding<S>> for Handler {
                 .projected_entity(&target)
                 .map_err(HandlerExecutionDenial::new)?;
             writer
-                .write_field(&entity, RequestedRows::reference(), input.count)
+                .write_field(
+                    &entity,
+                    RequestedRows::at("RequestedRows"),
+                    input.count.into(),
+                )
                 .map_err(HandlerExecutionDenial::new)?;
             Ok(PlanarAdjustmentResult {
                 changed_vertices: 1,

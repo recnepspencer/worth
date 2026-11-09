@@ -9,16 +9,20 @@ impl<Schema, Operation, Input, Scope>
     pub(in crate::domain_computation::primary_graph) fn bind_mutation_handler_input<Binding>(
         mut self,
         identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
-    ) -> Self
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, WorthQueryApplicationAttemptDenial>
     where
         Schema: ApplicationSchema,
         Binding: ApplicationMutationBinding<Schema, Operation = Operation, Input = Input>,
     {
+        let preimage = crate::domain_computation::primary_graph::application_attempt::coupled_outputs::CoupledPreImage::new(&self.read_set, &self.output_correspondence);
+        let coupled_outputs = crate::domain_computation::primary_graph::application_attempt::coupled_outputs::capture::<Schema, Binding>(execution, identities.mutation_input(), &preimage)?;
         self.read_set.mutation_handler_binding = Some(MutationHandlerBindingProof {
+            coupled_outputs,
             binding: Binding::IDENTITY,
             input_identity: *identities.input_identity(),
         });
-        self
+        Ok(self)
     }
 
     #[doc(hidden)]

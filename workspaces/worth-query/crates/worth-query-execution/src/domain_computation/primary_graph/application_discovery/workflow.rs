@@ -30,7 +30,7 @@ mod view;
 pub use admission::WorthQueryWorkflowReadDenial;
 pub use view::*;
 
-use worth_foundational::facade::{AspectValue, InternedString};
+use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_program::ApplicationWorkflowDefinitionContentIdentity;
 use worth_relational::facade::identity::EntityId;
 
@@ -106,7 +106,7 @@ pub(in crate::domain_computation::primary_graph) fn current_definition(
             "workflow definition discovery",
         )
     })?;
-    let Some(AspectValue::String(InternedString::Raw(recorded))) = recorded else {
+    let Some(recorded) = (recorded).as_ref().and_then(|value| value.raw_text()) else {
         return Ok(None);
     };
     let Some(content_identity) =

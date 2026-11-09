@@ -112,9 +112,9 @@ fn seed(graph: &mut primary_graph::WorthQueryPrimaryGraphBootstrap<QuoteSchema>)
                 Body::reference(),
                 primary_graph::WorthQueryApplicationEntityKey::new("quote-source").unwrap(),
             )
-            .field(BodyKey::reference(), "quote-source".to_owned())
-            .field(RequestedRows::reference(), 2)
-            .field(CountedTotal::reference(), 0),
+            .field(BodyKey::at("BodyKey"), "quote-source".to_owned())
+            .field(RequestedRows::at("RequestedRows"), 2.into())
+            .field(CountedTotal::at("CountedTotal"), 0.into()),
         )
         .unwrap();
 }

@@ -15,6 +15,8 @@ use std::{
     sync::Arc,
 };
 use worth_execution::ExecutionRequest;
+#[path = "journal/discovery_recipes.rs"]
+mod discovery_recipes;
 #[path = "journal/group.rs"]
 mod group;
 #[path = "journal/heads.rs"]
@@ -25,6 +27,8 @@ mod navigation;
 mod paging;
 #[path = "journal/preview.rs"]
 mod preview;
+#[path = "journal/recipe_fault.rs"]
+mod recipe_fault;
 #[path = "journal/recording.rs"]
 mod recording;
 #[path = "journal/retention.rs"]
@@ -53,6 +57,7 @@ pub(super) struct HistoryNode {
 }
 
 pub(super) struct RetainedHistorySource {
+    discovery_recipes: Option<Arc<super::discovery_recipes::HistoryDiscoveryRecipes>>,
     source: Option<Arc<WorthQueryApplicationReadObservation>>,
     bookmarked: bool,
     _allocation: HistoryInsertionAllocation,
@@ -174,6 +179,7 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
             0,
             RetainedHistorySource {
                 source: Some(source),
+                discovery_recipes: None,
                 bookmarked: false,
                 _allocation: source_allocation,
                 released_child: None,

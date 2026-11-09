@@ -3,6 +3,7 @@ use crate::authorized_projection::{
     PolicyAspectMask, PolicyInfluenceSet,
 };
 use crate::canonicalization::CanonicalResultShapeArtifact;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
 };
@@ -125,6 +126,7 @@ pub enum WorthQueryProjectionViolation {
 
 #[derive(Debug)]
 pub enum WorthQueryProjectionUnavailable {
+    EvidenceIdentityDerivationDenied(IdentityDerivationDenial),
     AuthorityBinding(AuthorizedProjectionError),
     Extraction(ProjectionFactExtractionError),
 }
@@ -161,16 +163,18 @@ impl WorthQueryProjectionOutcome {
         }
     }
 
-    pub(crate) fn with_query_context_advisory_for_certification(self) -> Self {
-        match self {
+    pub(crate) fn with_query_context_advisory_for_certification(
+        self,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(match self {
             Self::Completed(authority) => Self::Advisory(WorthQueryProjectionAdvisory {
                 authority,
                 warnings: ProjectionConsumptionWarnings::for_certification(
                     crate::projection_consumption::ProjectionConsumptionWarningKind::QueryContextRowBound,
-                ),
+                )?,
             }),
             other => other,
-        }
+        })
     }
 
     pub fn authority(&self) -> Option<&WorthQueryConsumedProjectionAuthority> {
@@ -285,6 +289,7 @@ impl WorthQueryReadProjectionBinding {
         );
         match result.consume_projection_authority_with_binding(binding, contract) {
             Ok(outcome) => WorthQueryProjectionOutcome::from_foundation(outcome),
+            Err(crate::projection_consumption::ProjectionFactConsumptionPathError::EvidenceIdentityDerivationDenied(cause)) => WorthQueryProjectionOutcome::Unavailable(WorthQueryProjectionUnavailable::EvidenceIdentityDerivationDenied(cause)),
             Err(
                 crate::projection_consumption::ProjectionFactConsumptionPathError::Declaration(
                     error,
@@ -315,6 +320,7 @@ impl WorthQueryReadProjectionBinding {
         };
         match result.consume_projection_authority(&self.result_shape, authorized, contract) {
             Ok(outcome) => WorthQueryProjectionOutcome::from_foundation(outcome),
+            Err(crate::projection_consumption::ProjectionFactConsumptionPathError::EvidenceIdentityDerivationDenied(cause)) => WorthQueryProjectionOutcome::Unavailable(WorthQueryProjectionUnavailable::EvidenceIdentityDerivationDenied(cause)),
             Err(
                 crate::projection_consumption::ProjectionFactConsumptionPathError::Declaration(
                     error,
@@ -362,7 +368,10 @@ fn unrestricted_projection(
                 WorthQueryEvidenceTag::new("schema_basis"),
                 graph.schema_basis().render_support_hex(),
             )
-            .seal();
+            .seal()
+            .expect(
+                "projection policy uses a fixed role, sealed graph digest and fixed schema digest",
+            );
     derive_authorized_projection(
         graph.canonical().query(),
         graph.canonical().result_shape(),

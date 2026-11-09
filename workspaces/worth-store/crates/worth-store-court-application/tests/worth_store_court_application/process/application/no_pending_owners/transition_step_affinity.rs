@@ -109,6 +109,11 @@ fn a_committed_transition_grant_refuses_another_world_attempt_before_target_exec
         grant.original(),
         &RelationalCallerAssociation::from_bytes(other.caller_association_bytes()).unwrap(),
         grant.admission(),
+        worth_relational::facade::indexes::DerivedIndexMaintenanceBudget {
+            maximum_work_units: None,
+            maximum_cold_record_slots: None,
+            maximum_derived_rows: None,
+        },
     );
     assert!(matches!(
         refused,

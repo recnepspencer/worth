@@ -5,7 +5,6 @@ use std::ops::Bound::{Excluded, Included, Unbounded};
 use std::sync::Arc;
 
 use crate::history::data::CanonicalCommitEnvelope;
-use crate::identity::data::VersionId;
 use crate::indexes::data::{DerivedIndexGeneration, DerivedIndexGenerationId};
 
 use super::GenerationCatalog;
@@ -14,16 +13,10 @@ impl GenerationCatalog {
     pub(in crate::runtime::state::subsystems::indexing) fn retire_after_publication(
         &mut self,
         publication: &CanonicalCommitEnvelope,
-        previous_versions: &BTreeSet<VersionId>,
         maximum_older_visits: usize,
         mut custody: impl FnMut(&DerivedIndexGeneration) -> (bool, bool, bool),
     ) -> Vec<Arc<DerivedIndexGeneration>> {
         let mut candidates = BTreeSet::new();
-        for version in previous_versions {
-            if let Some(ids) = self.versions.get(version) {
-                candidates.extend(ids.iter().copied());
-            }
-        }
         for id in self
             .commits
             .get(&publication.commit.commit_id)
@@ -43,13 +36,24 @@ impl GenerationCatalog {
             }
         }
         let older = self.next_retirement_visits(maximum_older_visits);
-        self.work.enumerate_inventory(older.len());
         candidates.extend(older);
+        self.work.enumerate_inventory(candidates.len());
         let mut retired = Vec::new();
         for id in candidates {
+            // A performed batch still owns the promise to publish these artifacts.
+            if self
+                .artifact_visibility
+                .get(&id)
+                .is_some_and(|v| v.awaits_settlement())
+            {
+                continue;
+            }
             let Some(generation) = self.entries.get(&id) else {
                 continue;
             };
+            if Arc::strong_count(generation) > 1 {
+                continue;
+            }
             let (global, basis_held, source_is_live) = custody(generation);
             if self.selected_for_retention(id, generation, global, basis_held, source_is_live) {
                 continue;
@@ -94,6 +98,7 @@ impl GenerationCatalog {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::identity::data::VersionId;
 
     #[test]
     fn appending_generations_cannot_starve_a_previously_visited_held_prefix() {
@@ -123,6 +128,40 @@ mod tests {
         assert!(
             revisited,
             "newer arrivals must not postpone an old hold's next eligibility check"
+        );
+    }
+    #[test]
+    fn basis_retirement_revisits_held_roots_while_new_bases_keep_arriving() {
+        use super::super::super::basis_selection::BasisSelections;
+        let mut bases = BasisSelections::default();
+        for id in 1..=40 {
+            bases.insert_generation(
+                Arc::new(super::super::tests::generation(id, 1, 0, id, 1, true)),
+                &im::OrdSet::new(),
+            );
+        }
+        bases.retire(3, |_, _, _| true);
+        let branch = crate::history::data::BranchId("branch-0".into());
+        let mut revisited = false;
+        for round in 0..32 {
+            for offset in 1..=10 {
+                let id = 40 + round * 10 + offset;
+                bases.insert_generation(
+                    Arc::new(super::super::tests::generation(id, 1, 0, id, 1, true)),
+                    &im::OrdSet::new(),
+                );
+            }
+            bases.retire(3, |_, version, _| version != VersionId(1));
+            if bases.get(Some(&branch), VersionId(1)).is_none()
+                && bases.get(None, VersionId(1)).is_none()
+            {
+                revisited = true;
+                break;
+            }
+        }
+        assert!(
+            revisited,
+            "new arrivals cannot postpone an old root's next custody check"
         );
     }
 }

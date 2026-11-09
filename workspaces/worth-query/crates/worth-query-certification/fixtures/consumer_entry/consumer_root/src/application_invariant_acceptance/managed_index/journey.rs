@@ -31,7 +31,7 @@ fn public_prefix_index_rebuild_preserves_source_slots_and_ordinary_query_results
         .unwrap();
 }
 fn run() {
-    assert!(query::source_definition(true).root_paths().iter().all(|path| !path.guards().is_empty()),
+    assert!(query::guarded_source_definition().into_erased().root_paths().iter().all(|path| !path.guards().is_empty()),
         "the actual public-only Source includes guards refused by the finite invariant Source compiler");
     let calls = Arc::new(prefix_observation::Calls::default());
     let world = host::install(Arc::clone(&calls));

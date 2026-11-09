@@ -1,3 +1,5 @@
+use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial;
+use crate::domain_computation::primary_graph::causal_inspection::CausalInspectionConstructionStop;
 use worth_runtime_bridge::facade::{
     BridgeCausalEvidenceBindingClass, BridgeCausalEvidenceFamily, BridgeCausalEvidenceOwner,
     BridgeCausalExplanationEnvelope,
@@ -13,7 +15,7 @@ use crate::domain_computation::primary_graph::causal_inspection::inventory::Caus
 
 pub(super) fn require_legacy_materialization_source(
     envelope: &BridgeCausalExplanationEnvelope,
-) -> Result<(), CausalInspectionMaterializationError> {
+) -> Result<(), CausalInspectionConstructionStop> {
     if envelope.bindings().iter().any(|binding| {
         matches!(
             binding.binding_class(),
@@ -21,7 +23,7 @@ pub(super) fn require_legacy_materialization_source(
                 | BridgeCausalEvidenceBindingClass::QueryObservationReport
         )
     }) {
-        return Err(CausalInspectionMaterializationError::new(
+        return Err((CausalInspectionMaterializationError::new(
             CausalInspectionMaterializationErrorKind::NativeInspectionAdmissionRequired,
             |identity| {
                 identity.field_value(
@@ -29,7 +31,8 @@ pub(super) fn require_legacy_materialization_source(
                     envelope.envelope_for_reporting(),
                 )
             },
-        ));
+        )?)
+        .into());
     }
     Ok(())
 }
@@ -39,10 +42,10 @@ pub fn validate_materialization_contract(
     requested_families: &[CausalEvidenceFamily],
     envelope: &BridgeCausalExplanationEnvelope,
     materialization_policy: CausalInspectionMaterializationPolicy,
-) -> Result<(), CausalInspectionMaterializationError> {
+) -> Result<(), CausalInspectionConstructionStop> {
     require_legacy_materialization_source(envelope)?;
     if envelope.bindings().is_empty() {
-        return Err(CausalInspectionMaterializationError::new(
+        return Err((CausalInspectionMaterializationError::new(
             CausalInspectionMaterializationErrorKind::MaterializationPolicyOverclaim,
             |identity| {
                 identity
@@ -56,16 +59,20 @@ pub fn validate_materialization_contract(
                     )
                     .field_usize(WorthQueryEvidenceTag::new("bindings"), 0)
             },
-        ));
+        )?)
+        .into());
     }
     validate_query_observation_binding(query_observation_identity, envelope)?;
-    validate_requested_replay_posture(requested_families, envelope)
+    Ok(validate_requested_replay_posture(
+        requested_families,
+        envelope,
+    )?)
 }
 
 fn validate_query_observation_binding(
     query_observation_identity: &WorthQueryEvidenceIdentity,
     envelope: &BridgeCausalExplanationEnvelope,
-) -> Result<(), CausalInspectionMaterializationError> {
+) -> Result<(), CausalInspectionConstructionStop> {
     let mut query_observation_binding_count = 0;
     let mut query_observation_matches_subject = false;
     let expected_query_observation_identity = query_observation_identity.bridge_evidence_identity();
@@ -84,25 +91,28 @@ fn validate_query_observation_binding(
         query_observation_binding_count,
         query_observation_matches_subject,
     ) {
-        (0, _) => Err(query_observation_binding_error(
+        (0, _) => Err((query_observation_binding_error(
             CausalInspectionMaterializationErrorKind::QueryObservationBindingMissing,
             query_observation_identity,
             envelope,
             0,
-        )),
+        )?)
+        .into()),
         (1, true) => Ok(()),
-        (1, false) => Err(query_observation_binding_error(
+        (1, false) => Err((query_observation_binding_error(
             CausalInspectionMaterializationErrorKind::QueryObservationBindingMismatch,
             query_observation_identity,
             envelope,
             1,
-        )),
-        (binding_count, _) => Err(query_observation_binding_error(
+        )?)
+        .into()),
+        (binding_count, _) => Err((query_observation_binding_error(
             CausalInspectionMaterializationErrorKind::QueryObservationBindingOverclaim,
             query_observation_identity,
             envelope,
             binding_count,
-        )),
+        )?)
+        .into()),
     }
 }
 
@@ -111,28 +121,31 @@ fn query_observation_binding_error(
     query_observation_identity: &WorthQueryEvidenceIdentity,
     envelope: &BridgeCausalExplanationEnvelope,
     query_observation_binding_count: usize,
-) -> CausalInspectionMaterializationError {
-    CausalInspectionMaterializationError::new(kind, |identity| {
-        identity
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("expected_query_observation"),
-                query_observation_identity,
-            )
-            .field_usize(
-                WorthQueryEvidenceTag::new("query_observation_binding_count"),
-                query_observation_binding_count,
-            )
-            .field_value(
-                WorthQueryEvidenceTag::new("envelope"),
-                envelope.envelope_for_reporting(),
-            )
-    })
+) -> Result<CausalInspectionMaterializationError, WorthQueryEvidenceIdentityDerivationDenial> {
+    Ok(CausalInspectionMaterializationError::new(
+        kind,
+        |identity| {
+            identity
+                .field_evidence_identity(
+                    WorthQueryEvidenceTag::new("expected_query_observation"),
+                    query_observation_identity,
+                )
+                .field_usize(
+                    WorthQueryEvidenceTag::new("query_observation_binding_count"),
+                    query_observation_binding_count,
+                )
+                .field_value(
+                    WorthQueryEvidenceTag::new("envelope"),
+                    envelope.envelope_for_reporting(),
+                )
+        },
+    )?)
 }
 
 fn validate_requested_replay_posture(
     requested_families: &[CausalEvidenceFamily],
     envelope: &BridgeCausalExplanationEnvelope,
-) -> Result<(), CausalInspectionMaterializationError> {
+) -> Result<(), CausalInspectionConstructionStop> {
     let bridge_replay_requested = requested_families.contains(&CausalEvidenceFamily::BridgeReplay);
     let signal_cursor_requested =
         requested_families.contains(&CausalEvidenceFamily::SignalReplayCursor);
@@ -158,7 +171,7 @@ fn validate_requested_replay_posture(
         return Ok(());
     }
 
-    Err(CausalInspectionMaterializationError::new(
+    Err((CausalInspectionMaterializationError::new(
         CausalInspectionMaterializationErrorKind::ReplayPostureUnsupported,
         |identity| {
             identity
@@ -183,5 +196,6 @@ fn validate_requested_replay_posture(
                     signal_cursor_bound,
                 )
         },
-    ))
+    )?)
+    .into())
 }

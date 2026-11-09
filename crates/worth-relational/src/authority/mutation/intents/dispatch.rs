@@ -64,25 +64,3 @@ pub(crate) fn dispatch_intent<'a>(
         MutationIntent::Materialization(intent) => materialization::apply(intent, workspace),
     }
 }
-
-/// Sealed original rows use the same row algorithm without staging copies.
-pub(crate) fn dispatch_original_intent<'a>(
-    intent: &'a MutationIntent,
-    workspace: &mut MutationWorkspace<'a>,
-) -> Result<MutationOutcome, TransactionCommitError> {
-    match intent {
-        MutationIntent::Create(CreateIntent::BulkEntities(intent)) => {
-            bulk_create_entities::apply_original(intent, workspace)
-        }
-        MutationIntent::Create(CreateIntent::BulkRelations(intent)) => {
-            bulk_create_relations::apply_original(intent, workspace)
-        }
-        MutationIntent::Entity(EntityMutationIntent::Delete(intent)) => {
-            delete_entity::apply_original(intent, workspace)
-        }
-        MutationIntent::Entity(EntityMutationIntent::Replace(intent)) => {
-            replace_entity::apply_original(intent, workspace)
-        }
-        intent => dispatch_intent(intent, workspace, None),
-    }
-}

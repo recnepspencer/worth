@@ -54,7 +54,7 @@ pub fn selected_sibling_mutation_carries_one_world_occurrence(
             selected
                 .resolve_entity(
                     &phase,
-                    IntentIdentityField::reference(),
+                    IntentIdentityField::at("IntentIdentityField"),
                     "intent-1".to_string(),
                     &request,
                     primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
@@ -211,7 +211,7 @@ pub fn selected_sibling_mutation_carries_one_world_occurrence(
                 selected
                     .resolve_entity(
                         &phase,
-                        IntentIdentityField::reference(),
+                        IntentIdentityField::at("IntentIdentityField"),
                         "intent-1".to_string(),
                         &request,
                         primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,

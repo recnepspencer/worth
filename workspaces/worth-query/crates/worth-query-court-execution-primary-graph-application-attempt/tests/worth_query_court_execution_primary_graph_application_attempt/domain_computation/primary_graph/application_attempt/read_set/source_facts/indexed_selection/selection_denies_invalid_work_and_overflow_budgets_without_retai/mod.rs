@@ -9,7 +9,7 @@ fn selection_denies_invalid_work_and_overflow_budgets_without_retaining_partial_
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let request = live_scope();
-    let label = AccountLabel::reference();
+    let label = AccountLabel::at("AccountLabel");
     world
         .application
         .with_host_advancement(|phase| {
@@ -90,7 +90,7 @@ fn selection_denies_invalid_work_and_overflow_budgets_without_retaining_partial_
                         ] {
                             let denial = reader
                                 .decision_select_entities(
-                                    AccountLabel::reference(),
+                                    AccountLabel::at("AccountLabel"),
                                     "primary".to_owned(),
                                     limit,
                                 )

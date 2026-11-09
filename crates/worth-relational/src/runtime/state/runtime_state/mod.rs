@@ -12,6 +12,7 @@ pub use source_close::{
     PreparedRelationalSourceClose, RelationalSourceClose, RelationalSourceCloseDenial,
     RelationalSourceCloseProgress, RetiredSourceRelationalAllocation,
 };
+mod court_doors_for_test;
 mod merge_authority;
 mod owner_lifecycle;
 mod partition_edition_access;

@@ -31,7 +31,7 @@ fn exhausted_affected_source_read_cannot_stamp_an_old_sum_current() {
             let locator = (*world
                 .authority
                 .layout_for_test())
-                .field_locator_for_test("AggregateSource", "SourceFacts", "SourceAmount")
+                .field_locator_for_test("AggregateSource", super::SourceAmount::at("SourceAmount").aspect(), "SourceAmount")
                 .unwrap()
                 .clone();
             (*world.authority.graph_for_test()).with_runtime_for_test(&healthy, |runtime| {

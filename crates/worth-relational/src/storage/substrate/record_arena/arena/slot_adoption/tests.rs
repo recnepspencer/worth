@@ -27,8 +27,9 @@ fn coordinates(source: u64) -> PrefixCoordinates {
 
 #[test]
 fn adopting_a_different_head_carries_its_owned_historical_projection_with_the_record() {
-    let mut destination_slots = RecordSlotDirectory::restore(vec![90, 13]).unwrap();
-    let selected_slots = RecordSlotDirectory::restore(vec![22, 90, 13]).unwrap();
+    let lane = crate::storage::substrate::maintenance::ReconstructionLane::oracle();
+    let mut destination_slots = RecordSlotDirectory::restore(&lane, vec![90, 13]).unwrap();
+    let selected_slots = RecordSlotDirectory::restore(&lane, vec![22, 90, 13]).unwrap();
     let original: SharedColumn<StorageAllocation<Option<PrefixCoordinates>>> =
         vec![Some(coordinates(1)), Some(coordinates(2))].into();
     let selected: SharedColumn<StorageAllocation<Option<PrefixCoordinates>>> = vec![

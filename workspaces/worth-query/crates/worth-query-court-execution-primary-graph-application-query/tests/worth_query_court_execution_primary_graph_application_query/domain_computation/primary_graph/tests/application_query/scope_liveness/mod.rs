@@ -58,7 +58,7 @@ fn changed_identity_field_makes_resolved_scope_stale_before_admission() {
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &phase,
-                    AccountStatus::reference(),
+                    AccountStatus::at("AccountStatus"),
                     "open".to_string(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -115,7 +115,7 @@ pub fn change_account_status(
     let graph = (*world.application.runtime_for_test())
         .primary_graph_for_test()
         .expect("test world publishes a primary graph");
-    let status_field = AccountStatus::reference();
+    let status_field = AccountStatus::at("AccountStatus");
     let locator = (*graph.layout_for_test())
         .field_locator_for_test(
             status_field.entity(),

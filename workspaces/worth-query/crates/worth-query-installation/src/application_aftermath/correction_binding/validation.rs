@@ -80,6 +80,12 @@ pub(crate) fn resolve_correction_binding(
             if compensation.compensating_operation_slot() == inverse.operation_name() => {}
         _ => return Err(denied()),
     }
+    super::super::preimage_anchor_roles::validate(contract).map_err(|denial| {
+        WorthQueryApplicationOperationInstallationDenial::new(
+            DenialKind::PreImageDemandNotCoveredByAuthoredAnchors,
+            denial.subject(),
+        )
+    })?;
     source_outputs::validate(members, source, declaration.source_output_fields())
         .map_err(|()| denied())?;
     authored_identity::validate(members, source, inverse, declaration, contract.mechanism())

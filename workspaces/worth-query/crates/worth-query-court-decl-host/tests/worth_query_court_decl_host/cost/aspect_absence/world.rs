@@ -48,9 +48,9 @@ fn install() -> WorthQueryProgramApplicationRuntime<Schema, Program> {
                     Record::reference(),
                     WorthQueryApplicationEntityKey::new("record").unwrap(),
                 )
-                .field(Key::reference(), "record".to_owned())
-                .field(Sink::reference(), 0)
-                .field(Value3::reference(), 33),
+                .field(Key::at("Key"), "record".to_owned())
+                .field(Sink::at("Sink"), 0)
+                .field(Value3::at("value"), 33),
             )?;
             Ok(())
         },
@@ -63,7 +63,9 @@ pub fn measure() -> [WorthQueryInvariantProjectionWork; 3] {
         let meanings = host.installed_schema().value_meaning().unwrap();
         let classes: Vec<_> = meanings
             .iter()
-            .filter(|aspect| aspect.entity() == "Record" && aspect.aspect().starts_with("Class"))
+            .filter(|aspect| {
+                aspect.entity() == "Record" && aspect.aspect() != Identity::reference().name()
+            })
             .map(|aspect| aspect.aspect())
             .collect();
         assert_eq!(
@@ -71,8 +73,17 @@ pub fn measure() -> [WorthQueryInvariantProjectionWork; 3] {
             CLASSES,
             "actual installed/native checked roster"
         );
-        for (n, name) in (1..=CLASSES).zip(&classes) {
-            assert!(classes.contains(&format!("Class{n}").as_str()), "{name}");
+        let definition = host
+            .installed_schema()
+            .value_bindings()
+            .fragment(ClassModel)
+            .unwrap();
+        for n in 1..=CLASSES {
+            let expected = definition
+                .aspects()
+                .find(|aspect| aspect.path().ends_with(&format!(".Record.Class{n}")))
+                .expect("literal class roster");
+            assert!(classes.contains(&expected.name()), "{}", expected.path());
         }
         let scope = request_scope();
         let principal = authenticate_operator(host.installed_schema(), &scope);

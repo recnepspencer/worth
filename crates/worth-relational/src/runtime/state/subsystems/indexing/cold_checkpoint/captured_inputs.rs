@@ -4,8 +4,9 @@ use crate::durability::data::RelationalRecoveryStop;
 use crate::durability::derived_index_artifacts::{captured_decode, validate_checkpoint_generation};
 use worth_execution::ExecutionRequest;
 impl DeferredIndexImage {
-    pub(in super::super) fn capture_generations(
+    pub(in super::super) fn capture_generations_in_reconstruction(
         &self,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<captured_decode::CapturedCheckpointGenerations, RelationalRecoveryStop> {
         let directory = self.directory();
@@ -25,7 +26,7 @@ impl DeferredIndexImage {
                 cause,
             },
         )?;
-        let captured = captured_decode::decode(payload, request)?;
+        let captured = captured_decode::decode(lane, payload, request)?;
         let mut seen = worth_execution::ExecutionOrderedMap::default();
         for generation in captured.generations.iter() {
             request
@@ -45,6 +46,7 @@ impl DeferredIndexImage {
                 .iter()
                 .find(|definition| definition.index_id == generation.index_id);
             validate_checkpoint_generation(
+                lane,
                 generation,
                 definition.map(AsRef::as_ref),
                 &self.history,

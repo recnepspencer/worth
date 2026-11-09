@@ -55,15 +55,42 @@ pub fn install(
     let operation = RevokeCapabilityElevationOperation::reference();
     schema
         .operation_projection_work_budget(operation, 96)
-        .operation_read_field(operation, CapabilityElevationIdentity::reference())
-        .operation_read_field(operation, CapabilityElevationReason::reference())
-        .operation_read_field(operation, CapabilityElevationStatusField::reference())
-        .operation_read_field(operation, CapabilityElevationNotBefore::reference())
-        .operation_read_field(operation, CapabilityElevationNotAfter::reference())
-        .operation_read_field(operation, CapabilityElevationClosedAt::reference())
-        .operation_read_field(operation, CapabilityReviewIdentity::reference())
-        .operation_read_field(operation, CapabilityReviewKindField::reference())
-        .operation_read_field(operation, CapabilityReviewStatusField::reference())
+        .operation_read_field(
+            operation,
+            CapabilityElevationIdentity::at("CapabilityElevationIdentity"),
+        )
+        .operation_read_field(
+            operation,
+            CapabilityElevationReason::at("CapabilityElevationReason"),
+        )
+        .operation_read_field(
+            operation,
+            CapabilityElevationStatusField::at("CapabilityElevationStatusField"),
+        )
+        .operation_read_field(
+            operation,
+            CapabilityElevationNotBefore::at("CapabilityElevationNotBefore"),
+        )
+        .operation_read_field(
+            operation,
+            CapabilityElevationNotAfter::at("CapabilityElevationNotAfter"),
+        )
+        .operation_read_field(
+            operation,
+            CapabilityElevationClosedAt::at("CapabilityElevationClosedAt"),
+        )
+        .operation_read_field(
+            operation,
+            CapabilityReviewIdentity::at("CapabilityReviewIdentity"),
+        )
+        .operation_read_field(
+            operation,
+            CapabilityReviewKindField::at("CapabilityReviewKindField"),
+        )
+        .operation_read_field(
+            operation,
+            CapabilityReviewStatusField::at("CapabilityReviewStatusField"),
+        )
         .operation_read_relation(operation, CapabilityElevationRequester::reference())
         .operation_read_relation(operation, CapabilityElevationApprover::reference())
         .operation_read_relation(operation, CapabilityElevationGrant::reference())
@@ -71,8 +98,14 @@ pub fn install(
         .operation_read_relation(operation, CapabilityElevationReview::reference())
         .operation_read_relation(operation, CapabilityReviewResource::reference())
         .operation_read_relation(operation, CapabilityReviewer::reference())
-        .operation_write(operation, CapabilityElevationStatusField::reference())
-        .operation_write(operation, CapabilityElevationClosedAt::reference())
+        .operation_write(
+            operation,
+            CapabilityElevationStatusField::at("CapabilityElevationStatusField"),
+        )
+        .operation_write(
+            operation,
+            CapabilityElevationClosedAt::at("CapabilityElevationClosedAt"),
+        )
         .capability(contract())
 }
 

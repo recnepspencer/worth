@@ -1,4 +1,5 @@
 use crate::domain_capabilities::identity::domain_capability_scope_encoder;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{WorthQueryEvidenceIdentity, WorthQueryEvidenceTag};
 use worth_relational::facade::runtime::{InvariantCatalog, InvariantRegistration};
 
@@ -9,29 +10,33 @@ pub struct WorthQueryInvariantRegistrationRuntimeSemantics {
 }
 
 impl WorthQueryInvariantRegistrationRuntimeSemantics {
-    pub fn new(invariant_catalog: InvariantCatalog) -> Self {
-        let registration_identity = Self::registration_identity_for_catalog(&invariant_catalog);
-        Self {
+    pub fn new(invariant_catalog: InvariantCatalog) -> Result<Self, IdentityDerivationDenial> {
+        let registration_identity = Self::registration_identity_for_catalog(&invariant_catalog)?;
+        Ok(Self {
             invariant_catalog,
             registration_identity,
-        }
+        })
     }
 
-    pub fn from_registration(registration: InvariantRegistration) -> Self {
-        Self::new(InvariantCatalog {
+    pub fn from_registration(
+        registration: InvariantRegistration,
+    ) -> Result<Self, IdentityDerivationDenial> {
+        Ok(Self::new(InvariantCatalog {
             registrations: vec![registration],
-        })
+        })?)
     }
 
     fn registration_identity_for_catalog(
         invariant_catalog: &InvariantCatalog,
-    ) -> WorthQueryEvidenceIdentity {
-        domain_capability_scope_encoder("worth_query_invariant_registration_runtime_semantics_v1")
-            .field_shape(
-                WorthQueryEvidenceTag::new("registration_label"),
-                invariant_catalog.canonical_registration_digest(),
-            )
-            .seal()
+    ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
+        Ok(domain_capability_scope_encoder(
+            "worth_query_invariant_registration_runtime_semantics_v1",
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("registration_label"),
+            invariant_catalog.canonical_registration_digest(),
+        )
+        .seal()?)
     }
 
     pub fn invariant_catalog(&self) -> &InvariantCatalog {

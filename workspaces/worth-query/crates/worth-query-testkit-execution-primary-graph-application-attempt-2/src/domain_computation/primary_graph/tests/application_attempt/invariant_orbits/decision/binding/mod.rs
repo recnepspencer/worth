@@ -18,9 +18,8 @@ worth_query_structured_value_binding!(pub CheckOrbitInputBinding for CheckOrbitI
 worth_query_portable_type!(CheckOrbitOutcome => "worth.query.test.check-orbit-outcome.v1");
 worth_query_structured_value_binding!(pub CheckOrbitOutcomeBinding for CheckOrbitOutcome {identity:"worth.query.test.check-orbit-outcome.v1"});
 worth_query_operation!(pub CheckOrbit for S: OrbitModel,input CheckOrbitInputBinding);
-worth_query_operation_reads!(CheckOrbit => [Node,NodeKey,Marked,Next]);
-worth_query_operation_expects_fact!(CheckOrbit => [Marked]);
-worth_query_operation_writes!(CheckOrbit => [Marked]);
+worth_query_operation_reads!(CheckOrbit => [Node, Next]);
+
 worth_query_mutation_binding!(pub CheckOrbitBinding for CheckOrbitInput,
     schema generic S: OrbitModel, identity "worth.query.test.check-orbit-mutation.v1",
     input CheckOrbitInputBinding,operation CheckOrbit,result CheckOrbitOutcomeBinding,
@@ -30,8 +29,8 @@ worth_query_mutation_binding!(pub CheckOrbitBinding for CheckOrbitInput,
     outputs NoApplicationMutationOutputs,source NoApplicationMutationSource,
     principal binding IdentityBinding::reference(),binding_type IdentityBinding,
     mapping ExternalMapping,principal_entity Principal,principal_identity u64,identity_binding U64ApplicationValueBinding,
-    scope Node,NodeData,NodeKey,u64,ReadOnly,NoApplicationUnit,
-    field NodeKey::reference(),value_field root,
+    scope NodeKey,
+    field NodeKey::at("NodeKey"),value_field root,
 );
 pub fn declare<S: OrbitModel>(
     schema: ApplicationSchemaDeclarationBuilder<S>,
@@ -46,11 +45,11 @@ pub fn declare<S: OrbitModel>(
                     .finish(),
             )
             .operation_read_entity(CheckOrbit::reference(), Node::reference())
-            .operation_read_field(CheckOrbit::reference(), NodeKey::reference())
-            .operation_read_field(CheckOrbit::reference(), Marked::reference())
+            .operation_read_field(CheckOrbit::reference(), NodeKey::at("NodeKey"))
+            .operation_read_field(CheckOrbit::reference(), Marked::at("Marked"))
             .operation_read_relation(CheckOrbit::reference(), Next::reference())
-            .operation_expected_fact(CheckOrbit::reference(), Marked::reference())
-            .operation_write(CheckOrbit::reference(), Marked::reference())
+            .operation_expected_fact(CheckOrbit::reference(), Marked::at("Marked"))
+            .operation_write(CheckOrbit::reference(), Marked::at("Marked"))
             .application_mutation_binding::<CheckOrbitBinding<S>>(),
     )
 }

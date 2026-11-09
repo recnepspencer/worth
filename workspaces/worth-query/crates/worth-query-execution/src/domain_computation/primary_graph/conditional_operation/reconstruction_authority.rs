@@ -4,9 +4,8 @@ use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
 };
 use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationIdentityScalarValueBinding,
-    ApplicationScalarValueBinding, DeclaredApplicationFieldValue, EqualityPredicate,
-    WorthQueryInstalledPrincipalBinding, WritePosture,
+    ApplicationIdentityScalarValueBinding, ApplicationScalarValueBinding,
+    WorthQueryInstalledPrincipalBinding,
 };
 
 use crate::domain_computation::primary_graph::{
@@ -110,11 +109,8 @@ pub struct WorthQueryTemporalReconstructionAccess<
     PrincipalIdentity,
     PrincipalIdentityBinding,
     Scope,
-    ScopeAspect,
     ScopeField,
     ScopeValue,
-    ScopeWrite,
-    ScopeUnit,
     PrincipalSource,
     QueryAuthorization = super::WorthQueryPublicTemporalQueryAuthorization,
 > {
@@ -127,17 +123,9 @@ pub struct WorthQueryTemporalReconstructionAccess<
         PrincipalIdentityBinding,
     >,
     pub(super) principal_source: Arc<PrincipalSource>,
-    pub(super) scope_field: ApplicationFieldRef<
-        Schema,
-        Scope,
-        ScopeAspect,
-        ScopeField,
-        ScopeValue,
-        ScopeWrite,
-        EqualityPredicate,
-        ScopeUnit,
-    >,
+    pub(super) scope_field: ScopeField,
     pub(super) scope_value: ScopeValue,
+    marker: std::marker::PhantomData<fn() -> Scope>,
     pub(super) query_authorization: QueryAuthorization,
 }
 
@@ -149,11 +137,8 @@ impl<
         PrincipalIdentity,
         PrincipalIdentityBinding,
         Scope,
-        ScopeAspect,
         ScopeField,
         ScopeValue,
-        ScopeWrite,
-        ScopeUnit,
         PrincipalSource,
     >
     WorthQueryTemporalReconstructionAccess<
@@ -164,20 +149,18 @@ impl<
         PrincipalIdentity,
         PrincipalIdentityBinding,
         Scope,
-        ScopeAspect,
         ScopeField,
         ScopeValue,
-        ScopeWrite,
-        ScopeUnit,
         PrincipalSource,
     >
 where
     PrincipalIdentityBinding: ApplicationIdentityScalarValueBinding<Value = PrincipalIdentity>,
     PrincipalIdentity: 'static,
-    ScopeField: DeclaredApplicationFieldValue<Value = ScopeValue>,
+    ScopeField: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+        Entity = Scope,
+        Value = ScopeValue,
+    >,
     ScopeField::Binding: ApplicationScalarValueBinding<Value = ScopeValue>,
-    ScopeWrite: WritePosture,
-    ScopeUnit: ApplicationFieldUnit,
     PrincipalSource: WorthQueryTemporalPrincipalSource<Schema>,
 {
     pub fn new(
@@ -190,16 +173,7 @@ where
             PrincipalIdentityBinding,
         >,
         principal_source: PrincipalSource,
-        scope_field: ApplicationFieldRef<
-            Schema,
-            Scope,
-            ScopeAspect,
-            ScopeField,
-            ScopeValue,
-            ScopeWrite,
-            EqualityPredicate,
-            ScopeUnit,
-        >,
+        scope_field: ScopeField,
         scope_value: ScopeValue,
     ) -> Result<Self, &'static str> {
         let identity = PrincipalSource::SEMANTIC_IDENTITY;
@@ -214,6 +188,7 @@ where
             principal_source: Arc::new(principal_source),
             scope_field,
             scope_value,
+            marker: std::marker::PhantomData,
             query_authorization: super::WorthQueryPublicTemporalQueryAuthorization,
         })
     }
@@ -227,11 +202,8 @@ impl<
         PrincipalIdentity,
         PrincipalIdentityBinding,
         Scope,
-        ScopeAspect,
         ScopeField,
         ScopeValue,
-        ScopeWrite,
-        ScopeUnit,
         PrincipalSource,
         QueryAuthorization,
     >
@@ -243,21 +215,19 @@ impl<
         PrincipalIdentity,
         PrincipalIdentityBinding,
         Scope,
-        ScopeAspect,
         ScopeField,
         ScopeValue,
-        ScopeWrite,
-        ScopeUnit,
         PrincipalSource,
         QueryAuthorization,
     >
 where
     PrincipalIdentityBinding: ApplicationIdentityScalarValueBinding<Value = PrincipalIdentity>,
     PrincipalIdentity: 'static,
-    ScopeField: DeclaredApplicationFieldValue<Value = ScopeValue>,
+    ScopeField: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+        Entity = Scope,
+        Value = ScopeValue,
+    >,
     ScopeField::Binding: ApplicationScalarValueBinding<Value = ScopeValue>,
-    ScopeWrite: WritePosture,
-    ScopeUnit: ApplicationFieldUnit,
     PrincipalSource: WorthQueryTemporalPrincipalSource<Schema>,
 {
     #[allow(clippy::too_many_arguments)]
@@ -271,16 +241,7 @@ where
             PrincipalIdentityBinding,
         >,
         principal_source: PrincipalSource,
-        scope_field: ApplicationFieldRef<
-            Schema,
-            Scope,
-            ScopeAspect,
-            ScopeField,
-            ScopeValue,
-            ScopeWrite,
-            EqualityPredicate,
-            ScopeUnit,
-        >,
+        scope_field: ScopeField,
         scope_value: ScopeValue,
         query_authorization: QueryAuthorization,
     ) -> Result<Self, &'static str> {
@@ -290,6 +251,7 @@ where
             principal_source: Arc::new(principal_source),
             scope_field,
             scope_value,
+            marker: std::marker::PhantomData,
             query_authorization,
         })
     }

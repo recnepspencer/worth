@@ -15,9 +15,8 @@ pub use worth_query_host::facade::{
             ApplicationQueryIntent, ApplicationQueryParameterSet,
         },
         application_schema::{
-            ApplicationFieldRef, ApplicationPrincipalBindingRef,
-            ApplicationSchemaDeclarationBuilder, EqualityPredicate, NoApplicationUnit, ReadOnly,
-            U64ApplicationValueBinding,
+            ApplicationPrincipalBindingRef, ApplicationSchemaDeclarationBuilder, EqualityPredicate,
+            NoApplicationUnit, ReadOnly, U64ApplicationValueBinding,
         },
     },
     primary_graph::{
@@ -72,15 +71,7 @@ worth_query_structured_value_binding!(pub DocumentRetentionReadBinding for Docum
 pub struct DocumentRetentionQueryBinding;
 pub struct DocumentRetentionConditionQueryBinding;
 
-pub type DocumentRetentionQueryScope = ApplicationQueryFieldScope<
-    DocumentRetentionSchema,
-    Document,
-    DocumentFacts,
-    DocumentIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type DocumentRetentionQueryScope = ApplicationQueryFieldScope<DocumentIdentityField>;
 
 impl ApplicationQueryBinding<DocumentRetentionSchema> for DocumentRetentionQueryBinding {
     type Input = DocumentRetentionRead;
@@ -98,17 +89,8 @@ impl ApplicationQueryBinding<DocumentRetentionSchema> for DocumentRetentionQuery
     const IDENTITY: &'static str = "worth.query.certification.document-retention.read-binding.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
 
-    fn scope_field() -> ApplicationFieldRef<
-        DocumentRetentionSchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
 
     fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -140,17 +122,8 @@ impl ApplicationQueryBinding<DocumentRetentionSchema> for DocumentRetentionCondi
         "worth.query.certification.document-retention.condition-read-binding.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
 
-    fn scope_field() -> ApplicationFieldRef<
-        DocumentRetentionSchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
 
     fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -173,7 +146,10 @@ impl ApplicationQueryIntent<DocumentRetentionSchema> for DocumentRetentionRead {
     }
 
     fn into_scope(self) -> DocumentRetentionQueryScope {
-        DocumentRetentionQueryScope::new(DocumentIdentityField::reference(), self.identity)
+        DocumentRetentionQueryScope::new(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            self.identity,
+        )
     }
 }
 
@@ -194,7 +170,10 @@ impl ApplicationQueryIntent<DocumentRetentionSchema> for DocumentRetentionCondit
     }
 
     fn into_scope(self) -> DocumentRetentionQueryScope {
-        DocumentRetentionQueryScope::new(DocumentIdentityField::reference(), self.identity)
+        DocumentRetentionQueryScope::new(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            self.identity,
+        )
     }
 }
 
@@ -232,15 +211,7 @@ impl
         worth_query_decl::facade::application_operation::ApplicationConventionalAdmission;
 }
 
-pub type SetRetentionScope = ApplicationMutationFieldScope<
-    DocumentRetentionSchema,
-    Document,
-    DocumentFacts,
-    DocumentIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type SetRetentionScope = ApplicationMutationFieldScope<DocumentIdentityField>;
 
 impl ApplicationMutationBinding<DocumentRetentionSchema> for SetRetentionBinding {
     fn workflow_execution_requirements(
@@ -273,17 +244,8 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for SetRetentionBinding
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.document-retention.command.v1";
 
-    fn scope_field() -> ApplicationFieldRef<
-        DocumentRetentionSchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
 
     fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -307,7 +269,7 @@ impl ApplicationMutationIntent<DocumentRetentionSchema> for SetRetentionIntent {
 
     fn scope_binding(&self) -> SetRetentionScope {
         SetRetentionScope::new(
-            DocumentIdentityField::reference(),
+            DocumentIdentityField::at("DocumentIdentityField"),
             self.input.identity.clone(),
         )
     }

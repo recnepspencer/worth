@@ -4,6 +4,7 @@ use super::evidence::{
     denied_support_failure,
 };
 use super::lanes::{lane_for, CertifiedLaneArtifacts, LaneScenario};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::harness::certification::{HostileExpectation, ParityAnchor, RejectionCertificationRow};
 use crate::live::LiveQueryFamily;
 use crate::subscription::CoverageResolutionPosture;
@@ -14,79 +15,80 @@ use super::{
     MilestoneNineThreePerturbationClass, MilestoneNineThreeRejectionBundle,
 };
 
-pub(super) fn canonical_rows() -> Vec<MilestoneNineThreeCertificationRow> {
+pub(super) fn canonical_rows(
+) -> Result<Vec<MilestoneNineThreeCertificationRow>, IdentityDerivationDenial> {
     let detail = lane_for(
         LiveQueryFamily::Detail,
         None,
         LaneScenario::ActiveLifecycle,
         CoverageResolutionPosture::IndexedCoverageSet,
         1,
-    );
+    )?;
     let inspector = lane_for(
         LiveQueryFamily::Detail,
         Some(LiveViewShapeFamily::InspectorDetailFocused),
         LaneScenario::ActiveLifecycle,
         CoverageResolutionPosture::IndexedCoverageSet,
         2,
-    );
+    )?;
     let ordered = lane_for(
         LiveQueryFamily::OrderedCollection,
         Some(LiveViewShapeFamily::Table),
         LaneScenario::ActiveLifecycle,
         CoverageResolutionPosture::IndexedCoverageSet,
         3,
-    );
+    )?;
     let grouped = lane_for(
         LiveQueryFamily::OrderedCollection,
         Some(LiveViewShapeFamily::KanbanGrouped),
         LaneScenario::ActiveLifecycle,
         CoverageResolutionPosture::IndexedCoverageSet,
         4,
-    );
+    )?;
     let bounded = lane_for(
         LiveQueryFamily::BoundedMaterialization,
         None,
         LaneScenario::ActiveLifecycle,
         CoverageResolutionPosture::IndexedCoverageSet,
         5,
-    );
+    )?;
     let continuation = lane_for(
         LiveQueryFamily::Detail,
         None,
         LaneScenario::Continuation,
         CoverageResolutionPosture::IndexedCoverageSet,
         6,
-    );
+    )?;
     let preview = lane_for(
         LiveQueryFamily::Detail,
         None,
         LaneScenario::PreviewDiscard,
         CoverageResolutionPosture::IndexedCoverageSet,
         7,
-    );
+    )?;
     let churn_control = lane_for(
         LiveQueryFamily::Detail,
         None,
         LaneScenario::ActiveLifecycle,
         CoverageResolutionPosture::IndexedCoverageSet,
         8,
-    );
+    )?;
     let churn_hostile = lane_for(
         LiveQueryFamily::Detail,
         None,
         LaneScenario::ActiveLifecycle,
         CoverageResolutionPosture::IndexedCoverageSet,
         9,
-    );
+    )?;
     let debt = lane_for(
         LiveQueryFamily::Detail,
         None,
         LaneScenario::ActiveLifecycle,
         CoverageResolutionPosture::MatrixScanDebtExplicit,
         1,
-    );
+    )?;
 
-    vec![
+    Ok(vec![
         admitted_row(
             "detail-family-support-and-parity",
             MilestoneNineThreePerturbationClass::DetailFamilySupportAndParity,
@@ -175,15 +177,18 @@ pub(super) fn canonical_rows() -> Vec<MilestoneNineThreeCertificationRow> {
             &debt,
             &detail,
         ),
-    ]
+    ])
 }
 
-pub(super) fn rejection_rows() -> Vec<
-    RejectionCertificationRow<
-        MilestoneNineThreePerturbationClass,
-        MilestoneNineThreeCertificationBundle,
-        MilestoneNineThreeRejectionBundle,
+pub(super) fn rejection_rows() -> Result<
+    Vec<
+        RejectionCertificationRow<
+            MilestoneNineThreePerturbationClass,
+            MilestoneNineThreeCertificationBundle,
+            MilestoneNineThreeRejectionBundle,
+        >,
     >,
+    IdentityDerivationDenial,
 > {
     let detail = lane_for(
         LiveQueryFamily::Detail,
@@ -191,21 +196,21 @@ pub(super) fn rejection_rows() -> Vec<
         LaneScenario::ActiveLifecycle,
         CoverageResolutionPosture::IndexedCoverageSet,
         11,
-    );
+    )?;
     let collection = lane_for(
         LiveQueryFamily::OrderedCollection,
         Some(LiveViewShapeFamily::Table),
         LaneScenario::ActiveLifecycle,
         CoverageResolutionPosture::IndexedCoverageSet,
         12,
-    );
+    )?;
 
-    vec![
+    Ok(vec![
         rejection_row(
             "uncertified-family-support-overclaim-forbidden",
             MilestoneNineThreePerturbationClass::UncertifiedFamilySupportOverclaimForbidden,
             &detail,
-            denied_support_failure(&detail),
+            denied_support_failure(&detail)?,
             &detail,
         ),
         rejection_row(
@@ -242,14 +247,14 @@ pub(super) fn rejection_rows() -> Vec<
             "diagnostic-bundle-missing-hostile-row-forbidden",
             MilestoneNineThreePerturbationClass::DiagnosticBundleMissingHostileRowForbidden,
             &detail,
-            denied_runtime_certification_failure(&detail),
+            denied_runtime_certification_failure(&detail)?,
             &detail,
         ),
         rejection_row(
             "runtime-certification-cross-family-row-mix-forbidden",
             MilestoneNineThreePerturbationClass::RuntimeCertificationCrossFamilyRowMixForbidden,
             &detail,
-            denied_cross_family_scope_failure(&detail, &collection),
+            denied_cross_family_scope_failure(&detail, &collection)?,
             &detail,
         ),
         rejection_row(
@@ -261,7 +266,7 @@ pub(super) fn rejection_rows() -> Vec<
             ),
             &detail,
         ),
-    ]
+    ])
 }
 
 fn admitted_row(

@@ -222,7 +222,10 @@ fn strategy_drift_denial_inspection_keeps_declared_and_returned_strategy_separat
     );
     assert_eq!(
         inspection.denial_digest(),
-        evidence.denial_digest().as_str()
+        evidence
+            .denial_digest()
+            .expect("fixture digest must fit")
+            .as_str()
     );
     assert!(!inspection.inspection_digest().is_empty());
 }

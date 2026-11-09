@@ -26,31 +26,26 @@ pub fn identity_result<Schema: BodySchemaBinding>() -> ApplicationQueryResultFie
     DocumentRetentionQuery,
     IdentitySlot,
     Schema,
-    Document,
-    DocumentFacts,
     DocumentIdentityField,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("identity", DocumentIdentityField::reference())
+    ApplicationQueryResultFieldRef::new(
+        "identity",
+        DocumentIdentityField::at("DocumentIdentityField"),
+    )
 }
 pub fn retention_result<Schema: BodySchemaBinding>() -> ApplicationQueryResultFieldRef<
     DocumentRetentionQuery,
     RetentionSlot,
     Schema,
-    Document,
-    DocumentFacts,
     DocumentRetentionField,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
 > {
-    ApplicationQueryResultFieldRef::new("retention", DocumentRetentionField::reference())
+    ApplicationQueryResultFieldRef::new(
+        "retention",
+        DocumentRetentionField::at("DocumentRetentionField"),
+    )
 }
-pub fn document_retention_query_definition<const DESTINATION: u64>() -> ApplicationQueryDefinition<
+pub fn document_retention_query_definition<const DESTINATION: u64>(
+) -> ApplicationQueryDefinitionBuilder<
     DocumentRetentionSchema<DESTINATION>,
     DocumentRetentionQuery,
     DocumentQueryParameters,
@@ -76,8 +71,6 @@ pub fn document_retention_query_definition<const DESTINATION: u64>() -> Applicat
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 
 impl<const DESTINATION: u64>
@@ -98,15 +91,7 @@ impl<const DESTINATION: u64>
     }
 }
 pub struct DocumentRetentionQueryBinding<const DESTINATION: u64>;
-pub type Scope<const DESTINATION: u64> = ApplicationQueryFieldScope<
-    DocumentRetentionSchema<DESTINATION>,
-    Document,
-    DocumentFacts,
-    DocumentIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type Scope<const DESTINATION: u64> = ApplicationQueryFieldScope<DocumentIdentityField>;
 impl<const DESTINATION: u64> ApplicationQueryBinding<DocumentRetentionSchema<DESTINATION>>
     for DocumentRetentionQueryBinding<DESTINATION>
 {
@@ -124,17 +109,8 @@ impl<const DESTINATION: u64> ApplicationQueryBinding<DocumentRetentionSchema<DES
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "worth.query.body-court.read-binding.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        DocumentRetentionSchema<DESTINATION>,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         DocumentRetentionSchema<DESTINATION>,
@@ -155,6 +131,9 @@ impl<const DESTINATION: u64> ApplicationQueryIntent<DocumentRetentionSchema<DEST
         ApplicationQueryParameterSet::new()
     }
     fn into_scope(self) -> Scope<DESTINATION> {
-        Scope::new(DocumentIdentityField::reference(), self.identity)
+        Scope::new(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            self.identity,
+        )
     }
 }

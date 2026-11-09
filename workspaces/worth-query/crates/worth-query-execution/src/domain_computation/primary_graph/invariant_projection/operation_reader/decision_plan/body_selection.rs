@@ -75,6 +75,11 @@ impl<Schema: ApplicationSchema, Operation>
             kind,
             entity: terminal.into(),
             authority_identity: self.reader.authority_identity,
+            phase: self
+                .reader
+                .native
+                .candidate_identity()
+                .map(|id| id.qualification()),
             _marker: std::marker::PhantomData,
         };
         let target = self
@@ -102,6 +107,7 @@ impl<Schema: ApplicationSchema, Operation>
             kind: root.kind,
             entity: root.entity.clone(),
             authority_identity: root.authority_identity,
+            phase: root.phase,
             _marker: std::marker::PhantomData,
         };
         let target = self

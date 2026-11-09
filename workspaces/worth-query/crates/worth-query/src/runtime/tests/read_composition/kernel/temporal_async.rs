@@ -159,7 +159,8 @@ fn runtime_read_family_receipt_retains_async_backed_materialized_fact_posture() 
             &WorthQueryRuntimeAsyncResultProjection::completion_state(
                 BridgeAsyncCompletionState::Admitted(BridgeAsyncCompletionClass::Fulfilled),
                 "async:read-family-current",
-            ),
+            )
+            .expect("fixture digest must fit"),
             &basis_digest,
             &generation_digest,
         )

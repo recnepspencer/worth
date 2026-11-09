@@ -49,7 +49,7 @@ fn retained_continuation_releases_the_query_registry_basis() {
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
                     &phase,
-                    AccountIdentity::reference(),
+                    AccountIdentity::at("AccountIdentity"),
                     "account-1".to_owned(),
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,

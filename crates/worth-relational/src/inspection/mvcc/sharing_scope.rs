@@ -21,6 +21,7 @@ pub(super) struct BranchSharingScopeEntry {
 
 pub(super) fn resolve_sharing_scope(
     runtime: &RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     branches: &[RelationalBranchIdentity],
 ) -> Result<Vec<BranchSharingScopeEntry>, RelationalBranchSharingInspectionDenial> {
     let mut seen_branches = BTreeSet::new();
@@ -47,7 +48,7 @@ pub(super) fn resolve_sharing_scope(
             && (!runtime
                 .services
                 .symbols
-                .with_read(|symbols| root.is_complete(symbols))
+                .with_read(|symbols| root.is_complete(execution, symbols))
                 || !artifact.links_root(&root)
                 || root.axes().is_none())
         {

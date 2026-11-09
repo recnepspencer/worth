@@ -60,6 +60,8 @@ impl CanonicalCommitEnvelopeDraft {
                 authored_index_writes: CanonicalAuthoredIndexWrites::default(),
                 required_output_codec_retirements: Vec::new(),
                 required_output_origin: None,
+                coupled_authored_publication: None,
+                historical_output_selection: None,
                 producer_cascade_retirement: None,
                 authored_cascade_retirement: None,
                 authored_cascade_restoration: None,
@@ -96,6 +98,21 @@ impl CanonicalCommitEnvelopeDraft {
     #[cfg(test)]
     pub(crate) fn into_body(self) -> CanonicalCommitEnvelopeBody {
         self.body
+    }
+
+    pub(crate) fn complete_lineage(
+        &mut self,
+        lineage: crate::lineage::data::LineageFinalizationArtifact,
+    ) -> Result<(), crate::transactions::data::TransactionCommitError> {
+        if lineage.branch_id() != &self.body.branch_context
+            || self.body.lineage.has_authority_content()
+        {
+            return Err(crate::mvcc::origin_denial(
+                "deferred publication lineage differs from its draft",
+            ));
+        }
+        self.body.lineage = lineage.publish();
+        Ok(())
     }
 
     pub(crate) fn seal(

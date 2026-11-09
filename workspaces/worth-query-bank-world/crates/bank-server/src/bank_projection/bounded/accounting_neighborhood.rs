@@ -15,27 +15,18 @@ impl BoundedProjectionState {
         id: JournalEntryId,
     ) -> Result<(), BankProjectionDenial>
     where
-        AccountIdentity: OperationReads<Operation>,
-        AccountingRevision: OperationReads<Operation>,
         InstitutionAccount: OperationReads<Operation>,
-        InstitutionIdentityField: OperationReads<Operation>,
-        Kind: OperationReads<Operation>,
+
         PersonalOwner: OperationReads<Operation>,
         BusinessAccount: OperationReads<Operation>,
-        PrincipalIdentityField: OperationReads<Operation>,
-        BusinessIdentityField: OperationReads<Operation>,
-        Status: OperationReads<Operation>,
-        AccountDisplayName: OperationReads<Operation>,
+
         PostingAccount: OperationReads<Operation>,
         JournalPosting: OperationReads<Operation>,
-        JournalIdentityField: OperationReads<Operation>,
-        JournalPurpose: OperationReads<Operation>,
-        PostingIdentityField: OperationReads<Operation>,
-        Purpose: OperationReads<Operation>,
-        PostingAmount: OperationReads<Operation>,
+
         JournalReversal: OperationReads<Operation>,
     {
-        let journal = reader.resolve_entity(JournalIdentityField::reference(), id)?;
+        let journal =
+            reader.resolve_entity(JournalIdentityField::at("JournalIdentityField"), id)?;
         let mut journals = BTreeSet::from([journal]);
         let incoming = self.projected_relations_to(
             reader,
@@ -60,40 +51,35 @@ impl BoundedProjectionState {
         journals: BTreeSet<JournalEntity>,
     ) -> Result<(), BankProjectionDenial>
     where
-        AccountIdentity: OperationReads<Operation>,
-        AccountingRevision: OperationReads<Operation>,
         InstitutionAccount: OperationReads<Operation>,
-        InstitutionIdentityField: OperationReads<Operation>,
-        Kind: OperationReads<Operation>,
+
         PersonalOwner: OperationReads<Operation>,
         BusinessAccount: OperationReads<Operation>,
-        PrincipalIdentityField: OperationReads<Operation>,
-        BusinessIdentityField: OperationReads<Operation>,
-        Status: OperationReads<Operation>,
-        AccountDisplayName: OperationReads<Operation>,
+
         PostingAccount: OperationReads<Operation>,
         JournalPosting: OperationReads<Operation>,
-        JournalIdentityField: OperationReads<Operation>,
-        JournalPurpose: OperationReads<Operation>,
-        PostingIdentityField: OperationReads<Operation>,
-        Purpose: OperationReads<Operation>,
-        PostingAmount: OperationReads<Operation>,
+
         JournalReversal: OperationReads<Operation>,
     {
         let mut entries = Vec::with_capacity(journals.len());
         for journal in journals {
             let id = required(
-                self.projected_field(reader, &journal, JournalIdentityField::reference())?,
+                self.projected_field(
+                    reader,
+                    &journal,
+                    JournalIdentityField::at("JournalIdentityField"),
+                )?,
                 "JournalIdentityField",
             )?;
-            let canonical = reader.resolve_entity(JournalIdentityField::reference(), id)?;
+            let canonical =
+                reader.resolve_entity(JournalIdentityField::at("JournalIdentityField"), id)?;
             if canonical != journal {
                 return Err(BankProjectionDenial::AmbiguousRelation(
                     "JournalIdentityField",
                 ));
             }
             let purpose = required(
-                self.projected_field(reader, &journal, JournalPurpose::reference())?,
+                self.projected_field(reader, &journal, JournalPurpose::at("JournalPurpose"))?,
                 "JournalPurpose",
             )?;
             let relations =
@@ -135,39 +121,35 @@ impl BoundedProjectionState {
         journal_purpose: PostingPurpose,
     ) -> Result<BankPosting, BankProjectionDenial>
     where
-        AccountIdentity: OperationReads<Operation>,
-        AccountingRevision: OperationReads<Operation>,
         InstitutionAccount: OperationReads<Operation>,
-        InstitutionIdentityField: OperationReads<Operation>,
-        Kind: OperationReads<Operation>,
+
         PersonalOwner: OperationReads<Operation>,
         BusinessAccount: OperationReads<Operation>,
-        PrincipalIdentityField: OperationReads<Operation>,
-        BusinessIdentityField: OperationReads<Operation>,
-        Status: OperationReads<Operation>,
-        AccountDisplayName: OperationReads<Operation>,
+
         PostingAccount: OperationReads<Operation>,
         JournalPosting: OperationReads<Operation>,
-        PostingIdentityField: OperationReads<Operation>,
-        Purpose: OperationReads<Operation>,
-        PostingAmount: OperationReads<Operation>,
     {
         let owners = self.projected_relations_to(reader, JournalPosting::reference(), posting)?;
         if !matches!(owners.as_slice(), [owner] if owner.from() == journal) {
             return Err(BankProjectionDenial::AmbiguousRelation("JournalPosting"));
         }
         let id = required(
-            self.projected_field(reader, posting, PostingIdentityField::reference())?,
+            self.projected_field(
+                reader,
+                posting,
+                PostingIdentityField::at("PostingIdentityField"),
+            )?,
             "PostingIdentityField",
         )?;
-        let canonical = reader.resolve_entity(PostingIdentityField::reference(), id)?;
+        let canonical =
+            reader.resolve_entity(PostingIdentityField::at("PostingIdentityField"), id)?;
         if &canonical != posting {
             return Err(BankProjectionDenial::AmbiguousRelation(
                 "PostingIdentityField",
             ));
         }
         let purpose = required(
-            self.projected_field(reader, posting, Purpose::reference())?,
+            self.projected_field(reader, posting, Purpose::at("Purpose"))?,
             "Purpose",
         )?;
         if purpose != journal_purpose {
@@ -188,11 +170,11 @@ impl BoundedProjectionState {
         Ok(BankPosting::from_projection(
             id,
             required(
-                self.projected_field(reader, account.to(), AccountIdentity::reference())?,
+                self.projected_field(reader, account.to(), AccountIdentity::at("AccountIdentity"))?,
                 "AccountIdentity",
             )?,
             required(
-                self.projected_field(reader, posting, PostingAmount::reference())?,
+                self.projected_field(reader, posting, PostingAmount::at("PostingAmount"))?,
                 "PostingAmount",
             )?,
         ))
@@ -206,14 +188,17 @@ fn reversal_target<Operation>(
 ) -> Result<Option<bank_domain::model::JournalEntryId>, BankProjectionDenial>
 where
     JournalReversal: OperationReads<Operation>,
-    JournalIdentityField: OperationReads<Operation>,
 {
     let reversals =
         state.projected_relations_from(reader, JournalReversal::reference(), journal)?;
     match reversals.as_slice() {
         [] => Ok(None),
         [reversal] => required(
-            state.projected_field(reader, reversal.to(), JournalIdentityField::reference())?,
+            state.projected_field(
+                reader,
+                reversal.to(),
+                JournalIdentityField::at("JournalIdentityField"),
+            )?,
             "JournalIdentityField",
         )
         .map(Some),

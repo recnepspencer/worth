@@ -2,9 +2,7 @@ use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalK
 use std::collections::BTreeMap;
 
 use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationReadableScalarValueBinding,
-    ApplicationSchema, DeclaredApplicationFieldValue, EqualityPredicate,
-    WorthQueryTemporalIntentCandidate, WritePosture,
+    ApplicationReadableScalarValueBinding, ApplicationSchema, WorthQueryTemporalIntentCandidate,
 };
 
 use super::{
@@ -45,25 +43,13 @@ pub(super) fn bind_source_records<
     Clock,
     Input,
     IntentEntity,
-    IdentityAspect,
     IdentityField,
     IdentityValue,
-    IdentityWrite,
-    IdentityUnit,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     candidates: BTreeMap<String, WorthQueryTemporalIntentCandidate<Clock, Input>>,
-    identity_field: ApplicationFieldRef<
-        Schema,
-        IntentEntity,
-        IdentityAspect,
-        IdentityField,
-        IdentityValue,
-        IdentityWrite,
-        EqualityPredicate,
-        IdentityUnit,
-    >,
+    identity_field: IdentityField,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     product: &crate::basis::WorthQueryProductBranchLease,
 ) -> Result<
@@ -72,10 +58,11 @@ pub(super) fn bind_source_records<
 >
 where
     Schema: ApplicationSchema,
-    IdentityField: DeclaredApplicationFieldValue<Value = IdentityValue>,
+    IdentityField: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+        Entity = IntentEntity,
+        Value = IdentityValue,
+    >,
     IdentityField::Binding: ApplicationReadableScalarValueBinding<Value = IdentityValue>,
-    IdentityWrite: WritePosture,
-    IdentityUnit: ApplicationFieldUnit,
 {
     let selected = runtime
         .on_product(execution, product.retained_clone())

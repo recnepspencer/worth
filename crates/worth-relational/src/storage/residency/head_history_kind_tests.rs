@@ -1,5 +1,11 @@
 //! A borrowed Head remains readable after later damage is proved.
+use super::mixed_history_tests::recapture;
 use super::*;
+use crate::identity::data::{EntityId, RelationId, VersionId};
+use crate::storage::data::RecordLifecycleState;
+use crate::storage::overlay::PartitionState;
+use crate::storage::substrate::SlotInit;
+use std::collections::BTreeSet;
 
 #[test]
 fn a_cached_head_guard_refuses_after_full_demand_proves_region_damage() {
@@ -43,4 +49,305 @@ fn a_cached_head_guard_refuses_after_full_demand_proves_region_damage() {
         &fixture.cold.symbols.interner_snapshot(), None,
     ), Err(super::super::RelationalResidencyDemandFailure::StorageUnavailable(retry)) if retry == failure));
     assert_eq!(source.reads.load(Ordering::SeqCst), reads);
+}
+
+#[test]
+fn head_prefixes_rebuild_owned_history_after_endpoint_edits_and_generation_reuse() {
+    let fixture = region_with_history();
+    let request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&request);
+    let head = region_load::load_head(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        execution,
+        1 << 24,
+    )
+    .unwrap();
+    assert_eq!(fixture.source.history_reads.load(Ordering::SeqCst), 0);
+    let full = region_load::load_full(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        &head,
+        execution,
+        1 << 24,
+    )
+    .unwrap();
+    let mut partial = head.partition.clone();
+    let mut oracle = full.partition.clone();
+    assert_owned_history(&mut partial, &mut oracle);
+    for partition in [&mut partial, &mut oracle] {
+        update_target(
+            partition,
+            fixture.relation,
+            fixture.entity,
+            VersionId(1_000),
+        );
+    }
+    assert_owned_history(&mut partial, &mut oracle);
+    let reused = RelationId::new(
+        fixture.relation.partition_id,
+        fixture.relation.slot_index() as u64,
+        fixture.relation.generation.0 + 1,
+    );
+    for partition in [&mut partial, &mut oracle] {
+        let slot = fixture.relation.slot_index();
+        let extra = partition
+            .relation_arena
+            .get_slot(slot)
+            .unwrap()
+            .extra()
+            .clone();
+        let endpoints = extra.endpoints.clone().unwrap();
+        partition
+            .relation_arena
+            .retire(slot, VersionId(1_001))
+            .expect("fixture slot is materialized");
+        partition
+            .relation_arena
+            .set_lifecycle_for_slot(slot, RecordLifecycleState::Reusable);
+        partition
+            .relation_arena
+            .reset_slot(slot)
+            .expect("fixture slot is materialized");
+        partition
+            .relation_arena
+            .write_reserved_slot(
+                SlotInit {
+                    partition_id: fixture.relation.partition_id,
+                    kind_id: KindId(2),
+                    version_id: VersionId(1_002),
+                    extra,
+                },
+                slot,
+                reused.generation.0,
+            )
+            .unwrap();
+        for table in [&mut partition.adjacency, &mut partition.reverse_adjacency] {
+            let adjacency = table.get_mut(endpoints.source.slot_index()).unwrap();
+            adjacency.remove(KindId(2), &fixture.relation);
+            adjacency.insert(KindId(2), reused);
+        }
+    }
+    assert_owned_history(&mut partial, &mut oracle);
+    assert_eq!(fixture.source.history_reads.load(Ordering::SeqCst), 1);
+}
+
+#[test]
+fn adopting_a_different_head_carries_its_owned_historical_projection_with_the_record() {
+    let fixture = region_with_history();
+    let request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&request);
+    let head = region_load::load_head(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        execution,
+        1 << 24,
+    )
+    .unwrap();
+    let full = region_load::load_full(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        &head,
+        execution,
+        1 << 24,
+    )
+    .unwrap();
+    let mut later = full.partition.clone();
+    update_target(
+        &mut later,
+        fixture.relation,
+        fixture.entity,
+        VersionId(1_000),
+    );
+    let (cold, source) = recapture(&fixture.cold, &later);
+    let selected =
+        region_load::load_head(&cold, cold.source.as_ref().unwrap(), execution, 1 << 24).unwrap();
+    let mut partial = head.partition.clone();
+    let mut oracle = full.partition.clone();
+    let slots = BTreeSet::from([fixture.relation.slot_index()]);
+    partial
+        .relation_arena
+        .merge_slots_from_owned(&mut selected.partition.relation_arena.clone(), &slots);
+    oracle
+        .relation_arena
+        .merge_slots_from_owned(&mut later.relation_arena.clone(), &slots);
+    partial.adjacency = selected.partition.adjacency.clone();
+    partial.reverse_adjacency = selected.partition.reverse_adjacency.clone();
+    oracle.adjacency = later.adjacency.clone();
+    oracle.reverse_adjacency = later.reverse_adjacency.clone();
+    assert_owned_history(&mut partial, &mut oracle);
+    assert_eq!(source.history_reads.load(Ordering::SeqCst), 0);
+    let symbols = fixture.cold.symbols.interner_snapshot();
+    let (commitment, _) = PartitionContentCommitment::capture_layered(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &worth_execution::ExecutionRequest::serial(&crate::test_execution_policy::serial_request()),
+        &partial,
+        &symbols,
+    )
+    .unwrap();
+    let kind_indexes = Arc::new(
+        super::super::kind_incremental::RegionKindIndexes::capture(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            &partial,
+        )
+        .unwrap(),
+    );
+    let history_presence = super::super::history_presence::HistoryPresence::from_cold(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        &partial,
+    );
+    let owned = RelationalRegionResidency::resident_head(
+        partial,
+        commitment,
+        kind_indexes,
+        history_presence,
+        fixture.cold.schema.clone(),
+        &fixture.cold.symbols,
+    );
+    let reconstructed = full_demand(owned.cell(), 1 << 24).unwrap();
+    assert_eq!(
+        reconstructed
+            .full_view()
+            .partition()
+            .authoritative_content_digest(&symbols)
+            .unwrap(),
+        oracle.authoritative_content_digest(&symbols).unwrap()
+    );
+    assert!(source.history_reads.load(Ordering::SeqCst) > 0,
+        "Full promotion follows the adopted relation's own source as well as the original entity source");
+}
+
+#[test]
+fn a_full_target_adopting_head_prefixes_keeps_history_readmission() {
+    let fixture = region_with_history();
+    let request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&request);
+    let head = region_load::load_head(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        execution,
+        1 << 24,
+    )
+    .unwrap();
+    let full = region_load::load_full(
+        &fixture.cold,
+        fixture.cold.source.as_ref().unwrap(),
+        &head,
+        execution,
+        1 << 24,
+    )
+    .unwrap();
+    let readmission =
+        ResidentHistoryReadmission::new(fixture.cold.schema.clone(), &fixture.cold.symbols);
+    for metadata_first in [false, true] {
+        let lease = RelationalRegionResidency::resident_uncommitted(full.partition.clone());
+        let edit = if metadata_first {
+            super::super::ResidentRegionEdit::from_full(lease)
+        } else {
+            super::super::ResidentRegionLease::Full(lease)
+                .into_edit(readmission.clone())
+                .0
+        };
+        let edited = edit
+            .transform(readmission.clone(), |_| head.partition.clone())
+            .freeze();
+        assert!(
+            matches!(edited, super::super::ResidentRegionLease::Head { .. }),
+            "imported prefixes must not be mislabeled Full"
+        );
+        let head_lease = edited.head_lease();
+        assert!(!head_lease.resident_region().history_presence.is_complete());
+        let rebuilt = full_demand(head_lease.cell(), 1 << 24).unwrap();
+        let symbols = fixture.cold.symbols.interner_snapshot();
+        assert_eq!(
+            rebuilt
+                .full_view()
+                .partition()
+                .authoritative_content_digest(&symbols)
+                .unwrap(),
+            full.partition
+                .authoritative_content_digest(&symbols)
+                .unwrap(),
+        );
+    }
+}
+
+fn update_target(
+    partition: &mut PartitionState,
+    relation: RelationId,
+    target: EntityId,
+    version: VersionId,
+) {
+    let mut extra = partition
+        .relation_arena
+        .get_slot(relation.slot_index())
+        .unwrap()
+        .extra()
+        .clone();
+    let endpoints = extra.endpoints.as_mut().unwrap();
+    let old = endpoints.target;
+    let source = endpoints.source;
+    endpoints.target = target;
+    partition
+        .relation_arena
+        .apply_extra_update(relation.slot_index(), extra, version)
+        .expect("fixture slot is materialized");
+    partition
+        .reverse_adjacency
+        .get_mut(old.slot_index())
+        .unwrap()
+        .remove_at(KindId(2), &relation, version);
+    partition
+        .reverse_adjacency
+        .get_mut(target.slot_index())
+        .unwrap()
+        .insert_at(KindId(2), relation, version);
+    partition
+        .adjacency
+        .get_mut(source.slot_index())
+        .unwrap()
+        .index_structural_revision(KindId(2), version);
+}
+
+fn assert_owned_history(partial: &mut PartitionState, full: &mut PartitionState) {
+    for partition in [&mut *partial, &mut *full] {
+        for table in [&mut partition.adjacency, &mut partition.reverse_adjacency] {
+            let slots = table.iter().map(|(&slot, _)| slot).collect::<Vec<_>>();
+            for slot in slots {
+                table
+                    .get_mut(slot)
+                    .unwrap()
+                    .reset_historical_kind_buckets_with_custody(None);
+            }
+        }
+        super::super::rebuild_region_history_kind_buckets(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            partition,
+        )
+        .unwrap();
+    }
+    assert_eq!(
+        super::super::kind_projection::canonical_history(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            partial
+        )
+        .unwrap(),
+        super::super::kind_projection::canonical_history(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            full
+        )
+        .unwrap()
+    );
+    assert_eq!(
+        super::super::RelationalRegionKindCommitment::capture(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            partial
+        )
+        .unwrap(),
+        super::super::RelationalRegionKindCommitment::capture(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            full
+        )
+        .unwrap()
+    );
 }

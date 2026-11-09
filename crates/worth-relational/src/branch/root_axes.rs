@@ -14,6 +14,8 @@ pub(super) fn storage_root_for(regions: &RelationalPersistentRegionSet) -> ([u8;
 /// by the root commitment here and their payloads are verified on demand;
 /// checking a descriptor never initiates region I/O.
 pub(super) fn storage_root_from_authoritative_regions(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     regions: &RelationalPersistentRegionSet,
     symbols: &crate::symbols::data::StringInterner,
 ) -> Result<([u8; 32], [u8; 32]), super::RelationalBranchRootCaptureDenial> {
@@ -21,7 +23,7 @@ pub(super) fn storage_root_from_authoritative_regions(
         let Some(content_digest) = region
             .partition
             .cell()
-            .capture_resident_content(symbols)
+            .capture_resident_content(lane, execution, symbols)
             .map_err(|failure| {
                 super::super::root_region::capture_failure(region.partition_id, failure)
             })?

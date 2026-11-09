@@ -39,9 +39,7 @@ pub(super) fn finalize_published_commit(
         published_snapshot_basis,
         published_snapshot_slot,
     } = input;
-    let index_refresh_basis = prepared_history.index_refresh_basis().clone();
     publish_storage(runtime, mirror_publication, phase_timing);
-    refresh_indexes(runtime, changed_records, &index_refresh_basis, phase_timing);
     let started = std::time::Instant::now();
     prepared_history.install(runtime, patch_position);
     phase_timing.history_publish_micros = phase_timing
@@ -94,21 +92,6 @@ fn publish_storage(
         .storage_authority()
         .publish_prepared_mirror(prepared);
     timing.storage_commit_micros = started.elapsed().as_micros() as u64;
-}
-
-fn refresh_indexes(
-    runtime: &crate::runtime::RelationalRuntime,
-    changed_records: &[crate::transactions::data::RecordRef],
-    basis: &crate::mvcc::PreparedIndexRefreshBasis,
-    timing: &mut crate::authority::commit::phases::finalize::PublicationPhaseTiming,
-) {
-    let started = std::time::Instant::now();
-    if basis.branch_id() == &runtime.history.main_branch {
-        runtime
-            .index_authority()
-            .refresh_unique_entity_aspect_field_index_for_records(changed_records, basis);
-    }
-    timing.index_refresh_micros = started.elapsed().as_micros() as u64;
 }
 
 fn advance_visibility(

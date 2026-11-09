@@ -20,16 +20,14 @@ pub fn scalar_storage_connects_only_the_actual_performed_occurrence() {
     let native = application
         .installed_schema()
         .native_contracts()
-        .aspect("Number", "ScalarFacts")
+        .aspect("Number", crate::facade::certification::application_graph::correction::model::scalar_input::ScalarFacts::reference().name())
         .unwrap();
     assert!(matches!(
         native.contract().shape(),
-        worth_foundational::facade::AspectShape::Scalar(
-            worth_foundational::facade::ScalarAspectType::UInt64
-        )
+        worth_foundational::facade::AspectShape::Struct(_)
     ));
     assert!(
-        matches!(native.binding(), worth_foundational::facade::AspectBinding::EntityField { field } if field.as_str() == "Value")
+        matches!(native.binding(), worth_foundational::facade::AspectBinding::EntityField { field } if field.as_str() == native.contract().key().as_str())
     );
     assert_ne!(
         native.contract().key().as_str(),
@@ -39,9 +37,10 @@ pub fn scalar_storage_connects_only_the_actual_performed_occurrence() {
     let meanings = application.installed_schema().value_meaning().unwrap();
     let meaning = meanings
         .iter()
-        .find(|meaning| meaning.entity() == "Number" && meaning.aspect() == "ScalarFacts")
+        .find(|meaning| meaning.entity() == "Number" && meaning.aspect() == crate::facade::certification::application_graph::correction::model::scalar_input::ScalarFacts::reference().name())
         .unwrap();
-    assert_eq!(meaning.scalar_field(), Some("Value"));
+    assert_eq!(meaning.scalar_field(), None);
+    assert!(meaning.fields().iter().any(|field| field.name() == "Value"));
     let readers = application.application_query_basis_observer();
     let baseline = readers.observe().active();
     let scope = request_scope();

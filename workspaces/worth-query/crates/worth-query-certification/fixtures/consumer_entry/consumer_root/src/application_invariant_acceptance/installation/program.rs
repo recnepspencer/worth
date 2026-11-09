@@ -71,7 +71,7 @@ Program::Outputs: installation::WorthQueryApplicationProgramRoots<ConsumerSchema
     let application = installation::in_memory_rostered_program::<ConsumerSchema, Program>(
         program,
         roster,
-        ConsumerSchema::declaration().expect("the contributed declaration is valid"),
+        <ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the contributed declaration is valid"),
         configuration,
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         limits,

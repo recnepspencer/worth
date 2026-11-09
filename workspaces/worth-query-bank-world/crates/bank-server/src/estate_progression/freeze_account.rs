@@ -52,13 +52,13 @@ pub(crate) fn project_freeze_account(
     };
     let account = relation.to().clone();
     let observed_account = reader
-        .decision_field(&account, AccountIdentity::reference())?
+        .decision_field(&account, AccountIdentity::at("AccountIdentity"))?
         .ok_or(BankEstateFreezeProjectionDenial::MissingAccountIdentity)?;
     if observed_account != expected_account {
         return Err(BankEstateFreezeProjectionDenial::RelatedAccountMismatch);
     }
     let status = reader
-        .decision_field(&account, Status::reference())?
+        .decision_field(&account, Status::at("Status"))?
         .ok_or(BankEstateFreezeProjectionDenial::MissingAccountStatus)?;
     if status != AccountStatus::Open {
         return Err(BankEstateFreezeProjectionDenial::AccountNotOpen);

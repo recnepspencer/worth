@@ -19,6 +19,7 @@ fn native_identity_describes_its_shared_key_without_changing_custody() {
             Arc::from("x".repeat(length)),
             19,
             PhantomData,
+            None,
         );
         let weak = Arc::downgrade(identity.entity_for_test());
         let clone = identity.clone();

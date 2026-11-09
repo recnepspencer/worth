@@ -322,9 +322,9 @@ impl CourtroomWorld {
         let execution = primary_graph::WorthQueryTemporalOperationExecution::with_authorization(
             Arc::clone(&invariant),
             invoker,
-            IntentIdentityField::reference(),
-            IntentRevisionField::reference(),
-            IntentLifecycleField::reference(),
+            IntentIdentityField::at("IntentIdentityField"),
+            IntentRevisionField::at("IntentRevisionField"),
+            IntentLifecycleField::at("IntentLifecycleField"),
             "active".to_string(),
             "completed".to_string(),
             primary_graph::WorthQueryPublicTemporalOperationAuthorization,
@@ -334,7 +334,7 @@ impl CourtroomWorld {
         let reconstruction = primary_graph::WorthQueryTemporalReconstructionAccess::new(
             principal_binding,
             principal_source,
-            IntentIdentityField::reference(),
+            IntentIdentityField::at("IntentIdentityField"),
             "intent-1".to_string(),
         )
         .unwrap();

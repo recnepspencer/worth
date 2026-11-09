@@ -9,7 +9,8 @@ fn dense_refresh_denial_blocks_work_packet_before_batch_exists() {
         attachment.lane_digest().clone(),
         "employee.name",
         MaintenanceDeltaWidth::measured(1),
-    );
+    )
+    .expect("fixture digest must fit");
     let (delta, lowering_report, _) = lower_query_subscription_maintenance_delta(delta).unwrap();
 
     let error = build_active_delivery_work_packet(
@@ -119,7 +120,8 @@ fn work_packet_rejects_wrong_phase_allocation_posture() {
         attachment.lane_digest().clone(),
         "employee.name",
         MaintenanceDeltaWidth::measured(1),
-    );
+    )
+    .expect("fixture digest must fit");
     let (delta, lowering_report, _) = lower_query_subscription_maintenance_delta(delta).unwrap();
 
     let error = build_active_delivery_work_packet(
@@ -155,7 +157,8 @@ fn performance_receipt_digest_binds_allocation_posture() {
         attachment.lane_digest().clone(),
         "employee.name",
         MaintenanceDeltaWidth::measured(1),
-    );
+    )
+    .expect("fixture digest must fit");
     let (patch_delta, patch_lowering, _) =
         lower_query_subscription_maintenance_delta(patch_delta).unwrap();
     let patch_packet = build_active_delivery_work_packet(
@@ -179,7 +182,8 @@ fn performance_receipt_digest_binds_allocation_posture() {
         attachment.lane_digest().clone(),
         "employee.name",
         MaintenanceDeltaWidth::measured(1),
-    );
+    )
+    .expect("fixture digest must fit");
     let (debt_delta, debt_lowering, _) =
         lower_query_subscription_maintenance_delta(debt_delta).unwrap();
     let debt_packet = build_active_delivery_work_packet(

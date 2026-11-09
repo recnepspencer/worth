@@ -2,13 +2,11 @@ use std::marker::PhantomData;
 
 use super::ApplicationRelationIntegrity;
 
-use worth_foundational::facade::{AspectContractRevision, AspectIdentity};
-
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
 use super::{
-    ApplicationAspectMarkerIdentity, ApplicationEffectMarkerIdentity,
-    ApplicationOperationMarkerIdentity, ApplicationStructuredValueBinding,
+    ApplicationEffectMarkerIdentity, ApplicationOperationMarkerIdentity,
+    ApplicationStructuredValueBinding,
 };
 
 macro_rules! named_reference {
@@ -60,22 +58,9 @@ macro_rules! named_reference {
 }
 
 named_reference!(ApplicationEntityRef, Schema, Entity);
-named_reference!(ApplicationAspectRef, Schema, Entity, Aspect);
+
 named_reference!(ApplicationPolicyRef, Schema, Policy);
 named_reference!(ApplicationUnitRef, Schema, Unit);
-
-impl<Schema, Entity, Aspect> ApplicationAspectRef<Schema, Entity, Aspect>
-where
-    Aspect: ApplicationAspectMarkerIdentity<Schema, Entity>,
-{
-    pub const fn identity(&self) -> AspectIdentity {
-        Aspect::ASPECT_IDENTITY
-    }
-
-    pub const fn revision(&self) -> AspectContractRevision {
-        Aspect::CONTRACT_REVISION
-    }
-}
 
 pub struct ApplicationAbilityRef<Schema, Ability, Scope> {
     name: &'static str,

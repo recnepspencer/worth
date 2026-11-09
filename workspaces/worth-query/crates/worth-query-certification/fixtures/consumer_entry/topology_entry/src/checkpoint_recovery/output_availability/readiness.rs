@@ -1,3 +1,4 @@
+use super::members::QuantitySnapshot;
 use super::*;
 use worth_query_host::facade::declaration::{
     authoring::{
@@ -26,7 +27,13 @@ worth_query_host::facade::worth_query_conditional_node!(
 pub(super) struct Readiness<const INITIAL: bool>;
 
 impl<const INITIAL: bool> Readiness<INITIAL> {
-    fn conditional_binding() -> domain::WorthQueryApplicationConditionalOperationBinding<
+    fn conditional_binding(
+        definition: &domain::WorthQueryDomainOperationDefinition<
+            PlanarReadinessDomain,
+            PlanarReadinessOperation,
+            PlanarReadinessFamily,
+        >,
+    ) -> domain::WorthQueryApplicationConditionalOperationBinding<
         Schema,
         PublishQuantity,
         Input,
@@ -36,7 +43,7 @@ impl<const INITIAL: bool> Readiness<INITIAL> {
     > {
         domain::WorthQueryApplicationConditionalOperationBinding::declare(
             PublishQuantity::reference::<Schema>(),
-            operation_definition().reference(),
+            definition.reference(),
         )
     }
 }
@@ -60,18 +67,14 @@ impl<const INITIAL: bool> application_contribution::WorthQueryApplicationConditi
     };
 
     fn package_contract(
-        _declaration: &worth_query_host::facade::declaration::application_schema::ErasedApplicationSchemaDeclaration,
+        declaration: &worth_query_host::facade::declaration::application_schema::ErasedApplicationSchemaDeclaration,
     ) -> Result<
         application_contribution::WorthQueryApplicationConditionalPackageContract,
         worth_query_host::facade::application_contribution::WorthQueryOutputReadinessContractDenial,
     > {
-        Ok({
-            application_contribution::WorthQueryApplicationConditionalPackageContract::new(
-                operation_definition().into_portable(),
-                Self::conditional_binding().portable().clone(),
-                PlanarReadyNode::reference().node_identity(),
-            )
-        })
+        let contract = operation_contract(declaration)?;
+        let binding = Self::conditional_binding(contract.definition());
+        Ok(contract.into_package_contract(binding.portable().clone()))
     }
 
     fn install(
@@ -82,13 +85,16 @@ impl<const INITIAL: bool> application_contribution::WorthQueryApplicationConditi
         (),
         worth_query_host::facade::primary_graph::WorthQueryConditionalRuntimeInstallationDenial,
     > {
+        let contract = operation_contract(installation.installed_schema().installed_declaration())?;
+        let binding = Self::conditional_binding(contract.definition());
+
         let operation = installation
             .installed_schema()
             .installed_operation(PublishQuantity::reference::<Schema>())
             .unwrap();
         let node = installation
             .installed_packages()
-            .bind_conditional_application_operation(operation, &Self::conditional_binding())
+            .bind_conditional_application_operation(operation, &binding)
             .unwrap()
             .bind_node(PlanarReadyNode::reference())
             .unwrap();
@@ -99,91 +105,57 @@ impl<const INITIAL: bool> application_contribution::WorthQueryApplicationConditi
         }
     }
 }
-pub(super) fn operation_definition() -> domain::WorthQueryDomainOperationDefinition<
-    PlanarReadinessDomain,
-    PlanarReadinessOperation,
-    PlanarReadinessFamily,
+pub(super) fn operation_contract(
+    declaration: &worth_query_decl::facade::application_schema::ErasedApplicationSchemaDeclaration,
+) -> Result<
+    application_contribution::WorthQueryOutputReadinessContract<
+        PlanarReadinessDomain,
+        PlanarReadinessOperation,
+        PlanarReadinessFamily,
+    >,
+    application_contribution::WorthQueryOutputReadinessContractDenial,
 > {
-    let dependency = output_change_dependency();
-    application_contribution::WorthQueryOutputReadinessContractBuilder::new(
+    application_contribution::WorthQueryOutputReadinessContractBuilder::for_field(
+        declaration,
+        QuantitySnapshot::at("QuantitySnapshot"),
         domain::WorthQueryDomainOperationIdentity::new("availability-output-readiness", 1),
         "availability-output-ready",
-        output_change_projection(),
         canonical_query(),
         domain::WorthQueryOperationProjectionRole::new("anchor").unwrap(),
         domain::WorthQueryExecutionStrategyName::new("availability-readiness").unwrap(),
         "availability-readiness-v1",
-    )
-    .semantic_reads([output_change_projection()])
-    .dependencies([dependency.clone()])
-    .readiness_dependencies([dependency])
-    .build()
-    .expect("planar readiness declaration is canonical")
-}
-
-pub(super) fn output_change_dependency() -> domain::WorthQuerySemanticTruthDependency {
-    domain::WorthQuerySemanticTruthDependency::new(
-        domain::WorthQueryConditionalGraphReadRole::new("primary").unwrap(),
-        output_contract(),
-        output_change_mask(),
-        domain::AspectBinding::EntityField {
-            field: domain::FieldKey::new("QuantityFacts").unwrap(),
-        },
-        domain::WorthQuerySemanticLocality::SourceRecord,
-        [domain::AuthoritativeAspectChangeKind::FieldSet],
-    )
-    .unwrap()
-}
-
-fn output_contract() -> domain::AspectContract {
-    let field = |name, scalar| {
-        domain::FieldDeclaration::new(
-            domain::FieldKey::new(name).unwrap(),
-            scalar,
-            domain::FieldRequirement::Required,
-            domain::AbsenceLaw::Required,
-            domain::AspectEvolutionPolicy::AdditiveFieldsAllowed,
-        )
-        .unwrap()
-    };
-    domain::AspectContract::struct_aspect(
-        domain::AspectKey::new("QuantityFacts").unwrap(),
-        domain::AspectIdentity(0x9174_2731),
-        domain::AspectContractRevision(1),
-        // Correspondence admits the complete installed aspect, while the mask
-        // below selects only the output value whose changes drive readiness.
-        domain::StructAspectShape::new([
-            field("QuantityKey", domain::ScalarAspectType::String),
-            field("QuantitySnapshot", domain::ScalarAspectType::String),
-        ])
-        .unwrap(),
-    )
-}
-
-fn output_change_mask() -> domain::AspectMask<domain::ProjectionMask> {
-    domain::AspectMask::new([domain::CanonicalFieldPath::single(
-        domain::FieldKey::new("QuantitySnapshot").unwrap(),
-    )])
-}
-
-pub(super) fn output_change_projection() -> domain::WorthQueryOperationNativeProjectionContract {
-    domain::WorthQueryOperationNativeProjectionContract::new(
-        output_contract(),
-        output_change_mask(),
-    )
-    .unwrap()
+    )?
+    .field_dependency(
+        declaration,
+        QuantitySnapshot::at("QuantitySnapshot"),
+        application_contribution::WorthQueryReadinessFieldUse::DeliveryAndEligibility,
+    )?
+    .build_typed()
 }
 
 pub(super) fn canonical_query(
 ) -> worth_query_host::facade::declaration::canonicalization::CanonicalQueryBundle {
-    let query = DetailQueryBuilder::new(RootEntityKey::new("Quantity").unwrap())
-        .project(AspectFieldSelector::new("QuantityFacts", "QuantitySnapshot").unwrap())
-        .build()
-        .unwrap()
-        .into_raw();
+    let query = DetailQueryBuilder::new(
+        RootEntityKey::new(QuantitySnapshot::at("QuantitySnapshot").entity()).unwrap(),
+    )
+    .project(
+        AspectFieldSelector::new(
+            QuantitySnapshot::at("QuantitySnapshot").aspect(),
+            QuantitySnapshot::at("QuantitySnapshot").field(),
+        )
+        .unwrap(),
+    )
+    .build()
+    .unwrap()
+    .into_raw();
     let shape = DetailResultShapeBuilder::new()
         .field(
-            AuthoredResultShapeField::new("QuantityFacts", "QuantitySnapshot", "snapshot").unwrap(),
+            AuthoredResultShapeField::new(
+                QuantitySnapshot::at("QuantitySnapshot").aspect(),
+                QuantitySnapshot::at("QuantitySnapshot").field(),
+                "snapshot",
+            )
+            .unwrap(),
         )
         .build()
         .unwrap()

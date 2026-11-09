@@ -9,6 +9,7 @@ use crate::application::config::{
 use crate::composition::{
     runtime_backed_query_composition_support_profile, QueryCompositionSupportProfile,
 };
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceIdentity, WorthQueryEvidenceScope,
     WorthQueryEvidenceTag,
@@ -51,7 +52,9 @@ pub struct WorthQuerySupportSectionPosture {
 }
 
 impl WorthQuerySupportSectionPosture {
-    fn from_resolution(resolution: WorthQueryConfigSectionResolution) -> Self {
+    fn from_resolution(
+        resolution: WorthQueryConfigSectionResolution,
+    ) -> Result<Self, IdentityDerivationDenial> {
         let section = resolution.section();
         let owner = resolution.owner();
         let enabled = resolution.enabled();
@@ -66,14 +69,14 @@ impl WorthQuerySupportSectionPosture {
             WorthQueryEvidenceTag::new("config_digest"),
             config_digest.clone(),
         )
-        .seal();
-        Self {
+        .seal()?;
+        Ok(Self {
             section,
             owner,
             enabled,
             config_digest,
             posture_identity,
-        }
+        })
     }
 
     pub fn section(&self) -> WorthQueryConfigSectionFamily {
@@ -122,9 +125,16 @@ pub struct WorthQuerySupportReport {
 impl WorthQuerySupportReport {
     pub fn from_config(config: WorthQueryConfig) -> Result<Self, ConfigurationAdmissionError> {
         let validated = config.validate()?;
-        let registry = WorthQueryCapabilityRegistry::from_validated_config(&validated);
-        let matrix = WorthQuerySupportMatrix::new(registry);
-        Ok(Self::from_validated_config_and_matrix(&validated, matrix))
+        let registry =
+            WorthQueryCapabilityRegistry::from_validated_config(&validated).map_err(|cause| {
+                ConfigurationAdmissionError::identity_denied(cause, validated.counters().clone())
+            })?;
+        let matrix = WorthQuerySupportMatrix::new(registry).map_err(|cause| {
+            ConfigurationAdmissionError::identity_denied(cause, validated.counters().clone())
+        })?;
+        Self::from_validated_config_and_matrix(&validated, matrix).map_err(|cause| {
+            ConfigurationAdmissionError::identity_denied(cause, validated.counters().clone())
+        })
     }
 
     pub fn runtime_backed_default() -> Self {
@@ -135,7 +145,7 @@ impl WorthQuerySupportReport {
     pub(crate) fn from_validated_config_and_matrix(
         config: &ValidatedWorthQueryConfig,
         support_matrix: WorthQuerySupportMatrix,
-    ) -> Self {
+    ) -> Result<Self, IdentityDerivationDenial> {
         let admitted_capability_families = support_matrix
             .capability_registry()
             .descriptors()
@@ -163,20 +173,22 @@ impl WorthQuerySupportReport {
         let section_postures = vec![
             WorthQuerySupportSectionPosture::from_resolution(
                 config.resolve_section(WorthQueryConfigSectionFamily::Query),
-            ),
+            )?,
             WorthQuerySupportSectionPosture::from_resolution(
                 config.resolve_section(WorthQueryConfigSectionFamily::Relational),
-            ),
+            )?,
             WorthQuerySupportSectionPosture::from_resolution(
                 config.resolve_section(WorthQueryConfigSectionFamily::Signal),
-            ),
+            )?,
             WorthQuerySupportSectionPosture::from_resolution(
                 config.resolve_section(WorthQueryConfigSectionFamily::RuntimeBridge),
-            ),
+            )?,
             WorthQuerySupportSectionPosture::from_resolution(
                 config.resolve_section(WorthQueryConfigSectionFamily::Store),
-            ),
-        ];
+            )?,
+        ]
+        .into_iter()
+        .collect::<Vec<_>>();
         let query_composition_support_profile = support_matrix
             .descriptor(WorthQueryCapabilityFamily::QueryComposition)
             .filter(|descriptor| descriptor.status() == WorthQueryCapabilityStatus::Admitted)
@@ -184,7 +196,8 @@ impl WorthQuerySupportReport {
         let query_context_support_profile = support_matrix
             .descriptor(WorthQueryCapabilityFamily::QueryContext)
             .filter(|descriptor| descriptor.status() == WorthQueryCapabilityStatus::Admitted)
-            .map(|_| runtime_backed_narrow_query_context_support_profile());
+            .map(|_| runtime_backed_narrow_query_context_support_profile())
+            .transpose()?;
         let identity_evolution_support_profile = support_matrix
             .descriptor(WorthQueryCapabilityFamily::IdentityEvolution)
             .filter(|descriptor| descriptor.status() == WorthQueryCapabilityStatus::Admitted)
@@ -259,9 +272,9 @@ impl WorthQuerySupportReport {
                     WorthQueryEvidenceTag::new("support_report_generation_count"),
                     counters.support_report_generation_count(),
                 )
-                .seal();
+                .seal()?;
 
-        Self {
+        Ok(Self {
             support_matrix,
             admitted_capability_count,
             deferred_capability_count,
@@ -276,7 +289,7 @@ impl WorthQuerySupportReport {
             validated_config_digest,
             counters,
             report_identity,
-        }
+        })
     }
 
     pub fn support_matrix(&self) -> &WorthQuerySupportMatrix {

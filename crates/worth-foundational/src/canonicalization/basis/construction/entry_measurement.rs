@@ -109,6 +109,9 @@ pub(super) fn measure<Stop>(
 fn interned_width(value: &crate::values::InternedString) -> (usize, usize) {
     match value {
         crate::values::InternedString::Raw(text) => (text.len(), text.len()),
+        crate::values::InternedString::Stored(text) => {
+            (text.as_str().len(), text.clone_allocation_capacity_bytes())
+        }
         crate::values::InternedString::Symbol(_) => (size_of::<u32>(), 0),
     }
 }

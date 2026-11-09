@@ -1,4 +1,55 @@
 //! Diagnostic values prove transport projection, not execution of an owner fault.
+#[test]
+fn history_recipe_and_ownership_keep_original_control_and_content_instructions() {
+    use worth_query_host::facade::{
+        application_entry::{
+            WorthQueryDocumentHistoryDenial as Document,
+            WorthQueryHistoryNavigationDenial as Navigation,
+        },
+        primary_graph::{
+            RelationalHistoricalSelectionReadDenial as Restored,
+            RelationalModelOwnershipDenial as Ownership,
+        },
+    };
+    for (cause, expected) in [
+        (
+            Cause::Cancelled,
+            BankHttpDenial::new(Kind::Cancelled, Next::Retry),
+        ),
+        (
+            Cause::DeadlineElapsed,
+            BankHttpDenial::new(Kind::DeadlineExceeded, Next::Retry),
+        ),
+        (
+            Cause::Content(Rejection::SizeLimit {
+                observed: 9,
+                maximum: 3,
+            }),
+            BankHttpDenial::new(Kind::ResourceExhausted, Next::NarrowRequest),
+        ),
+        (
+            Cause::Content(Rejection::IntegrityMismatch),
+            BankHttpDenial::new(Kind::InternalDenied, Next::ContactOperator),
+        ),
+    ] {
+        for read in [
+            Read::RecipeCapture(cause.into()),
+            Read::Authority(Navigation::Document(Document::Ownership(
+                Ownership::Native(cause),
+            ))),
+            Read::Authority(Navigation::Document(Document::Recording(cause))),
+            Read::Authority(Navigation::OutputLineage(
+                CompanionPreflightStop::Execution(cause),
+            )),
+            Read::Authority(Navigation::RestoredOutputRead(Restored::Execution(cause))),
+        ] {
+            assert_eq!(
+                query_denial(BankApplicationQueryDenial::HistoryOutput(Box::new(read))),
+                expected
+            );
+        }
+    }
+}
 use super::*;
 use bank_server::{BankApplicationContinuationDenialKind, BankApplicationLiveOpenDenialKind};
 use worth_query_host::facade::{
@@ -53,9 +104,9 @@ fn content_wrappers_preserve_the_original_request_instruction() {
             Verification::IndexedSelectionFactDenied(Indexed::Lookup(Lookup::Execution(cause))),
         ] {
             assert_eq!(
-                output_settlement::denial(
+                output_settlement::output_settlement(
                     BankApplicationOutputSettlementDenialKind::RetainedVerificationFactUnavailable(
-                        verification
+                        Box::new(verification)
                     )
                 ),
                 expected
@@ -109,7 +160,7 @@ fn current_read_cutover_deadlines_keep_the_request_instruction() {
         expected
     );
     assert_eq!(
-        output_settlement::denial(
+        output_settlement::output_settlement(
             BankApplicationOutputSettlementDenialKind::RecoveryPublication(
                 NoEffectCause::CurrentReadDependency(Current::CutoverDeadlineElapsed)
             )

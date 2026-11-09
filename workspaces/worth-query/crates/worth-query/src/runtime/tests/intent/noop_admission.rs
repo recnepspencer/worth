@@ -42,14 +42,17 @@ fn idempotent_intent_noop_emits_receipt_without_mutation_or_signal_routing() {
         )
         .expect("computed should declare");
     let delivery_effect = runtime
-        .declare_effect::<WorthQueryUnrefinedLiveShape>(WorthQueryEffectDeclaration::deliver(
-            "ui.noop-intent",
-            WorthQueryEffectTrigger::computed_view(
-                &computed,
-                test_aspect_touches(["title.summary"]),
-            ),
-            "ui.noop-intent",
-        ))
+        .declare_effect::<WorthQueryUnrefinedLiveShape>(
+            WorthQueryEffectDeclaration::deliver(
+                "ui.noop-intent",
+                WorthQueryEffectTrigger::computed_view(
+                    &computed,
+                    test_aspect_touches(["title.summary"]),
+                ),
+                "ui.noop-intent",
+            )
+            .expect("fixture digest must fit"),
+        )
         .expect("effect should declare");
 
     let receipt = runtime
@@ -211,7 +214,11 @@ fn mutating_intent_with_empty_delta_denies_before_signal_routing() {
                 Some(WorthQueryIntentExecutionKind::Mutating)
             );
             assert!(evidence.attempt_digest().is_some());
-            assert!(!evidence.denial_digest().as_str().is_empty());
+            assert!(!evidence
+                .denial_digest()
+                .expect("fixture digest must fit")
+                .as_str()
+                .is_empty());
         }
         other => panic!("expected mutation receipt admission denial, got {other:?}"),
     }

@@ -4,6 +4,7 @@ use crate::memory_workspace::WorthQueryWorkspaceErrorKind as Kind;
 
 pub(crate) fn classify_merge_validation_kind(kind: Kind) -> Denial {
     match kind {
+        Kind::EvidenceIdentityDerivationDenied(cause) => Denial::EvidenceIdentityDerivationDenied(cause),
         Kind::ForeignPhase(cause) => Denial::ForeignPhase(cause),
         Kind::ExecutionDenied(kind) => Denial::ExecutionDenied(kind),
         Kind::ExecutionControlStopped(kind) => Denial::ExecutionControlStopped(kind),

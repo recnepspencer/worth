@@ -6,7 +6,7 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
         let mut owner = census.owner::<PreparedPublicationPhase>("crates/worth-relational/src/authority/commit/pipeline/publication_execution/preparation.rs", "PreparedPublicationPhase", 128 * 1024);
         owner.field::<crate::runtime::PendingRecordAllocations>("record_allocations");
         owner.field::<crate::runtime::PreparedSymbolPublication>("symbol_meanings");
-        owner.field::<crate::runtime::RuntimeSymbolTable>("candidate_symbols");
+        owner.field::<crate::runtime::RuntimeSymbolTable>("_candidate_symbols");
         owner.field::<crate::storage::PreparedMirrorPublication>("mirror_publication");
         owner.field::<crate::mvcc::PreparedRelationalPublication>("prepared_history");
         owner.field::<crate::runtime::ValidatedLineageEventBatch>("validated_lineage_events");

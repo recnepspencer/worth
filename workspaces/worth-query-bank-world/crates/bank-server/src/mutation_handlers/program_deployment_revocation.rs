@@ -18,13 +18,16 @@ impl OperationHandler<BankSchema, ProgramDeploymentRevocationBinding>
         ProgramDeploymentRevocationDenial,
     > {
         let grant = match reader.resolve_entity(
-            ProgramDeploymentGrantIdentity::reference(),
+            ProgramDeploymentGrantIdentity::at("ProgramDeploymentGrantIdentity"),
             input.grant_identity.clone(),
         ) {
             Ok(grant) => grant,
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };
-        match reader.field(&grant, ProgramDeploymentGrantStatus::reference()) {
+        match reader.field(
+            &grant,
+            ProgramDeploymentGrantStatus::at("ProgramDeploymentGrantStatus"),
+        ) {
             Ok(Some(current)) if current == "revoked" => {
                 return HandlerResult::DomainDenied(ProgramDeploymentRevocationDenial::Unchanged)
             }
@@ -51,7 +54,7 @@ impl OperationHandler<BankSchema, ProgramDeploymentRevocationBinding>
         };
         if let Err(error) = writer.write_field(
             &grant,
-            ProgramDeploymentGrantStatus::reference(),
+            ProgramDeploymentGrantStatus::at("ProgramDeploymentGrantStatus"),
             "revoked".to_owned(),
         ) {
             return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));

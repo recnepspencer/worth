@@ -5,6 +5,7 @@ mod assembly;
 pub(in crate::domain_computation::primary_graph) mod home_attachment;
 mod input;
 mod owned_contributions;
+mod schema;
 mod schema_admission;
 use super::{
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphBootstrap,
@@ -17,8 +18,8 @@ use crate::domain_computation::execution_runtime::{
 };
 use assembly::assemble_application_runtime;
 pub(in crate::domain_computation::primary_graph) use input::ApplicationRuntimePublication;
+pub(in crate::domain_computation::primary_graph) use schema::validate_application_schema;
 pub(super) use schema_admission::require_no_conditional_bindings;
-use schema_admission::validate_application_schema;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationSchema,
     WorthQueryInstalledGraphParticipationAuthority,
@@ -86,7 +87,6 @@ pub(super) struct PublishedApplicationGraph<Bridge> {
         Option<worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority>,
     checkpoint_restore_work: Option<worth_relational::facade::durability::CheckpointRestoreWork>,
 }
-
 fn compile_authorization<Schema>(
     bootstrap: &WorthQueryPrimaryGraphBootstrap<Schema>,
     installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
@@ -100,6 +100,7 @@ where
                 WorthQueryPrimaryGraphInstallationDenialKind::AuthorizationPolicyRejected,
                 denial.to_string(),
             )
+            .with_authorization_cause(denial)
         })
 }
 fn publish_application_graph<Schema>(

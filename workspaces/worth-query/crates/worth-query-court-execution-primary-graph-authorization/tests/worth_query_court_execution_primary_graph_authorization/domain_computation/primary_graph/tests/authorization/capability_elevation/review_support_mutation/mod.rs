@@ -43,13 +43,13 @@ pub fn complete_review_out_of_band(
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             &phase_custody.phase_for_application_for_test(&world.application),
-            CapabilityReviewIdentity::reference(),
+            CapabilityReviewIdentity::at("CapabilityReviewIdentity"),
             "review-2".to_owned(),
             &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
-    let field = CapabilityReviewStatusField::reference();
+    let field = CapabilityReviewStatusField::at("CapabilityReviewStatusField");
     let graph = (*world.application.runtime_for_test())
         .primary_graph_for_test()
         .unwrap();
@@ -111,8 +111,8 @@ pub fn replace_support_grantor_with_custodian(
         .expect("the selected product branch remains admitted")
         .resolve_entity(
             &phase_custody.phase_for_application_for_test(&world.application),
-            CapabilityIdentity::reference(),
-            "capability-1".to_owned(),
+            CapabilityIdentity::at("CapabilityIdentity"),
+            "capability-1".into(),
             &live_scope(),
             WorthQueryPrincipalResolutionMode::Ordinary,
         )

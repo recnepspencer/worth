@@ -1,3 +1,5 @@
+use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial;
+use crate::domain_computation::primary_graph::causal_inspection::CausalInspectionConstructionStop;
 use std::collections::BTreeSet;
 
 use crate::domain_computation::evidence_identity::{
@@ -45,7 +47,7 @@ impl CausalObservationAnchorCounters {
         reference_family_count: usize,
         missing_reference_posture: CausalObservationMissingReferencePosture,
         anchor_digest_width: usize,
-    ) -> Self {
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         let counter_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::CausalObservationAnchorCounters,
         )
@@ -67,9 +69,9 @@ impl CausalObservationAnchorCounters {
             WorthQueryEvidenceTag::new("diagnostics_retention_scan_count"),
             0,
         )
-        .seal()
+        .seal()?
         .into();
-        Self {
+        Ok(Self {
             source_receipt_family_count: 1,
             reference_family_count,
             missing_reference_posture,
@@ -77,7 +79,7 @@ impl CausalObservationAnchorCounters {
             runtime_graph_scan_count: 0,
             diagnostics_retention_scan_count: 0,
             counter_identity,
-        }
+        })
     }
 
     pub fn source_receipt_family_count(&self) -> usize {
@@ -142,7 +144,7 @@ impl CausalObservationAnchorError {
         kind: CausalObservationAnchorErrorKind,
         message: &'static str,
         evidence: &[String],
-    ) -> Self {
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         let failure_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::CausalObservationAnchorFailure,
         )
@@ -152,13 +154,13 @@ impl CausalObservationAnchorError {
             WorthQueryEvidenceTag::new("evidence"),
             evidence.iter().map(String::as_str),
         )
-        .seal()
+        .seal()?
         .into();
-        Self {
+        Ok(Self {
             kind,
             message,
             failure_identity,
-        }
+        })
     }
 
     pub fn kind(&self) -> CausalObservationAnchorErrorKind {
@@ -213,38 +215,40 @@ impl CausalObservationAnchor {
 pub fn anchor_causal_observation(
     observation_receipt: impl Into<QueryObservationReceipt>,
     inspection_reason: CausalInspectionReason,
-) -> Result<CausalObservationAnchor, CausalObservationAnchorError> {
+) -> Result<CausalObservationAnchor, CausalInspectionConstructionStop> {
     let observation_receipt = observation_receipt.into();
     if !inspection_reason_matches_observation_outcome(&inspection_reason, &observation_receipt) {
-        return Err(CausalObservationAnchorError::new(
+        return Err((CausalObservationAnchorError::new(
             CausalObservationAnchorErrorKind::InspectionReasonOutcomeMismatch,
             "causal observation anchor reason must match the observed Query outcome",
             &[
                 format!("reason:{}", inspection_reason.as_str()),
                 format!("outcome:{}", observation_receipt.outcome().as_str()),
             ],
-        ));
+        )?)
+        .into());
     }
     if observation_receipt
         .observation_receipt_identity()
         .as_str()
         .is_empty()
     {
-        return Err(CausalObservationAnchorError::new(
+        return Err((CausalObservationAnchorError::new(
             CausalObservationAnchorErrorKind::MissingObservationReceipt,
             "causal observation anchors require one canonical Query observation receipt",
             &[format!("family:{}", observation_receipt.family().as_str())],
-        ));
+        )?)
+        .into());
     }
     if observation_receipt.evidence_identities().is_empty() {
-        return Err(CausalObservationAnchorError::new(
+        return Err((CausalObservationAnchorError::new(
             CausalObservationAnchorErrorKind::MissingRequiredEvidenceReference,
             "causal observation anchors require at least one lower-runtime or Query evidence identity carried by the source receipt",
             &[format!(
                 "observation:{}",
                 observation_receipt.observation_receipt_identity().as_str()
             )],
-        ));
+        )?).into());
     }
     let unique_families = observation_receipt
         .evidence_identities()
@@ -304,14 +308,14 @@ pub fn anchor_causal_observation(
                     .iter()
                     .map(|identity| identity.evidence_identity()),
             )
-            .seal()
+            .seal()?
             .into();
     let missing_reference_posture = CausalObservationMissingReferencePosture::Complete;
     let counters = CausalObservationAnchorCounters::new(
         unique_families.len(),
         missing_reference_posture,
         anchor_digest.as_str().len(),
-    );
+    )?;
 
     Ok(CausalObservationAnchor {
         observation_receipt,

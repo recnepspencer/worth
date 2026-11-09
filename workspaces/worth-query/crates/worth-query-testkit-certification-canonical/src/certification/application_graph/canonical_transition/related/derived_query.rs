@@ -10,19 +10,13 @@ pub struct Parameters;
 pub struct ValueSlot;
 pub struct IdentitySlot;
 worth_query_portable_type!(IdentitySlot => "canonical-related.paired.first-identity.v1");
-pub fn identity_field() -> ApplicationQueryResultFieldRef<
-    ValueQuery,
-    IdentitySlot,
-    CanonicalSchema,
-    Derived,
-    DerivedFacts,
-    DerivedIdentityField,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("identity", DerivedIdentityField::reference())
+pub fn identity_field(
+) -> ApplicationQueryResultFieldRef<ValueQuery, IdentitySlot, CanonicalSchema, DerivedIdentityField>
+{
+    ApplicationQueryResultFieldRef::new(
+        "identity",
+        DerivedIdentityField::at("DerivedIdentityField"),
+    )
 }
 worth_query_portable_type!(ValueSlot => "canonical-transition.derived.value-slot.v1");
 worth_query_structured_value_binding!(pub ParametersBinding for Parameters { identity: "canonical-transition.derived.parameters.v1" });
@@ -30,23 +24,14 @@ worth_query_structured_value_binding!(pub ResultBinding for DerivedValue { ident
 worth_query_application_query!(pub ValueQuery for CanonicalSchema, identity "canonical-transition.derived.read.v1",
     parameters ParametersBinding, result ResultBinding, scope Derived => "Derived", name "derived_value");
 
-pub fn value_field() -> ApplicationQueryResultFieldRef<
-    ValueQuery,
-    ValueSlot,
-    CanonicalSchema,
-    Derived,
-    DerivedFacts,
-    DerivedValueField,
-    DerivedValue,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("value", DerivedValueField::reference())
+pub fn value_field(
+) -> ApplicationQueryResultFieldRef<ValueQuery, ValueSlot, CanonicalSchema, DerivedValueField> {
+    ApplicationQueryResultFieldRef::new("value", DerivedValueField::at("DerivedValueField"))
 }
 
 pub fn definition(
-) -> ApplicationQueryDefinition<CanonicalSchema, ValueQuery, Parameters, DerivedValue, Derived> {
+) -> ApplicationQueryDefinitionBuilder<CanonicalSchema, ValueQuery, Parameters, DerivedValue, Derived>
+{
     let shape = ApplicationQueryResultShapeBuilder::<
         CanonicalSchema,
         ValueQuery,
@@ -66,8 +51,6 @@ pub fn definition(
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .public()
-        .build()
-        .unwrap()
 }
 impl WorthQueryApplicationProjection<CanonicalSchema, ValueQuery> for DerivedValue {
     fn project(
@@ -84,15 +67,7 @@ pub struct ReadValue {
 }
 worth_query_structured_value_binding!(pub ReadInputBinding for ReadValue { identity: "canonical-transition.derived.read-input.v1" });
 pub struct ReadBinding;
-pub type ReadScope = ApplicationQueryFieldScope<
-    CanonicalSchema,
-    Derived,
-    DerivedFacts,
-    DerivedIdentityField,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
+pub type ReadScope = ApplicationQueryFieldScope<DerivedIdentityField>;
 impl ApplicationQueryBinding<CanonicalSchema> for ReadBinding {
     type Input = ReadValue;
     type InputBinding = ReadInputBinding;
@@ -107,17 +82,8 @@ impl ApplicationQueryBinding<CanonicalSchema> for ReadBinding {
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "canonical-transition.derived.read-binding.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        CanonicalSchema,
-        Derived,
-        DerivedFacts,
-        DerivedIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DerivedIdentityField::reference()
+    fn scope_field() -> DerivedIdentityField {
+        DerivedIdentityField::at("DerivedIdentityField")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         CanonicalSchema,
@@ -136,6 +102,9 @@ impl ApplicationQueryIntent<CanonicalSchema> for ReadValue {
         ApplicationQueryParameterSet::new()
     }
     fn into_scope(self) -> ReadScope {
-        ReadScope::new(DerivedIdentityField::reference(), self.identity)
+        ReadScope::new(
+            DerivedIdentityField::at("DerivedIdentityField"),
+            self.identity,
+        )
     }
 }

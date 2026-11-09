@@ -1,6 +1,7 @@
 //! Production admission for comparing preview execution evidence.
 
 use crate::basis::{BasisAuthorityFamily, ExecutionPreflightBundle};
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::execution::ExecutionResultEnvelope;
 use crate::preview::binding::contract::PreviewSessionPlanBinding;
 use crate::preview::comparison::contract::{
@@ -17,8 +18,8 @@ use crate::preview::workflow_context_identity;
 
 pub(crate) fn derive_preview_comparison_eligibility(
     binding: &PreviewSessionPlanBinding,
-) -> PreviewComparisonEligibilityArtifact {
-    let shape_contract = PreviewComparisonShapeContract::from_preflight(binding.preflight());
+) -> Result<PreviewComparisonEligibilityArtifact, IdentityDerivationDenial> {
+    let shape_contract = PreviewComparisonShapeContract::from_preflight(binding.preflight())?;
 
     let digest = workflow_context_identity::compose_preview_comparison_eligibility_digest(
         binding.basis().binding_tuple().canonical_query_digest(),
@@ -31,9 +32,9 @@ pub(crate) fn derive_preview_comparison_eligibility(
         &shape_contract.ordering_digest,
         &shape_contract.materialization_boundary_digest,
         shape_contract.shape_check_width,
-    );
+    )?;
 
-    PreviewComparisonEligibilityArtifact {
+    Ok(PreviewComparisonEligibilityArtifact {
         digest,
         canonical_query_digest: binding
             .basis()
@@ -50,14 +51,14 @@ pub(crate) fn derive_preview_comparison_eligibility(
         ordering_digest: shape_contract.ordering_digest,
         materialization_boundary_digest: shape_contract.materialization_boundary_digest,
         shape_check_width: shape_contract.shape_check_width,
-    }
+    })
 }
 
 fn derive_preview_comparison_candidate(
     preflight: &ExecutionPreflightBundle,
     execution: &ExecutionResultEnvelope,
-) -> PreviewComparisonCandidateArtifact {
-    let shape_contract = PreviewComparisonShapeContract::from_preflight(preflight);
+) -> Result<PreviewComparisonCandidateArtifact, IdentityDerivationDenial> {
+    let shape_contract = PreviewComparisonShapeContract::from_preflight(preflight)?;
     let digest = workflow_context_identity::compose_preview_comparison_candidate_digest(
         preflight.plan().query().validated_query_digest(),
         execution.report().result_digest(),
@@ -71,9 +72,9 @@ fn derive_preview_comparison_candidate(
         &shape_contract.ordering_digest,
         &shape_contract.materialization_boundary_digest,
         shape_contract.shape_check_width,
-    );
+    )?;
 
-    PreviewComparisonCandidateArtifact {
+    Ok(PreviewComparisonCandidateArtifact {
         digest,
         validated_query_digest: preflight.plan().query().validated_query_digest().clone(),
         basis_digest: preflight.basis().proof().digest().as_str().to_string(),
@@ -89,14 +90,28 @@ fn derive_preview_comparison_candidate(
         ordering_digest: shape_contract.ordering_digest,
         materialization_boundary_digest: shape_contract.materialization_boundary_digest,
         shape_check_width: shape_contract.shape_check_width,
-    }
+    })
 }
 
 pub fn admit_authoritative_preview_comparison_candidate(
     candidate_preflight: &ExecutionPreflightBundle,
     candidate_execution: &ExecutionResultEnvelope,
 ) -> Result<AuthoritativePreviewComparisonCandidate, PreviewComparisonError> {
-    let candidate = derive_preview_comparison_candidate(candidate_preflight, candidate_execution);
+    let candidate = derive_preview_comparison_candidate(candidate_preflight, candidate_execution)
+        .map_err(|cause| {
+        PreviewComparisonError::identity_refused(
+            cause,
+            None,
+            None,
+            PreviewComparisonCounters {
+                preview_promotion_comparison_count: 0,
+                preview_promotion_comparison_denial_count: 1,
+                preview_comparison_eligibility_proof_count: 0,
+                preview_comparison_shape_check_width: 0,
+                preview_basis_pair_width: 1,
+            },
+        )
+    })?;
     let denial_counters = || PreviewComparisonCounters {
         preview_promotion_comparison_count: 0,
         preview_promotion_comparison_denial_count: 1,
@@ -242,7 +257,15 @@ fn admit_preview_execution_comparison(
             candidate.digest(),
             candidate.basis_digest(),
             candidate.result_digest().as_str(),
-        ),
+        )
+        .map_err(|cause| {
+            PreviewComparisonError::identity_refused(
+                cause,
+                Some(preview.digest()),
+                Some(candidate.digest()),
+                denial_counters(shape_check_width),
+            )
+        })?,
         preview_execution_digest: preview_execution
             .report()
             .preview_execution_digest()

@@ -1,30 +1,21 @@
 use super::*;
 
 pub(super) fn query_definition(
-) -> worth_query_declaration::facade::application_query::ApplicationQueryDefinition<
+) -> worth_query_declaration::facade::application_query::ApplicationQueryDefinitionBuilder<
     PlanningTestSchema,
     ActivityQuery,
     ActivityParameters,
     ActivityResult,
     Account,
 > {
-    let sequence =
-        ApplicationQueryResultFieldRef::<ActivityQuery, SequenceSlot, _, _, _, _, _, _, _, _>::new(
-            "sequence",
-            Sequence::reference(),
-        );
-    let account_id = ApplicationQueryResultFieldRef::<
-        ActivityQuery,
-        AccountIdSlot,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-    >::new("account_id", AccountId::reference());
+    let sequence = ApplicationQueryResultFieldRef::<ActivityQuery, SequenceSlot, _, _>::new(
+        "sequence",
+        Sequence::at("Sequence"),
+    );
+    let account_id = ApplicationQueryResultFieldRef::<ActivityQuery, AccountIdSlot, _, _>::new(
+        "account_id",
+        AccountId::at("AccountId"),
+    );
     let activity_relation = ApplicationQueryResultRelationRef::<
         ActivityQuery,
         ActivitySlot,
@@ -63,14 +54,10 @@ pub(super) fn query_definition(
         .lanes(ApplicationQueryLaneEligibility::one_shot().with_live())
         .public()
         .parameter(account_parameter())
-        .where_equal(AccountId::reference(), account_parameter())
+        .where_equal(AccountId::at("AccountId"), account_parameter())
         .order_by(sequence, ApplicationQueryOrderingDirection::Ascending)
         .continue_by(activity_relation)
-        .live_by::<Activity, live_lane::PlanningLiveCause, _, _, _, _, _, _, _, _>(
-            account_id, sequence,
-        )
-        .build()
-        .unwrap()
+        .live_by::<Activity, live_lane::PlanningLiveCause>(account_id, sequence)
 }
 
 pub(super) fn installed_schema(

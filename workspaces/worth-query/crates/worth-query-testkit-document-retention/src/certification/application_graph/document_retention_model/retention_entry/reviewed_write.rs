@@ -7,9 +7,8 @@ pub use worth_query_host::facade::{
             NoApplicationMutationSource,
         },
         application_schema::{
-            ApplicationFieldRef, ApplicationPrincipalBindingRef, EqualityPredicate,
-            NoApplicationUnit, OperationReads, OperationWrites, ReadOnly,
-            U64ApplicationValueBinding,
+            ApplicationPrincipalBindingRef, EqualityPredicate, NoApplicationUnit, OperationReads,
+            OperationWrites, ReadOnly, U64ApplicationValueBinding,
         },
     },
     primary_graph::{
@@ -66,17 +65,8 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for ReviewedSetRetentio
         worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::requiring_approval::<super::super::workflow::WorkflowApprovalCapability>()
     }
 
-    fn scope_field() -> ApplicationFieldRef<
-        DocumentRetentionSchema,
-        Document,
-        DocumentFacts,
-        DocumentIdentityField,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        DocumentIdentityField::reference()
+    fn scope_field() -> DocumentIdentityField {
+        DocumentIdentityField::at("DocumentIdentityField")
     }
 
     fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -100,7 +90,7 @@ impl ApplicationMutationIntent<DocumentRetentionSchema> for ReviewedSetRetention
 
     fn scope_binding(&self) -> SetRetentionScope {
         SetRetentionScope::new(
-            DocumentIdentityField::reference(),
+            DocumentIdentityField::at("DocumentIdentityField"),
             self.input.identity.clone(),
         )
     }
@@ -117,9 +107,6 @@ where
         Decision = WorthQueryInvariantMutationTarget<DocumentRetentionSchema, Document>,
         Denial = SetRetentionDenial,
     >,
-    DocumentIdentityField: OperationReads<Binding::Operation>,
-    DocumentRetentionField:
-        OperationReads<Binding::Operation> + OperationWrites<Binding::Operation>,
 {
     fn decide(
         &self,
@@ -129,13 +116,17 @@ where
         WorthQueryInvariantMutationTarget<DocumentRetentionSchema, Document>,
         SetRetentionDenial,
     > {
-        let document = match reader
-            .resolve_entity(DocumentIdentityField::reference(), input.identity.clone())
-        {
+        let document = match reader.resolve_entity(
+            DocumentIdentityField::at("DocumentIdentityField"),
+            input.identity.clone(),
+        ) {
             Ok(document) => document,
             Err(error) => return HandlerResult::ExecutionDenied(error),
         };
-        match reader.field(&document, DocumentRetentionField::reference()) {
+        match reader.field(
+            &document,
+            DocumentRetentionField::at("DocumentRetentionField"),
+        ) {
             Ok(Some(current)) if current == input.retention_days => {
                 return HandlerResult::DomainDenied(SetRetentionDenial::RetentionUnchanged)
             }
@@ -163,7 +154,7 @@ where
         };
         if let Err(error) = writer.write_field(
             &document,
-            DocumentRetentionField::reference(),
+            DocumentRetentionField::at("DocumentRetentionField"),
             input.retention_days,
         ) {
             return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));

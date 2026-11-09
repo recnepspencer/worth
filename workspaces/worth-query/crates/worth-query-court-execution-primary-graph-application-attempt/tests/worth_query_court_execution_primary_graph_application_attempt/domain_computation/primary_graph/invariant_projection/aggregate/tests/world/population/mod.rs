@@ -23,9 +23,9 @@ pub fn bind_world(
         let source = format!("source-{ordinal}");
         let mut seed =
             WorthQueryApplicationEntitySeed::new(AggregateSource::reference(), entity_key(&source))
-                .field(SourceIdentity::reference(), source.clone());
+                .field(SourceIdentity::at("SourceIdentity"), source.clone());
         if let Some(value) = value {
-            seed = seed.field(SourceAmount::reference(), value);
+            seed = seed.field(SourceAmount::at("SourceAmount"), value);
         }
         bootstrap.bind_entity(seed).expect("source binds");
         bind_contribution(bootstrap, &source, "target", ordinal);
@@ -44,7 +44,7 @@ pub fn bind_target(
     bootstrap
         .bind_entity(
             WorthQueryApplicationEntitySeed::new(AggregateTarget::reference(), entity_key(target))
-                .field(TargetIdentity::reference(), target.to_owned()),
+                .field(TargetIdentity::at("TargetIdentity"), target.to_owned()),
         )
         .expect("target binds");
 }

@@ -44,7 +44,7 @@ fn grant_reactivation_does_not_revive_older_approval() {
                 "capability-1",
                 field(
                     &world,
-                    worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::capability::CapabilityStatusField::reference(),
+                    worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::capability::CapabilityStatusField::at("CapabilityStatusField"),
                 ),
                 worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::CapabilityStatusBinding::encode(
                     &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::capability::declaration::CapabilityStatus::Active,

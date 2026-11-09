@@ -9,7 +9,7 @@ impl Rule {
         budget: Option<&dyn CustomInvariantLeaseBudget>,
     ) -> Result<
         WorthQueryApplicationInvariantVerdict<Refusal>,
-        WorthQueryApplicationInvariantExecutionError,
+        WorthQueryApplicationInvariantError<Refusal>,
     > {
         let outcome = self.judge(context, scope, budget);
         self.observation.evaluated(context.reads());
@@ -23,11 +23,11 @@ impl Rule {
         budget: Option<&dyn CustomInvariantLeaseBudget>,
     ) -> Result<
         WorthQueryApplicationInvariantVerdict<Refusal>,
-        WorthQueryApplicationInvariantExecutionError,
+        WorthQueryApplicationInvariantError<Refusal>,
     > {
         context
             .check_live()
-            .map_err(|stop| failure(format!("{stop:?}")))?;
+            .map_err(WorthQueryApplicationInvariantError::from)?;
         let view = context.proposed();
         for root in scope {
             checkpoint(budget)?;
@@ -47,7 +47,11 @@ impl Rule {
                     let blocked = view
                         .field(&self.key, step.entity())
                         .map_err(access)?
-                        .ok_or_else(|| failure("blocked key absent"))?;
+                        .ok_or_else(|| {
+                            WorthQueryApplicationInvariantError::MissingRequiredField {
+                                field: "blocked key absent",
+                            }
+                        })?;
                     return Ok(WorthQueryApplicationInvariantVerdict::Violation(Refusal {
                         root: root.key,
                         blocked,
@@ -63,20 +67,16 @@ impl Rule {
 
 pub fn checkpoint(
     budget: Option<&dyn CustomInvariantLeaseBudget>,
-) -> Result<(), WorthQueryApplicationInvariantExecutionError> {
+) -> Result<(), WorthQueryApplicationInvariantError<Refusal>> {
     if budget.is_some_and(|payer| !payer.checkpoint(1)) {
-        Err(failure("walk evaluation stopped"))
+        Err(WorthQueryApplicationInvariantError::Stopped)
     } else {
         Ok(())
     }
 }
 
 pub fn access(
-    error: WorthQueryInvariantAccessDenial,
-) -> WorthQueryApplicationInvariantExecutionError {
-    failure(error.to_string())
-}
-
-pub fn failure(message: impl Into<String>) -> WorthQueryApplicationInvariantExecutionError {
-    WorthQueryApplicationInvariantExecutionError::new(message.into())
+    error: impl Into<WorthQueryApplicationInvariantError<Refusal>>,
+) -> WorthQueryApplicationInvariantError<Refusal> {
+    error.into()
 }

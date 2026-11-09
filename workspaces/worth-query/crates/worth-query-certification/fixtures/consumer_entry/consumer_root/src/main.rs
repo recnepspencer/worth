@@ -23,7 +23,6 @@ use worth_query_consumer_values::PositiveLength;
 use worth_query_decl::facade::application_schema::{
     ApplicationReadableScalarValueBinding, ApplicationScalarValueBinding, ApplicationSchema,
 };
-use worth_query_decl::facade::worth_query_application;
 use worth_query_host::facade::domain::{
     WorthQueryInstallationAdmissionProfile, WorthQueryInstallationGeneration,
     WorthQueryInstallationRuntimeIdentity, WorthQueryInstalledApplicationSchema,
@@ -37,15 +36,49 @@ use worth_query_topology_entry::{
     TopologyContribution, TopologyLengthBinding, TopologySchemaBinding,
 };
 
-worth_query_application! {
-    pub ConsumerSchema {
-        owner: "worth.query.certification.consumer",
-        version: (2, 0),
-        contributions: [TopologyContribution, ParameterContribution, ConsumerProgramDeployment],
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ConsumerSchema;
+impl worth_query_decl::facade::application_schema::fragment::Fragment for ConsumerSchema {
+    const NAME: &'static str = "ConsumerSchema";
+    type Bindings = worth_query_decl::facade::application_schema::fragment::NoBindings;
+    type Members = (
+        TopologyContribution,
+        ParameterContribution,
+        ConsumerProgramDeployment,
+    );
+}
+impl worth_query_decl::facade::application_schema::ApplicationSchema for ConsumerSchema {
+    const OWNER: &'static str = "worth.query.certification.consumer";
+    const NAME: &'static str = "ConsumerSchema";
+    const MAJOR: u32 = 2;
+    const MINOR: u32 = 0;
+    fn declaration() -> Result<
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclaration<Self>,
+        worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationDenial,
+    > {
+        worth_query_decl::facade::application_schema::fragment::declare(Self)
     }
+    fn visit_correction<
+        V: worth_query_decl::facade::application_aftermath::ApplicationCorrectionVisitor<Self>,
+    >(
+        source: std::any::TypeId,
+        visitor: V,
+    ) -> V::Output {
+        worth_query_decl::facade::application_schema::fragment::visit_correction(
+            Self, source, visitor,
+        )
+    }
+}
+impl worth_query_decl::facade::application_schema::ApplicationSchemaComposition for ConsumerSchema {
+    type Contributions = (
+        TopologyContribution,
+        ParameterContribution,
+        ConsumerProgramDeployment,
+    );
 }
 
 impl TopologySchemaBinding for ConsumerSchema {
+    type PrincipalFragment = program_deployment::ConsumerPrincipalRecords;
     const ESCAPING_PLANAR_OUTPUT: bool = true;
 }
 impl ParameterSchemaBinding for ConsumerSchema {}
@@ -55,7 +88,7 @@ fn main() {
 }
 
 fn installed_schema() -> WorthQueryInstalledApplicationSchema<ConsumerSchema> {
-    let declaration = ConsumerSchema::declaration()
+    let declaration = <ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration()
         .expect("the root-owned contributions form one closed schema declaration");
 
     assert_eq!(declaration.contributions().len(), 3);
@@ -127,82 +160,33 @@ fn run() {
     }
 }
 
+#[cfg_attr(test, test)]
 fn hostile_binding_identity_and_unit_cannot_preserve_schema_identity() {
-    let baseline = hostile::baseline::Schema::declaration().unwrap();
-    let wrong_identity = hostile::wrong_identity::Schema::declaration().unwrap();
-    let wrong_unit = hostile::wrong_unit::Schema::declaration().unwrap();
+    let baseline = <hostile::baseline::Schema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap();
+    let wrong_identity = <hostile::wrong_identity::Schema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap();
+    let wrong_unit = <hostile::wrong_unit::Schema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap();
+    for schema in [
+        baseline.erased(),
+        wrong_identity.erased(),
+        wrong_unit.erased(),
+    ] {
+        let postures = schema
+            .members()
+            .iter()
+            .filter_map(|member| match member {
+                worth_query_decl::facade::application_schema::ApplicationSchemaMember::Field {
+                    field,
+                    equality_queryable,
+                    ..
+                } => Some((field.as_str(), *equality_queryable)),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(postures, vec![("value", true)]);
+    }
 
     assert_ne!(baseline.identity(), wrong_identity.identity());
     assert_ne!(baseline.identity(), wrong_unit.identity());
 }
 
-mod hostile {
-    macro_rules! schema_with_binding {
-        ($module:ident, $binding:ident, $identity:literal, $unit:ident, $unit_identity:literal) => {
-            pub mod $module {
-                use worth_query_consumer_values::PositiveLength;
-                use worth_query_decl::facade::{
-                    worth_query_application_schema, worth_query_aspect, worth_query_entity,
-                    worth_query_field, worth_query_unit, worth_query_value_binding,
-                };
-
-                worth_query_value_binding! {
-                    $binding for PositiveLength {
-                        identity: $identity,
-                        scalar: UInt64,
-                        unit: $unit_identity,
-                        frame: "worth.frames.model-local.v1",
-                        encode: PositiveLength::get,
-                        decode: PositiveLength::new,
-                    }
-                }
-                worth_query_entity!(Body for Schema);
-                worth_query_unit!($unit(()) in Schema);
-                worth_query_aspect!(
-                    Geometry for Schema, Body;
-                    identity = AspectIdentity(0x9174_2001),
-                    revision = AspectContractRevision(1),
-                );
-                worth_query_field!(
-                    Length for Schema, Body, Geometry:
-                    PositiveLength => $binding, unit $unit, read_write, equality
-                );
-                worth_query_application_schema! {
-                    pub(crate) schema Schema {
-                        owner: "worth.query.certification.binding-hostile",
-                        version: (1, 0),
-                        members: |schema| {
-                            schema
-                                .entity(Body::reference())
-                                .unit($unit::reference())
-                                .aspect(Body::reference(), Geometry::reference())
-                                .field(Body::reference(), Length::reference())
-                        }
-                    }
-                }
-            }
-        };
-    }
-
-    schema_with_binding!(
-        baseline,
-        BaselineBinding,
-        "worth.query.certification.length.v1",
-        Metre,
-        "Metre"
-    );
-    schema_with_binding!(
-        wrong_identity,
-        WrongIdentityBinding,
-        "worth.query.certification.foreign-length.v1",
-        Metre,
-        "Metre"
-    );
-    schema_with_binding!(
-        wrong_unit,
-        WrongUnitBinding,
-        "worth.query.certification.length.v1",
-        Millimetre,
-        "Millimetre"
-    );
-}
+mod hostile;

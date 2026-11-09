@@ -1,8 +1,8 @@
 //! Fresh authored rows reconstruct optional payload without generated readback.
 use super::*;
 use facts::{
-    BodyEntrySet, EntryFault, EntryNumber, EntryRegion, EntrySet, EntrySetFacts, EntrySetKey,
-    EntrySetMember, EntrySetWeight, EntryValueBits, EntryWork, SetEntry, SetEntryFacts,
+    BodyEntrySet, EntryFault, EntryNumber, EntryRegion, EntrySet, EntrySetKey, EntrySetMember,
+    EntrySetWeight, EntryValueBits, EntryWork, SetEntry,
 };
 use worth_query_decl::facade::{
     application_query::*, application_schema::*, worth_query_portable_type,
@@ -55,7 +55,7 @@ impl<Schema: TopologySchemaBinding> ApplicationQueryBinding<Schema> for Binding<
     type Query = Query;
     type ParameterBinding = ParameterBinding;
     type ResultBinding = ResultBinding;
-    type ScopeBinding = PlanarReadScope<Schema>;
+    type ScopeBinding = PlanarReadScope;
     type PrincipalBinding = ConsumerPrincipalBinding;
     type Mapping = ExternalPrincipalMapping;
     type Principal = Principal;
@@ -63,17 +63,8 @@ impl<Schema: TopologySchemaBinding> ApplicationQueryBinding<Schema> for Binding<
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "collection-source-read.binding.v1";
     const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Body,
-        PlanarPosition,
-        BodyKey,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        BodyKey::reference()
+    fn scope_field() -> BodyKey {
+        BodyKey::at("BodyKey")
     }
     fn principal_binding() -> ApplicationPrincipalBindingRef<
         Schema,
@@ -91,8 +82,8 @@ impl<Schema: TopologySchemaBinding> ApplicationQueryIntent<Schema> for SourceRea
     fn parameters(&self) -> ApplicationQueryParameterSet<Query> {
         ApplicationQueryParameterSet::new()
     }
-    fn into_scope(self) -> PlanarReadScope<Schema> {
-        PlanarReadScope::new(BodyKey::reference(), self.body_key)
+    fn into_scope(self) -> PlanarReadScope {
+        PlanarReadScope::new(BodyKey::at("BodyKey"), self.body_key)
     }
 }
 
@@ -126,115 +117,45 @@ fn entries<Schema: TopologySchemaBinding>() -> ApplicationQueryResultRelationRef
 }
 pub(super) struct EntrySetKeySlot;
 worth_query_portable_type!(EntrySetKeySlot => "collection-source-read.set_key");
-fn set_key<Schema: TopologySchemaBinding>() -> ApplicationQueryResultFieldRef<
-    Query,
-    EntrySetKeySlot,
-    Schema,
-    EntrySet,
-    EntrySetFacts,
-    EntrySetKey,
-    String,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("set_key", EntrySetKey::reference())
+fn set_key<Schema: TopologySchemaBinding>(
+) -> ApplicationQueryResultFieldRef<Query, EntrySetKeySlot, Schema, EntrySetKey> {
+    ApplicationQueryResultFieldRef::new("set_key", EntrySetKey::at("EntrySetKey"))
 }
 pub(super) struct EntrySetWeightSlot;
 worth_query_portable_type!(EntrySetWeightSlot => "collection-source-read.weight");
-fn weight<Schema: TopologySchemaBinding>() -> ApplicationQueryResultFieldRef<
-    Query,
-    EntrySetWeightSlot,
-    Schema,
-    EntrySet,
-    EntrySetFacts,
-    EntrySetWeight,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("weight", EntrySetWeight::reference())
+fn weight<Schema: TopologySchemaBinding>(
+) -> ApplicationQueryResultFieldRef<Query, EntrySetWeightSlot, Schema, EntrySetWeight> {
+    ApplicationQueryResultFieldRef::new("weight", EntrySetWeight::at("EntrySetWeight"))
 }
 pub(super) struct EntryNumberSlot;
 worth_query_portable_type!(EntryNumberSlot => "collection-source-read.number");
-fn number<Schema: TopologySchemaBinding>() -> ApplicationQueryResultFieldRef<
-    Query,
-    EntryNumberSlot,
-    Schema,
-    SetEntry,
-    SetEntryFacts,
-    EntryNumber,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("number", EntryNumber::reference())
+fn number<Schema: TopologySchemaBinding>(
+) -> ApplicationQueryResultFieldRef<Query, EntryNumberSlot, Schema, EntryNumber> {
+    ApplicationQueryResultFieldRef::new("number", EntryNumber::at("EntryNumber"))
 }
 pub(super) struct EntryRegionSlot;
 worth_query_portable_type!(EntryRegionSlot => "collection-source-read.region");
-fn region<Schema: TopologySchemaBinding>() -> ApplicationQueryResultFieldRef<
-    Query,
-    EntryRegionSlot,
-    Schema,
-    SetEntry,
-    SetEntryFacts,
-    EntryRegion,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("region", EntryRegion::reference())
+fn region<Schema: TopologySchemaBinding>(
+) -> ApplicationQueryResultFieldRef<Query, EntryRegionSlot, Schema, EntryRegion> {
+    ApplicationQueryResultFieldRef::new("region", EntryRegion::at("EntryRegion"))
 }
 pub(super) struct EntryValueBitsSlot;
 worth_query_portable_type!(EntryValueBitsSlot => "collection-source-read.value");
-fn value<Schema: TopologySchemaBinding>() -> ApplicationQueryResultFieldRef<
-    Query,
-    EntryValueBitsSlot,
-    Schema,
-    SetEntry,
-    SetEntryFacts,
-    EntryValueBits,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("value", EntryValueBits::reference())
+fn value<Schema: TopologySchemaBinding>(
+) -> ApplicationQueryResultFieldRef<Query, EntryValueBitsSlot, Schema, EntryValueBits> {
+    ApplicationQueryResultFieldRef::new("value", EntryValueBits::at("EntryValueBits"))
 }
 pub(super) struct EntryWorkSlot;
 worth_query_portable_type!(EntryWorkSlot => "collection-source-read.work");
-fn work<Schema: TopologySchemaBinding>() -> ApplicationQueryResultFieldRef<
-    Query,
-    EntryWorkSlot,
-    Schema,
-    SetEntry,
-    SetEntryFacts,
-    EntryWork,
-    u64,
-    ReadOnly,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("work", EntryWork::reference())
+fn work<Schema: TopologySchemaBinding>(
+) -> ApplicationQueryResultFieldRef<Query, EntryWorkSlot, Schema, EntryWork> {
+    ApplicationQueryResultFieldRef::new("work", EntryWork::at("EntryWork"))
 }
 pub(super) struct EntryFaultSlot;
 worth_query_portable_type!(EntryFaultSlot => "collection-source-read.fault");
-fn fault<Schema: TopologySchemaBinding>() -> ApplicationQueryResultFieldRef<
-    Query,
-    EntryFaultSlot,
-    Schema,
-    SetEntry,
-    SetEntryFacts,
-    EntryFault,
-    u64,
-    ReadWrite,
-    EqualityPredicate,
-    NoApplicationUnit,
-> {
-    ApplicationQueryResultFieldRef::new("fault", EntryFault::reference())
+fn fault<Schema: TopologySchemaBinding>(
+) -> ApplicationQueryResultFieldRef<Query, EntryFaultSlot, Schema, EntryFault> {
+    ApplicationQueryResultFieldRef::new("fault", EntryFault::at("EntryFault"))
 }
 
 pub(super) fn declare<Schema: TopologySchemaBinding>(
@@ -273,9 +194,7 @@ pub(super) fn declare<Schema: TopologySchemaBinding>(
     .disclosure(ApplicationQueryDisclosureContract::public())
     .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
     .lanes(ApplicationQueryLaneEligibility::one_shot())
-    .public()
-    .build()
-    .unwrap();
+    .public();
     schema
         .application_query(definition)
         .application_query_binding::<Binding<Schema>>()

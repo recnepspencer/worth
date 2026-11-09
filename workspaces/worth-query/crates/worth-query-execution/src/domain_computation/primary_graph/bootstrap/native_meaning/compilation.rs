@@ -63,7 +63,7 @@ impl WorthQueryExecutionInstallationAuthority {
         let schema = installed_schema.installed_declaration();
         let contracts = installed_schema.native_contracts();
         let values = installed_schema.value_bindings();
-        let (layout, additions) = match source {
+        let (layout, mut additions) = match source {
             NativeSchemaCompilation::Fresh(base) => {
                 WorthQueryPrimaryGraphLayout::lower(schema, contracts, base, values)
             }
@@ -91,6 +91,11 @@ impl WorthQueryExecutionInstallationAuthority {
                 )
             }
         }?;
+        if invariant_factories.current_publication_ownership() {
+            additions = super::super::super::schema_layout::install_current_publication_ownership(
+                additions,
+            )?;
+        }
         let (registrations, managed_sources, source_initializer) = invariant_factories.lower(
             &phase.execution_request(),
             installed_schema.binding_identity(),

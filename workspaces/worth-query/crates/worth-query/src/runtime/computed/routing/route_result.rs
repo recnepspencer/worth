@@ -1,4 +1,5 @@
 use super::*;
+use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 impl WorthQueryComputedRouteResult {
     pub(in crate::runtime) fn new(
@@ -92,7 +93,7 @@ pub(in crate::runtime) fn route_derived_view_patches(
     >,
     receipt: &WorthQueryMutationReceipt,
     mutation_metadata: &crate::runtime::WorthQueryMutationMetadata,
-) -> WorthQueryComputedRouteResult {
+) -> Result<WorthQueryComputedRouteResult, IdentityDerivationDenial> {
     let mut affected = Vec::new();
     let mut refresh_fallback = false;
     let mut considered_view_count = 0;
@@ -119,7 +120,7 @@ pub(in crate::runtime) fn route_derived_view_patches(
             continue;
         };
         considered_view_count += 1;
-        let source_deltas = relevant_source_deltas(view, receipt, &emitted_by_view);
+        let source_deltas = relevant_source_deltas(view, receipt, &emitted_by_view)?;
         if source_deltas.is_empty() {
             continue;
         }
@@ -199,7 +200,11 @@ pub(in crate::runtime) fn route_derived_view_patches(
 
     affected.sort();
     affected.dedup();
-    WorthQueryComputedRouteResult::new(affected, refresh_fallback, considered_view_count)
+    Ok(WorthQueryComputedRouteResult::new(
+        affected,
+        refresh_fallback,
+        considered_view_count,
+    ))
 }
 
 pub(in crate::runtime) fn retained_live_view_names_for_candidates(

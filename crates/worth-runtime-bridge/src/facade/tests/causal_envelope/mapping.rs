@@ -239,6 +239,9 @@ fn causal_envelope_denies_missing_preview_mapping_after_required_route_evidence(
         .diagnostics()
         .assemble_causal_explanation_envelope(request)
         .expect_err("missing preview mapping should deny");
+    let crate::facade::BridgeCausalEnvelopeConstructionStop::Denied(denial) = denial else {
+        panic!("expected domain denial, got {denial:?}")
+    };
 
     assert_eq!(
         denial.kind(),
@@ -290,6 +293,9 @@ fn causal_envelope_request_denies_duplicate_preview_references_before_mapping() 
         ],
     )
     .expect_err("duplicate preview references should deny before mapping");
+    let crate::facade::BridgeCausalEnvelopeConstructionStop::Denied(denial) = denial else {
+        panic!("expected domain denial, got {denial:?}")
+    };
 
     assert_eq!(
         denial.kind(),

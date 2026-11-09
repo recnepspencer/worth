@@ -5,6 +5,8 @@ mod descriptor;
 mod group_resources;
 mod navigation;
 mod navigation_resources;
+mod ownership;
+pub use ownership::{history_ownership_reaches, ApplicationHistoryOwnershipRelation};
 mod retention;
 mod retention_resources;
 

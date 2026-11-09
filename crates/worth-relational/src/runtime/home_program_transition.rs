@@ -195,6 +195,7 @@ impl RelationalRuntime {
         })?;
         let contracts = SchemaContractRuntimeSubsystem::for_schema_compilation(
             schema.registry(),
+            &snapshot.config.schema.invariant_catalog.registrations,
             schema.aspect_plans_arc(),
             custom,
             generation,

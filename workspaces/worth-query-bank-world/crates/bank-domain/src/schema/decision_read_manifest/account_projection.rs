@@ -19,27 +19,28 @@ pub(super) fn install_account_projection_reads<Operation, Input>(
     operation: ApplicationOperationRef<BankSchema, Operation, Input>,
 ) -> ApplicationSchemaDeclarationBuilder<BankSchema>
 where
-    AccountIdentity: OperationReads<Operation>,
-    AccountingRevision: OperationReads<Operation>,
     InstitutionAccount: OperationReads<Operation>,
-    InstitutionIdentityField: OperationReads<Operation>,
-    Kind: OperationReads<Operation>,
     PersonalOwner: OperationReads<Operation>,
     BusinessAccount: OperationReads<Operation>,
-    PrincipalIdentityField: OperationReads<Operation>,
-    BusinessIdentityField: OperationReads<Operation>,
-    Status: OperationReads<Operation>,
-    AccountDisplayName: OperationReads<Operation>,
 {
     schema
-        .operation_read_field(operation, AccountIdentity::reference())
-        .operation_read_field(operation, AccountingRevision::reference())
-        .operation_read_field(operation, InstitutionIdentityField::reference())
-        .operation_read_field(operation, Kind::reference())
-        .operation_read_field(operation, PrincipalIdentityField::reference())
-        .operation_read_field(operation, BusinessIdentityField::reference())
-        .operation_read_field(operation, Status::reference())
-        .operation_read_field(operation, AccountDisplayName::reference())
+        .operation_read_field(operation, AccountIdentity::at("AccountIdentity"))
+        .operation_read_field(operation, AccountingRevision::at("AccountingRevision"))
+        .operation_read_field(
+            operation,
+            InstitutionIdentityField::at("InstitutionIdentityField"),
+        )
+        .operation_read_field(operation, Kind::at("Kind"))
+        .operation_read_field(
+            operation,
+            PrincipalIdentityField::at("PrincipalIdentityField"),
+        )
+        .operation_read_field(
+            operation,
+            BusinessIdentityField::at("BusinessIdentityField"),
+        )
+        .operation_read_field(operation, Status::at("Status"))
+        .operation_read_field(operation, AccountDisplayName::at("AccountDisplayName"))
         .operation_read_relation(operation, InstitutionAccount::reference())
         .operation_read_relation(operation, PersonalOwner::reference())
         .operation_read_relation(operation, BusinessAccount::reference())
@@ -50,32 +51,19 @@ pub(super) fn install_accounting_projection_reads<Operation, Input>(
     operation: ApplicationOperationRef<BankSchema, Operation, Input>,
 ) -> ApplicationSchemaDeclarationBuilder<BankSchema>
 where
-    AccountIdentity: OperationReads<Operation>,
-    AccountingRevision: OperationReads<Operation>,
     InstitutionAccount: OperationReads<Operation>,
-    InstitutionIdentityField: OperationReads<Operation>,
-    Kind: OperationReads<Operation>,
     PersonalOwner: OperationReads<Operation>,
     BusinessAccount: OperationReads<Operation>,
-    PrincipalIdentityField: OperationReads<Operation>,
-    BusinessIdentityField: OperationReads<Operation>,
-    Status: OperationReads<Operation>,
-    AccountDisplayName: OperationReads<Operation>,
     PostingAccount: OperationReads<Operation>,
     JournalPosting: OperationReads<Operation>,
-    JournalIdentityField: OperationReads<Operation>,
-    JournalPurpose: OperationReads<Operation>,
-    PostingIdentityField: OperationReads<Operation>,
-    Purpose: OperationReads<Operation>,
-    PostingAmount: OperationReads<Operation>,
     JournalReversal: OperationReads<Operation>,
 {
     install_account_projection_reads(schema, operation)
-        .operation_read_field(operation, JournalIdentityField::reference())
-        .operation_read_field(operation, JournalPurpose::reference())
-        .operation_read_field(operation, PostingIdentityField::reference())
-        .operation_read_field(operation, Purpose::reference())
-        .operation_read_field(operation, PostingAmount::reference())
+        .operation_read_field(operation, JournalIdentityField::at("JournalIdentityField"))
+        .operation_read_field(operation, JournalPurpose::at("JournalPurpose"))
+        .operation_read_field(operation, PostingIdentityField::at("PostingIdentityField"))
+        .operation_read_field(operation, Purpose::at("Purpose"))
+        .operation_read_field(operation, PostingAmount::at("PostingAmount"))
         .operation_read_relation(operation, PostingAccount::reference())
         .operation_read_relation(operation, JournalPosting::reference())
         .operation_read_relation(operation, JournalReversal::reference())

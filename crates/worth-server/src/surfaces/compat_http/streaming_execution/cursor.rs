@@ -204,6 +204,7 @@ fn aspect_value_json(value: &AspectValue) -> Value {
         AspectValue::UInt64(value) => Value::Number(Number::from(*value)),
         AspectValue::String(value) => Value::String(match value {
             worth_foundational::facade::InternedString::Raw(text) => text.clone(),
+            worth_foundational::facade::InternedString::Stored(text) => text.as_str().to_owned(),
             worth_foundational::facade::InternedString::Symbol(symbol) => {
                 format!("symbol:{}", symbol.0)
             }

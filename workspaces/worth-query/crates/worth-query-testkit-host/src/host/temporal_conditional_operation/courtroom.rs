@@ -48,7 +48,7 @@ pub fn future_temporal_operation_waits_until_due(
     );
     assert_authoritative_value(
         &world,
-        IntentEffectField::reference(),
+        IntentEffectField::at("IntentEffectField"),
         "payload".to_string(),
     );
 }
@@ -112,12 +112,12 @@ pub fn host_installs_and_executes_due_operation(
     );
     assert_authoritative_value(
         &world,
-        IntentEffectField::reference(),
+        IntentEffectField::at("IntentEffectField"),
         "payload".to_string(),
     );
     assert_authoritative_value(
         &world,
-        IntentLifecycleField::reference(),
+        IntentLifecycleField::at("IntentLifecycleField"),
         "completed".to_string(),
     );
 }
@@ -192,12 +192,12 @@ pub fn cancellation_after_publication_retires_stale_wake(
     );
     assert_authoritative_value(
         &world,
-        IntentEffectField::reference(),
+        IntentEffectField::at("IntentEffectField"),
         "pending".to_string(),
     );
     assert_authoritative_value(
         &world,
-        IntentLifecycleField::reference(),
+        IntentLifecycleField::at("IntentLifecycleField"),
         "cancelled".to_string(),
     );
     assert_eq!(world.contacts.snapshot(), (0, 0, 0, 0));
@@ -224,10 +224,14 @@ pub fn active_successor_revision_replaces_predecessor_wake(
     );
     assert_authoritative_value(
         &world,
-        IntentEffectField::reference(),
+        IntentEffectField::at("IntentEffectField"),
         "successor-payload".to_string(),
     );
-    assert_authoritative_value(&world, super::schema::IntentRevisionField::reference(), 3);
+    assert_authoritative_value(
+        &world,
+        super::schema::IntentRevisionField::at("IntentRevisionField"),
+        3,
+    );
     assert_eq!(world.contacts.snapshot(), (1, 1, 1, 1));
 }
 
@@ -296,7 +300,7 @@ pub fn suppressed_wake_is_reconsidered_after_truth_change(
         .expect("the recomputed Signal node must carry its bounded performed receipt");
     assert_authoritative_value(
         &world,
-        IntentEffectField::reference(),
+        IntentEffectField::at("IntentEffectField"),
         "payload".to_string(),
     );
 }
@@ -329,7 +333,7 @@ pub fn precondition_panic_isolated_and_retry_succeeds(
     );
     assert_authoritative_value(
         &world,
-        IntentEffectField::reference(),
+        IntentEffectField::at("IntentEffectField"),
         "payload".to_string(),
     );
 }

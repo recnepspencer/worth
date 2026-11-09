@@ -21,6 +21,8 @@ pub trait ApplicationAuthoredCorrectionFamily<Schema: ApplicationSchema>: 'stati
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct DeclaredAuthoredCorrection {
     parts: DeclaredAuthoredCorrectionParts,
+    co_anchors: Vec<DeclaredAuthoredCorrection>,
+    optional: bool,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -35,7 +37,28 @@ pub struct DeclaredAuthoredCorrectionParts {
 
 impl DeclaredAuthoredCorrection {
     pub fn from_untrusted_parts(parts: DeclaredAuthoredCorrectionParts) -> Self {
-        Self { parts }
+        Self {
+            parts,
+            co_anchors: Vec::new(),
+            optional: false,
+        }
+    }
+    pub fn co_anchors(&self) -> &[Self] {
+        &self.co_anchors
+    }
+    pub fn is_optional(&self) -> bool {
+        self.optional
+    }
+    pub fn with_co_anchor(mut self, mut anchor: Self, optional: bool) -> Self {
+        anchor.optional = optional;
+        self.co_anchors.push(anchor);
+        self.co_anchors.sort_by(|a, b| {
+            a.parts
+                .source_role
+                .cmp(&b.parts.source_role)
+                .then_with(|| a.parts.inverse_role.cmp(&b.parts.inverse_role))
+        });
+        self
     }
     pub fn parts(&self) -> &DeclaredAuthoredCorrectionParts {
         &self.parts

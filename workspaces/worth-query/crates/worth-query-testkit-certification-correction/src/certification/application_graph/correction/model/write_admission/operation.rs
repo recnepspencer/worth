@@ -26,8 +26,7 @@ pub struct Write {
 }
 worth_query_structured_value_binding!(pub InputBinding for Write { identity: "domain-write.input.v1" });
 worth_query_operation!(pub WriteOperation for NumericSchema, input InputBinding);
-worth_query_operation_reads!(WriteOperation => [Key, Binary, Canonical, Delegated]);
-worth_query_operation_writes!(WriteOperation => [Binary, Canonical, Delegated]);
+
 pub fn key(input: &Write) -> String {
     input.key.clone()
 }
@@ -41,8 +40,8 @@ worth_query_mutation_binding!(
     outputs NoApplicationMutationOutputs,
     principal ActorBinding, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
-    scope Number, NumberFacts, Key, String, ReadOnly, NoApplicationUnit,
-    field Key::reference(), value key,
+    scope Key,
+    field Key::at("Key"), value key,
 );
 pub struct Handler;
 impl OperationHandler<NumericSchema, Binding> for Handler {
@@ -52,16 +51,16 @@ impl OperationHandler<NumericSchema, Binding> for Handler {
         reader: &mut DecisionReader<'_, '_, '_, NumericSchema, Binding>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<NumericSchema, Number>, MissingValue> {
         let decision = (|| {
-            let root = reader.resolve_entity(Key::reference(), input.key.clone())?;
+            let root = reader.resolve_entity(Key::at("Key"), input.key.clone())?;
             match input.encoding {
                 Encoding::Binary => {
-                    reader.field(&root, Binary::reference())?;
+                    reader.field(&root, Binary::at("Binary"))?;
                 }
                 Encoding::Canonical => {
-                    reader.field(&root, Canonical::reference())?;
+                    reader.field(&root, Canonical::at("Canonical"))?;
                 }
                 Encoding::Delegated => {
-                    reader.field(&root, Delegated::reference())?;
+                    reader.field(&root, Delegated::at("Delegated"))?;
                 }
             }
             reader.mutation_target(&root)
@@ -80,14 +79,14 @@ impl OperationHandler<NumericSchema, Binding> for Handler {
         let result = writer
             .projected_entity(&target)
             .and_then(|target| match input.encoding {
-                Encoding::Binary => writer.write_field(&target, Binary::reference(), input.value),
+                Encoding::Binary => writer.write_field(&target, Binary::at("Binary"), crate::facade::certification::application_graph::correction::model::write_admission::BinaryCounter(input.value)),
                 Encoding::Canonical => writer.write_field(
                     &target,
-                    Canonical::reference(),
+                    Canonical::at("Canonical"),
                     CanonicalCounter(input.value),
                 ),
                 Encoding::Delegated => {
-                    writer.write_field(&target, Delegated::reference(), input.value)
+                    writer.write_field(&target, Delegated::at("Delegated"), crate::facade::certification::application_graph::correction::model::write_admission::DelegatedCounter(input.value))
                 }
             });
         match result {

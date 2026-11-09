@@ -140,6 +140,7 @@ impl EffectLifecycleCounters {
                 self.effect_support_row_count,
             )
             .seal()
+            .expect("fixed counter grammar contains only primitive values and literals")
     }
 
     pub fn counter_for_reporting(&self) -> String {

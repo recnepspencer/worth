@@ -138,11 +138,13 @@ fn relinking_other_envelopes_preserves_an_index_even_while_its_body_is_in_flight
     let id = entry.commit.commit_id;
     let mut catalog = super::RelationalCommitCatalog::default();
     catalog
-        .append_indexed_recovery(
-            super::RetainedCanonicalIndex::from_ordinary_owned(entry),
-            source,
-            None,
-        )
+        .append_preencoded_recovery(Arc::new(
+            super::RelationalCommitArtifact::from_index(
+                super::RetainedCanonicalIndex::from_ordinary_owned(entry),
+                source,
+            )
+            .unwrap(),
+        ))
         .unwrap();
     let body = catalog
         .get(id)
@@ -180,8 +182,9 @@ fn settlement_releases_a_journal_flight_but_preserves_memory_history_and_positio
         let position = performed.position();
         let body = performed.canonical_arc().clone();
         let weak = Arc::downgrade(&body);
-        let payload = body.authoritative_payload_observation().unwrap();
-        let cell = RelationalCommitEnvelopeResidency::resident(body, payload);
+        let original =
+            crate::branch::RelationalOriginalRootCommitEvidence::prepare(&execution, body).unwrap();
+        let cell = RelationalCommitEnvelopeResidency::resident(original);
         let reads = source.reads.load(Ordering::Relaxed);
         cell.bind_performed(
             &performed,
@@ -254,11 +257,13 @@ fn unpositioned_memory_envelopes_and_cold_digests_refuse_explicitly() {
     let id = entry.commit.commit_id;
     let mut catalog = super::RelationalCommitCatalog::default();
     catalog
-        .append_indexed_recovery(
-            super::RetainedCanonicalIndex::from_ordinary_owned(entry),
-            source,
-            None,
-        )
+        .append_preencoded_recovery(Arc::new(
+            super::RelationalCommitArtifact::from_index(
+                super::RetainedCanonicalIndex::from_ordinary_owned(entry),
+                source,
+            )
+            .unwrap(),
+        ))
         .unwrap();
     let artifact = catalog.get(id).unwrap();
     assert_eq!(
@@ -271,8 +276,9 @@ fn unpositioned_memory_envelopes_and_cold_digests_refuse_explicitly() {
     let mut conflicting = envelope.copy_original_for_test(&execution);
     conflicting.body_mut_for_test().commit.version_id = crate::identity::data::VersionId(u64::MAX);
     assert_eq!(artifact.matches_envelope(&conflicting), Ok(false));
-    let payload = envelope.authoritative_payload_observation().unwrap();
-    let cell = RelationalCommitEnvelopeResidency::resident(envelope, payload);
+    let original =
+        crate::branch::RelationalOriginalRootCommitEvidence::prepare(&execution, envelope).unwrap();
+    let cell = RelationalCommitEnvelopeResidency::resident(original);
     let Err(crate::durability::data::RelationalRecoveryStop::Durability(failure)) =
         cell.demand_positioned(&execution, 1 << 30)
     else {

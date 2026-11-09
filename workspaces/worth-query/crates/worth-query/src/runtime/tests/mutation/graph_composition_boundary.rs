@@ -46,8 +46,14 @@ fn ordinary_batch_does_not_claim_graph_composition_evidence() {
         .expect("receipt should inspect");
 
     assert!(receipt.graph_composition_program().is_none());
-    assert!(receipt.graph_composition_lifecycle_outcomes().is_none());
-    assert!(receipt.graph_composition_evidence().is_none());
+    assert!(receipt
+        .graph_composition_lifecycle_outcomes()
+        .expect("fixture digest must fit")
+        .is_none());
+    assert!(receipt
+        .graph_composition_evidence()
+        .expect("fixture digest must fit")
+        .is_none());
     match inspection {
         WorthQueryInspection::BatchWriteReceipt(inspection) => {
             assert!(inspection.graph_composition_program().is_none());
@@ -139,8 +145,12 @@ fn reconstructed_graph_composition_receipt_without_breadth_fails_closed() {
     assert!(reconstructed.graph_composition_program().is_none());
     assert!(reconstructed
         .graph_composition_lifecycle_outcomes()
+        .expect("fixture digest must fit")
         .is_none());
-    assert!(reconstructed.graph_composition_evidence().is_none());
+    assert!(reconstructed
+        .graph_composition_evidence()
+        .expect("fixture digest must fit")
+        .is_none());
     match inspection {
         WorthQueryInspection::BatchWriteReceipt(inspection) => {
             assert!(inspection.graph_composition_program().is_none());

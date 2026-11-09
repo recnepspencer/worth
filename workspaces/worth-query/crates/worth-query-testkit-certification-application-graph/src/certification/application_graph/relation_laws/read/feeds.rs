@@ -27,20 +27,23 @@ pub fn committed<L: LawPolicy>(world: &World<L>) -> FeedingGraph {
                         };
                         for key in 0..world.nodes {
                             let Some(node) = reader
-                                .resolve_optional_entity(NodeKey::reference(), key)
+                                .resolve_optional_entity(node_key::<GraphSchema<L>>(), key)
                                 .unwrap()
                             else {
                                 continue;
                             };
                             graph.sources.insert(key, node.entity_id());
-                            for edge in reader.relations_from(Feeds::reference(), &node).unwrap() {
-                                let leaf = reader.field(edge.to(), LeafKey::reference()).unwrap();
+                            for edge in reader
+                                .relations_from(feeds::<GraphSchema<L>>(), &node)
+                                .unwrap()
+                            {
+                                let leaf = reader.field(edge.to(), LeafKey::at("LeafKey")).unwrap();
                                 *graph.edges.entry((key, leaf)).or_default() += 1;
                             }
                         }
                         for key in 0..world.leaves {
                             if let Some(leaf) = reader
-                                .resolve_optional_entity(LeafKey::reference(), key)
+                                .resolve_optional_entity(LeafKey::at("LeafKey"), key)
                                 .unwrap()
                             {
                                 graph.leaves.insert(key, leaf.entity_id());
@@ -68,7 +71,7 @@ pub fn identity<L: LawPolicy>(world: &World<L>, key: u64) -> Option<EntityId> {
                     &phase,
                     |reader| {
                         reader
-                            .resolve_optional_entity(LeafKey::reference(), key)
+                            .resolve_optional_entity(LeafKey::at("LeafKey"), key)
                             .unwrap()
                             .map(|leaf| leaf.entity_id())
                     },

@@ -125,8 +125,8 @@ impl From<QueryKind> for BankAuthorizationDenialKind {
 const fn map_kind(kind: QueryKind) -> BankAuthorizationDenialKind {
     use BankAuthorizationDenialKind as Bank;
     match kind {
-        QueryKind::Stopped(Ok(cause)) => Bank::ExecutionRequest(cause),
         QueryKind::Refused(AuthorizationRefusal::InputNotAdmitted) => Bank::InputNotAdmitted,
+        QueryKind::Stopped(Ok(cause)) => Bank::ExecutionRequest(cause),
         QueryKind::Refused(AuthorizationRefusal::ForeignPhase) => Bank::ForeignPhase,
         QueryKind::Stopped(Err(worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind::Cancelled)) => Bank::Cancelled,
         QueryKind::Stopped(Err(worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind::TimedOut)) => Bank::DeadlineExceeded,

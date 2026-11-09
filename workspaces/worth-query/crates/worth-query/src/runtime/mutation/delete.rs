@@ -23,20 +23,23 @@ impl WorthQueryDeleteMutationBuilder {
         Self::default()
     }
 
-    pub fn target_collection(mut self, collection: impl Into<String>) -> Self {
+    pub fn target_collection(
+        mut self,
+        collection: impl Into<String>,
+    ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
         if self.error.is_some() {
-            return self;
+            return Ok(self);
         }
         let collection = collection.into();
         if collection.trim().is_empty() {
             self.error = Some("delete target collection may not be empty".to_string());
-            return self;
+            return Ok(self);
         }
         self.declared_collection = Some(WorthQueryMutationTargetCollectionIdentity::new(
             "write-command-declared",
             collection,
-        ));
-        self
+        )?);
+        Ok(self)
     }
 
     pub fn touch(mut self, touch: WorthQueryAspectTouch) -> Self {

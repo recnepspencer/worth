@@ -13,6 +13,6 @@ pub use outcome::{
     BankOperationInstallationDenialKind,
 };
 pub use query::{
-    mutations, BankMutation, BankMutationForPrincipal, BankOperationConstructionRefusal,
-    BankReadyMutation,
+    mutations, BankMutation, BankMutationForPrincipal, BankMutationPreconditionDenial,
+    BankOperationConstructionRefusal, BankReadyMutation,
 };

@@ -1,3 +1,4 @@
+use crate::facade::certification::granular_invalidation::financial_runtime_world::schema as stored;
 pub use std::sync::Arc;
 
 pub use worth_query::facade::runtime::WorthQueryPrimaryGraphSourceAdapter;
@@ -200,7 +201,10 @@ pub fn settle(
                 read::project_facts().entity_identities().display_field(
                     read::ProjectionFactFieldPath::from_canonical_field_path(
                         worth_foundational::facade::CanonicalFieldPath::new(vec![
-                            worth_foundational::facade::FieldKey::new("RiskFacts").unwrap(),
+                            worth_foundational::facade::FieldKey::new(
+                                stored::RiskFacts::reference().name(),
+                            )
+                            .unwrap(),
                             worth_foundational::facade::FieldKey::new("RiskValueField").unwrap(),
                         ])
                         .unwrap(),

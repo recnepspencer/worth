@@ -5,7 +5,6 @@ use std::sync::{
 
 use crate::projection_consumption::ProjectionAuthorityOutcome;
 use crate::runtime::tests::support::*;
-use worth_foundational::facade::InternedString;
 
 mod schedule;
 
@@ -37,7 +36,8 @@ impl WorthQueryDerivedViewMaintainer for HostileCertificationMaintainer {
             crate::memory_workspace::admit_external_commit_label(format!(
                 "hostile-certification-refresh-{}",
                 next + 1
-            )),
+            ))
+            .expect("fixture digest must fit"),
             [test_aspect_touch("title.value")],
             WorthQueryDerivedPatchPayload::from_retained_row(retained_row),
             format!("hostile-certification-publication-{}", next + 1),
@@ -245,7 +245,8 @@ impl HostileExecutionState {
                 })
                 .expect("preview staging should succeed");
             preview.discard()
-        };
+        }
+        .expect("fixture digest must fit");
         self.delivery_residue_count += hostile_preview_delivery_residue_count(&discarded);
         self.preview_closeouts
             .push(hostile_preview_closeout_digest(&discarded));
@@ -383,11 +384,7 @@ impl HostileExecutionState {
                 .facts()
                 .display_fields()
                 .first()
-                .and_then(|fact| match fact.native_value().scalar()? {
-                    AspectValue::String(InternedString::Raw(value)) => Some(value.as_str()),
-                    AspectValue::String(InternedString::Symbol(_)) => None,
-                    _ => None,
-                })
+                .and_then(|fact| fact.native_value().scalar()?.raw_text())
                 .expect("display title should be present")
                 .to_string(),
             other => panic!("expected admitted published fact consumption, got {other:?}"),

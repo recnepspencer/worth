@@ -4,7 +4,6 @@ use worth_query_decl::facade::{
         WorthQueryApplicationDeclaredOutputRole, WorthQueryApplicationOutputRole,
         WorthQueryCreateOutput, WorthQueryExactlyOneOutput,
     },
-    application_schema::{NoApplicationUnit, ReadOnly},
     worth_query_mutation_binding, worth_query_structured_value_binding,
 };
 
@@ -16,9 +15,8 @@ use crate::proposals::{
 
 use super::{InitiateBusinessPayment, InitiateBusinessPaymentInputBinding};
 use crate::schema::{
-    BankPrincipalBinding, BankPrincipalIdBinding, BankSchema, Business, BusinessIdentity,
-    BusinessIdentityField, ExternalPrincipalMapping, InitiateBusinessPaymentOperation,
-    PaymentIntent, Principal,
+    BankPrincipalBinding, BankPrincipalIdBinding, BankSchema, BusinessIdentityField,
+    ExternalPrincipalMapping, InitiateBusinessPaymentOperation, PaymentIntent, Principal,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -115,12 +113,7 @@ worth_query_mutation_binding!(
         principal_entity Principal,
         principal_identity BankPrincipalId,
         identity_binding BankPrincipalIdBinding,
-    scope Business,
-        BusinessIdentity,
-        BusinessIdentityField,
-        BusinessId,
-        ReadOnly,
-        NoApplicationUnit,
-    field BusinessIdentityField::reference(),
+    scope BusinessIdentityField,
+    field BusinessIdentityField::at("BusinessIdentityField"),
     value business_scope,
 );

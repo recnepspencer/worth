@@ -60,18 +60,46 @@ fn publish_retained(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    committed: WorthQueryCommittedApplicationSession,
+    mut committed: WorthQueryCommittedApplicationSession,
     evidence: super::super::WorthQueryPrimaryGraphCommitEvidence,
     predicate: &mut Option<PredicatePreparationOwner>,
     retired: &mut PredicatePreparationRetirement,
 ) -> Result<WorthQueryPublishedApplicationCommit, WorthQueryProviderSessionFailure> {
+    committed.finish_group_origins();
+    let mut members = std::mem::take(&mut committed.members);
+    for member in &mut members {
+        let mut session = committed.take_member_session(member);
+        let evidence =
+            super::super::evidence_seal::seal_on_runtime(execution, runtime, &mut session);
+        let mut pending = prepare_pending(provider, runtime, session, evidence);
+        pending.omit_shared_before_lease();
+        member.pending = Some(pending);
+    }
+    let emissions = committed.group_emissions.take();
+    let recovery = committed.attempt.take_publication_recovery_reservation();
+    let mut pending = prepare_pending(provider, runtime, committed, evidence);
+    pending.retain_members(members, emissions);
+    provider.install_and_publish_application(
+        execution, runtime, recovery, pending, predicate, retired,
+    )?;
+    Ok(WorthQueryPublishedApplicationCommit { _private: () })
+}
+
+fn prepare_pending(
+    provider: &WorthQueryPrimaryGraphProvider,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    committed: WorthQueryCommittedApplicationSession,
+    evidence: super::super::WorthQueryPrimaryGraphCommitEvidence,
+) -> WorthQueryPendingApplicationPublication {
     let WorthQueryCommittedApplicationSession {
-        mut attempt,
+        attempt,
         before,
         next_basis,
         committed,
         product_publication,
         managed_views,
+        own_publication,
+        group_evidence,
         required_prerequisites,
         mut prepared_lineage_slot,
         prepared_output_witness,
@@ -88,7 +116,8 @@ fn publish_retained(
             .producer_dependency_identity()
             .is_some()
         {
-            slot.required_publication = committed.required_output_publication(&publisher.native);
+            slot.required_publication = own_publication
+                .or_else(|| committed.required_output_publication(&publisher.native));
         }
     }
     if let (Some(witness), Some(slot)) = (prepared_output_witness, prepared_lineage_slot.as_mut())
@@ -103,7 +132,6 @@ fn publish_retained(
     if let Some(managed_views) = managed_views {
         managed_views.apply(&committed, &next_basis, &product_publication);
     }
-    let recovery_reservation = attempt.take_publication_recovery_reservation();
     let changed_record_count = committed.patch().len();
     let runtime_instance_id = committed.snapshot.runtime_instance_id();
     let emitted_effect_count = attempt.emitted_effect_count();
@@ -118,24 +146,19 @@ fn publish_retained(
         evidence,
         product_publication,
     };
-    let application = WorthQueryPrimaryGraphCommittedApplication::from_publication(seal);
-    provider.install_and_publish_application(
-        execution,
-        runtime,
-        recovery_reservation,
-        WorthQueryPendingApplicationPublication::new(
-            attempt,
-            before,
-            next_basis,
-            committed,
-            application,
-            required_prerequisites,
-            prepared_lineage_slot,
-        ),
-        predicate,
-        retired,
-    )?;
-    Ok(WorthQueryPublishedApplicationCommit { _private: () })
+    let mut application = WorthQueryPrimaryGraphCommittedApplication::from_publication(seal);
+    if let Some(members) = group_evidence {
+        application.retain_coupled_members(members);
+    }
+    WorthQueryPendingApplicationPublication::new(
+        attempt,
+        before,
+        next_basis,
+        committed,
+        application,
+        required_prerequisites,
+        prepared_lineage_slot,
+    )
 }
 
 pub(super) fn encode(

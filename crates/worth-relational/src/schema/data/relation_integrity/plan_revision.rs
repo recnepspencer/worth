@@ -29,6 +29,7 @@ pub(crate) fn derive_relation_integrity_plan_revision(
     partition_isolation_contracts: &[PartitionIsolationContractDeclaration],
     connectivity_minimum_contracts: &[ConnectivityMinimumContractDeclaration],
     aggregate_identity: Option<&super::AggregateIdentityContractDeclaration>,
+    current_publication_storage: Option<&crate::schema::data::CurrentPublicationStorage>,
 ) -> RelationIntegrityPlanRevision {
     derive_relation_integrity_plan_revision_for_compilation(
         crate::schema::SchemaCompilationControl::Configuration,
@@ -41,6 +42,7 @@ pub(crate) fn derive_relation_integrity_plan_revision(
         partition_isolation_contracts,
         connectivity_minimum_contracts,
         aggregate_identity,
+        current_publication_storage,
     )
     .expect("configuration revision hashing has no request refusal")
 }
@@ -56,6 +58,7 @@ pub(crate) fn derive_relation_integrity_plan_revision_for_compilation(
     partition_isolation_contracts: &[PartitionIsolationContractDeclaration],
     connectivity_minimum_contracts: &[ConnectivityMinimumContractDeclaration],
     aggregate_identity: Option<&super::AggregateIdentityContractDeclaration>,
+    current_publication_storage: Option<&crate::schema::data::CurrentPublicationStorage>,
 ) -> Result<RelationIntegrityPlanRevision, crate::execution::RelationalExecutionDenialCause> {
     let mut digest = RelationIntegrityRevisionDigest::new(control);
     digest.mix_endpoint_kind_contracts(endpoint_kind_contracts)?;
@@ -70,6 +73,9 @@ pub(crate) fn derive_relation_integrity_plan_revision_for_compilation(
         digest.mix_bytes(b"aggregate_identity_v1")?;
         aggregate.try_write_canonical(&mut |part| digest.mix_segment(part))?;
         digest.finish_bytes();
+    }
+    if let Some(storage) = current_publication_storage {
+        digest.mix_bytes(&storage.canonical_bytes())?;
     }
     control.checkpoint()?;
     Ok(RelationIntegrityPlanRevision(digest.finish()))

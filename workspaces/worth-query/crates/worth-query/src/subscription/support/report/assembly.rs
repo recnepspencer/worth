@@ -22,7 +22,7 @@ pub fn report_query_subscription_support(
         evidence.family(),
         evidence.support_profile(),
         &subject,
-    );
+    )?;
     let support_row = support_matrix
         .row_for_class(*subject.support_class())
         .expect("every support class must exist in the family support matrix");
@@ -34,7 +34,7 @@ pub fn report_query_subscription_support(
         SupportResolutionPosture::IndexedFamilyLookup,
         1,
         support_matrix.rows().len().saturating_sub(1),
-    );
+    )?;
     let counter_snapshot_identity = counters.evidence_identity();
     let report_identity = support_report_identity(
         subject.subject_identity(),
@@ -42,7 +42,7 @@ pub fn report_query_subscription_support(
         support_matrix.matrix_identity(),
         lookup_receipt.lookup_receipt_identity(),
         &counter_snapshot_identity,
-    );
+    )?;
 
     Ok((
         QuerySubscriptionSupportReport::new(

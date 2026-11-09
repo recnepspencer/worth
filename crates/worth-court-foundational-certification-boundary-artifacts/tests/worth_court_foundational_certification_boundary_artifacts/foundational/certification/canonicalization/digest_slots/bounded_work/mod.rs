@@ -83,7 +83,7 @@ fn digest_work_separates_canonical_material_from_sha256_compression() {
 
     assert_eq!(work.canonical_entry_count(), 1);
     assert!(work.canonical_encoded_bytes() > 0);
-    assert!(work.canonical_material_allocation_bytes() >= work.canonical_encoded_bytes());
+    assert!(work.canonical_material_allocation_bytes() < work.canonical_encoded_bytes());
     assert_eq!(work.sha256_input_bytes(), work.canonical_encoded_bytes());
     assert_eq!(
         work.sha256_compression_block_count(),

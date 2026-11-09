@@ -17,8 +17,8 @@ worth_query_structured_value_binding!(pub FinalPlanarPreserveInputBinding for Fi
 });
 worth_query_operation!(pub PreserveFinalPlanarOutput for Schema: TopologySchemaBinding, input FinalPlanarPreserveInputBinding;
     access {
-        read_entities: [Body]; read_fields: [BodyKey, PositionY, Length];
-        read_relations: [PlanarSuccessor]; writes: [PositionY, Length];
+        read_entities: [Body]; read_fields: [BodyKey::at("BodyKey"), PositionY::at("PositionY"), Length::at("Length")];
+        read_relations: [PlanarSuccessor]; writes: [PositionY::at("PositionY"), Length::at("Length")];
     }
 );
 
@@ -84,7 +84,7 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     type Denial = worth_query_consumer_values::PlanarMutationDenial;
     type DenialBinding = PlanarMutationDenialBinding;
     type Output = FinalPlanarPreserveOutputs;
-    type ScopeBinding = PlanarMutationScope<Schema>;
+    type ScopeBinding = PlanarMutationScope;
     type PrincipalBinding = ConsumerPrincipalBinding;
     type Mapping = ExternalPrincipalMapping;
     type Principal = Principal;
@@ -98,17 +98,8 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.final-planar-preserve-command.v1";
 
-    fn scope_field() -> ApplicationFieldRef<
-        Schema,
-        Body,
-        PlanarPosition,
-        BodyKey,
-        String,
-        ReadOnly,
-        EqualityPredicate,
-        NoApplicationUnit,
-    > {
-        BodyKey::reference()
+    fn scope_field() -> BodyKey {
+        BodyKey::at("BodyKey")
     }
 
     fn principal_binding() -> ApplicationPrincipalBindingRef<
@@ -130,8 +121,8 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationIntent<Schema> for FinalP
         self
     }
 
-    fn scope_binding(&self) -> PlanarMutationScope<Schema> {
-        PlanarMutationScope::new(BodyKey::reference(), self.scope_key.clone())
+    fn scope_binding(&self) -> PlanarMutationScope {
+        PlanarMutationScope::new(BodyKey::at("BodyKey"), self.scope_key.clone())
     }
 }
 
@@ -240,7 +231,7 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, FinalPlanarPreserve
             format!("{}:c", input.output_key),
         ];
         for (entity, key) in entities.iter().zip(&keys) {
-            match reader.field(entity, BodyKey::reference()) {
+            match reader.field(entity, BodyKey::at("BodyKey")) {
                 Ok(Some(actual)) if actual == *key => {}
                 Ok(_) => {
                     return HandlerResult::DomainDenied(
@@ -250,8 +241,8 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, FinalPlanarPreserve
                 Err(error) => return HandlerResult::ExecutionDenied(error),
             }
             for result in [
-                reader.field(entity, PositionY::reference()).map(|_| ()),
-                reader.field(entity, Length::reference()).map(|_| ()),
+                reader.field(entity, PositionY::at("PositionY")).map(|_| ()),
+                reader.field(entity, Length::at("Length")).map(|_| ()),
             ] {
                 if let Err(error) = result {
                     return HandlerResult::ExecutionDenied(error);
@@ -298,10 +289,10 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, FinalPlanarPreserve
             for result in [
                 writer.write_field(
                     &entity,
-                    PositionY::reference(),
+                    PositionY::at("PositionY"),
                     worth_query_consumer_values::PositiveLength::new(y).unwrap(),
                 ),
-                writer.write_field(&entity, Length::reference(), input.value),
+                writer.write_field(&entity, Length::at("Length"), input.value),
             ] {
                 if let Err(error) = result {
                     return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));

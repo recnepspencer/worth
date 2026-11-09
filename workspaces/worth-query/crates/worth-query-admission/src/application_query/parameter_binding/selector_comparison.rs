@@ -162,6 +162,7 @@ fn basis_copy_and_comparison_visits(
     use worth_foundational::facade::{CanonicalBasisLocus, CanonicalBasisValue, InternedString};
     let text = |value: &InternedString| match value {
         InternedString::Raw(value) => value.len(),
+        InternedString::Stored(value) => value.as_str().len(),
         InternedString::Symbol(_) => 1,
     };
     let mut initialized = basis.version().as_str().len();

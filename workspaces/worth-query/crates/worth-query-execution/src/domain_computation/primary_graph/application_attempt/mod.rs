@@ -41,8 +41,7 @@ pub(crate) mod observation;
 pub(in crate::domain_computation::primary_graph) use observation::observe_aspect_presence;
 
 pub(in crate::domain_computation::primary_graph) use observation::{
-    observe_aspect_absence, observe_field, observe_field_observation_borrowed_admitted,
-    observe_field_value_borrowed, observe_field_value_borrowed_admitted,
+    observe_aspect_absence, observe_field_from_view_admitted, observe_field_value_borrowed,
     WorthQueryApplicationFieldObservation,
 };
 pub(crate) mod precondition_binding;
@@ -124,10 +123,11 @@ pub(in crate::domain_computation::primary_graph) use effect_program::{
     WorthQueryCheckpointOutputRole,
 };
 pub use effect_program::{
-    WorthQueryApplicationCreatedRelation, WorthQueryApplicationEffectEntity,
-    WorthQueryApplicationEffectProgram, WorthQueryApplicationEffectProgramBuilder,
-    WorthQueryApplicationOutputEntity, WorthQueryApplicationOutputFamilyEntry,
-    WorthQueryApplicationOutputPosture, WorthQueryApplicationOutputProjectionDenial,
+    WorthQueryApplicationClosureEvidenceEntry, WorthQueryApplicationCreatedRelation,
+    WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgram,
+    WorthQueryApplicationEffectProgramBuilder, WorthQueryApplicationOutputEntity,
+    WorthQueryApplicationOutputFamilyEntry, WorthQueryApplicationOutputPosture,
+    WorthQueryApplicationOutputProjectionDenial, WorthQueryApplicationTypedClosureEvidence,
     WorthQueryApplicationTypedOutputCorrespondence,
 };
 pub(super) use elevation_approval_outcome::approved_outcome;
@@ -243,3 +243,12 @@ pub use provider_execution::WorthQueryManagedPhaseStorageForTest;
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
+
+pub(crate) mod coupled_outputs;
+
+pub(in crate::domain_computation::primary_graph) use provider_execution::{
+    inspect_coupled_application, prepare_coupled_application, register_coupled_application,
+    ApprovedCoupledWriter, CommitPreparedCoupledWriter, InspectedCoupledWriter,
+};
+
+pub(in crate::domain_computation::primary_graph) use fact::candidate_support_source_stop;

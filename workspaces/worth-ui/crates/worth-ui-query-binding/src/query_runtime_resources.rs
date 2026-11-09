@@ -28,7 +28,7 @@ pub(crate) fn ui_product_world_resources() -> runtime::WorthQueryProductWorldRes
                 owner_created_component_custody_records: 256,
             },
         },
-        runtime::WorthQueryProductWorldClock::start(),
+        runtime::WorthQueryProductWorldClock::start(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         runtime::WorthQueryInvalidationResources::new(),
         UI_EXECUTION_POLICY,
     )

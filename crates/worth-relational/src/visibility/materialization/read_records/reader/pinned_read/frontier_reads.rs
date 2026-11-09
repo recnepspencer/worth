@@ -5,7 +5,7 @@ use crate::identity::data::{EntityId, KindId};
 use crate::storage::partition::AdjacencyDirection;
 use std::collections::BTreeSet;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
-impl RelationalPinnedRead {
+impl<Snapshot> RelationalPinnedRead<Snapshot> {
     pub fn bounded_outgoing_relations_for_frontier(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
@@ -16,7 +16,7 @@ impl RelationalPinnedRead {
         BoundedFrontierAdjacencyTruthRead,
         BoundedFrontierReadStop<
             FrontierAdjacencyTruthReadLimitExceeded,
-            worth_execution::WorkCeilingDenial,
+            crate::execution::RelationalExecutionDenialCause,
         >,
     > {
         self.frontier_relations(
@@ -38,7 +38,7 @@ impl RelationalPinnedRead {
         BoundedFrontierAdjacencyTruthRead,
         BoundedFrontierReadStop<
             FrontierAdjacencyTruthReadLimitExceeded,
-            worth_execution::WorkCeilingDenial,
+            crate::execution::RelationalExecutionDenialCause,
         >,
     > {
         self.frontier_relations(
@@ -63,7 +63,7 @@ impl RelationalPinnedRead {
         BoundedFrontierAdjacencyTruthRead,
         BoundedFrontierReadStop<
             FrontierAdjacencyTruthReadLimitExceeded,
-            worth_execution::WorkCeilingDenial,
+            crate::execution::RelationalExecutionDenialCause,
         >,
     > {
         self.frontier_relations(
@@ -87,22 +87,22 @@ impl RelationalPinnedRead {
         BoundedFrontierAdjacencyTruthRead,
         BoundedFrontierReadStop<
             FrontierAdjacencyTruthReadLimitExceeded,
-            worth_execution::WorkCeilingDenial,
+            crate::execution::RelationalExecutionDenialCause,
         >,
     > {
-        ProjectionRecordReader::new(self.basis.version_id(), &self.instrumentation)
-            .bounded_relations_for_frontier_in_state(
-                self.basis.root().as_ref(),
-                self.schema(),
-                || request.consult(),
+        self.project_read()
+            .bounded_relations_for_frontier(
+                request,
                 entities,
                 kind,
-                self.basis.version_id(),
                 direction,
                 maximum,
                 include_audit,
             )
+            .map_err(BoundedFrontierReadStop::Admission)?
+            .map_err(BoundedFrontierReadStop::Limit)
     }
+
     pub fn bounded_entity_field_equals_for_frontier(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
@@ -115,14 +115,17 @@ impl RelationalPinnedRead {
         BoundedFrontierFieldEqualityTruthRead,
         BoundedFrontierReadStop<
             FrontierFieldEqualityTruthReadLimitExceeded,
-            worth_execution::WorkCeilingDenial,
+            crate::execution::RelationalExecutionDenialCause,
         >,
     > {
+        self.basis
+            .demand_regions_full(request, entities.iter().map(|id| id.partition_id))
+            .map_err(|cause| BoundedFrontierReadStop::Admission(cause.into()))?;
         ProjectionRecordReader::new(self.basis.version_id(), &self.instrumentation)
             .bounded_entity_field_equals_for_frontier_in_state(
-                self.basis.root().as_ref(),
+                &self.basis,
                 self.schema(),
-                || request.consult(),
+                || crate::execution::check_request(request),
                 entities,
                 kind,
                 locator,

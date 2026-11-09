@@ -28,6 +28,9 @@
 
 #![forbid(unsafe_code)]
 
+#[cfg(test)]
+mod allocation_observation;
+
 mod application_build_identity;
 mod aspects;
 mod boundary;

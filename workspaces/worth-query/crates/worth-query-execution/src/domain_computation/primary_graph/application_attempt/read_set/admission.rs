@@ -81,7 +81,8 @@ where
     /// struct FirstOperation;
     /// struct SecondOperation;
     ///
-    /// fn cannot_cross_operation_projection<Schema: ApplicationSchema, Input, Scope>(
+    /// fn cannot_cross_operation_projection<'a, Schema: ApplicationSchema, Input, Scope>(
+    ///     phase: &crate::facade::primary_graph::WorthQueryAdvancementPhase<'a>,
     ///     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     ///     admission: WorthQueryAdmittedApplicationOperation<
     ///         Schema, FirstOperation, Input, Scope,
@@ -90,7 +91,7 @@ where
     ///         Schema, SecondOperation,
     ///     >,
     /// ) {
-    ///     let _ = runtime.begin_projected_application_read_attempt(admission, projection, worth_execution::ExecutionAllocationPolicy::SystemAllocation);
+    ///     let _ = runtime.begin_projected_application_read_attempt(phase, admission, projection, worth_execution::ExecutionAllocationPolicy::SystemAllocation);
     /// }
     /// ```
     pub fn begin_projected_application_read_attempt<'scope, Operation, Input, Scope>(

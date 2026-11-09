@@ -17,7 +17,7 @@ use worth_query_topology_entry::{
 macro_rules! declared_world {
     ($world:ident,$request:ident,$delivery:ty) => {
         let program = ApplicationProgramAuthoring::<ConsumerSchema, Program<$delivery>>::begin()
-            .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
+            .with_schema(&<ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the completed schema is valid"))
             .validated_program()
             .unwrap();
         let grants=[crate::program_deployment::ConsumerDeploymentGrantSeed::for_program::<Program<$delivery>>("model-owner","model-owner")];
@@ -42,7 +42,7 @@ impl ApplicationMutationIntent<ConsumerSchema> for Original {
     fn input(&self) -> &PlanarSourceAdjustment {
         &self.0
     }
-    fn scope_binding(&self) -> PlanarMutationScope<ConsumerSchema> {
+    fn scope_binding(&self) -> PlanarMutationScope {
         <PlanarSourceAdjustment as ApplicationMutationIntent<ConsumerSchema>>::scope_binding(
             &self.0,
         )

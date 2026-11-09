@@ -1,4 +1,5 @@
 //! Arithmetic/prefix oracles, not native result or source-custody issuance.
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution;
 use std::sync::Arc;
 use std::collections::BTreeSet;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::Call;
@@ -117,8 +118,7 @@ fn call_range_refusal_descends_to_the_first_actual_unfitting_call() {
 
 pub fn funded_tree(calls: &[(ComputationRead, Call)]) -> Arc<Node> {
     use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy;
-    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution;
-    use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
+        use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
     let request = live_scope();
     let execution = QueryRequestExecution::open_for_test(
         worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(test_policy(

@@ -55,7 +55,7 @@ where
     P: WorthQueryDomainCapabilityPayload,
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    let rows = build_rows(&contribution);
+    let rows = build_rows(&contribution)?;
     let profile_progression = materialize_profile_progression(
         &contribution,
         requested_profile,

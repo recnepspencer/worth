@@ -108,6 +108,7 @@ pub(super) fn publish<Schema: ApplicationSchemaComposition, Program>(
                 grant.original(),
                 &association,
                 grant.admission(),
+                budget,
             )
             .map_err(Denial::Native)?;
         for batch in step.batches {
@@ -121,12 +122,20 @@ pub(super) fn publish<Schema: ApplicationSchemaComposition, Program>(
         let (opened, proposal) = opened
             .bind_query_native_proposal(proposal)
             .map_err(Denial::NativePreparation)?;
-        let mut candidate = native
+        let candidate = native
             .prepare_validated_proposal(request, proposal)
-            .map_err(Denial::Commit)?;
-        target
-            .prepare_home_program_transition_indexes(request, native, &mut candidate, role, budget)
-            .map_err(Denial::Indexes)?;
+            .map_err(|cause| {
+                if let worth_relational::facade::transactions::TransactionCommitError::Publication {
+                    error,
+                    ..
+                } = &cause
+                    && let Some(indexes) = error.index_maintenance_denial()
+                {
+                    Denial::Indexes(indexes.clone())
+                } else {
+                    Denial::Commit(cause)
+                }
+            })?;
         let prepared = opened
             .complete_query_native_preparation(candidate, request)
             .map_err(Denial::NativePreparation)?;

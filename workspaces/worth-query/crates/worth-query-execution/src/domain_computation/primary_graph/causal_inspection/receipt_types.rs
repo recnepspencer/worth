@@ -1,3 +1,4 @@
+use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial;
 use crate::domain_computation::evidence_identity::{
     WorthQueryAuthorityLane, WorthQueryReadExecutionEngine,
 };
@@ -118,8 +119,8 @@ impl CausalObservationEvidenceIdentity {
     pub fn new(
         family: CausalEvidenceFamily,
         reference_digest: impl Into<CausalEvidenceReferenceInput>,
-    ) -> Self {
-        let reference_digest = into_reference_digest(reference_digest.into());
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
+        let reference_digest = into_reference_digest(reference_digest.into())?;
         let evidence_identity =
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::CausalEvidenceReference)
                 .field_shape(WorthQueryEvidenceTag::new("family"), family.as_str())
@@ -127,12 +128,12 @@ impl CausalObservationEvidenceIdentity {
                     WorthQueryEvidenceTag::new("reference"),
                     reference_digest.evidence_identity(),
                 )
-                .seal();
-        Self {
+                .seal()?;
+        Ok(Self {
             family,
             reference_digest,
             evidence_identity,
-        }
+        })
     }
 
     pub fn family(&self) -> CausalEvidenceFamily {
@@ -150,10 +151,8 @@ impl CausalObservationEvidenceIdentity {
 
 fn into_reference_digest(
     reference_input: CausalEvidenceReferenceInput,
-) -> CausalEvidenceReferenceDigest {
-    match reference_input {
-        CausalEvidenceReferenceInput::Typed(identity) => identity,
-    }
+) -> Result<CausalEvidenceReferenceDigest, WorthQueryEvidenceIdentityDerivationDenial> {
+    reference_input.into_digest()
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -172,7 +171,9 @@ pub struct QueryObservationReceipt {
 }
 
 impl QueryObservationReceipt {
-    pub fn from_parts(parts: ObservationReceiptParts) -> Self {
+    pub fn from_parts(
+        parts: ObservationReceiptParts,
+    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         let receipt_identity = WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::CausalQueryObservationReceipt,
         )
@@ -216,9 +217,9 @@ impl QueryObservationReceipt {
                 .iter()
                 .map(CausalObservationEvidenceIdentity::evidence_identity),
         )
-        .seal()
+        .seal()?
         .into();
-        Self {
+        Ok(Self {
             family: parts.family,
             observation_receipt_identity: parts.observation_receipt_identity,
             query_identity: parts.query_identity,
@@ -230,7 +231,7 @@ impl QueryObservationReceipt {
             outcome: parts.outcome,
             evidence_identities: parts.evidence_identities,
             receipt_identity,
-        }
+        })
     }
 
     pub fn family(&self) -> QueryObservationReceiptFamily {

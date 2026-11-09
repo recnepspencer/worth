@@ -210,7 +210,7 @@ impl WorthQueryRuntimeBackend for TestQueryRuntimeBackend {
         vec![worth_query::facade::foundation::WorthQueryEntity::from_native_field_values(
             worth_query::facade::foundation::WorthQueryEntityIdentity::admit_authored_entity_token(worth_query::facade::foundation::QueryExternalIdentityToken::new(
                 std::sync::Arc::from("user-1"),
-            )),
+            )).expect("fixture digest must fit"),
             std::collections::BTreeMap::from([
                 (
                     field_path("identity.id"),
@@ -294,8 +294,8 @@ impl WorthQueryRuntimeSchemaAdapter for TestSchemaAdapter {
         request: &DeclarativeLiveQueryRequest,
         _schema_view: &QuerySchemaView,
     ) -> Result<LiveViewDeclarationAdmissionBoundaryReceipt, WorthQueryWorkspaceError> {
-        let admission = self.build_live_view_declaration_admission_receipt(name, request);
-        Ok(self.build_live_view_declaration_boundary_receipt(name, request, admission))
+        let admission = self.build_live_view_declaration_admission_receipt(name, request)?;
+        Ok(self.build_live_view_declaration_boundary_receipt(name, request, admission)?)
     }
 }
 

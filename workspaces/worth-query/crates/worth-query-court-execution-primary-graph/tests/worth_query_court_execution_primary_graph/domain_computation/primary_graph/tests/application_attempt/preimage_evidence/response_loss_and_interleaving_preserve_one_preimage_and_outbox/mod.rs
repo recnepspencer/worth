@@ -193,7 +193,7 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
     assert!(!format!("{retained:?}").contains("open"));
     assert_eq!(
         retained
-            .field_for(AccountStatus::reference())
+            .field_for(AccountStatus::at("AccountStatus"))
             .unwrap()
             .value(),
         &worth_foundational::facade::AspectValue::String(

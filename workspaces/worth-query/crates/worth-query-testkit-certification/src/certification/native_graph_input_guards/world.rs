@@ -52,13 +52,13 @@ pub fn install() -> App {
                 ("parent-overflow", None),
             ] {
                 let entity = Entity::new(Parent::reference(), Key::new(id).unwrap())
-                    .field(ParentIdentity::reference(), id.to_string())
+                    .field(ParentIdentity::at("ParentIdentity"), id.to_string())
                     .field(
-                        ParentRevision::reference(),
+                        ParentRevision::at("ParentRevision"),
                         if id == "parent-overflow" { u64::MAX } else { 1 },
                     );
                 graph.bind_entity(if let Some(company) = company {
-                    entity.field(Company::reference(), company.to_string())
+                    entity.field(Company::at("Company"), company.to_string())
                 } else {
                     entity
                 })?;
@@ -74,8 +74,8 @@ pub fn install() -> App {
             ] {
                 graph.bind_entity(
                     Entity::new(Row::reference(), Key::new(row).unwrap())
-                        .field(RowIdentity::reference(), row.to_string())
-                        .field(RowValue::reference(), 7),
+                        .field(RowIdentity::at("RowIdentity"), row.to_string())
+                        .field(RowValue::at("RowValue"), 7),
                 )?;
             }
             for (parent, row) in [

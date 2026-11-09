@@ -1,0 +1,13 @@
+COMMAND: ["C:\\Users\\shepworth\\AppData\\Local\\Programs\\Python\\Python314\\python.exe", "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\lane-evidence\\pa_merge_owned_cargo.py", "principal-native-final-check", "Cargo.toml", "check", "-p", "worth-relational", "--tests", "--message-format=json", "--keep-going"]
+HEAD: dbe3280daa804f95a9ec6375f85ae78d1cbcc6dd
+CLEAN: false
+START: 2026-11-08T19:25:28.509400+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+prebuild: cargo check -p worth-relational --tests --message-format=json --keep-going --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\Cargo.toml" --unit-graph -Z unstable-options
+prebuild: cargo check -p worth-relational --tests --message-format=json --keep-going --manifest-path "C:\programming\worth worktees\worktrees\m3-host-home\Cargo.toml"
+    Checking worth-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-relational)
+    Checking worth-testkit-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-host-home\crates\worth-testkit-relational)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 45.74s
+
+END: 2026-11-08T19:26:16.934250+00:00
+EXIT: 0

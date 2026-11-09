@@ -8,12 +8,12 @@ pub fn membership_and_label(
     let graph = (*world.application.runtime_for_test())
         .primary_graph_for_test()
         .unwrap();
-    let tag_field = AccountMembershipTag::reference();
+    let tag_field = AccountMembershipTag::at("AccountMembershipTag");
     let tag_locator = (*graph.layout_for_test())
         .field_locator_for_test(tag_field.entity(), tag_field.aspect(), tag_field.field())
         .unwrap()
         .clone();
-    let label_field = AccountLabel::reference();
+    let label_field = AccountLabel::at("AccountLabel");
     let label_locator = (*graph.layout_for_test())
         .field_locator_for_test(
             label_field.entity(),

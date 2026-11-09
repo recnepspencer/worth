@@ -41,7 +41,7 @@ pub fn link(
             let to = selected
                 .resolve_entity(
                     &phase,
-                    NodeKey::reference(),
+                    NodeKey::at("NodeKey"),
                     target,
                     request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
@@ -57,9 +57,11 @@ pub fn link(
                             .require_decision_entity(subject, Node::reference())
                             .unwrap();
                         reader
-                            .require_decision_field(subject, NodeKey::reference())
+                            .require_decision_field(subject, NodeKey::at("NodeKey"))
                             .unwrap();
-                        let target = reader.resolve_entity(NodeKey::reference(), target).unwrap();
+                        let target = reader
+                            .resolve_entity(NodeKey::at("NodeKey"), target)
+                            .unwrap();
                         reader
                             .require_decision_entity(&target, Node::reference())
                             .unwrap();
