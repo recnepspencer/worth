@@ -13,6 +13,7 @@ mod publication_fate;
 mod publication_task;
 pub use ports::ApplicationWorldPorts;
 pub(crate) use publication_task::WorldPublications;
+mod query_corrections;
 mod query_obligations;
 mod query_root;
 mod readmission;

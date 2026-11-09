@@ -5,14 +5,15 @@ use worth_execution::{ExecutionInterruptionView, ExecutionResourceLease};
 mod execution;
 mod terminal;
 
-pub(super) enum QueryObligationNativeProgress {
+pub(super) enum QueryJournalNativeProgress {
     Pending,
     Committed { position: u64, digest: [u8; 32] },
     ProvenNoEffect { position: u64, digest: [u8; 32] },
-    Refused(QueryProgramSupportDenial),
+    Refused(QueryJournalDenial),
     Unresolved,
 }
-pub(super) struct QueryObligationPublication {
+pub(super) struct QueryJournalPublication {
+    journal: &'static str,
     position: u64,
     digest: [u8; 32],
     bytes: u64,
@@ -37,38 +38,41 @@ enum Endpoint {
     NoEffect(OrderedJournalPublicationObservation),
     NoEffectBeforeStart,
 }
-impl QueryObligationPublication {
+impl QueryJournalPublication {
     pub(super) fn prepare(
         serving: &ServingPhysicalRuntime,
-        frame: &QueryProgramSupportFrame,
+        journal: &'static str,
+        position: u64,
+        bytes: &[u8],
         request: &ExecutionRequest<'_, '_>,
-    ) -> Result<Self, QueryProgramSupportDenial> {
+    ) -> Result<Self, QueryJournalDenial> {
         let capture = |lease: Option<&ExecutionResourceLease<'_>>| {
             request
                 .run_native_with_checkpoint(|context| context.retain_interruption_view(lease))
-                .map_err(QueryProgramSupportDenial::Execution)?
+                .map_err(QueryJournalDenial::Execution)?
                 .0
                 .map_err(storage)
         };
         let view = if request.is_leased() {
             request
                 .in_scope(capture)
-                .map_err(QueryProgramSupportDenial::Execution)??
+                .map_err(QueryJournalDenial::Execution)??
         } else {
             capture(None)?
         };
         let milliseconds = crate::deadline::milliseconds(request, 120_000).map_err(storage)?;
         let payload = OrderedJournalPublication::new(
-            frame.position(),
-            frame.bytes().to_vec(),
+            position,
+            bytes.to_vec(),
             crate::open::physical_admission::placement(),
             PhysicalMutationDeadline::after_milliseconds(milliseconds)
-                .ok_or(QueryProgramSupportDenial::SupportUnavailable)?,
+                .ok_or(QueryJournalDenial::Unavailable)?,
         );
         Ok(Self {
-            position: frame.position(),
-            digest: Sha256::digest(frame.bytes()).into(),
-            bytes: frame.bytes().len() as u64,
+            journal,
+            position,
+            digest: Sha256::digest(bytes).into(),
+            bytes: bytes.len() as u64,
             runtime: serving.runtime_identity(),
             physical: Mutex::new(PhysicalPublication {
                 payload: Some(payload),
@@ -80,16 +84,13 @@ impl QueryObligationPublication {
         })
     }
 
-    pub(super) fn matches_frame(&self, frame: &QueryProgramSupportFrame) -> bool {
-        self.position == frame.position()
-            && self.digest == frame.payload_digest()
-            && self.bytes == frame.bytes().len() as u64
+    pub(super) fn matches_payload(&self, position: u64, bytes: &[u8]) -> bool {
+        self.position == position
+            && self.digest == <[u8; 32]>::from(Sha256::digest(bytes))
+            && self.bytes == bytes.len() as u64
     }
-    pub(super) fn matches_subject(
-        &self,
-        subject: &worth_proof::HomeQueryObligationSubject,
-    ) -> bool {
-        self.position == subject.position() && self.digest == subject.payload_digest()
+    pub(super) fn matches_subject(&self, position: u64, digest: [u8; 32]) -> bool {
+        self.position == position && self.digest == digest
     }
     pub(super) fn committed(&self) -> bool {
         let state = self.state();
@@ -108,12 +109,12 @@ impl QueryObligationPublication {
     }
     pub(super) fn no_effect(&self) -> bool {
         match self.outcome() {
-            Some(QueryObligationNativeProgress::ProvenNoEffect { .. }) => true,
+            Some(QueryJournalNativeProgress::ProvenNoEffect { .. }) => true,
             Some(
-                QueryObligationNativeProgress::Pending
-                | QueryObligationNativeProgress::Committed { .. }
-                | QueryObligationNativeProgress::Refused(_)
-                | QueryObligationNativeProgress::Unresolved,
+                QueryJournalNativeProgress::Pending
+                | QueryJournalNativeProgress::Committed { .. }
+                | QueryJournalNativeProgress::Refused(_)
+                | QueryJournalNativeProgress::Unresolved,
             )
             | None => false,
         }
@@ -125,7 +126,7 @@ impl QueryObligationPublication {
     }
     fn matches(&self, source: OrderedJournalPublicationSource) -> bool {
         source.runtime_identity() == self.runtime
-            && source.journal().as_str() == "query.obligations"
+            && source.journal().as_str() == self.journal
             && source.position() == self.position
             && source.payload_sha256() == self.digest
             && source.payload_bytes() == self.bytes

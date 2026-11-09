@@ -13,6 +13,11 @@ mod durable_publication;
 mod dx;
 mod effect;
 mod home_binding;
+mod home_query_corrections;
+pub use home_query_corrections::{
+    AdmittedHomeQueryCorrections, CommittedHomeQueryCorrection, HomeQueryCorrectionSubject,
+    HomeQueryCorrectionsAuthority, HomeQueryCorrectionsOwner, NoEffectHomeQueryCorrection,
+};
 mod home_query_obligations;
 pub use home_query_obligations::{
     AdmittedHomeQueryObligations, CommittedHomeQueryObligation, HomeQueryObligationSubject,
