@@ -16,6 +16,7 @@ pub(crate) mod canonical_record;
 pub(crate) mod correction_history;
 mod lineage_fields;
 mod original_row;
+pub(crate) mod readmission;
 mod restored_witness;
 mod source_fields;
 use crate::domain_computation::application_aftermath::{
@@ -316,6 +317,20 @@ type AftermathCausalityRecord = (VersionId, AftermathCausalityValues);
 fn required_fields(
     layout: &WorthQueryAftermathCausalityLayout,
 ) -> Result<Vec<worth_foundational::facade::FieldKey>, &'static str> {
+    canonical_locators(layout)
+        .map(|locator| {
+            locator
+                .field_path()
+                .fields()
+                .first()
+                .cloned()
+                .ok_or("aftermath causality field locator is empty")
+        })
+        .collect()
+}
+fn canonical_locators(
+    layout: &WorthQueryAftermathCausalityLayout,
+) -> impl Iterator<Item = &worth_foundational::facade::AspectFieldLocator> {
     [
         &layout.key_locator,
         &layout.role_locator,
@@ -326,15 +341,6 @@ fn required_fields(
     .into_iter()
     .chain(source_fields::locators(layout))
     .chain(lineage_fields::locators(layout))
-    .map(|locator| {
-        locator
-            .field_path()
-            .fields()
-            .first()
-            .cloned()
-            .ok_or("aftermath causality field locator is empty")
-    })
-    .collect()
 }
 
 fn as_u64(value: &AspectValue) -> Option<u64> {

@@ -18,10 +18,10 @@ pub(super) fn read(
                 layout.lineage.entity_kind,
                 &layout.lineage.protocol_version,
             )
-            .map_err(Denial::Record)?;
+            .map_err(|cause| lineage_denial(*lineage, layout.lineage.entity_kind, cause))?;
         if fields
             .text(*lineage, layout.lineage.entity_kind, &layout.lineage.spec)
-            .map_err(Denial::Record)?
+            .map_err(|cause| lineage_denial(*lineage, layout.lineage.entity_kind, cause))?
             .bytes()
             .is_empty()
         {
@@ -119,4 +119,11 @@ pub(super) fn read(
         }
     }
     Ok(result)
+}
+
+fn lineage_denial(entity: EntityId, kind: KindId, cause: WorthQueryWorkflowReadDenial) -> Denial {
+    match cause {
+        WorthQueryWorkflowReadDenial::Corrupt => Denial::CorruptRecord { entity, kind },
+        cause => Denial::Record(cause),
+    }
 }

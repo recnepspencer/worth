@@ -170,11 +170,11 @@ fn create(
 }
 
 /// These are Native administrative rows, not fabricated workflow executions.
-pub(super) fn create_required_row(
+pub(super) fn required_row_batch(
     native: &RelationalRuntime,
     execution: &ExecutionRequest<'_, '_>,
     name: &str,
-) -> (KindId, EntityId) {
+) -> (KindId, WorkerIntentBatch) {
     let view = view(native);
     let pinned = native
         .read_truth()
@@ -205,16 +205,29 @@ pub(super) fn create_required_row(
         }
     }
     drop(pinned);
-    create(
-        native,
-        execution,
+    (
         kind,
-        "persisted-administrative-owner-row",
-        AspectFieldPatch::new(fields),
-    );
+        WorkerIntentBatch::new("actual administrative owner row").push(MutationIntent::Create(
+            CreateIntent::Entity(EntitySpec {
+                partition_id: PartitionId::main(),
+                kind_id: kind,
+                client_key: ClientKey::raw("persisted-administrative-owner-row"),
+                fields: AspectFieldPatch::new(fields),
+            }),
+        )),
+    )
+}
+
+pub(super) fn create_required_row(
+    native: &RelationalRuntime,
+    execution: &ExecutionRequest<'_, '_>,
+    name: &str,
+) -> (KindId, EntityId) {
+    let (kind, batch) = required_row_batch(native, execution, name);
+    commit(native, execution, batch);
     let rows = rows(native, execution, name);
     let [row] = rows.as_slice() else {
-        panic!("one actual persisted owner row")
+        panic!("one actual persisted owner row");
     };
     (kind, row.entity_id)
 }

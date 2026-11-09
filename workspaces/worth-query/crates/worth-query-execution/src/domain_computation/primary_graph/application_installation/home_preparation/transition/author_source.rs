@@ -28,6 +28,7 @@ pub enum QueryHomeProgramTransitionSourceDenial {
     NonDurableWorldOwner,
     ForeignWorldOwner,
     Activation(super::super::super::super::bootstrap::branch_activation_history::QueryHomeProgramActivationDenial),
+    Correction(crate::domain_computation::primary_graph::provider::aftermath_causality::readmission::QueryHomeCorrectionLineageDenial),
 }
 impl WorthQueryHomeProgramTransitionReadSource<'_, '_> {
     pub fn schema_registry(&self) -> &worth_relational::facade::schema::RelationalSchemaRegistry {
@@ -178,6 +179,9 @@ fn admit_source_lens<'owner, 'scope, Schema>(
         inspection,
     )
     .map_err(Denial::Activation)?;
+    crate::domain_computation::primary_graph::provider::aftermath_causality::readmission::verify_source(
+        &phase.execution_request(), native, layout, inspection, observation,
+    ).map_err(Denial::Correction)?;
     let view = native
         .read_truth()
         .project_observation(&basis.observation())

@@ -72,9 +72,49 @@ impl WorldProgramActivationHistory {
             .fence()
             .admit(fence)
             .map_err(Denial::Incarnation)?;
-        let candidate = original.identity();
-        let mut position =
+        let position =
             DurableCompositeCommitIdentity::from_recorded(expected.owner(), selected.ordinal());
+        self.original_in_ancestry(original, position, request)
+    }
+
+    /// Compare two source-backed DATA observations without creating a live commit
+    /// capability. The candidate must strictly precede the descendant original.
+    pub fn original_precedes_original(
+        &self,
+        original: &WorldOriginalObservation<'_>,
+        descendant: &WorldOriginalObservation<'_>,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<bool, WorldOriginalObservationDenial> {
+        use WorldOriginalObservationDenial as Denial;
+        if original.identity().owner() != self.image.binding.owner()
+            || descendant.identity().owner() != self.image.binding.owner()
+        {
+            return Err(Denial::Incarnation(
+                worth_proof::HomeIncarnationDenial::ForeignHome,
+            ));
+        }
+        if !self.contains_original(descendant) {
+            return Err(Denial::Source(WorldReadmissionDenial::BranchLineage));
+        }
+        self.original_in_ancestry(original, descendant.predecessor(), request)
+    }
+    fn contains_original(&self, original: &WorldOriginalObservation<'_>) -> bool {
+        self.image
+            .occurrences
+            .get(&original.original.location().position())
+            .is_some_and(|entry| {
+                entry.open() == original.original.open()
+                    && entry.relational() == original.original.relational()
+            })
+    }
+    fn original_in_ancestry(
+        &self,
+        original: &WorldOriginalObservation<'_>,
+        mut position: DurableCompositeCommitIdentity,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<bool, WorldOriginalObservationDenial> {
+        use WorldOriginalObservationDenial as Denial;
+        let candidate = original.identity();
         loop {
             request.consult().map_err(Denial::Request)?;
             let head = self
@@ -85,14 +125,7 @@ impl WorldProgramActivationHistory {
             if position == candidate {
                 // A view captured before publication cannot establish an original
                 // from a later cut, even if its descriptive Home identity agrees.
-                return Ok(self
-                    .image
-                    .occurrences
-                    .get(&original.original.location().position())
-                    .is_some_and(|entry| {
-                        entry.open() == original.original.open()
-                            && entry.relational() == original.original.relational()
-                    }));
+                return Ok(self.contains_original(original));
             }
             match &head.program_record().record {
                 WorldRecord::Branch { .. } => return Ok(false),

@@ -1,11 +1,13 @@
 //! Actual cold World custody and original Query keys admit the service phase.
 use super::*;
+use crate::domain_computation::primary_graph::provider::aftermath_causality::readmission as corrections;
 use worth_proof::CustodyReadmitted;
 
 #[derive(Debug)]
 pub enum QueryHomeCustodyReadmissionDenial {
     ProgramSupport(crate::facade::program_support::QueryProgramSupportDenial),
     Activation(super::QueryHomeProgramActivationDenial),
+    Correction(corrections::QueryHomeCorrectionLineageDenial),
     Execution(worth_execution::WorkCeilingDenial),
     World(RuntimeWorldServiceDenial<RuntimeWorldRecoveryDenial>),
     Recovery(RuntimeWorldRecoveryDenial),
@@ -115,6 +117,12 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
             return Err(QueryHomeCustodyReadmissionRefused {
                 query: self,
                 cause: QueryHomeCustodyReadmissionDenial::Activation(cause),
+            });
+        }
+        if let Err(cause) = corrections::verify(self.runtime.runtime(), execution) {
+            return Err(QueryHomeCustodyReadmissionRefused {
+                query: self,
+                cause: QueryHomeCustodyReadmissionDenial::Correction(cause),
             });
         }
         if let Err(cause) = self.admit_original_custody(execution) {
