@@ -90,3 +90,5 @@ pub(crate) use scope_refusal::{run_admitting_scope, ScopeKernelFailure};
 pub(crate) use port::run_native_batch_with_charge;
 pub(crate) use port::run_owned_batch_perturbed_for_test;
 pub(crate) use port::{run_owned_native_batch, run_owned_native_batch_perturbed_for_test};
+
+pub(crate) use meter::active_cancelled;

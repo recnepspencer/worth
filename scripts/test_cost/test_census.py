@@ -7,7 +7,7 @@ import unittest
 
 from census import collect, includes_scheduled_selection, markdown
 from ratchet import source_violations
-from ratchet import build_violations
+from ratchet import build_violations, compiler_observations
 from compiler_units import declarations
 from logs import read_lane
 from test_compiler_units import event as compiler_event, graph, unit
@@ -27,6 +27,31 @@ class CensusFixtureTests(unittest.TestCase):
             self.assertEqual({row['package'] for row in source_violations(scoped['source_sites'])}, {'owner'})
             complete = collect(root/'Cargo.toml', root)
             self.assertEqual({row['package'] for row in source_violations(complete['source_sites'])}, {'owner', 'other'})
+
+    def test_warm_census_validates_reused_inputs_without_charging_another_compile(self):
+        row = unit('dependency')
+        cached = dict(compiler_event(row), reason='compiler-artifact', fresh=True)
+        marker = {'type': 'cargo-invocation', 'mode': 'check', 'cargo_profile': 'dev',
+                  'unit_plan': {'units': declarations(graph(row)), 'compiler_inputs': 'native-flags'}}
+        for warm in (False, True):
+            for changed in (False, True):
+                with self.subTest(warm=warm, changed=changed), tempfile.TemporaryDirectory() as temporary:
+                    root = Path(temporary)
+                    manifest = root/'Cargo.toml'
+                    manifest.write_text('[package]\nname="fixture-court-runtime"\nversion="0.1.0"\n')
+                    path = root/'lane.log'
+                    first = dict(cached, fresh=warm)
+                    next_marker = dict(marker, unit_plan={**marker['unit_plan'],
+                        'compiler_inputs': 'extra-lint-flag' if changed else 'native-flags'})
+                    path.write_text('\n'.join(map(json.dumps, [marker, first, next_marker, cached])))
+                    census = collect(manifest, root, [('lane', path)])
+                    lane = census['lanes']['lane']
+                    observed = compiler_observations(census['lanes'].values(), path)
+                    result = build_violations(observed, {'max_compiles_per_unit': 1})
+                    self.assertEqual([r['kind'] for r in result],
+                                     ['unplanned-compiler-input-drift'] if changed else [])
+                    self.assertEqual(len(lane['artifacts']), 0 if warm else 1)
+                    self.assertEqual(len(lane['reused_artifacts']), 2 if warm else 1)
 
     def test_failed_attempt_inventory_does_not_change_fresh_artifact_measure(self):
         with tempfile.TemporaryDirectory() as temporary:

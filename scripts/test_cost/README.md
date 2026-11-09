@@ -48,7 +48,58 @@ workspace subdirectory of PATH. Filtered runs prove only their selected subset. 
 not evidence that those tests executed: `executed-coverage.json` separately
 compares terminal observations with the requested identities.
 
+## Complete root qualification
+
+Run `python3 scripts/ci/query_gate.py root-landing` (equivalently
+`python3 scripts/ci/root_gate.py`) from the repository checkout. This supported
+entry selects every nonignored root category and doctest, builds compiler and
+proof prerequisites once outside court processes, and supplies
+`WORTH_PREBUILT_COMPILER_OUTCOMES` and `WORTH_PREBUILT_PROOF` before executing
+selected compiler/proof courts. Query uses `query-landing` with the same owner.
+
+Raw `cargo test`/`cargo nextest run` without the outer prebuild is not full
+qualification: compiler/proof courts deliberately refuse missing receipts.
+Do not interpret those refusals as product failures, skip those courts or run
+Cargo inside a court. Use the supported entry above. Focused run_lane selection
+also derives the required prerequisites from the actual selected test identities.
+
+The foreign-schema consumer court uses its real consumer workspace check
+session, including all three successful counterparts, prepared by the outer
+runner; the court itself only reads attributed receipts.
+
+## Compiler diagnostics and recording
+
+Native builds and compiler prebuilds inherit the same committed rustflags.
+`--verbose` is declared once in `.cargo/config.toml`: full concrete types keep
+compiler diagnostics independent of random `.long-type-*` output filenames.
+The prebuilder adds no presentation flags and does not suppress dead-code
+warnings. Changing this shared configuration invalidates existing compiler
+caches once; the unit-input drift and duplicate-graph checks remain enabled.
+
+Review stale diagnostics with the owning recorder, using the actual receipt
+channel supplied by the outer prebuilder:
+
+```text
+cargo run -p worth-testkit-compiler --example record_denials -- path/to/fixture.rs
+cargo run -p worth-testkit-compiler --example record_denials -- --write path/to/fixture.rs
+```
+
+The default is a JSON comparison only. `--sources-from PATH` accepts an explicit
+JSON list. Recording uses the court's attribution, environment validation and
+existing complete-diagnostic masks; it refuses a compiled or unobserved source.
+The writer refuses warning-bearing output: remove incidental lint causes from
+the fixture before recording. Before writing, establish that the current denial reaches the protected action.
+A stale import or argument error is not evidence of the intended private field,
+phase or ownership boundary. Repair that fixture and demonstrate a killing
+mutation before accepting its new snapshot.
+
 ## Ownership and enforcement
+
+Fresh Cargo artifacts are retained as `reused_artifacts` for compiler-input validation. They do not consume a compilation allowance. Native and prebuild uses of a shared unit must agree even when both are cache hits; the retained invocation unit plan identifies the command flags and configuration behind a drift refusal.
+
+Input fingerprints follow Cargo's unit scope: trailing `cargo rustc` arguments belong to its selected roots, and incremental mode is carried by each unit's resolved profile. The complete invocation contract is still checked before execution. An incremental override without resolved profile evidence refuses rather than discarding an unknown input.
+
+The snapshot warning court scans every tracked `.stderr`. `snapshot_warning_residuals.json` names the four unchanged UI residuals filed as #117. Unlisted warnings fail; a listed file that disappears or becomes warning-free also fails, requiring its residual entry to be removed. The manifest does not filter discovery or compiler diagnostics.
 
 * `source_scan.py` and `ratchet.source_violations` refuse Cargo, cargo_metadata
   and trybuild calls in tests, courts and testkits. This check belongs here
@@ -229,3 +280,5 @@ that note to its immediately preceding error group, requires the exact fixture
 span for every group, and still compares all rendered diagnostics. An unrelated
 note, a note preceding an error, or a foreign callsite cannot supply attribution.
 Check-stage outcomes cannot use this codegen-specific route.
+
+Lane evidence may live outside the checkout with `--out` (or run_lane `--output`). Telemetry retention keeps its resolved locator; the history owner stores repository-relative names for internal captures and absolute names for external captures. The build ratchet still runs before qualification succeeds.

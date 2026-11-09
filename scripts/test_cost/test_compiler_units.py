@@ -45,6 +45,19 @@ class CompilerUnitDeclarationTests(unittest.TestCase):
             failed_unit({'package_id': linked['pkg_id'], 'target': linked['target'],
                          'message': {'level': 'error'}}, declaration)
 
+    def test_ambiguous_library_test_error_preserves_the_actual_compiler_diagnostic(self):
+        owner = unit('owner', mode='test', dependencies=[1])
+        library = unit('owner', mode='build')
+        declaration = {'units': declarations(graph(owner, library)), 'compiler_inputs': 'flags'}
+        error = {'package_id': owner['pkg_id'], 'target': owner['target'],
+                 'message': {'level': 'error', 'message': 'no rules expected outputs',
+                             'rendered': 'error: no rules expected `outputs`\n --> src/lib.rs:12:9\n'}}
+        with self.assertRaises(CompilerUnitRefusal) as refusal:
+            failed_unit(error, declaration)
+        self.assertIn('failed target does not identify exactly one', str(refusal.exception))
+        self.assertIn('error: no rules expected `outputs`', str(refusal.exception))
+        self.assertIn('src/lib.rs:12:9', str(refusal.exception))
+
     def test_cached_warning_cannot_prove_a_failed_compiler_attempt(self):
         row = unit('owner')
         with self.assertRaises(CompilerUnitRefusal):

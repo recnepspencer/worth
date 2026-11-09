@@ -3,10 +3,11 @@ mod edit;
 mod funding;
 mod iteration;
 pub(crate) mod node;
+mod plan;
 mod request;
 mod sorted;
 use crate::{ChargedBytes, ExecutionAllocationDenial, ExecutionAllocationPolicy};
-use node::{Entry, Link};
+use node::Link;
 
 /// A refused edit leaves the original root and every grant intact.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -142,7 +143,7 @@ impl<K: Ord, V> ExecutionOrderedMap<K, V> {
         if !self.contains_key(key) {
             return Ok(false);
         }
-        let root = edit::remove(&self.root, key, policy.into())?;
+        let root = edit::remove(&self.root, key, &policy)?;
         policy.check_live()?;
         self.root = root;
         Ok(true)
@@ -158,10 +159,9 @@ impl<K: Ord + Clone + ChargedBytes, V: Clone + ChargedBytes> ExecutionOrderedMap
         policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<(), ExecutionOrderedMapDenial> {
         policy.check_live()?;
-        let entry = Entry::cloned(key, value, policy.into())?;
-        let root = edit::insert(&self.root, entry, policy.into())?;
+        let root = edit::insert_measured(&self.root, key, value, &policy)?;
         policy.check_live()?;
-        self.root = Some(root);
+        self.root = root;
         Ok(())
     }
 }
@@ -175,10 +175,9 @@ impl<K: Ord + Clone, V: Clone> ExecutionOrderedMap<K, V> {
         policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<(), ExecutionOrderedMapDenial> {
         policy.check_live()?;
-        let entry = Entry::cloned_native(key, value, policy.into())?;
-        let root = edit::insert(&self.root, entry, policy.into())?;
+        let root = edit::insert_native(&self.root, key, value, &policy)?;
         policy.check_live()?;
-        self.root = Some(root);
+        self.root = root;
         Ok(())
     }
 }

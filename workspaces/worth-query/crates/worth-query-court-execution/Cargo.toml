@@ -8,6 +8,7 @@ license.workspace = true
 publish = false
 
 [dev-dependencies]
+worth-testkit-compiler = { path = "../../../../crates/worth-testkit-compiler" }
 im = "=15.1.0"
 sha2 = "0.10"
 worth-execution = { path = "../../../../crates/worth-execution" }

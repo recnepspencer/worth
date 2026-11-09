@@ -130,6 +130,30 @@ def declare(command, cwd, environment, observed):
     except (KeyError, TypeError, ValueError) as error:
         raise CompilerUnitRefusal(f'could not declare required compiler units: {error}') from error
     contract = inputs(command, cwd, environment, manifest_paths(command, cwd, graph))
+    shared = dict(contract['compiler_inputs'])
+    # Incremental mode is already part of each declared Cargo profile. Comparing
+    # the spelling of its override would invent drift for unaffected dependencies.
+    primary_flags = command[command.index('--') + 1:] if command[1:2] == ['rustc'] and '--' in command else []
+    configurations = shared['command_flags'][:-len(primary_flags)] if primary_flags else shared['command_flags']
+    effective = []
+    for value in configurations:
+        try:
+            parsed = tomllib.loads(value)
+        except tomllib.TOMLDecodeError:
+            parsed = None
+        if parsed not in ({'build': {'incremental': True}}, {'build': {'incremental': False}}):
+            effective.append(value)
+        elif any(not isinstance(row['profile'].get('incremental'), bool) for row in units):
+            raise CompilerUnitRefusal('Cargo did not declare the resolved incremental mode')
+    shared['command_flags'] = effective
+    rows = iter(units)
+    for index, unit in enumerate(graph['units']):
+        if unit['mode'] == 'run-custom-build':
+            continue
+        row = next(rows)
+        # cargo rustc's trailing arguments apply only to the selected roots.
+        row['compiler_inputs'] = digest(dict(shared, command_flags=effective +
+            (primary_flags if index in graph['roots'] else [])))
     return {'schema': 1, 'type': 'compiler-unit-plan', 'contract': contract,
             'compiler_inputs': digest(contract['compiler_inputs']), 'units': units,
             'graph': graph}

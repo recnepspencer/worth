@@ -1,25 +1,15 @@
-warning: unreachable expression
- --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/prepared_host_computed_evaluation_fields_are_private.rs:6:21
-  |
-5 |         request: loop {},
-  |                  ------- any code following this expression is unreachable
-6 |         evaluation: loop {},
-  |                     ^^^^^^^ unreachable expression
-  |
-  = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
-
 error[E0451]: fields `request`, `evaluation`, `admitted_reads`, `dependency_patch` and `diagnostics_summary` of struct `PreparedHostComputedEvaluation` are private
- --> tests/worth_court_signal_owner_services/sources/worth_signal/ui/prepared_host_computed_evaluation_fields_are_private.rs:5:9
+ --> tests/ui/prepared_host_computed_evaluation_fields_are_private.rs:5:9
   |
 4 |     let _ = PreparedHostComputedEvaluation {
   |             ------------------------------ in this type
-5 |         request: loop {},
+5 |         request: supplied(),
   |         ^^^^^^^ private field
-6 |         evaluation: loop {},
+6 |         evaluation: supplied(),
   |         ^^^^^^^^^^ private field
-7 |         admitted_reads: loop {},
+7 |         admitted_reads: supplied(),
   |         ^^^^^^^^^^^^^^ private field
-8 |         dependency_patch: loop {},
+8 |         dependency_patch: supplied(),
   |         ^^^^^^^^^^^^^^^^ private field
-9 |         diagnostics_summary: loop {},
+9 |         diagnostics_summary: supplied(),
   |         ^^^^^^^^^^^^^^^^^^^ private field

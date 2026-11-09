@@ -10,7 +10,12 @@ pub fn certification_semantic_denial(
     code: &str,
     symbols: &[&str],
 ) -> Result<(), CompilerFixtureRefusal> {
-    check_path(path.as_ref(), RequiredDiagnostic::Code(code), symbols)
+    check_path(
+        path.as_ref(),
+        RequiredDiagnostic::Code(code),
+        symbols,
+        CompilerEnvironment::Certification,
+    )
 }
 
 /// Require an explicitly uncoded certification/check error whose semantic cause
@@ -24,7 +29,36 @@ pub fn certification_uncoded_semantic_denial(
         path.as_ref(),
         RequiredDiagnostic::ExplicitNullCause(cause),
         symbols,
+        CompilerEnvironment::Certification,
     )
+}
+
+/// Require a denial in the ordinary production dependency graph.
+pub fn production_semantic_denial(
+    path: impl AsRef<Path>,
+    code: &str,
+    symbols: &[&str],
+) -> Result<(), CompilerFixtureRefusal> {
+    check_path(
+        path.as_ref(),
+        RequiredDiagnostic::Code(code),
+        symbols,
+        CompilerEnvironment::Production,
+    )
+}
+
+#[derive(Clone, Copy)]
+pub(crate) enum CompilerEnvironment {
+    Production,
+    Certification,
+}
+impl CompilerEnvironment {
+    fn name(self) -> &'static str {
+        match self {
+            Self::Production => "production",
+            Self::Certification => "certification",
+        }
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -37,6 +71,7 @@ fn check_path(
     path: &Path,
     required: RequiredDiagnostic<'_>,
     symbols: &[&str],
+    environment: CompilerEnvironment,
 ) -> Result<(), CompilerFixtureRefusal> {
     let outcomes = session::outcomes()?;
     let source = path
@@ -45,19 +80,37 @@ fn check_path(
             path: path.to_path_buf(),
             reason: error.to_string(),
         })?;
-    check_semantic_outcome(
+    check_semantic_in_environment(
         &source,
         session::fixture(outcomes, &source)?,
         required,
         symbols,
+        environment,
     )
 }
 
+#[cfg(test)]
 pub(crate) fn check_semantic_outcome(
     source: &Path,
     outcome: &serde_json::Value,
     required: RequiredDiagnostic<'_>,
     symbols: &[&str],
+) -> Result<(), CompilerFixtureRefusal> {
+    check_semantic_in_environment(
+        source,
+        outcome,
+        required,
+        symbols,
+        CompilerEnvironment::Certification,
+    )
+}
+
+pub(crate) fn check_semantic_in_environment(
+    source: &Path,
+    outcome: &serde_json::Value,
+    required: RequiredDiagnostic<'_>,
+    symbols: &[&str],
+    environment: CompilerEnvironment,
 ) -> Result<(), CompilerFixtureRefusal> {
     let fragment = match required {
         RequiredDiagnostic::Code(code) => code,
@@ -80,7 +133,7 @@ pub(crate) fn check_semantic_outcome(
         ));
     }
     let messages = denied_messages(source, outcome, RequiredEnvironment::Any)?;
-    validate_semantic_observation(outcome, messages)?;
+    validate_semantic_observation(outcome, messages, environment)?;
     let mut matched = false;
     let mut errors = 0;
     for message in messages.iter().filter(|message| {
@@ -129,6 +182,7 @@ pub(crate) fn check_semantic_outcome(
 fn validate_semantic_observation(
     outcome: &serde_json::Value,
     messages: &[serde_json::Value],
+    environment: CompilerEnvironment,
 ) -> Result<(), CompilerFixtureRefusal> {
     let fields = [
         "environment",
@@ -150,10 +204,11 @@ fn validate_semantic_observation(
             "unknown semantic observation field".into(),
         ));
     }
-    if outcome["environment"] != "certification" || outcome["proof_stage"] != "check" {
-        return Err(CompilerFixtureRefusal::InvalidPrebuild(
-            "semantic denial requires certification/check evidence".into(),
-        ));
+    if outcome["environment"] != environment.name() || outcome["proof_stage"] != "check" {
+        return Err(CompilerFixtureRefusal::InvalidPrebuild(format!(
+            "semantic denial requires {}/check evidence",
+            environment.name()
+        )));
     }
     for message in messages {
         validate_message(message).map_err(CompilerFixtureRefusal::InvalidPrebuild)?;

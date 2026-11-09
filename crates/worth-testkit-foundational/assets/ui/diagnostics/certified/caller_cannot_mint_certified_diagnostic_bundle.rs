@@ -1,6 +1,6 @@
 use worth_foundational::{
-    FoundationalCertifiedDiagnosticBundle, FoundationalDiagnosticSupportReport,
-    CurrentBasisCommitReceiptArtifact,
+    CurrentBasisCommitReceiptArtifact, FoundationalCertifiedDiagnosticBundle,
+    FoundationalDiagnosticSupportReport,
 };
 
 fn main() {
@@ -12,7 +12,7 @@ fn main() {
     };
 }
 
-fn impossible_inner() -> ! {
+fn impossible_inner<T>() -> T {
     loop {
         std::hint::spin_loop();
     }

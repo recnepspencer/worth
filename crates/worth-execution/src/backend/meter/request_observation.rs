@@ -19,3 +19,15 @@ pub(crate) fn active_deadline() -> Option<crate::MonotonicDeadline> {
             .and_then(|meter| meter.borrow().limits.deadline.clone())
     })
 }
+
+/// Cancellation-only reads do not consult clocks, accounting or scope observers.
+/// A positive result returns to the original complete consultation owner.
+pub(crate) fn active_cancelled() -> bool {
+    ACTIVE_METER.with(|active| {
+        active.borrow().last().is_some_and(|meter| {
+            let meter = meter.borrow();
+            meter.limits.tokens.iter().any(|token| token.is_cancelled())
+                || meter.checkpoint_stop == Some(super::KernelStop::Cancelled)
+        })
+    })
+}

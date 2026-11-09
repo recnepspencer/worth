@@ -4,14 +4,14 @@ use worth_foundational::{
 };
 
 fn main() {
-    let _ = FoundationalCertifiedPerformanceBundle::<FoundationalCounterBackedPerformanceReceipt<
-        FoundationalAuthoritativePerformanceClaim,
-    >> {
+    let _ = FoundationalCertifiedPerformanceBundle::<
+        FoundationalCounterBackedPerformanceReceipt<FoundationalAuthoritativePerformanceClaim>,
+    > {
         inner: impossible_inner(),
     };
 }
 
-fn impossible_inner() -> ! {
+fn impossible_inner<T>() -> T {
     loop {
         std::hint::spin_loop();
     }

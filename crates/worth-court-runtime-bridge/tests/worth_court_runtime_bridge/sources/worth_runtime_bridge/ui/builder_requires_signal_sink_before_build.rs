@@ -1,14 +1,13 @@
 use worth_runtime_bridge::facade::{
     BridgeCommittedPatchEnvelope, BridgeMappingId, BridgeMappingRegistration, CoarseRoutingMode,
     CommittedPatchSource, MappingSelector, RelationalBridgeSourceError,
-    RelationalCommittedPatchRequest, RuntimeBridgeBuilder, SignalInvalidationScope,
-    SnapshotReadContract, SnapshotReadSource, TruthPatchScope, TruthSnapshotIdentity,
-    TruthSnapshotReader,
+    RelationalCommittedPatchRequest, RuntimeBridge, SignalInvalidationScope, SnapshotReadContract,
+    SnapshotReadSource, TruthPatchScope, TruthSnapshotIdentity, TruthSnapshotReader,
 };
 
 fn registration() -> BridgeMappingRegistration {
     BridgeMappingRegistration::new(
-        BridgeMappingId::new("profile-name"),
+        BridgeMappingId::from_stable_name("profile-name"),
         TruthPatchScope::for_entity_field(
             MappingSelector::exact("user"),
             worth_foundational::facade::AspectKey::new("profile").expect("valid native aspect key"),
@@ -19,7 +18,7 @@ fn registration() -> BridgeMappingRegistration {
             worth_foundational::facade::AspectKey::new("profile").expect("valid native aspect key"),
             worth_foundational::facade::ScalarAspectType::String,
         ),
-        SignalInvalidationScope::new("signal.profile"),
+        SignalInvalidationScope::from_stable_name("signal.profile"),
         CoarseRoutingMode::Direct,
     )
 }
@@ -47,7 +46,7 @@ impl SnapshotReadSource for Source {
 }
 
 fn main() {
-    let builder = RuntimeBridgeBuilder::new()
+    let builder = RuntimeBridge::builder()
         .with_relational_source(Source)
         .register_mapping(registration());
     let _ = builder.build();

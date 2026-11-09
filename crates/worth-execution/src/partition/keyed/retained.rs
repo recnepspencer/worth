@@ -2,7 +2,7 @@
 use super::*;
 use crate::ExecutionMemoryReservation;
 pub(super) struct Members {
-    pub(super) values: BTreeSet<PartitionItemId>,
+    pub(super) values: PartitionMembers,
     _memory: Option<ExecutionMemoryReservation>,
 }
 impl Members {
@@ -12,36 +12,16 @@ impl Members {
         insert: bool,
         policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<Arc<Self>, ExecutionOrderedMapDenial> {
-        let before = old.map_or(0, |m| m.values.len());
-        let count = before
-            .checked_add(usize::from(
-                insert && old.is_none_or(|m| !m.values.contains(&item)),
-            ))
-            .ok_or(ExecutionOrderedMapDenial::CapacityOverflow)?;
-        let mut memory = if policy.uses_accounting() {
-            let bytes = (count as u64)
-                .checked_mul(member_bytes())
-                .and_then(|v| v.checked_add((size_of::<Self>() + 2 * size_of::<usize>()) as u64))
-                .ok_or(ExecutionOrderedMapDenial::CapacityOverflow)?;
-            policy.reserve_memory(bytes)?
+        let memory = if policy.uses_accounting() {
+            policy.reserve_memory((size_of::<Self>() + 2 * size_of::<usize>()) as u64)?
         } else {
             None
         };
-        let mut values = old.map_or_else(BTreeSet::new, |m| m.values.clone());
+        let mut values = old.map_or_else(PartitionMembers::default, |m| m.values.clone());
         if insert {
-            values.insert(item);
+            values.0.insert_cloned_in(&item, &(), policy)?;
         } else {
-            values.remove(&item);
-        }
-        if let Some(memory) = &mut memory {
-            let final_bytes = (values.len() as u64)
-                .checked_mul(member_bytes())
-                .and_then(|v| v.checked_add((size_of::<Self>() + 2 * size_of::<usize>()) as u64))
-                .ok_or(ExecutionOrderedMapDenial::CapacityOverflow)?;
-            // Shrinking cannot refuse: the new set already fits this hold.
-            memory
-                .resize(final_bytes)
-                .expect("a shrinking group reservation remains admitted");
+            values.0.remove_in(&item, policy)?;
         }
         Ok(Arc::new(Self {
             values,
@@ -62,7 +42,7 @@ impl<K: Ord + Clone + ChargedBytes> KeyedPartitioner<K> {
         }
         Ok(next)
     }
-    /// O(log N + affected-group members), with direct retained grants. The
+    /// O(log N + log affected-group size), with direct retained grants. The
     /// complete candidate root is published only after all allocations succeed.
     pub fn upsert_in(
         &mut self,

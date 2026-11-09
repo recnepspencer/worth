@@ -16,6 +16,12 @@ fn bridge_phase_boundaries_are_compile_time_private() {
 
 #[test]
 fn bridge_public_contracts_a_to_f_are_sealed() {
+    // Admit the phase-specific refusal before unrelated impl-list diagnostics.
+    worth_testkit_compiler::denied(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/builder_requires_relational_source_before_build.rs"
+    ))
+    .expect("relational source phase must be sealed");
     worth_testkit_compiler::denied(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/[a-f]*.rs"

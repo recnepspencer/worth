@@ -1,8 +1,10 @@
-use worth_foundational::{AspectContractRevision, AspectKey, ContractValidatedAspectValue};
+use worth_foundational::ContractValidatedAspectValue;
+
+// Probe today's actual carrier field privacy, not obsolete representation names.
+fn reconstruct(value: ContractValidatedAspectValue) -> ContractValidatedAspectValue {
+    ContractValidatedAspectValue { ..value }
+}
 
 fn main() {
-    let _worthd = ContractValidatedAspectValue {
-        key: AspectKey::new("count").unwrap(),
-        contract_revision: AspectContractRevision(1),
-    };
+    let _ = reconstruct;
 }

@@ -119,6 +119,61 @@ fn exact_old_inputs_and_current_retry() {
 fn worker_only_old_input_read() {
     exact_old_inputs(&install(true));
 }
+
+#[test]
+fn repeated_loans_in_one_admitted_producer_retain_the_same_predecessor_truth() {
+    for worker in [false, true] {
+        let host = install(worker);
+        reset(false);
+        let scope = request_scope();
+        let principal = authenticate_operator(host.installed_schema(), &scope);
+        let request = host.request(&principal, &scope);
+        settle(&request, &host).unwrap();
+        let document = edit_model(world::attach(&host), &host, &request, 2);
+        let branch = document
+            .selection(&request)
+            .unwrap()
+            .physical_endpoint()
+            .product_branch();
+        let request = host.request(&principal, &scope).on_branch(branch);
+        PROBE.with(|probe| {
+            probe.borrow_mut().around_read = Some(Box::new(|read| {
+                let first = read();
+                assert_eq!(first, Ok(Some(1)), "the first loan observes D, not C");
+                let second = read();
+                assert_eq!(
+                    second, first,
+                    "fresh authorization must merge by full truth"
+                );
+                second
+            }));
+        });
+        settle(&request, &host).unwrap();
+        PROBE.with(|probe| {
+            assert!(
+                probe.borrow().around_read.is_none(),
+                "producer ran both loans"
+            );
+            assert_eq!(probe.borrow().values.last(), Some(&Ok(Some(1))));
+        });
+        assert_eq!(
+            request
+                .query(query::first_output::Read("predecessor:a".into()))
+                .execute()
+                .unwrap()
+                .rows()[0]
+                .value,
+            9002,
+            "the read-only loans preserve the producer's declared current-value output"
+        );
+        let reads = PROBE.with(|probe| probe.borrow().values.len());
+        settle(&request, &host).unwrap();
+        PROBE.with(|probe| assert_eq!(probe.borrow().values.len(), reads));
+        host.with_host_advancement(|phase| document.close(&phase).unwrap())
+            .unwrap();
+    }
+}
+
 #[test]
 fn read_scope_mismatch_cannot_be_swallowed_by_authorized_producer() {
     let host = install(false);

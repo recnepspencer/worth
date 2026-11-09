@@ -172,7 +172,8 @@ where
             super::super::application_attempt::retained_decision_facts::StorageControl::new(
                 allocation_policy,
                 request,
-            ),
+            )
+            .with_execution(*execution),
         )
     }
 

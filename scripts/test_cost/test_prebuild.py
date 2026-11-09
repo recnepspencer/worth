@@ -29,9 +29,12 @@ class PrerequisiteOwnershipTests(unittest.TestCase):
             self.assertEqual(env, {'WORTH_PREBUILT_BANK_METADATA': 'raw.json'})
             self.assertEqual(json.loads((output / 'environment.json').read_text()), env)
 
-    def test_query_without_nested_compilation_has_no_fabricated_prerequisite(self):
+    def test_query_receipts_are_prepared_by_the_outer_runner(self):
         with tempfile.TemporaryDirectory() as temporary:
-            self.assertEqual(prepare(Path.cwd(), 'query', Path(temporary), object()), {})
+            with patch('compiler_prebuild.prepare', return_value={'WORTH_PREBUILT_COMPILER_OUTCOMES': 'query.json'}) as compiler:
+                env = prepare(Path.cwd(), 'query', Path(temporary), object())
+            compiler.assert_called_once()
+            self.assertEqual(env, {'WORTH_PREBUILT_COMPILER_OUTCOMES': 'query.json'})
 
     def test_missing_native_graph_refuses_store_preparation_before_compiler_work(self):
         with tempfile.TemporaryDirectory() as temporary:

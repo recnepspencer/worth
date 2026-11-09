@@ -137,8 +137,13 @@ fn funded_group_move_keeps_historical_routes_and_releases_every_grant() {
         Some(PartitionIdentity::new(0))
     );
     assert_eq!(
-        routing.members(PartitionIdentity::new(0)).unwrap(),
-        &BTreeSet::from([PartitionItemId(1)])
+        routing
+            .members(PartitionIdentity::new(0))
+            .unwrap()
+            .iter()
+            .copied()
+            .collect::<Vec<_>>(),
+        vec![PartitionItemId(1)]
     );
     let before = lease.charged_memory_bytes();
     assert!(matches!(

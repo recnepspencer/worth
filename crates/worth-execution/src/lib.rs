@@ -53,7 +53,8 @@ pub use backend::{
 pub use partition::{
     Bisection, BisectionDenial, BisectionQuality, ComponentDenial, ComponentEdit,
     ComponentPartitioner, KeyedDenial, KeyedEditDenial, KeyedItem, KeyedPartitioner,
-    PartitionItemId, PartitionUpdateDenial, PartitionWork, WeightedEdge, WeightedItem,
+    PartitionItemId, PartitionMembers, PartitionUpdateDenial, PartitionWork, WeightedEdge,
+    WeightedItem,
 };
 pub use pattern::{
     BackInput, DecomposeCertificationFailure, DecomposeComplete, DecomposeFailure,
