@@ -41,6 +41,9 @@ pub(super) fn discover(
         }
     }
     let Some(scope) = scope else { return Ok(None) };
+    new.retain(
+        program.physical_sources().count() * size_of::<crate::identity::data::KindId>() * 5,
+    )?;
     let kinds: BTreeSet<_> = program
         .physical_sources()
         .map(|&(kind, _, _)| kind)

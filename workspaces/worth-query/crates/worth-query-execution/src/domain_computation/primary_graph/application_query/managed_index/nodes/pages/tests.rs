@@ -14,6 +14,66 @@ use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
 
+mod chain {
+    //! Count actual immutable page identities across retained versions and key shares.
+    use super::*;
+    use std::collections::BTreeSet;
+
+    mod cost {
+        use super::*;
+        #[test]
+        fn retained_chain_pages_grow_with_touched_pages_instead_of_roster_copies() {
+            for count in [16, 256] {
+                let cancellation = CancellationSource::new();
+                let backing = request(&cancellation);
+                let execution = ExecutionRequest::serial(&backing);
+                controlled(&execution, |control| {
+                    let scratch = (0..32 * PAGE_SIZE)
+                        .map(|i| RefCell::new(Some(i as u64)))
+                        .collect::<Vec<_>>();
+                    let mut versions =
+                        vec![NodePages::from_scratch(&execution, &scratch, control)?];
+                    for step in 0..count {
+                        let mut edit = PageEdit::new(versions.last().unwrap().clone(), execution);
+                        edit.replace(step % PAGE_SIZE, Some(10000 + step as u64), control)?;
+                        versions.push(edit.seal(control)?);
+                    }
+                    let mut pages = BTreeSet::new();
+                    for version in &versions {
+                        collect(version.root.as_ref().unwrap(), &mut pages);
+                    }
+                    assert!(pages.len() <= 32 + count * 2);
+                    assert!(
+                        pages.len() < versions.len() * 32 / 2,
+                        "retaining versions must share untouched pages"
+                    );
+                    let shares = versions.clone();
+                    for version in &shares {
+                        collect(version.root.as_ref().unwrap(), &mut pages);
+                    }
+                    assert!(
+                        pages.len() <= 32 + count * 2,
+                        "sharing across keys/forks must not copy a page"
+                    );
+                    assert_eq!(versions[0].get(0, control)?, Some(&0));
+                    Ok(())
+                })
+                .unwrap();
+            }
+        }
+    }
+    fn collect(node: &Arc<Directory<u64>>, pages: &mut BTreeSet<usize>) {
+        match &node.entry {
+            Entry::Page(_) => {
+                pages.insert(Arc::as_ptr(node) as usize);
+            }
+            Entry::Branch { left, right } => {
+                collect(left, pages);
+                collect(right, pages);
+            }
+        }
+    }
+}
 mod churn;
 
 fn request(cancel: &CancellationSource) -> SerialRequest {
@@ -137,9 +197,9 @@ fn empty_inserted_page_is_pruned(
     let mut edited = PageEdit::new(original.clone(), *execution);
     edited.replace(ordinal, Some(1), control)?;
     edited.replace(ordinal, None, control)?;
-    assert_eq!(edited.get(ordinal, control)?.map(|node| *node), None);
+    assert_eq!(edited.get(ordinal, control)?.copied(), None);
     let edited = edited.seal(control)?;
-    assert_eq!(edited.get(ordinal, control)?.map(|node| *node), None);
+    assert_eq!(edited.get(ordinal, control)?.copied(), None);
     assert!(
         Arc::ptr_eq(leaf_at(original, 3), leaf_at(&edited, 3)),
         "untouched page stays shared"

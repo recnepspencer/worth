@@ -2,8 +2,7 @@
 use super::{prefix, query, schema::*};
 use std::sync::{Arc, Mutex};
 use worth_query_decl::facade::{
-    application_query::{ApplicationManagedIndexBinding, ApplicationManagedIndexColdSource},
-    application_schema::*,
+    application_query::ApplicationManagedIndexBinding, application_schema::*,
 };
 use worth_query_host::facade::application_invariants::*;
 pub(in super::super) struct CompleteNestedSource;
@@ -38,7 +37,7 @@ pub(super) fn definition() -> ApplicationInvariantDefinition<Catalog, CompleteNe
         ),
     )
     .managed_index_source(prefix::PrefixIndex::reference())
-    .managed_index_cold_sources(ApplicationManagedIndexColdSource::AdmitRebuild)
+    .managed_index_cold_sources(super::SOURCE_COLD_POLICY)
 }
 #[derive(Default)]
 pub(in super::super) struct Calls {

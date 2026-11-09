@@ -5,7 +5,6 @@ use crate::derived_relation::{
 };
 use crate::identity::data::KindId;
 use crate::validation::data::StructuralRelationRecord;
-use std::collections::BTreeSet;
 
 impl ManagedIndexSourceScope<'_> {
     pub fn ordered_predecessor(&self) -> Result<Option<EntityId>, Denial> {
@@ -23,47 +22,107 @@ impl ManagedIndexSourceScope<'_> {
         }
     }
 
-    /// No roster walk or predecessor reconstruction: only this event's own leaves.
-    /// Current before/after membership tickets retain their genuine Native loans.
+    /// An exact retained predecessor proves its prefix. Only this event's
+    /// physical leaves are acquired; a descriptive parent coordinate is insufficient.
     pub fn prepare_ordered_step(
         &self,
-    ) -> Result<
-        Vec<(
-            Option<ManagedIndexSourceOccurrence>,
-            Option<PreparedManagedIndexSourceOccurrence>,
-        )>,
-        Denial,
-    > {
+        predecessor: &Arc<dyn Any + Send + Sync>,
+    ) -> Result<Vec<(EntityId, Option<PreparedManagedIndexSourceOccurrence>)>, Denial> {
+        use super::row_read::{OccurrenceMembership, OrderedStepSupport};
         let recipe = self.program.0.ordered.ok_or(Denial::ForeignSource)?;
         let parent = self.ordered_predecessor()?.ok_or(Denial::ForeignSource)?;
         if !self.committed_available {
             return Err(Denial::RootUnavailable);
         }
-        let before = self.rows_at(true, parent);
-        let after = self.proposed();
-        let mut rows = BTreeSet::new();
-        for kind in [recipe.introduced, recipe.retired] {
-            for record in self.event_records(kind)? {
-                self.read_budget()
-                    .checkpoint(1)
+        if self.closure.scopes.contains_key(&parent) {
+            return Err(Denial::PredecessorUnavailable {
+                predecessor: parent,
+            });
+        }
+        let basis = self.interpretation.physical_basis();
+        let image = basis
+            .inner
+            .root
+            .managed_source_image
+            .get()
+            .ok_or(Denial::RootUnavailable)?;
+        image.admit_predecessor_material(
+            basis,
+            self.program,
+            parent,
+            predecessor,
+            self.interpretation.current_registration_generation()?,
+        )?;
+        let introduced = self.event_records(recipe.introduced)?;
+        let retired = self.event_records(recipe.retired)?;
+        let budget = self.read_budget();
+        let mut members = std::collections::BTreeMap::new();
+        for (records, live) in [(&introduced, true), (&retired, false)] {
+            for record in records {
+                budget
+                    .checkpoint(u64::from(usize::BITS - members.len().max(1).leading_zeros()) + 1)
                     .map_err(ReadDenial::Structural)?;
-                self.read_budget()
-                    .claim_retained((size_of::<EntityId>() * 5) as u64)
+                budget
+                    .claim_retained((size_of::<(EntityId, bool)>() * 5) as u64)
                     .map_err(ReadDenial::Structural)?;
-                rows.insert(record.target);
+                members.insert(record.target, live);
             }
         }
-        self.read_budget()
+        budget
             .claim_retained(
-                (rows.len()
-                    * size_of::<(
-                        Option<ManagedIndexSourceOccurrence>,
-                        Option<PreparedManagedIndexSourceOccurrence>,
-                    )>()) as u64,
+                (size_of::<OrderedStepSupport>()
+                    + 2 * size_of::<usize>()
+                    + members.len() * size_of::<EntityId>() * 5) as u64,
             )
             .map_err(ReadDenial::Structural)?;
-        rows.into_iter()
-            .map(|row| Ok((before.occurrence(row)?, after.prepare_occurrence(row)?)))
+        let after = self.proposed();
+        let support = Arc::new(OrderedStepSupport {
+            identity: after
+                .projection
+                .scope_identity(self.scope)?
+                .ok_or(Denial::ForeignSource)?,
+            members: members
+                .iter()
+                .filter_map(|(&row, &live)| live.then_some(row))
+                .collect(),
+            _records: (introduced, retired),
+            _retention: self.views.after.work_meter(),
+        });
+        budget
+            .claim_retained(
+                (members.len()
+                    * size_of::<(EntityId, Option<PreparedManagedIndexSourceOccurrence>)>())
+                    as u64,
+            )
+            .map_err(ReadDenial::Structural)?;
+        members
+            .into_iter()
+            .map(|(row, live)| {
+                budget.checkpoint(1).map_err(ReadDenial::Structural)?;
+                let present = if live {
+                    match after.projection.entity_kind(row) {
+                        Ok(kind) => kind == self.program.row_kind(),
+                        Err(ReadDenial::Definition(Definition::RecordUnavailable))
+                        | Err(ReadDenial::Structural(
+                            crate::validation::data::StructuralWalkDenialKind::Read(
+                                crate::validation::data::StructuralReadError::RecordUnavailable,
+                            ),
+                        )) => false,
+                        Err(cause) => return Err(cause.into()),
+                    }
+                } else {
+                    false
+                };
+                let occurrence = present.then(|| PreparedManagedIndexSourceOccurrence {
+                    occurrence: ManagedIndexSourceOccurrence {
+                        program: self.program.clone(),
+                        scope: self.scope,
+                        row,
+                    },
+                    membership: OccurrenceMembership::OrderedStep(Arc::clone(&support)),
+                });
+                Ok((row, occurrence))
+            })
             .collect()
     }
 

@@ -5,6 +5,7 @@ pub(super) fn decide(
     reader: &mut DecisionReader<'_, '_, '_, Catalog, Binding>,
     previous: &str,
     retired: Option<&str>,
+    rename: Option<&str>,
 ) -> Result<Decision, HandlerExecutionDenial> {
     let item = retired
         .map(|key| {
@@ -16,11 +17,23 @@ pub(super) fn decide(
             reader.mutation_target(&entity)
         })
         .transpose()?;
+    let rename = rename
+        .map(|key| {
+            let entity = reader.resolve_entity(ItemIdentity::at("ItemIdentity"), key.to_owned())?;
+            reader
+                .reader()
+                .require_decision_entity(&entity, Item::reference())
+                .map_err(HandlerExecutionDenial::new)?;
+            reader.field(&entity, ItemName::at("ItemName"))?;
+            reader.mutation_target(&entity)
+        })
+        .transpose()?;
     Ok(Decision {
         event: super::handler::directory(reader, "catalog")?,
         previous: Some(super::handler::directory(reader, previous)?),
         old: Vec::new(),
         item,
+        rename,
     })
 }
 
@@ -33,6 +46,7 @@ pub(super) fn apply(
         event,
         introduced,
         retired,
+        rename,
         ..
     } = input
     else {
@@ -96,6 +110,19 @@ pub(super) fn apply(
                 &created,
                 &item,
             )
+            .map_err(HandlerExecutionDenial::new)?;
+    }
+    if let Some((_, value)) = rename {
+        let target = writer
+            .projected_entity(
+                decision
+                    .rename
+                    .as_ref()
+                    .expect("append resolves prefix edit"),
+            )
+            .map_err(HandlerExecutionDenial::new)?;
+        writer
+            .write_field(&target, ItemName::at("ItemName"), value.clone().into())
             .map_err(HandlerExecutionDenial::new)?;
     }
     if let Some(key) = retired {

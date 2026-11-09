@@ -13,6 +13,7 @@ struct ProjectionLineage {
 /// Actual endpoint preparation tied to its Source row, route and parent path.
 pub struct PreparedManagedIndexProjectionRead {
     root: ManagedIndexSourceOccurrence,
+    source_identity: Option<crate::derived_relation::DerivedRelationReadIdentity>,
     route: usize,
     anchor: EntityId,
     lineage: Option<Arc<ProjectionLineage>>,
@@ -42,7 +43,13 @@ impl ManagedIndexSourceRows<'_> {
         root: &ManagedIndexSourceOccurrence,
         route: usize,
     ) -> Result<PreparedManagedIndexProjectionRead, ReadDenial> {
-        self.admit_occurrence(root)?;
+        self.prepare_row(root)?.prepare_projection(route)
+    }
+    pub(super) fn prepare_admitted_projection(
+        &self,
+        root: &ManagedIndexSourceOccurrence,
+        route: usize,
+    ) -> Result<PreparedManagedIndexProjectionRead, ReadDenial> {
         let descriptor = self
             .projection
             .program
@@ -59,6 +66,7 @@ impl ManagedIndexSourceRows<'_> {
         )?;
         Ok(PreparedManagedIndexProjectionRead {
             root: root.clone(),
+            source_identity: self.projection.scope_identity(self.scope)?,
             route,
             anchor: root.row,
             lineage: None,
@@ -119,6 +127,7 @@ impl ManagedIndexSourceRows<'_> {
         )?;
         Ok(PreparedManagedIndexProjectionRead {
             root: parent.root.clone(),
+            source_identity: parent.source_identity.clone(),
             route,
             anchor: occurrence.entity,
             lineage: Some(lineage),
@@ -131,7 +140,16 @@ impl ManagedIndexSourceRows<'_> {
         &'borrow self,
         read: &'borrow PreparedManagedIndexProjectionRead,
     ) -> Result<&'borrow DerivedRelationData, ReadDenial> {
-        self.admit_occurrence(&read.root)?;
+        if read.root.program != *self.program() || read.root.scope != self.scope {
+            return Err(Definition::ForeignObservation.into());
+        }
+        if let Some(identity) = &read.source_identity {
+            if self.projection.scope_identity(self.scope)?.as_ref() != Some(identity) {
+                return Err(Definition::ForeignObservation.into());
+            }
+        } else {
+            self.admit_occurrence(&read.root)?;
+        }
         let route = self
             .projection
             .program

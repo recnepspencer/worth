@@ -13,6 +13,8 @@ mod host;
 #[path = "mutation.rs"]
 mod mutation;
 mod nested;
+#[cfg(test)]
+mod ordered_refusing;
 #[path = "prefix.rs"]
 mod prefix;
 mod protected;

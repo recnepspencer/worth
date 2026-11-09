@@ -6,7 +6,7 @@ use std::{collections::BTreeSet, sync::Arc};
 use worth_query_host::facade::{
     application_entry::*, primary_graph::*, runtime::ExecutionAllocationPolicy,
 };
-mod fixture;
+pub(super) mod fixture;
 use fixture::*;
 #[test]
 fn newest_event_reintroduction_and_inverse_queries_use_real_registered_sources() {

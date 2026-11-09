@@ -15,6 +15,15 @@ use worth_query_host::facade::primary_graph::*;
 pub(super) mod cost_stages;
 #[cfg(test)]
 include!("prefix/installed_version.rs");
+#[path = "prefix/definition.rs"]
+mod definition;
+#[allow(clippy::duplicate_mod, reason = "Distinct Catalog instantiations.")]
+#[path = "prefix/observations.rs"]
+mod observations;
+#[path = "prefix/predicate.rs"]
+mod predicate;
+#[path = "prefix/refinement.rs"]
+mod refinement;
 #[cfg(test)]
 #[allow(
     clippy::duplicate_mod,
@@ -24,13 +33,6 @@ include!("prefix/installed_version.rs");
 pub(super) mod source_updates;
 #[path = "prefix/storage.rs"]
 mod storage;
-
-#[path = "prefix/definition.rs"]
-mod definition;
-#[path = "prefix/predicate.rs"]
-mod predicate;
-#[path = "prefix/refinement.rs"]
-mod refinement;
 #[path = "prefix/structure.rs"]
 pub(super) mod structure;
 #[path = "prefix/summary.rs"]
@@ -88,6 +90,10 @@ pub struct Calls {
     pub(super) repeat_candidates: std::sync::atomic::AtomicBool,
     #[cfg(test)]
     pub(super) foreign_candidate: Mutex<Option<WorthQueryManagedIndexSourceSlot>>,
+    #[cfg(test)]
+    pub(super) observed_root: Mutex<Option<WorthQueryManagedIndexNodeId>>,
+    #[cfg(test)]
+    pub(super) foreign_node: Mutex<Option<WorthQueryManagedIndexNodeId>>,
     pub matched_sources: AtomicUsize,
     pub successful_matches: AtomicUsize,
     pub summary_comparisons: AtomicUsize,
@@ -101,15 +107,6 @@ pub struct Calls {
     // Consumer fixture observation, invoked only after a genuine first node write.
     pub after_first_node: Mutex<Option<Box<dyn FnOnce() + Send>>>,
     pub canonical_coordinates: Mutex<[(u32, u64, u32); OBSERVED_COORDINATES]>,
-}
-impl Calls {
-    pub fn totals(&self) -> (usize, usize, usize) {
-        (
-            self.capacity.load(Ordering::SeqCst),
-            self.builds.load(Ordering::SeqCst),
-            self.probe_validations.load(Ordering::SeqCst),
-        )
-    }
 }
 pub struct Provider(pub Arc<Calls>);
 pub(super) use definition::PrefixSourceIndex;
@@ -263,6 +260,10 @@ impl<I: PrefixSourceIndex> WorthQueryManagedIndexProvider<Catalog, I> for Provid
         for slot in sources.slots() {
             root = Some(insert_prefix_source(root, slot?, &mut storage)?);
         }
+        #[cfg(test)]
+        {
+            *self.0.observed_root.lock().unwrap() = root;
+        }
         Ok(root)
     }
     fn update(
@@ -275,6 +276,10 @@ impl<I: PrefixSourceIndex> WorthQueryManagedIndexProvider<Catalog, I> for Provid
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<Option<WorthQueryManagedIndexNodeId>, Stop> {
         self.0.updates.fetch_add(1, Ordering::SeqCst);
+        #[cfg(test)]
+        if let Some(foreign) = *self.0.foreign_node.lock().unwrap() {
+            nodes.get(foreign)?;
+        }
         #[cfg(test)]
         source_updates::record(&self.0, before, after, changes)?;
         #[cfg(test)]

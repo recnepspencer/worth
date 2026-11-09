@@ -10,7 +10,7 @@ impl<'borrow, 'scope, 'authority> Projector<'borrow, 'scope, 'authority> {
     pub(super) fn acquire(
         &mut self,
         program: &ManagedIndexSourceProgram,
-        root: &ManagedIndexSourceOccurrence,
+        root_read: &PreparedManagedIndexSourceRowRead<'_, '_>,
         index: usize,
         parent_path: &str,
         parent: Option<(
@@ -30,7 +30,7 @@ impl<'borrow, 'scope, 'authority> Projector<'borrow, 'scope, 'authority> {
                 DerivedRelationDenial::InvalidExpression,
             ))?;
         let read = match parent {
-            None => self.rows.prepare_projection(root, index)?,
+            None => root_read.prepare_projection(index)?,
             Some((read, occurrence)) => self
                 .rows
                 .prepare_nested_projection(read, occurrence, index)?,

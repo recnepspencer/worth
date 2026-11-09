@@ -25,8 +25,28 @@ where
                 {
                     return Err(Denial::ForeignSource);
                 }
-                let changed = scope.prepare_ordered_step()?;
-                self.update_changed(execution, &scope, payload, &changed, true)?
+                match scope.prepare_ordered_step(payload) {
+                    Ok(step) => {
+                        let changed = step
+                            .into_iter()
+                            .map(|(entity, after)| {
+                                (
+                                    root.rows
+                                        .entry(entity)
+                                        .map(|entry| entry.occurrence.clone()),
+                                    after,
+                                )
+                            })
+                            .collect::<Vec<_>>();
+                        self.update_changed(execution, &scope, payload, &changed, true)?
+                    }
+                    Err(Denial::PredecessorUnavailable { .. })
+                        if self.cold == Cold::AdmitRebuild =>
+                    {
+                        self.cold(execution, &scope, &scope.proposed())?
+                    }
+                    Err(cause) => return Err(cause),
+                }
             }
             (Some(predecessor), None) if self.cold == Cold::Refuse => {
                 return Err(Denial::PredecessorUnavailable { predecessor })

@@ -110,7 +110,7 @@ impl PersistentSourceRows {
                 rows,
                 occurrence,
                 graph,
-                Some(ProjectionMembership::Forward(&support)),
+                ProjectionMembership::Forward(&support),
             )?;
             if entries.contains_key(&entity) {
                 return Err(ManagedIndexSourcePreparationDenial::ForeignSource.into());
@@ -222,7 +222,7 @@ impl PersistentSourceRows {
                     &after,
                     proposed.occurrence().clone(),
                     graph,
-                    Some(ProjectionMembership::Inverse(proposed)),
+                    ProjectionMembership::Inverse(proposed),
                 )?;
                 dependencies.insert_entry(entity, &entry.dependencies, execution)?;
                 entries

@@ -2,7 +2,9 @@
 use super::schema::*;
 use worth_query_decl::facade::{application_operation::*, application_schema::*, *};
 use worth_query_host::facade::primary_graph::*;
+#[path = "history/append.rs"]
 mod append;
+#[path = "history/handler.rs"]
 mod handler;
 pub(super) use handler::Handler;
 #[derive(Clone, Debug, serde::Serialize)]
@@ -11,6 +13,7 @@ pub enum Edit {
         event: String,
         previous: String,
         introduced: Option<(String, String)>,
+        rename: Option<(String, String)>,
         retired: Option<String>,
     },
     Previous {
@@ -47,6 +50,7 @@ pub struct Decision {
     previous: Option<Target<Directory>>,
     old: Vec<Target<Directory>>,
     item: Option<Target<Item>>,
+    rename: Option<Target<Item>>,
 }
 worth_query_structured_value_binding!(pub InputBinding for Edit { identity:"event-catalog.history.input.v1" });
 worth_query_structured_value_binding!(pub ResultBinding for Changed { identity:"event-catalog.history.result.v1" });
@@ -76,6 +80,7 @@ pub(super) fn declare(
         .operation_read_entity(op, Item::reference())
         .operation_read_field(op, DirectoryIdentity::at("DirectoryIdentity"))
         .operation_read_field(op, ItemIdentity::at("ItemIdentity"))
+        .operation_read_field(op, ItemName::at("ItemName"))
         .operation_create(op, Directory::reference())
         .operation_create(op, Item::reference())
         .operation_write(op, DirectoryIdentity::at("DirectoryIdentity"))

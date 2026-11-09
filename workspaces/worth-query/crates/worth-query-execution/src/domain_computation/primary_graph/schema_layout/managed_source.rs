@@ -30,7 +30,7 @@ pub(in crate::domain_computation::primary_graph) struct ManagedSource {
     pub(in crate::domain_computation::primary_graph) cold: Cold,
 }
 
-fn requirements(schema: &ErasedApplicationSchemaDeclaration) -> BTreeMap<&str, Cold> {
+pub(super) fn requirements(schema: &ErasedApplicationSchemaDeclaration) -> BTreeMap<&str, Cold> {
     let mut required = BTreeMap::new();
     for member in schema.members() {
         let requirement = match member {

@@ -9,7 +9,7 @@ mod selection;
 mod work_attribution;
 type Principal = WorthQueryAuthenticatedExternalPrincipal<Catalog>;
 
-fn invoice<T>(operation: impl FnOnce() -> T) -> (T, u64) {
+pub(in super::super) fn invoice<T>(operation: impl FnOnce() -> T) -> (T, u64) {
     invoice_observing(|_| {}, operation)
 }
 fn invoice_observing<T>(
@@ -233,3 +233,5 @@ fn authenticate(world: &host::Host, scope: &WorthQueryRequestScope) -> Principal
     )
     .unwrap()
 }
+
+mod ordered_chain;

@@ -3,6 +3,45 @@ use super::*;
 use std::sync::atomic::Ordering;
 
 #[test]
+fn ordered_birth_cannot_use_a_predecessor_changed_in_the_same_candidate() {
+    let (world, calls, _, mut key) = setup();
+    let builds = calls.builds.load(Ordering::SeqCst);
+    edit_history(
+        &world,
+        &mut key,
+        history::Edit::Append {
+            event: "E".into(),
+            previous: "A".into(),
+            introduced: None,
+            retired: None,
+            rename: Some(("x".into(), "new-prefix".into())),
+        },
+    );
+    assert_eq!(calls.builds.load(Ordering::SeqCst), builds + 1);
+    let scope = authentication::request_scope();
+    let principal = authentication::block_on(
+        authentication::admit(world.installed_schema()).authenticate(
+            authentication::LocalCredential::issued_for_model_owner(),
+            &scope,
+        ),
+    )
+    .unwrap();
+    let request = world
+        .runtime()
+        .request(&principal, &scope)
+        .on_branch(world.current_world());
+    let indexed = request.query(find("E", "")).execute().unwrap();
+    let cold = request
+        .query(query::ReadSource {
+            directory: "E".into(),
+        })
+        .execute()
+        .unwrap();
+    assert_eq!(indexed.rows(), cold.rows());
+    assert_eq!(indexed.rows()[0].name, "new-prefix");
+}
+
+#[test]
 fn ordered_birth_applies_only_its_step_and_preserves_the_predecessor() {
     let (world, calls, _, mut key) = setup();
     let builds = calls.builds.load(Ordering::SeqCst);
@@ -11,6 +50,7 @@ fn ordered_birth_applies_only_its_step_and_preserves_the_predecessor() {
         &world,
         &mut key,
         history::Edit::Append {
+            rename: None,
             event: "E".into(),
             previous: "A".into(),
             introduced: Some(("e".into(), "match-e".into())),
@@ -74,6 +114,7 @@ fn refused_birth_releases_its_edit_and_preserves_the_retained_predecessor() {
     let refused = request
         .advanced()
         .mutate(history::Edit::Append {
+            rename: None,
             event: "E".into(),
             previous: "A".into(),
             introduced: Some(("e".into(), "forbidden".into())),
@@ -100,6 +141,7 @@ fn refused_birth_releases_its_edit_and_preserves_the_retained_predecessor() {
         &world,
         &mut key,
         history::Edit::Append {
+            rename: None,
             event: "E".into(),
             previous: "A".into(),
             introduced: Some(("e".into(), "match-e".into())),

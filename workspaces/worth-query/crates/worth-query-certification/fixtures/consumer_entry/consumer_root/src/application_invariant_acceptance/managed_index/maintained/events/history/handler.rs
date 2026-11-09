@@ -42,10 +42,18 @@ fn decide(
     reader: &mut Reader<'_, '_, '_>,
 ) -> Result<Decision, HandlerExecutionDenial> {
     if let Edit::Append {
-        previous, retired, ..
+        previous,
+        retired,
+        rename,
+        ..
     } = input
     {
-        return super::append::decide(reader, previous, retired.as_deref());
+        return super::append::decide(
+            reader,
+            previous,
+            retired.as_deref(),
+            rename.as_ref().map(|(item, _)| item.as_str()),
+        );
     }
     let name = match input {
         Edit::Append { .. } => unreachable!(),
@@ -59,6 +67,7 @@ fn decide(
         previous: None,
         old: Vec::new(),
         item: None,
+        rename: None,
     };
     match input {
         Edit::Append { .. } => unreachable!(),

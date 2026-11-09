@@ -124,7 +124,7 @@ impl ManagedDerivedViewRegistry {
             let retained = retained.as_ref().and_then(|entry| entry.payload());
             let predecessor = if retained.is_none() && scope.scope_exists()? {
                 match scope.ordered_predecessor()? {
-                    Some(parent) if !source.scopes().any(|other| other.scope() == parent) => image
+                    Some(parent) => image
                         .as_ref()
                         .map(|image| image.payload().retained(source.program(), parent))
                         .transpose()?
