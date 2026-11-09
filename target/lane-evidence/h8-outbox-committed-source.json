@@ -1,0 +1,128 @@
+{
+  "base": "5d41be299030a2e9d90dae61dfc36da9a86cb385",
+  "head": "5791602d5695b03ce24b12f5d8c30ca4ced015b8",
+  "reviewed_tree": "29927be5dfe465576ce704b09d06317c68fe68b4",
+  "committed_tree_matches_reviewed": true,
+  "paths": [
+    {
+      "path": "docs/capability-index.md",
+      "git_blob": "66b183f687496441f712bee8266202dcbb38f13e",
+      "raw_sha256": "7fc01fe36a057a29082a0d25d44b7b2e7297574620cda1ad72e22ebe379906dc"
+    },
+    {
+      "path": "workspaces/worth-query-bank-world/crates/worth-query-bank-court-external-rail-server/tests/worth_query_bank_court_external_rail_server/process/server_owned_effects/server/ordinary_mutations/estate_operations/c4_retry_outbox_rebind/mod.rs",
+      "git_blob": "9759c5c20ada23beb92a13238ce8fbc771c2cebc",
+      "raw_sha256": "6589cb7e4a155f456424678252f3baa275a13c496408fe17816de033d9c2c5e1"
+    },
+    {
+      "path": "workspaces/worth-query/Cargo.lock",
+      "git_blob": "78b1a97df0a3775800278682aad387320a338f03",
+      "raw_sha256": "82904a64ef9b9662ed5cc56d009830bffe5b04c5422e9b42078040df6f4d0c98"
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-execution/Cargo.toml",
+      "git_blob": "d793f2683ba36f4dc11418b5d9ceaea9f9d7709b",
+      "raw_sha256": "273136770d1750b8c4a2fcc24e3c9d077af51030bef82c306042dee122621d2e"
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/application_aftermath/external_effect/outbox.rs",
+      "git_blob": "936ffca4a32013564d14ba375767bd0e34aa1f89",
+      "raw_sha256": "348c130378c7e60a32d87491401501fda8ec3606d2055f831749193907124e53"
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/idempotency/recorded_intent.rs",
+      "git_blob": "02c8a49c0c07ca8b14cd6736d4907e5454871dc1",
+      "raw_sha256": "9e4a09507f99909c8632f4e962c89cf7fd90dd48b6f2ffe77be0c57712729f67"
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/idempotency/recorded_intent_tests.rs",
+      "git_blob": "2efe61282a7b6f7f832fea8538d8b1622e1131f9",
+      "raw_sha256": "0adcc171704b68f67031c3f59711f557e2db19e3e76d691c3cf7321f2ae7a53d"
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/installation/graph_publication.rs",
+      "git_blob": "0145ccf0f1b41996665272a0da9e4f8a2cab1389",
+      "raw_sha256": "fb3a22fe0f22f1d711f5e4f88cb6b7624acaeb7b228f3cd9be534f1acaed318b"
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/installation/home_attachment.rs",
+      "git_blob": "3e3d9f0b4019f60cca59f9357cee92f145a5bcc5",
+      "raw_sha256": "1a8acd088cb31add9503f660f0605803d253eb5633dece11c630a835048d643c"
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider.rs",
+      "git_blob": "7f92696dc2f6b07159879237ad0c41bc5ebe3349",
+      "raw_sha256": "713f0875505b99ad2c6e95c49db66089ab543b117485619ff2cf88a7cde34b6b"
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/committed_dispatch_outbox.rs",
+      "git_blob": "d5377da18a819994c603bae0ec88b6fccb5087cf",
+      "raw_sha256": "11bc15ae9a808131a5496385da688c2d68f1eff90bda573e424c1c7066542ecf"
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/committed_dispatch_outbox/original_row.rs",
+      "git_blob": "e56f2fd22a6b227971a1f57c830112e7052f8bf3",
+      "raw_sha256": "9fca1852c71afda474fc2f04f88d373d77602a52080376ad770688d4b84d4e90"
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/committed_dispatch_outbox/record_read.rs",
+      "git_blob": "42cf33a422d1347f96ff9f5043a0804a408b7765",
+      "raw_sha256": "eb42b08193799144a456122373c86f04425a358af1e0b7fec76f5dec56c70c3a"
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/committed_dispatch_outbox/restoration.rs",
+      "git_blob": "49be0db9f5df454facc0bf79702f9314948bb85f",
+      "raw_sha256": "f148fe949b1bb82120375c952e990d1584aef5125ef57deb1bc103f3ed95e2fa"
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/committed_dispatch_outbox/restoration_tests.rs",
+      "git_blob": "346bd771969052ed181117721edc25002e77af3e",
+      "raw_sha256": "4ca3f52bf3353c070433cd458c414c66de3ce3645ca773abaacf432f3773f25a"
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/idempotency/snapshot_resolution/original_receipt.rs",
+      "git_blob": "0809452178a57cbd9cbd360ea8d51677801ac365",
+      "raw_sha256": "d63018116c05ef41243c554de90f18639720fd9a0f4b8422458a90ec49120d7d"
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/idempotency/snapshot_resolution/original_receipt/outbox.rs",
+      "git_blob": "02467c5926c38eb67d672ce4fea448133bc7e224",
+      "raw_sha256": "79db08b2d133843003d7ecbe16e4c875729af95e2b82c7eac2df8d10d83f2ef4"
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/idempotency/snapshot_resolution/original_receipt/outbox/tests.rs",
+      "git_blob": "2c3d15c2385e5823bcd5424bf48348fe7a564b3d",
+      "raw_sha256": "4a46ffaed24f07b105aedeb7db6ce5eacc87d01ef630fd346fcb79b454833f33"
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/idempotency/snapshot_resolution/original_receipt/outbox/tests/installation.rs",
+      "git_blob": "89316a197c8f6a66eaacbfb2bf7a6fe8cfeadd99",
+      "raw_sha256": "dc237da57283071720f95c39cfd57d2726e9a842ad2d8824888e08af9a3c2c45"
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/idempotency/snapshot_resolution/original_receipt/sealing.rs",
+      "git_blob": "db70dec0732fb1fea38a52efe5b6e91446e1af8e",
+      "raw_sha256": "f46e850d4f518e47596d88785baac91c6123866c9879b7f7cdf892e5d2d6b59b"
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/idempotency/snapshot_resolution/source_receipt.rs",
+      "git_blob": "f3bd55f1f541c8681221c49d3b0cd70b2f840dea",
+      "raw_sha256": "97c8e7e9c2a6c14f3c849425d1bbf1b982d055989c502e10c1e947fe66282689"
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/installation.rs",
+      "git_blob": "c4a8066989e5951299189474af8f57eee4821295",
+      "raw_sha256": "53381f192dc42301d67782a5bc348aa75825309eda536909d4b82e394f47d294"
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-testkit-installation/src/installation/mod.rs",
+      "git_blob": "d9af38747af30136683fab49b814ccf1bdea35c0",
+      "raw_sha256": "3af200220a3b788924888d089517c98738f3f4f343695fe29acc28966d7c19c5"
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-testkit-installation/src/installation/outbox_contract_installation.rs",
+      "git_blob": "82e90957783f5bdbf367254eddc91459dc90f898",
+      "raw_sha256": "3454f45446299cfb9c61d49d5488ea760f40d636ede14555d5d6c785f233d46c"
+    }
+  ]
+}

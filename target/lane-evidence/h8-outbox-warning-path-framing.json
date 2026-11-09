@@ -1,0 +1,754 @@
+{
+  "baseline": "deferred-geometry-native-round2-check.log",
+  "current": "h8-outbox-query-round2-check.log",
+  "baseline_distinct": 32,
+  "current_distinct": 32,
+  "added": [
+    [
+      "associated function `resident_for_request` is never used",
+      "dead_code",
+      [
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\cell\\resident_full.rs",
+          16,
+          42
+        ]
+      ]
+    ],
+    [
+      "function `evidence` is never used",
+      "dead_code",
+      [
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\authority\\mutation\\canonical_deltas\\revision_input.rs",
+          50,
+          4
+        ]
+      ]
+    ],
+    [
+      "function `write_original_aspect_version` is never used",
+      "dead_code",
+      [
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\authority\\mutation\\aspect_versions\\original.rs",
+          2,
+          39
+        ]
+      ]
+    ],
+    [
+      "function `delete_entity_with_cascade_original` is never used",
+      "dead_code",
+      [
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\authority\\mutation\\record_changes\\entity_deletion.rs",
+          71,
+          39
+        ]
+      ]
+    ],
+    [
+      "function `write_original_field_versions_for_binding` is never used",
+      "dead_code",
+      [
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\authority\\mutation\\field_versions\\original.rs",
+          7,
+          39
+        ]
+      ]
+    ],
+    [
+      "function `apply_original` is never used",
+      "dead_code",
+      [
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\authority\\mutation\\intents\\bulk_create_entities\\original.rs",
+          4,
+          48
+        ]
+      ]
+    ],
+    [
+      "associated function `new` is never used",
+      "dead_code",
+      [
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\runtime\\state\\subsystems\\services\\symbol_table\\mutation_input.rs",
+          37,
+          19
+        ]
+      ]
+    ],
+    [
+      "method `retained_text` is never used",
+      "dead_code",
+      [
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\symbols\\data\\symbol_text_lookup.rs",
+          7,
+          8
+        ]
+      ]
+    ],
+    [
+      "struct `OriginalSymbolMeanings` is never constructed",
+      "dead_code",
+      [
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\runtime\\state\\subsystems\\services\\symbol_table\\mutation_input.rs",
+          32,
+          19
+        ]
+      ]
+    ],
+    [
+      "associated items `from_original_root_partitions` and `into_original_root_partitions` are never used",
+      "dead_code",
+      [
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\overlay\\working_state\\request_mutation.rs",
+          34,
+          19
+        ],
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\overlay\\working_state\\request_mutation.rs",
+          50,
+          19
+        ]
+      ]
+    ],
+    [
+      "function `dispatch_original_intent` is never used",
+      "dead_code",
+      [
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\authority\\mutation\\intents\\dispatch.rs",
+          69,
+          15
+        ]
+      ]
+    ],
+    [
+      "method `finish_mutation` is never used",
+      "dead_code",
+      [
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\runtime\\state\\subsystems\\record_identity\\allocation_batch.rs",
+          27,
+          8
+        ]
+      ]
+    ],
+    [
+      "function `apply_original` is never used",
+      "dead_code",
+      [
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\authority\\mutation\\intents\\bulk_create_relations\\original.rs",
+          3,
+          48
+        ]
+      ]
+    ],
+    [
+      "associated function `initial_for_request` is never used",
+      "dead_code",
+      [
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\region_publication\\full.rs",
+          7,
+          19
+        ]
+      ]
+    ],
+    [
+      "function `apply_original_intents_to_working_state` is never used",
+      "dead_code",
+      [
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\authority\\mutation\\execution.rs",
+          113,
+          15
+        ]
+      ]
+    ],
+    [
+      "function `execution` is never used",
+      "dead_code",
+      [
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\authority\\mutation\\field_versions\\original.rs",
+          101,
+          4
+        ]
+      ]
+    ],
+    [
+      "struct `OriginalAdjacency` is never constructed",
+      "dead_code",
+      [
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\authority\\mutation\\execution\\original_adjacency.rs",
+          7,
+          19
+        ]
+      ]
+    ],
+    [
+      "associated function `from_entries` is never used",
+      "dead_code",
+      [
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\partition\\sparse_adjacency_table.rs",
+          124,
+          19
+        ]
+      ]
+    ],
+    [
+      "function `borrowed_deletion_binding_evidence` is never used",
+      "dead_code",
+      [
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\authority\\mutation\\canonical_deltas\\patch_authority.rs",
+          164,
+          15
+        ]
+      ]
+    ],
+    [
+      "function `context` is never used",
+      "dead_code",
+      [
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\authority\\mutation\\canonical_deltas\\revision_input.rs",
+          103,
+          4
+        ]
+      ]
+    ],
+    [
+      "associated function `from_original_commit` is never used",
+      "dead_code",
+      [
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\history\\data\\required_output_positions\\reconstruction.rs",
+          8,
+          19
+        ]
+      ]
+    ],
+    [
+      "function `original_adjacency` is never used",
+      "dead_code",
+      [
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\authority\\mutation\\execution.rs",
+          170,
+          4
+        ]
+      ]
+    ],
+    [
+      "associated items `normalize`, `add_owned`, and `install` are never used",
+      "dead_code",
+      [
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\kind_projection\\full.rs",
+          69,
+          42
+        ],
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\kind_projection\\full.rs",
+          118,
+          8
+        ],
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\kind_projection\\full.rs",
+          157,
+          8
+        ]
+      ]
+    ],
+    [
+      "method `write_original_binding_revision_stamps` is never used",
+      "dead_code",
+      [
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\authority\\mutation\\workspace\\original_revisions.rs",
+          3,
+          19
+        ]
+      ]
+    ],
+    [
+      "methods `as_slice` and `push` are never used",
+      "dead_code",
+      [
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\authority\\mutation\\execution\\original_adjacency.rs",
+          12,
+          19
+        ],
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\authority\\mutation\\execution\\original_adjacency.rs",
+          15,
+          19
+        ]
+      ]
+    ],
+    [
+      "associated function `new_for_request` is never used",
+      "dead_code",
+      [
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\branch\\root_region.rs",
+          27,
+          30
+        ]
+      ]
+    ],
+    [
+      "function `apply_original` is never used",
+      "dead_code",
+      [
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\authority\\mutation\\intents\\replace_entity.rs",
+          19,
+          15
+        ]
+      ]
+    ],
+    [
+      "struct `OriginalRecordAllocationCursor` is never constructed",
+      "dead_code",
+      [
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\runtime\\state\\subsystems\\record_identity\\original_cursor.rs",
+          18,
+          19
+        ]
+      ]
+    ],
+    [
+      "function `apply_original` is never used",
+      "dead_code",
+      [
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\authority\\mutation\\intents\\delete_entity.rs",
+          25,
+          15
+        ]
+      ]
+    ],
+    [
+      "function `arc_bytes` is never used",
+      "dead_code",
+      [
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\storage\\residency\\cell\\resident_full.rs",
+          6,
+          4
+        ]
+      ]
+    ],
+    [
+      "function `write_original_revision_stamps` is never used",
+      "dead_code",
+      [
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\authority\\mutation\\canonical_deltas\\revision_input.rs",
+          14,
+          15
+        ]
+      ]
+    ],
+    [
+      "associated function `new` is never used",
+      "dead_code",
+      [
+        [
+          "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\crates\\worth-relational\\src\\runtime\\state\\subsystems\\record_identity\\original_cursor.rs",
+          25,
+          19
+        ]
+      ]
+    ]
+  ],
+  "removed": [
+    [
+      "function `write_original_field_versions_for_binding` is never used",
+      "dead_code",
+      [
+        [
+          "crates\\worth-relational\\src\\authority\\mutation\\field_versions\\original.rs",
+          7,
+          39
+        ]
+      ]
+    ],
+    [
+      "function `apply_original` is never used",
+      "dead_code",
+      [
+        [
+          "crates\\worth-relational\\src\\authority\\mutation\\intents\\delete_entity.rs",
+          25,
+          15
+        ]
+      ]
+    ],
+    [
+      "associated function `resident_for_request` is never used",
+      "dead_code",
+      [
+        [
+          "crates\\worth-relational\\src\\storage\\residency\\cell\\resident_full.rs",
+          16,
+          42
+        ]
+      ]
+    ],
+    [
+      "function `write_original_aspect_version` is never used",
+      "dead_code",
+      [
+        [
+          "crates\\worth-relational\\src\\authority\\mutation\\aspect_versions\\original.rs",
+          2,
+          39
+        ]
+      ]
+    ],
+    [
+      "methods `as_slice` and `push` are never used",
+      "dead_code",
+      [
+        [
+          "crates\\worth-relational\\src\\authority\\mutation\\execution\\original_adjacency.rs",
+          12,
+          19
+        ],
+        [
+          "crates\\worth-relational\\src\\authority\\mutation\\execution\\original_adjacency.rs",
+          15,
+          19
+        ]
+      ]
+    ],
+    [
+      "function `apply_original` is never used",
+      "dead_code",
+      [
+        [
+          "crates\\worth-relational\\src\\authority\\mutation\\intents\\bulk_create_relations\\original.rs",
+          3,
+          48
+        ]
+      ]
+    ],
+    [
+      "associated items `normalize`, `add_owned`, and `install` are never used",
+      "dead_code",
+      [
+        [
+          "crates\\worth-relational\\src\\storage\\residency\\kind_projection\\full.rs",
+          69,
+          42
+        ],
+        [
+          "crates\\worth-relational\\src\\storage\\residency\\kind_projection\\full.rs",
+          118,
+          8
+        ],
+        [
+          "crates\\worth-relational\\src\\storage\\residency\\kind_projection\\full.rs",
+          157,
+          8
+        ]
+      ]
+    ],
+    [
+      "function `borrowed_deletion_binding_evidence` is never used",
+      "dead_code",
+      [
+        [
+          "crates\\worth-relational\\src\\authority\\mutation\\canonical_deltas\\patch_authority.rs",
+          164,
+          15
+        ]
+      ]
+    ],
+    [
+      "function `evidence` is never used",
+      "dead_code",
+      [
+        [
+          "crates\\worth-relational\\src\\authority\\mutation\\canonical_deltas\\revision_input.rs",
+          50,
+          4
+        ]
+      ]
+    ],
+    [
+      "method `retained_text` is never used",
+      "dead_code",
+      [
+        [
+          "crates\\worth-relational\\src\\symbols\\data\\symbol_text_lookup.rs",
+          7,
+          8
+        ]
+      ]
+    ],
+    [
+      "function `apply_original` is never used",
+      "dead_code",
+      [
+        [
+          "crates\\worth-relational\\src\\authority\\mutation\\intents\\replace_entity.rs",
+          19,
+          15
+        ]
+      ]
+    ],
+    [
+      "struct `OriginalRecordAllocationCursor` is never constructed",
+      "dead_code",
+      [
+        [
+          "crates\\worth-relational\\src\\runtime\\state\\subsystems\\record_identity\\original_cursor.rs",
+          18,
+          19
+        ]
+      ]
+    ],
+    [
+      "method `finish_mutation` is never used",
+      "dead_code",
+      [
+        [
+          "crates\\worth-relational\\src\\runtime\\state\\subsystems\\record_identity\\allocation_batch.rs",
+          27,
+          8
+        ]
+      ]
+    ],
+    [
+      "struct `OriginalAdjacency` is never constructed",
+      "dead_code",
+      [
+        [
+          "crates\\worth-relational\\src\\authority\\mutation\\execution\\original_adjacency.rs",
+          7,
+          19
+        ]
+      ]
+    ],
+    [
+      "function `original_adjacency` is never used",
+      "dead_code",
+      [
+        [
+          "crates\\worth-relational\\src\\authority\\mutation\\execution.rs",
+          170,
+          4
+        ]
+      ]
+    ],
+    [
+      "function `execution` is never used",
+      "dead_code",
+      [
+        [
+          "crates\\worth-relational\\src\\authority\\mutation\\field_versions\\original.rs",
+          101,
+          4
+        ]
+      ]
+    ],
+    [
+      "associated function `initial_for_request` is never used",
+      "dead_code",
+      [
+        [
+          "crates\\worth-relational\\src\\storage\\residency\\region_publication\\full.rs",
+          7,
+          19
+        ]
+      ]
+    ],
+    [
+      "associated function `from_original_commit` is never used",
+      "dead_code",
+      [
+        [
+          "crates\\worth-relational\\src\\history\\data\\required_output_positions\\reconstruction.rs",
+          8,
+          19
+        ]
+      ]
+    ],
+    [
+      "associated function `new_for_request` is never used",
+      "dead_code",
+      [
+        [
+          "crates\\worth-relational\\src\\branch\\root_region.rs",
+          27,
+          30
+        ]
+      ]
+    ],
+    [
+      "method `write_original_binding_revision_stamps` is never used",
+      "dead_code",
+      [
+        [
+          "crates\\worth-relational\\src\\authority\\mutation\\workspace\\original_revisions.rs",
+          3,
+          19
+        ]
+      ]
+    ],
+    [
+      "function `apply_original` is never used",
+      "dead_code",
+      [
+        [
+          "crates\\worth-relational\\src\\authority\\mutation\\intents\\bulk_create_entities\\original.rs",
+          4,
+          48
+        ]
+      ]
+    ],
+    [
+      "associated function `new` is never used",
+      "dead_code",
+      [
+        [
+          "crates\\worth-relational\\src\\runtime\\state\\subsystems\\record_identity\\original_cursor.rs",
+          25,
+          19
+        ]
+      ]
+    ],
+    [
+      "associated function `from_entries` is never used",
+      "dead_code",
+      [
+        [
+          "crates\\worth-relational\\src\\storage\\partition\\sparse_adjacency_table.rs",
+          124,
+          19
+        ]
+      ]
+    ],
+    [
+      "function `context` is never used",
+      "dead_code",
+      [
+        [
+          "crates\\worth-relational\\src\\authority\\mutation\\canonical_deltas\\revision_input.rs",
+          103,
+          4
+        ]
+      ]
+    ],
+    [
+      "function `apply_original_intents_to_working_state` is never used",
+      "dead_code",
+      [
+        [
+          "crates\\worth-relational\\src\\authority\\mutation\\execution.rs",
+          113,
+          15
+        ]
+      ]
+    ],
+    [
+      "associated function `new` is never used",
+      "dead_code",
+      [
+        [
+          "crates\\worth-relational\\src\\runtime\\state\\subsystems\\services\\symbol_table\\mutation_input.rs",
+          37,
+          19
+        ]
+      ]
+    ],
+    [
+      "function `write_original_revision_stamps` is never used",
+      "dead_code",
+      [
+        [
+          "crates\\worth-relational\\src\\authority\\mutation\\canonical_deltas\\revision_input.rs",
+          14,
+          15
+        ]
+      ]
+    ],
+    [
+      "function `dispatch_original_intent` is never used",
+      "dead_code",
+      [
+        [
+          "crates\\worth-relational\\src\\authority\\mutation\\intents\\dispatch.rs",
+          69,
+          15
+        ]
+      ]
+    ],
+    [
+      "function `arc_bytes` is never used",
+      "dead_code",
+      [
+        [
+          "crates\\worth-relational\\src\\storage\\residency\\cell\\resident_full.rs",
+          6,
+          4
+        ]
+      ]
+    ],
+    [
+      "struct `OriginalSymbolMeanings` is never constructed",
+      "dead_code",
+      [
+        [
+          "crates\\worth-relational\\src\\runtime\\state\\subsystems\\services\\symbol_table\\mutation_input.rs",
+          32,
+          19
+        ]
+      ]
+    ],
+    [
+      "function `delete_entity_with_cascade_original` is never used",
+      "dead_code",
+      [
+        [
+          "crates\\worth-relational\\src\\authority\\mutation\\record_changes\\entity_deletion.rs",
+          71,
+          39
+        ]
+      ]
+    ],
+    [
+      "associated items `from_original_root_partitions` and `into_original_root_partitions` are never used",
+      "dead_code",
+      [
+        [
+          "crates\\worth-relational\\src\\storage\\overlay\\working_state\\request_mutation.rs",
+          34,
+          19
+        ],
+        [
+          "crates\\worth-relational\\src\\storage\\overlay\\working_state\\request_mutation.rs",
+          50,
+          19
+        ]
+      ]
+    ]
+  ]
+}

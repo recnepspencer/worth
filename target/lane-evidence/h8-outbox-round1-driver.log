@@ -1,0 +1,10 @@
+COMMAND: ["python", "target/lane-evidence/h8_outbox_validate.py"]
+HEAD: 5d41be299030a2e9d90dae61dfc36da9a86cb385
+CLEAN: false
+START: 2026-11-08T23:08:34.934511+00:00
+ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
+h8-outbox-query-check-driver: exit=101 log=C:\programming\worth worktees\worktrees\m3-host-home\target\lane-evidence\h8-outbox-query-check-driver.log
+Inspect ALL Query diagnostics before any new round
+
+END: 2026-11-08T23:14:39.157644+00:00
+EXIT: 1
