@@ -49,6 +49,26 @@ impl ApplicationCorrectionBinding<Catalog> for Note {
             bytes, expected, bounds,
         )
     }
+
+    fn recover_inverse_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<
+                Catalog,
+                Self,
+            > as worth_query_decl::facade::application_operation::ApplicationMutationBinding<
+                Catalog,
+            >>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    > {
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained(
+            bytes, expected, bounds,
+        )
+    }
     fn disclosure_parameters(
         original: &note::Input,
     ) -> Result<ApplicationQueryParameterSet<state::NoteQuery>, ApplicationCorrectionDerivationDenial>
@@ -124,6 +144,26 @@ impl ApplicationCorrectionBinding<Catalog> for Mover {
             bytes, expected, bounds,
         )
     }
+
+    fn recover_inverse_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<
+                Catalog,
+                Self,
+            > as worth_query_decl::facade::application_operation::ApplicationMutationBinding<
+                Catalog,
+            >>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    > {
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained(
+            bytes, expected, bounds,
+        )
+    }
     fn disclosure_parameters(
         original: &mover::Input,
     ) -> Result<ApplicationQueryParameterSet<state::NoteQuery>, ApplicationCorrectionDerivationDenial>
@@ -194,6 +234,26 @@ impl ApplicationCorrectionBinding<Catalog> for Motion {
         >,
         worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
     >{
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained(
+            bytes, expected, bounds,
+        )
+    }
+
+    fn recover_inverse_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<
+                Catalog,
+                Self,
+            > as worth_query_decl::facade::application_operation::ApplicationMutationBinding<
+                Catalog,
+            >>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    > {
         worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained(
             bytes, expected, bounds,
         )

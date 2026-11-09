@@ -61,3 +61,31 @@ impl RecordedEstateId {
         EstateCaseId::new(self.0)
     }
 }
+
+#[derive(Deserialize)]
+#[cfg_attr(test, derive(serde::Serialize))]
+#[serde(rename = "InstitutionId")]
+pub(super) struct RecordedInstitutionId(pub(super) u64);
+impl RecordedInstitutionId {
+    pub(super) fn restore(self) -> Option<crate::model::InstitutionId> {
+        crate::model::InstitutionId::new(self.0)
+    }
+}
+#[derive(Deserialize)]
+#[cfg_attr(test, derive(serde::Serialize))]
+#[serde(rename = "JournalEntryId")]
+pub(super) struct RecordedJournalId(pub(super) RecordedCreatedId);
+impl RecordedJournalId {
+    pub(super) fn restore(self) -> Option<crate::model::JournalEntryId> {
+        match self.0 {
+            RecordedCreatedId::Fixture(value) => crate::model::JournalEntryId::new(value),
+            RecordedCreatedId::Operation {
+                idempotency_key,
+                ordinal,
+            } => Some(crate::model::JournalEntryId::from_operation(
+                idempotency_key,
+                ordinal,
+            )),
+        }
+    }
+}

@@ -1,5 +1,7 @@
 //! Checked reconstruction of the three declared correctable source inputs.
 mod identities;
+mod inverse;
+pub(super) use inverse::{frozen, journal};
 #[cfg(test)]
 mod tests;
 use super::{

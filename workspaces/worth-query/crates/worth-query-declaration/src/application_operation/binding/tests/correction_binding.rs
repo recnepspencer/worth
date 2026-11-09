@@ -41,6 +41,23 @@ impl ApplicationCorrectionBinding<MutationSchema> for Inverse {
         )
     }
 
+    fn recover_inverse_input(
+        bytes: &[u8],
+        expected: crate::facade::application_schema::CanonicalDigestId,
+        bounds: crate::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        crate::application_operation::ApplicationEncodedInput<
+            <crate::application_aftermath::ApplicationInverseBinding<MutationSchema, Self> as crate::application_operation::ApplicationMutationBinding<
+                MutationSchema,
+            >>::InputBinding,
+        >,
+        crate::application_operation::ApplicationRetainedInputDenial,
+    >{
+        crate::application_operation::ApplicationEncodedInput::decode_retained(
+            bytes, expected, bounds,
+        )
+    }
+
     fn disclosure_parameters(
         _: &RenameInput,
     ) -> Result<

@@ -35,6 +35,27 @@ impl ApplicationCorrectionBinding<NumericSchema> for UndoCreate {
             worth_query_decl::facade::application_schema::CanonicalValueSeed::<<Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<NumericSchema>>::Input>::new(bounds),
         )
     }
+
+    fn recover_inverse_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<
+                NumericSchema,
+                Self,
+            > as worth_query_decl::facade::application_operation::ApplicationMutationBinding<
+                NumericSchema,
+            >>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    > {
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained_with_seed(
+            bytes, expected, bounds,
+            worth_query_decl::facade::application_schema::CanonicalValueSeed::<<worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<NumericSchema, Self> as worth_query_decl::facade::application_operation::ApplicationMutationBinding<NumericSchema>>::Input>::new(bounds),
+        )
+    }
     fn source_definition(
     ) -> ApplicationOperationDefinitionBuilder<NumericSchema, CreateOperation, Create, true, false>
     {
@@ -113,6 +134,27 @@ impl ApplicationCorrectionBinding<NumericSchema> for UndoRetire {
         worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained_with_seed(
             bytes, expected, bounds,
             worth_query_decl::facade::application_schema::CanonicalValueSeed::<<Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<NumericSchema>>::Input>::new(bounds),
+        )
+    }
+
+    fn recover_inverse_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<
+                NumericSchema,
+                Self,
+            > as worth_query_decl::facade::application_operation::ApplicationMutationBinding<
+                NumericSchema,
+            >>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    > {
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained_with_seed(
+            bytes, expected, bounds,
+            worth_query_decl::facade::application_schema::CanonicalValueSeed::<<worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<NumericSchema, Self> as worth_query_decl::facade::application_operation::ApplicationMutationBinding<NumericSchema>>::Input>::new(bounds),
         )
     }
     fn source_definition() -> ApplicationOperationDefinitionBuilder<

@@ -48,6 +48,19 @@ pub trait ApplicationCorrectionBinding<Schema: ApplicationSchema>: Sized + 'stat
         crate::application_operation::ApplicationRetainedInputDenial,
     >;
 
+    /// Reconstruct the exact performed inverse input for a retry as fresh DATA.
+    /// Recovery must never rerun inverse derivation to replace this input.
+    fn recover_inverse_input(
+        bytes: &[u8],
+        expected: worth_foundational::facade::CanonicalDigestId,
+        bounds: worth_foundational::facade::ValueDecodeBounds,
+    ) -> Result<
+        crate::application_operation::ApplicationEncodedInput<
+            <ApplicationInverseBinding<Schema, Self> as ApplicationMutationBinding<Schema>>::InputBinding,
+        >,
+        crate::application_operation::ApplicationRetainedInputDenial,
+    >;
+
     /// Captured while the original operation is admitted, before history becomes protected.
     fn disclosure_parameters(
         original: &<Self::Source as ApplicationMutationBinding<Schema>>::Input,

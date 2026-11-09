@@ -45,6 +45,26 @@ impl<Schema: TopologySchemaBinding> ApplicationCorrectionBinding<Schema>
         )
     }
 
+    fn recover_inverse_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<
+                Schema,
+                Self,
+            > as worth_query_decl::facade::application_operation::ApplicationMutationBinding<
+                Schema,
+            >>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    > {
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained(
+            bytes, expected, bounds,
+        )
+    }
+
     fn disclosure_parameters(
         _: &EntryCorrection,
     ) -> Result<ApplicationQueryParameterSet<PlanarQuery>, ApplicationCorrectionDerivationDenial>
