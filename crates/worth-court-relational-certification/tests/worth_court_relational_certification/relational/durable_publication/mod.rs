@@ -45,3 +45,10 @@ use worth_testkit_relational::{
 mod encoded_checkpoint_backing;
 mod partition_frontier;
 mod validation_posture;
+
+mod branch_aspect_history;
+mod branch_checkpoint_journeys;
+mod branch_endpoint_history;
+mod branch_history_publications;
+mod branch_history_recovery;
+mod definition_lookup_snapshot;

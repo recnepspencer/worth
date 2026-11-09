@@ -30,3 +30,15 @@ merge/facade exports, validation ownerunit mount, specMovedcourts entry and
 exact originalExecutionRequest baseline placement transfer (net-3rows).
 No merge, push, otherworktreeedit, queryscale, scenario or exhaustiveoracle.
 Counts thisturn sofar:0cargo check,1Clippy,4focusedbuilds,3selectedtestruns.
+
+
+## Next reviewed slice: public history and cost preservation
+
+Eight publicports8/0/0,47cost/sourcefiles(12roots+descendants+measurementhelper)
+C2 withrestoreee7aef9014 and partialhelperrefs;13non-adaptercostcampaignsremain.
+Puredefinitionlookupunitkeptowner. FreshfinalreviewAPPROVE; ledger
+landing2a-attachment-history-lanes.md/json. Newfixturewarningsallremoved,
+RootClippyonlysame32/23,fmt/context/caps15pass,7cohesivefunctionadvisories,
+boundary12nonechanged. Runtimeattachmentremainsowned; directclosure194files
+fromexactscopedsearch. The eight-case original Nativecopiesremovedonlyafterpass.
+Counts thisturn:0check/3Clippy/6focusedbuilds/4selectedruns. Activequeue unchanged.

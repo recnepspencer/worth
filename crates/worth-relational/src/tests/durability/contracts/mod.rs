@@ -1,7 +1,5 @@
-mod adjacency_checkpoint;
 mod associated_effects;
 mod associated_effects_discovery;
-mod branch_and_aspect_history;
 mod branch_root_checkpoint;
 mod branch_root_content_binding;
 mod branch_root_schema_binding;
@@ -15,7 +13,6 @@ mod declared_schema_binding;
 mod derived_index_checkpoint;
 mod descriptor_continuity;
 mod fork_provenance_checkpoint;
-mod fork_tail_after_source_moved;
 mod global_generation_reclamation;
 mod lineage_allocator_denials;
 mod lineage_artifact_recovery;

@@ -43,8 +43,6 @@ pub(crate) fn test_execution_lease() -> ExecutionResourceLease<'static> {
 pub(crate) enum PerfDiagnosticsPolicy {
     GeometryOperationalHotPath,
     GeometryRichCertification,
-    ChipOperationalHotPath,
-    ChipRichCertification,
 }
 
 pub(crate) fn apply_perf_diagnostics_policy(
@@ -57,12 +55,6 @@ pub(crate) fn apply_perf_diagnostics_policy(
         }
         PerfDiagnosticsPolicy::GeometryRichCertification => {
             RelationalDiagnosticsProfile::geometry_rich_certification()
-        }
-        PerfDiagnosticsPolicy::ChipOperationalHotPath => {
-            RelationalDiagnosticsProfile::chip_operational_hot_path()
-        }
-        PerfDiagnosticsPolicy::ChipRichCertification => {
-            RelationalDiagnosticsProfile::chip_rich_certification()
         }
     };
     runtime.configure_diagnostics_for_test(|configured| *configured = profile);

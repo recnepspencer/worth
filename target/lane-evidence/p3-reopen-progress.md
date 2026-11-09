@@ -523,3 +523,41 @@ Fresh final independent review requested. Counts0check/1Clippy/4builds/3runs.
 Fresh final independent review APPROVE, no open findings for mergehistory slice.
 Commit reviewed safe point; then runtimeattachment consumer cutover,32warnings,
 CompleteACK. No ownership/async blocker. Full logledger merge-owner-lanes.md.
+
+MERGE HISTORY LANDED ee7aef9014 with fresh APPROVE. Next8public-history ports
+prepared coherently before Cargo; allactualsource/receiver media explicit. Audit
+corrected empty-contract authoring (same emptyfields/emptyfeaturecommit), released
+same created snapshots, validated named digest/filter/outcome/observation types
+fromowners. No new observerdoor or Native adapter. Originals remain mounted.
+Nextselectedpacket8 only; no check or test invocation yet for thisslice.
+
+Historycohort first prebuild failed9 diagnostics, no tests. One family: private
+branch_head(6)/latest_commit(3) conveniences. Nearest working public analogues
+commit_surfaces.rs:12/92 and encoded_checkpoint_backing.rs:225. Fix allcalls:
+ownerissued observe_branch+branch_head_for_observation returns samefullreceipt;
+historical_latest_commit is exact shipping method oldalias delegates to. No new
+observerdoor. Counts0check/1Clippy/5builds/3runs cumulative; slice1build/0run.
+
+Publichistory8/0/0 at secondprebuild afterwholeprivateconveniencefamilyfix. All
+sameassertionsnowshippingpublicowners; firstprebuild9diagnostics/no tests.
+Remove4Nativefiles/mounts and only runtime scenario fromdefinitionlookup; pure
+matching unitstaysowner. Baseline deletesoldrows, no additions. No repeatedtest.
+Cumulative0checks/1Clippy/6focusedbuilds/4selectedruns. Slice2builds/1run.
+
+History/C2 thirdblockinground Clippy exits0,32lib/46unitwarnings:23duplicates+
+23new orphaned cost-fixture diagnostics from12moved roots. Fix ALL inonebatch:
+remove9unusedimportgroups,10unusedFintechperformance wrappers+exports (scoped
+rgfindsno type usersoutsideFintech), measurementmodule/glob, is_null predicate,
+densepatchcounter,2unconstructedChipfixturevariants+arms. C2restoreee7a refs
+includeallpartialhelpers. KeepordinaryFintechscenarios/shared13costroots.
+Fourthround Root-onlyClippy; certgreenreuse (publicAPI unchanged/testonly edits).
+No testrepeat. Cumulative0check/2Clippy/6builds/4runs beforethisfourthround.
+
+Publichistory/C2slice finalphasegatespass:8/0/0;Root/courtClippyexit0 andcleanRoot
+32lib/23duplicatestestwarnings only;fmt/context/caps15pass;7cohesiveadvisories;
+boundarysame12nonechanged(1remainingowned). FreshindependentreviewAPPROVE,
+noopenfindings. Commit8ports+12costrootsC2(47files+partialhelperspreservedee7a).
+Currentdirectproviderclosure194files (scopedrg), notallindependenttestcases.
+Continueadapterconsumers, then32warnings/CompleteACK. Noownershipblocker.
+Cumulative0check/3Clippy/6focusedbuilds/4selectedruns. Noignoredbody/oracle/scale/
+scenario/QueryStorebuild/merge/push.

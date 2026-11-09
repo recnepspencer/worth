@@ -4,7 +4,6 @@ mod checkpoint_state;
 mod fates;
 mod reconstruction;
 mod recovery;
-mod replay;
 mod tampering;
 
 use crate::branch::{

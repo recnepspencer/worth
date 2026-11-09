@@ -33,6 +33,38 @@ each invariant is enforced and where each new type lives.
 
 ### C2 - Cost and bounds: backing and work budgets
 
+The following adapter-dependent Native performance campaigns move to C2 under
+Landing 2a's cost/growth disposition. Their assertions and durable posture are
+preserved at the restore references. Restore each root's descendant modules
+from the same SHA and its shared imports from `tests/performance_profiles.rs`;
+the exact mount closures and metric/scale evidence are recorded in
+`target/lane-evidence/landing2a-performance-claim-disposition.md`. The thirteen
+campaigns outside the adapter closure remain unchanged in this tree.
+
+Campaign-only fixtures removed with those roots also restore from `ee7aef9014`:
+`tests/performance_profiles/measurement_support.rs`, `dense_patch_record_count`
+in `tests/performance_profiles/invariant_support.rs`, `PerfMetricValue::is_null`
+in `tests/performance_metrics.rs`, the ten performance adapters/exports in
+`tests/domains/fintech/mod.rs`, and the two Chip variants/arms of
+`PerfDiagnosticsPolicy` in `tests/support/runtime.rs` (paths relative to
+`crates/worth-relational/src/`). Remaining shared fixtures and all ordinary
+Fintech scenarios remain. C2 must restore these claims with actual owned durable
+media through the public testkit, preserving the claims without reviving the
+retired runtime-discovery adapters.
+
+- `perf_artifact_recoverability_matrix`: `restore from ee7aef9014:crates/worth-relational/src/tests/performance_profiles/artifact_recoverability_matrix.rs`.
+- `perf_chip_simulator_matrix`: `restore from ee7aef9014:crates/worth-relational/src/tests/performance_profiles/chip_simulator_matrix/mod.rs`.
+- `perf_commit_delta_matrix`: `restore from ee7aef9014:crates/worth-relational/src/tests/performance_profiles/commit_delta_matrix.rs`.
+- `perf_durability_append_matrix`: `restore from ee7aef9014:crates/worth-relational/src/tests/performance_profiles/durability_append_matrix.rs`.
+- `perf_geometry_kernel_matrix`: `restore from ee7aef9014:crates/worth-relational/src/tests/performance_profiles/geometry_kernel_matrix/mod.rs`.
+- `perf_hot_cold_path_matrix`: `restore from ee7aef9014:crates/worth-relational/src/tests/performance_profiles/hot_cold_path_matrix/mod.rs`.
+- `perf_index_parity_matrix`: `restore from ee7aef9014:crates/worth-relational/src/tests/performance_profiles/index_parity_matrix.rs`.
+- `perf_merge_lineage_matrix`: `restore from ee7aef9014:crates/worth-relational/src/tests/performance_profiles/merge_lineage_matrix/mod.rs`.
+- `perf_recoverability_policy_matrix`: `restore from ee7aef9014:crates/worth-relational/src/tests/performance_profiles/recoverability_policy_matrix.rs`.
+- `perf_replay_recovery_matrix`: `restore from ee7aef9014:crates/worth-relational/src/tests/performance_profiles/replay_recovery_matrix.rs`.
+- `perf_sustained_load_matrix`: `restore from ee7aef9014:crates/worth-relational/src/tests/performance_profiles/sustained_load_matrix/mod.rs`.
+- `perf_workflow_matrix`: `restore from ee7aef9014:crates/worth-relational/src/tests/performance_profiles/workflow_matrix/mod.rs`.
+
 - `request_root_refusal_preserves_original_and_releases_partial_backing`:
   `restore from 2a51552fc5:crates/worth-relational/src/branch/root_tests/request.rs`.
   Moved under the coordinator's 2026-11-09 Landing 2a ruling, not retired or
