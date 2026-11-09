@@ -1,4 +1,5 @@
 //! Derivation material belongs to the original occurrence's installed mechanism.
+pub(super) mod recorded_input;
 use super::{
     disclosure::WorthQueryCorrectionDerivationDenial as Denial, WorthQuerySelectedCorrectionSource,
 };

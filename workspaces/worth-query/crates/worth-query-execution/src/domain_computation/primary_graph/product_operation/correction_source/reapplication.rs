@@ -89,9 +89,9 @@ where
         .retained_governed_input_carrier()
         .ok_or(Denial::SemanticMaterialUnavailable)?;
     let input = retained
-        .encoded_input::<<C::Source as ApplicationMutationBinding<S>>::InputBinding>()
-        .ok_or(Denial::UnsupportedSourceMeaning)?
-        .clone();
+        .retained_input::<<C::Source as ApplicationMutationBinding<S>>::InputBinding>()
+        .ok_or(Denial::UnsupportedSourceMeaning)?;
+    let input = super::material::recorded_input::recover(input, C::recover_source_input)?;
     let scope =
         <<C::Source as ApplicationMutationBinding<S>>::Input as ApplicationMutationInputScope<
             S,

@@ -25,6 +25,18 @@ pub enum ApplicationRetainedInputDenial {
     IdentityMismatch,
     Encoding(ApplicationValueEncodeDenial),
 }
+impl ApplicationRetainedInputDenial {
+    /// Owned identity metadata retained by a native encoding refusal.
+    pub fn retained_heap_bytes(&self) -> usize {
+        match self {
+            Self::Encoding(cause) => cause.retained_heap_bytes(),
+            Self::Codec(_)
+            | Self::UnsupportedProtocol
+            | Self::BindingMismatch
+            | Self::IdentityMismatch => 0,
+        }
+    }
+}
 impl From<CanonicalInputDecodeError> for ApplicationRetainedInputDenial {
     fn from(cause: CanonicalInputDecodeError) -> Self {
         Self::Codec(cause.0)

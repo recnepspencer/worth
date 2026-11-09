@@ -43,6 +43,8 @@ and list it in the contribution's `corrections: [RecordedEdit]` declaration.
 | `authored_identity()` | The authored lifecycle family, logical-key field and exact source/inverse output roles for create/delete inversion. |
 | `completed_external_reconciliation()` | The exact reconciliation procedure authorizing business compensation of a completed external workflow operation. |
 | `disclosure_parameters(original)` | Query parameters associated with the original governed input. |
+| `recover_source_input(bytes, identity, bounds)` | Required DATA factory that decodes and validates the exact canonical source input under its original binding. |
+| `recover_inverse_input(bytes, identity, bounds)` | Required DATA factory that reconstructs the performed inverse input for retry; it does not derive another inverse. |
 | `derive_correction(original, material)` | The domain's deterministic action construction from the original input and its mechanism-specific material. |
 | `inverse_key(key)` | Fallible conversion to the inverse binding's key type, returning `Result<Key, ApplicationValueEncodeDenial>`. Validation refusals use the ordinary mutation key-identity denial. |
 | `visit(dispatch)` | Typed selection of conventional or capability admission for the inverse. |
@@ -59,6 +61,14 @@ The
 addresses the original number and applies its current read-enabled predicate.
 The [contribution](../../../worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/schema.rs)
 installs the association alongside the ordinary schema members.
+
+Original admission retains an `ApplicationRetainedInput` canonical snapshot
+before erasing the input's Rust type. Correction derivation, reapplication and
+completed-command lookup use the recorded bytes through these factories after
+fresh source disclosure. Each reconstructed value must keep the recorded input
+identity. A decoding or identity refusal remains typed as
+`OriginalInputDecode`; replacement input is never substituted. These factories
+construct DATA; fresh action admission governs its use.
 
 ## Select, prepare and publish
 

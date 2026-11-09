@@ -64,6 +64,7 @@ pub use captured_input::{
 };
 pub use encoder::CanonicalEncodingCharge;
 pub use input::ApplicationEncodedInput;
+mod retained_input;
 pub use partition::{
     application_computation_input_digest, application_computation_item_digest,
     application_computation_partition_identity, ApplicationComputationPartitionIdentity,
@@ -78,6 +79,7 @@ pub use request::{
     ApplicationMutationIdentityAdmittedDenial, ApplicationMutationIdentityDenial,
     ApplicationOwnedMutationIdentities,
 };
+pub use retained_input::ApplicationRetainedInput;
 pub use work::ApplicationCanonicalWork;
 
 use serde::Serialize;

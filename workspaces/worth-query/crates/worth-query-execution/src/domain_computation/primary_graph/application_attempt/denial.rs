@@ -34,6 +34,7 @@ enum AttemptDenialCause {
     SourceDisclosureParameters(Box<worth_query_admission::facade::application_query::WorthQueryApplicationQueryParameterDenial>),
     IndexedLookup(Box<worth_relational::facade::indexes::BoundedEntityFieldLookupDenial>),
     OutputObservation(Box<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop>),
+    RetainedInput(Box<worth_query_declaration::facade::application_operation::ApplicationRetainedInputDenial>),
     None,
     NativeQueryRead(Box<worth_relational::facade::runtime::QueryReadExecutionStop>),
     RetainedSource(Box<super::retained_decision_facts::StoreDenial>),
@@ -211,6 +212,7 @@ impl std::fmt::Display for WorthQueryApplicationAttemptDenial {
 mod unobserved_write;
 pub use unobserved_write::WorthQueryApplicationUnobservedWrite;
 mod output_observation;
+mod retained_input;
 mod source_disclosure;
 
 impl std::error::Error for WorthQueryApplicationAttemptDenial {

@@ -42,6 +42,9 @@ pub enum WorthQueryCorrectionDerivationDenial {
     MissingPreImage,
     SourceOutput(super::material::WorthQueryCorrectionOutputProjectionDenial),
     SemanticMaterialUnavailable,
+    OriginalInputDecode(
+        worth_query_declaration::facade::application_operation::ApplicationRetainedInputDenial,
+    ),
     MissingTargetParent,
     InputCapture(crate::domain_computation::primary_graph::WorthQueryOperationInputCaptureDenial),
     CommandKey(worth_query_declaration::facade::application_schema::ApplicationValueEncodeDenial),

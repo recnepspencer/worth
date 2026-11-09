@@ -99,6 +99,7 @@ fn derivation(cause: WorthQueryCorrectionDerivationDenial) -> BankHttpDenial {
         | D::ReapplicationUnavailable
         | D::MissingPreImage
         | D::SourceOutput(_)
+        | D::OriginalInputDecode(_)
         | D::SemanticMaterialUnavailable
         | D::MissingTargetParent
         | D::CommandKey(_)

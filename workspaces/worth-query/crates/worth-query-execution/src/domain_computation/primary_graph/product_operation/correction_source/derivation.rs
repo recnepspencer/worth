@@ -64,8 +64,9 @@ where
         .ok_or(Denial::UnsupportedSourceMeaning)?;
     let workflow = super::preparation::prepare_workflow::<Schema, C>(target, phase, source)?;
     let input = retained
-        .encoded_input::<<C::Source as ApplicationMutationBinding<Schema>>::InputBinding>()
+        .retained_input::<<C::Source as ApplicationMutationBinding<Schema>>::InputBinding>()
         .ok_or(Denial::UnsupportedSourceMeaning)?;
+    let input = super::material::recorded_input::recover(input, C::recover_source_input)?;
     let execution = phase
         .execution_request_for(&target.application().runtime.product_runtime)
         .map_err(|_| Denial::ForeignPhase)?;

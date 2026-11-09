@@ -72,7 +72,12 @@ pub(super) fn select_input<Schema: ApplicationSchema, C: ApplicationCorrectionBi
     let intent = WorthQueryCorrectionIntent::from_disclosed_source::<Schema, C>(
         target, source, key, &lineage,
     );
-    select_action::<Schema, ApplicationInverseBinding<Schema, C>>(observed, intent, key)
+    select_action::<Schema, ApplicationInverseBinding<Schema, C>>(
+        observed,
+        intent,
+        key,
+        C::recover_inverse_input,
+    )
 }
 
 pub(super) fn select_reapplication_input<
@@ -131,13 +136,21 @@ pub(super) fn select_reapplication_input<
         key,
         &lineage,
     );
-    select_action::<Schema, C::Source>(observed, intent, key)
+    select_action::<Schema, C::Source>(observed, intent, key, C::recover_source_input)
 }
 
 fn select_action<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>(
     observed: Observed,
     intent: WorthQueryCorrectionIntent,
     key: &WorthQueryCorrectionCommandKey,
+    factory: impl FnOnce(
+        &[u8],
+        worth_foundational::facade::CanonicalDigestId,
+        worth_foundational::facade::ValueDecodeBounds,
+    ) -> Result<
+        ApplicationEncodedInput<Binding::InputBinding>,
+        worth_query_declaration::facade::application_operation::ApplicationRetainedInputDenial,
+    >,
 ) -> Result<
     WorthQueryCorrectionActionInputSelection<Schema, Binding>,
     WorthQueryCorrectionDerivationDenial,
@@ -153,14 +166,15 @@ fn select_action<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<
                 .commit_evidence()
                 .original_authority()
                 .retained_governed_input_carrier()
-                .and_then(|retained| retained.encoded_input::<Binding::InputBinding>())
+                .and_then(|retained| retained.retained_input::<Binding::InputBinding>())
                 .ok_or(WorthQueryCorrectionDerivationDenial::SemanticMaterialUnavailable)?;
+            let input = super::material::recorded_input::recover(input, factory)?;
             if input.identity() != binding.intent_identity() {
                 return Err(WorthQueryCorrectionDerivationDenial::UnsupportedSourceMeaning);
             }
             Selection::Replay {
                 intent: intent.with_recorded_definition(&binding),
-                input: input.clone(),
+                input,
             }
         }
         Observed::Pending(Some(binding))
