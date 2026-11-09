@@ -63,7 +63,7 @@ fn ordered_predecessor_admits_only_its_own_to_one_order_relation() {
         .bind_ordered_predecessor_managed_index_source(&path, vec![], vec![])
         .unwrap();
     assert_eq!(
-        program.0.predecessor,
+        program.0.ordered.map(|recipe| recipe.predecessor),
         Some(crate::identity::data::KindId(4))
     );
     assert_eq!(

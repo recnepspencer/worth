@@ -2,10 +2,17 @@
 use super::schema::*;
 use worth_query_decl::facade::{application_operation::*, application_schema::*, *};
 use worth_query_host::facade::primary_graph::*;
+mod append;
 mod handler;
 pub(super) use handler::Handler;
 #[derive(Clone, Debug, serde::Serialize)]
 pub enum Edit {
+    Append {
+        event: String,
+        previous: String,
+        introduced: Option<(String, String)>,
+        retired: Option<String>,
+    },
     Previous {
         event: String,
         previous: Option<String>,
@@ -47,6 +54,7 @@ worth_query_structured_value_binding!(pub DenialBinding for Denial { identity:"e
 worth_query_operation!(pub EditHistory for Catalog,input InputBinding);
 worth_query_operation_reads!(EditHistory=> [Directory,Item,Previous,Retires,Contains]);
 worth_query_operation_links!(EditHistory=>[Previous,Retires,Contains]);
+worth_query_operation_creates!(EditHistory=>[Directory,Item]);
 worth_query_operation_unlinks!(EditHistory=>[Previous,Retires,Contains]);
 fn scope(_: &Edit) -> String {
     "catalog".into()
@@ -68,6 +76,12 @@ pub(super) fn declare(
         .operation_read_entity(op, Item::reference())
         .operation_read_field(op, DirectoryIdentity::at("DirectoryIdentity"))
         .operation_read_field(op, ItemIdentity::at("ItemIdentity"))
+        .operation_create(op, Directory::reference())
+        .operation_create(op, Item::reference())
+        .operation_write(op, DirectoryIdentity::at("DirectoryIdentity"))
+        .operation_write(op, ItemIdentity::at("ItemIdentity"))
+        .operation_write(op, ItemName::at("ItemName"))
+        .operation_write(op, ItemEnabled::at("ItemEnabled"))
         .operation_read_relation(op, Previous::reference())
         .operation_read_relation(op, Retires::reference())
         .operation_read_relation(op, Contains::reference())

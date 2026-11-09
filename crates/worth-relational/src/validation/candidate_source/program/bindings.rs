@@ -21,7 +21,7 @@ impl SourceBindingCache {
         path: &DerivedRelationHandle,
         fields: Vec<ManagedIndexSourceField>,
         routes: Vec<ManagedIndexSourceProjectionRoute>,
-        predecessor: Option<crate::identity::data::KindId>,
+        ordered: Option<super::ordered_predecessor::OrderedSourceRecipe>,
     ) -> Result<ManagedIndexSourceProgram, Denial> {
         let mut bindings = self
             .0
@@ -29,7 +29,7 @@ impl SourceBindingCache {
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let identity = &path.parts().identity;
         if let Some(previous) = bindings.upgrade() {
-            if previous.predecessor != predecessor
+            if previous.ordered != ordered
                 || previous.path != *path
                 || previous.fields.as_ref() != fields.as_slice()
                 || previous.routes.as_ref() != routes.as_slice()
@@ -44,7 +44,7 @@ impl SourceBindingCache {
         let program = Arc::new(SourceProgram {
             order,
             path: path.clone(),
-            predecessor,
+            ordered,
             fields: fields.into(),
             routes: routes.into(),
             issuer,

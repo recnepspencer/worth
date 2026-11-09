@@ -2,6 +2,13 @@
 use super::*;
 use crate::derived_relation::DerivedRelationNode as Node;
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) struct OrderedSourceRecipe {
+    pub(crate) predecessor: KindId,
+    pub(crate) introduced: KindId,
+    pub(crate) retired: KindId,
+}
+
 impl RelationalSchemaRegistry {
     /// Bind birth sharing through this membership's own to-one order relation.
     /// Neither a predecessor coordinate nor a provider root can be supplied here.
@@ -15,11 +22,25 @@ impl RelationalSchemaRegistry {
             return Err(Denial::ForeignDefinition);
         }
         let membership = ordered_membership(self, path)?;
-        let Some(Node::OrderedEvents { predecessor, .. }) = membership.parts().nodes.last() else {
+        let Some(Node::OrderedEvents {
+            predecessor,
+            introduced,
+            retired,
+        }) = membership.parts().nodes.last()
+        else {
             return Err(Denial::OrderedPredecessorMembershipRequired);
         };
         let Node::Stored { relation, .. } = membership.parts().nodes[*predecessor] else {
             return Err(Denial::OrderedPredecessorMembershipRequired);
+        };
+        let leaf = |index: usize| match membership.parts().nodes[index] {
+            Node::Stored { relation, .. } => Ok(relation),
+            _ => Err(Denial::OrderedPredecessorMembershipRequired),
+        };
+        let ordered = OrderedSourceRecipe {
+            predecessor: relation,
+            introduced: leaf(*introduced)?,
+            retired: leaf(*retired)?,
         };
         let registration = self
             .relation_registration(relation)
@@ -46,7 +67,7 @@ impl RelationalSchemaRegistry {
         super::projection_routes::validate_route_names(&routes)?;
         path.entry
             .managed_source_binding
-            .bind(path, fields, routes, Some(relation))
+            .bind(path, fields, routes, Some(ordered))
     }
 }
 

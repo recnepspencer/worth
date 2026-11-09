@@ -40,3 +40,5 @@ const PREFIX_REFINEMENT: Option<
 const PREFIX_MAINTENANCE:
     worth_query_decl::facade::application_query::ApplicationManagedIndexMaintenance =
     worth_query_decl::facade::application_query::ApplicationManagedIndexMaintenance::WhenRequired;
+
+const PREFIX_SOURCE_SCOPE: worth_query_decl::facade::application_query::ApplicationManagedIndexSourceScope = worth_query_decl::facade::application_query::ApplicationManagedIndexSourceScope::SameAdmittedScope;

@@ -122,6 +122,20 @@ impl ManagedDerivedViewRegistry {
                 .transpose()?
                 .flatten();
             let retained = retained.as_ref().and_then(|entry| entry.payload());
+            let predecessor = if retained.is_none() && scope.scope_exists()? {
+                match scope.ordered_predecessor()? {
+                    Some(parent) if !source.scopes().any(|other| other.scope() == parent) => image
+                        .as_ref()
+                        .map(|image| image.payload().retained(source.program(), parent))
+                        .transpose()?
+                        .flatten(),
+                    _ => None,
+                }
+            } else {
+                None
+            };
+            let predecessor = predecessor.as_ref().filter(|entry| entry.physical_availability() == worth_relational::facade::runtime::ManagedIndexSourceAvailability::Available)
+                .and_then(|entry| entry.payload());
             if initializing && !scope.committed_scope_exists()? && scope.scope_exists()? {
                 roots.push(
                     service.prepare_initial(
@@ -136,7 +150,7 @@ impl ManagedDerivedViewRegistry {
                     )?,
                 );
             } else {
-                roots.push(service.prepare(execution, scope, retained)?);
+                roots.push(service.prepare(execution, scope, retained, predecessor)?);
             }
         }
         execution.consult().map_err(|cause| {

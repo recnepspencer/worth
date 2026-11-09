@@ -25,7 +25,7 @@ impl OperationHandler<Catalog, Binding> for Handler {
         }
     }
 }
-fn directory(
+pub(super) fn directory(
     reader: &mut Reader<'_, '_, '_>,
     name: &str,
 ) -> Result<Target<Directory>, HandlerExecutionDenial> {
@@ -41,7 +41,14 @@ fn decide(
     input: &Edit,
     reader: &mut Reader<'_, '_, '_>,
 ) -> Result<Decision, HandlerExecutionDenial> {
+    if let Edit::Append {
+        previous, retired, ..
+    } = input
+    {
+        return super::append::decide(reader, previous, retired.as_deref());
+    }
     let name = match input {
+        Edit::Append { .. } => unreachable!(),
         Edit::Previous { event, .. }
         | Edit::Retirement { event, .. }
         | Edit::Introduction { event, .. } => event,
@@ -54,6 +61,7 @@ fn decide(
         item: None,
     };
     match input {
+        Edit::Append { .. } => unreachable!(),
         Edit::Previous { previous, .. } => {
             let entity =
                 reader.resolve_entity(DirectoryIdentity::at("DirectoryIdentity"), name.clone())?;
@@ -82,7 +90,7 @@ fn decide(
                         .relations_from(Contains::reference(), &event)
                         .map_err(HandlerExecutionDenial::new)?;
                 }
-                Edit::Previous { .. } => unreachable!(),
+                Edit::Previous { .. } | Edit::Append { .. } => unreachable!(),
             }
             let entity = reader.resolve_entity(ItemIdentity::at("ItemIdentity"), item.clone())?;
             reader
@@ -99,10 +107,14 @@ fn apply(
     decision: Decision,
     writer: &mut CandidateWriter<'_, Catalog, Binding>,
 ) -> Result<(), HandlerExecutionDenial> {
+    if matches!(input, Edit::Append { .. }) {
+        return super::append::apply(input, decision, writer);
+    }
     let event = writer
         .projected_entity(&decision.event)
         .map_err(HandlerExecutionDenial::new)?;
     match input {
+        Edit::Append { .. } => unreachable!(),
         Edit::Previous {
             event: name,
             edition,

@@ -35,3 +35,5 @@ fn source_path() -> worth_query_decl::facade::application_query::ApplicationQuer
     )
     .forward_derived(schema::LiveItems::reference())
 }
+
+const PREFIX_SOURCE_SCOPE: worth_query_decl::facade::application_query::ApplicationManagedIndexSourceScope = worth_query_decl::facade::application_query::ApplicationManagedIndexSourceScope::OrderedPredecessor;

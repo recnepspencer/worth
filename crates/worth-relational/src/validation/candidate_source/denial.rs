@@ -13,6 +13,9 @@ pub enum ManagedIndexSourcePreparationDenial {
     IncompletePreparation,
     ForeignSource,
     RootUnavailable,
+    PredecessorUnavailable {
+        predecessor: crate::identity::data::EntityId,
+    },
     PublicCacheIdentityExhausted,
 }
 
@@ -44,7 +47,10 @@ impl ManagedIndexSourcePreparationDenial {
 
     /// This exact Source posture had no available root; never means empty rows.
     pub fn source_unavailable(&self) -> bool {
-        matches!(self, Self::RootUnavailable)
+        matches!(
+            self,
+            Self::RootUnavailable | Self::PredecessorUnavailable { .. }
+        )
     }
 
     /// Borrow the provider's original owned failure without changing its custody.

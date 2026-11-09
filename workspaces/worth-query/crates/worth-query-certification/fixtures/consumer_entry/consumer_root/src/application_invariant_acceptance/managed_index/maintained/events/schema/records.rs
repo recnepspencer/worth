@@ -240,6 +240,8 @@ impl Children {
 pub struct Previous;
 impl fragment::Relation for Previous {
     const NAME: &'static str = "Previous";
+    const CARDINALITY: ApplicationRelationCardinality =
+        ApplicationRelationCardinality::new(None, Some(1), None, None, None, None);
     type To = Directory;
 }
 impl Previous {

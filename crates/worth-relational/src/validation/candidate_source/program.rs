@@ -25,7 +25,7 @@ pub(crate) struct SourceProgram {
     // In-memory bind order only; never persist, content-hash, or include in evidence.
     order: u64,
     pub(crate) path: DerivedRelationHandle,
-    pub(crate) predecessor: Option<crate::identity::data::KindId>,
+    pub(crate) ordered: Option<ordered_predecessor::OrderedSourceRecipe>,
     pub(crate) fields: Arc<[ManagedIndexSourceField]>,
     pub(crate) routes: Arc<[ManagedIndexSourceProjectionRoute]>,
     pub(crate) issuer: ManagedIndexSourceAudienceIssuer,
@@ -97,6 +97,10 @@ impl RelationalSchemaRegistry {
 }
 
 impl ManagedIndexSourceProgram {
+    pub fn has_ordered_predecessor(&self) -> bool {
+        self.0.ordered.is_some()
+    }
+
     pub fn scope_kind(&self) -> KindId {
         self.0
             .path

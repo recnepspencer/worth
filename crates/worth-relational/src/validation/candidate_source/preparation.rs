@@ -11,6 +11,7 @@ use crate::identity::data::EntityId;
 use crate::validation::data::{StructuralAspectStateView, StructuralRelationView};
 use std::{any::Any, sync::Arc};
 
+mod ordered_predecessor;
 mod projection_rows;
 mod row_read;
 mod rows;
@@ -171,8 +172,11 @@ impl<'a> ManagedIndexSourceScope<'a> {
     }
 
     fn rows(&self, before: bool) -> ManagedIndexSourceRows<'_> {
+        self.rows_at(before, self.scope)
+    }
+    fn rows_at(&self, before: bool, scope: EntityId) -> ManagedIndexSourceRows<'_> {
         ManagedIndexSourceRows {
-            scope: self.scope,
+            scope,
             projection: ManagedIndexSourceProjection {
                 program: self.program,
                 backing: super::projection::SourceProjectionBacking::Invariant {
