@@ -1,6 +1,7 @@
 //! Controlled provider mechanics over a genuine completed source image.
 mod adapter;
 mod admitted_read;
+pub(crate) mod certification;
 pub(in crate::domain_computation::primary_graph) use admitted_read::read_decision;
 pub(in crate::domain_computation::primary_graph::application_query) use admitted_read::read_source_admitted;
 mod build;

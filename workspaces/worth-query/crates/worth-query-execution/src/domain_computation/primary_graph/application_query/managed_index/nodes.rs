@@ -247,6 +247,12 @@ impl<'a, Node: Clone> WorthQueryManagedIndexNodeWriter<'a, Node> {
 }
 
 impl<Node: Clone> WorthQueryManagedIndexNodes<Node> {
+    pub(super) fn inspect_pages(&self, inspection: &mut pages::inspection::PageInspection)
+    where
+        Node: Send + Sync + 'static,
+    {
+        self.pages.inspect_pages(inspection);
+    }
     pub(super) fn frontier(&self) -> usize {
         self.frontier
     }
