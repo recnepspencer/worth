@@ -41,7 +41,7 @@ use portable_markers::*;
 
 pub(crate) mod delegation_activation_fixture;
 mod identity_axes;
-mod warm_lookup;
+pub(crate) mod warm_lookup;
 
 fn contract(axis: Option<Axis>) -> ErasedApplicationCapabilityContract {
     match axis {

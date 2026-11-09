@@ -1,18 +1,18 @@
 from pathlib import Path
-import json
 import subprocess
 import tempfile
 import unittest
 
-from snapshot_warnings import (committed_warnings, snapshot_warning_policy_violations,
+from snapshot_warnings import (committed_warnings, load_snapshot_warning_manifest,
+                               snapshot_warning_policy_violations,
                                snapshot_warning_violations, warning_lines)
 
 
 class CommittedSnapshotWarningTests(unittest.TestCase):
     def test_committed_compiler_snapshots_contain_only_the_protected_refusals(self):
         repository = Path(__file__).resolve().parents[2]
-        residuals = json.loads(Path(__file__).with_name('snapshot_warning_residuals.json').read_text())
-        policy = json.loads(Path(__file__).with_name('snapshot_warning_policy.json').read_text())
+        residuals = load_snapshot_warning_manifest(Path(__file__).with_name('snapshot_warning_residuals.json'))
+        policy = load_snapshot_warning_manifest(Path(__file__).with_name('snapshot_warning_policy.json'))
         self.assertEqual(snapshot_warning_policy_violations(residuals, policy), [],
                          'Residual changes require a reviewed set and an open filed issue')
         self.assertEqual(snapshot_warning_violations(repository, residuals), [],
@@ -29,6 +29,16 @@ class CommittedSnapshotWarningTests(unittest.TestCase):
             with self.subTest(residuals=residuals):
                 self.assertEqual([v['kind'] for v in
                                   snapshot_warning_policy_violations(residuals, policy)], [kind])
+
+    def test_residual_manifest_refuses_duplicate_keys_even_when_the_last_tag_is_valid(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            manifest = Path(temporary) / 'residuals.json'
+            manifest.write_text('{"known.stderr":"#117"}', encoding='utf-8')
+            self.assertEqual(load_snapshot_warning_manifest(manifest), {'known.stderr': '#117'})
+            manifest.write_text('{"known.stderr":"#999","known.stderr":"#117"}',
+                                encoding='utf-8')
+            with self.assertRaisesRegex(ValueError, 'duplicate-snapshot-warning-key: known.stderr'):
+                load_snapshot_warning_manifest(manifest)
 
     def test_diagnostic_lines_are_distinct_from_a_quoted_source_literal(self):
         self.assertEqual(warning_lines('warning: unused import\nwarning[lint]: other\n'), [1, 2])

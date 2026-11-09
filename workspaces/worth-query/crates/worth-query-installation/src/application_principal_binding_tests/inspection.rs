@@ -3,7 +3,7 @@ use worth_query_declaration::facade::{
     application_query::*, application_schema::ApplicationSchemaDeclaration,
 };
 
-fn declaration(inspect: bool) -> ApplicationSchemaDeclaration<IdentitySchema> {
+pub(super) fn declaration(inspect: bool) -> ApplicationSchemaDeclaration<IdentitySchema> {
     let schema = schema_members::declare();
     let schema = if inspect {
         schema.application_query_inspection(

@@ -1,5 +1,6 @@
 """Compiler snapshots pin protected refusals, never incidental lint diagnostics."""
 from pathlib import Path
+import json
 import subprocess
 
 
@@ -48,3 +49,16 @@ def snapshot_warning_policy_violations(residuals, policy):
             violations.append(dict(kind='unfiled-snapshot-warning-issue',
                                    snapshot=path, issue=issue))
     return violations
+
+
+def load_snapshot_warning_manifest(path):
+    """A reviewed issue/path must not be overwritten by a duplicate JSON key."""
+    def unique_keys(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError(f'duplicate-snapshot-warning-key: {key}')
+            result[key] = value
+        return result
+
+    return json.loads(Path(path).read_text(encoding='utf-8'), object_pairs_hook=unique_keys)
