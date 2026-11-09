@@ -32,35 +32,6 @@ fn committed_root_and_envelope(
 }
 
 #[test]
-fn publication_cost_distinguishes_new_and_reused_schema_authority() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = durable_runtime_with_test_schema();
-    create_entity_outcome(execution, &runtime, "schema-authority-allocation-owner");
-    let first = runtime
-        .history
-        .branch_cell(&BranchId("main".to_owned()))
-        .and_then(|cell| cell.root())
-        .expect("first commit installs a root");
-    create_entity_outcome(execution, &runtime, "schema-authority-reuse");
-    let second = runtime
-        .history
-        .branch_cell(&BranchId("main".to_owned()))
-        .and_then(|cell| cell.root())
-        .expect("second commit installs a root");
-
-    assert_eq!(first.publication_cost().new_schema_authorities, 1);
-    assert_eq!(first.publication_cost().reused_schema_authorities, 0);
-    assert_eq!(second.publication_cost().new_schema_authorities, 0);
-    assert_eq!(second.publication_cost().reused_schema_authorities, 1);
-    assert_eq!(
-        first.schema_authority().allocation_id(),
-        second.schema_authority().allocation_id()
-    );
-}
-
-#[test]
 fn relink_rejects_schema_authority_mutation() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);

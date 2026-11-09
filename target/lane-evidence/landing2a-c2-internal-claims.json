@@ -1,0 +1,26 @@
+[
+  {
+    "path": "crates/worth-relational/src/branch/root_tests.rs",
+    "name": "publication_cost_distinguishes_new_and_reused_schema_authority",
+    "restore": "b736be6f47:crates/worth-relational/src/branch/root_tests.rs",
+    "claim": "private physical pin/residency or instrumentation/allocation ownership; full original test remains at restore reference"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_isolation.rs",
+    "name": "replay_pin_of_a_cold_partition_is_typed_and_has_no_effect",
+    "restore": "b736be6f47:crates/worth-relational/src/tests/durability/medium/cold_isolation.rs",
+    "claim": "private physical pin/residency or instrumentation/allocation ownership; full original test remains at restore reference"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_pins.rs",
+    "name": "resident_pin_custody_refuses_unread_mirror_frames_after_exact_source_admission",
+    "restore": "b736be6f47:crates/worth-relational/src/tests/durability/medium/cold_pins.rs",
+    "claim": "private physical pin/residency or instrumentation/allocation ownership; full original test remains at restore reference"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_invariants.rs",
+    "name": "selected_branch_views_preserve_cold_probe_and_demand",
+    "restore": "b736be6f47:crates/worth-relational/src/tests/durability/medium/cold_invariants.rs",
+    "claim": "private physical pin/residency or instrumentation/allocation ownership; full original test remains at restore reference"
+  }
+]

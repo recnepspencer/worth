@@ -329,3 +329,35 @@ review APPROVE source,fullBCnotachieved. Read-only next-family audit maps80files
 dictionary claims requiring owner decomposition. No broad cold edits or extra
 Cargo run. User clarification about live allocation claim still pending. See
 turn-end-state.md; counts0checks/1Clippy/1focusedbuild/1testrun.
+
+
+2026-11-09 Landing2a: allocation refusal moved to C2 in b736be6f47 after fresh
+APPROVE; exact restore and public-observation obligation in milestone3. No product
+allocation path changed. Cold-family86-test independent classification pending.
+First public migration batch moves the two actual damaged-member/tail refusal
+courts onto the external provider, with explicit medium custody and unchanged
+claims. Testkit cold source capture is shared by its existing recovered fixture.
+New cold-residency court is the source-ceiling split (old certification35909lines),
+with exact frontier owner/delegation/workspace registration. First Root check is
+running; no focused build/test run yet. Counts1check,0Clippy,0build,0tests so far.
+Formatting initially found module-path layout inconsistency; fixed conventional
+mod.rs placement and reran fmt green before compilation. Full log retained.
+Complete/ACK label has no concrete defect in landing note or held reports;
+clarification question is pending while implementation continues.
+
+First cold public packet6/0/0: five migrated courts plus existing custody regression.
+One owned build,one selected run; initialcheck green. Added profile-preserving
+source capture fixture, no Native public or wire change. C2 five pure private
+claims moved with exact restore refs. Review caught two mixed proposed moves;
+restored their full public/private original tests pending proper split. No changed
+public proof inputs after green evidence. Currentgate boundary remains14 (3ours
+unchanged local providers,11other-owner), no newcourt/testkit findings. Context
+and caps green. Counts1check,0Clippy,1focusedbuild,1selectedrun; no ignored tests.
+
+Freshreview also found partial-residency success/equality inside the discarded
+visibility counter court. Restored entire test/file/mount and its baseline row.
+Four entirely private tests remain C2; baseline now unchanged. No public court,
+testkit or product runtime inputs changed after6/0/0. Complete/ACK clarification
+stillpending. Node/event observation design review found feasible typed owners;
+return existing event semantic DATA with current ordinary collection policy,
+not a new quota/result wrapper; actual counted node lease stays inNodeRead.

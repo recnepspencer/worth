@@ -9,7 +9,8 @@ struct PinFixture {
     source: Arc<MemberSource>,
     historical_version: VersionId,
     entity: EntityId,
-    source_state: crate::visibility::snapshot_states::SnapshotState,
+    // Hold the admitted old source root while the distinct mirror is probed.
+    _source_state: crate::visibility::snapshot_states::SnapshotState,
 }
 
 fn reopened(execution: &worth_execution::ExecutionRequest<'_, '_>) -> PinFixture {
@@ -138,7 +139,7 @@ fn reopened(execution: &worth_execution::ExecutionRequest<'_, '_>) -> PinFixture
         source,
         historical_version,
         entity,
-        source_state,
+        _source_state: source_state,
     }
 }
 
@@ -210,51 +211,6 @@ fn replay_pin_count(fixture: &PinFixture) -> u32 {
         .entity_arena
         .replay_pin_count(fixture.entity.slot_index())
         .unwrap()
-}
-
-#[test]
-fn resident_pin_custody_refuses_unread_mirror_frames_after_exact_source_admission() {
-    let backing = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&backing);
-    let fixture = reopened(execution);
-    let position = fixture.runtime.history().latest_patch_stream_position();
-    let offered = attached_test_medium(&fixture.runtime).offered().len();
-    let before = fixture.source.reads.load(Ordering::Relaxed);
-    fixture.source.damaged.store(true, Ordering::Relaxed);
-    let expected =
-        RelationalExecutionDenialCause::StorageUnavailable(RelationalStorageUnavailable {
-            subject: RelationalStorageSubject::Region(fixture.entity.partition_id),
-            cause: Cause::IntegrityMismatch,
-        });
-    let demand = || {
-        fixture
-            .runtime
-            .visibility_pins()
-            .demand_replay_pins(execution, fixture.source_state.clone())
-            .map(|_| ())
-    };
-    assert_eq!(demand(), Err(expected));
-    let reads = fixture.source.reads.load(Ordering::Relaxed);
-    assert!(
-        reads > before,
-        "the fixture must actually cross the mirror's cold source"
-    );
-    fixture.source.damaged.store(false, Ordering::Relaxed);
-    assert_eq!(demand(), Err(expected));
-    assert_eq!(fixture.source.reads.load(Ordering::Relaxed), reads);
-    assert!(fixture
-        .runtime
-        .visibility
-        .replay_retention_versions()
-        .is_empty());
-    assert_eq!(
-        fixture.runtime.history().latest_patch_stream_position(),
-        position
-    );
-    assert_eq!(
-        attached_test_medium(&fixture.runtime).offered().len(),
-        offered
-    );
 }
 
 #[test]

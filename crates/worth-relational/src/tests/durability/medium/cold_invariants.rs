@@ -50,21 +50,6 @@ fn storage_cause(error: TransactionCommitError) -> RelationalExecutionDenialCaus
 }
 
 #[test]
-fn selected_branch_views_preserve_cold_probe_and_demand() {
-    let host = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host);
-    let (runtime, counter, entity) = recovered(execution, false);
-    let transaction = test_owner_begin_transaction_for_main(&runtime);
-    let selected = runtime.selected_branch_state(&transaction.basis).unwrap();
-    let answer = crate::storage::residency::probe_full_sources(execution, [&selected], |[view]| {
-        view.get_partition(entity.partition_id).is_some()
-    })
-    .unwrap();
-    assert!(answer);
-    assert!(counter.reads.load(Ordering::Relaxed) > 0);
-}
-
-#[test]
 fn invariant_storage_refusal_is_sticky_and_does_not_settle_provisional_counts() {
     let host = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);

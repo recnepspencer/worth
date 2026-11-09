@@ -29,6 +29,15 @@ each invariant is enforced and where each new type lives.
   original, and honours cancellation. C2 must provide the public
   allocation-refusal observation before restoring this claim.
 
+- `publication_cost_distinguishes_new_and_reused_schema_authority`: `restore from b736be6f47:crates/worth-relational/src/branch/root_tests.rs`.
+- `replay_pin_of_a_cold_partition_is_typed_and_has_no_effect`: `restore from b736be6f47:crates/worth-relational/src/tests/durability/medium/cold_isolation.rs`.
+- `resident_pin_custody_refuses_unread_mirror_frames_after_exact_source_admission`: `restore from b736be6f47:crates/worth-relational/src/tests/durability/medium/cold_pins.rs`.
+- `selected_branch_views_preserve_cold_probe_and_demand`: `restore from b736be6f47:crates/worth-relational/src/tests/durability/medium/cold_invariants.rs`.
+  These courts retain private physical pin actions/counts, resident-only probe
+  state, or exact publication/materialization accounting. Restore the original
+  claims in C2 through its honest allocation/residency observation; they are not
+  retired. Public semantic read/failure courts remain in the happy tree.
+
 ## Phase map
 
 | Phase | Name | Depends on | Lands |
