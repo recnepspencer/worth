@@ -10,6 +10,7 @@ mod request;
 mod runtime;
 mod support;
 mod transition;
+mod workflow;
 pub use checkpoint::WorthQueryApplicationHomeCheckpointDenial;
 pub use close::{WorthQueryApplicationHomeCloseRefused, WorthQueryApplicationHomeClosed};
 pub use discard::{discard_home, WorthQueryApplicationHomeDiscardDenial};
@@ -28,6 +29,11 @@ pub use transition::{
     WorthQueryHomeProgramTransitionOpenPhase, WorthQueryHomeProgramTransitionOpenRefused,
     WorthQueryHomeProgramTransitionPlan, WorthQueryHomeProgramTransitionStep,
 };
+pub use workflow::{
+    WorthQueryWorkflowApplicationHome, WorthQueryWorkflowHomeBindingRefused,
+    WorthQueryWorkflowHomeCloseRefused, WorthQueryWorkflowHomeClosed,
+};
+pub use worth_query_execution::facade::application_home_integration::QueryHomeProgramActivationDenial;
 pub use worth_store_application::facade::ApplicationHomeQueryRootDenial;
 pub use worth_store_application::ApplicationHomeCheckpointLimits as WorthQueryApplicationHomeCheckpointLimits;
 pub use worth_store_application::ApplicationHomeCloseDenial::WorldCompositionRetained;

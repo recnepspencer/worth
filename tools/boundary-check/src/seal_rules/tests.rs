@@ -202,6 +202,17 @@ fn certification_factory_callers_are_class_and_file_exact() {
             "from_protected_world_journal",
             "world-home-checkpoint-source",
         ),
+        ("admit_query_obligation_prefix", "query-obligation-prefix"),
+        (
+            "acknowledge_query_obligation_commit",
+            "query-obligation-publication",
+        ),
+        (
+            "acknowledge_query_obligation_no_effect",
+            "query-obligation-publication",
+        ),
+        ("query_obligations_medium", "query-home-obligations"),
+        ("admit_query_obligations", "query-home-obligations"),
         ("prepare_home_program", "query-home-preparation"),
         ("initialize_home_native_schema", "query-home-preparation"),
         (

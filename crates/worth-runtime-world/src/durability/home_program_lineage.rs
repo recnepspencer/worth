@@ -16,7 +16,9 @@ pub struct WorldHomeProgramLineage {
     initial: CanonicalDigestId,
     current: CanonicalDigestId,
     rows: ExecutionArray<HomeProgramRevisionBoundary>,
+    steps: ExecutionArray<worth_foundational::facade::HomeProgramTransitionProgramStep>,
     _memory: Option<ExecutionMemoryReservation>,
+    _step_names: Option<ExecutionMemoryReservation>,
 }
 impl WorldHomeProgramLineage {
     pub fn from_recorded(
@@ -24,6 +26,9 @@ impl WorldHomeProgramLineage {
         initial: CanonicalDigestId,
         current: CanonicalDigestId,
         rows: impl ExactSizeIterator<Item = HomeProgramRevisionBoundary>,
+        steps: impl ExactSizeIterator<
+            Item = worth_foundational::facade::HomeProgramTransitionProgramStep,
+        >,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Arc<Self>, Denial> {
         let mut captured = ExecutionRequestArrayBuilder::allocate(*request, rows.len())
@@ -47,7 +52,7 @@ impl WorldHomeProgramLineage {
         if expected != current {
             return Err(Denial::ProgramRevisionMismatch);
         }
-        Self::retain(
+        let lineage = Self::retain(
             owner,
             initial,
             current,
@@ -55,7 +60,8 @@ impl WorldHomeProgramLineage {
                 .seal()
                 .map_err(|cause| Denial::Medium(Medium::Backing(cause)))?,
             request,
-        )
+        )?;
+        lineage.with_program_steps(steps, request)
     }
 
     fn retain(
@@ -76,7 +82,11 @@ impl WorldHomeProgramLineage {
             initial,
             current,
             rows,
+            steps: ExecutionRequestArrayBuilder::allocate(*request, 0)
+                .and_then(|array| array.seal())
+                .map_err(|cause| Denial::Medium(Medium::Backing(cause)))?,
             _memory: memory,
+            _step_names: None,
         }))
     }
 
@@ -110,7 +120,7 @@ impl WorldHomeProgramLineage {
                 .push(row)
                 .map_err(|cause| Denial::Medium(Medium::Backing(cause)))?;
         }
-        Self::retain(
+        let extended = Self::retain(
             boundary.through().owner(),
             initial,
             boundary.successor(),
@@ -118,7 +128,96 @@ impl WorldHomeProgramLineage {
                 .seal()
                 .map_err(|cause| Denial::Medium(Medium::Backing(cause)))?,
             request,
+        )?;
+        extended.with_program_steps(
+            previous
+                .map_or(&[][..], |p| p.steps.elements())
+                .iter()
+                .cloned(),
+            request,
         )
+    }
+
+    pub(crate) fn with_program_steps(
+        self: Arc<Self>,
+        additional: impl ExactSizeIterator<
+            Item = worth_foundational::facade::HomeProgramTransitionProgramStep,
+        >,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Arc<Self>, Denial> {
+        let count = self
+            .steps
+            .elements()
+            .len()
+            .checked_add(additional.len())
+            .ok_or(Denial::JournalSourceMismatch)?;
+        // Durable branch names are bounded at 256 bytes. Fund every cloned
+        // name before evaluating the lazy source iterator.
+        let name_bytes = count
+            .checked_mul(256)
+            .and_then(|n| u64::try_from(n).ok())
+            .ok_or(Denial::JournalSourceMismatch)?;
+        let names = request
+            .reserve_retained_memory(name_bytes)
+            .map_err(|cause| Denial::Medium(Medium::Request(cause)))?;
+        let mut steps = ExecutionRequestArrayBuilder::allocate(*request, count)
+            .map_err(|cause| Denial::Medium(Medium::Backing(cause)))?;
+        let mut prior = None;
+        for step in self.steps.elements().iter().cloned().chain(additional) {
+            charge(request)?;
+            let attempt = step.original().attempt();
+            if attempt.owner() != self.owner
+                || prior.is_some_and(|old| old >= attempt.ordinal())
+                || !self.matches_recorded_attempt(
+                    *step.recorded().bytes(),
+                    attempt.ordinal(),
+                    request,
+                )?
+            {
+                return Err(Denial::ProgramRevisionMismatch);
+            }
+            prior = Some(attempt.ordinal());
+            steps
+                .push(step)
+                .map_err(|cause| Denial::Medium(Medium::Backing(cause)))?;
+        }
+        let mut lineage = Arc::try_unwrap(self).map_err(|_| Denial::JournalSourceMismatch)?;
+        lineage.steps = steps
+            .seal()
+            .map_err(|cause| Denial::Medium(Medium::Backing(cause)))?;
+        lineage._step_names = names;
+        Ok(Arc::new(lineage))
+    }
+    /// Resolve descriptive exact-step attribution; this grants no runtime authority.
+    pub fn recorded_activation_for_original(
+        &self,
+        original: &worth_foundational::facade::CompositeAttemptAssociation,
+        recorded: [u8; 32],
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<[u8; 32], Denial> {
+        let rows = self.steps.elements();
+        // Exact original membership, never a broad attempt-window exemption.
+        let mut lower = 0;
+        let mut upper = rows.len();
+        while lower < upper {
+            charge(request)?;
+            let middle = lower + (upper - lower) / 2;
+            if rows[middle].original().attempt().ordinal() < original.attempt().ordinal() {
+                lower = middle + 1;
+            } else {
+                upper = middle;
+            }
+        }
+        if let Some(step) = rows
+            .get(lower)
+            .filter(|step| step.original().attempt() == original.attempt())
+        {
+            if step.original() != original || step.recorded().bytes() != &recorded {
+                return Err(Denial::ProgramRevisionMismatch);
+            }
+            return Ok(*step.activation().bytes());
+        }
+        Ok(recorded)
     }
 
     pub(crate) fn owner(&self) -> DurableWorldOwnerIdentity {

@@ -16,6 +16,21 @@ struct SettledHomeTransition {
 }
 
 impl HomeTransitionOwner {
+    pub(crate) fn require_fresh_plan(
+        &self,
+        binding: &worth_foundational::facade::ApplicationHomeBinding,
+    ) -> Result<(), super::ApplicationHomeTransitionIntentDenial> {
+        self.admission.require_fresh_plan(binding)
+    }
+    pub(crate) fn admit_planning_request(
+        &self,
+        source: worth_relational::facade::runtime::RelationalHomeProgramPlanningSource,
+    ) -> worth_proof::AdmittedHomeProgramTransitionPlanningRequest<
+        worth_relational::facade::runtime::RelationalHomeProgramPlanningSource,
+    > {
+        self.seal.admit_planning_request(source)
+    }
+
     pub(crate) fn new(
         home: worth_foundational::facade::HomeIdentity,
         incarnation: worth_proof::HomeIncarnationFence,

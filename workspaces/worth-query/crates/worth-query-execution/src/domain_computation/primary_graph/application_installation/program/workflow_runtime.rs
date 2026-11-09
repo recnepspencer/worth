@@ -9,6 +9,8 @@ use worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec
 use super::WorthQueryProgramApplicationRuntime;
 
 mod authentication;
+mod configuration;
+pub use configuration::WorthQueryWorkflowRuntimeConfiguration;
 mod registration;
 mod support;
 mod vocabulary;
@@ -26,11 +28,7 @@ where
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
 {
     runtime: WorthQueryProgramApplicationRuntime<Schema, Program>,
-    workflow: WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
-    authentication: WorthQueryAuthenticationEventSigningOwner<Schema>,
-    /// The same spec installed against programs this host rostered, one per
-    /// program, so adopted branches keep a vocabulary for what they now run.
-    supported: Vec<WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>>,
+    configuration: WorthQueryWorkflowRuntimeConfiguration<Schema, Spec>,
 }
 
 impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program>
@@ -50,35 +48,20 @@ where
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
-        let binding = (|| {
-            if workflow.schema_binding()
-                != &self.backing.runtime().installed_schema().binding_identity()
-            {
-                return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignSchema);
-            }
-            if authentication.binding_identity() != workflow.schema_binding() {
-                return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignAuthenticationOwner);
-            }
-            if workflow.program_revision() != self.backing.program.revision() {
-                return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignProgram);
-            }
-            self.install_workflow_registration(&workflow, &authentication)?;
-            Ok(())
-        })();
-        if let Err(denial) = binding {
-            return Err(WorthQueryWorkflowRuntimeBindingRefusal {
-                workflow,
-                authentication,
-                denial,
+        match self.install_workflow_configuration(workflow, authentication) {
+            Ok(configuration) => Ok(WorthQueryWorkflowApplicationRuntime {
                 runtime: self,
-            });
+                configuration,
+            }),
+            Err((workflow, authentication, denial)) => {
+                Err(WorthQueryWorkflowRuntimeBindingRefusal {
+                    workflow,
+                    authentication,
+                    denial,
+                    runtime: self,
+                })
+            }
         }
-        Ok(WorthQueryWorkflowApplicationRuntime {
-            runtime: self,
-            workflow,
-            authentication,
-            supported: Vec::new(),
-        })
     }
 }
 
@@ -92,22 +75,34 @@ where
     }
 
     pub const fn workflow_spec(&self) -> &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec> {
-        &self.workflow
+        self.configuration.workflow_spec()
     }
 
     pub const fn authentication_owner(&self) -> &WorthQueryAuthenticationEventSigningOwner<Schema> {
-        &self.authentication
+        self.configuration.authentication_owner()
     }
 
     /// Every vocabulary this runtime installed. A request prepares against
     /// the one installed for the program its branch runs.
     pub fn vocabulary(&self) -> WorthQueryWorkflowVocabulary<'_, Schema, Spec> {
-        WorthQueryWorkflowVocabulary::new(
-            self.runtime.backing.runtime(),
-            &self.workflow,
-            &self.supported,
-            &self.authentication,
-        )
+        self.configuration
+            .vocabulary_for(&self.runtime)
+            .expect("immutable installed workflow pair keeps its original receiver")
+    }
+
+    /// Install the same Spec for another genuinely rostered program.
+    pub fn support_workflow_spec(
+        &mut self,
+        workflow: WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
+    ) -> Result<
+        (),
+        (
+            WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
+            WorthQueryWorkflowRuntimeBindingDenial,
+        ),
+    > {
+        self.configuration
+            .support_workflow_spec(&mut self.runtime, workflow)
     }
 
     /// Close the contained native runtime without consuming its installed companions.
@@ -211,6 +206,8 @@ where
 pub enum WorthQueryWorkflowRuntimeBindingDenial {
     SigningOwner(super::WorthQuerySigningOwnerInstallationDenial),
     ForeignSchema,
+    ForeignRuntime,
+    StaleIncarnation,
     /// Installed runtime meaning cannot grow while dependent handles retain it.
     RuntimeKeepaliveRetained,
     ForeignProgram,

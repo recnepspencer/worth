@@ -7,11 +7,18 @@ pub use crate::domain_computation::primary_graph::application_installation::home
     QueryExistingHomeWorldAttachmentRefused, QueryHomeCustodyReadmissionDenial,
     QueryHomeCustodyReadmissionRefused, QueryHomeInitialStateDenial,
     QueryHomeNativeInstallationRefused, QueryHomeNativeReadmissionRefused,
+    QueryHomeProgramActivationDenial, QueryHomeProgramTransitionSourceDenial,
     QueryHomeSourceAttachmentRefused, QueryHomeTransitionPreparationDenial,
     QueryHomeTransitionPreparationRefused, QueryHomeTransitionPromotionRefused,
-    QueryHomeWorldAttachmentRefused, ReadmittedExistingHomeNativeMeaning,
-    ReadmittedHomeNativeMeaning, ReadmittedHomeQueryService,
+    QueryHomeWorkflowDispositionDenial, QueryHomeWorldAttachmentRefused,
+    ReadmittedExistingHomeNativeMeaning, ReadmittedHomeNativeMeaning, ReadmittedHomeQueryService,
     WorthQueryHomeProgramTransitionBodyDenial, WorthQueryHomeProgramTransitionReadSource,
     WorthQueryHomeProgramTransitionTarget,
 };
 pub use worth_runtime_world::facade::RuntimeWorldOwnerUnavailable;
+
+pub use crate::domain_computation::primary_graph::workflow::{
+    QueryHomeWorkflowReadmissionDenial, WorkflowAdoptionReadDenial,
+};
+
+pub use crate::domain_computation::primary_graph::workflow::instance::start_provenance::StartProvenanceReadDenial;

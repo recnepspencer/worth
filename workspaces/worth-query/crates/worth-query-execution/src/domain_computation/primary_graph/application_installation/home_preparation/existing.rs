@@ -101,6 +101,15 @@ impl<Schema: ApplicationSchemaComposition, Program>
         }
     }
 
+    pub(super) fn predecessor_program_support(
+        &self,
+    ) -> (
+        &worth_query_installation::facade::WorthQueryInstalledApplicationSchema<Schema>,
+        &worth_query_installation::facade::WorthQueryProgramSupportRoster<Schema>,
+    ) {
+        (&self.state.installed, &self.state.support.roster)
+    }
+
     pub(super) fn predecessor_activation(
         &self,
     ) -> (

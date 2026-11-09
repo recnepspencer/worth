@@ -6,6 +6,7 @@ use super::*;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime;
 use worth_runtime_world::facade::*;
 mod custody;
+pub use crate::domain_computation::primary_graph::bootstrap::branch_activation_history::QueryHomeProgramActivationDenial;
 pub use custody::{QueryHomeCustodyReadmissionDenial, QueryHomeCustodyReadmissionRefused};
 #[cfg(test)]
 #[path = "world/tests.rs"]
@@ -13,12 +14,16 @@ mod tests;
 
 pub struct ReadmittedHomeQueryService<Schema, Program> {
     runtime: WorthQueryProgramApplicationRuntime<Schema, Program>,
+    program_support_admission: std::sync::OnceLock<worth_proof::AdmittedHomeQueryObligations>,
 }
 impl<Schema: 'static, Program: 'static> worth_proof::AuthorityMarker
     for ReadmittedHomeQueryService<Schema, Program>
 {
 }
 impl<Schema, Program> ReadmittedHomeQueryService<Schema, Program> {
+    pub fn program_support_admission(&self) -> Option<worth_proof::AdmittedHomeQueryObligations> {
+        self.program_support_admission.get().cloned()
+    }
     pub fn into_home_program_runtime(self) -> WorthQueryProgramApplicationRuntime<Schema, Program> {
         self.runtime
     }
@@ -124,11 +129,8 @@ where
                     &self.state.installed,
                     root.basis().relational_basis(),
                 )?;
-            self.bootstrap.readmit_home_initial_program(
-                phase,
-                &root,
-                &self.state.support.initial_revision,
-            )?;
+            self.bootstrap
+                .readmit_home_activation_record(phase, &root)?;
             let relational = self
                 .bootstrap
                 .graph
@@ -141,6 +143,7 @@ where
                     home_world_denial(format!("Home product source denied: {cause:?}"))
                 })?;
             let product = WorthQueryProductRuntime::attach_home_world_ports(
+                &phase.execution_request(),
                 relational,
                 &mut self.bridge.conditional_lifecycle(),
                 self.state.limits.world.clone(),
@@ -237,7 +240,10 @@ where
             Some((state.program, state.supported)),
         )
         .map(|runtime| {
-            worth_proof::QueryReadmitted::from_owner(ReadmittedHomeQueryService { runtime })
+            worth_proof::QueryReadmitted::from_owner(ReadmittedHomeQueryService {
+                runtime,
+                program_support_admission: std::sync::OnceLock::new(),
+            })
         })
         .map_err(|refused| QueryHomeWorldAttachmentRefused {
             custody: HomeWorldAttachmentCustody::Program(refused),

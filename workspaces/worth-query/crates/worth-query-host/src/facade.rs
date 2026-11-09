@@ -361,9 +361,10 @@ pub use worth_query_publication::facade::application_entry;
 
 pub use crate::application_home::{
     discard_home, ApplicationHomeQueryRootDenial, HomeCustodyReadmissionDenial,
-    NoHomeProgramTransition, UnadmittedHomeQueryCustodyRefused, UnadmittedHomeQueryService,
-    WorldCompositionRetained, WorthQueryApplicationHome, WorthQueryApplicationHomeCheckpoint,
-    WorthQueryApplicationHomeCheckpointDenial, WorthQueryApplicationHomeCheckpointInspection,
+    NoHomeProgramTransition, QueryHomeProgramActivationDenial, UnadmittedHomeQueryCustodyRefused,
+    UnadmittedHomeQueryService, WorldCompositionRetained, WorthQueryApplicationHome,
+    WorthQueryApplicationHomeCheckpoint, WorthQueryApplicationHomeCheckpointDenial,
+    WorthQueryApplicationHomeCheckpointInspection,
     WorthQueryApplicationHomeCheckpointJournalObservation,
     WorthQueryApplicationHomeCheckpointLimits, WorthQueryApplicationHomeCloseOutcome,
     WorthQueryApplicationHomeCloseRefused, WorthQueryApplicationHomeClosed,
@@ -373,7 +374,9 @@ pub use crate::application_home::{
     WorthQueryApplicationHomeTransitionRequired, WorthQueryHomeProgramTransition,
     WorthQueryHomeProgramTransitionDenial, WorthQueryHomeProgramTransitionOpenPhase,
     WorthQueryHomeProgramTransitionOpenRefused, WorthQueryHomeProgramTransitionPlan,
-    WorthQueryHomeProgramTransitionStep,
+    WorthQueryHomeProgramTransitionStep, WorthQueryWorkflowApplicationHome,
+    WorthQueryWorkflowHomeBindingRefused, WorthQueryWorkflowHomeCloseRefused,
+    WorthQueryWorkflowHomeClosed,
 };
 /// Relational DATA for a Home transition author. These values grant no step,
 /// initialization, publication or Native owner access.

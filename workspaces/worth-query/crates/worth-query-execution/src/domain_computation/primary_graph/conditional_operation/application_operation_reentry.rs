@@ -236,8 +236,18 @@ where
     LifecycleUnit: ApplicationFieldUnit,
     Authorization: super::WorthQueryTemporalOperationAuthorization<Schema, Operation, Input, Scope>,
 {
+    let selected = product.observation();
+    let scope = match selected.owner_identity().durable() {
+        Some(owner) => temporal_idempotency::TemporalIdempotencyScope::Home {
+            owner,
+            branch: selected.branch_identity().name().as_str(),
+            incarnation: selected.lifecycle_incarnation().ordinal(),
+        },
+        None => temporal_idempotency::TemporalIdempotencyScope::ProcessLocal,
+    };
     let idempotency =
-        match temporal_idempotency::prepare_temporal_idempotency(runtime_binding, candidate) {
+        match temporal_idempotency::prepare_temporal_idempotency(runtime_binding, candidate, scope)
+        {
             Ok(idempotency) => idempotency,
             Err(denial) => {
                 return WorthQueryTemporalReentryAttempt {

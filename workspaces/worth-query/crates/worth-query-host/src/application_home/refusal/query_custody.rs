@@ -1,7 +1,9 @@
 //! A refused opening retains Query custody without exposing a runtime.
 use super::*;
+use std::sync::Arc;
 use worth_proof::{AuthorityMarker, CustodyReadmitted};
 use worth_query_execution::facade::application_home_integration::QueryHomeCustodyReadmissionDenial;
+use worth_query_execution::facade::program_support::QueryObligationsMedium;
 
 /// Custody from an opening that has not completed D8 service admission.
 ///
@@ -28,6 +30,7 @@ use worth_query_execution::facade::application_home_integration::QueryHomeCustod
 /// ```
 pub struct UnadmittedHomeQueryService<Schema: ApplicationSchemaComposition, Program> {
     _query: ReadmittedHomeQueryService<Schema, Program>,
+    obligations: Arc<dyn QueryObligationsMedium>,
 }
 impl<Schema: ApplicationSchemaComposition, Program: 'static> AuthorityMarker
     for UnadmittedHomeQueryService<Schema, Program>
@@ -55,8 +58,12 @@ impl<Schema: ApplicationSchemaComposition, Program: 'static>
 {
     pub(in crate::application_home) fn retain(
         query: ReadmittedHomeQueryService<Schema, Program>,
+        obligations: Arc<dyn QueryObligationsMedium>,
     ) -> Self {
-        Self { _query: query }
+        Self {
+            _query: query,
+            obligations,
+        }
     }
 
     /// Retry only the original custody admission. The result remains quarantined
@@ -65,14 +72,17 @@ impl<Schema: ApplicationSchemaComposition, Program: 'static>
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<CustodyReadmitted<Self>, UnadmittedHomeQueryCustodyRefused<Schema, Program>> {
-        match self._query.readmit_custody(execution) {
-            Ok(admitted) => {
-                Ok(admitted.consume(|query| CustodyReadmitted::from_owner(Self::retain(query))))
-            }
+        let Self {
+            _query: query,
+            obligations,
+        } = self;
+        match query.readmit_custody(execution, Arc::clone(&obligations)) {
+            Ok(admitted) => Ok(admitted
+                .consume(|query| CustodyReadmitted::from_owner(Self::retain(query, obligations)))),
             Err(refused) => {
                 let (query, cause) = refused.into_parts();
                 Err(UnadmittedHomeQueryCustodyRefused {
-                    query: Self::retain(query),
+                    query: Self::retain(query, obligations),
                     cause,
                 })
             }

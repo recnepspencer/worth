@@ -9,6 +9,37 @@ fn owner(incarnation: u64) -> HomeProgramTransitionOwner {
 }
 
 #[test]
+fn planning_requests_require_the_attached_owner_and_incarnation_before_source_scope() {
+    let original = owner(1);
+    let request = original.admit_planning_request(42);
+    assert_eq!(
+        original
+            .authority()
+            .admit_planning_request(&request, [1; 16]),
+        Ok(())
+    );
+    assert_eq!(*request.source(), 42);
+    assert_eq!(
+        original
+            .authority()
+            .admit_planning_request(&request, [9; 16]),
+        Err(HomeProgramTransitionAdmissionDenial::SourceMismatch)
+    );
+    assert_eq!(
+        owner(1)
+            .authority()
+            .admit_planning_request(&request, [1; 16]),
+        Err(HomeProgramTransitionAdmissionDenial::ForeignOwner)
+    );
+    assert_eq!(
+        owner(2)
+            .authority()
+            .admit_planning_request(&request, [9; 16]),
+        Err(HomeProgramTransitionAdmissionDenial::StaleIncarnation)
+    );
+}
+
+#[test]
 fn transition_admission_requires_the_attached_owner_and_exact_commitment() {
     let installed = owner(1);
     let foreign = owner(1);

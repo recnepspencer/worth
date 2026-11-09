@@ -16,13 +16,32 @@ pub(super) fn readmit<Schema: ApplicationSchemaComposition, Program: 'static>(
     CustodyReadmitted<AdmittedHomeCustody<Schema, Program>>,
     WorthQueryApplicationHomeOpenRefused<Schema, Program>,
 > {
-    match query.readmit_custody(&phase.execution_request()) {
-        Ok(admitted) => Ok(admitted
-            .consume(|query| CustodyReadmitted::from_owner(AdmittedHomeCustody { query, home }))),
+    let request = phase.execution_request();
+    let obligations = home.query_obligations_medium();
+    match query.readmit_custody(&request, std::sync::Arc::clone(&obligations)) {
+        Ok(admitted) => {
+            let query = admitted.consume(|query| query);
+            let admission = query
+                .program_support_admission()
+                .expect("successful Query admission retains its proof");
+            match home.admit_query_obligations(admission, &request) {
+                Ok(()) => Ok(CustodyReadmitted::from_owner(AdmittedHomeCustody {
+                    query,
+                    home,
+                })),
+                Err(cause) => Err(WorthQueryApplicationHomeOpenRefused::CustodyReadmission {
+                    query: super::super::UnadmittedHomeQueryService::retain(query, obligations),
+                    home,
+                    cause: HomeCustodyReadmissionDenial::Query(
+                        QueryHomeCustodyReadmissionDenial::ProgramSupport(cause),
+                    ),
+                }),
+            }
+        }
         Err(refused) => {
             let (query, cause) = refused.into_parts();
             Err(WorthQueryApplicationHomeOpenRefused::CustodyReadmission {
-                query: super::super::UnadmittedHomeQueryService::retain(query),
+                query: super::super::UnadmittedHomeQueryService::retain(query, obligations),
                 home,
                 cause: HomeCustodyReadmissionDenial::Query(cause),
             })

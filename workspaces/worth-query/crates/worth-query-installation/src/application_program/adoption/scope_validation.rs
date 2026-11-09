@@ -5,7 +5,10 @@ use worth_query_declaration::facade::application_schema::{
 };
 
 use crate::application_program::support::WorthQueryProgramRuleKey;
-use crate::facade::WorthQueryInstalledApplicationSchema;
+use crate::facade::{
+    WorthQueryInstalledApplicationInvariantCatalog,
+    WorthQueryInstalledApplicationInvariantDescriptor, WorthQueryInstalledApplicationSchema,
+};
 
 /// The scope targets the installed catalog declares for one rule contract.
 ///
@@ -21,14 +24,18 @@ pub(super) fn installed_validation_scope<Schema>(
 where
     Schema: ApplicationSchema,
 {
-    installed_schema
-        .invariants()
-        .descriptors()
-        .find(|descriptor| {
-            descriptor.identifier() == rule.identity()
-                && descriptor.major() == rule.major()
-                && descriptor.minor() == rule.minor()
-                && descriptor.execution_point() == rule.execution_point()
-        })
+    installed_rule_descriptor(installed_schema.invariants(), rule)
         .map(|descriptor| descriptor.applicability().to_vec())
+}
+
+pub(super) fn installed_rule_descriptor<'catalog>(
+    catalog: &'catalog WorthQueryInstalledApplicationInvariantCatalog,
+    rule: &WorthQueryProgramRuleKey,
+) -> Option<&'catalog WorthQueryInstalledApplicationInvariantDescriptor> {
+    catalog.descriptors().find(|descriptor| {
+        descriptor.identifier() == rule.identity()
+            && descriptor.major() == rule.major()
+            && descriptor.minor() == rule.minor()
+            && descriptor.execution_point() == rule.execution_point()
+    })
 }

@@ -4006,6 +4006,7 @@ dependencies = [
  "worth-execution",
  "worth-foundational",
  "worth-proof",
+ "worth-query-execution",
  "worth-query-installation",
  "worth-relational",
  "worth-runtime-bridge",

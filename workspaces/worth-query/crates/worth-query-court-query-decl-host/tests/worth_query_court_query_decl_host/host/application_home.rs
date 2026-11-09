@@ -1,4 +1,6 @@
 //! Real directory startup/read/owning close, extended by the ordinary commit seam.
+mod program_support;
+mod workflow_configuration;
 use std::{
     sync::{
         atomic::{AtomicUsize, Ordering},
@@ -238,3 +240,5 @@ mod fresh_source;
 mod fresh_close;
 mod program_transition;
 mod transition_required;
+
+mod signing_owner_retirement;

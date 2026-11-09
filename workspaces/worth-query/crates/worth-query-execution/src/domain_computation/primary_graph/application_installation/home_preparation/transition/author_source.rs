@@ -14,6 +14,20 @@ pub struct WorthQueryHomeProgramTransitionReadSource<'owner, 'scope> {
     metadata: RelationalPinnedRead<()>,
     pub(super) layout: &'owner WorthQueryPrimaryGraphLayout,
     phase: &'owner WorthQueryBootstrapAdvancementPhase<'scope>,
+    pub(super) branch: crate::basis::WorthQueryProductBranch,
+    pub(super) actor: worth_proof::AdmittedWorkflowEndingActor<
+        crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor,
+        worth_relational::facade::runtime::RelationalHomeProgramPlanningSource,
+    >,
+}
+
+#[derive(Debug)]
+pub enum QueryHomeProgramTransitionSourceDenial {
+    Native(worth_relational::facade::runtime::RelationalHomeProgramContractDenial),
+    Meaning(WorthQueryPrimaryGraphInstallationDenial),
+    NonDurableWorldOwner,
+    ForeignWorldOwner,
+    Activation(super::super::super::super::bootstrap::branch_activation_history::QueryHomeProgramActivationDenial),
 }
 impl WorthQueryHomeProgramTransitionReadSource<'_, '_> {
     pub fn schema_registry(&self) -> &worth_relational::facade::schema::RelationalSchemaRegistry {
@@ -94,34 +108,104 @@ impl<Schema: ApplicationSchemaComposition, Program>
     pub fn home_program_transition_source<'owner, 'scope>(
         &'owner self,
         phase: &'owner WorthQueryBootstrapAdvancementPhase<'scope>,
-        native: &RelationalRuntime,
-        basis: &AdmittedRelationalBranchBasis,
+        native: &'owner RelationalRuntime,
+        source: &'owner worth_runtime_world::facade::ProductBranchObservation,
+        admitted: worth_proof::AdmittedHomeProgramTransitionPlanningRequest<
+            worth_relational::facade::runtime::RelationalHomeProgramPlanningSource,
+        >,
+        observation: &worth_runtime_world::facade::RuntimeWorldObservationPort,
+        inspection: &worth_runtime_world::facade::RuntimeWorldInspectionPort,
     ) -> Result<
         WorthQueryHomeProgramTransitionReadSource<'owner, 'scope>,
-        WorthQueryPrimaryGraphInstallationDenial,
+        QueryHomeProgramTransitionSourceDenial,
     > {
-        let (_, receipt) = self.predecessor_native_meaning();
-        if receipt.runtime_instance_id() != native.runtime_instance_id() {
-            return Err(denied(
-                "transition source belongs to another actual Native receiver",
-            ));
-        }
-        let view = native
-            .read_truth()
-            .project_observation(&basis.observation())
-            .map_err(|cause| denied(format!("transition original source refused: {cause:?}")))?;
-        let metadata = native
-            .read_truth()
-            .pin_view_read_capability(&view, &[], &phase.execution_request())
-            .map_err(|cause| denied(format!("transition original metadata refused: {cause:?}")))?;
-        Ok(WorthQueryHomeProgramTransitionReadSource {
-            view,
-            metadata,
-            layout: self.predecessor_native_meaning().0,
+        let (layout, receipt) = self.predecessor_native_meaning();
+        admit_source_lens(
             phase,
-        })
+            native,
+            source,
+            admitted,
+            layout,
+            receipt,
+            self.predecessor_program_support().1,
+            observation,
+            inspection,
+        )
     }
 }
+
+fn admit_source_lens<'owner, 'scope, Schema>(
+    phase: &'owner WorthQueryBootstrapAdvancementPhase<'scope>,
+    native: &'owner RelationalRuntime,
+    source: &'owner worth_runtime_world::facade::ProductBranchObservation,
+    admitted: worth_proof::AdmittedHomeProgramTransitionPlanningRequest<
+        worth_relational::facade::runtime::RelationalHomeProgramPlanningSource,
+    >,
+    layout: &'owner WorthQueryPrimaryGraphLayout,
+    receipt: &worth_relational::facade::runtime::RelationalInitialSchemaInstallationReceipt,
+    roster: &worth_query_installation::facade::WorthQueryProgramSupportRoster<Schema>,
+    observation: &worth_runtime_world::facade::RuntimeWorldObservationPort,
+    inspection: &worth_runtime_world::facade::RuntimeWorldInspectionPort,
+) -> Result<
+    WorthQueryHomeProgramTransitionReadSource<'owner, 'scope>,
+    QueryHomeProgramTransitionSourceDenial,
+> {
+    use QueryHomeProgramTransitionSourceDenial as Denial;
+    let basis = source.basis().relational_basis();
+    // Incarnation/owner admission precedes every scope test and truth read.
+    native
+        .admit_home_program_transition_planning_request(&admitted, basis)
+        .map_err(Denial::Native)?;
+    let owner = source
+        .owner_identity()
+        .durable()
+        .ok_or(Denial::NonDurableWorldOwner)?;
+    if owner != admitted.source().actor() {
+        return Err(Denial::ForeignWorldOwner);
+    }
+    if receipt.runtime_instance_id() != native.runtime_instance_id() {
+        return Err(Denial::Meaning(denied(
+            "transition source belongs to another actual Native receiver",
+        )));
+    }
+    super::super::super::super::bootstrap::branch_activation_history::verify_predecessor(
+        native,
+        layout,
+        &phase.execution_request(),
+        source,
+        roster,
+        observation,
+        inspection,
+    )
+    .map_err(Denial::Activation)?;
+    let view = native
+        .read_truth()
+        .project_observation(&basis.observation())
+        .map_err(|cause| {
+            Denial::Meaning(denied(format!(
+                "transition original source refused: {cause:?}"
+            )))
+        })?;
+    let metadata = native
+        .read_truth()
+        .pin_view_read_capability(&view, &[], &phase.execution_request())
+        .map_err(|cause| {
+            Denial::Meaning(denied(format!(
+                "transition original metadata refused: {cause:?}"
+            )))
+        })?;
+    Ok(WorthQueryHomeProgramTransitionReadSource {
+        view,
+        metadata,
+        layout,
+        phase,
+        branch: crate::basis::WorthQueryProductBranch::from_occurrence(
+            source.lifecycle_incarnation(),
+        ),
+        actor: worth_proof::AdmittedWorkflowEndingActor::from_home_program_transition(admitted),
+    })
+}
+
 impl<Schema: ApplicationSchemaComposition, Program>
     PreparedHomeProgramTransitionTarget<Schema, Program>
 {

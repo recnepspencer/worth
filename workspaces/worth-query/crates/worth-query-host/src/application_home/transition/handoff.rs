@@ -17,6 +17,9 @@ pub(super) fn transition<A, AP, B, BP, Author>(
     home: UnsharedReadmittedApplicationHome,
     author: Author,
     resources: worth_relational::facade::indexes::DerivedIndexMaintenanceBudget,
+    workflow_dispositions: Option<
+        worth_query_execution::facade::primary_graph::WorthQueryWorkflowDispositions,
+    >,
     checkpoint_limits: ApplicationHomeCheckpointLimits,
     observation: ApplicationHomeOpeningObservation,
 ) -> Result<
@@ -39,7 +42,7 @@ where
     >,
 {
     let prepared = super::preparation::prepare(phase, before, after, home)?;
-    let planned = prepared.plan(phase, author, resources)?;
+    let planned = prepared.plan(phase, author, resources, workflow_dispositions.as_ref())?;
     let bound = planned.perform(phase)?;
     bound
         .attach(phase, checkpoint_limits, observation)

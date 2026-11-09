@@ -77,11 +77,23 @@ fn each_unsupported_journal_entry_refuses_admission_and_returns_the_same_home() 
             .readmit_no_pending_owners(&execution)
             .err()
             .expect("a genuine reserved journal entry must refuse admission");
-        assert!(
-            matches!(refused.reason(), Denial::JournalNotEmpty { journal, head }
-            if *journal == name && *head == entry)
-        );
+        if name == "query.obligations" {
+            assert!(matches!(refused.reason(), Denial::QueryObligations(worth_query_execution::facade::program_support::QueryProgramSupportDenial::SupportUnavailable)));
+        } else {
+            assert!(
+                matches!(refused.reason(), Denial::JournalNotEmpty { journal, head } if *journal == name && *head == entry)
+            );
+        }
         let home = refused.into_home();
+        assert_eq!(
+            home.physical_serving_for_test()
+                .ordered_journal(OrderedJournalName::new(name).unwrap())
+                .unwrap()
+                .head()
+                .unwrap(),
+            Some(entry),
+            "refused owner admission cannot alter the original prefix"
+        );
         assert_eq!(home.home_identity(), identity);
         assert_eq!(home.incarnation(), incarnation);
         assert_eq!(

@@ -16,7 +16,8 @@ pub use home_program_transition::{
     home_program_transition_body_digest, PreparedRelationalHomeProgramContracts,
     RelationalHomeProgramBodyDenial, RelationalHomeProgramCatalogReadmissionSource,
     RelationalHomeProgramCatalogReceipt, RelationalHomeProgramContractDenial,
-    RelationalHomeProgramPromotionRefused, RelationalHomeProgramStepContracts,
+    RelationalHomeProgramPlanningSource, RelationalHomeProgramPromotionRefused,
+    RelationalHomeProgramStepContracts,
 };
 pub(crate) use home_program_transition::{
     AdmittedRelationalHomeProgramStep, AdmittedRelationalHomeProgramTarget,

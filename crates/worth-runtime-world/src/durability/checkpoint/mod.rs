@@ -19,6 +19,8 @@ pub(crate) use origin::{
 };
 pub use origin::{WorldCheckpointOriginRetirement, WorldCheckpointOriginRetirementDenial};
 mod port;
+mod program_activation;
+pub use program_activation::{WorldProgramActivationHistory, WorldProgramActivationHistoryEntry};
 mod source;
 mod subject;
 #[cfg(test)]

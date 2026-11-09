@@ -411,13 +411,16 @@ pub use crate::durability::{
     HomeProgramTransitionCatalogDigest, HomeProgramTransitionDescriptionDenial,
     HomeProgramTransitionIdentity, HomeProgramTransitionInstallationBinding,
     HomeProgramTransitionPlanDescription, HomeProgramTransitionPlanDigest,
-    HomeProgramTransitionSchemaCarrierDigest, HomeProgramTransitionSchemaDigest,
-    HomeProgramTransitionStepAssociation, HomeProgramTransitionStepRole,
-    HomeProgramTransitionTargetMeaning, MemoryProductBranchReference,
-    NativeCheckpointBranchObservation, NativeCheckpointBranchReference,
-    NativeCheckpointBranchTarget, RecordedCompositePublicationAttemptIdentity,
-    RecordedProductBranchReference, RetentionClass, UncleanRecoveryUnsupported,
-    UnsupportedDurableOwnerTag, WorldDurableJournal, WorldOwnerCoordinate, WorldOwnerSlotIdentity,
+    HomeProgramTransitionProgramStep, HomeProgramTransitionSchemaCarrierDigest,
+    HomeProgramTransitionSchemaDigest, HomeProgramTransitionStepAssociation,
+    HomeProgramTransitionStepRole, HomeProgramTransitionTargetMeaning,
+    MemoryProductBranchReference, NativeCheckpointBranchObservation,
+    NativeCheckpointBranchReference, NativeCheckpointBranchTarget,
+    ProgramSupportObligationIdentity, ProgramSupportObligationKind, ProgramSupportStatus,
+    RecordedCompositePublicationAttemptIdentity, RecordedProductBranchReference, RetentionClass,
+    UncleanRecoveryUnsupported, UnsupportedDurableOwnerTag, WorkflowEndingActorDecodeDenial,
+    WorkflowEndingActorProvenance, WorldDurableJournal, WorldOwnerCoordinate,
+    WorldOwnerSlotIdentity,
 };
 pub use crate::durable_publication::DurablePublicationFate;
 pub use crate::execution::{

@@ -4,6 +4,13 @@ use std::num::NonZeroUsize;
 pub(crate) trait RuntimeWorldInspectionService:
     crate::lifecycle::availability::RuntimeWorldAvailability
 {
+    fn observe_program_activation_history(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        crate::durability::WorldProgramActivationHistory,
+        crate::durability::WorldReadmissionDenial,
+    >;
     fn bootstrap_is_complete(&self) -> bool;
     fn history_snapshot(&self) -> super::RuntimeWorldHistorySnapshot;
     fn retention_costs(&self) -> crate::retention::RetentionCostSnapshot;

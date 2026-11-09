@@ -22,6 +22,10 @@ use crate::domain_computation::primary_graph::application_attempt::{
 use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
 
 mod cold;
+mod readmission;
+pub(in crate::domain_computation::primary_graph) use readmission::{
+    read_recorded_definition, RecordedWorkflowDefinition,
+};
 mod connection;
 mod global_actions;
 pub(in crate::domain_computation::primary_graph) use connection::observe_connection;
@@ -237,26 +241,6 @@ fn adjacency(
         relations,
     });
     Ok(adjacent)
-}
-
-fn exact_text(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    entity: EntityId,
-    kind: KindId,
-    locator: &AspectFieldLocator,
-    expected: &str,
-    facts: &mut Vec<WorthQueryApplicationObservedFact>,
-) -> Result<(), WorthQueryApplicationAttemptDenial> {
-    let value = observed_text(execution, runtime, snapshot, entity, kind, locator, facts)?;
-    if value == expected {
-        Ok(())
-    } else {
-        Err(denial(
-            "workflow definition field does not match installed support",
-        ))
-    }
 }
 
 fn exact_u64(

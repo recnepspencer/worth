@@ -118,6 +118,9 @@ where
                             &required,
                             &successor,
                             |world| {
+                                let world = world
+                                    .prepare_program_history(intent.program_steps(), request)
+                                    .map_err(Stage::World)?;
                                 let acknowledgement = prepared
                                     .publish(
                                         &context.serving,

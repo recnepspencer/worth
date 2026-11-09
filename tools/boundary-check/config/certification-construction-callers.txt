@@ -219,3 +219,10 @@ world-home workspaces/worth-store/crates/worth-store-application/src/world_secti
 world-home-checkpoint-selection workspaces/worth-store/crates/worth-store-application/src/world_section/checkpoint/selection.rs
 world-home-checkpoint-source crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/retention/artifact_source/journal.rs
 world-home-checkpoint-source workspaces/worth-store/crates/worth-store-application/src/world_section/checkpoint/read.rs
+
+# H6: actual Query owner admission and retained refused-opening custody.
+query-obligation-prefix workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/program_occurrence/support_lifecycle/journal_readmission.rs
+query-obligation-publication workspaces/worth-store/crates/worth-store-application/src/query_obligations/mod.rs
+query-home-obligations workspaces/worth-query/crates/worth-query-host/src/application_home/opening/custody.rs
+query-home-obligations workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/query_publication.rs
+query-home-obligations workspaces/worth-query/crates/worth-query-host/src/application_home/opening/service.rs

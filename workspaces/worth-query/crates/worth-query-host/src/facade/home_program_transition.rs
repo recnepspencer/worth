@@ -3,7 +3,9 @@ pub use worth_foundational::facade::{
     AspectFieldLocator, AspectKey, AspectValue, CanonicalFieldPath, FieldKey,
 };
 pub use worth_query_execution::facade::application_home_integration::{
-    WorthQueryHomeProgramTransitionReadSource, WorthQueryHomeProgramTransitionTarget,
+    QueryHomeProgramTransitionSourceDenial, QueryHomeWorkflowDispositionDenial,
+    WorkflowAdoptionReadDenial, WorthQueryHomeProgramTransitionReadSource,
+    WorthQueryHomeProgramTransitionTarget,
 };
 pub use worth_relational::facade::{
     identity::{EntityId, KindId, PartitionId, RelationId},

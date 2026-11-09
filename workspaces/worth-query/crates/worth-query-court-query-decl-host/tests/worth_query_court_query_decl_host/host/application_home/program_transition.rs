@@ -1,5 +1,6 @@
 //! Public Host transition over the original nonempty directory and ordinary B reopen.
 use super::*;
+mod activation_siblings;
 mod successor;
 use worth_query_host::facade::{
     application_entry::WorthQueryApplicationMutationOutcome, home_program_transition::*,
@@ -328,3 +329,5 @@ fn host_transition_refuses_private_record_bodies_before_intent_and_preserves_a()
     assert_eq!(contacts.load(Ordering::SeqCst), 0);
     (*home).close(&execution).unwrap();
 }
+
+mod workflow_dispositions;

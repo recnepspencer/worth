@@ -197,6 +197,12 @@ explicit unbudgeted `reclaim()` or abandonment. Dropping a Home is not successfu
 close. The Directory close method does not provide a completed MemoryOnly close;
 its owning refusal can return the original MemoryOnly Home through `resume()`.
 
+An installed authentication-event signing registry retires intact with its
+original Query owner. Close retains its inert supplier custody until explicit
+`reclaim()` or abandonment. A separately retained external authentication owner
+remains usable; closing the Home does not revoke that service. A retained
+program-runtime alias still refuses close with `Busy(ProgramRuntime)`.
+
 Dispose of a development directory with
 `discard_home(WorthQueryApplicationHomeLocation::Directory(path))` only when its
 lease is free. Discard destroys its data; it is separate from close. A held lease
@@ -209,6 +215,21 @@ The next successful open after discard initializes a new Home identity.
 ### Recovery after a selected checkpoint — pending (owner P-A, D12)
 
 ### Development workflow with program transitions
+
+Attach workflow choices to the transition request with
+`.with_workflow_dispositions(choices)`. The same fresh inventory and legality
+checks used by live adoption govern those choices. The total policy
+`WorthQueryWorkflowDispositions::retire_and_cancel_unperformed()` retires current
+definitions and cancels only unperformed instances; performed effects,
+outstanding approvals and owner custody still refuse. Ending provenance records
+the actual durable Home World owner from the checked request, never a principal
+invented for the Home. These framework writes enter the canonical target step
+after the authored-body fence and before intent recording.
+
+Workflow-bearing Directory admission still waits for H5's family cutoff and
+structural workflow readmission. Supplying choices does not bypass either gate;
+positive workflow cancellation/reopen qualification is pending that integration.
+
 
 When a Directory Home's recorded program or schema differs, supply the actual
 successor declaration and program on the open request. Call
@@ -234,6 +255,11 @@ binding before returning the successor Home. User bodies can change authored
 Relational records; private Query records and materialization mutations refuse
 before the intent. The framework updates the existing activation record.
 Signal/Bridge mutations remain unsupported in this lane.
+
+The author lens is admitted by the actual Home owner. Native verifies its
+attached Home seal, incarnation and exact source admission before exposing the
+predecessor view. Descriptive owner coordinates cannot substitute for that
+request, and planning permission does not authorize a transition step.
 
 Fresh and already-current Homes skip the transition author. After a successful
 transition, close normally and reopen with the successor request alone. Existing
@@ -1058,3 +1084,30 @@ This includes calls entered through a cloned ProductRuntime. Close refuses
 before World sealing while such a call remains active; resume retains the same
 Home service. Releasing the call permits owning close. This admission fence
 alone does not establish bounded destruction of arbitrary installed payloads.
+
+## Workflow configuration and Home custody
+
+After open, compile the workflow Spec from the Home's actual installed schema
+and program. Before cloning runtime handles, call
+`home.retain_workflow_spec(installed_spec, signing_owner)`. The returned
+`WorthQueryWorkflowApplicationHome` owns the original Home and its installed
+configuration. This uses the same atomic signing/coverage installation as the
+Memory workflow runtime. Refusal returns the original Home, Spec and signing
+owner; none is reconstructed from identifiers.
+
+Use `vocabulary()` for a request and `support_workflow_spec` for another genuinely
+rostered program. The shared configuration binds the actual Query authority and
+World owner/incarnation. A supplied foreign receiver refuses `ForeignRuntime`;
+a different incarnation of the same Home refuses `StaleIncarnation` before
+projection or registration. These identities retain no runtime backing.
+
+`close` preserves configuration through the original Home's close protocol.
+A refusal retains it through `resume` and `try_close`. A closed workflow Home
+reclaims it with the original closed Home at `reclaim`, outside budgeted close.
+A vocabulary borrows the Home and cannot remain usable after it is consumed.
+Memory Homes still have their existing close-lifecycle refusal; resume returns
+the same configured owner. This is not a filesystem-close claim.
+
+Workflow-bearing Directory execution and reopen qualification remain pending
+H5's cutoff and structural workflow readmission. Configuration after open does
+not supply a transition's target executable vocabulary retroactively.

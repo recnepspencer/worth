@@ -179,7 +179,14 @@ pub fn admit_home(
             execution,
         )
         .map_err(ApplicationHomeOpenRefusal::Execution)?;
+        let query_obligations =
+            Arc::new(crate::query_obligations::ApplicationQueryObligations::new(
+                &recovered.serving,
+                descriptor.identity,
+                descriptor.incarnation,
+            ));
         let mut context = HomeContext {
+            query_obligations,
             world_preparation: None,
             opening_observation,
             transition,

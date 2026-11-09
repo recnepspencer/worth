@@ -134,14 +134,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         if self.runtime.external_effect_transport.get().is_some() {
             return Err(Unsupported(Owner::ExternalTransport));
         }
-        if !self
-            .signing_owners
+        // The intact signer registry follows this original runtime into inert
+        // retirement custody. Its final supplier destruction belongs to reclaim,
+        // not budgeted close; external authentication owners are not revoked.
+        self.signing_owners
             .get_mut()
-            .map_err(|_| Busy(Owner::SigningOwners))?
-            .is_empty()
-        {
-            return Err(Unsupported(Owner::SigningOwners));
-        }
+            .map_err(|_| Busy(Owner::SigningOwners))?;
         Ok(())
     }
 
