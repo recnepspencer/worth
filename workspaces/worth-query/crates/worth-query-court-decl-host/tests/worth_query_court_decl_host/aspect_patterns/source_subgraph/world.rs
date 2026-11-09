@@ -10,6 +10,11 @@ pub enum Fault {
     CorruptInputMember,
     RetainAuthoredAnchor,
     OmitRestoredAnchor,
+    ChangedRestoredKey,
+    RepeatedRestoredMember,
+    ForeignRestoredMember,
+    ExtraRestoredMember,
+    ChangedRestoredValue,
 }
 pub struct Configuration {
     pub fault: Fault,

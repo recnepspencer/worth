@@ -28,6 +28,8 @@ where
     Member: OperationCreates<B::Operation>,
     OwnedBy: OperationLinks<B::Operation>,
     Next: OperationLinks<B::Operation>,
+    Head: OperationLinks<B::Operation>,
+    Operand: OperationLinks<B::Operation>,
     Root: WorthQueryApplicationOutputRole<
         Schema = Schema,
         Contract = B::Output,
@@ -67,7 +69,20 @@ where
         writer.create_member::<Members>(&row.key, &member)?;
         members.push((row.key.clone(), member));
     }
+    if let Some((_, first)) = members.first() {
+        writer.link(Head::reference(), "roster-head", &root, first)?;
+    }
     for row in &image.members {
+        if let Some(operand) = &row.operand {
+            let from = &members.iter().find(|(key, _)| key == &row.key).unwrap().1;
+            let to = &members.iter().find(|(key, _)| key == operand).unwrap().1;
+            writer.link(
+                Operand::reference(),
+                format!("operand:{}", row.key),
+                from,
+                to,
+            )?;
+        }
         if let Some(next) = &row.next {
             let from = &members.iter().find(|(key, _)| key == &row.key).unwrap().1;
             let to = &members.iter().find(|(key, _)| key == next).unwrap().1;

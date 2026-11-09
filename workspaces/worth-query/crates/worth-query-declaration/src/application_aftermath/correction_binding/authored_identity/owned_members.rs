@@ -10,6 +10,23 @@ use crate::application_operation::{
 use crate::application_schema::ApplicationRelationRef;
 
 impl<S: ApplicationSchema> ApplicationAuthoredCorrection<S> {
+    /// Restore this one member under its original live owner, by its family key.
+    /// The relation must have exactly one target per live member and be retained
+    /// by the recorded inverse's relation demand.
+    pub fn owned_member_of<Owner, Member, Anchor>(
+        mut self,
+        owner: ApplicationRelationRef<S, Owner, Member, Anchor>,
+    ) -> Self {
+        let owner = PortablePreImageRelationLocus::from_untrusted_fields(
+            owner.name().to_owned(),
+            owner.from().to_owned(),
+            owner.to().to_owned(),
+        );
+        let previous = self.compose;
+        self.compose = Box::new(move || Ok(previous()?.with_live_member_owner(owner.clone())));
+        self
+    }
+
     /// Join a variable-size member kind to this anchor's lifetime inverse.
     /// Source and inverse output families must have opposite lifecycle postures.
     /// Installation requires an exactly-one member-to-anchor owner relation.

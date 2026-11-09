@@ -72,7 +72,8 @@ impl PreparedAuthoredIdentity {
         worth_relational::facade::transactions::CreatedEntityRef,
     )> {
         let parts = self.declaration.parts();
-        if parts.source_posture != Posture::Retire {
+        if parts.source_posture != Posture::Retire || self.declaration.live_member_owner().is_some()
+        {
             return None;
         }
         roles.find_map(|(name, posture, _, target)| match target {

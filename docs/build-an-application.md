@@ -4274,6 +4274,24 @@ in decision support; deleting another holder or claiming the value twice still
 refuses. An empty roster retains its intra-member empty loci from the genuinely
 observed empty owner adjacency, rather than inventing a member to read.
 
+A local recorded correction can delete one member while its owner stays live.
+Declare the member itself with
+`ApplicationAuthoredCorrection::restore_retired::<C, MemberFamily, Deleted, Restored>()`
+and append `.owned_member_of(MemberOf::reference())`. This names the same
+exactly-one owner relation used by the roster; it does not request a roster
+replacement. Demand and observe that relation, every changed incident relation,
+the logical key and all fields to restore. The original Retire output identifies
+the deleted member. Native's validated relation footprint matches its retained
+family key to exactly one fresh member and carries that old-to-fresh pair into
+relation inversion. The original live owner must remain its owner, and the
+retained member fields must match exactly. A changed key refuses with
+`IncompleteInverse`, duplicate recreated keys with `RepeatedInverse`, a different
+owner with `ForeignEndpoint`, an additional recreated member with `ExtraInverse`,
+and changed retained fields with `RestoredFieldMismatch`. These typed pre-image
+failures name the affected member through `relation_preimage_failure()` and
+publish no effects. This uses the same total retained-byte bound and never
+re-evaluates the original candidate or recreates the unaffected roster.
+
 Historical member fields are read using `family_member_suffix`,
 `family_member_entity` and `field_for_family_member` on the recorded pre-image.
 These descriptive values grant no current read or mutation authority.

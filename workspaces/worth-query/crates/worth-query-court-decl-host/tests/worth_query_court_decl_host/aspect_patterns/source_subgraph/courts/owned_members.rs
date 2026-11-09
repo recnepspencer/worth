@@ -2,66 +2,8 @@
 use super::super::roster::*;
 use super::*;
 use worth_relational::facade::transactions::RecordRef;
-pub(super) fn image(count: usize) -> Image {
-    Image {
-        key: "roster".into(),
-        value: 7,
-        members: (0..count)
-            .map(|i| Row {
-                key: format!("part-{i}"),
-                value: 20 + i as u64,
-                next: (i + 1 < count).then(|| format!("part-{}", i + 1)),
-            })
-            .collect(),
-    }
-}
-pub(super) fn created(
-    host: &world::Host,
-    request: &world::Request<'_, '_, '_>,
-    image: Image,
-) -> WorthQueryApplicationCommitReceipt {
-    let creation_key = format!("create:{}", image.key);
-    let result = request
-        .advanced()
-        .mutate(Create(image))
-        .without_source()
-        .idempotency(&creation_key)
-        .execute_in_program(
-            host,
-            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    let WorthQueryApplicationMutationOutcome::Committed { receipt, .. } = result else {
-        panic!("{result:?}");
-    };
-    receipt
-}
-pub(super) fn reverse(
-    request: &world::Request<'_, '_, '_>,
-    receipt: &WorthQueryApplicationCommitReceipt,
-    key: &str,
-) {
-    let limits = WorthQueryCorrectionHistoryLimits::new(None, std::num::NonZeroUsize::MIN);
-    let selected = request.corrections().select(receipt, limits).unwrap();
-    let preparation = request
-        .corrections()
-        .reverse(&selected)
-        .idempotency(key)
-        .limits(limits)
-        .prepare()
-        .unwrap();
-    let WorthQueryApplicationCorrectionPreparation::Prepared(prepared) = preparation else {
-        panic!("inverse did not prepare");
-    };
-    let result = prepared.publish().unwrap();
-    assert!(
-        matches!(
-            result,
-            WorthQueryApplicationMutationOutcome::Committed { .. }
-        ),
-        "{result:?}"
-    );
-}
+mod round_trip;
+pub(super) use round_trip::{created, image, reverse};
 #[test]
 fn retirement_restores_a_variable_keyed_chain_and_an_empty_roster() {
     for count in [0, 3] {
@@ -272,4 +214,67 @@ pub(super) fn assert_absent(request: &world::Request<'_, '_, '_>) {
             WorthQueryEntityResolutionRefusalKind::UnknownEntity
         )
     );
+}
+
+#[test]
+fn one_deleted_member_returns_to_its_live_owner_with_all_three_links() {
+    let host = world::install(world::Fault::None, Hashes::default());
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.runtime().request(&principal, &scope);
+    created(&host, &request, local_image());
+    let before = local_snapshot(&request);
+    assert_eq!(before.head.as_deref(), Some("part-0"));
+    let receipt = delete_one(&host, &request);
+    let deleted = local_snapshot(&request);
+    assert_eq!(deleted.id, before.id);
+    assert_eq!(deleted.members.len(), 1);
+    assert_eq!(deleted.members[0], before.members[1]);
+    assert_eq!(deleted.head, None);
+    reverse(&request, &receipt, "restore-one-member");
+    let after = local_snapshot(&request);
+    assert_eq!(after.id, before.id);
+    assert_eq!(after.members.len(), 2);
+    assert_ne!(after.members[0].0, before.members[0].0);
+    assert_eq!(after.members[0].1, before.members[0].1);
+    assert_eq!(after.members[1], before.members[1]);
+    assert_eq!(after.head, before.head);
+}
+pub(super) fn local_snapshot(request: &world::Request<'_, '_, '_>) -> query::Snapshot {
+    request
+        .query(query::Read("roster".into()))
+        .execute()
+        .unwrap()
+        .rows()[0]
+        .clone()
+}
+pub(super) fn delete_one(
+    host: &world::Host,
+    request: &world::Request<'_, '_, '_>,
+) -> WorthQueryApplicationCommitReceipt {
+    let result = request
+        .advanced()
+        .mutate(local_member::Delete {
+            owner: "roster".into(),
+            key: "part-0".into(),
+            operand: "part-1".into(),
+        })
+        .without_source()
+        .idempotency(&"delete-one".to_owned())
+        .execute_in_program(
+            host,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
+    let WorthQueryApplicationMutationOutcome::Committed { receipt, .. } = result else {
+        panic!("{result:?}");
+    };
+    receipt
+}
+
+pub(super) fn local_image() -> Image {
+    let mut graph = image(2);
+    graph.members[0].next = None;
+    graph.members[0].operand = Some("part-1".into());
+    graph
 }

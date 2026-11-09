@@ -25,6 +25,7 @@ pub struct DeclaredAuthoredCorrection {
     co_anchors: Vec<DeclaredAuthoredCorrection>,
     optional: bool,
     owner: Option<crate::application_aftermath::PortablePreImageRelationLocus>,
+    live_owner: Option<crate::application_aftermath::PortablePreImageRelationLocus>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -44,7 +45,21 @@ impl DeclaredAuthoredCorrection {
             co_anchors: Vec::new(),
             optional: false,
             owner: None,
+            live_owner: None,
         }
+    }
+    /// A single deleted member returns to this same live owner.
+    pub fn live_member_owner(
+        &self,
+    ) -> Option<&crate::application_aftermath::PortablePreImageRelationLocus> {
+        self.live_owner.as_ref()
+    }
+    pub fn with_live_member_owner(
+        mut self,
+        owner: crate::application_aftermath::PortablePreImageRelationLocus,
+    ) -> Self {
+        self.live_owner = Some(owner);
+        self
     }
     pub fn co_anchors(&self) -> &[Self] {
         &self.co_anchors

@@ -78,13 +78,13 @@ pub use transaction::{
 };
 pub(crate) use validation::RelationalTransactionValidationInput;
 pub use validation::{
-    CustomInvariantExecutionReceipt, CustomInvariantNonApplicability,
-    RelationalMutationInvariantEvidence, RelationalMutationProposalIdentity,
-    ValidatedEntityStructTouch, ValidatedMutationFootprint, ValidatedMutationFootprintNotRequested,
-    ValidatedMutationFootprintProjection, ValidatedMutationFootprintWork, ValidatedMutationTouch,
-    ValidatedMutationTouchProjectionError, ValidatedMutationTouchProjectionWork,
-    ValidatedMutationTouches, ValidatedRelationMutation, ValidatedRelationMutationFootprint,
-    ValidatedRelationalProposal,
+    CustomInvariantExecutionReceipt, CustomInvariantNonApplicability, RecordedMemberRestoration,
+    RecordedMemberRestorationRefusal, RelationalMutationInvariantEvidence,
+    RelationalMutationProposalIdentity, ValidatedEntityStructTouch, ValidatedMutationFootprint,
+    ValidatedMutationFootprintNotRequested, ValidatedMutationFootprintProjection,
+    ValidatedMutationFootprintWork, ValidatedMutationTouch, ValidatedMutationTouchProjectionError,
+    ValidatedMutationTouchProjectionWork, ValidatedMutationTouches, ValidatedRelationMutation,
+    ValidatedRelationMutationFootprint, ValidatedRelationalProposal,
 };
 
 #[cfg(test)]

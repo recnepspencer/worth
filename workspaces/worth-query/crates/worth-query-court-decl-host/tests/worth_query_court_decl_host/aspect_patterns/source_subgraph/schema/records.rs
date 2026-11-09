@@ -63,7 +63,7 @@ pub struct Source;
 impl Entity for Source {
     const NAME: &'static str = "Source";
     type Aspects = ();
-    type Relations = (SourceMember,);
+    type Relations = (SourceMember, roster::Head);
 }
 impl Source {
     pub fn reference() -> ApplicationEntityRef<Schema, Self> {

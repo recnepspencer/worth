@@ -5,7 +5,7 @@ pub struct Member;
 impl Entity for Member {
     const NAME: &'static str = "AuthoredMember";
     type Aspects = (MemberFacts,);
-    type Relations = (OwnedBy, Next);
+    type Relations = (OwnedBy, Next, Operand);
 }
 impl Member {
     pub fn reference() -> ApplicationEntityRef<Schema, Self> {
@@ -25,7 +25,6 @@ impl Record<MemberValue> for SourceModelBindings {
     fn record() -> impl Shape<MemberValue, Self> {
         field("MemberKey", |row: &MemberValue| row.key.clone())
             .equality_queryable(true)
-            .unique()
             .and("MemberValue", |row: &MemberValue| row.value)
             .build(|key, value, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(MemberValue { key, value })
@@ -74,5 +73,31 @@ impl ApplicationAuthoredCorrectionFamily<Schema> for MemberFamily {
     type Entity = Member;
     fn logical_key() -> ApplicationAuthoredLogicalKey<Schema, Member> {
         ApplicationAuthoredLogicalKey::from_field(MemberKey::at("MemberKey"))
+    }
+}
+
+pub struct Head;
+impl Relation for Head {
+    const NAME: &'static str = "RosterHead";
+    type To = Member;
+    const DELETION: ApplicationRelationDeletionPolicy =
+        ApplicationRelationDeletionPolicy::RejectDeleteWithLiveRelations;
+}
+impl Head {
+    pub fn reference() -> ApplicationRelationRef<Schema, Self, Source, Member> {
+        relation(SourceModel, Source, Self)
+    }
+}
+
+pub struct Operand;
+impl Relation for Operand {
+    const NAME: &'static str = "MemberOperand";
+    type To = Member;
+    const DELETION: ApplicationRelationDeletionPolicy =
+        ApplicationRelationDeletionPolicy::RejectDeleteWithLiveRelations;
+}
+impl Operand {
+    pub fn reference() -> ApplicationRelationRef<Schema, Self, Member, Member> {
+        relation(SourceModel, Member, Self)
     }
 }

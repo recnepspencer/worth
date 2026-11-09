@@ -22,19 +22,19 @@ worth_query_structured_value_binding!(pub RetireInput for Retire { identity: "so
 worth_query_operation!(pub CreateGraph for Schema, input CreateInput; access {
     read_fields: [SourceKey::at("SourceKey")];
     writes: [SourceKey::at("SourceKey"), SourceValue::at("SourceValue"), MemberKey::at("MemberKey"), Value::at("MemberValue")];
-    creates: [Source, Member]; links: [OwnedBy, Next];
+    creates: [Source, Member]; links: [OwnedBy, Next, Head, Operand];
 });
 worth_query_operation!(pub RestoreGraph for Schema, input RestoreInput; access {
     read_fields: [SourceKey::at("SourceKey"), SourceValue::at("SourceValue"), MemberKey::at("MemberKey"), Value::at("MemberValue")];
-    read_entities: [Source, Member]; read_relations: [OwnedBy, Next];
+    read_entities: [Source, Member]; read_relations: [OwnedBy, Next, Head, Operand];
     writes: [SourceKey::at("SourceKey"), SourceValue::at("SourceValue"), MemberKey::at("MemberKey"), Value::at("MemberValue")];
-    creates: [Source, Member]; links: [OwnedBy, Next]; deletes: [Source, Member]; unlinks: [OwnedBy, Next];
+    creates: [Source, Member]; links: [OwnedBy, Next, Head, Operand]; deletes: [Source, Member]; unlinks: [OwnedBy, Next, Head, Operand];
 });
 worth_query_operation!(pub RetireGraph for Schema, input RetireInput; access {
     read_fields: [SourceKey::at("SourceKey"), SourceValue::at("SourceValue"), MemberKey::at("MemberKey"), Value::at("MemberValue")];
-    read_entities: [Source, Member]; read_relations: [OwnedBy, Next];
+    read_entities: [Source, Member]; read_relations: [OwnedBy, Next, Head, Operand];
     writes: [SourceKey::at("SourceKey"), SourceValue::at("SourceValue"), MemberKey::at("MemberKey"), Value::at("MemberValue")];
-    creates: [Source, Member]; links: [OwnedBy, Next]; deletes: [Source, Member]; unlinks: [OwnedBy, Next];
+    creates: [Source, Member]; links: [OwnedBy, Next, Head, Operand]; deletes: [Source, Member]; unlinks: [OwnedBy, Next, Head, Operand];
 });
 pub struct CreatedOutputs;
 pub struct RetiredOutputs;
@@ -97,6 +97,8 @@ pub struct Retirement {
     pub root: AnchorTarget,
     pub members: Vec<(String, MemberTarget, Option<AnchorTarget>)>,
     pub links: Vec<(MemberTarget, MemberTarget)>,
+    pub operands: Vec<(MemberTarget, MemberTarget)>,
+    pub head: Option<MemberTarget>,
 }
 macro_rules! binding { ($binding:ident, $input:ident, $codec:ident, $operation:ident, $decision:ty, $outputs:ident, $id:literal) => {
     fn scope(_: &$input) -> String { "source".into() }

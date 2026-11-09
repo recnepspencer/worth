@@ -2,6 +2,7 @@
 use super::*;
 mod schema;
 pub(super) use schema::*;
+pub(super) mod local_member;
 mod operations;
 pub(super) use operations::*;
 mod correction;
@@ -18,6 +19,7 @@ pub struct Row {
     pub key: String,
     pub value: u64,
     pub next: Option<String>,
+    pub operand: Option<String>,
 }
 #[derive(Clone, Debug, WorthValue)]
 #[worth_value(crate = "worth_query_decl::facade::application_schema")]
@@ -31,12 +33,13 @@ pub type MemberTarget = WorthQueryInvariantMutationTarget<Schema, Member>;
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    links::declare(query::declare(operations::declare(schema)))
+    local_member::declare(links::declare(query::declare(operations::declare(schema))))
 }
 pub fn configure(
     setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
     fault: world::Fault,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    local_member::configure(setup, fault)?;
     setup.handler::<links::Binding, _>(links::Handler)?;
     setup.handler::<CreateBinding, _>(creation::Handler)?;
     setup.handler::<RestoreBinding, _>(creation::RestorationHandler {

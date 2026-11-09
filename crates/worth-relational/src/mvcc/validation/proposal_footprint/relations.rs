@@ -1,4 +1,5 @@
 //! Relation lifecycle material comes from the validated actor's real applied draft.
+use super::member_restoration::{RecordedMemberRestoration, RecordedMemberRestorationRefusal};
 use super::ValidatedRelationalProposal;
 use crate::execution::request_stage::checkpoint;
 use crate::{
@@ -44,12 +45,16 @@ impl ValidatedRelationMutation {
 #[derive(Debug)]
 pub struct ValidatedRelationMutationFootprint {
     relations: Vec<ValidatedRelationMutation>,
-    restored_entities: Vec<(EntityId, EntityId)>,
+    restored_entities: Result<Vec<(EntityId, EntityId)>, RecordedMemberRestorationRefusal>,
     _memory: Option<ExecutionMemoryReservation>,
 }
 impl ValidatedRelationMutationFootprint {
-    pub fn restored_entities(&self) -> &[(EntityId, EntityId)] {
-        &self.restored_entities
+    pub fn restored_entities(
+        &self,
+    ) -> Result<&[(EntityId, EntityId)], RecordedMemberRestorationRefusal> {
+        self.restored_entities
+            .as_deref()
+            .map_err(|refusal| *refusal)
     }
     pub fn relations(&self) -> &[ValidatedRelationMutation] {
         &self.relations
@@ -61,6 +66,7 @@ impl ValidatedRelationalProposal {
         &self,
         execution: &ExecutionRequest<'_, '_>,
         kinds: &[KindId],
+        members: &[RecordedMemberRestoration<'_>],
     ) -> Result<ValidatedRelationMutationFootprint, TransactionCommitError> {
         let fragments = &self
             .proposed_mutation
@@ -81,11 +87,14 @@ impl ValidatedRelationalProposal {
                 .len()
                 + 1
         });
+        let restored_capacity = anchors.checked_add(members.len()).ok_or_else(|| {
+            stop(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
+        })?;
         let bytes = fragments
             .len()
             .checked_mul(size_of::<ValidatedRelationMutation>())
             .and_then(|bytes| {
-                anchors
+                restored_capacity
                     .checked_mul(size_of::<(EntityId, EntityId)>())
                     .and_then(|extra| bytes.checked_add(extra))
             })
@@ -112,9 +121,12 @@ impl ValidatedRelationalProposal {
             stop(crate::execution::RelationalExecutionDenialCause::AllocationFailed)
         })?;
         let mut restored_entities = Vec::new();
-        restored_entities.try_reserve_exact(anchors).map_err(|_| {
-            stop(crate::execution::RelationalExecutionDenialCause::AllocationFailed)
-        })?;
+        restored_entities
+            .try_reserve_exact(restored_capacity)
+            .map_err(|_| {
+                stop(crate::execution::RelationalExecutionDenialCause::AllocationFailed)
+            })?;
+        let mut member_refusal = None;
         execution.run_native_with_checkpoint(|context| {
             if let Some(restoration) = restoration {
                 for (original, target) in restoration.entities.iter().take(anchors) {
@@ -126,6 +138,14 @@ impl ValidatedRelationalProposal {
             }
             for fragment in fragments {
                 checkpoint(context, 1).map_err(stop)?;
+                if !members.is_empty()
+                    && let RecordRef::Entity(entity) = fragment.target
+                    && fragment.structural_change == crate::publication::patch::data::RecordStructuralChange::Created {
+                    let partition = self.proposed_mutation.state.get_current_partition(entity.partition_id);
+                    if let Some(kind) = partition.as_ref().and_then(|partition| partition.entity_arena().get(&entity)).filter(|row| row.is_live()).and_then(|row| row.kind_id()) {
+                        self.project_restored_member(entity, kind, members, &mut restored_entities, &mut member_refusal, context)?;
+                    }
+                }
                 let RecordRef::Relation(relation) = fragment.target else { continue; };
                 if let Some(admission) = &self.required_output_publication
                     && let crate::mvcc::RequiredOutputPublication::CoupledAuthored { group } = &admission.publication
@@ -158,16 +178,30 @@ impl ValidatedRelationalProposal {
                     relations.push(ValidatedRelationMutation { relation, kind, audit_retained: matches!(fragment.structural_change, crate::publication::patch::data::RecordStructuralChange::RetainedForAudit), before, after, allocated_endpoint });
                 }
             }
+            for member in members {
+                checkpoint(context, restored_entities.len() as u64).map_err(stop)?;
+                let Some((_, fresh)) = restored_entities.iter().find(|(old, _)| *old == member.original) else {
+                    member_refusal = Some(RecordedMemberRestorationRefusal::Incomplete(member.original));
+                    break;
+                };
+                checkpoint(context, relations.len() as u64).map_err(stop)?;
+                if !relations.iter().any(|edge| edge.kind() == member.owner.0 && edge.after() == Some((*fresh, member.owner.1))) && member_refusal.is_none() {
+                    member_refusal = Some(RecordedMemberRestorationRefusal::Foreign(member.original));
+                }
+            }
             Ok::<(), TransactionCommitError>(())
         }).map_err(stop)?.0?;
         Ok(ValidatedRelationMutationFootprint {
             relations,
-            restored_entities,
+            restored_entities: match member_refusal {
+                Some(refusal) => Err(refusal),
+                None => Ok(restored_entities),
+            },
             _memory: memory,
         })
     }
 }
-fn stop(
+pub(super) fn stop(
     cause: impl Into<crate::execution::RelationalExecutionDenialCause>,
 ) -> TransactionCommitError {
     TransactionCommitError::execution(crate::transactions::data::CommitExecutionDenial {

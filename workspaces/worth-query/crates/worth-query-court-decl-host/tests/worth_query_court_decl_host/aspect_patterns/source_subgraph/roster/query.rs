@@ -6,6 +6,7 @@ pub struct Snapshot {
     pub id: NativeEntityId,
     pub key: String,
     pub value: u64,
+    pub head: Option<String>,
     pub members: Vec<(NativeEntityId, Row)>,
 }
 worth_query_structured_value_binding!(pub SnapshotBinding for Snapshot { identity: "source-subgraph.roster-snapshot.v1" });
@@ -52,6 +53,44 @@ fn next() -> ApplicationQueryResultRelationRef<
 > {
     ApplicationQueryResultRelationRef::forward_many("next", Next::reference())
 }
+pub struct HeadKey;
+worth_query_portable_type!(HeadKey => "source-subgraph.roster-head-key.v1");
+fn head_key() -> ApplicationQueryResultFieldRef<Query, HeadKey, Schema, MemberKey> {
+    ApplicationQueryResultFieldRef::new("head_key", MemberKey::at("MemberKey"))
+}
+pub struct OperandKey;
+worth_query_portable_type!(OperandKey => "source-subgraph.roster-operand-key.v1");
+fn operand_key() -> ApplicationQueryResultFieldRef<Query, OperandKey, Schema, MemberKey> {
+    ApplicationQueryResultFieldRef::new("operand_key", MemberKey::at("MemberKey"))
+}
+pub struct HeadMember;
+worth_query_portable_type!(HeadMember => "source-subgraph.roster-head.v1");
+fn head() -> ApplicationQueryResultRelationRef<
+    Query,
+    HeadMember,
+    Schema,
+    Head,
+    Source,
+    Member,
+    ForwardResultTraversal,
+    ManyResults,
+> {
+    ApplicationQueryResultRelationRef::forward_many("head", Head::reference())
+}
+pub struct OperandMember;
+worth_query_portable_type!(OperandMember => "source-subgraph.roster-operand.v1");
+fn operand() -> ApplicationQueryResultRelationRef<
+    Query,
+    OperandMember,
+    Schema,
+    Operand,
+    Member,
+    Member,
+    ForwardResultTraversal,
+    ManyResults,
+> {
+    ApplicationQueryResultRelationRef::forward_many("operand", Operand::reference())
+}
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
@@ -72,6 +111,7 @@ pub fn declare(
     >::new(Member::reference())
     .field(child_key())
     .field(child_value())
+    .relation(operand(), ApplicationQueryResultShapeBuilder::<Schema, Query, Member, Snapshot, SnapshotBinding>::new(Member::reference()).field(operand_key()))
     .relation(next(), next_shape);
     let shape = ApplicationQueryResultShapeBuilder::<
         Schema,
@@ -82,6 +122,7 @@ pub fn declare(
     >::new(Source::reference())
     .field(root_key())
     .field(root_value())
+    .relation(head(), ApplicationQueryResultShapeBuilder::<Schema, Query, Member, Snapshot, SnapshotBinding>::new(Member::reference()).field(head_key()))
     .relation(members(), member_shape)
     .build();
     schema
@@ -113,6 +154,12 @@ impl WorthQueryApplicationProjection<Schema, Query> for Snapshot {
                     Row {
                         key: member.field(child_key())?,
                         value: member.field(child_value())?,
+                        operand: member
+                            .many(operand())?
+                            .iter()
+                            .next()
+                            .map(|target| target.field(operand_key()))
+                            .transpose()?,
                         next: links
                             .iter()
                             .next()
@@ -127,6 +174,12 @@ impl WorthQueryApplicationProjection<Schema, Query> for Snapshot {
             id: row.entity_id(),
             key: row.field(root_key())?,
             value: row.field(root_value())?,
+            head: row
+                .many(head())?
+                .iter()
+                .next()
+                .map(|head| head.field(head_key()))
+                .transpose()?,
             members,
         })
     }

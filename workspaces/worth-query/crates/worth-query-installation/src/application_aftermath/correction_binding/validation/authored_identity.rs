@@ -38,6 +38,21 @@ pub(super) fn validate(
     if identity.member_owner().is_some() {
         return Err(());
     }
+    if let Some(owner) = identity.live_member_owner() {
+        let Member::Field { entity, .. } = identity.parts().logical_key.as_ref() else {
+            return Err(());
+        };
+        if identity.parts().source_posture != Posture::Retire
+            || !identity.co_anchors().is_empty()
+            || owner.from() != entity
+            || !recorded.preimage_demand().relations().contains(owner)
+            || !members.iter().any(|member| matches!(member,
+                Member::Relation { relation, from, to, integrity }
+                if relation == owner.relation() && from == owner.from() && to == owner.to()
+                    && integrity.cardinality.source_min == Some(1) && integrity.cardinality.source_max == Some(1))) {
+            return Err(());
+        }
+    }
     let owned_members = identity
         .co_anchors()
         .iter()
@@ -52,7 +67,8 @@ pub(super) fn validate(
         owned_members,
     )?;
     for (index, anchor) in identity.co_anchors().iter().enumerate() {
-        if (!owned_members && anchor.parts().source_posture != identity.parts().source_posture)
+        if anchor.live_member_owner().is_some()
+            || (!owned_members && anchor.parts().source_posture != identity.parts().source_posture)
             || !anchor.co_anchors().is_empty()
             || anchor.parts().source_role == identity.parts().source_role
             || anchor.parts().inverse_role == identity.parts().inverse_role
