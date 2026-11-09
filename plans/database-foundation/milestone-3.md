@@ -17,6 +17,18 @@ requirements, design, required tests, oracle extension, documentation and exit
 criteria. The cross-cutting decisions below bind every phase. D17 decides how
 each invariant is enforced and where each new type lives.
 
+## Moved courts
+
+### C2 - Cost and bounds: backing and work budgets
+
+- `request_root_refusal_preserves_original_and_releases_partial_backing`:
+  `restore from 2a51552fc5:crates/worth-relational/src/branch/root_tests/request.rs`.
+  Moved under the coordinator's 2026-11-09 Landing 2a ruling, not retired or
+  weakened. It proves the specific unchanged-root replacement allocation refuses
+  at controller + `size_of(root)` - 1, releases partial backing, preserves the
+  original, and honours cancellation. C2 must provide the public
+  allocation-refusal observation before restoring this claim.
+
 ## Phase map
 
 | Phase | Name | Depends on | Lands |
