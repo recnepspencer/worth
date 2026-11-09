@@ -1,3 +1,5 @@
+IN PROGRESS ? Landing2a source2db457e903; merge-parent transaction admission ruling pending.
+
 FUNDING MERGED bd3ac03d2f
 D13 ACTIVE: single-door/source registry batch, including the reviewed pre-World
 Native transition continuation. Current validation: three Root Clippy invocations
