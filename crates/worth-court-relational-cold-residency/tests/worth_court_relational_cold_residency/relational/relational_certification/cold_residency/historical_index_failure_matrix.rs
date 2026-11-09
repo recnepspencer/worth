@@ -1,13 +1,20 @@
-use super::*;
+use super::{
+    historical_index_reads::{assert_initial_no_reads, build, target_reads, Subject},
+    index_source::IndexRecipe,
+    lineage_event_matrix::FAILURES,
+};
+use std::sync::atomic::Ordering;
+use worth_relational::facade::transactions::RelationalExecutionDenialCause as Execution;
 
 #[test]
 fn residency_failure_matrix_historical_index_builds_preserve_full_source_failures() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
+    let recipe = IndexRecipe::new(execution, true);
     for subject in Subject::ALL {
-        for (cause, sticky) in super::super::cold_read_matrix::FAILURES {
-            let fixture = reopened_historical(execution);
-            assert_cold(&fixture);
+        for (cause, sticky) in FAILURES {
+            let fixture = recipe.reopen(execution);
+            assert_initial_no_reads(&fixture);
             let (target, storage) = subject.target(&fixture);
             assert_eq!(
                 fixture.source.reads.load(Ordering::Relaxed),
@@ -15,7 +22,7 @@ fn residency_failure_matrix_historical_index_builds_preserve_full_source_failure
                 "metadata selection performs no hidden load"
             );
             let frontier = fixture.runtime.history().latest_patch_stream_position();
-            let offered = attached_test_medium(&fixture.runtime).offered().len();
+            let offered = fixture.medium.offered().len();
             let reservations = fixture.runtime.patch_position_reservation_counters();
             fixture
                 .source
@@ -32,14 +39,9 @@ fn residency_failure_matrix_historical_index_builds_preserve_full_source_failure
                     before,
                     "index metadata suffices; the unused nonhead body stays cold"
                 );
-                assert!(fixture
-                    .runtime
-                    .history
-                    .canonical_envelope(fixture.generation.source_commit_id)
-                    .is_none());
             } else {
                 let expected = Execution::StorageUnavailable(
-                    crate::storage::data::RelationalStorageUnavailable {
+                    worth_relational::facade::storage::RelationalStorageUnavailable {
                         subject: storage,
                         cause,
                     },
@@ -63,10 +65,7 @@ fn residency_failure_matrix_historical_index_builds_preserve_full_source_failure
                 fixture.runtime.history().latest_patch_stream_position(),
                 frontier
             );
-            assert_eq!(
-                attached_test_medium(&fixture.runtime).offered().len(),
-                offered
-            );
+            assert_eq!(fixture.medium.offered().len(), offered);
             assert_eq!(
                 fixture.runtime.patch_position_reservation_counters(),
                 reservations

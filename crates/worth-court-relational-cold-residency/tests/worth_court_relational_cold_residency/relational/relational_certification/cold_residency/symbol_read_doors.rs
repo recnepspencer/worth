@@ -1,13 +1,19 @@
-//! Public Full read guards admit meanings even when another fork warmed bytes.
-use super::super::cold_visibility::ReadDoor;
-use super::view_levels::reopened;
-use super::*;
-use crate::execution::RelationalExecutionDenialCause;
-
+//! Every ordinary Full reader preserves the same original history-only page refusal.
+use super::{full_read_inventory::FullReadDoor as ReadDoor, symbol_view_source::SymbolViewRecipe};
+use std::sync::atomic::Ordering;
+use worth_relational::facade::{
+    storage::{
+        RelationalStorageSubject, RelationalStorageUnavailable,
+        RelationalStorageUnavailableCause as Cause,
+    },
+    transactions::RelationalExecutionDenialCause,
+};
+use worth_testkit_relational::aspect_storage::publications::begin_main_transaction;
 #[test]
-fn every_full_read_door_admits_its_runtime_dictionary_or_preserves_page_damage() {
-    let host = crate::test_execution_policy::serial_request();
+fn full_read_doors_preserve_history_symbol_refusals_and_current_head() {
+    let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
+    let recipe = SymbolViewRecipe::new(execution);
     // The original query admission claim applies to reads; opaque checkpoint
     // transport has its independent symbol failure cells in cold_read_matrix.
     for door in ReadDoor::ALL
@@ -15,7 +21,7 @@ fn every_full_read_door_admits_its_runtime_dictionary_or_preserves_page_damage()
         .filter(|door| !door.is_checkpoint())
     {
         for damage in [false, true] {
-            let fixture = reopened(execution);
+            let fixture = recipe.reopen(execution);
             door.prepare(&fixture.runtime);
             let frontier = fixture.runtime.history().latest_patch_stream_position();
             let history_reads_before = fixture
@@ -41,13 +47,6 @@ fn every_full_read_door_admits_its_runtime_dictionary_or_preserves_page_damage()
                         .count(),
                     history_reads_before
                 );
-                assert!(fixture
-                    .runtime
-                    .services
-                    .symbols
-                    .interner_snapshot()
-                    .resolve(fixture.historical)
-                    .is_none());
                 assert_eq!(
                     fixture.runtime.history().latest_patch_stream_position(),
                     frontier
@@ -77,7 +76,7 @@ fn every_full_read_door_admits_its_runtime_dictionary_or_preserves_page_damage()
                     "{door:?}"
                 );
                 assert_eq!(fixture.source.reads.load(Ordering::Relaxed), reads);
-                let mut transaction = test_owner_begin_transaction_for_main(&fixture.runtime);
+                let mut transaction = begin_main_transaction(&fixture.runtime);
                 assert_eq!(
                     transaction
                         .read_entity(execution, fixture.entity)
@@ -91,16 +90,6 @@ fn every_full_read_door_admits_its_runtime_dictionary_or_preserves_page_damage()
             } else {
                 door.run(execution, &fixture.runtime, fixture.entity)
                     .unwrap();
-                assert_eq!(
-                    fixture
-                        .runtime
-                        .services
-                        .symbols
-                        .interner_snapshot()
-                        .resolve(fixture.historical),
-                    Some("paged-view-value-0300"),
-                    "{door:?} must admit Full meanings into its own runtime"
-                );
             }
             assert_eq!(
                 fixture.runtime.history().latest_patch_stream_position(),

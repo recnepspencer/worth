@@ -162,6 +162,48 @@ each invariant is enforced and where each new type lives.
   standalone checkpoint/recovery, partition4 relation count>=2 and per-ID
   effective relation equality. These private subclaims move, not retire.
 
+- C2: private per-runtime interner absence in current-scan cells of
+  `residency_failure_matrix_full_read_subjects_cover_every_door_and_class`:
+  `restore from 14e282569e:crates/worth-relational/src/tests/durability/medium/cold_read_matrix/exhaustive.rs`.
+  The public counterpart keeps all 47 doors, three subjects, six causes, exact
+  refusal/retry behavior, target reads, current-scan history noninterference and
+  publication invariance. The existing request-funded version read is now public.
+- C2: exact receiver dictionary absence/admission/resolved text in
+  `every_full_read_door_admits_its_runtime_dictionary_or_preserves_page_damage`:
+  `restore from 14e282569e:crates/worth-relational/src/tests/durability/medium/cold_symbol_read_doors.rs`.
+  All original public success/refusal, sticky I/O, Head identity and frontier
+  observations remain in `full_read_doors_preserve_history_symbol_refusals_and_current_head`.
+- C2: private Full/Head probes, metadata-history length, dictionary contents and
+  <400 entry bound, and shared-Full/receiver-cold preparation in
+  `head_symbols_never_cover_full_history_or_inherit_its_page_damage`:
+  `restore from 14e282569e:crates/worth-relational/src/tests/durability/medium/cold_symbol_view_levels.rs`.
+  Public paired court retains actual current field identity, Full typed refusal,
+  sticky/no-extra-I/O retry, unchanged Head, historical values and frontier.
+  Public history entries do not replace the private metadata-history claim.
+- C2: private exact-basis representation assertion `view.is_exact_basis()` in
+  `residency_failure_matrix_index_doors_preserve_every_failure_class`:
+  `restore from 14e282569e:crates/worth-relational/src/tests/durability/medium/cold_index_matrix.rs`.
+  Public issued-version equality, all 14 doors/six causes, no-load generation
+  residency, exact generation/entry equality, successor bounds, reservation
+  counters and publication/I/O assertions remain in the public matrix.
+- C2: exact resident interner text and cold-envelope cache probes in
+  `historical_index_reconstruction_uses_the_old_value_and_full_cold_history` and
+  its `assert_cold` preparation:
+  `restore from 14e282569e:crates/worth-relational/src/tests/durability/medium/cold_historical_index_matrix.rs`;
+  matrix cold-envelope assertion:
+  `restore from 14e282569e:crates/worth-relational/src/tests/durability/medium/cold_historical_index_matrix/exhaustive.rs`.
+  Both public counterparts preserve genuine old source/rows, generation bounds,
+  all five targets/six causes, exact unconsulted-envelope reads, reservation
+  counters and no publication. The actual single carried MVCC root is checked
+  against an issued main observation; an old receipt is not inferred to be a root.
+- C2: whole private allocation/inventory court
+  `residency_cold_index_frontier_prevents_reissue_before_any_image_demand`:
+  `restore from 14e282569e:crates/worth-relational/src/tests/durability/medium/cold_index_frontier.rs`.
+  Restore all four actual IndexSubsystem reserve/publish/frontier/inventory
+  sequences with their zero/positive source reads. Public actual builds retain
+  monotonic generations and the original <old+16 bound; they do not stand in for
+  these private allocator actions. No claim is retired.
+
 ## Phase map
 
 | Phase | Name | Depends on | Lands |

@@ -1,13 +1,30 @@
-//! Restored index payloads must be admitted before pinning or preparation.
-use super::cold_read_matrix::FAILURES;
-use super::cold_source::ColdRead;
-use super::*;
-use crate::execution::RelationalExecutionDenialCause as Execution;
-use crate::indexes::data::DerivedIndexId;
-use crate::storage::data::{RelationalStorageSubject, RelationalStorageUnavailable};
-
+//! Every original index consumer goes through its typed public owner.
+use super::pin_read_refusal::pin_denial;
+use worth_relational::facade::transactions::RelationalExecutionDenialCause as Execution;
+use worth_relational::facade::{
+    identity::{KindId, PartitionId},
+    indexes::*,
+    transactions::*,
+};
+use worth_testkit_relational::{
+    aspect_storage::{
+        aspect_field_locator, aspect_key, field_key,
+        publications::{begin_main_transaction, release_test_commit_snapshot},
+    },
+    durable_publication::field_patch,
+};
+fn batch_create(name: &str) -> WorkerIntentBatch {
+    WorkerIntentBatch::new(format!("batch-{name}")).push(MutationIntent::Create(
+        CreateIntent::Entity(EntitySpec {
+            partition_id: PartitionId::main(),
+            kind_id: KindId(1),
+            client_key: name.into(),
+            fields: field_patch("name", "name", name),
+        }),
+    ))
+}
 #[derive(Debug, Clone, Copy)]
-enum IndexDoor {
+pub(super) enum IndexDoor {
     Latest,
     CommitGeneration,
     ObservationGeneration,
@@ -24,7 +41,7 @@ enum IndexDoor {
     Commit,
 }
 impl IndexDoor {
-    const ALL: [Self; 14] = [
+    pub(super) const ALL: [Self; 14] = [
         Self::Latest,
         Self::CommitGeneration,
         Self::ObservationGeneration,
@@ -40,20 +57,13 @@ impl IndexDoor {
         Self::Candidate,
         Self::Commit,
     ];
-    fn read(
+    pub(super) fn read(
         self,
-        runtime: &crate::runtime::RelationalRuntime,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         index: DerivedIndexId,
-        expected_generation: &crate::indexes::data::DerivedIndexGeneration,
+        expected_generation: &worth_relational::facade::indexes::DerivedIndexGeneration,
     ) -> Result<bool, Execution> {
-        use crate::runtime::RelationalPinnedReadAdmissionDenial as Pin;
-        let pin_denial = |denial| match denial {
-            Pin::Request(stop) => stop,
-            other => {
-                panic!("the actual owner basis and installed definition remain valid: {other:?}")
-            }
-        };
         let (_, basis) = runtime
             .observe_branch(&runtime.main_branch_identity())
             .unwrap();
@@ -63,11 +73,12 @@ impl IndexDoor {
             | Self::ObservationGeneration
             | Self::VersionGenerations => {
                 let access = runtime.index_access();
-                let genuine = |generation: &crate::indexes::data::DerivedIndexGeneration| {
-                    generation.index_id == index
-                        && generation.source_commit_id == expected_generation.source_commit_id
-                        && generation.entries == expected_generation.entries
-                };
+                let genuine =
+                    |generation: &worth_relational::facade::indexes::DerivedIndexGeneration| {
+                        generation.index_id == index
+                            && generation.source_commit_id == expected_generation.source_commit_id
+                            && generation.entries == expected_generation.entries
+                    };
                 let found = match self {
                     Self::Latest => access.read_latest_generation(
                         execution,
@@ -97,12 +108,21 @@ impl IndexDoor {
                             .iter()
                             .any(genuine))
                     }
-                    _ => unreachable!("selected generation inspection"),
+                    Self::Build
+                    | Self::BasisBuild
+                    | Self::MemoryCheckpoint
+                    | Self::EmbeddedCheckpoint
+                    | Self::SnapshotPin
+                    | Self::ViewPin
+                    | Self::FieldPreparation
+                    | Self::Validation
+                    | Self::Candidate
+                    | Self::Commit => unreachable!("selected generation inspection"),
                 };
                 Ok(found.as_deref().is_some_and(genuine))
             }
             Self::MemoryCheckpoint | Self::EmbeddedCheckpoint => {
-                super::cold_index_checkpoint_door::read(
+                super::index_checkpoint_reads::read(
                     execution,
                     runtime,
                     matches!(self, Self::EmbeddedCheckpoint),
@@ -111,9 +131,9 @@ impl IndexDoor {
             }
             Self::Build | Self::BasisBuild => {
                 let door = if matches!(self, Self::Build) {
-                    super::cold_index_build_door::IndexBuildDoor::Commit
+                    super::index_build_reads::IndexBuildDoor::Commit
                 } else {
-                    super::cold_index_build_door::IndexBuildDoor::Basis
+                    super::index_build_reads::IndexBuildDoor::Basis
                 };
                 door.read(runtime, execution, index).and_then(|_| {
                     let successor = runtime
@@ -151,7 +171,7 @@ impl IndexDoor {
                     .read_truth()
                     .project_observation(&basis.observation())
                     .unwrap();
-                assert!(view.is_exact_basis());
+                assert_eq!(view.version_id(), basis.observation().version_id());
                 match self {
                     Self::ViewPin => runtime
                         .read_truth()
@@ -169,16 +189,16 @@ impl IndexDoor {
                         )
                         .map(|_| true)
                         .map_err(|denial| match denial.kind() {
-                            crate::indexes::data::BoundedEntityFieldLookupDenialKind::Execution(
+                            worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::Execution(
                                 cause,
                             ) => cause,
                             other => panic!("the actual field definition is valid: {other:?}"),
                         }),
-                    _ => unreachable!("selected view index door"),
+                    Self::Latest | Self::CommitGeneration | Self::ObservationGeneration | Self::VersionGenerations | Self::Build | Self::BasisBuild | Self::MemoryCheckpoint | Self::EmbeddedCheckpoint | Self::SnapshotPin | Self::Validation | Self::Candidate | Self::Commit => unreachable!("selected view index door"),
                 }
             }
             Self::Validation | Self::Candidate | Self::Commit => {
-                let mut transaction = test_owner_begin_transaction_for_main(runtime);
+                let mut transaction = begin_main_transaction(runtime);
                 transaction
                     .push_batch(
                         batch_create("index-matrix-write"),
@@ -194,17 +214,27 @@ impl IndexDoor {
                         release_test_commit_snapshot(runtime, &outcome);
                         true
                     }),
-                    _ => unreachable!("selected preparation index door"),
+                    Self::Latest
+                    | Self::CommitGeneration
+                    | Self::ObservationGeneration
+                    | Self::VersionGenerations
+                    | Self::Build
+                    | Self::BasisBuild
+                    | Self::MemoryCheckpoint
+                    | Self::EmbeddedCheckpoint
+                    | Self::SnapshotPin
+                    | Self::ViewPin
+                    | Self::FieldPreparation => unreachable!("selected preparation index door"),
                 };
                 result.map_err(|denial| {
-                    let crate::transactions::data::TransactionCommitError::Preparation {
+                    let worth_relational::facade::transactions::TransactionCommitError::Preparation {
                         error,
                         ..
                     } = denial
                     else {
                         panic!("index storage refusal is pre-effect: {denial:?}");
                     };
-                    let crate::transactions::data::CommitPreparationReason::StorageUnavailable(
+                    let worth_relational::facade::transactions::CommitPreparationReason::StorageUnavailable(
                         failure,
                     ) = error.reason()
                     else {
@@ -216,7 +246,3 @@ impl IndexDoor {
         }
     }
 }
-
-#[cfg(test)]
-#[path = "cold_index_matrix/exhaustive.rs"]
-mod exhaustive;

@@ -53,3 +53,29 @@ mod invariant_source;
 mod cross_partition_kind;
 mod record_field_values;
 mod region_fork_roundtrips;
+
+mod immutable_recovery_input;
+mod symbol_text_publications;
+mod symbol_view_source;
+
+mod full_projection_scans;
+mod full_read_dispatch;
+mod full_read_inventory;
+mod full_snapshot_reads;
+mod index_build_reads;
+mod inspection_read_limits;
+mod pin_read_refusal;
+
+mod index_checkpoint_reads;
+mod index_source;
+
+mod full_read_failure_matrix;
+mod full_visibility_reads;
+mod symbol_read_doors;
+mod symbol_view_reads;
+
+mod historical_index_failure_matrix;
+mod historical_index_reads;
+mod index_custody_reads;
+mod index_read_doors;
+mod index_read_failure_matrix;

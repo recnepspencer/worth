@@ -2,8 +2,10 @@
 use serde::Deserialize;
 use worth_relational::facade::{
     durability::{RelationalDurableMemberLocator, RelationalDurableRecoverySource},
-    history::CommitId,
+    history::{CommitId, RelationalCommitReceipt},
     identity::PartitionId,
+    indexes::DerivedIndexDefinition,
+    publication::PatchStreamPosition,
 };
 
 #[derive(Deserialize)]
@@ -13,6 +15,9 @@ pub(super) struct Directory {
     pub lineage_events: Vec<EventPage>,
     pub mirror: Vec<Region>,
     pub roots: Vec<Component>,
+    pub commits: Vec<CommitPlacement>,
+    pub derived_indexes: RelationalDurableMemberLocator,
+    pub index_definitions: Vec<DerivedIndexDefinition>,
 }
 #[derive(Deserialize, Clone, Copy)]
 pub(super) struct Page {
@@ -37,6 +42,11 @@ pub(super) struct Region {
 pub(super) struct Component {
     pub commit_id: CommitId,
     pub regions: Vec<Region>,
+}
+#[derive(Deserialize)]
+pub(super) struct CommitPlacement {
+    pub position: PatchStreamPosition,
+    pub commit: RelationalCommitReceipt,
 }
 pub(super) fn read(input: &RelationalDurableRecoverySource) -> Directory {
     #[derive(Deserialize)]

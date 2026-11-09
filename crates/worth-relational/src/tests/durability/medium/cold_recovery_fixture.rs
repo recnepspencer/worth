@@ -1,17 +1,6 @@
 //! Producer checkpoint and journal-prefix recovery fixture.
 use super::*;
 
-pub(super) fn fixture(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    with_tail: bool,
-) -> (
-    RelationalDurableRecoverySource,
-    Arc<MemberSource>,
-    crate::identity::data::EntityId,
-) {
-    fixture_with_history(execution, with_tail, 0)
-}
-
 pub(super) fn fixture_with_history(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     with_tail: bool,

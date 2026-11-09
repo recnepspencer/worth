@@ -1,15 +1,19 @@
-//! Historical builds must filter a genuine older version and admit its Full source.
-use super::cold_index_fixture::{reopened_historical, IndexFixture};
-use super::*;
-use crate::execution::RelationalExecutionDenialCause as Execution;
-use crate::indexes::data::DerivedIndexBuildRequest;
-
-fn build(
+//! Original older-source index rows and exact unconsulted envelope target selection.
+use super::{
+    current_read_basis::main_selected_version,
+    index_source::{IndexFixture, IndexRecipe},
+};
+use std::sync::atomic::Ordering;
+use worth_relational::facade::{
+    indexes::DerivedIndexBuildRequest, transactions::RelationalExecutionDenialCause as Execution,
+};
+use worth_testkit_relational::durable_medium::immutable_members::ColdRead;
+pub(super) fn build(
     fixture: &IndexFixture,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<(), Execution> {
     let expected = &fixture.generation;
-    assert!(expected.applicability.version_id < fixture.runtime.current_version_id());
+    assert!(expected.applicability.version_id < main_selected_version(&fixture.runtime));
     let result = fixture.runtime.index_authority().build_for_commit(
         execution,
         DerivedIndexBuildRequest {
@@ -19,7 +23,8 @@ fn build(
         },
     );
     if let Some(denial) = result.execution_denial {
-        let crate::indexes::data::DerivedIndexExecutionDenialKind::Cause(cause) = denial.kind;
+        let worth_relational::facade::indexes::DerivedIndexExecutionDenialKind::Cause(cause) =
+            denial.kind;
         return Err(cause);
     }
     assert!(
@@ -43,58 +48,27 @@ fn build(
     );
     Ok(())
 }
-fn assert_cold(fixture: &IndexFixture) {
-    let symbol = fixture.history_symbol.unwrap();
-    assert!(
-        fixture
-            .runtime
-            .services
-            .symbols
-            .interner_snapshot()
-            .resolve(symbol)
-            .is_none(),
-        "the historical-only meaning is cold at reopen"
-    );
-    assert!(
-        fixture
-            .runtime
-            .history
-            .canonical_envelope(fixture.generation.source_commit_id)
-            .is_none(),
-        "the selected nonhead envelope body is cold"
-    );
+pub(super) fn assert_initial_no_reads(fixture: &IndexFixture) {
     assert_eq!(fixture.source.reads.load(Ordering::Relaxed), 0);
 }
 #[test]
 fn historical_index_reconstruction_uses_the_old_value_and_full_cold_history() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
-    let fixture = reopened_historical(execution);
-    assert_cold(&fixture);
+    let fixture = IndexRecipe::new(execution, true).reopen(execution);
+    assert_initial_no_reads(&fixture);
     let journal = fixture.runtime.history().latest_patch_stream_position();
-    let offered = attached_test_medium(&fixture.runtime).offered().len();
+    let offered = fixture.medium.offered().len();
     build(&fixture, execution).unwrap();
-    assert_eq!(
-        fixture
-            .runtime
-            .services
-            .symbols
-            .interner_snapshot()
-            .resolve(fixture.history_symbol.unwrap()),
-        Some("paged-view-value-0300")
-    );
     assert_eq!(
         fixture.runtime.history().latest_patch_stream_position(),
         journal
     );
-    assert_eq!(
-        attached_test_medium(&fixture.runtime).offered().len(),
-        offered
-    );
+    assert_eq!(fixture.medium.offered().len(), offered);
 }
 
 #[derive(Clone, Copy, Debug)]
-enum Subject {
+pub(super) enum Subject {
     Head,
     History,
     HistorySymbols,
@@ -102,26 +76,26 @@ enum Subject {
     Index,
 }
 impl Subject {
-    const ALL: [Self; 5] = [
+    pub(super) const ALL: [Self; 5] = [
         Self::Head,
         Self::History,
         Self::HistorySymbols,
         Self::Envelope,
         Self::Index,
     ];
-    fn target(
+    pub(super) fn target(
         self,
         fixture: &IndexFixture,
     ) -> (
-        super::cold_source::ColdRead,
-        crate::storage::data::RelationalStorageSubject,
+        ColdRead,
+        worth_relational::facade::storage::RelationalStorageSubject,
     ) {
-        use super::cold_source::ColdRead;
-        use crate::storage::data::RelationalStorageSubject as Storage;
+        use worth_relational::facade::storage::RelationalStorageSubject as Storage;
+        use ColdRead;
         match self {
             Self::Envelope => {
                 let entry = fixture
-                    .manifest
+                    .directory
                     .commits
                     .iter()
                     .find(|entry| entry.commit.commit_id == fixture.generation.source_commit_id)
@@ -138,7 +112,7 @@ impl Subject {
             Self::HistorySymbols => {
                 let symbol = fixture.history_symbol.unwrap();
                 let page = fixture
-                    .manifest
+                    .directory
                     .symbols
                     .iter()
                     .find(|page| {
@@ -148,8 +122,12 @@ impl Subject {
                 (
                     ColdRead::Member(page.member),
                     Storage::Symbols {
-                        first: crate::symbols::data::Symbol(page.first.try_into().unwrap()),
-                        last: crate::symbols::data::Symbol(page.last.try_into().unwrap()),
+                        first: worth_relational::facade::symbols::Symbol(
+                            page.first.try_into().unwrap(),
+                        ),
+                        last: worth_relational::facade::symbols::Symbol(
+                            page.last.try_into().unwrap(),
+                        ),
                     },
                 )
             }
@@ -159,13 +137,21 @@ impl Subject {
                     .read_truth()
                     .try_project_historical_version(fixture.generation.applicability.version_id)
                     .unwrap();
-                let root_commit = view.selected_root().unwrap().commit_id().unwrap();
-                let root = fixture
-                    .manifest
-                    .roots
-                    .iter()
-                    .find(|root| root.commit_id == root_commit)
+                assert_eq!(
+                    view.version_id(),
+                    fixture.generation.applicability.version_id
+                );
+                // This one-branch fixture carries one actual MVCC root. Older
+                // versions read its retained interval; no guessed old root exists.
+                let [root] = fixture.directory.roots.as_slice() else {
+                    panic!("historical fixture must carry its single actual branch root");
+                };
+                let (_, basis) = fixture
+                    .runtime
+                    .observe_branch(&fixture.runtime.main_branch_identity())
                     .unwrap();
+                assert_eq!(Some(root.commit_id), basis.observation().commit_id());
+                drop(view);
                 let region = root
                     .regions
                     .iter()
@@ -183,9 +169,9 @@ impl Subject {
         }
     }
 }
-fn target_reads(fixture: &IndexFixture, target: super::cold_source::ColdRead) -> usize {
+pub(super) fn target_reads(fixture: &IndexFixture, target: ColdRead) -> usize {
     match target {
-        super::cold_source::ColdRead::Member(target) => fixture
+        ColdRead::Member(target) => fixture
             .source
             .member_reads
             .lock()
@@ -193,7 +179,7 @@ fn target_reads(fixture: &IndexFixture, target: super::cold_source::ColdRead) ->
             .iter()
             .filter(|member| **member == target)
             .count(),
-        super::cold_source::ColdRead::Commit(target) => fixture
+        ColdRead::Commit(target) => fixture
             .source
             .commit_reads
             .lock()
@@ -203,7 +189,3 @@ fn target_reads(fixture: &IndexFixture, target: super::cold_source::ColdRead) ->
             .count(),
     }
 }
-
-#[cfg(test)]
-#[path = "cold_historical_index_matrix/exhaustive.rs"]
-mod exhaustive;

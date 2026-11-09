@@ -1,0 +1,24 @@
+command: python scripts/quality/scrutinize_rust_functions.py --dirty .
+HEAD: 14e282569eb7a05f04e1d1211ddfe576127f6942
+git_status_short_empty: false
+start_utc: 2026-11-09T21:52:36.672476+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+crates/worth-court-relational-cold-residency/tests/worth_court_relational_cold_residency/relational/relational_certification/cold_residency/full_read_dispatch.rs:5: run: 263 lines, 3 parameters [long-function]
+crates/worth-court-relational-cold-residency/tests/worth_court_relational_cold_residency/relational/relational_certification/cold_residency/full_read_failure_matrix.rs:135: residency_failure_matrix_full_read_subjects_cover_every_door_and_class: 93 lines, 0 parameters [long-function]
+crates/worth-court-relational-cold-residency/tests/worth_court_relational_cold_residency/relational/relational_certification/cold_residency/full_visibility_reads.rs:65: cold_and_warm_visibility_preserve_an_observation_across_a_later_commit: 61 lines, 0 parameters [long-function]
+crates/worth-court-relational-cold-residency/tests/worth_court_relational_cold_residency/relational/relational_certification/cold_residency/historical_index_failure_matrix.rs:10: residency_failure_matrix_historical_index_builds_preserve_full_source_failures: 66 lines, 0 parameters [long-function]
+crates/worth-court-relational-cold-residency/tests/worth_court_relational_cold_residency/relational/relational_certification/cold_residency/historical_index_reads.rs:86: target: 85 lines, 1 parameters [long-function]
+crates/worth-court-relational-cold-residency/tests/worth_court_relational_cold_residency/relational/relational_certification/cold_residency/index_read_doors.rs:60: read: 188 lines, 4 parameters [long-function]
+crates/worth-court-relational-cold-residency/tests/worth_court_relational_cold_residency/relational/relational_certification/cold_residency/index_read_failure_matrix.rs:14: residency_failure_matrix_index_doors_preserve_every_failure_class: 96 lines, 0 parameters [long-function]
+crates/worth-court-relational-cold-residency/tests/worth_court_relational_cold_residency/relational/relational_certification/cold_residency/index_source.rs:40: new: 78 lines, 2 parameters [long-function]
+crates/worth-court-relational-cold-residency/tests/worth_court_relational_cold_residency/relational/relational_certification/cold_residency/symbol_read_doors.rs:13: full_read_doors_preserve_history_symbol_refusals_and_current_head: 88 lines, 0 parameters [long-function]
+crates/worth-court-relational-cold-residency/tests/worth_court_relational_cold_residency/relational/relational_certification/cold_residency/symbol_view_reads.rs:13: current_symbols_preserve_full_history_refusal_and_original_head_values: 88 lines, 0 parameters [long-function]
+crates/worth-relational/src/tests/durability/medium/cold_symbol_view_levels.rs:18: reopened: 108 lines, 1 parameters [long-function]
+crates/worth-relational/src/tests/durability/medium/cold_symbols.rs:20: reopened: 101 lines, 1 parameters [long-function]
+scrutinized 29 Rust files; 12 candidate functions; 0 scan errors
+
+end_utc: 2026-11-09T21:52:43.536552+00:00
+exit_code: 0
+tests_passed: 0
+tests_failed: 0
+tests_ignored: 0

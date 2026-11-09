@@ -1,10 +1,10 @@
 //! The two public index construction orchestrators over real selected records.
-use super::*;
-use crate::execution::RelationalExecutionDenialCause;
-use crate::indexes::data::{
+use worth_relational::facade::indexes::{
     DerivedIndexBuildRequest, DerivedIndexDefinition, DerivedIndexEntries, DerivedIndexId,
     DerivedIndexKind,
 };
+use worth_relational::facade::transactions::RelationalExecutionDenialCause;
+use worth_testkit_relational::aspect_storage::{aspect_field_locator, aspect_key, field_key};
 
 #[derive(Clone, Copy, Debug)]
 pub(super) enum IndexBuildDoor {
@@ -12,23 +12,28 @@ pub(super) enum IndexBuildDoor {
     Basis,
 }
 impl IndexBuildDoor {
-    pub(super) fn register(runtime: &crate::runtime::RelationalRuntime) -> DerivedIndexId {
+    pub(super) fn register(
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    ) -> DerivedIndexId {
         runtime
             .index_authority()
-            .register(DerivedIndexDefinition {
-                index_id: DerivedIndexId(1001),
-                name: "residency-read-matrix-build".into(),
-                branch_scoped: true,
-                kind: DerivedIndexKind::EntityField {
-                    field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-                },
-            })
+            .register(Self::definition())
             .expect("index fixture has identity capacity")
             .index_id
     }
+    pub(super) fn definition() -> DerivedIndexDefinition {
+        DerivedIndexDefinition {
+            index_id: DerivedIndexId(1001),
+            name: "residency-read-matrix-build".into(),
+            branch_scoped: true,
+            kind: DerivedIndexKind::EntityField {
+                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+            },
+        }
+    }
     pub(super) fn read(
         self,
-        runtime: &crate::runtime::RelationalRuntime,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         index: DerivedIndexId,
     ) -> Result<(), RelationalExecutionDenialCause> {
@@ -37,7 +42,7 @@ impl IndexBuildDoor {
             .unwrap();
         let request = DerivedIndexBuildRequest {
             source_commit_id: basis.observation().commit_id().unwrap(),
-            branch_id: crate::history::data::BranchId("main".into()),
+            branch_id: worth_relational::facade::history::BranchId("main".into()),
             index_ids: vec![index],
         };
         let outcome = match self {
@@ -49,7 +54,8 @@ impl IndexBuildDoor {
                 .build_for_basis(execution, request, &basis),
         };
         if let Some(cause) = outcome.execution_denial {
-            let crate::indexes::data::DerivedIndexExecutionDenialKind::Cause(cause) = cause.kind;
+            let worth_relational::facade::indexes::DerivedIndexExecutionDenialKind::Cause(cause) =
+                cause.kind;
             return Err(cause);
         }
         assert!(
@@ -63,7 +69,9 @@ impl IndexBuildDoor {
                 .any(|generation| generation.index_id == index
                     && match &generation.entries {
                         DerivedIndexEntries::EntityField(entries) => !entries.is_empty(),
-                        _ => false,
+                        DerivedIndexEntries::RelationField(_)
+                        | DerivedIndexEntries::RelatedEntityOrdering(_)
+                        | DerivedIndexEntries::RelationJoin(_) => false,
                     }),
             "the producer's declared field must yield actual rows"
         );

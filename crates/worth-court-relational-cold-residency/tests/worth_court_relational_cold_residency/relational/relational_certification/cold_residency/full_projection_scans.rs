@@ -1,7 +1,7 @@
 //! Public projection scans must guard their exact or historical source themselves.
-use super::*;
-use crate::execution::RelationalExecutionDenialCause;
-use crate::visibility::materialization::read_records::ProjectionAspectScope;
+use worth_relational::facade::identity::KindId;
+use worth_relational::facade::runtime::ProjectionAspectScope;
+use worth_relational::facade::transactions::RelationalExecutionDenialCause;
 #[derive(Clone, Copy, Debug)]
 pub(super) enum ProjectionScanDoor {
     EntityKind,
@@ -14,12 +14,14 @@ impl ProjectionScanDoor {
         self,
         historical: bool,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &crate::runtime::RelationalRuntime,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
     ) -> Result<(), RelationalExecutionDenialCause> {
         let view = if historical {
             runtime
                 .read_truth()
-                .try_project_historical_version(runtime.current_version_id())
+                .try_project_historical_version(super::current_read_basis::main_selected_version(
+                    runtime,
+                ))
                 .unwrap()
         } else {
             let (_, basis) = runtime

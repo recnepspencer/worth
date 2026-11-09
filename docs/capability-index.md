@@ -148,6 +148,11 @@ custody and this runtime's aspect-name meanings, performs no source read, and
 returns a typed cold-pin refusal. `RelationalPinnedEntityMetadata` exposes current
 kind, aspect revision and retirement only; historical reads require Full custody.
 
+Native retained-version reads use `read_truth().try_read_version(request, version)`.
+The existing owner funds Full materialization from that request; an unavailable
+retained basis returns `HistoricalVisibilityDenial` rather than inferred absence.
+Exact owner-issued observations remain readable through `read_observation`.
+
 Native conditional observation owners borrow the genuine computed effect through
 `BridgeConditionalCausalObservation::computed_evaluation()` and its observed
 before/after Signal versions. The original Signal verdict, suppression reason
