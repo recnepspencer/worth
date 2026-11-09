@@ -14,7 +14,9 @@ pub(crate) mod evidence_dependency;
 pub(crate) mod instance;
 pub(crate) mod operation_output;
 pub(in crate::domain_computation::primary_graph) mod proposal;
+pub(in crate::domain_computation::primary_graph) mod readmission;
 pub(crate) mod schema;
+pub use readmission::QueryHomeWorkflowReadmissionDenial;
 
 pub(in crate::domain_computation::primary_graph) use approval::{
     visit_workflow_approval_facts, workflow_approval_fields, workflow_approval_instance_identity,

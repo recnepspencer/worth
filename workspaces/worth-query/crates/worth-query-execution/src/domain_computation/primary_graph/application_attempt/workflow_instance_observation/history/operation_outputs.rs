@@ -42,7 +42,24 @@ pub fn observe(
         snapshot,
         layout,
     }
-    .validate(transition, charge)
+    .validate(transition, Some(charge))
+}
+
+/// Cold DATA inspection uses the actual opening request, without inventing a Spec ceiling.
+pub(in crate::domain_computation::primary_graph) fn read_recorded(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    snapshot: &SnapshotHandle,
+    layout: &WorthQueryWorkflowLayout,
+    transition: EntityId,
+) -> Result<Option<ObservedOperationOutputs>, WorthQueryApplicationAttemptDenial> {
+    OutputContextReader {
+        execution,
+        runtime,
+        snapshot,
+        layout,
+    }
+    .validate(transition, None)
 }
 
 /// One pinned native read context, not a cache or a second output authority.
@@ -57,14 +74,16 @@ impl OutputContextReader<'_, '_, '_> {
     fn validate(
         &self,
         transition: EntityId,
-        charge: &mut HistoryReconstructionCharge,
+        mut charge: Option<&mut HistoryReconstructionCharge>,
     ) -> Result<Option<ObservedOperationOutputs>, WorthQueryApplicationAttemptDenial> {
         let context = self.count(transition)?;
         let count = context.as_ref().map_or(0, |(_, count)| *count);
-        if count > charge.record_limit() {
-            return Err(super::budget::inventory_exhausted());
+        if let Some(charge) = charge.as_deref_mut() {
+            if count > charge.record_limit() {
+                return Err(super::budget::inventory_exhausted());
+            }
+            charge.reserve_inventory(count)?;
         }
-        charge.reserve_inventory(count)?;
         let members = observe_adjacency(
             self.runtime,
             self.execution,
@@ -85,7 +104,7 @@ impl OutputContextReader<'_, '_, '_> {
         }
         let mut roles = BTreeMap::new();
         for member in members {
-            let (role, entry) = self.entry(member.to, charge)?;
+            let (role, entry) = self.entry(member.to, charge.as_deref_mut())?;
             if roles.insert(role, entry).is_some() {
                 return Err(denial("workflow operation output role is duplicated"));
             }
@@ -122,17 +141,19 @@ impl OutputContextReader<'_, '_, '_> {
     fn entry(
         &self,
         entry: EntityId,
-        charge: &mut HistoryReconstructionCharge,
+        charge: Option<&mut HistoryReconstructionCharge>,
     ) -> Result<(String, ObservedOperationOutput), WorthQueryApplicationAttemptDenial> {
         let output = &self.layout.operation_output;
-        charge.reserve_record(
-            self.execution,
-            self.runtime,
-            self.snapshot,
-            entry,
-            output.entity_kind,
-            &output.role,
-        )?;
+        if let Some(charge) = charge {
+            charge.reserve_record(
+                self.execution,
+                self.runtime,
+                self.snapshot,
+                entry,
+                output.entity_kind,
+                &output.role,
+            )?;
+        }
         let role = self.text(entry, &output.role)?;
         let entity = self.text(entry, &output.entity)?;
         let posture = observe_field_value(

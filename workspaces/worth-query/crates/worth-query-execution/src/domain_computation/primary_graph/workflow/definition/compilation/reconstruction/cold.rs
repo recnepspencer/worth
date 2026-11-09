@@ -46,6 +46,32 @@ pub(super) fn reconstruct_cold_definition(
         posture,
         None,
     )?;
+    reconstruct_members(
+        execution,
+        runtime,
+        snapshot,
+        layout,
+        observed,
+        maximum_nodes,
+        maximum_connections,
+    )
+}
+
+pub(super) fn reconstruct_members(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    layout: &WorthQueryWorkflowLayout,
+    observed: super::publication_header::ObservedWorkflowPublicationHeader,
+    maximum_nodes: usize,
+    maximum_connections: usize,
+) -> Result<
+    (
+        ColdCompiledWorkflowDefinition,
+        Vec<WorthQueryApplicationObservedFact>,
+    ),
+    WorthQueryApplicationAttemptDenial,
+> {
     let definition = observed.definition;
     let lineage = observed.lineage;
     let mut facts = observed.facts;

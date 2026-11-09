@@ -1,12 +1,12 @@
 //! Canonical instance role applicability at the selected native basis.
 use super::*;
 /// Already validated recorded identities; data only, never authority.
-pub(in crate::domain_computation::primary_graph::application_attempt) struct WorkflowInstanceRoles {
-    pub(in crate::domain_computation::primary_graph::application_attempt) start: EntityId,
-    pub(in crate::domain_computation::primary_graph::application_attempt) end:
+pub(in crate::domain_computation::primary_graph) struct WorkflowInstanceRoles {
+    pub(in crate::domain_computation::primary_graph) start: EntityId,
+    pub(in crate::domain_computation::primary_graph) end:
         Option<worth_foundational::facade::WorkflowEndingActorProvenance>,
 }
-pub(in crate::domain_computation::primary_graph::application_attempt) fn observe(
+pub(in crate::domain_computation::primary_graph) fn observe(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,

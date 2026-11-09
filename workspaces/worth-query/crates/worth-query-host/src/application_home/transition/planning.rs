@@ -66,7 +66,14 @@ impl<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaComposition, BP>
                 .admit_home_program_transition_planning_request(source, &request)
                 .map_err(Denial::PlanningRequest)?;
             let lens = before
-                .home_program_transition_source(phase, native, source, admitted)
+                .home_program_transition_source(
+                    phase,
+                    native,
+                    source,
+                    admitted,
+                    &home.world().observation_port(),
+                    &home.world().inspection_port(),
+                )
                 .map_err(Denial::Source)?;
             let mut plan = author(&lens, &target.authoring_target()).map_err(Denial::Author)?;
             let count = u32::try_from(plan.steps.len()).map_err(|_| Denial::InvalidPlan)?;

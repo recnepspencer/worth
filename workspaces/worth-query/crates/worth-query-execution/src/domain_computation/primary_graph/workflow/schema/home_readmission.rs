@@ -1,4 +1,4 @@
-//! Exhaustive installed workflow populations unsupported by Home cold service.
+//! Exhaustive installed workflow populations inspected by structural Home readmission.
 use super::layout::*;
 use worth_relational::facade::identity::KindId;
 impl WorthQueryWorkflowLayout {

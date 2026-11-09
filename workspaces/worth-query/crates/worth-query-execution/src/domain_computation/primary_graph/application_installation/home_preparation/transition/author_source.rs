@@ -27,6 +27,7 @@ pub enum QueryHomeProgramTransitionSourceDenial {
     Meaning(WorthQueryPrimaryGraphInstallationDenial),
     NonDurableWorldOwner,
     ForeignWorldOwner,
+    Activation(super::super::super::super::bootstrap::branch_activation_history::QueryHomeProgramActivationDenial),
 }
 impl WorthQueryHomeProgramTransitionReadSource<'_, '_> {
     pub fn schema_registry(&self) -> &worth_relational::facade::schema::RelationalSchemaRegistry {
@@ -112,16 +113,28 @@ impl<Schema: ApplicationSchemaComposition, Program>
         admitted: worth_proof::AdmittedHomeProgramTransitionPlanningRequest<
             worth_relational::facade::runtime::RelationalHomeProgramPlanningSource,
         >,
+        observation: &worth_runtime_world::facade::RuntimeWorldObservationPort,
+        inspection: &worth_runtime_world::facade::RuntimeWorldInspectionPort,
     ) -> Result<
         WorthQueryHomeProgramTransitionReadSource<'owner, 'scope>,
         QueryHomeProgramTransitionSourceDenial,
     > {
         let (layout, receipt) = self.predecessor_native_meaning();
-        admit_source_lens(phase, native, source, admitted, layout, receipt)
+        admit_source_lens(
+            phase,
+            native,
+            source,
+            admitted,
+            layout,
+            receipt,
+            self.predecessor_program_support().1,
+            observation,
+            inspection,
+        )
     }
 }
 
-fn admit_source_lens<'owner, 'scope>(
+fn admit_source_lens<'owner, 'scope, Schema>(
     phase: &'owner WorthQueryBootstrapAdvancementPhase<'scope>,
     native: &'owner RelationalRuntime,
     source: &'owner worth_runtime_world::facade::ProductBranchObservation,
@@ -130,6 +143,9 @@ fn admit_source_lens<'owner, 'scope>(
     >,
     layout: &'owner WorthQueryPrimaryGraphLayout,
     receipt: &worth_relational::facade::runtime::RelationalInitialSchemaInstallationReceipt,
+    roster: &worth_query_installation::facade::WorthQueryProgramSupportRoster<Schema>,
+    observation: &worth_runtime_world::facade::RuntimeWorldObservationPort,
+    inspection: &worth_runtime_world::facade::RuntimeWorldInspectionPort,
 ) -> Result<
     WorthQueryHomeProgramTransitionReadSource<'owner, 'scope>,
     QueryHomeProgramTransitionSourceDenial,
@@ -152,6 +168,16 @@ fn admit_source_lens<'owner, 'scope>(
             "transition source belongs to another actual Native receiver",
         )));
     }
+    super::super::super::super::bootstrap::branch_activation_history::verify_predecessor(
+        native,
+        layout,
+        &phase.execution_request(),
+        source,
+        roster,
+        observation,
+        inspection,
+    )
+    .map_err(Denial::Activation)?;
     let view = native
         .read_truth()
         .project_observation(&basis.observation())

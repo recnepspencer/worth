@@ -127,8 +127,60 @@ pub(super) fn observe_coverages(
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
     observation_request: &WorthQueryRequestScope,
 ) -> Result<Vec<WorkflowProposalCoverageMeaning>, WorthQueryApplicationAttemptDenial> {
+    observe_coverages_data(
+        execution,
+        runtime,
+        snapshot,
+        layout,
+        proposal,
+        count,
+        scope,
+        facts,
+        Some(observation_request),
+    )
+}
+/// Canonical retained coverage DATA under the actual opening execution request.
+/// This function grants no capability or disclosure and does not invent a request scope.
+pub(in crate::domain_computation::primary_graph) fn observe_recorded_coverages(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    layout: &WorthQueryWorkflowLayout,
+    proposal: EntityId,
+    facts: &mut Vec<WorthQueryApplicationObservedFact>,
+) -> Result<Vec<WorkflowProposalCoverageMeaning>, WorthQueryApplicationAttemptDenial> {
+    let scope = observe_proposal_scope(execution, runtime, snapshot, layout, proposal, facts)?;
+    let count = required_u64(
+        execution,
+        runtime,
+        snapshot,
+        proposal,
+        layout.proposal.entity_kind,
+        &layout.proposal.coverage_count,
+        facts,
+    )?;
+    let count =
+        usize::try_from(count).map_err(|_| denial("workflow coverage count exceeds this host"))?;
+    observe_coverages_data(
+        execution, runtime, snapshot, layout, proposal, count, scope, facts, None,
+    )
+}
+
+fn observe_coverages_data(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    layout: &WorthQueryWorkflowLayout,
+    proposal: EntityId,
+    count: usize,
+    scope: WorkflowProposalCoverageScope,
+    facts: &mut Vec<WorthQueryApplicationObservedFact>,
+    observation_request: Option<&WorthQueryRequestScope>,
+) -> Result<Vec<WorkflowProposalCoverageMeaning>, WorthQueryApplicationAttemptDenial> {
     let direction = WorthQueryApplicationAdjacencyDirection::Outgoing;
-    check_request_live(observation_request, "workflow proposal coverage")?;
+    if let Some(request) = observation_request {
+        check_request_live(request, "workflow proposal coverage")?;
+    }
     let maximum_work_units = count.checked_add(1).and_then(|count| count.checked_mul(2))
         .ok_or_else(|| crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::Representability.into_attempt_denial("workflow proposal coverage"))?;
     let relations = observe_adjacency(
@@ -153,7 +205,9 @@ pub(super) fn observe_coverages(
     });
     let mut coverages = Vec::with_capacity(count);
     for relation in relations {
-        check_request_live(observation_request, "workflow proposal coverage")?;
+        if let Some(request) = observation_request {
+            check_request_live(request, "workflow proposal coverage")?;
+        }
         let entity = relation.to;
         let kind = layout.proposal_coverage.entity_kind;
         facts.push(WorthQueryApplicationObservedFact::Entity {

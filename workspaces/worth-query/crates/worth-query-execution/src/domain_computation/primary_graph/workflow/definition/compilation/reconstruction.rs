@@ -22,6 +22,10 @@ use crate::domain_computation::primary_graph::application_attempt::{
 use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
 
 mod cold;
+mod readmission;
+pub(in crate::domain_computation::primary_graph) use readmission::{
+    read_recorded_definition, RecordedWorkflowDefinition,
+};
 mod connection;
 mod global_actions;
 pub(in crate::domain_computation::primary_graph) use connection::observe_connection;

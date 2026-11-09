@@ -5,7 +5,7 @@ use worth_relational::facade::runtime::{
 };
 
 use super::WorkflowDefinitionCompilationPosture;
-mod recorded;
+pub(super) mod recorded;
 use crate::domain_computation::primary_graph::workflow::definition::compilation::publication_binding::WorkflowDefinitionPublicationRevisions;
 use crate::domain_computation::primary_graph::application_attempt::{
     PublishedWorkflowDefinitionRef,

@@ -13,16 +13,24 @@ use worth_relational::facade::{
     identity::EntityId, runtime::RelationalRuntime, snapshots::SnapshotHandle,
 };
 
-pub(super) struct RecordedWorkflowPublication {
-    pub(super) content: ApplicationWorkflowDefinitionContentIdentity,
-    pub(super) published_under: CanonicalDigestId,
-    pub(super) carried_to: Option<CanonicalDigestId>,
-    pub(super) lineage: EntityId,
-    pub(super) spec: String,
-    pub(super) facts: Vec<WorthQueryApplicationObservedFact>,
+pub(in crate::domain_computation::primary_graph::workflow::definition::compilation::reconstruction)
+struct RecordedWorkflowPublication
+{
+    pub(in crate::domain_computation::primary_graph::workflow::definition::compilation::reconstruction) content:
+        ApplicationWorkflowDefinitionContentIdentity,
+    pub(in crate::domain_computation::primary_graph::workflow::definition::compilation::reconstruction) published_under:
+        CanonicalDigestId,
+    pub(in crate::domain_computation::primary_graph::workflow::definition::compilation::reconstruction) carried_to:
+        Option<CanonicalDigestId>,
+    pub(in crate::domain_computation::primary_graph::workflow::definition::compilation::reconstruction) lineage:
+        EntityId,
+    pub(in crate::domain_computation::primary_graph::workflow::definition::compilation::reconstruction) spec:
+        String,
+    pub(in crate::domain_computation::primary_graph::workflow::definition::compilation::reconstruction) facts:
+        Vec<WorthQueryApplicationObservedFact>,
 }
 
-pub(super) fn observe(
+pub(in crate::domain_computation::primary_graph::workflow::definition::compilation::reconstruction) fn observe(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,

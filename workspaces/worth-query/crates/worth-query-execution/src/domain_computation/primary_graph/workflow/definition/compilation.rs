@@ -12,7 +12,8 @@ pub(in crate::domain_computation::primary_graph) use plan::{
 };
 pub(in crate::domain_computation::primary_graph) use reconstruction::WorkflowDefinitionCompilationPosture;
 pub(in crate::domain_computation::primary_graph) use reconstruction::{
-    compile_node, observe_connection, reconstruct_compiled_definition,
+    compile_node, observe_connection, read_recorded_definition, reconstruct_compiled_definition,
+    RecordedWorkflowDefinition,
 };
 pub(in crate::domain_computation::primary_graph) use reuse::WorkflowDefinitionCompilationReuse;
 pub use reuse::WorthQueryWorkflowCompilationReuseCounters;

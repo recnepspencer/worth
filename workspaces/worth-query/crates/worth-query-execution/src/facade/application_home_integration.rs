@@ -17,4 +17,8 @@ pub use crate::domain_computation::primary_graph::application_installation::home
 };
 pub use worth_runtime_world::facade::RuntimeWorldOwnerUnavailable;
 
-pub use crate::domain_computation::primary_graph::workflow::WorkflowAdoptionReadDenial;
+pub use crate::domain_computation::primary_graph::workflow::{
+    QueryHomeWorkflowReadmissionDenial, WorkflowAdoptionReadDenial,
+};
+
+pub use crate::domain_computation::primary_graph::workflow::instance::start_provenance::StartProvenanceReadDenial;

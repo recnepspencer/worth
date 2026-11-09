@@ -16,7 +16,11 @@ mod captured_inventory;
 pub(in crate::domain_computation::primary_graph) use captured_history::observe as observe_captured_workflow_history;
 mod coverage;
 pub(in crate::domain_computation::primary_graph) use captured::target as observe_captured_workflow_input;
+pub(in crate::domain_computation::primary_graph) use captured::{
+    profile as read_recorded_captured_profile, read_recorded_target,
+};
 use coverage::observe_coverages;
+pub(in crate::domain_computation::primary_graph) use coverage::observe_recorded_coverages;
 pub(in crate::domain_computation::primary_graph) use coverage::observe_workflow_proposal_coverages;
 
 pub(in crate::domain_computation::primary_graph) struct ObservedWorkflowOperationInput {

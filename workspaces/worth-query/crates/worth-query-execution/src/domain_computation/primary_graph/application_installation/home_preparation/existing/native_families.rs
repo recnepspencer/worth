@@ -1,4 +1,5 @@
-//! Inspect latest Native owner populations before any existing-Home service.
+//! Non-workflow unsupported families and original-key integrity before Home service.
+//! Workflow DATA joins its actual World branch history at the later custody/source gate.
 use super::super::*;
 use worth_relational::facade::{identity::KindId, runtime::VisibilityProjectionView};
 pub(super) fn readmit(
@@ -22,22 +23,6 @@ pub(super) fn readmit(
         ),
     ] {
         absent(&view, execution, family, kind)?;
-    }
-    let (entities, relations) = layout.workflow().home_readmission_kinds();
-    for kind in entities {
-        absent(&view, execution, "workflow", kind)?;
-    }
-    for kind in relations {
-        let rows = view
-            .bounded_relations_of_kind(execution, kind, usize::MAX)
-            .map_err(super::super::super::super::bootstrap::request_read_denial::read)?
-            .map_err(|_| denied("Home workflow relation scan exceeded its bound"))?;
-        if let Some(record) = rows.records().first() {
-            return Err(denied(format!(
-                "Home unsupported Native workflow relation kind {} record {:?}",
-                kind.0, record.relation_id
-            )));
-        }
     }
     super::super::super::super::application_attempt::idempotency::home_readmission::readmit(
         native,
