@@ -53,11 +53,30 @@ pub(super) fn discover(
         .filter(|delta| kinds.contains(&delta.kind_id))
     {
         new.checkpoint(1)?;
-        match delta.kind {
-            AdjacencyDeltaKind::Created { source, target }
-                if created.contains(&source)
-                    && (delta.kind_id != recipe.predecessor || !created.contains(&target)) => {}
-            _ => return Ok(None),
+        let AdjacencyDeltaKind::Created { source, target } = delta.kind else {
+            return Ok(None);
+        };
+        if delta.kind_id == recipe.predecessor
+            && (!created.contains(&source) || created.contains(&target))
+        {
+            return Ok(None);
+        }
+        if [recipe.introduced, recipe.retired].contains(&delta.kind_id)
+            && !created.contains(&source)
+        {
+            return Ok(None);
+        }
+        // Every use must read from a new anchor, including nested routes and
+        // a physical relation used in both directions. A new endpoint alone
+        // cannot hide a changed projection on an old row or old endpoint.
+        for route in program.projection_routes() {
+            new.checkpoint(1)?;
+            let (relation, outgoing) = route.physical_relation();
+            if relation == delta.kind_id
+                && !created.contains(&if outgoing { source } else { target })
+            {
+                return Ok(None);
+            }
         }
     }
     // Native permits dangling audit links. New lifecycle alone must not hide

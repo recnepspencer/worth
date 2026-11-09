@@ -153,3 +153,63 @@ fn refused_birth_releases_its_edit_and_preserves_the_retained_predecessor() {
         set(&["e"])
     );
 }
+
+#[test]
+fn inherited_row_changes_update_both_scopes_without_rebuilding_after_birth() {
+    let (world, calls, _, mut key) = setup();
+    let builds = calls.builds.load(Ordering::SeqCst);
+    edit_history(
+        &world,
+        &mut key,
+        history::Edit::Append {
+            event: "E".into(),
+            previous: "A".into(),
+            introduced: None,
+            retired: None,
+            rename: None,
+        },
+    );
+    assert_eq!(
+        calls.builds.load(Ordering::SeqCst),
+        builds,
+        "E must inherit A's row"
+    );
+    publish(
+        &world,
+        &mut key,
+        authoring::Edit::Name {
+            item: "x".into(),
+            value: "changed-inherited-row".into(),
+        },
+    );
+    let scope = authentication::request_scope();
+    let principal = authentication::block_on(
+        authentication::admit(world.installed_schema()).authenticate(
+            authentication::LocalCredential::issued_for_model_owner(),
+            &scope,
+        ),
+    )
+    .unwrap();
+    let request = world
+        .runtime()
+        .request(&principal, &scope)
+        .on_branch(world.current_world());
+    for event in ["A", "E"] {
+        let indexed = request.query(find(event, "")).execute().unwrap();
+        let direct = request
+            .query(query::ReadSource {
+                directory: event.into(),
+            })
+            .execute()
+            .unwrap();
+        assert_eq!(indexed.rows(), direct.rows());
+        assert_eq!(indexed.rows().len(), 1);
+        assert_eq!(indexed.rows()[0].identity, "x");
+        assert_eq!(indexed.rows()[0].name, "changed-inherited-row");
+    }
+    assert_eq!(
+        calls.builds.load(Ordering::SeqCst),
+        builds,
+        "both scopes must update their retained rows"
+    );
+}
