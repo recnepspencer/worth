@@ -1,349 +1,394 @@
-# P5 CP2b: sequential producer rounds in one Native candidate
+# P5 CP2b: candidate rounds with one effectful publication per route
 
-Status: proposed revision for independent review, 2026-11-09. D1418, D1422,
-D1430, D1450, D1456 and D1470 govern. D1450 supersedes D1445/D1448.
-CP2a is committed at ececd430a1c89caaa37856a4c9ff650c94d967ad, with complete
-root8656 and Query8760 gates green against clean4405 (8631/8622), exact ordinary
-byte/allocation equality and the optimized scratch cabinet7/7. This document
-authorizes no CP2b implementation. S6 requires its own subsequent plan review.
+Status: proposed revision for D1472 re-review, 2026-11-09. No implementation
+is authorized by this document. CP2a is ececd430a1; prior plan a79812e1a6.
+D1472 supersedes its multi-round origin, demand-control ceiling and scheduler
+proposals. S6 still needs a separate plan review.
 
-## Result and adversarial constraint
+## First journey, prerequisites and completion
 
-An explicitly synchronous required tree has one authored edit, one Native
-candidate and one final relational publication. A route may execute several
-real rounds against that candidate. The published entities, relations, values,
-identities and content must equal the final state of the old sequential path.
-Facts created then deleted solely within that route's rounds never become
-visible. Every external fact read in any round remains in conflict support.
-A refusal, non-convergence or late invariant failure leaves C unchanged.
+The first working journey is a generic owned required-output route whose
+admitted source/decision support moves during the synchronous candidate, and
+whose real verification execution applies no further effect. The source and
+one final route publication commit once; a fresh demand reuses the final
+qualified support. The actual producer runs are observed, rather than inferred
+from the later delivery handle. No settlement exists before World cutover.
 
-The hard counterexample is the cabinet-shaped fixture: a shrink re-spaces
-survivors, retires old dependent trees, creates temporary retirement facts,
-consumes those facts in a cleanup round, then executes a no-effect round.
-Concatenating intents is invalid (delete-of-create and repeated field writes).
-Taking the first/last round as the input is false provenance. Dropping the
-initial round's reads admits a concurrent conflict. Netting by record ID alone
-can erase another producer's or the authored stage's legitimate creation.
+Prerequisites, immediately before their consumers:
+1. After approval, merge public master 39ad4063e0 with a merge commit. Re-admit
+   the roster/issuer and ordinary-part seams before changing candidate rounds.
+2. Native must issue per-round applied coordinates and route-local next-round
+   custody before Query can schedule a repeat. First-entry custody stays intact.
+3. The delta net-plan and all-round read retention precede repeated commands.
+   Receipt finalization follows final qualification, never an intermediate run.
+4. The published 9.19/K6b read owner is rechecked before the Query read join.
+   CP2b does not implement CAD stamp/read narrowing or change source_merge.rs.
 
-CP2a retains exact Native roster equality and immutable original root delivery.
-Its scratch unmigrated cabinet result is7commits/7contacts (8→7); body role
-renames are real typed output, not receipt metadata. The5commit target belongs
-to continuation/predecessor work and later proprietary migration. The1commit
-target requires the synchronous entry (#93 in proprietary), then S6 for the
-whole product cohort/refresh/seal envelope. Do not claim those results early.
+Completion adds late writer/refusal, replay, cold allocator/frontier and exact
+predecessor tests, runtime mutants and release-profile measurements. Every slice
+ends at a coherent commit and report, green or with each residual filed as
+identical-on-master. There is no claim that this finishes the cabinet's single
+commit journey: #119/#100 and the later proprietary entry/S6 migration remain.
 
-## Preconditions and exclusions
+## Scope and hard boundary
 
-Certified #113 and master4405 are already merged at ab33e4d6a1. Preserve the
-repeated-predecessor loan owner and request_stage helper. Fetch and merge a newer
-master at a clean checkpoint if root requires it, then qualify against that exact
-clean base; do not reopen an independent reader ownership lane.
-The existing request_stage checkpoint helper is mandatory on Native walks.
+At most ONE genuinely Native-effectful round per route may publish in CP2b.
+There is no MultiRoundProducer variant, CHK tag, decoder change, version step,
+public predecessor-origin variant, or durable JSON artifact. Existing CHK20.1
+and ordinary/Birth/Preserve origins keep their meanings. A single-effect route
+retains the actual effectful round's input; no-effect verification does not
+become a second producing input. A no-effect-only final publication retains its
+one actual completed run, never a fabricated writer.
 
-No changes to publication/ownership/**, SHA or content-commitment owners.
-Native receives one final part per route; netting precedes final ownership,
-content and commitment preparation. Query never reads CAD role prefixes.
-No whole-object Query inputs, fabricated writer/settlement/origin, durable
-readiness commit, historical-custody fallback or parallel ownership reader.
-Existing non-continuation origins/paths retain their exact meaning and bytes.
+Known NRU retirement-metadata producers remain on their existing post-commit
+path A, exactly as CP2a. The cabinet and its public mirror still complete; they
+are not redirected to a refusal or advertised as one commit. The two seeded
+comparison courts stay ignored under public #119 / proprietary #100, with all
+named-row and one-commit assertions unchanged.
 
-## Authority and destination topology
+If a new in-candidate path has already applied one effectful round and a second
+would require a false single-input origin, Native refuses before publication,
+with the route/source/family and #119 as the postponement cause. Nothing escapes
+C. This guard is installed BEFORE repeats/netting can reach publication. It is
+not applied to the retained legacy post-commit path. No fallback silently turns
+an expressly atomic candidate request into several commits.
 
-| Meaning | Canonical owner / proposed physical location |
+If implementation identifies an existing productive, non-artifact producer
+needing two effectful rounds, stop with its file:line and actual journey for
+root's option (b) ruling. An intentionally non-terminating adversary is a court,
+not evidence that a new permanent history variant is needed.
+
+No publication/ownership/** or SHA/content-commitment edits; no whole-object
+inputs, role-name interpretation, fake settlement, historical custody reader,
+new JSON or weakening of ordinary conflicting-intent/Ambiguous refusals.
+#115, public #119/proprietary #100, #121 and #94 are separate owners.
+
+## Verified source and integration boundaries
+
+Paths below use Q = worth-query-execution/src/domain_computation/primary_graph,
+under workspaces/worth-query/crates; N = worth-relational/src, under crates.
+
+- Q/application_contribution/producer/synchronous_outputs/wave.rs: drive()
+  prepares each ranked candidate wave and discovers the next from its applied
+  parents. This is the candidate scheduler. required_wave is post-commit only.
+- Q/application_contribution/producer/coupled_assembly/preparation.rs: prepare_one
+  distinguishes Retiring, Prepared, Verified and Source, appends an actual writer
+  and retains its after-own pin. Prepared is not permission for another run.
+- N/mvcc/publication/application_publication/coupled_assembly/part.rs:22-43
+  rejects repeated first-entry routes. Its normalization at 92-99 and cumulative
+  effect clone at 198-204 cannot become the per-round algorithm.
+- The same directory's aggregate_read.rs clones the accumulated command prefix
+  on each pin; pin_source also passes the accumulated touched-record set. Both
+  are in the performance cutover, not concealed behind the new scheduler.
+- Q/provider/application_attempt_state/commit_preparation/relational_commit/
+  evidence_seal/postcommit_currentness/resolution.rs:41-45,88-135 owns admitted
+  retirement/predecessor rebase and KeepSuperseded. Retire alone is no trigger.
+- Q/application_attempt/fact/source_merge.rs merges one dependency at one Native
+  revision. It cannot collect different round coordinates into one fact body.
+- N/runtime/state/subsystems/record_identity/pending_allocations.rs: commit()
+  consumes every reservation. recovery.rs:21 releases whole abandoned custody;
+  no partial release of a netted record in a committing candidate was found.
+
+Fetched public master and origin/integration are 39ad4063e0921b238b053c201047a3066cc88ca6.
+The new owned_members/roster.rs compares exact expected/supplied full-generation
+sets and rejects missing, repeated, foreign and dangling members. The changed
+application_publication/completion.rs also checks the authored-retirement issuer
+for restoration and historical selection. Preserve both checks when merging
+CP2a's ordinary participant and source-prefix changes. Master still has the old
+Preserve-only writer_custody interface and no participant_admission.rs; reconcile
+by meaning, then re-run both owners' courts on the merged tree. Do not replace
+master's roster with a Query inventory or drop CP2a's ordinary fences.
+
+Fetch/status checked also through the authenticated private repository: main and
+codex/query-919-cad-integration both point at e4ca4a74853df776a90c181279ff22361eaeebe8.
+K6a S1's thread-read owner is landed (8fae6ec5716f). The cutover plan's K6b
+section still schedules stamp read narrowing after K5/K6a; the fetched public
+9.19 plan says Phase 6 unfinished. No separate published K6b lane was found in
+the paginated branch inventory. This is published status, not a claim about
+unpublished work on the other machine. Before slice 3, fetch again and inspect
+any announced K6/K6b landing. Keep its source selection/narrowing policy intact;
+CP2b stores the facts that owner admits, separately per round, without duplicating
+its policy. No wait on an unpublished K6b result is needed for that separation.
+
+## Route-specific certification and scheduling (B1)
+
+Path A is Q/output_lineage/required_settlement/current_accepted.rs through
+Q/application_contribution/producer/execution/source_readmission/
+ready_on_selected.rs. Path B is Q/application_output_demand/currentness.rs.
+Their post-commit NRU and UnsupportedFact distinctions remain unchanged.
+
+No candidate pin is passed to a committed Ready certifier as a fake position.
+The existing rebase/currentness owner gains an applied-data entry which uses
+Native's admitted postconditions at exact D and the same rebase policy. It emits
+candidate data, not CurrentComputation or Ready authority:
+
+- qualified after own rebase;
+- own-effect supersession with the actual fact ordinals;
+- support changed by a later candidate writer, naming that fact and its round;
+- full verification required, preserving UnsupportedFact versus NRU;
+- the original typed read/control/resource refusal.
+
+synchronous_outputs/wave.rs consumes these facts through its new round child
+module. The route's entry posture below is retained explicitly. Query does not
+select posture from Retire roles, command counts or a producer flag.
+
+| Route/condition | Candidate decision after each actual run | Post-commit owner |
+|---|---|---|
+| Explicit authored/correction coupled writer, including multi-writer Preserve | One execution. Apply admitted rebase; NRU does not request another candidate run. Later foreign support change keeps the existing atomic refusal. | Path B/on-branch read-only full verification, as master. multi.rs:320-325 remains exactly two contacts for two writers. |
+| Lone root/ordinary direct demand | No new candidate loop. Existing single publication and rebase. | Path B; unchanged lone-root court stays 1 then 0. |
+| Owned synchronous required-tree route, qualified support | Continue discovery, retaining its exact parent/read support; no extra execution. | Path A after World, with the existing marks/full-verification distinctions. |
+| Owned required-tree route with actual own-effect supersession, or its data invalidated by a later writer | Scheduler may execute a real next round under Native next-round custody, then requalify. B3 guard prevents a second effectful round from publishing. | Path A. Only a genuine owned no-effect verification proof tied to that commit's final route publication can install fresh G1 Ready support. |
+| Required-tree NRU, including cabinet/public retirement-metadata mirror | Do NOT reschedule from NRU in D. Retain ordinary required-delivery custody and the first publication. | Existing path A disclosure/execution stays after commit. #119/#100 owns removing this artifact. |
+| UnsupportedFact without actual supersession/moved support | Funded full comparison at the currentness owner; failure is not guessed Current. No automatic producer run solely because marks lack a posting. | Existing path A UnsupportedFact-only full verification. NRU is never accepted through this door. |
+| Ordinary part, including D1470 Initial-absence scalar | A candidate verification proof can support reads/discovery only. It never mints Ready or adopts an ordinary publication. | Existing certifiers/real successor chain in delivery. D1470 remains 1 contact/1 successor publication, then 0/0; #121 stays postponed. |
+
+The applied rebase must preserve admitted retirements as postconditions, so the
+multi-writer's retire/create cell succession (handler.rs:290-328) is not an
+oscillator. Do not compare literal pre-run facts before their own postconditions.
+A later writer's change is distinguished from that same writer's own effect.
+Permission, principal, request and installed meaning stay at C for every run.
+Final support remains qualified at the complete D, not merely the last local pin.
+
+A new generic owned route will exercise no-effect/effect/no-effect runs, induced
+by distinct required writers moving an external declared input while its output
+cutoff changes only once. Use hard-coded input values 0, 1, 3 and parity output 0, 1, 1:
+its producing input is the middle 1; final verification supports 3. This is a new
+required-tree scenario, not a change to explicit coupled-writer refusal policy.
+First compare the actual legacy repeated-demand journey, then the candidate's
+complete rows and typed predecessor observation. Do not infer re-entry from
+roster membership or bypass installed connection order.
+
+## Limits and the oscillator consequence
+
+Choose the mutation builder, not WorthQueryOutputDemandControls. Add a typed
+ApplicationProducerRoundLimits value in worth-foundational (portable resource
+policy, no grant), re-exported by Host. Live route/attempt counters belong to
+Query's synchronous attempt. Carry the policy through request, staged request,
+capture, retry and fixed/performed paths. Existing calls use default per-route 64
+and total 4096; callers may choose other positive finite bounds. Replay of an
+already committed source key resolves before starting any producer.
+
+Proposed DX, implemented only after approval:
+
+```rust
+request.advanced().mutate(intent)
+    .producer_round_limits(ApplicationProducerRoundLimits::new(
+        NonZeroUsize::new(64).unwrap(), NonZeroUsize::new(4096).unwrap()))
+    .without_source().idempotency(&key)
+    .execute_performed::<Program, Root>(&host, allocation)
+```
+
+Count actual handler starts, including no-effect executions, not certification
+reads. Reserve both route and attempt quota before dispatch; resource stops
+keep their original causes. Exceeding a finite policy is a typed producer-round
+budget refusal naming the route/source/family, actual count and bound. It does
+NOT prove mathematical non-convergence. Do not introduce a NonConvergentProducer
+classification based only on reaching 64; it must never label master's accepted
+one-run Preserve or a finite producer needing a larger caller budget.
+
+C2 is a deliberate deterministic source-read oscillator: its query reads a
+source field which its producer flips, separate from the authored field. Each
+real publication supersedes that consumed source fact. The unmodified master
+reference must actually continue for 64 rounds, stopped by real request
+cancellation via an existing scoped interleaver/observer, not by changing the
+handler. No blanket retirement gate or failed setup qualifies it.
+
+Under B3, that oscillator's candidate leg refuses #119 on its second effectful
+round before World, NOT NonConvergentProducer at 64. A 64-effect candidate cannot
+be both admitted and forbidden by B3. Release evidence therefore measures the
+real 64-round legacy reference AND the early atomic candidate refusal separately.
+No new NonConvergentProducer kind is needed in this reduced scope. A genuine
+productive non-artifact case found by that investigation triggers root's B3 (b)
+stop. A separate many-route finite court tests the attempt ceiling and a limit 1
+owned-verification court tests the route ceiling, both as budget refusals.
+
+The capability index and consumer guide must document both limits, the typed
+budget refusal, preserved post-commit NRU/ordinary delivery, and the #119 seam.
+No new policy changes intent identity or persists a JSON execution envelope.
+
+## Native net plan, custody and identity (G2/G3)
+
+Native owns one C-to-final delta compiler. Each round is normalized once against
+its exact prior applied state; the net plan incrementally updates only touched
+records, bindings, keys, fields/aspects, relations, content and foreign effects.
+Cross-writer conflicting patches still refuse. Sequential same-route commands
+use this owner, not a weakened ordinary merger against C.
+
+Keep two indexes: route state (existing exact route semantics, next-round linear
+custody and effect count) and creator custody keyed by full RecordRef including
+generation. Only the same route's own create/delete pair may cancel. Deleting
+another route's or the authored prefix's fresh record refuses typed naming both
+writers and the record. Existing current-publication destruction/retarget fences,
+required-owner coverage and ordinary-part admission all still run.
+
+N1-N5 cover genuine C deletion, temporary local cancellation, fresh update,
+old/new identity replacement and exact revert. The physical net-plan tests may
+inspect the real prepared Native net result before its B3 publication guard;
+they do not forge a published origin. Two-effect cases MUST still refuse before
+World in the public candidate entry. There is no end-to-end claim of committed
+fresh-ID elision while #119 blocks that journey.
+
+Netted fresh IDs stay CONSUMED; no partial release, frontier rewind or reuse is
+added. Keep the original Native reservation owner and whole-candidate abort
+rules (append-frontier gaps versus reclaimed slots), not a new slot lifecycle.
+For supported one-effect/no-effect publication, cold reopen must exactly match
+the legacy identity/generation frontier and surviving IDs. For cabinet-like
+create/delete churn, compare cold frontiers on the RETAINED post-commit legacy
+path against master: both really allocate then retire those IDs. A committing
+candidate containing netted fresh IDs remains unavailable under #119; its cold
+publication claim and any required allocation-replay cutover belong to that
+unblocked slice, not an unverified claim of partial release in CP2b.
+
+B3's effect counter is Native-issued from actual application outcomes, including
+observable output meaning, not a count of submitted commands or receipts. It
+excludes receipt-only bookkeeping. A real second effect refuses before receipt
+finalization. O1 mutates a no-effect verification into effectful and must break
+the accepted one-effect journey; O2 substitutes first/last for its middle input.
+
+## All-round reads, final evidence and receipt cutover (B2)
+
+Before-commit conflict support and after-commit currentness evidence are distinct
+products of the same actual runs. Retain immutable (candidate, route, round,
+Native applied qualification, FactPayload) spans. Never flatten them into the
+one-revision AuthoringSourceFacts map, merge them in source_merge.rs, overwrite
+one round with another, or replace the first round's reads with the last.
+Native applied revision increases for every round; parts.len() is not a round
+coordinate when a route repeats. Equal values at two rounds are still two
+read coordinates. K6b may narrow each span's fields; it does not merge spans.
+
+At final qualification, the existing rebase owner resolves each span against
+its authenticated own postconditions and final D. All external C reads remain
+in commit conflict support even if their writes net away. Recorded currentness
+support retains final-qualified observations plus proofs of how intra-candidate
+reads were discharged; it is not a claim that the final producer read C.
+
+For any netted ID, exclude its direct observations only with a Native-issued
+same-route elision proof paired with the original reads, creation and deletion.
+Stable selector/negative reads are retained as actual final absence observations
+by their existing owner. Never manufacture a RetiredOutputEntity for an entity
+which never published, or keep a dangling ID in SourceEntity/field/adjacency/
+aggregate/walk/DerivedSource facts, consumed-output witnesses or checkpoints.
+A seal-time traversal rejects any undischarged netted reference before effects.
+With B3 this is primarily a Native prepared-plan boundary test; it is not a
+claim that unsupported multi-effect rows can be committed. No new durable proof
+journal or JSON is introduced.
+
+Only the final route publication receives an idempotency binding and real
+producer receipt. Intermediate rounds are private completed executions with
+read/effect evidence, never Committed/AlreadyCommitted deliveries. Delay Query's
+real receipt writer/appendix until Native final net and provenance qualification.
+Use the sole effectful round's real producing input/key; zero-effect final
+verification contributes fresh G1 support, not a fictional producing input.
+The no-effect/effect/no-effect fixture checks the middle input 1 rather than 0/3.
+If no round changed the route, preserve the actual final single-run publication
+or existing adoption posture; do not invent an ordinary adoption for #121.
+
+The actual one final Native result supplies the producer receipt. Query prepares
+lineage/settlement storage before cutover and installs final verified backing
+when the real group completes. ProductUnpublished keeps its existing recovery
+custody; it never exposes a guessed successful receipt. Lost delivery/retry after
+co-commit rejoins that final receipt, with zero new commits, hot and worker-only.
+Explicit lookups for distinct intermediate keys must not return Equivalent.
+For a retained legacy route, keep its real per-commit receipts and succession.
+
+Follow-on demand courts compare master and candidate explicitly: preserve
+D1450's NRU first verification contact(s)/zero commits, then 0/0, on legacy
+retirement metadata. Supported owned final verification may already establish
+G1, but assertions pair zero delivery contacts with actual in-edit executions,
+exact final rows, the final receipt and zero extra all-branch commits. D1470's
+ordinary scalar remains1/1 delivery then 0/0, with no expectation change.
+
+## Destination topology and cost
+
+Q/application_contribution/producer/coupled_assembly.rs stays an orchestrator
+(currently 341 lines). New round logic lives under synchronous_outputs/rounds/:
+mod.rs (one concrete coordinator), disposition.rs (route/certifier mapping),
+limits.rs (attempt counters), reads.rs (round-coordinate spans), finalization.rs
+(the final writer/receipt handoff). wave.rs drives it; preparation.rs supplies
+actual prepared executions. No second post-commit required_wave is created.
+
+Native coupled_assembly/continuation.rs owns linear next-round custody;
+net_plan/ has record_delta.rs, creator_custody.rs and finalization.rs under a
+small entry. aggregate_read.rs delegates incremental candidate observations to
+the existing aggregate_identity owner. Applied pin retention carries a funded,
+shared immutable touched-record index per revision, not copied cumulative Vecs.
+The postcommit_currentness owner gains an applied-rebase child, with no copied
+rebase policy. New legal authority, if actually needed, belongs in worth-proof;
+Native's runtime completion evidence itself grants no permission.
+
+Remove full-prefix normalized_intents_for_merge and effect.clone on each round.
+Aggregate projection and pin creation must also avoid rebuilding every prior
+command. Extend the existing aggregate owner with delta-fed, revision-scoped
+read preparation; do not create a competing aggregate reader. Prepare final
+canonical commands/effects once, then invoke existing content/ownership/hash
+owners unchanged. One final part per route reaches them.
+
+Target per-round complexity is O(own work + touched records/incident structural
+granule), with indexed updates O(delta log U), U distinct touched records. Final
+sealing is O(U + retained reads). No O(rounds × accumulated prefix) normalization,
+cloning, roster reconstruction or serialization. Fund retained spans and maps;
+worker-only paths use execution::request_stage::checkpoint.
+
+## Courts and named runtime mutants
+
+Each mutant must run its intended semantic leg, fail a runtime assertion and
+restore source by SHA-256. A compile error, setup refusal or deadline alone is
+not a kill. No source fingerprint/JSON certification system is added.
+
+| Court | Native/Query mutant and required failing assertion |
 |---|---|
-| Admit first route, continuation and writer custody | Native application_publication/coupled_assembly/participant_admission.rs and writer_custody.rs; a new continuation.rs carries the linear next-round capability |
-| Candidate-local prior publication and read pin | Native coupled_assembly plus its existing applied read identity; proposed applied_predecessor.rs, tied to runtime/candidate/route/round |
-| C→final commands, binding/key resolution and effects | Native coupled_assembly/net_plan.rs with narrowly named child modules as needed; this is the sole sequential-net owner |
-| All-round external read conflict support | Existing Query application_attempt fact/source_merge.rs and Native transaction footprint; candidate reads retain their applied coordinates |
-| Scheduling/currentness of candidate rounds | Existing required_wave and applied currentness owner; no second dependency graph |
-| Final route origin and roster | Native canonical required_output_origin installer, consumed by existing publication and position writers |
-| Producer's semantic classification against C | The explicit predecessor/comparison observation owner #115, consumed by the producer; never Query's net plan |
-| Atomic final publication | Existing coupled completion, invariant validation and World cutover |
+| C1 first-entry/continuation | M-C1 skips consuming next-round custody; stale/duplicate/foreign token is then wrongly accepted. Existing first-entry route refusal stays. |
+| B1 route map | M-B1 uses NRU as candidate-repeat; unchanged multi-writer contact 2 total and lone-root 1 then 0 go red. |
+| C2 oscillator / limits | M-C2 removes the B3 second-effect stop: the candidate no-effect/provenance assertion fails; M-L1/M-L2 omit route/attempt quota and the actual bounded refusal goes red. Legacy64-round reference must first prove the intended oscillator, not a producer master accepts once. |
+| N1 genuine deletion | M-N1 drops the genuine C retirement; exact live rows/origin fail. |
+| N2/X1/X2 creator custody | M-X drops same-route creator check; M-ID nets by ID only. Foreign-route and authored-prefix destruction must be wrongly accepted at the real Native net-plan boundary. Final public B3 refusal remains independently tested. |
+| N3/N4 identities | M-N3 allocates a new ID for a later update; M-N4 conflates old/new same-key generations. Native final plan and supported cold frontier/identity assertions fail. |
+| N5 revert | M-N5 keeps an identical-value patch on an exact revert; Native net-plan patch/trigger absence fails before the independent B3 guard. This is not represented as a successful two-effect edit. |
+| K1 all-round reads | M-K1 drops round 1 external support; a concurrent write to that input is wrongly admitted even when later output is equal. Keep round coordinates distinct. |
+| B2 recorded support | M-E1 records round1 only; the middle-input/final-support/follow-on oracle fails. M-E2 retains a netted ID in recorded facts; the seal/absence assertion fails. |
+| B2 receipts/retry | M-R1 gives an intermediate run a receipt; its key wrongly resolves Equivalent or extra receipt/commit appears. Hot/worker retries require the actual final receipt. |
+| O1 effect provenance | M-O1 marks no-effect verification effectful; the supported one-effect edit wrongly refuses #119. |
+| O2 actual input | M-O2a/M-O2b choose first/last input; the predecessor read must return 1, not0/3. |
+| Ordinary proof boundary | M-Q1 mints Ready from an ordinary candidate read proof; unchanged D1470 delivery 1/1 and original producing attribution fail. |
+| Exact origin kind | At application_query/output_source_observation/predecessor.rs:30, assert HistoricalSelection and AuthoredRestoration separately through fresh read authorization; M-P1 swaps their causes and fails. Public origin enum remains unchanged. #94 stays postponed. |
+| Commit/orphan/atomicity | M-G1 publishes a side-branch/readiness commit; all-branch observer fails. M-A1 publishes a prefix on later failure; C/head/complete rows fail. |
 
-Types whose legality decision is new belong in worth-proof when required by
-the constitution, not in a reader convenience module. Runtime candidate pins,
-linear round state and Drop remain Native runtime-owned. No public producer
-constructs continuation custody from an index, id, role list or digest.
+No additional ignores. The two comparison.rs seeded courts keep their semantic
+oracles and cite #119/#100. After those owners land, their independent legacy
+named-row oracle remains the acceptance target for one-commit cabinet cleanup.
 
-The proposed Native runtime carriers attest actual candidate/route/round
-completion; they confer no operation permission. Every round is independently
-admitted at C through the existing operation-authorization owner and existing
-installed publication authority. Native owns the counter, candidate pin and
-linear completion evidence. If implementation needs a new legal permission
-rather than that existing authority plus runtime facts, place it in worth-proof
-and stop for a placement ruling before designing a runtime substitute.
+## Implementation slices after approval (B4)
 
-## 1. Apply real rounds with narrow continuation custody
+Estimates below are planning estimates, not measured performance or binary caps.
+Each includes optimized-build iteration and courts; new core logic is concrete,
+with generic shells only where schema/provider dispatch actually needs them.
 
-Keep require_unseen_route and participant_admission's independent fence for
-first publications. Re-entry requires the new owner-issued continuation for
-exactly that route's last applied round in this candidate. It consumes the
-previous round capability; stale, duplicate, foreign-candidate, foreign-route,
-and cross-build uses refuse typed with the route/source/family and round.
+| Slice | Deliverable, dependency and size estimate | Release evidence and named mutants | Stop/qualification |
+|---|---|---|---|
+| 1 | Merge 39ad; route map, linear custody, B3 guard, builder limits and docs. About 200–350 production + 180–280 court lines, split at 400 lines/file or less; 1–1.5 lane-days including release builds; estimated native text delta 30–80KiB. | C1/B1, multi-writer/lone-root/D1470 unchanged; M-C1, M-B1, M-C2, M-L2. Existing one-effect owned journey stays green; repeat dispatch remains disabled. | Commit/report. Complete affected Native/Query owners and root/Query comparison green, or each residual filed as identical-on-master. Stop for changed authority/provenance or a real non-artifact multi-effect journey. |
+| 2 | Delta net-plan, same-route creator ledger, incremental aggregate/pin support, consumed-ID policy. About 300–500 production + 250–400 court lines; 1–2 lane-days; estimated native text 40–100KiB. | N1-N5/X1/X2, custody/first-entry after master merge; M-N1, M-X, M-ID, M-N3/N4/N5. Cold supported frontiers and unchanged legacy churn frontiers. Release cabinet-scale 27-retirement workload plus touched-record growth. | Commit/report, same green-or-filed-baseline rule. Stop if allocation replay would require a format change or forbidden owner edits; do not claim publishing netted IDs while B3 blocks it. |
+| 3 | Fetch K6/K6b status again; distinct round spans, applied rebase disposition, one final receipt/lineage handoff and owned-only final verification. About 250–450 production + 220–350 court lines; 1–1.5 lane-days; estimated text 30–90KiB. | Middle-input fixture, K1, final support/no netted fact, hot/worker crash/retry/follow-on; M-K1, M-E1/E2, M-R1, M-Q1, M-O1, M-O2a/b, M-L1. | Commit/report, same green-or-filed-baseline rule. Stop rather than duplicate K6 policy, fabricate Current/Ready, or require #121/#94. |
+| 4 | Exact-kind predecessor courts, residual lifecycle/atomicity, final docs/ledger and release qualification. About 120–220 court/doc lines; 0.5–1 lane-day; no stored/public enum growth expected. | M-P1/M-G1/M-A1; rerun affected CP2a appendix/currentness/receipt mutants, exact bytes/allocation, private 7/7 and complete root/Query baseline comparison. | Commit/report, green or each residual filed identical-on-master; no changed assertion without reason. Then stop for the separate S6 plan review. |
 
-Retain original C predecessor (or authenticated absence) separately from each
-round's immediate applied predecessor. The applied posture is not a committed
-publication, product observation, historical selection or settled output. Query
-can borrow it only inside the same atomic qualification, admitted at C with data
-at the exact D round. C supplies every request, permission, principal and installed
-operation/discovery fact. Candidate state supplies identity, liveness and data.
-The same posture is the future S6 read-your-writes entry; S6 must not add another.
+Slices 1–2 install and court the real Native preparation/qualification owners
+without enabling Query repeat dispatch. Slice 3 connects the first new repeat
+journey only after delta netting, all-round support and final-only receipt
+preparation are present together. No checkpoint ships a repeat with partial
+conflict support, intermediate receipts or false single-input provenance.
 
-## 2. Sequential net-plan owner (G2)
+Every slice uses the repo's supported root-landing/query-landing drivers and
+focused owner courts; no nested Cargo framework or new test manifest. Run the
+boundary/context/format/dirty-cap checks on the scoped changes. Source-only
+reason updates in this plan revision need no runtime-gate rerun; they do not
+unignore or alter a court.
 
-The new Native net-plan owner consumes authenticated applied-round outcomes,
-not an application's final-state/unchanged claim. It retains C baselines for
-only touched records, each round's typed command/binding resolutions, identity
-allocations and the final applied state. Per-record changes retain the actual
-writer route and round. Query supplies real handlers and their support; it
-never emits a guessed replacement plan.
-
-Build the final ordinary canonical command set once from C to final D, using
-Native's existing field/aspect patch and intent validation owners. Validate
-round k against its actual D(k-1); validate the final net plan against C. Do not
-relax validation against C or feed a sorted union of sequential commands to it.
-
-Rules:
-- a C record updated repeatedly has one final typed patch; an exact revert has
-  no update (including no identical-value patch/trigger write);
-- a C record retired stays a genuine deletion, with original generation/custody;
-- a fresh record updated in later rounds keeps its identity and final fields;
-- retire-old/create-new with the same business key remains a real identity
-  replacement; name equality never substitutes the old ID;
-- binding and local-key resolution are retained through their Native owners;
-  references to a surviving fresh record keep its actual allocated identity;
-- rollback of unpublished identities follows the existing slot/symbol owner,
-  with no rewind of a published generation or leaked provisional reference;
-- net adjacency, relationship/content attachments, conditional effects, triggers
-  and publication effects are prepared from the net changed set before final
-  content/ownership preparation, not by subtracting row counts.
-
-The plan does not introduce a second serializer or application-owned diff.
-Round-local material may support real reads, but only net final content reaches
-final content preparation. The original transaction footprint retains every
-external C read from every round, even a round whose entire write set nets away.
-Candidate-local reads retain exact applied revisions and proof of the prior
-round, not invented C facts. Final support checks requalify the actual consumed
-graph against final D before World; stale downstream work is re-executed or the
-whole edit refuses. No all-model scan is introduced.
-
-## 3. Custody-aware netting (G3)
-
-Only a create/delete pair produced by the SAME route's own candidate rounds may
-net away. Carry the creating writer at allocation and require exact custody at
-the deleting round. A continuation deleting another route's fresh record or an
-authored-prefix fresh record refuses typed, naming both writers and the record.
-A general record-ID or key match is insufficient, even if the final record is
-absent. Genuine C retirements remain included and Native-proven.
-
-Final coverage uses each route's C live members plus its actual final creations
-and genuine retirements. Transaction-local churn is excluded. There is exactly
-one CoupledPublicationPart per route for the existing ownership writers; their
-independent roster/presence checks see the same final candidate. No custody
-check is weakened to admit a repeated writer.
-
-## 4. Convergence and scheduling
-
-Preserve the actual two certifier postures identified in
-`orchestration/analysis-p5-cp2a-currentness.md`, and port their existing authority
-to exact applied revisions at the candidate owner. Own-publication/on-branch
-certification can succeed by read-only full verification after admitted rebase.
-Required-wave NativeRevisionUnavailable goes to disclosure/execution; it is not
-a global publication or retirement rule. UnsupportedFact means incomplete mark
-coverage and funded full comparison, not unconditional producer execution.
-There is no blanket retirement gate, producer flag, literal unrebased own-read
-change rule, or general fixed-point contract. The plan review must verify the
-candidate posture preserves this call-site distinction without fabricated Ready
-settlements or a committed Native position for D. An upstream later round that
-moves a downstream fact outside its admitted own postconditions invalidates that
-route; requalify it through the existing owner before final completion. Retain
-all rounds' external reads for commit conflict detection.
-
-A no-effect verification round retains its own actual consumed facts separately
-from the effectful producer's original input, as G1 requires. It mints no Ready
-settlement before the final Native publication. Proposed owner join for review:
-Native's continuation/net-plan owner seals a candidate-local completed-
-verification proof only for a real preceding part on that same candidate and
-route. The existing Query currentness/settlement owner consumes that proof and
-its final-qualified reads after the actual commit. It must not masquerade as a
-RelationalCurrentOutputAdoption, which requires a published current route.
-This is specifically an in-candidate continuation completion, not the standalone
-ordinary no-effect adoption postponed under #121. The review must verify that
-this distinction is sufficient for ordinary parts as well as owned parts;
-implementation stops for a ruling if it requires the postponed #121 contract.
-A no-effect verification does not change the genuine effectful origin or erase
-any round's reads from conflict support.
-
-Bound actual executions by a per-attempt continuation policy supplied through
-the existing demand-control owner, including a finite explicit route-round
-ceiling. The proposal is a default64 actual rounds per route per attempt, with
-a caller able to choose a smaller positive ceiling. Exhaustion refuses typed
-NonConvergentProducer {source, family, rounds, maximum}; it never publishes the
-last state. Cancellation/deadline/allocation stops propagate through their
-original owners and cleanup remains outside locks. The review must approve the
-ceiling's placement and public control shape before implementation.
-
-## 5. Effectful provenance and #84 (G4)
-
-Only rounds with a genuine Native-applied effect contribute to multi-round
-provenance. Native decides this; Query cannot infer it from command counts,
-receipt allocation or CAD role names. A no-effect verification/adoption does not. One effectful round
-retains that round's exact existing single-input origin. Two or more effectful
-rounds issue MultiRoundProducer through the canonical Native installer, recording
-the actual ordered producer/input coordinates and net final members. Neither
-first, last nor navigation precommit basis stands for the sequence.
-
-The installed #84 predecessor owner returns typed
-PredecessorBasisUnavailableForOrigin(MultiRoundProducer), hot and cold. Never
-return a before-input for it. #115 is scheduled BEFORE proprietary #93, and
-must provide an explicit multi-round observation before a producer which needs
-it is migrated. HistoricalSelection/authored-restoration retain their existing
-typed refusal; do not broaden this slice into #94.
-
-CHK20.1 gets an additive origin tag through the canonical codec, no new version
-step without a ruling. Use recorders for fixtures. A pre-change CHK20.1 image must
-open in the changed shipped decoder. An unknown origin tag, fed through the
-shipped decoder under catch_unwind, must return its typed error and never panic.
-Test the unchanged variants' round trips too; no compatibility fixture may be
-hand-constructed as a fake valid origin.
-
-## 6. Classification against C (D1430 / #115)
-
-The net-command owner owns physical C→final state only. It does NOT own whether
-CAD calls an output changed_edges.X or edges.X. Those are distinct observable
-roles. A producer's classification must use the original edit-comparison input
-at C, while cleanup/prior-output processing may need its immediate applied
-predecessor at D(k-1). #115's single predecessor-observation owner must expose
-these coordinates distinctly, with exact provenance, not call either a settled
-publication. The producer chooses and emits its semantic roles from that proof.
-
-Within this slice, Query passes those roles unchanged and Native enforces exact
-coverage, custody and classification contract. It never preserves the first
-role, chooses the last, aliases strings, or derives a remapping. A legacy
-continuation whose classification cannot be authenticated against the original
-comparison input refuses with route/family/record context; do not promise the
-cabinet rename solved before #115. Add a generic observable role-classification
-court and list the explicit #115 consumer join in the migration handoff. If
-implementation needs a new predecessor meaning beyond this proposal, stop for
-a ruling rather than invent it under G2.
-
-## 6a. Retirement metadata precedes Native retired-role proof (D1450)
-
-The cabinet's round1 creates temporary RetiredCell rows; the old round2 removes
-them only because path A cannot form a native posting projection for Retire
-roles. This is not a platform fixed-point requirement. The actual long-term
-owner (proprietary #100, public #119) must define predecessor-relative
-retirement metadata against C, through G2's real sequential net plan and/or
-#115's explicit predecessor observations.
-Query cannot interpret CAD role names or invent a continuation declaration.
-A producer-side closure-evidence change, if selected by the proprietary owner,
-also requires its own reviewed migration rather than a platform approximation.
-
-Do not add Native proof for retired roles or broaden path A full verification
-to NRU until that semantic owner exists and the live-row oracle is protected.
-Removing NRU earlier silently preserves27RetiredCell rows and54links: D1450's
-runtime mutant reached and failed the actual private absence query. CP2b must
-name this prerequisite explicitly at review, carry all original C observations,
-and preserve exactly the selected producer's output classification. It may not
-call all marks-uncertifiable rows stale, or assume a last-round input is the
-original edit comparison input.
-
-CP2a composes genuinely disjoint field/aspect fragments across actual authored
-and producer parts, through Native applied and portable command owners. It
-preserves field locators, source-prefix effects and every transaction read;
-actual overlapping writes still refuse, including duplicate-patch Ambiguous.
-That repair does not perform repeated writes across one route's sequential
-rounds, create/delete cancellation or continuation. G2 owns those additional
-responsibilities after review; it must not weaken ordinary C intent validation
-or the existing per-writer custody fences.
-
-## 7. Courts and mutations
-
-All runtime mutants must run their intended court, reach its semantic leg,
-fail an assertion, then restore every mutated source by SHA-256. Compile
-failure, precondition/setup refusal and timeout alone are not kills.
-
-| ID | Runtime assertion required |
-|---|---|
-| C1 | First-entry fences still reject a second unauthenticated route; only the same candidate's next-round custody admits continuation |
-| C2 | Oscillating producer refuses typed at its round ceiling (well under20s), C unchanged |
-| N1 | Genuine C retirement remains in origin and deleted from live state |
-| N2 | Route-local temporary create/delete absent from final patch, public rows and triggers |
-| N3 | Fresh create followed by update survives with final values and original fresh ID |
-| N4 | Retire-old/create-new same key has distinct native IDs and correct roster |
-| N5 | Update then exact revert has no identical in-place patch |
-| N6 | Synchronous comparison runs explicit absence queries for temporary, removed member, source and child records, catching orphans |
-| X1 | Route R deleting S's fresh record refuses typed naming both owners, no effects |
-| X2 | Route deleting authored-prefix fresh record refuses, no effects |
-| O1 | Single effectful+no-effect stays single-input; two effectful rounds become MultiRoundProducer; consecutive #84 edits prove both |
-| O2 | MultiRoundProducer #84 refuses exact origin kind; first/last-input substitution fails |
-| O3 | Pre-change CHK20.1 opens and unknown origin tag refuses typed without panic in shipped decoder |
-| O4 | Cold reopen preserves multi-round custody and typed predecessor refusal |
-| W2 | Upstream second round changing downstream input forces re-execution; final named rows equal legacy oracle |
-| K1 | Concurrent write to round1-only external input conflicts even if its writes net away |
-| G1 | All-branch observer detects any empty/side-branch extra commit |
-| Classification | Changed-vs-C generic roles stay observable; immediate-round classification cannot substitute for C comparison |
-
-Re-run CP2a A1..A7/R1/R2/R3 and the three D1422 appendix mutants where touched
-owners alter their assumptions; original runtime kills remain evidence for
-unchanged owners. Keep worker-only courts on new Native/read paths. Add reset,
-retry, late refusal and cold-reopen legs using existing public generic fixture,
-not CAD types. Preserve the independent hard-coded legacy named-row oracle.
-Unignore the two seeded comparison courts only when both pass unchanged, adding
-missing orphan reads on the synchronous side. Never loosen their oracle.
-
-## Implementation slices after review
-
-1. Confirm the merged #113 base. Add Native linear continuation/applied predecessor with
-   foreign/stale/duplicate/worker courts, leaving final publication unchanged.
-2. Implement Native sequential net plan and same-route creation custody, before
-   final content/ownership preparation; qualify N/X/K cases independently.
-3. Join Query candidate reads, all-round support and required-wave convergence;
-   qualify W2/oscillation/late-refusal and row equality under one commit.
-4. Canonical effectful-round origin, codec and #84 refusal, hot/cold/unknown-tag;
-   qualify explicit single-effect-vs-multi-effect cases and classification seam.
-5. Full root/Query comparison to clean merged master, Native/Query enforcement,
-   changed-assertion ledger and mutation restoration manifest. Coherent commits
-   with required coauthor footer; no push. Then the separate S6 plan review.
-
-Every code/test/support file≤400lines, no new framework, no forbidden-owner
-edits. No performance timing claim from debug builds. Count commits across all
-branches and report the actual unmigrated scratch cabinet result separately
-from the synchronous public fixture and future migrated1commit claim.
-
-
-## D1470 continuation parity incorporated in this revision
-
-Do not add ordinary no-effect adoption from public #121. Clean master4405
-really publishes two delivery receipts for the Initial-absence scalar producer;
-CP2a co-commits its first receipt with the source, then uses master's real
-OwnPublicationContinuation and original-producing-publication chain for its
-one delivery successor. The typed in-edit own-effect mark, not a fixture flag
-or a blanket retired-role rule, distinguishes that case. Healthy coupled
-completions retain master's current readmission, including a required-wave
-verification request with a successor hint. Blocking every hinted successor
-reopens healthy restored owners; the original ownership courts protect this.
-
-Within-candidate continuation must preserve this exact source/computation
-distinction, both existing Ready certifiers and the original root evidence.
-No newly invented replay, idempotency alias, inspection fallback or Current
-proof can substitute for a real continuation. Every round's actual support
-remains in the net plan's conflict qualification. A genuine effect in only one
-round does not become MultiRoundProducer merely because a later verification
-executes without effect.
-
-The applied-support join uses PreparedSourceFactRebase's authenticated
-predecessor and the single predecessor_output selector policy: every observed
-full-generation member is checked, a partial shrink acquires the actual
-surviving aggregate or all surviving walk regions on the exact applied pin,
-and final support compares those coordinates to the completed candidate.
-Foreign members retain ordinary support and typed refusals. CP2b must carry
-this owner through all rounds; it must not use a route's existence as proof of
-live output or as permission to rewrite a foreign selector.
-
-The D1470 serial/worker follow-on measurements are0contacts/0commits in both
-trees. After real successor publication its actual binding resolves Equivalent.
-An overlapping authored write of Total is already refused by Native's intent
-owner before publication; neither CP2a nor CP2b may loosen that fence to reach
-an inspection oracle. All source-prefix versus producer field-attribution
-assertions and named-row final-state oracles remain binding.
+Release telemetry uses the committed optimized profile, records workload,
+hardware, warm/cold posture and repetitions, and compares growth/bytes rather
+than fitting exact incidental work counts. Measure the actual source-entry
+edit (including all synchronous producers) on the cabinet-scale fixture; keep
+interactive supported/refused edits well under roughly 1 s. Also record the
+64-round legacy oscillator reference and the candidate's early #119 refusal
+separately. Never present 64 successful effectful candidate rounds as CP2b proof.
+A slope in accumulated prior work blocks the slice: fix net/pin/aggregate
+structure, not capacity or deadline. Do not claim the postponed cabinet final
+single commit from the preserved 7/7 scratch probe.
