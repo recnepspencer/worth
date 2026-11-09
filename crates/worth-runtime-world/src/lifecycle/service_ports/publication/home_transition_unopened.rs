@@ -22,6 +22,7 @@ where
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
         expected: ProductBranchObservation,
+        program_source: worth_proof::AdmittedBranchProgramSource,
         change: worth_relational::facade::mvcc::RelationalTransactionIntent,
         plan: &HomeProgramTransitionPlanDescription,
         step: u32,
@@ -46,6 +47,7 @@ where
         owner.prepare_readmitted_home_transition_step(
             request,
             expected,
+            program_source,
             change,
             plan,
             step,

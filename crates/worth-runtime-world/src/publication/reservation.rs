@@ -93,6 +93,12 @@ impl ReservedCompositePublicationAttempt {
         self.custody.reserved_commit_identity()
     }
 
+    pub(crate) fn durable_association(
+        &self,
+    ) -> Option<worth_foundational::facade::CompositeAttemptAssociation> {
+        self.custody.durable_association()
+    }
+
     pub(crate) fn has_durable_open(&self) -> bool {
         self.custody.has_durable_open()
     }

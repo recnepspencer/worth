@@ -5,7 +5,9 @@ mod associated_effects;
 mod construction;
 mod fresh_source;
 mod native_effects;
+mod occurrence_owners;
 mod reconcile;
+mod signal_effects;
 
 /// Home configuration lacks caller-supplied Relational and Bridge owners.
 /// Store installs the concrete section and its actual bound Bridge once.
@@ -65,3 +67,6 @@ where
         Ok(RuntimeWorldOwner::from_root(root))
     }
 }
+
+mod authored;
+pub use authored::RuntimeWorldAuthoredHomeBuilder;

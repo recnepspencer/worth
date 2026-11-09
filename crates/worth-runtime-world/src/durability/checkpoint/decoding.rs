@@ -7,7 +7,10 @@ use crate::durability::{
     WorldRelationalReleaseEvidence,
 };
 use worth_execution::ExecutionRequest;
-use worth_foundational::facade::{DurableCompositePublicationAttemptIdentity, HomeIncarnation};
+use worth_foundational::facade::{
+    BoundaryProtocolCompatibilityWindow, BoundaryProtocolVersion,
+    DurableCompositePublicationAttemptIdentity, HomeIncarnation,
+};
 
 impl WorldCheckpointImage {
     pub(crate) fn decode_selected(
@@ -59,6 +62,15 @@ fn read_binding(
     binding: &WorldDurableHomeBinding,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<HomeIncarnation, Denial> {
+    let row_version =
+        BoundaryProtocolVersion::try_new(u32::from_le_bytes(read.fixed().map_err(frame)?))
+            .map_err(|_| frame(Frame::Malformed))?;
+    BoundaryProtocolCompatibilityWindow::inclusive(
+        crate::durability::WORLD_ARTIFACT_VERSION,
+        crate::durability::WORLD_ARTIFACT_VERSION,
+    )
+    .admit(row_version)
+    .map_err(|cause| frame(Frame::UnsupportedVersion(cause)))?;
     if read.owner().map_err(frame)? != binding.owner() {
         return Err(Denial::ForeignOwner);
     }
@@ -192,20 +204,21 @@ fn read_occurrences(
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<(), Denial> {
     let mut previous_position = 0u64;
-    for _ in 0..count(read, 104)? {
+    for _ in 0..count(read, 105)? {
         super::framing::charge(request, 1).map_err(Denial::Medium)?;
         let (position, digest) = location(read)?;
         if previous_position.checked_add(1) != Some(position) {
             return Err(Denial::JournalSourceMismatch);
         }
         let attempt = attempt(read, image)?;
-        let relational = read.evidence().map_err(frame)?;
+        let owners = crate::durability::codec::owner_evidence::read(read, request)
+            .map_err(Denial::Medium)?;
         let publishing = HomeIncarnation::from_recorded(read.number().map_err(frame)?)
             .ok_or_else(|| frame(Frame::Malformed))?;
         if publishing > capture_incarnation {
             return Err(Denial::FutureIncarnation);
         }
-        image.admit_occurrence(attempt, relational, publishing, position, digest, request)?;
+        image.admit_occurrence(attempt, owners, publishing, position, digest, request)?;
         previous_position = position;
     }
     Ok(())

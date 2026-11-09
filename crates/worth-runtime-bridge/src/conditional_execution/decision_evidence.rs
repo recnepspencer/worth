@@ -25,6 +25,11 @@ impl BridgeConditionalDecisionEvidence {
         ))
     }
 
+    pub fn installed_lowering_ref(
+        &self,
+    ) -> &std::sync::Arc<super::BridgeInstalledConditionalLowering> {
+        &self.core.lowering
+    }
     pub fn lowering_projection(&self) -> &super::BridgeConditionalLoweringProjectionIdentity {
         self.core.lowering.projection()
     }

@@ -135,7 +135,14 @@ impl BridgeReadmittedAuthoredAssembly {
                     std::mem::size_of::<Pending>() as u64,
                     crate::conditional_execution::retention::array_charge::<
                         Arc<BridgeInstalledConditionalLowering>,
-                    >(serving.lowerings.values().count())
+                    >(
+                        serving
+                            .lowerings
+                            .read()
+                            .unwrap_or_else(std::sync::PoisonError::into_inner)
+                            .values()
+                            .count(),
+                    )
                     .map_err(size_denial)?,
                 ])
                 .map_err(size_denial)?,
@@ -147,6 +154,13 @@ impl BridgeReadmittedAuthoredAssembly {
                     DurableSignalBranchIdentity,
                     BranchSlot,
                 >(1)
+                .and_then(|bytes| {
+                    crate::conditional_execution::retention::btree_charge::<
+                        worth_signal::facade::branch::SignalBranchIdentity,
+                        DurableSignalBranchIdentity,
+                    >(1)
+                    .and_then(|index| crate::conditional_execution::retention::sum(&[bytes, index]))
+                })
                 .map_err(size_denial)?,
             )
             .map_err(request_denial)?;
@@ -169,7 +183,13 @@ impl BridgeReadmittedAuthoredAssembly {
             }
         }
         drop(slots);
-        let inherited = serving.lowerings.values().cloned().collect();
+        let inherited = serving
+            .lowerings
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .values()
+            .cloned()
+            .collect();
         serving.posture = BranchPosture::ForkPreparing { target };
         drop(serving);
         Ok(Box::new(Pending {
@@ -328,6 +348,18 @@ impl SignalDurableProjectionPublication for Pending {
                 unreachable!("original owns reservation")
             }
         };
+        let signal_branch = projection
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .signal_branch
+            .clone();
+        self.reservation
+            .registry
+            .signals
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .insert(signal_branch, self.reservation.target);
         *slot = BranchSlot::Serving {
             projection,
             _memory: memory,

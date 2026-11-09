@@ -24,6 +24,7 @@ pub(in crate::conditional_execution) struct BranchProjection {
 }
 pub(in crate::conditional_execution) enum BranchPosture {
     Serving,
+    Stopped,
     ForkPreparing {
         target: DurableSignalBranchIdentity,
     },
@@ -44,13 +45,24 @@ pub(in crate::conditional_execution) struct ReadmittedBranch {
     pub(in crate::conditional_execution) _allocations:
         crate::correspondence::SharedCorrespondenceAllocationRegistry,
     pub(in crate::conditional_execution) section: BridgeAuthoredSection,
-    pub(in crate::conditional_execution) lowerings: BridgeConditionalLoweringRegistry,
+    pub(in crate::conditional_execution) lowerings:
+        Arc<std::sync::RwLock<BridgeConditionalLoweringRegistry>>,
+    pub(in crate::conditional_execution) declarations: Arc<
+        std::sync::RwLock<crate::conditional_execution::authored_declaration::DeclarationIndex>,
+    >,
+    pub(in crate::conditional_execution) source_owner:
+        Arc<worth_proof::ConditionalSourceObservationOwner>,
+    pub(in crate::conditional_execution) graph_instance_id: u64,
+    pub(in crate::conditional_execution) signal_branch:
+        worth_signal::facade::branch::SignalBranchIdentity,
     pub(in crate::conditional_execution) retention: Arc<BridgeRetentionLedger>,
     pub(in crate::conditional_execution) _backing: Arc<backing::Backing>,
-    pub(in crate::conditional_execution) _program: Arc<Program>,
 }
 #[derive(Debug)]
 pub enum BridgeAuthoredBranchDenial {
+    Stopped {
+        branch: DurableSignalBranchIdentity,
+    },
     RegistryContactHeld {
         branch: DurableSignalBranchIdentity,
     },
@@ -87,6 +99,17 @@ pub struct BridgeAuthoredBranchView<'a> {
     branch: MutexGuard<'a, Box<ReadmittedBranch>>,
 }
 impl BridgeReadmittedAuthoredAssembly {
+    /// World borrows the same installed Bridge source; per-branch conditional
+    /// projections remain owned by this assembly and its durable Signal owner.
+    pub fn runtime_world_correspondence_port(
+        &self,
+    ) -> crate::facade::RuntimeWorldCorrespondencePort {
+        let mut port = self.program.bridge.runtime_world_correspondence_port();
+        port.branches = crate::correspondence::RuntimeWorldCorrespondenceBranches::Authored(
+            Arc::downgrade(&self.branches),
+        );
+        port
+    }
     pub fn diagnostics(&self) -> crate::diagnostics::BridgeDiagnosticsHandle {
         self.program.bridge.diagnostics.handle()
     }
@@ -120,6 +143,7 @@ impl BranchProjection {
         })?;
         match guard.posture {
             BranchPosture::Serving => Ok(guard),
+            BranchPosture::Stopped => Err(BridgeAuthoredBranchDenial::Stopped { branch }),
             BranchPosture::ForkPreparing { target } => {
                 Err(BridgeAuthoredBranchDenial::ForkPreparing { branch, target })
             }
@@ -139,10 +163,17 @@ impl BridgeAuthoredBranchView<'_> {
     pub fn authored_section(&self) -> &BridgeAuthoredSection {
         &self.branch.section
     }
-    pub fn conditional_definitions(
+    /// Inspection retains a registry read contact only for this callback.
+    pub fn with_conditional_definitions<R>(
         &self,
-    ) -> impl Iterator<Item = Arc<BridgeInstalledConditionalLowering>> + '_ {
-        self.branch.lowerings.values().cloned()
+        inspect: impl FnOnce(&mut dyn Iterator<Item = Arc<BridgeInstalledConditionalLowering>>) -> R,
+    ) -> R {
+        let lowerings = self
+            .branch
+            .lowerings
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        inspect(&mut lowerings.values().cloned())
     }
     pub fn conditional_retention(
         &self,
@@ -153,7 +184,12 @@ impl BridgeAuthoredBranchView<'_> {
 impl Drop for ReadmittedBranch {
     fn drop(&mut self) {
         self.retention.close();
-        for lowering in self.lowerings.values() {
+        for lowering in self
+            .lowerings
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .values()
+        {
             lowering.lease.revoke_liveness();
         }
     }

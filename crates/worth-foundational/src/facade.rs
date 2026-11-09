@@ -423,8 +423,8 @@ pub use crate::durability::{
     SignalBranchAdvanceIdentity, SignalBranchAdvanceReference,
     SignalConditionalDefinitionOwnerMismatch, SignalDefinitionProjectionOutcome,
     SignalDefinitionTransitionIdentity, SignalDefinitionTransitionReference, SignalDurableJournal,
-    SignalOwnerSlotIdentity, UnsupportedDurableOwnerTag, WorldDurableJournal, WorldOwnerCoordinate,
-    WorldOwnerSlotIdentity,
+    SignalOwnerSlotIdentity, UncleanRecoveryUnsupported, UnsupportedDurableOwnerTag,
+    WorldDurableJournal, WorldOwnerCoordinate, WorldOwnerSlotIdentity,
 };
 pub use crate::durable_publication::DurablePublicationFate;
 pub use crate::execution::{

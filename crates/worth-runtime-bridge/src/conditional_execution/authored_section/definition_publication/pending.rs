@@ -155,7 +155,12 @@ impl Pending {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if !branch.lowerings.reserve_owned_slot(key.clone()) {
+        if !branch
+            .lowerings
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .reserve_owned_slot(key.clone())
+        {
             return Err(D::ProjectionSlotOccupied {
                 branch: branch_identity,
                 node: context.contract().node(),
@@ -218,10 +223,24 @@ impl worth_signal::facade::durability::SignalDurableProjectionPublication for Pe
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let old = projection.lowerings.remove(&self.predecessor.registry_key);
+        let old = projection
+            .lowerings
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .remove(&self.predecessor.registry_key);
         self.predecessor.lease.revoke_liveness();
         projection
+            .declarations
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .insert(
+                crate::conditional_execution::authored_declaration::DeclarationKey::of(&lowering),
+                Arc::clone(&lowering),
+            );
+        projection
             .lowerings
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .install(lowering.registry_key.clone(), lowering);
         projection.section = section;
         projection.posture = BranchPosture::Serving;

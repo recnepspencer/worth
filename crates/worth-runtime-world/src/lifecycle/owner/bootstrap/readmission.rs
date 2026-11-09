@@ -4,7 +4,7 @@ use crate::durability::{DecodedWorldRecord, WorldReadmissionDenial as Denial, Wo
 use crate::identity::readmission::{readmit_bootstrap, readmit_commit, readmit_incarnation};
 use worth_relational::facade::durability::RecoveredRelationalBranchBasis;
 use worth_runtime_bridge::facade::AdmittedRuntimeWorldCorrespondenceBasis;
-use worth_signal::facade::branch::AdmittedSignalInitialEmptyRoot;
+use worth_signal::facade::durability::SignalReadmittedSourcePoint;
 
 impl<D, I, E, Ctx, T> RuntimeWorldOwnerRoot<D, I, E, Ctx, T>
 where
@@ -19,13 +19,13 @@ where
         &self,
         artifact: &DecodedWorldRecord,
         native: RecoveredRelationalBranchBasis,
-        signal: AdmittedSignalInitialEmptyRoot,
+        signal: SignalReadmittedSourcePoint,
         bridge: AdmittedRuntimeWorldCorrespondenceBasis,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         (
             ProductBranchObservation,
-            crate::durability::WorldCheckpointOrigin,
+            crate::durability::PreparedCheckpointOccurrence,
         ),
         Denial,
     > {
@@ -64,7 +64,9 @@ where
                 .basis_port()
                 .export_recorded_retained_component(execution, basis.relational_basis())
                 .map_err(Denial::NativeRecorded)?;
-            if original != components.relational || signal.recorded() != &components.signal {
+            if original != components.relational
+                || signal.source_point() != components.signal.point()
+            {
                 return Err(Denial::BranchLineage);
             }
             let owner = self.owner_identity();
@@ -79,8 +81,10 @@ where
                 commit: readmit_commit(owner, head.commit).ok_or(Denial::ForeignOwner)?,
                 basis,
             };
+            let origin = crate::durability::PreparedCheckpointOccurrence::prepare(execution)
+                .map_err(Denial::Medium)?;
             let mut prepared = self
-                .prepare_readmitted_root(intent, readmitted)
+                .prepare_readmitted_root(intent, readmitted, origin)
                 .map_err(Denial::RootAdmission)?;
             // The branch frame was already selected through actual Home
             // recovery; installing its SAME identities performs no new I/O.

@@ -38,7 +38,7 @@ where
                 frontiers,
             )
             .map_err(WorldReadmissionDenial::IdentityExhaustion)?;
-        RuntimeWorldOwnerRoot::construct(inputs, construction, Some(binding))
+        RuntimeWorldOwnerRoot::construct(inputs.into_installed(), construction, Some(binding))
             .map_err(WorldReadmissionDenial::IdentityExhaustion)
     }
 }

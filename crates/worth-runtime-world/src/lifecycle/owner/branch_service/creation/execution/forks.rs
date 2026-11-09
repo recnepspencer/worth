@@ -215,7 +215,10 @@ where
     let custody = attempt.take_signal_custody().ok_or(ForkFailure {
         denial: RuntimeWorldBranchAdmissionDenial::CustodyCapacityExhausted,
     })?;
-    let mutation_port = owner.state.signal.mutation_port();
+    let services = owner.state.signal.memory_services().ok_or(ForkFailure {
+        denial: RuntimeWorldBranchAdmissionDenial::DurableBranchPublicationRequired,
+    })?;
+    let mutation_port = services.mutation_port();
     let reservation = mutation_port
         .reserve_fork_exact(target.clone(), attempt.source().basis().signal_basis())
         .map_err(|denial| signal_fork_failure(&denial))?;

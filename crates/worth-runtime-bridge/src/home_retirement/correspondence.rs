@@ -30,6 +30,7 @@ impl RuntimeWorldCorrespondencePort {
     ) -> Result<RetiringWorldCorrespondence, (Self, Denial)> {
         let Self {
             runtime,
+            branches,
             inspection,
         } = self;
         match runtime.into_home_retirement(native, request) {
@@ -40,6 +41,7 @@ impl RuntimeWorldCorrespondencePort {
             Err((runtime, cause)) => Err((
                 Self {
                     runtime,
+                    branches,
                     inspection,
                 },
                 cause,

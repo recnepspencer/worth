@@ -180,7 +180,7 @@ impl BridgeAuthoredDependencyDescription {
     pub fn observation_record(&self) -> Option<RelationalBridgeRecordIdentityParts> {
         self.meaning.data.observation_record.map(Record::parts)
     }
-    pub(super) fn admits_fresh_candidate(
+    pub(in crate::conditional_execution) fn admits_fresh_candidate(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         fresh: &BridgeSemanticDependencyCandidate,

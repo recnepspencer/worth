@@ -1,0 +1,17 @@
+{
+  "descriptor": {
+    "branch_id": "other",
+    "descriptor_version": 2,
+    "posture": "Live",
+    "reference": {
+      "branch_id": "relational/0/other",
+      "generation": 0,
+      "target": "Empty"
+    },
+    "root_identity": 0,
+    "runtime_instance_id": 0,
+    "truth_version": 0,
+    "visibility_commitment": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "target": "Empty"
+}

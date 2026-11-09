@@ -218,15 +218,15 @@ where
             conditional,
             temporal,
         );
-        let owner = self
+        let root = self
             .owner_services
-            .downgrade_owner()
-            .expect("readmission seals one owner");
+            .transfer_to_durable_owner()
+            .expect("readmission seals one original canonical root");
         SignalDurableOwner::from_readmitted(
             self,
+            root,
             source,
             medium,
-            owner,
             Arc::new(vocabulary),
             contracts,
             execution,

@@ -16,6 +16,7 @@ use worth_foundational::facade::{
 
 #[derive(Debug)]
 pub enum SignalOwnerReadmissionDenial {
+    Source(crate::branch::owner_services::SignalDurableSourceDenial),
     Medium(super::SignalDurableMediumDenial),
     Frame(super::SignalDurableFrameDenial),
     Image(super::SignalAuthoredImageDenial),

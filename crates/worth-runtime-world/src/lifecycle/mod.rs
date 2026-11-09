@@ -39,7 +39,10 @@ mod execution;
 pub use execution::{RuntimeWorldBuildDenial, RuntimeWorldExecutionPlacement};
 mod public_owner;
 mod service_ports;
-pub use builder::{MissingRuntimeWorldInput, RuntimeWorldHomeBuilder, RuntimeWorldOwnerBuilder};
+pub use builder::{
+    MissingRuntimeWorldInput, RuntimeWorldHomeBuilder, RuntimeWorldOwnerBuilder,
+    RuntimeWorldUnboundHomeBuilder,
+};
 pub use public_owner::RuntimeWorldOwner;
 pub use service_ports::*;
 
@@ -68,3 +71,12 @@ pub use close::{
     RetiredRuntimeWorldHome, RuntimeWorldHomeRetirement, RuntimeWorldHomeRetirementDenial,
     RuntimeWorldHomeRetirementProgress,
 };
+
+mod authored_signal;
+pub use authored_signal::{
+    RuntimeWorldAuthoredSignalAttachment, RuntimeWorldAuthoredSignalAttachmentDenial,
+};
+
+mod signal_services;
+
+pub use builder::RuntimeWorldAuthoredHomeBuilder;

@@ -219,3 +219,7 @@ world-home workspaces/worth-store/crates/worth-store-application/src/world_secti
 world-home-checkpoint-selection workspaces/worth-store/crates/worth-store-application/src/world_section/checkpoint/selection.rs
 world-home-checkpoint-source crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/retention/artifact_source/journal.rs
 world-home-checkpoint-source workspaces/worth-store/crates/worth-store-application/src/world_section/checkpoint/read.rs
+
+# Authored Signal admission uses the same actual Home fresh-source authority.
+native-world-fresh-source workspaces/worth-store/crates/worth-store-application/src/world_section/readmission/signal.rs
+native-world-fresh-source workspaces/worth-store/crates/worth-store-application/src/world_section/readmission/standalone_signal.rs

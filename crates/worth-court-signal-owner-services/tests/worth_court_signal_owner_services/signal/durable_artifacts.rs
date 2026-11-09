@@ -265,3 +265,5 @@ fn foreign_definition_owner_and_foreign_attempt_home_refuse_as_typed_data() {
         Err(SignalDurableFrameDenial::ForeignOwner)
     ));
 }
+
+mod source_point;

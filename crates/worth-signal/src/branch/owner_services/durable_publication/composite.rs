@@ -145,6 +145,7 @@ where
         binding: SignalCompositeAdvanceBinding,
         grant: AdmittedCompositeSignalPublication,
         runtime_ctx: &mut Ctx,
+        cancellation: &super::super::SignalOwnerCancellationToken,
         apply: F,
     ) -> Result<SignalDurableAdvanceTask, SignalDurableAdvanceDenial>
     where
@@ -157,6 +158,7 @@ where
             execution,
             &expected,
             runtime_ctx,
+            cancellation,
             apply,
             None,
             Some(CompositePublicationAuthorization {

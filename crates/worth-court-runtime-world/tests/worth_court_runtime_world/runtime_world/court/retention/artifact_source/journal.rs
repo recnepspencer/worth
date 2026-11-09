@@ -1,4 +1,4 @@
-//! External storage records only actual sealed subjects and freezes real read cuts.
+//! The journal model pins sealed publications or explicitly untrusted DATA cuts.
 use super::*;
 use sha2::{Digest, Sha256};
 use std::sync::Mutex;
@@ -14,12 +14,16 @@ struct Stored {
 #[derive(Debug)]
 pub(in super::super) struct Recorder {
     binding: WorldDurableHomeBinding,
+    program_source: worth_proof::InstalledBranchProgramSourceOwner,
     pub(in super::super) subjects: Mutex<Vec<WorldDurableArtifact>>,
     rows: Arc<Mutex<Vec<Stored>>>,
     persist: bool,
+    refuse_occurrence: std::sync::atomic::AtomicBool,
 }
 impl Recorder {
     pub(super) fn new(persist: bool) -> Arc<Self> {
+        let program_source = worth_proof::InstalledBranchProgramSourceOwner::fresh();
+        let authority = program_source.authority();
         Arc::new(Self {
             binding: WorldDurableHomeBinding::from_admitted_adapter(
                 DurableWorldOwnerIdentity::from_recorded(
@@ -28,29 +32,89 @@ impl Recorder {
                 ),
                 HomeIncarnation::initial(),
                 [3; 32],
-            ),
+            )
+            .with_branch_program_source_authority(authority),
+            program_source,
             subjects: Mutex::new(Vec::new()),
             rows: Arc::default(),
             persist,
+            refuse_occurrence: std::sync::atomic::AtomicBool::new(false),
         })
     }
+    pub(in super::super) fn refuse_next_occurrence(&self) {
+        self.refuse_occurrence
+            .store(true, std::sync::atomic::Ordering::SeqCst);
+    }
     pub(super) fn successor(&self) -> Arc<Self> {
+        let program_source = worth_proof::InstalledBranchProgramSourceOwner::fresh();
+        let authority = program_source.authority();
         Arc::new(Self {
             binding: WorldDurableHomeBinding::from_admitted_adapter(
                 self.binding.owner(),
                 self.binding.incarnation().successor().unwrap(),
                 self.binding.program_revision(),
-            ),
+            )
+            .with_branch_program_source_authority(authority),
+            program_source,
             subjects: Mutex::new(Vec::new()),
             rows: self.rows.clone(),
             persist: self.persist,
+            refuse_occurrence: std::sync::atomic::AtomicBool::new(false),
         })
+    }
+    /// This model installs one unchanged declared program; it has no adoption table.
+    pub(in super::super) fn program_source(
+        &self,
+        expected: &ProductBranchObservation,
+    ) -> worth_proof::AdmittedBranchProgramSource {
+        let revision = self.binding.program_revision();
+        self.program_source.admit_source(
+            revision,
+            world_branch_program_source_commitment(expected, revision).unwrap(),
+        )
     }
     pub(in super::super) fn heads(&self) -> [u64; 3] {
         heads(&self.rows.lock().unwrap())
     }
+    /// Read-only protocol fixture, not a writer or a Native admission.
+    pub(in super::super) fn recorded_data_cut(
+        selected: worth_execution::ExecutionImmutableBytes,
+        tail: worth_execution::ExecutionImmutableBytes,
+    ) -> Box<dyn WorldCheckpointReadSource> {
+        Box::new(JournalSource {
+            selected: Some(selected),
+            rows: vec![Stored {
+                journal: WorldDurableJournal::Branches,
+                position: 4,
+                digest: Sha256::digest(tail.as_ref()).into(),
+                bytes: tail.as_ref().to_vec(),
+            }],
+        })
+    }
+    pub(in super::super) fn data_snapshot(
+        &self,
+        selected: Option<worth_execution::ExecutionImmutableBytes>,
+        mutation: impl FnOnce(&mut Vec<u8>),
+    ) -> Box<dyn WorldCheckpointReadSource> {
+        let mut rows = self.rows.lock().unwrap().clone();
+        if let Some(row) = rows
+            .iter_mut()
+            .rev()
+            .find(|row| row.journal == WorldDurableJournal::Occurrences)
+        {
+            mutation(&mut row.bytes);
+            row.digest = Sha256::digest(&row.bytes).into();
+        }
+        Box::new(JournalSource { selected, rows })
+    }
+    pub(in super::super) fn snapshot_for_court(&self) -> Box<dyn WorldCheckpointReadSource> {
+        self.snapshot()
+    }
     pub(super) fn snapshot(&self) -> Box<dyn WorldCheckpointReadSource> {
-        Box::new(JournalSource(self.rows.lock().unwrap().clone()))
+        Box::new(JournalSource {
+            selected: None,
+            rows: self.rows.lock().unwrap().clone(),
+        })
     }
 }
 impl RuntimeWorldDurableMedium for Recorder {
@@ -78,7 +142,12 @@ impl RuntimeWorldDurableMedium for Recorder {
         _: &ExecutionRequest<'_, '_>,
     ) -> WorldPublicationObservation {
         self.subjects.lock().unwrap().push(subject.clone());
-        if !self.persist {
+        if !self.persist
+            || (subject.journal() == WorldDurableJournal::Occurrences
+                && self
+                    .refuse_occurrence
+                    .swap(false, std::sync::atomic::Ordering::SeqCst))
+        {
             return WorldPublicationObservation::Finished(
                 WorldPublicationCompletion::proven_no_effect(WorldDurableMediumDenial::Unavailable),
             );
@@ -101,7 +170,10 @@ impl RuntimeWorldDurableMedium for Recorder {
     }
 }
 #[derive(Debug)]
-struct JournalSource(Vec<Stored>);
+struct JournalSource {
+    selected: Option<worth_execution::ExecutionImmutableBytes>,
+    rows: Vec<Stored>,
+}
 impl WorldCheckpointReadSource for JournalSource {
     fn read(
         &self,
@@ -110,7 +182,12 @@ impl WorldCheckpointReadSource for JournalSource {
         request
             .consult()
             .map_err(WorldDurableMediumDenial::Request)?;
-        WorldCheckpointReadView::from_protected_home_source(None, heads(&self.0))
+        WorldCheckpointReadView::from_protected_home_source(
+            self.selected
+                .as_ref()
+                .map(|bytes| (bytes.clone(), 0..bytes.len())),
+            heads(&self.rows),
+        )
     }
     fn read_journal_record(
         &self,
@@ -119,7 +196,7 @@ impl WorldCheckpointReadSource for JournalSource {
         position: u64,
     ) -> Result<WorldCheckpointJournalRecord, WorldDurableMediumDenial> {
         let row = self
-            .0
+            .rows
             .iter()
             .find(|r| r.journal == journal && r.position == position)
             .ok_or(WorldDurableMediumDenial::Unavailable)?;

@@ -29,6 +29,10 @@ impl WorldCheckpointImage {
         request: &ExecutionRequest<'_, '_>,
         stop: &mut Option<crate::durability::WorldDurableMediumDenial>,
     ) -> Result<(), Frame> {
+        // Semantic rows omit the artifact envelope; retain its exact dialect.
+        out(&crate::durability::WORLD_ARTIFACT_VERSION
+            .get()
+            .to_le_bytes())?;
         owner(out, self.binding.owner())?;
         number(out, self.binding.incarnation().get())?;
         out(&self.binding.program_revision())?;
@@ -91,7 +95,7 @@ impl WorldCheckpointImage {
                 occurrence.location().digest(),
             )?;
             number(out, occurrence.open().association.attempt().ordinal())?;
-            evidence(out, occurrence.relational())?;
+            codec::owner_evidence::write(out, occurrence.owners())?;
             number(out, occurrence.publishing_incarnation().get())?;
         }
         self.write_graph(out)

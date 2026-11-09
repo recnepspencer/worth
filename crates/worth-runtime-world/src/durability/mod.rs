@@ -4,8 +4,10 @@ mod association;
 mod binding;
 mod checkpoint;
 mod codec;
+pub(crate) use checkpoint::PreparedCheckpointOccurrence;
 pub(crate) use checkpoint::WorldCheckpointImage;
-pub(crate) use checkpoint::{PreparedCheckpointOccurrence, WorldCheckpointOrigin};
+#[cfg(test)]
+pub(crate) use checkpoint::WorldCheckpointOrigin;
 pub use checkpoint::{
     PreparedWorldCheckpoint, WorldCheckpointJournalRecord, WorldCheckpointOriginRetirement,
     WorldCheckpointOriginRetirementDenial, WorldCheckpointPort, WorldCheckpointReadSource,
@@ -59,3 +61,5 @@ pub use readmission::WorldReadmissionDenial;
 pub(crate) use readmission::WorldRecoveredJournalState;
 pub(crate) use release_evidence::WorldRelationalReleaseEvidence;
 pub use root_readmission::RefusedWorldRootReadmission;
+
+pub(crate) use artifact::{WorldOccurrenceOwnerEvidence, WorldSignalEvidence};

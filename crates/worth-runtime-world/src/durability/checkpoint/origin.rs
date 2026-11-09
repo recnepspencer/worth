@@ -119,17 +119,18 @@ impl WorldCheckpointOrigin {
 
 impl WorldDurableMediumBinding {
     /// Move the SAME prepared obligation after actual root installation.
-    pub(crate) fn retain_checkpoint_origin(&self, retained: WorldCheckpointOrigin) {
+    pub(crate) fn retain_checkpoint_origin(&self, retained: PreparedCheckpointOccurrence) {
         let mut origin = self
             .checkpoint_origin
             .lock()
             .unwrap_or_else(|e| e.into_inner());
-        match &*origin {
+        match &mut *origin {
             WorldCheckpointOriginState::Uninstalled => {
-                *origin = WorldCheckpointOriginState::Held(retained);
+                *origin = WorldCheckpointOriginState::Held(retained.into_origin());
             }
-            WorldCheckpointOriginState::Held(_) | WorldCheckpointOriginState::Retired => {
-                panic!("the original Branch recipe installs its custody exactly once");
+            WorldCheckpointOriginState::Held(origin) => origin.occurrences.retain(retained),
+            WorldCheckpointOriginState::Retired => {
+                panic!("a retired Home cannot install a branch recipe")
             }
         }
     }

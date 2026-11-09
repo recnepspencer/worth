@@ -1,4 +1,4 @@
-mod authored_section;
+pub(crate) mod authored_section;
 mod authoritative_delivery;
 pub use authored_section::{
     BridgeAuthoredBranchDenial, BridgeAuthoredBranchView, BridgeAuthoredDependencyDescription,
@@ -7,6 +7,10 @@ pub use authored_section::{
     BridgeDurableForkPublicationDenial, BridgeReadmittedAuthoredAssembly,
     BRIDGE_AUTHORED_SECTION_PROTOCOL, BRIDGE_AUTHORED_SECTION_VERSION,
 };
+mod authored_declaration;
+mod authored_execution;
+mod authored_home_retirement;
+pub use authored_home_retirement::RetiringBridgeAuthoredAssembly;
 mod causal_observation;
 mod compatibility;
 mod contract;
@@ -16,17 +20,21 @@ mod denial;
 mod evaluation_reuse;
 mod evaluation_session;
 mod execution;
+mod execution_view;
 mod installation_admission;
 mod installation_extension;
 mod installed_lowering;
 mod lifecycle_probe;
 mod liveness;
+pub use authored_declaration::BridgeAuthoredConditionalDeclaration;
+pub use authored_execution::BridgeAuthoredConditionalExecution;
 mod lowering;
 mod lowering_authority;
 mod lowering_identity;
 mod lowering_installation;
 mod lowering_registry;
 mod managed_time;
+mod memory_execution;
 #[cfg(test)]
 pub(crate) use managed_time::budget_tests::assert_retention_boundaries;
 #[cfg(test)]
@@ -140,7 +148,7 @@ pub use retained_decision::{
     BridgeConditionalDecisionReentryRequest, BridgeRetainedConditionalDecisionSeed,
 };
 pub use retention::BridgeConditionalRetentionObservation;
-pub use runtime_builder::BridgeConditionalRuntimeBuilder;
+pub use runtime_builder::{BridgeConditionalRuntimeBuilder, BridgeFreshAuthoredBindings};
 pub use runtime_builder::{
     BridgeInitialSourceDenial, BridgeInitialSourcePreparationRefusal,
     BridgeInitialSourcePublication, BridgePublishedInitialSource,

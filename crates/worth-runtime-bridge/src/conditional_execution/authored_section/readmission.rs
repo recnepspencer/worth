@@ -93,11 +93,15 @@ pub(in crate::conditional_execution) struct PreparedDefinition {
 }
 pub(in crate::conditional_execution) struct Program {
     pub(in crate::conditional_execution) bridge: RuntimeBridge,
-    _memory: Option<worth_execution::ExecutionMemoryReservation>,
+    pub(in crate::conditional_execution) installation:
+        worth_proof::BridgeProgramInstallationBinding,
+    pub(in crate::conditional_execution) _memory:
+        Option<worth_execution::ExecutionMemoryReservation>,
 }
 impl Program {
     pub(in crate::conditional_execution) fn new(
         bridge: RuntimeBridge,
+        installation: worth_proof::BridgeProgramInstallationBinding,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<Arc<Self>, BridgeAuthoredReadmissionDenial> {
         let bytes =
@@ -109,11 +113,13 @@ impl Program {
         })?;
         Ok(Arc::new(Self {
             bridge,
+            installation,
             _memory: memory,
         }))
     }
 }
 pub(in crate::conditional_execution) struct PreparedBranch {
+    pub(in crate::conditional_execution) graph_instance_id: u64,
     pub(in crate::conditional_execution) program: Arc<Program>,
     pub(in crate::conditional_execution) dependencies:
         crate::correspondence::AdmittedSemanticDependencyRegistry,
@@ -194,6 +200,10 @@ impl Installation<'_> {
             .map_err(|_| D::section(BridgeAuthoredSectionDenial::SizeLimit))?,
         )?;
         Ok(Box::new(PreparedBranch {
+            graph_instance_id: branch
+                .graph()
+                .installed_graph_capability()
+                .graph_instance_id(),
             program: Arc::clone(&self.program),
             dependencies,
             allocations,

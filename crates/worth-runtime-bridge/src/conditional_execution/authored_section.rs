@@ -1,6 +1,6 @@
 //! Bridge's authored declaration section inside a Signal definition transition.
 pub(super) mod branch_projection;
-pub(in crate::conditional_execution) mod branch_registry;
+pub(crate) mod branch_registry;
 pub(super) mod capture;
 mod definition;
 pub(super) mod definition_publication;
@@ -10,6 +10,7 @@ mod fork_publication;
 mod fork_section;
 mod framing;
 mod layout;
+mod programme_affinity;
 pub(super) mod publication;
 pub(super) mod readmission;
 mod registration;

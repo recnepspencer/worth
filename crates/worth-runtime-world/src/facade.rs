@@ -98,7 +98,9 @@ pub use crate::publication::{
     WorldHomeTransitionStepReservation, WorldHomeTransitionUnopenedDenial,
     WorldNativePreparationDenial, WorldNativePreparationRefusal, WorldOpenAttemptOutcome,
     WorldOpenAttemptRefusal, WorldOpenedPublicationAttempt, WorldPendingDurablePublication,
-    WorldPendingOpenAttempt, WorldPreparedPublicationWithoutSignal, WorldQueryNativePreparation,
+    WorldPendingOpenAttempt, WorldPreparedPublicationWithSignal,
+    WorldPreparedPublicationWithoutSignal, WorldQueryNativePreparation,
+    WorldQuerySignalPreparation,
 };
 
 pub use crate::lifecycle::{
@@ -114,7 +116,7 @@ pub use crate::lifecycle::{
     RuntimeWorldRecoveryPort, RuntimeWorldResultSnapshotCleanup,
     RuntimeWorldResultSnapshotCleanupDenial, RuntimeWorldResultSnapshotCleanupProgress,
     RuntimeWorldResultSnapshotCleanupReport, RuntimeWorldRetainedRecordReport,
-    RuntimeWorldServiceDenial, WorldHomeProgramBindingDenial,
+    RuntimeWorldServiceDenial, RuntimeWorldUnboundHomeBuilder, WorldHomeProgramBindingDenial,
 };
 
 pub use crate::publication::{
@@ -178,3 +180,11 @@ pub use crate::lifecycle::{
     RetiredRuntimeWorldHome, RuntimeWorldHomeRetirement, RuntimeWorldHomeRetirementDenial,
     RuntimeWorldHomeRetirementProgress,
 };
+
+pub use crate::lifecycle::{
+    RuntimeWorldAuthoredSignalAttachment, RuntimeWorldAuthoredSignalAttachmentDenial,
+};
+
+pub use crate::lifecycle::RuntimeWorldAuthoredHomeBuilder;
+
+pub use crate::publication::world_branch_program_source_commitment;

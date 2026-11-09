@@ -16,6 +16,7 @@ pub(crate) use open::AdmittedWorldOpenAttempt;
 
 #[derive(Debug)]
 pub enum WorldReadmissionDenial {
+    AuthoredAttachment(Box<crate::lifecycle::RuntimeWorldAuthoredSignalAttachmentDenial>),
     JournalSourceMismatch,
     OccurrenceEvidenceMismatch,
     HistoryAdmission(crate::history::CompositeHistoryCatalogDenial),
@@ -52,7 +53,10 @@ pub enum WorldReadmissionDenial {
     FutureIncarnation,
     NativeReadmissionRequired,
     RootPreparation(Box<super::RefusedWorldRootReadmission>),
-    SignalInitialRoot(worth_signal::facade::branch::SignalInitialEmptyRootRefusal),
+    AuthoredSignalRequired,
+    SignalDiscovery(Box<worth_signal::facade::durability::SignalOwnerReadmissionDenial>),
+    UncleanRecoveryUnsupported(worth_foundational::facade::UncleanRecoveryUnsupported),
+    SignalSource(Box<worth_signal::facade::durability::SignalSourcePointReadmissionDenial>),
     BridgeBaseline(worth_runtime_bridge::facade::RuntimeWorldBaselineRefusal),
     NativeRecorded(worth_relational::facade::branch::RelationalRecordedComponentRefusal),
     RootAdmission(crate::branch::RuntimeWorldBootstrapNoEffectCause),

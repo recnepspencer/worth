@@ -40,6 +40,8 @@ fn forked_relational_effect_is_retained_when_later_signal_sibling_denies() {
     let held = owner
         .state
         .signal
+        .memory_services()
+        .expect("memory-only retirement fixture")
         .mutation_port()
         .reserve_fork_exact(
             validate_signal_branch_name("signal-branch-partial").expect("valid Signal name"),
@@ -164,6 +166,8 @@ fn releasing_the_record_by_handle_drains_the_same_fork_custody() {
     let held = owner
         .state
         .signal
+        .memory_services()
+        .expect("memory-only retirement fixture")
         .mutation_port()
         .reserve_fork_exact(
             validate_signal_branch_name("signal-branch-handle").expect("valid Signal name"),
@@ -212,6 +216,8 @@ fn relational_fork_then_signal_owner_loss_retains_exact_fork_custody() {
     let held = owner
         .state
         .signal
+        .memory_services()
+        .expect("memory-only retirement fixture")
         .mutation_port()
         .reserve_fork_exact(
             validate_signal_branch_name("signal-branch-fork-loss").expect("valid Signal name"),

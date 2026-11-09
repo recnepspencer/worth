@@ -11,6 +11,7 @@ pub struct WorldDurableHomeBinding {
     incarnation: HomeIncarnation,
     program_revision: [u8; 32],
     transition: Option<worth_proof::HomeProgramTransitionAuthority>,
+    program_source: Option<worth_proof::InstalledBranchProgramSourceAuthority>,
     transition_attempt_frontier: Option<u64>,
     pub(in crate::durability) lineage: Option<std::sync::Arc<super::WorldHomeProgramLineage>>,
 }
@@ -27,9 +28,23 @@ impl WorldDurableHomeBinding {
             incarnation,
             program_revision,
             transition: None,
+            program_source: None,
             transition_attempt_frontier: None,
             lineage: None,
         }
+    }
+    /// Installed by the actual Home program-source owner, never a per-request verifier.
+    pub fn with_branch_program_source_authority(
+        mut self,
+        authority: worth_proof::InstalledBranchProgramSourceAuthority,
+    ) -> Self {
+        self.program_source = Some(authority);
+        self
+    }
+    pub(crate) fn branch_program_source_authority(
+        &self,
+    ) -> Option<&worth_proof::InstalledBranchProgramSourceAuthority> {
+        self.program_source.as_ref()
     }
     pub const fn owner(&self) -> DurableWorldOwnerIdentity {
         self.owner
@@ -93,18 +108,6 @@ impl WorldDurableHomeBinding {
             .map_or(self.program_revision == revision, |lineage| {
                 lineage.initial().bytes() == &revision
             })
-    }
-
-    pub(crate) fn admits_attempt_revision(
-        &self,
-        revision: [u8; 32],
-        attempt: u64,
-        request: &ExecutionRequest<'_, '_>,
-    ) -> Result<bool, super::WorldReadmissionDenial> {
-        match &self.lineage {
-            None => Ok(revision == self.program_revision),
-            Some(lineage) => lineage.matches_recorded_attempt(revision, attempt, request),
-        }
     }
 
     /// The actual Home composition attaches this verifier once. An individual

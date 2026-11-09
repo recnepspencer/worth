@@ -1,8 +1,10 @@
 //! Readmission rebuilds every Bridge branch against actual cold Signal contracts.
 use super::*;
 use worth_signal::facade::durability::*;
+mod home_stop;
 mod recorded_cut;
 mod semantic_claims;
+mod shared_owner;
 
 struct Bindings {
     providers: usize,
@@ -105,7 +107,8 @@ fn cold_owner_rebuilds_conditional_definitions_and_retention_on_every_branch_for
             );
             assert_eq!(
                 owner
-                    .with_authored_branch(*identity, |view| view.conditional_definitions().count())
+                    .with_authored_branch(*identity, |view| view
+                        .with_conditional_definitions(|items| items.count()))
                     .unwrap(),
                 2
             );
@@ -128,7 +131,7 @@ fn cold_owner_rebuilds_conditional_definitions_and_retention_on_every_branch_for
             assert!(usage.retained_bytes() > 0);
             for lowering in owner
                 .with_authored_branch(*identity, |view| {
-                    view.conditional_definitions().collect::<Vec<_>>()
+                    view.with_conditional_definitions(|items| items.collect::<Vec<_>>())
                 })
                 .unwrap()
             {
@@ -138,6 +141,47 @@ fn cold_owner_rebuilds_conditional_definitions_and_retention_on_every_branch_for
                     BridgeConditionalCondition::OnDemand
                 ));
                 assert_eq!(lowering.correspondence_count(), 0);
+                assert!(lowering.signal_basis_admission_identity().is_none());
+                let source = owner.signal_owner().source_port();
+                let branch = source.readmit_descriptor(&descriptor).unwrap();
+                let world = owner.runtime_world_correspondence_port();
+                let baseline = world.admit_signal_baseline(branch.basis()).unwrap();
+                world.compare_current_exact(&baseline).unwrap();
+                assert!(matches!(
+                    world.admit_runtime_baseline(lowering.signal_graph_instance_id()),
+                    Err(RuntimeWorldCorrespondenceAdmissionDenial::SignalBranchBasisRequired)
+                ));
+                let runtime = owner.conditional_execution(*identity).unwrap();
+                let binding = runtime
+                    .admit_conditional_signal_basis(&lowering, branch.basis())
+                    .unwrap();
+                let mut value = 41u64;
+                let decision = runtime
+                    .execute(
+                        execution,
+                        &binding,
+                        BridgeConditionalExecutionRequest {
+                            lowering: &lowering,
+                            query_binding_identity: "cold-authored-query",
+                            query_capability_identity: 1,
+                            snapshot_identity: "cold-first-demand",
+                            truth_branch_identity: None,
+                            bridge_snapshot_identity: None,
+                            execution_identity: "cold-execution",
+                            attempt: 1,
+                        },
+                        &mut value,
+                    )
+                    .unwrap();
+                assert!(decision.signal().computed_evaluation().is_some());
+                assert_eq!(decision.signal().output_version(), 41);
+                let (image, runtime_image) =
+                    source.capture_authored_images(&branch, &execution).unwrap();
+                assert_eq!(image.as_bytes(), definition.authored_image().as_bytes());
+                assert_eq!(
+                    runtime_image.as_bytes(),
+                    definition.authored_runtime_image().as_bytes()
+                );
             }
         }
     }

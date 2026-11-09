@@ -2,12 +2,8 @@ use std::collections::HashMap;
 use std::fmt;
 use std::sync::{Arc, Condvar, Mutex};
 
-use worth_relational::facade::branch::{
-    RelationalBranchBasisPort, RelationalBranchRetentionLease, RelationalOwnerServicePorts,
-};
-use worth_signal::facade::branch::{
-    SignalBranchBasisPort, SignalBranchRetentionLease, SignalOwnerServicePorts,
-};
+use worth_relational::facade::branch::{RelationalBranchBasisPort, RelationalBranchRetentionLease};
+use worth_signal::facade::branch::{SignalBranchBasisPort, SignalBranchRetentionLease};
 
 use crate::basis::AdmittedCompositeRuntimeWorldBasis;
 use crate::budget::RuntimeWorldBudgetLimit;
@@ -194,24 +190,6 @@ where
                 observation_limit,
             ),
         }
-    }
-
-    pub(crate) fn from_component_services<E, Ctx>(
-        owner_identity: RuntimeWorldOwnerIdentity,
-        relational: &RelationalOwnerServicePorts,
-        signal: &SignalOwnerServicePorts<D, I, E, Ctx, T>,
-        unique_pin_limit: RuntimeWorldBudgetLimit,
-        reservation_limit: RuntimeWorldBudgetLimit,
-        observation_limit: RuntimeWorldBudgetLimit,
-    ) -> Self {
-        Self::new(
-            owner_identity,
-            relational.basis_port(),
-            signal.basis_port(),
-            unique_pin_limit,
-            reservation_limit,
-            observation_limit,
-        )
     }
 
     fn lock(&self) -> std::sync::MutexGuard<'_, RegistryState<D, I, T>> {

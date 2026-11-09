@@ -3,7 +3,7 @@ use super::CompositePublicationReady;
 use crate::branch::ProductBranchReferenceCell;
 use crate::durability::{
     WorldDurableArtifact, WorldDurableMediumBinding, WorldDurableMediumDenial,
-    WorldDurablePublicationStop, WorldRelationalEvidence,
+    WorldDurablePublicationStop,
 };
 use crate::publication::{PerformedCompositePublication, RuntimeWorldCancellationToken};
 use crate::recovery::{ProductUnpublishedCause, ProductUnpublishedOwnerEffects};
@@ -16,6 +16,7 @@ pub enum WorldDurablePublicationDenial {
     StaleIncarnation,
     Native(worth_relational::facade::branch::RelationalRecordedComponentRefusal),
     OriginalNativeEvidenceRequired,
+    OriginalSignalEvidenceRequired,
     Medium(WorldDurableMediumDenial),
     MovementAdmission,
     EvidenceRequired,
@@ -58,6 +59,17 @@ impl CompositePublicationReady {
         self.owner_results.settled_relational_parts()
     }
 
+    pub(crate) fn signal_durable_output(
+        &self,
+    ) -> Option<&worth_signal::facade::durability::SignalDurableAdvanceOutput> {
+        self.owner_results.signal().durable_advance_output()
+    }
+    pub(crate) fn durable_component_intent(
+        &self,
+    ) -> Option<crate::durability::WorldOpenComponentIntent> {
+        self.custody.durable_association()?;
+        self.custody.durable_component_intent()
+    }
     pub(crate) fn durable_recovery(
         self,
         cause: WorldDurablePublicationDenial,
@@ -75,7 +87,7 @@ impl CompositePublicationReady {
     pub(crate) fn begin_durable(
         mut self,
         cell: ProductBranchReferenceCell,
-        evidence: WorldRelationalEvidence,
+        evidence: crate::durability::WorldOccurrenceOwnerEvidence,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         cancellation: RuntimeWorldCancellationToken,
         clock: &crate::lifecycle::RuntimeWorldClock,

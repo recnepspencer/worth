@@ -4,10 +4,12 @@
 //! synchronization and capacity kernel consumed by later service phases.
 
 mod initial_empty_stop;
+mod owner_stop_denial;
 pub use initial_empty_stop::{
-    PreparedInitialEmptySignalStop, SignalInitialEmptyStopDenial, SignalInitialEmptyStopRefused,
+    PreparedInitialEmptySignalStop, SignalInitialEmptyStopRefused,
     StoppedInitialEmptySignalAllocation,
 };
+pub use owner_stop_denial::SignalOwnerStopDenial;
 
 mod admission_table;
 mod basis_port;
@@ -24,7 +26,7 @@ mod durable_branch_handle;
 mod durable_source_port;
 mod lifecycle_observation;
 mod lifecycle_port;
-mod lifecycle_state;
+pub(crate) mod lifecycle_state;
 mod mutation_port;
 pub use durable_branch_handle::SignalDurableBranchHandle;
 pub(crate) mod durable_publication;
@@ -91,7 +93,9 @@ pub(in crate::branch) use lifecycle_state::{
     SignalOwnerOperationAdmission,
 };
 pub use mutation_port::{SignalBranchForkReservation, SignalBranchMutationPort};
-pub(crate) use owner::{SignalOwner, SignalOwnerRoot, DEFAULT_MAXIMUM_LIVE_SIGNAL_BRANCHES};
+pub(crate) use owner::{
+    SignalOwner, SignalOwnerRoot, SignalSealedOwnerRoot, DEFAULT_MAXIMUM_LIVE_SIGNAL_BRANCHES,
+};
 
 pub use cancellation::{SignalOwnerCancellationSource, SignalOwnerCancellationToken};
 pub use counters::SignalOwnerServiceCostSnapshot;

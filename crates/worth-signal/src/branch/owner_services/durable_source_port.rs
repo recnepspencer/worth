@@ -1,4 +1,6 @@
 //! Weak access to authored source under the real sealed owner and branch cells.
+mod associated_effects;
+mod cell_control;
 mod recorded_point;
 use super::{SignalDurableBranchHandle, SignalOwner, SignalOwnerUnavailable};
 use crate::branch::{

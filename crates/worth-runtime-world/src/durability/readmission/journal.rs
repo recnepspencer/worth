@@ -81,8 +81,14 @@ impl WorldCheckpointImage {
             WorldRecord::Branch {
                 head,
                 program_revision,
+                components,
                 ..
             } => {
+                if components.signal.point().descriptor().owner().home()
+                    != self.binding.owner().home()
+                {
+                    return Err(WorldReadmissionDenial::ForeignOwner);
+                }
                 if !self.binding.admits_root_revision(*program_revision) {
                     return Err(WorldReadmissionDenial::ProgramRevisionMismatch);
                 }
@@ -99,13 +105,8 @@ impl WorldCheckpointImage {
                 insert(&mut self.history, &head.commit, &image_head, execution)?;
             }
             WorldRecord::OpenAttempt(open) => {
-                if !self.binding.admits_attempt_revision(
-                    open.program_revision,
-                    open.association.attempt().ordinal(),
-                    execution,
-                )? {
-                    return Err(WorldReadmissionDenial::ProgramRevisionMismatch);
-                }
+                // Exact branch activation/history admission owns this revision.
+                // The Home descriptor may still name a different branch's program.
                 let attempt = open.association.attempt();
                 if self.opens.contains_key(&attempt) {
                     return Err(WorldReadmissionDenial::DuplicateIdentity);
@@ -146,7 +147,7 @@ impl WorldCheckpointImage {
             }
             WorldRecord::Occurrence {
                 open,
-                relational,
+                owners,
                 publishing_incarnation,
             } => {
                 self.require_open(&open.association, open.custody)?;
@@ -160,7 +161,7 @@ impl WorldCheckpointImage {
                 }
                 self.admit_occurrence(
                     open.association.attempt(),
-                    relational.clone(),
+                    owners.clone(),
                     *publishing_incarnation,
                     position,
                     digest,

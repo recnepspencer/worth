@@ -29,10 +29,12 @@ impl WorldOccurrenceCustody {
             .ok_or(WorldDurableMediumDenial::Frame(
                 super::WorldDurableFrameDenial::IdentityMismatch,
             ))?;
-        // Occurrence adds the actual Native receipt/position/digest and current
-        // publishing incarnation to the identical open grammar (56 bytes).
-        let total = super::codec::occurrence_backing::admitted_length(original.as_bytes().len())
-            .map_err(WorldDurableMediumDenial::Frame)?;
+        // Reserve the selected owner's entire envelope before either owner effect.
+        let total = super::codec::occurrence_backing::admitted_length(
+            original.as_bytes().len(),
+            open.component_intent,
+        )
+        .map_err(WorldDurableMediumDenial::Frame)?;
         let (prepared_artifact, open) =
             super::PreparedWorldArtifact::prepare_occurrence(open, execution)?;
         let destination = OccurrenceByteDestination::prepare(total, execution)?;
@@ -76,9 +78,28 @@ impl WorldOccurrenceCustody {
         relational: WorldRelationalEvidence,
         publishing_incarnation: worth_foundational::facade::HomeIncarnation,
     ) -> Result<&WorldDurableArtifact, WorldDurableMediumDenial> {
+        self.finalize_owners(
+            super::artifact::WorldOccurrenceOwnerEvidence::RelationalOnly(relational),
+            publishing_incarnation,
+        )
+    }
+    pub(crate) fn finalize_owners(
+        &mut self,
+        owners: super::artifact::WorldOccurrenceOwnerEvidence,
+        publishing_incarnation: worth_foundational::facade::HomeIncarnation,
+    ) -> Result<&WorldDurableArtifact, WorldDurableMediumDenial> {
         if self.subject.is_none() {
+            if self
+                .open
+                .as_ref()
+                .expect("same pre-effect open")
+                .component_intent
+                != owners.component_intent()
+            {
+                return Err(super::WorldDurableFrameDenial::IdentityMismatch.into());
+            }
             self.destination.backing()?;
-            let record = OpenRecordLoan::take(&mut self.open, relational, publishing_incarnation);
+            let record = OpenRecordLoan::take(&mut self.open, owners, publishing_incarnation);
             let backing = self.destination.backing()?;
             super::codec::occurrence_backing::fill(backing, record.record())?;
             backing

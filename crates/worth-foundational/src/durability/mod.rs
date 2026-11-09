@@ -83,5 +83,7 @@ pub use home_incarnation::{HomeIncarnation, HomeIncarnationExhausted};
 pub use owner_family::{DurableOwnerFamily, UnsupportedDurableOwnerTag};
 pub use retention_class::{DurableArtifactRetention, RetentionClass};
 
+mod unclean_recovery;
+pub use unclean_recovery::UncleanRecoveryUnsupported;
 mod world_original_fate;
 pub use world_original_fate::WorldOriginalFate;

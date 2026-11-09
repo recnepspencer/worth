@@ -24,19 +24,23 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
-    let Some(origin) = recovered.first_branch() else {
+    let Some(first) = recovered
+        .branch_origins()
+        .min_by_key(|origin| origin.position)
+    else {
         return Ok(());
     };
-    let artifact = origin.record();
-    let WorldRecord::Branch {
-        components, head, ..
-    } = &artifact.record
-    else {
-        unreachable!("branch frame")
+    let origins = || {
+        std::iter::once(first).chain(
+            recovered
+                .branch_origins()
+                .filter(|origin| origin.position != first.position),
+        )
     };
     let owner = root.owner_identity();
     let mut custody = WorldNativeReadmissionCustody::allocate(
         execution,
+        recovered.branches.len(),
         recovered.occurrences.len(),
         recovered.opens.len(),
     )?;
@@ -49,57 +53,37 @@ where
         let signal = root
             .state
             .signal
-            .basis_port()
-            .readmit_recorded_initial_empty_root(&components.signal)
-            .map_err(Denial::SignalInitialRoot)?;
-        let bridge = root
-            .state
-            .bridge
-            .as_ref()
-            .expect("serving World owns correspondence")
-            .readmit_recorded_runtime_world_baseline(&components.bridge, &signal)
-            .map_err(Denial::BridgeBaseline)?;
-        custody.root = Some(
-            authority
-                .admit_recorded_component(execution, native, &components.relational)
-                .map_err(|cause| Denial::NativeComponent(Box::new(cause)))?,
-        );
+            .authored()
+            .ok_or(Denial::AuthoredSignalRequired)?;
         let mut descriptors = ExecutionOrderedMap::default();
-        insert(
-            &mut descriptors,
-            &head.commit,
-            &components.relational,
-            execution,
-        )?;
+        for origin in origins() {
+            let WorldRecord::Branch {
+                components, head, ..
+            } = &origin.record().record
+            else {
+                unreachable!("branch source")
+            };
+            let native_basis = authority
+                .admit_recorded_component(execution, native, &components.relational)
+                .map_err(|cause| Denial::NativeComponent(Box::new(cause)))?;
+            custody.roots.push(Some(native_basis));
+            insert(
+                &mut descriptors,
+                &head.commit,
+                &components.relational,
+                execution,
+            )?;
+        }
         let mut published = ExecutionOrderedMap::default();
         for occurrence in recovered.occurrences.values() {
             let open = occurrence.open();
-            let relational = occurrence.relational();
-            let effect = effects
-                .take(&open.association.attempt())
-                .ok_or(Denial::OccurrenceEvidenceMismatch)?;
-            let subject = effect.subject();
-            if subject.receipt().commit_id.0 != relational.commit
-                || subject.position().0 != relational.position
-                || subject.artifact_digest() != &relational.digest
-            {
-                return Err(Denial::OccurrenceEvidenceMismatch);
-            }
             let before = descriptors
                 .get(&open.expected.commit)
                 .ok_or(Denial::MissingPredecessor)?;
-            let after = authority
-                .recorded_publication_successor(execution, native, &effect)
-                .map_err(Denial::NativeSuccessor)?;
-            let admitted = authority
-                .admit_recorded_publication(execution, native, effect, before, &after)
-                .map_err(|cause| Denial::NativePublication(Box::new(cause)))?;
-            custody.occurrence_owners.push(
-                crate::history::RecoveredWorldOwnerEvidence::from_admitted_components(
-                    Some(admitted),
-                    None,
-                ),
-            );
+            let (admitted, after) = super::occurrence_owners::readmit(
+                occurrence, before, signal, native, authority, &effects, execution,
+            )?;
+            custody.occurrence_owners.push(Some(admitted));
             insert(&mut descriptors, &open.commit, &after, execution)?;
             insert(&mut published, &open.association.attempt(), &(), execution)?;
         }
@@ -163,13 +147,42 @@ where
                 execution,
             )?;
         }
-        let before = custody.root.take().expect("same original root admission");
-        let (expected, origin) =
-            root.install_readmitted_root(artifact, before, signal, bridge, execution)?;
-        custody.checkpoint_origin = Some(origin);
-        custody.observations.push(expected.clone());
         let mut observations = ExecutionOrderedMap::default();
-        insert(&mut observations, &head.commit, &expected, execution)?;
+        for (index, origin) in origins().enumerate() {
+            let WorldRecord::Branch {
+                components, head, ..
+            } = &origin.record().record
+            else {
+                unreachable!("branch source")
+            };
+            let admitted_signal = signal
+                .source_port()
+                .readmit_source_point(components.signal.point(), execution)
+                .map_err(|cause| Denial::SignalSource(Box::new(cause)))?;
+            let bridge = root
+                .state
+                .bridge
+                .as_ref()
+                .expect("installed correspondence")
+                .readmit_recorded_runtime_world_baseline(
+                    &components.bridge,
+                    admitted_signal.basis(),
+                )
+                .map_err(Denial::BridgeBaseline)?;
+            let native = custody.roots[index]
+                .take()
+                .expect("same admitted Native branch");
+            let (expected, origin) = root.install_readmitted_root(
+                origin.record(),
+                native,
+                admitted_signal,
+                bridge,
+                execution,
+            )?;
+            custody.checkpoint_origins.push(origin);
+            custody.observations.push(expected.clone());
+            insert(&mut observations, &head.commit, &expected, execution)?;
+        }
         for (index, occurrence) in recovered.occurrences.values().enumerate() {
             let open = occurrence.open();
             let before = observations
@@ -258,12 +271,9 @@ where
         // All fallible reconciliation is complete. Until this handoff the
         // owning refusal retains every recipe with its private World graph;
         // the Home binding must not outlive cleanup with a partial recipe.
-        binding.retain_checkpoint_origin(
-            custody
-                .checkpoint_origin
-                .take()
-                .expect("same admitted root origin"),
-        );
+        for origin in custody.checkpoint_origins.drain(..) {
+            binding.retain_checkpoint_origin(origin);
+        }
         for origin in custody.checkpoint_occurrences.drain(..) {
             binding.retain_checkpoint_occurrence(origin);
         }

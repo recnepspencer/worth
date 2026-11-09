@@ -107,6 +107,18 @@ where
                     admit_activation,
                 },
             ) => {
+                if let Some(attachment) = self.state.signal.authored() {
+                    return self.execute_durable_signal(
+                        execution,
+                        attempt,
+                        progress,
+                        attachment,
+                        runtime_ctx,
+                        runtime_cancellation,
+                        apply,
+                        admit_activation,
+                    );
+                }
                 // SPEC-P4-005: the Signal owner is handed the token embedded in
                 // the Runtime World source, never a caller-supplied Signal
                 // token, so one `cancel()` reaches an in-flight advance.
@@ -114,17 +126,18 @@ where
                 let signal_cancellation = runtime_cancellation.signal_token();
                 #[cfg(test)]
                 super::rehearsal::reach_signal_advance(self.owner_identity(), signal_cancellation);
-                let mut completion = self
+                let services = self
                     .state
                     .signal
-                    .mutation_port()
-                    .advance_exact_with_completion(
-                        execution,
-                        attempt.plan().signal().expected(),
-                        runtime_ctx,
-                        signal_cancellation,
-                        apply,
-                    );
+                    .memory_services()
+                    .ok_or_else(|| activation_failure(progress.signal().retained_image()))?;
+                let mut completion = services.mutation_port().advance_exact_with_completion(
+                    execution,
+                    attempt.plan().signal().expected(),
+                    runtime_ctx,
+                    signal_cancellation,
+                    apply,
+                );
                 let result = completion.take_result();
                 match result {
                     Some(Ok(mut outcome)) => {
@@ -162,9 +175,12 @@ where
                 let SignalDefinitionPublicationAdmission::Retained(custody) = publication else {
                     unreachable!("definition publication is admitted before owner execution")
                 };
-                let (mut completion, returned_publication) = self
+                let definitions = self
                     .state
-                    .signal_definition_publication
+                    .signal
+                    .memory_definitions()
+                    .ok_or_else(|| activation_failure(progress.signal().retained_image()))?;
+                let (mut completion, returned_publication) = definitions
                     .advance_exact_with_completion(
                         execution,
                         custody.take_publication(),
@@ -224,7 +240,7 @@ fn activation_failure(partial: SignalAttemptProgress) -> SignalExecutionFailure 
     }
 }
 
-fn advance_failure(denial: &SignalBranchAdvanceDenial) -> SignalExecutionFailure {
+pub(super) fn advance_failure(denial: &SignalBranchAdvanceDenial) -> SignalExecutionFailure {
     let cancellation = matches!(denial, SignalBranchAdvanceDenial::CancelledNoMovement);
     SignalExecutionFailure {
         cause: if cancellation {

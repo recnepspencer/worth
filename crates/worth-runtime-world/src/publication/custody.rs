@@ -114,6 +114,34 @@ impl ActiveAttemptCustody {
         self.lease_resources().resources_mut().durable_open = open;
     }
 
+    pub(crate) fn durable_component_intent(
+        &self,
+    ) -> Option<crate::durability::WorldOpenComponentIntent> {
+        self.record
+            .state()
+            .resources
+            .as_ref()?
+            .durable_open
+            .as_ref()?
+            .subject
+            .open_attempt()
+            .map(|open| open.component_intent)
+    }
+
+    pub(crate) fn durable_association(
+        &self,
+    ) -> Option<worth_foundational::facade::CompositeAttemptAssociation> {
+        self.record
+            .state()
+            .resources
+            .as_ref()?
+            .durable_open
+            .as_ref()?
+            .subject
+            .open_attempt()
+            .map(|open| open.association.clone())
+    }
+
     pub(crate) fn has_durable_open(&self) -> bool {
         self.record
             .state()

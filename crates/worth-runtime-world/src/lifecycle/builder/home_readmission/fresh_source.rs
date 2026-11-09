@@ -28,19 +28,7 @@ where
         native: &RelationalRuntime,
         admission: &FreshRelationalSourceAdmission,
     ) -> Result<RuntimeWorldOwner<D, I, E, Ctx, T>, WorldReadmissionDenial> {
-        request.consult().map_err(request_denial)?;
-        admission
-            .validate_fresh_source_runtime(request, native)
-            .map_err(WorldReadmissionDenial::NativeFreshSource)?;
-        source
-            .read(request)
-            .map_err(WorldReadmissionDenial::Medium)?
-            .require_fresh_empty()?;
-        // No owner is constructed, and no recovered effects are discovered,
-        // until the original request and both actual source admissions agree.
-        request.consult().map_err(request_denial)?;
-        let binding = WorldDurableMediumBinding::new(medium, request)
-            .map_err(WorldReadmissionDenial::Medium)?;
+        let binding = admit_source(medium, source, request, native, admission)?;
         let root = self.construct_home_root(relational, bridge, binding, Default::default())?;
         Ok(RuntimeWorldOwner::from_root(root))
     }
@@ -48,4 +36,25 @@ where
 
 fn request_denial(cause: worth_execution::WorkCeilingDenial) -> WorldReadmissionDenial {
     WorldReadmissionDenial::Medium(WorldDurableMediumDenial::Request(cause))
+}
+
+pub(super) fn admit_source(
+    medium: Arc<dyn crate::durability::RuntimeWorldDurableMedium>,
+    source: Box<dyn crate::durability::WorldCheckpointReadSource>,
+    request: &ExecutionRequest<'_, '_>,
+    native: &RelationalRuntime,
+    admission: &FreshRelationalSourceAdmission,
+) -> Result<Arc<WorldDurableMediumBinding>, WorldReadmissionDenial> {
+    request.consult().map_err(request_denial)?;
+    admission
+        .validate_fresh_source_runtime(request, native)
+        .map_err(WorldReadmissionDenial::NativeFreshSource)?;
+    source
+        .read(request)
+        .map_err(WorldReadmissionDenial::Medium)?
+        .require_fresh_empty()?;
+    // No owner is constructed, and no recovered effects are discovered,
+    // until the original request and both actual source admissions agree.
+    request.consult().map_err(request_denial)?;
+    WorldDurableMediumBinding::new(medium, request).map_err(WorldReadmissionDenial::Medium)
 }

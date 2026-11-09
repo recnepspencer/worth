@@ -22,17 +22,14 @@ where
     {
         let location = occurrence.location();
         let open = occurrence.open();
-        let owners_match_open = match (open.component_intent, owners.borrowed()) {
-            (
-                crate::durability::WorldOpenComponentIntent::RelationalOnly,
-                crate::history::RecoveredWorldOwnerEvidenceRef::RelationalOnly(_),
-            ) => true,
-            (
-                crate::durability::WorldOpenComponentIntent::RelationalOnly,
-                crate::history::RecoveredWorldOwnerEvidenceRef::SignalOnly(_)
-                | crate::history::RecoveredWorldOwnerEvidenceRef::RelationalAndSignal { .. },
-            ) => false,
+        use crate::durability::WorldOpenComponentIntent as Intent;
+        use crate::history::RecoveredWorldOwnerEvidenceRef as Owners;
+        let actual_intent = match owners.borrowed() {
+            Owners::RelationalOnly(_) => Intent::RelationalOnly,
+            Owners::SignalOnly(_) => Intent::SignalOnly,
+            Owners::RelationalAndSignal { .. } => Intent::RelationalAndSignal,
         };
+        let owners_match_open = actual_intent == open.component_intent;
         if !owners_match_open
             || Some(location.owner()) != self.owner_identity().durable()
             || location.attempt() != open.association.attempt()

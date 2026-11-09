@@ -21,6 +21,7 @@ where
         execution: ExecutionRequest<'_, '_>,
         expected: &AdmittedSignalBranchBasis,
         runtime_ctx: &mut Ctx,
+        cancellation: &super::super::SignalOwnerCancellationToken,
         recorded_nodes: worth_execution::ExecutionOrderedMap<u32, u32>,
         change: Option<&crate::durability::SignalDurableConditionalDefinitionChange>,
         apply: F,
@@ -35,6 +36,10 @@ where
             ))
         };
         self.validate_admission(admission).map_err(map)?;
+        admission.reach_operation_boundary(super::super::operation_control::SignalOwnerOperationBoundaryForTest::DurableCandidateCellWait);
+        cancellation.preflight_cell_wait().map_err(|_| {
+            D::Mutation(crate::branch::SignalBranchAdvanceDenial::CancelledNoMovement)
+        })?;
         let _hold = admission
             .hold_branch_cell()
             .map_err(SignalBranchCellAdmissionDenial::from)
@@ -99,6 +104,9 @@ where
             }
             None => None,
         };
+        let _permit = cancellation.preflight_movement().map_err(|_| {
+            D::Mutation(crate::branch::SignalBranchAdvanceDenial::CancelledNoMovement)
+        })?;
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             state.prepare_durable_advance(
                 execution,

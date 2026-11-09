@@ -28,6 +28,7 @@ mod durable_source;
 pub(crate) mod fork;
 #[path = "branch_execution_cell/fork_custody.rs"]
 mod fork_custody;
+mod held_cell_control;
 mod inspection;
 pub(crate) mod restoration;
 pub(crate) mod retirement;

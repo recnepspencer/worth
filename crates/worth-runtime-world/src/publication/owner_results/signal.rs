@@ -16,15 +16,59 @@ enum CompositeSignalOwnerResultKind {
     RetainedExact,
     Advanced(std::sync::Arc<SignalBranchAdvanceOutcome>),
     Forked(SignalBranchForkOutcome),
+    Durable(std::sync::Arc<super::super::durable_signal::WorldDurableSignalResult>),
+    Unresolved(std::sync::Arc<super::super::durable_signal::WorldDurableSignalAdvance>),
 }
 
 impl CompositeSignalOwnerResult {
+    pub(crate) fn durable(
+        result: std::sync::Arc<super::super::durable_signal::WorldDurableSignalResult>,
+    ) -> Self {
+        Self {
+            result: CompositeSignalOwnerResultKind::Durable(result),
+        }
+    }
+    pub(crate) fn unresolved(
+        task: std::sync::Arc<super::super::durable_signal::WorldDurableSignalAdvance>,
+    ) -> Self {
+        Self {
+            result: CompositeSignalOwnerResultKind::Unresolved(task),
+        }
+    }
+    /// Exact Signal original still held by the owner after a stopped request.
+    pub fn unresolved_durable_original(
+        &self,
+    ) -> Option<worth_foundational::facade::SignalBranchAdvanceIdentity> {
+        match &self.result {
+            CompositeSignalOwnerResultKind::Unresolved(task) => Some(task.original()),
+            CompositeSignalOwnerResultKind::RetainedExact
+            | CompositeSignalOwnerResultKind::Advanced(_)
+            | CompositeSignalOwnerResultKind::Forked(_)
+            | CompositeSignalOwnerResultKind::Durable(_) => None,
+        }
+    }
+    pub fn durable_advance_output(
+        &self,
+    ) -> Option<&worth_signal::facade::durability::SignalDurableAdvanceOutput> {
+        match &self.result {
+            CompositeSignalOwnerResultKind::Durable(result) => Some(&result.output),
+            CompositeSignalOwnerResultKind::RetainedExact
+            | CompositeSignalOwnerResultKind::Advanced(_)
+            | CompositeSignalOwnerResultKind::Forked(_)
+            | CompositeSignalOwnerResultKind::Unresolved(_) => None,
+        }
+    }
     pub(crate) fn settled_advance(&self) -> Option<super::super::SignalAttemptProgress> {
         match &self.result {
             CompositeSignalOwnerResultKind::Advanced(outcome) => Some(
                 super::super::SignalAttemptProgress::advanced_arc(std::sync::Arc::clone(outcome)),
             ),
-            _ => None,
+            CompositeSignalOwnerResultKind::Durable(outcome) => Some(
+                super::super::SignalAttemptProgress::durable(std::sync::Arc::clone(outcome)),
+            ),
+            CompositeSignalOwnerResultKind::RetainedExact
+            | CompositeSignalOwnerResultKind::Forked(_)
+            | CompositeSignalOwnerResultKind::Unresolved(_) => None,
         }
     }
     /// Exact owner-issued outcome retained by this composite result.
@@ -71,6 +115,8 @@ impl CompositeSignalOwnerResult {
                 CompositeComponentChangePosture::RetainExact
             }
             CompositeSignalOwnerResultKind::Advanced(_)
+            | CompositeSignalOwnerResultKind::Durable(_)
+            | CompositeSignalOwnerResultKind::Unresolved(_)
             | CompositeSignalOwnerResultKind::Forked(_) => {
                 CompositeComponentChangePosture::Published
             }
@@ -81,7 +127,13 @@ impl CompositeSignalOwnerResult {
         &self,
     ) -> Option<crate::history::CompositeSignalPublicationIdentity> {
         match &self.result {
-            CompositeSignalOwnerResultKind::RetainedExact => None,
+            CompositeSignalOwnerResultKind::RetainedExact
+            | CompositeSignalOwnerResultKind::Unresolved(_) => None,
+            CompositeSignalOwnerResultKind::Durable(result) => Some(
+                crate::history::CompositeSignalPublicationIdentity::Advanced(
+                    result.output.branch().basis().admission_identity().clone(),
+                ),
+            ),
             CompositeSignalOwnerResultKind::Advanced(result) => Some(
                 crate::history::CompositeSignalPublicationIdentity::Advanced(
                     result.advanced_basis().admission_identity().clone(),
@@ -101,7 +153,12 @@ impl CompositeSignalOwnerResult {
                 self.posture() == CompositeComponentChangePosture::RetainExact
             }
             SignalComponentPlanPosture::AdvanceExact | SignalComponentPlanPosture::AdoptSettled => {
-                matches!(self.result, CompositeSignalOwnerResultKind::Advanced(_))
+                matches!(
+                    self.result,
+                    CompositeSignalOwnerResultKind::Advanced(_)
+                        | CompositeSignalOwnerResultKind::Durable(_)
+                        | CompositeSignalOwnerResultKind::Unresolved(_)
+                )
             }
         }
     }

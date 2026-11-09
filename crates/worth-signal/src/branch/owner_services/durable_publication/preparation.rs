@@ -24,7 +24,15 @@ where
     where
         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
     {
-        self.begin_prepared(execution, expected, runtime_ctx, apply, None, None)
+        self.begin_prepared(
+            execution,
+            expected,
+            runtime_ctx,
+            &super::super::SignalOwnerCancellationSource::new().token(),
+            apply,
+            None,
+            None,
+        )
     }
     /// Publish one conditional successor on its actual owner; no conditional
     /// evaluation service or mutable graph is issued to the caller.
@@ -42,6 +50,7 @@ where
             execution,
             expected,
             runtime_ctx,
+            &super::super::SignalOwnerCancellationSource::new().token(),
             |_| Ok(()),
             Some(Box::new(
                 crate::durability::SignalDurableConditionalDefinitionChange {
@@ -59,6 +68,7 @@ where
         execution: ExecutionRequest<'_, '_>,
         expected: &SignalDurableBranchHandle,
         runtime_ctx: &mut Ctx,
+        cancellation: &super::super::SignalOwnerCancellationToken,
         apply: F,
         change: Option<Box<crate::durability::SignalDurableConditionalDefinitionChange>>,
         authorization: Option<CompositePublicationAuthorization>,
@@ -118,6 +128,7 @@ where
             execution,
             expected.basis(),
             runtime_ctx,
+            cancellation,
             registered.recorded_nodes.clone(),
             change.as_deref(),
             apply,

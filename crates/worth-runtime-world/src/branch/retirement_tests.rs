@@ -195,6 +195,8 @@ pub(super) fn owner_lifecycles(
         owner
             .state
             .signal
+            .memory_services()
+            .expect("memory-only retirement fixture")
             .lifecycle_port()
             .owner_lifecycle_observation(),
     )
@@ -297,6 +299,8 @@ fn branch_capacity_denies_before_identity_or_retention_work_for_fork_input() {
     let signal_lifecycle = owner
         .state
         .signal
+        .memory_services()
+        .expect("memory-only retirement fixture")
         .lifecycle_port()
         .owner_lifecycle_observation();
     assert!(matches!(
@@ -325,6 +329,8 @@ fn branch_capacity_denies_before_identity_or_retention_work_for_fork_input() {
         owner
             .state
             .signal
+            .memory_services()
+            .expect("memory-only retirement fixture")
             .lifecycle_port()
             .owner_lifecycle_observation(),
         signal_lifecycle

@@ -1,7 +1,7 @@
 //! Borrowed comparison of the original witness against the actual locked cell.
 use super::{SignalBranchExecutionCell, CELL_LIVE};
 use crate::branch::owner_services::SignalBranchCellState;
-use crate::branch::{SignalBranchObservation, SignalInitialEmptyStopDenial as Denial};
+use crate::branch::{SignalBranchObservation, SignalOwnerStopDenial as Denial};
 use std::sync::atomic::Ordering;
 impl<D, I, T> SignalBranchExecutionCell<SignalBranchCellState<D, I, T>>
 where

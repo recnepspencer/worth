@@ -5,3 +5,5 @@ pub(crate) mod no_inc_files;
 pub(crate) mod subscription_replay_folklore_guard;
 
 mod original_lowering;
+
+mod world_baseline;

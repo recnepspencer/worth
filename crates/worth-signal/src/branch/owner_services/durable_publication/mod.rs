@@ -1,5 +1,7 @@
 //! Per-branch original tasks share only short metadata locks and physical publication order.
 mod checkpoint_capture;
+mod home_stop;
+pub(crate) use home_stop::SignalAuthoredStopPublicationGate;
 mod composite;
 mod composite_definition;
 mod cutover;
@@ -7,6 +9,7 @@ mod driving;
 mod effect;
 use effect::{PreparedSignalOwnerEffect, ReservedSignalBranches};
 pub use effect::{SignalDurableForkResult, SignalDurableOwnerEffect};
+mod associated_effects;
 mod fork_frames;
 mod fork_preparation;
 mod frame_preparation;

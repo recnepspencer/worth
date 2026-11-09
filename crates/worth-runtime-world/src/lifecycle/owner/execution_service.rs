@@ -14,6 +14,7 @@ use super::RuntimeWorldOwnerRoot;
 mod admission;
 #[path = "execution_service/conditional_recovery.rs"]
 mod conditional_recovery;
+mod durable_signal;
 #[path = "execution_service/relational.rs"]
 mod relational;
 #[path = "execution_service/signal.rs"]
@@ -171,27 +172,29 @@ where
                 runtime_ctx,
                 apply,
                 admit_activation,
-            } => match self
-                .state
-                .signal_definition_publication
-                .admit(publication, attempt.plan().signal().expected())
-            {
-                Ok(publication) => {
-                    let custody = attempt
-                        .conditional_definition_custody()
-                        .expect("conditional publication owns definition custody");
-                    custody.retain_publication(publication);
-                    SignalExecutionRequest::PublishConditionalDefinition {
-                        publication: SignalDefinitionPublicationAdmission::Retained(custody),
-                        runtime_ctx,
-                        apply,
-                        admit_activation,
+            } => {
+                let Some(definitions) = self.state.signal.memory_definitions() else {
+                    return self
+                        .no_effect(attempt, crate::publication::NoEffectCause::OwnerUnavailable);
+                };
+                match definitions.admit(publication, attempt.plan().signal().expected()) {
+                    Ok(publication) => {
+                        let custody = attempt
+                            .conditional_definition_custody()
+                            .expect("conditional publication owns definition custody");
+                        custody.retain_publication(publication);
+                        SignalExecutionRequest::PublishConditionalDefinition {
+                            publication: SignalDefinitionPublicationAdmission::Retained(custody),
+                            runtime_ctx,
+                            apply,
+                            admit_activation,
+                        }
+                    }
+                    Err(denial) => {
+                        return self.no_effect(attempt, signal::map_advance_no_effect(&denial))
                     }
                 }
-                Err(denial) => {
-                    return self.no_effect(attempt, signal::map_advance_no_effect(&denial))
-                }
-            },
+            }
             request => request,
         };
         attempt.begin_owner_execution();

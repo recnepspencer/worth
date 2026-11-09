@@ -10,8 +10,9 @@ pub use crate::branch::owner_services::{
 };
 pub use crate::data::graph::SignalAuthoredGraphReadmission;
 pub use crate::durability::{
-    SignalAuthoredBranchChange, SignalAuthoredBranchInstallation, SignalAuthoredImage,
-    SignalAuthoredImageDenial, SignalAuthoredInstallationRefused, SignalAuthoredOwnerInstallation,
+    SignalAuthoredBranchChange, SignalAuthoredBranchInstallation, SignalAuthoredCheckpointPort,
+    SignalAuthoredHomeStopDenial, SignalAuthoredImage, SignalAuthoredImageDenial,
+    SignalAuthoredInstallationRefused, SignalAuthoredOwnerInstallation,
     SignalBranchAdvanceArtifact, SignalBridgeAuthoredSection, SignalCompositeAdvanceBinding,
     SignalCompositeOwnerServicePorts, SignalDefinitionPublicationContext,
     SignalDefinitionTransitionArtifact, SignalDurableBranchDescriptor,
@@ -20,11 +21,13 @@ pub use crate::durability::{
     SignalDurableOwnerAdmissionRegistry, SignalDurableProjectionPublication,
     SignalDurableReadSource, SignalDurableTierVocabulary, SignalDurableTierVocabularyDenial,
     SignalLiveOwnerIdentity, SignalOnlyDefinitionPublication, SignalOnlyOwnerInstallation,
-    SignalOwnerReadmissionDenial, SignalPublicationCompletion, SignalPublicationObservation,
-    SignalPublicationTaskPosture, SignalReadmittedConditionalContract,
-    SignalRecordedIdentityContribution, SignalRuntimeAuthoredImage, SIGNAL_AUTHORED_IMAGE_PROTOCOL,
-    SIGNAL_AUTHORED_IMAGE_VERSION, SIGNAL_OWNER_FRAME_MAXIMUM_BYTES, SIGNAL_OWNER_FRAME_PROTOCOL,
-    SIGNAL_OWNER_FRAME_VERSION, SIGNAL_RUNTIME_AUTHORED_IMAGE_PROTOCOL,
+    SignalOwnerReadmissionDenial, SignalPreparedAuthoredHomeStop, SignalPublicationCompletion,
+    SignalPublicationObservation, SignalPublicationTaskPosture,
+    SignalReadmittedConditionalContract, SignalRecordedIdentityContribution,
+    SignalRetainedAuthoredHomeAllocation, SignalRuntimeAuthoredImage,
+    SIGNAL_AUTHORED_IMAGE_PROTOCOL, SIGNAL_AUTHORED_IMAGE_VERSION,
+    SIGNAL_OWNER_FRAME_MAXIMUM_BYTES, SIGNAL_OWNER_FRAME_PROTOCOL, SIGNAL_OWNER_FRAME_VERSION,
+    SIGNAL_RUNTIME_AUTHORED_IMAGE_PROTOCOL,
 };
 pub use worth_proof::ProvenNoEffectPublication;
 

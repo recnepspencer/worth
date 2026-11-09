@@ -65,7 +65,12 @@ impl Drop for Reservation {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(slot) = self.slot.take() {
-            if let Some(lowering) = branch.lowerings.remove(&slot) {
+            if let Some(lowering) = branch
+                .lowerings
+                .write()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .remove(&slot)
+            {
                 lowering.lease.revoke_liveness();
             }
         }
@@ -115,6 +120,7 @@ impl BridgeReadmittedAuthoredAssembly {
         execution: &ExecutionRequest<'_, '_>,
         binding: worth_signal::facade::durability::SignalCompositeAdvanceBinding,
         grant: worth_proof::AdmittedCompositeSignalPublication,
+        cancellation: &worth_signal::facade::branch::SignalOwnerCancellationToken,
         predecessor: &Arc<BridgeInstalledConditionalLowering>,
         request: BridgeOwnedConditionalInstallationRequest,
         apply: F,
@@ -142,6 +148,7 @@ impl BridgeReadmittedAuthoredAssembly {
                 binding,
                 grant,
                 &mut (),
+                cancellation,
                 pending.claimant(),
                 predecessor.signal_contract().clone(),
                 definition,

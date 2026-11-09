@@ -8,14 +8,18 @@ use crate::identity::CompositePublicationAttemptIdentity;
 use std::sync::Arc;
 use worth_execution::{ExecutionArray, ExecutionRequest};
 mod native_preparation;
+mod signal_preparation;
 pub use native_preparation::{
     WorldNativePreparationDenial, WorldNativePreparationRefusal,
     WorldPreparedPublicationWithoutSignal, WorldQueryNativePreparation,
 };
+pub use signal_preparation::{WorldPreparedPublicationWithSignal, WorldQuerySignalPreparation};
 #[derive(Debug)]
 pub enum WorldOpenAttemptRefusal {
     TransitionAdmission(worth_proof::HomeProgramTransitionAdmissionDenial),
     NotHomeBound,
+    ProgramSourceOwnerRequired,
+    ProgramSource(worth_proof::BranchProgramSourceAdmissionDenial),
     Reservation(super::NoEffectCompositePublication),
     Durable(WorldDurableMediumDenial),
     IdentityScope,

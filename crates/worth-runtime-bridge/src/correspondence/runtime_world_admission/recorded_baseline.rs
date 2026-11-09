@@ -1,11 +1,13 @@
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use worth_signal::facade::branch::AdmittedSignalInitialEmptyRoot;
+use worth_signal::facade::branch::AdmittedSignalBranchBasis;
 
 use super::{admit_baseline, AdmittedRuntimeWorldCorrespondenceBasis};
 use crate::facade::RuntimeBridge;
 
-/// Portable meaning of the existing uninstalled Bridge baseline.
+/// Portable identity of the World correspondence baseline.
+/// Conditional declarations remain authored in Signal's Bridge transition section;
+/// this description neither snapshots nor replaces their fresh branch projections.
 /// The registered source and concrete Home composition retain authority.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(transparent)]
@@ -32,14 +34,25 @@ impl PartialEq for RecordedBaselineMeaning {
 }
 impl Eq for RecordedBaselineMeaning {}
 mod json;
-const BASELINE: &str = "bridge-runtime-world-uninstalled-baseline-v1";
+const BASELINE: &str = "bridge-runtime-world-baseline-v2";
 impl RecordedRuntimeWorldBaseline {
     /// Fund decoded descriptive data without admitting a Bridge basis.
     pub fn from_json_in(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         bytes: &[u8],
     ) -> Result<Self, RuntimeWorldBaselineRefusal> {
-        json::decode(execution, bytes)
+        let recorded = json::decode(execution, bytes)?;
+        recorded.require_version()?;
+        Ok(recorded)
+    }
+    fn require_version(&self) -> Result<(), RuntimeWorldBaselineRefusal> {
+        if self.meaning.version != 2 {
+            return Err(RuntimeWorldBaselineRefusal::UnsupportedVersion {
+                observed: self.meaning.version,
+                supported: 2,
+            });
+        }
+        Ok(())
     }
 }
 
@@ -49,9 +62,9 @@ pub enum RuntimeWorldBaselineRefusal {
     Description,
     UnsupportedVersion { observed: u16, supported: u16 },
     RegisteredSourceRequired,
-    UninstalledBaselineRequired,
+    BaselineCorrespondenceRequired,
     RecordedMeaningMismatch,
-    SignalInitialRootRequired,
+    SignalGraphBasisRequired,
     CurrentBasisRequired,
 }
 
@@ -81,7 +94,7 @@ fn make_baseline(
 ) -> RecordedRuntimeWorldBaseline {
     RecordedRuntimeWorldBaseline {
         meaning: Arc::new(RecordedBaselineMeaning {
-            version: 1,
+            version: 2,
             baseline: BASELINE.into(),
             adapter_semantic_identity: profile.adapter_semantic_identity().to_owned(),
             graph_role: role.to_owned(),
@@ -93,9 +106,6 @@ fn baseline_values(
     runtime: &RuntimeBridge,
 ) -> Result<(&crate::facade::BridgeAuthoritativeSourceProfile, &str), RuntimeWorldBaselineRefusal> {
     use RuntimeWorldBaselineRefusal as Refusal;
-    if runtime.semantic_dependency_registry.admitted_count() != 0 {
-        return Err(Refusal::UninstalledBaselineRequired);
-    }
     let profile = runtime
         .authoritative_source_profile
         .as_ref()
@@ -117,14 +127,23 @@ fn baseline_values(
 pub(crate) fn readmit_baseline(
     runtime: &RuntimeBridge,
     recorded: &RecordedRuntimeWorldBaseline,
-    signal: &AdmittedSignalInitialEmptyRoot,
+    signal: &AdmittedSignalBranchBasis,
 ) -> Result<AdmittedRuntimeWorldCorrespondenceBasis, RuntimeWorldBaselineRefusal> {
-    if recorded.meaning.version != 1 {
-        return Err(RuntimeWorldBaselineRefusal::UnsupportedVersion {
-            observed: recorded.meaning.version,
-            supported: 1,
-        });
-    }
+    admit_recorded_meaning(runtime, recorded)?;
+    let graph = signal
+        .observation()
+        .target()
+        .as_basis()
+        .and_then(|basis| basis.graph_instance_id().parse::<u64>().ok())
+        .ok_or(RuntimeWorldBaselineRefusal::SignalGraphBasisRequired)?;
+    Ok(admit_baseline(runtime, graph).bind_signal_branch(signal))
+}
+
+fn admit_recorded_meaning(
+    runtime: &RuntimeBridge,
+    recorded: &RecordedRuntimeWorldBaseline,
+) -> Result<(), RuntimeWorldBaselineRefusal> {
+    recorded.require_version()?;
     let (profile, role) = baseline_values(runtime)?;
     if recorded.meaning.baseline != BASELINE
         || recorded.meaning.adapter_semantic_identity != profile.adapter_semantic_identity()
@@ -132,12 +151,5 @@ pub(crate) fn readmit_baseline(
     {
         return Err(RuntimeWorldBaselineRefusal::RecordedMeaningMismatch);
     }
-    let graph = signal
-        .basis()
-        .observation()
-        .target()
-        .as_basis()
-        .and_then(|basis| basis.graph_instance_id().parse::<u64>().ok())
-        .ok_or(RuntimeWorldBaselineRefusal::SignalInitialRootRequired)?;
-    Ok(admit_baseline(runtime, graph))
+    Ok(())
 }

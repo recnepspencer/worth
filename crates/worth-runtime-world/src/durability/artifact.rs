@@ -1,5 +1,7 @@
 use super::WorldRelationalReleaseEvidence;
 use std::sync::Arc;
+mod owner_evidence;
+pub(crate) use owner_evidence::{WorldOccurrenceOwnerEvidence, WorldSignalEvidence};
 mod record_input;
 pub(crate) use record_input::{WorldArtifactInput, WorldHeadInput, WorldOpenAttemptInput};
 mod record_custody;
@@ -16,7 +18,7 @@ use worth_foundational::facade::{
 };
 pub const WORLD_ARTIFACT_PROTOCOL: BoundaryProtocolIdentity =
     BoundaryProtocolIdentity::new("worth.world.artifact");
-pub const WORLD_ARTIFACT_VERSION: BoundaryProtocolVersion = BoundaryProtocolVersion::new(3);
+pub const WORLD_ARTIFACT_VERSION: BoundaryProtocolVersion = BoundaryProtocolVersion::new(4);
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct DurableWorldHead {
@@ -37,6 +39,16 @@ pub(crate) struct WorldOpenAttemptRecord {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum WorldOpenComponentIntent {
     RelationalOnly,
+    SignalOnly,
+    RelationalAndSignal,
+}
+impl WorldOpenComponentIntent {
+    pub(crate) const fn changes_relational(self) -> bool {
+        match self {
+            Self::RelationalOnly | Self::RelationalAndSignal => true,
+            Self::SignalOnly => false,
+        }
+    }
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct WorldRelationalEvidence {
@@ -58,7 +70,7 @@ pub(crate) enum WorldRecord {
     OpenAttempt(WorldOpenAttemptRecord),
     Occurrence {
         open: WorldOpenAttemptRecord,
-        relational: WorldRelationalEvidence,
+        owners: WorldOccurrenceOwnerEvidence,
         publishing_incarnation: HomeIncarnation,
     },
     Released {

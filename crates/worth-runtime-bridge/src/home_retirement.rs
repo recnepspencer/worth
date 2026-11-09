@@ -26,7 +26,8 @@ pub enum BridgeHomeRetirementDenial {
     ForeignOwner,
     NativeAlias(RelationalRuntimeHandleAliasRetirementDenial),
     Execution(worth_execution::WorkCeilingDenial),
-    Signal(worth_signal::facade::runtime::SignalInitialEmptyStopDenial),
+    Signal(worth_signal::facade::runtime::SignalOwnerStopDenial),
+    AuthoredSignal(Box<worth_signal::facade::durability::SignalAuthoredHomeStopDenial>),
 }
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum BridgeHomeRetirementProgress {

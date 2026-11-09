@@ -78,16 +78,18 @@ pub use query_delivery::{
 };
 pub use rebuild_report::BridgeCorrespondenceRebuildReport;
 pub use registration::BridgeSemanticCorrespondenceRegistration;
+pub(crate) use runtime_world_admission::RuntimeWorldCorrespondenceBranches;
 pub(crate) use runtime_world_admission::RuntimeWorldCorrespondenceInspectionLedger;
 pub(crate) use runtime_world_admission::{
-    admit_baseline, admit_installed_basis, compare_current_basis,
+    admit_baseline, admit_installed_basis, admit_installed_basis_in, compare_current_basis,
+    compare_current_basis_in,
 };
 pub(crate) use runtime_world_admission::{
     readmit_baseline, recorded_baseline, recorded_baseline_in,
 };
 pub use runtime_world_admission::{
     AdmittedRuntimeWorldCorrespondenceBasis, RuntimeWorldCorrespondenceAdmissionDenial,
-    RuntimeWorldCorrespondenceInspectionCounters,
+    RuntimeWorldCorrespondenceInspectionCounters, RuntimeWorldCorrespondencePort,
 };
 pub use runtime_world_admission::{RecordedRuntimeWorldBaseline, RuntimeWorldBaselineRefusal};
 pub(crate) use semantic_dependency_binding::BridgeInstalledBindingKey;

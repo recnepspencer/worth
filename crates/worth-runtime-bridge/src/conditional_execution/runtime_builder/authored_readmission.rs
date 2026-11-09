@@ -67,7 +67,7 @@ impl BridgeConditionalRuntimeBuilder {
                     crate::conditional_execution::BridgeAuthoredSectionDenial::Request(cause),
                 )
             })?;
-        let program = Program::new(template, execution)?;
+        let program = Program::new(template, self.program_owner.binding(), execution)?;
         let mut installation = Box::new(Installation {
             program,
             bindings,
@@ -110,6 +110,13 @@ impl BridgeConditionalRuntimeBuilder {
                 worth_foundational::facade::DurableSignalBranchIdentity,
                 crate::conditional_execution::authored_section::branch_registry::BranchSlot,
             >(installation.branches.len())
+            .and_then(|bytes| {
+                crate::conditional_execution::retention::btree_charge::<
+                    worth_signal::facade::branch::SignalBranchIdentity,
+                    worth_foundational::facade::DurableSignalBranchIdentity,
+                >(installation.branches.len())
+                .and_then(|index| crate::conditional_execution::retention::sum(&[bytes, index]))
+            })
             .map_err(|_| {
                 D::section(crate::conditional_execution::BridgeAuthoredSectionDenial::SizeLimit)
             })?,
@@ -177,6 +184,41 @@ pub(in crate::conditional_execution) fn finish(
             D::section(crate::conditional_execution::BridgeAuthoredSectionDenial::SizeLimit)
         })?,
     )?;
+    prepared.backing.grow(
+        execution,
+        retention::arc_charge::<
+            std::sync::RwLock<lowering_registry::BridgeConditionalLoweringRegistry>,
+        >()
+        .map_err(|_| {
+            D::section(crate::conditional_execution::BridgeAuthoredSectionDenial::SizeLimit)
+        })?
+        .checked_add(
+            retention::arc_charge::<worth_proof::ConditionalSourceObservationOwner>().map_err(
+                |_| {
+                    D::section(crate::conditional_execution::BridgeAuthoredSectionDenial::SizeLimit)
+                },
+            )?,
+        )
+        .ok_or_else(|| {
+            D::section(crate::conditional_execution::BridgeAuthoredSectionDenial::SizeLimit)
+        })?,
+    )?;
+    prepared.backing.grow(
+        execution,
+        retention::arc_charge::<
+            std::sync::RwLock<crate::conditional_execution::authored_declaration::DeclarationIndex>,
+        >()
+        .and_then(|bytes| {
+            retention::btree_charge::<
+                crate::conditional_execution::authored_declaration::DeclarationKey,
+                Arc<crate::conditional_execution::BridgeInstalledConditionalLowering>,
+            >(prepared.definitions.len())
+            .and_then(|index| retention::sum(&[bytes, index]))
+        })
+        .map_err(|_| {
+            D::section(crate::conditional_execution::BridgeAuthoredSectionDenial::SizeLimit)
+        })?,
+    )?;
     let ledger = retention::BridgeRetentionLedger::new(
         prepared.program.bridge.policy.conditional_retention(),
     )
@@ -234,14 +276,30 @@ pub(in crate::conditional_execution) fn finish(
         );
         registry.install(key, lowering);
     }
+    let mut declarations =
+        crate::conditional_execution::authored_declaration::DeclarationIndex::new();
+    for lowering in registry.values() {
+        if declarations
+            .insert(
+                crate::conditional_execution::authored_declaration::DeclarationKey::of(lowering),
+                Arc::clone(lowering),
+            )
+            .is_some()
+        {
+            return Err(D::ConditionalDefinitionMismatch);
+        }
+    }
     Ok(Arc::new(BranchProjection {
         state: std::sync::Mutex::new(Box::new(ReadmittedBranch {
             posture: BranchPosture::Serving,
             _dependencies: prepared.dependencies,
             _allocations: prepared.allocations,
-            _program: prepared.program,
             section: prepared.section,
-            lowerings: registry,
+            lowerings: Arc::new(std::sync::RwLock::new(registry)),
+            declarations: Arc::new(std::sync::RwLock::new(declarations)),
+            source_owner: Arc::new(worth_proof::ConditionalSourceObservationOwner::fresh()),
+            graph_instance_id: prepared.graph_instance_id,
+            signal_branch: branch,
             retention: ledger,
             _backing: prepared.backing,
         })),

@@ -1,6 +1,6 @@
 //! The actual sole live cell remains in its original locked registry.
 use super::{SignalBranchNameOccupancy, SignalBranchRegistry, SignalBranchRegistryEntry};
-use crate::branch::SignalInitialEmptyStopDenial as Denial;
+use crate::branch::SignalOwnerStopDenial as Denial;
 use crate::state::SignalBranchId;
 use std::sync::Arc;
 impl<S> SignalBranchRegistry<S> {

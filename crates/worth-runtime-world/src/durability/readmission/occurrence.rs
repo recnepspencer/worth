@@ -35,7 +35,7 @@ impl AdmittedWorldOccurrenceLocation {
 #[derive(Clone, Debug)]
 pub(crate) struct AdmittedWorldOccurrence {
     open: AdmittedWorldOpenAttempt,
-    relational: WorldRelationalEvidence,
+    owners: super::super::artifact::WorldOccurrenceOwnerEvidence,
     publishing_incarnation: HomeIncarnation,
     location: AdmittedWorldOccurrenceLocation,
 }
@@ -44,7 +44,7 @@ impl AdmittedWorldOccurrence {
     /// source SHA, frame, contiguous position, owner and complete graph edge.
     pub(super) fn from_validated_source(
         open: AdmittedWorldOpenAttempt,
-        relational: WorldRelationalEvidence,
+        owners: super::super::artifact::WorldOccurrenceOwnerEvidence,
         publishing_incarnation: HomeIncarnation,
         position: u64,
         digest: [u8; 32],
@@ -58,7 +58,7 @@ impl AdmittedWorldOccurrence {
         };
         Self {
             open,
-            relational,
+            owners,
             publishing_incarnation,
             location,
         }
@@ -69,18 +69,18 @@ impl AdmittedWorldOccurrence {
     ) -> Result<Self, super::WorldReadmissionDenial> {
         let crate::durability::WorldRecord::Occurrence {
             open: actual,
-            relational,
+            owners,
             publishing_incarnation,
         } = committed.subject().record()
         else {
             return Err(super::WorldReadmissionDenial::OccurrenceEvidenceMismatch);
         };
-        if actual != open.open() {
+        if actual != open.open() || owners.component_intent() != open.component_intent {
             return Err(super::WorldReadmissionDenial::OccurrenceEvidenceMismatch);
         }
         Ok(Self::from_validated_source(
             open.clone(),
-            relational.clone(),
+            owners.clone(),
             *publishing_incarnation,
             committed.position(),
             *committed.digest().bytes(),
@@ -89,8 +89,11 @@ impl AdmittedWorldOccurrence {
     pub(crate) fn open(&self) -> &WorldOpenAttemptRecord {
         self.open.open()
     }
-    pub(crate) fn relational(&self) -> &WorldRelationalEvidence {
-        &self.relational
+    pub(crate) fn relational(&self) -> Option<&WorldRelationalEvidence> {
+        self.owners.relational()
+    }
+    pub(crate) fn owners(&self) -> &super::super::artifact::WorldOccurrenceOwnerEvidence {
+        &self.owners
     }
     pub(crate) fn publishing_incarnation(&self) -> HomeIncarnation {
         self.publishing_incarnation

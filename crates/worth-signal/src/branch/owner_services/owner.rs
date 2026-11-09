@@ -1,3 +1,5 @@
+mod sealed_root;
+pub(crate) use sealed_root::SignalSealedOwnerRoot;
 mod initial_empty_stop;
 use super::owner_metadata::SignalOwnerMetadata;
 use super::{

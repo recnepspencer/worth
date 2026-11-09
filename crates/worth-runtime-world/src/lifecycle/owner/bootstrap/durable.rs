@@ -99,14 +99,18 @@ where
             owner: self,
             completed: false,
         };
-        let signal = match self
-            .state
-            .signal
-            .basis_port()
-            .export_recorded_initial_empty_root_in(execution, intent.signal_basis())
-        {
-            Ok(recorded) => recorded,
-            Err(cause) => return Outcome::Refused(Refusal::SignalInitialRoot(cause)),
+        let super::super::super::signal_services::RuntimeWorldSignalServices::Authored(attachment) =
+            &self.state.signal
+        else {
+            return Outcome::Refused(Refusal::AuthoredSignalRequired);
+        };
+        let point = match attachment.recorded_current_basis(intent.signal_basis()) {
+            Ok(point) => point,
+            Err(cause) => return Outcome::Refused(Refusal::SignalSource(Box::new(cause))),
+        };
+        let signal = match crate::durability::WorldSignalEvidence::from_point(point, execution) {
+            Ok(signal) => signal,
+            Err(cause) => return Outcome::Refused(Refusal::Medium(cause)),
         };
         let bridge = match self
             .state
@@ -127,7 +131,11 @@ where
             Ok(native) => native,
             Err(cause) => return Outcome::Refused(Refusal::Native(cause)),
         };
-        let prepared = match self.prepare_durable_root(intent) {
+        let origin = match crate::durability::PreparedCheckpointOccurrence::prepare(execution) {
+            Ok(origin) => origin,
+            Err(cause) => return Outcome::Refused(Refusal::Medium(cause)),
+        };
+        let prepared = match self.prepare_durable_root(intent, origin) {
             Ok(prepared) => prepared,
             Err(cause) => return Outcome::Refused(Refusal::Preparation(cause)),
         };

@@ -21,9 +21,7 @@ impl SubmittedContinuationWork {
             None,
         )
         .map_err(Denial::Readmission)?;
-        let WorldRecord::Occurrence {
-            open, relational, ..
-        } = common
+        let WorldRecord::Occurrence { open, owners, .. } = common
             .occurrence
             .subject
             .as_ref()
@@ -37,9 +35,10 @@ impl SubmittedContinuationWork {
             .values()
             .filter(|row| row.open().association == open.association);
         let occurrence = matches.next().ok_or(Denial::NativeEffectMismatch)?;
+        let relational = owners.relational().ok_or(Denial::NativeEffectMismatch)?;
         if matches.next().is_some()
             || occurrence.open() != open
-            || occurrence.relational() != relational
+            || occurrence.relational() != Some(relational)
         {
             return Err(Denial::NativeEffectMismatch);
         }

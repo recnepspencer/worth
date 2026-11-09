@@ -134,6 +134,8 @@ fn partial_creation_under_the_shared_name(
     let held = owner
         .state
         .signal
+        .memory_services()
+        .expect("memory-only retirement fixture")
         .mutation_port()
         .reserve_fork_exact(
             validate_signal_branch_name("signal-branch-aba-partial").expect("valid Signal name"),

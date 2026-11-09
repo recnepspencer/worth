@@ -33,7 +33,19 @@ pub(super) fn admit_provider_set(
     contract: Arc<BridgeConditionalContract>,
     providers: &BridgeConditionalProviderSet,
 ) -> Result<BridgeConditionalProviderAdmission, BridgeConditionalDenial> {
-    let required_roles = required_provider_roles(&contract);
+    let required_roles = admit_provider_roles(&contract, providers)?;
+    Ok(BridgeConditionalProviderAdmission {
+        contract,
+        required_roles,
+        semantic_contracts: providers.semantic_contracts.clone(),
+    })
+}
+
+pub(super) fn admit_provider_roles(
+    contract: &BridgeConditionalContract,
+    providers: &BridgeConditionalProviderSet,
+) -> Result<[bool; PROVIDER_DIMENSION_CHECK_COUNT], BridgeConditionalDenial> {
+    let required_roles = required_provider_roles(contract);
     let present_roles = present_provider_roles(providers);
     for ((required, present), (missing, extra)) in required_roles
         .into_iter()
@@ -42,11 +54,7 @@ pub(super) fn admit_provider_set(
     {
         require_exact(required, present, missing, extra)?;
     }
-    Ok(BridgeConditionalProviderAdmission {
-        contract,
-        required_roles,
-        semantic_contracts: providers.semantic_contracts.clone(),
-    })
+    Ok(required_roles)
 }
 
 fn required_provider_roles(

@@ -29,6 +29,7 @@ where
         binding: SignalCompositeAdvanceBinding,
         grant: worth_proof::AdmittedCompositeSignalPublication,
         runtime_ctx: &mut Ctx,
+        cancellation: &super::super::SignalOwnerCancellationToken,
         claimant: SignalAspectLoweringOwner,
         predecessor: InstalledSignalConditionalContract,
         definition: SignalConditionalContractDefinition,
@@ -43,6 +44,7 @@ where
             execution,
             &expected,
             runtime_ctx,
+            cancellation,
             apply,
             Some(Box::new(SignalDurableConditionalDefinitionChange {
                 claimant,

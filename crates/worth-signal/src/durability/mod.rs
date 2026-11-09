@@ -37,8 +37,15 @@ pub use initial_source::{
     SignalInitialSourcePreparationRefusal, SignalInitialSourceProgress,
     SignalInitialSourcePublication, SignalInitialSourceStepRefusal, SignalPublishedInitialSource,
 };
+mod checkpoint_port;
+mod home_stop;
+pub use home_stop::{
+    SignalAuthoredHomeStopDenial, SignalPreparedAuthoredHomeStop,
+    SignalRetainedAuthoredHomeAllocation,
+};
 mod medium;
 mod owner;
+pub use checkpoint_port::SignalAuthoredCheckpointPort;
 mod owner_installation;
 pub use owner_installation::{
     SignalAuthoredBranchInstallation, SignalAuthoredInstallationRefused,

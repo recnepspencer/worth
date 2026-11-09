@@ -151,7 +151,7 @@ fn cold_correspondence_rebinds_full_semantics_and_preserves_the_selected_slot_wi
         assert_eq!(bindings.rebound, 1);
         let restored = owner
             .with_authored_branch(branch, |view| {
-                view.conditional_definitions().next().unwrap()
+                view.with_conditional_definitions(|items| items.next().unwrap())
             })
             .unwrap();
         assert_eq!(restored.signal_node(), node);

@@ -9,6 +9,8 @@ use super::{
 };
 use crate::facade::RuntimeBridge;
 mod authored_capture;
+mod fresh_bindings;
+pub use fresh_bindings::BridgeFreshAuthoredBindings;
 pub(super) mod authored_readmission;
 mod initial_source;
 pub use initial_source::{
@@ -21,6 +23,7 @@ pub use initial_source::{
 /// operational runtime.
 pub struct BridgeConditionalRuntimeBuilder {
     runtime: Box<BridgeOwnedSignalRuntime>,
+    program_owner: worth_proof::InstalledBridgeProgramOwner,
     managed_clocks:
         std::collections::BTreeMap<Arc<str>, super::managed_time::BridgeManagedClockDeclaration>,
 }
@@ -124,6 +127,7 @@ impl BridgeConditionalRuntimeBuilder {
     pub(super) fn from_runtime(runtime: BridgeOwnedSignalRuntime) -> Self {
         Self {
             runtime: Box::new(runtime),
+            program_owner: worth_proof::InstalledBridgeProgramOwner::fresh(),
             managed_clocks: Default::default(),
         }
     }

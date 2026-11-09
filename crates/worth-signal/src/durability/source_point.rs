@@ -11,6 +11,10 @@ pub struct SignalRecordedSourcePoint {
     descriptor: SignalDurableBranchDescriptor,
 }
 impl SignalRecordedSourcePoint {
+    /// Largest envelope admitted by this version of the fixed-width source codec.
+    /// Includes a populated snapshot identity; no authored definition bytes occur here.
+    pub const MAXIMUM_ENCODED_BYTES: usize = frame::HEADER + 72 + 129;
+
     pub fn from_recorded(
         reference: SignalBranchAdvanceReference,
         position: std::num::NonZeroU64,

@@ -17,6 +17,8 @@ impl BridgeReadmittedAuthoredAssembly {
         let mut serving = projection.serving(branch).map_err(D::Branch)?;
         if !serving
             .lowerings
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .get(&predecessor.registry_key)
             .is_some_and(|installed| Arc::ptr_eq(installed, predecessor))
         {
@@ -60,7 +62,7 @@ impl BridgeReadmittedAuthoredAssembly {
                     .ok_or(D::Section(Box::new(BridgeAuthoredSectionDenial::SizeLimit)))?,
             )
             .map_err(|cause| D::Section(Box::new(BridgeAuthoredSectionDenial::Request(cause))))?;
-        let program = Arc::clone(&serving._program);
+        let program = Arc::clone(&self.program);
         let retention = Arc::clone(&serving.retention);
         serving.posture = BranchPosture::Preparing {
             node: predecessor.signal_node(),

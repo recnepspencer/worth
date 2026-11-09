@@ -40,30 +40,44 @@ pub(in crate::durability) fn prepare(
     }
     let mut published = ExecutionOrderedMap::default();
     for occurrence in image.occurrences.values() {
-        let evidence = occurrence.relational();
-        let coordinates = Coordinates::from_recorded(
-            CommitId(evidence.commit),
-            PatchStreamPosition(evidence.position),
-            CanonicalDigestId::new(evidence.digest),
-        );
+        let source = match occurrence.relational() {
+            Some(evidence) => {
+                let coordinates = Coordinates::from_recorded(
+                    CommitId(evidence.commit),
+                    PatchStreamPosition(evidence.position),
+                    CanonicalDigestId::new(evidence.digest),
+                );
+                published
+                    .insert_cloned_native_for_request(
+                        &occurrence.open().association.attempt(),
+                        &coordinates,
+                        *request,
+                    )
+                    .map_err(|cause| Denial::Medium(Medium::Ordered(cause)))?;
+                Source::Published(coordinates)
+            }
+            None => sources
+                .get(&occurrence.open().expected.commit)
+                .ok_or(Denial::MissingPredecessor)?
+                .clone(),
+        };
         sources
-            .insert_cloned_native_for_request(
-                &occurrence.open().commit,
-                &Source::Published(coordinates),
-                *request,
-            )
-            .map_err(|cause| Denial::Medium(Medium::Ordered(cause)))?;
-        published
-            .insert_cloned_native_for_request(
-                &occurrence.open().association.attempt(),
-                &coordinates,
-                *request,
-            )
+            .insert_cloned_native_for_request(&occurrence.open().commit, &source, *request)
             .map_err(|cause| Denial::Medium(Medium::Ordered(cause)))?;
     }
-    let mut originals = ExecutionRequestArrayBuilder::allocate(*request, image.opens.len())
-        .map_err(|cause| Denial::Medium(Medium::Backing(cause)))?;
+    let mut originals = ExecutionRequestArrayBuilder::allocate(
+        *request,
+        image
+            .opens
+            .values()
+            .filter(|open| open.component_intent.changes_relational())
+            .count(),
+    )
+    .map_err(|cause| Denial::Medium(Medium::Backing(cause)))?;
     for open in image.opens.values() {
+        if !open.component_intent.changes_relational() {
+            continue;
+        }
         let source = sources
             .get(&open.expected.commit)
             .ok_or(Denial::MissingPredecessor)?

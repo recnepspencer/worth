@@ -1,9 +1,9 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
+use super::signal_services::RuntimeWorldSignalServices;
 use worth_relational::facade::branch::RelationalOwnerServicePorts;
 use worth_runtime_bridge::facade::RuntimeWorldCorrespondencePort;
-use worth_signal::facade::branch::SignalOwnerServicePorts;
 
 use crate::branch::registry::ProductBranchRegistry;
 use crate::history::CompositeHistoryCatalog;
@@ -15,7 +15,7 @@ use crate::retention::RuntimeWorldRetentionOwner;
 
 use super::clock::RuntimeWorldClock;
 use super::close::RuntimeWorldCloseContract;
-use super::owner_inputs::RuntimeWorldOwnerInputs;
+use super::owner_inputs::{RuntimeWorldInstalledOwnerInputs, RuntimeWorldOwnerInputs};
 
 mod bootstrap;
 mod branch_service;
@@ -90,9 +90,7 @@ where
     pub(super) identities: Mutex<RuntimeWorldIdentityIssuer>,
     pub(crate) durable: Option<Arc<crate::durability::WorldDurableMediumBinding>>,
     pub(super) relational: Option<RelationalOwnerServicePorts>,
-    pub(super) signal: SignalOwnerServicePorts<D, I, E, Ctx, T>,
-    pub(super) signal_definition_publication:
-        worth_signal::facade::branch::SignalConditionalDefinitionPublicationPort<D, I, E, Ctx, T>,
+    pub(super) signal: RuntimeWorldSignalServices<D, I, E, Ctx, T>,
     pub(super) bridge: Option<RuntimeWorldCorrespondencePort>,
     pub(super) execution: super::execution::InstalledExecution,
     pub(super) clock: RuntimeWorldClock,
@@ -117,18 +115,17 @@ where
         inputs: RuntimeWorldOwnerInputs<D, I, E, Ctx, T>,
     ) -> Result<Self, RuntimeWorldIdentityExhaustion> {
         let construction = RuntimeWorldOwnerConstructionContract::new()?;
-        Self::construct(inputs, construction, None)
+        Self::construct(inputs.into_installed(), construction, None)
     }
 
-    pub(crate) fn construct(
-        inputs: RuntimeWorldOwnerInputs<D, I, E, Ctx, T>,
+    pub(in crate::lifecycle) fn construct(
+        inputs: RuntimeWorldInstalledOwnerInputs<D, I, E, Ctx, T>,
         construction: RuntimeWorldOwnerConstructionContract,
         durable: Option<Arc<crate::durability::WorldDurableMediumBinding>>,
     ) -> Result<Self, RuntimeWorldIdentityExhaustion> {
-        let RuntimeWorldOwnerInputs {
+        let RuntimeWorldInstalledOwnerInputs {
             relational,
             signal,
-            signal_definition_publication,
             bridge,
             budgets,
             clock,
@@ -143,10 +140,10 @@ where
                 budgets.history_metadata_bytes(),
             ),
         );
-        let retention = RuntimeWorldRetentionOwner::from_component_services(
+        let retention = RuntimeWorldRetentionOwner::new(
             owner_identity,
-            &relational,
-            &signal,
+            relational.basis_port(),
+            signal.basis_port(),
             budgets.unique_exact_component_pins(),
             budgets.in_flight_pin_acquisition_reservations(),
             budgets.active_observations(),
@@ -171,7 +168,6 @@ where
                 durable,
                 relational: Some(relational),
                 signal,
-                signal_definition_publication,
                 bridge: Some(bridge),
                 execution,
                 clock,
