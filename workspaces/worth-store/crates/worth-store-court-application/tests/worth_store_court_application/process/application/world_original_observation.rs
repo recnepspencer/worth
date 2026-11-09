@@ -192,3 +192,114 @@ fn live_original_publication_reads_exact_native_source_after_a_later_publication
     drop(expected);
     super::world_occurrence_readmission::close(fixture.home, &execution);
 }
+
+#[test]
+fn protected_original_metadata_keeps_native_association_and_ancestry_after_graceful_reopen() {
+    let directory = tempfile::tempdir().unwrap();
+    let foreign_directory = tempfile::tempdir().unwrap();
+    let request = crate::workload::serial_request();
+    let execution = ExecutionRequest::serial(&request);
+    let fixture = super::world_occurrence_readmission::open(directory.path(), &execution);
+    let bootstrap = fixture.bootstrap_root(&execution);
+    let mut expected = bootstrap.product_branch().clone();
+    drop(bootstrap);
+    let root = expected.selected_commit().clone();
+    let cancellation = RuntimeWorldCancellationSource::new();
+    let mut reference = Vec::new();
+    for round in 0..2 {
+        let predecessor = expected.selected_commit().ordinal();
+        let prepared = fixture.prepare_publication(
+            &execution,
+            expected.clone(),
+            crate::batches::create(round),
+            &cancellation.token(),
+        );
+        let performed = fixture.publish(&execution, prepared, &cancellation.token());
+        reference.push((
+            performed.commit().identity().ordinal(),
+            predecessor,
+            performed
+                .component_results()
+                .relational_commit_result()
+                .unwrap()
+                .semantic_result()
+                .receipt()
+                .commit_id,
+        ));
+        let mut consumed = performed.consume();
+        expected = consumed.take_successor_observation().unwrap();
+    }
+    let old_selected = expected.selected_commit().clone();
+    let history = fixture
+        .home
+        .world()
+        .inspection_port()
+        .observe_program_activation_history(&execution)
+        .unwrap();
+    let originals = history.original_observations().collect::<Vec<_>>();
+    assert_eq!(originals.len(), reference.len());
+    for (original, (commit, predecessor, native)) in originals.iter().zip(&reference) {
+        assert_eq!(original.identity().ordinal(), *commit);
+        assert_eq!(original.predecessor().ordinal(), *predecessor);
+        assert_eq!(original.relational_commit(), *native);
+        assert_eq!(
+            original.branch().owner(),
+            fixture.home.world().owner_identity().durable().unwrap()
+        );
+        assert!(history
+            .original_is_ancestor_of(original, &old_selected, &execution)
+            .unwrap());
+        assert!(!history
+            .original_is_ancestor_of(original, &root, &execution)
+            .unwrap());
+    }
+    drop(originals);
+    drop(history);
+    drop(expected);
+    super::world_occurrence_readmission::close(fixture.home, &execution);
+
+    let fixture = super::world_occurrence_readmission::open(directory.path(), &execution);
+    let selected = fixture
+        .home
+        .world()
+        .observation_port()
+        .observe_root_product_branch()
+        .unwrap();
+    let history = fixture
+        .home
+        .world()
+        .inspection_port()
+        .observe_program_activation_history(&execution)
+        .unwrap();
+    let originals = history.original_observations().collect::<Vec<_>>();
+    assert_eq!(originals.len(), reference.len());
+    for (original, (commit, predecessor, native)) in originals.iter().zip(&reference) {
+        assert_eq!(original.identity().ordinal(), *commit);
+        assert_eq!(original.predecessor().ordinal(), *predecessor);
+        assert_eq!(original.relational_commit(), *native);
+        assert!(history
+            .original_is_ancestor_of(original, selected.selected_commit(), &execution)
+            .unwrap());
+        assert!(matches!(
+            history.original_is_ancestor_of(original, &old_selected, &execution),
+            Err(WorldOriginalObservationDenial::Incarnation(
+                worth_proof::HomeIncarnationDenial::StaleIncarnation
+            ))
+        ));
+    }
+    let foreign = super::world_occurrence_readmission::open(foreign_directory.path(), &execution);
+    let foreign_bootstrap = foreign.bootstrap_root(&execution);
+    let foreign_root = foreign_bootstrap.product_branch().selected_commit().clone();
+    drop(foreign_bootstrap);
+    assert!(matches!(
+        history.original_is_ancestor_of(&originals[0], &foreign_root, &execution),
+        Err(WorldOriginalObservationDenial::Incarnation(
+            worth_proof::HomeIncarnationDenial::ForeignHome
+        ))
+    ));
+    drop(originals);
+    drop(history);
+    drop(selected);
+    super::world_occurrence_readmission::close(fixture.home, &execution);
+    super::world_occurrence_readmission::close(foreign.home, &execution);
+}

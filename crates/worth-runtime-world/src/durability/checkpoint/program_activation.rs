@@ -9,7 +9,7 @@ use worth_foundational::facade::DurableCompositeCommitIdentity;
 
 #[derive(Debug)]
 pub struct WorldProgramActivationHistory {
-    image: WorldCheckpointImage,
+    pub(super) image: WorldCheckpointImage,
     _source: Box<dyn WorldCheckpointReadSource>,
     binding: Arc<WorldDurableMediumBinding>,
 }
