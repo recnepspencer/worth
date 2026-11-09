@@ -50,7 +50,7 @@ where
         let Some(node) = nodes.node_at_ordinal(ordinal, control)? else {
             return Ok(None);
         };
-        let region = provider_result(execution, control, provider.decompose(*node, control))?;
+        let region = provider_result(execution, control, provider.decompose(node, control))?;
         for child in region.children.into_iter().flatten() {
             nodes.get(child, control)?;
         }

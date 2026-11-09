@@ -26,22 +26,25 @@ impl BoxEditStorage for Edit<'_, '_, '_> {
     fn checkpoint(&mut self) -> Result<(), Stop> {
         self.control.checkpoint(1).map_err(Into::into)
     }
-    fn read(&mut self, id: Self::Id) -> Result<Node, Stop> {
+    fn read(&mut self, id: Self::Id) -> Result<Material, Stop> {
         self.calls.navigation.fetch_add(1, Ordering::SeqCst);
-        self.nodes.get(id).map_err(Into::into)
+        self.nodes
+            .get(id)
+            .map(|node| node.material)
+            .map_err(Into::into)
     }
-    fn append(&mut self, node: Node) -> Result<Self::Id, Stop> {
-        let id = self.nodes.push(node)?;
+    fn append(&mut self, node: Material) -> Result<Self::Id, Stop> {
+        let id = self.nodes.push(node.into())?;
         self.observe_write();
         Ok(id)
     }
-    fn replace(&mut self, id: Self::Id, node: Node) -> Result<(), Stop> {
+    fn replace(&mut self, id: Self::Id, node: Material) -> Result<(), Stop> {
         // The actual writer validates the coordinate before exact data equality
         // can omit an ineffective backing edit. Source deltas remain independent.
         if self.read(id)? == node {
             return self.control.poll().map_err(Into::into);
         }
-        self.nodes.replace(id, node)?;
+        self.nodes.replace(id, node.into())?;
         self.observe_write();
         Ok(())
     }
@@ -61,11 +64,11 @@ impl BoxEditStorage for Edit<'_, '_, '_> {
         // Earlier edits only rotate branches; other leaf coordinates stay live.
         let id = self.nodes.before_source_node(source)?;
         let node = self.nodes.get(id)?;
-        match node.links {
+        match node.material.links {
             worth_query_consumer_values::BoxNodeLinks::Leaf { source: actual }
                 if actual == source =>
             {
-                Ok(node.bounds)
+                Ok(node.material.bounds)
             }
             _ => Err(invalid()),
         }

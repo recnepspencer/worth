@@ -1,7 +1,10 @@
 //! Mutable page custody exists only within one actual predecessor writer.
 use super::*;
 use crate::domain_computation::primary_graph::access_strategy::ordered_storage as maps;
-use std::{cell::RefCell, rc::Rc};
+use std::{
+    cell::{Ref, RefCell},
+    rc::Rc,
+};
 use worth_execution::ExecutionOrderedMap;
 mod seal;
 
@@ -19,7 +22,7 @@ struct OpenPage<'a, Node> {
     builder: Option<ExecutionRequestArrayBuilder<'a, 'a, Option<Node>>>,
     occupied: usize,
 }
-impl<'a, Node: Copy> PageEdit<'a, Node> {
+impl<'a, Node: Clone> PageEdit<'a, Node> {
     pub(in super::super::super) fn new(
         base: NodePages<Node>,
         execution: ExecutionRequest<'a, 'a>,
@@ -38,17 +41,22 @@ impl<'a, Node: Copy> PageEdit<'a, Node> {
         &self,
         ordinal: usize,
         control: &WorthQueryManagedIndexControl<'_>,
-    ) -> Result<Option<Node>, Stop> {
+    ) -> Result<Option<super::super::NodeRead<'_, Node>>, Stop> {
         maps::lookup(control, self.touched.len(), size_of::<usize>())?;
         if let Some(page) = self.touched.get(&(ordinal >> PAGE_BITS)) {
-            let open = page.open.borrow();
-            return Ok(open
-                .builder
-                .as_ref()
-                .expect("only consuming seal takes a page")
-                .elements()[ordinal & (PAGE_SIZE - 1)]);
+            return Ok(Ref::filter_map(page.open.borrow(), |open| {
+                open.builder
+                    .as_ref()
+                    .expect("only consuming seal takes a page")
+                    .elements()[ordinal & (PAGE_SIZE - 1)]
+                    .as_ref()
+            })
+            .ok()
+            .map(super::super::NodeRead::Scratch));
         }
-        self.base.get(ordinal, control).map(|node| node.copied())
+        self.base
+            .get(ordinal, control)
+            .map(|node| node.map(super::super::NodeRead::Retained))
     }
     pub(in super::super::super) fn replace(
         &mut self,
@@ -70,10 +78,11 @@ impl<'a, Node: Copy> PageEdit<'a, Node> {
         let builder = open.builder.as_mut().expect("writer has not sealed");
         let index = ordinal & (PAGE_SIZE - 1);
         let before = builder.elements()[index].is_some();
+        let after = value.is_some();
         builder
             .replace_initialized(index, value)
             .map_err(|cause| control.refuse(Stop::Storage(cause)))?;
-        match (before, value.is_some()) {
+        match (before, after) {
             (false, true) => open.occupied += 1,
             (true, false) => open.occupied -= 1,
             _ => {}
@@ -92,7 +101,7 @@ impl<'a, Node: Copy> PageEdit<'a, Node> {
         let mut occupied = 0;
         for index in 0..PAGE_SIZE {
             control.checkpoint(1)?;
-            let value = original.and_then(|page| page[index]);
+            let value = original.and_then(|page| page[index].clone());
             occupied += usize::from(value.is_some());
             builder
                 .push(value)

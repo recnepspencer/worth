@@ -60,26 +60,26 @@ impl WorthQueryManagedIndexProvider<Schema, Index> for Provider {
     }
     fn merge_summaries(
         &self,
-        parts: [Option<usize>; 3],
+        parts: [Option<&usize>; 3],
         _: &WorthQueryManagedIndexSummarySources<'_, '_, Schema, Index>,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<usize, Stop> {
         control.checkpoint(3)?;
         parts.into_iter().flatten().try_fold(0usize, |sum, n| {
-            sum.checked_add(n).ok_or(Stop::Domain(Denial))
+            sum.checked_add(*n).ok_or(Stop::Domain(Denial))
         })
     }
-    fn node_summary(
+    fn node_summary<'node>(
         &self,
-        node: Node,
+        node: &'node Node,
         control: &WorthQueryManagedIndexControl<'_>,
-    ) -> Result<usize, Stop> {
+    ) -> Result<&'node usize, Stop> {
         control.checkpoint(1)?;
-        Ok(node.count)
+        Ok(&node.count)
     }
     fn summary_may_match(
         &self,
-        _: usize,
+        _: &usize,
         _: &WorthQueryManagedIndexSummarySources<'_, '_, Schema, Index>,
         _: &u64,
         control: &WorthQueryManagedIndexControl<'_>,
@@ -117,7 +117,7 @@ impl WorthQueryManagedIndexProvider<Schema, Index> for Provider {
     }
     fn decompose(
         &self,
-        node: Node,
+        node: &Node,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<WorthQueryManagedIndexNodeRegion, Stop> {
         control.checkpoint(1)?;

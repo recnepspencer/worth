@@ -44,7 +44,20 @@ impl ApplicationManagedIndexBinding<Catalog> for BoxIndex {
     const MEMBERSHIP: worth_query_decl::facade::application_query::ApplicationManagedIndexMembership =
         worth_query_decl::facade::application_query::ApplicationManagedIndexMembership::CheckedSummarySourceTree;
 }
-pub type Node = BoxNode<WorthQueryManagedIndexNodeId, WorthQueryManagedIndexSourceSlot>;
+pub type Material = BoxNode<WorthQueryManagedIndexNodeId, WorthQueryManagedIndexSourceSlot>;
+#[derive(Clone)]
+pub struct Node {
+    material: Material,
+    summary: Box<Box2>,
+}
+impl From<Material> for Node {
+    fn from(material: Material) -> Self {
+        Self {
+            summary: Box::new(material.bounds),
+            material,
+        }
+    }
+}
 pub type Stop = WorthQueryManagedIndexProviderStop<BoxIndexDenial>;
 #[derive(Default)]
 pub struct Calls {
@@ -118,13 +131,13 @@ where
 {
     fn decompose(
         &self,
-        node: Node,
+        node: &Node,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<WorthQueryManagedIndexNodeRegion, Stop> {
         #[cfg(test)]
         self.0.cost_stages.record(cost_stages::Stage::Decompose);
         control.checkpoint(1)?;
-        Ok(match node.links {
+        Ok(match node.material.links {
             worth_query_consumer_values::BoxNodeLinks::Leaf { source } => {
                 WorthQueryManagedIndexNodeRegion::new(Some(source), [None, None])
             }
@@ -135,7 +148,7 @@ where
     }
 
     type Node = Node;
-    type Summary = Box2;
+    type Summary = Box<Box2>;
     type Denial = BoxIndexDenial;
     const IDENTITY: &'static str = PROVIDER_IDENTITY;
     const VERSION: u32 = PROVIDER_VERSION;
@@ -149,11 +162,11 @@ where
         self.0.cost_stages.record(cost_stages::Stage::Summary);
         control.checkpoint(1)?;
         self.0.summary_sources.fetch_add(1, Ordering::SeqCst);
-        row_bounds(row)
+        row_bounds(row).map(Box::new)
     }
     fn merge_summaries(
         &self,
-        parts: [Option<Self::Summary>; 3],
+        parts: [Option<&Self::Summary>; 3],
         _sources: &WorthQueryManagedIndexSummarySources<'_, '_, Catalog, Index>,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<Self::Summary, Stop> {
@@ -163,20 +176,22 @@ where
         parts
             .into_iter()
             .flatten()
+            .map(|bounds| **bounds)
             .reduce(Box2::union)
+            .map(Box::new)
             .ok_or(Stop::Domain(BoxIndexDenial::InvalidTopology))
     }
-    fn node_summary(
+    fn node_summary<'node>(
         &self,
-        node: Node,
+        node: &'node Node,
         control: &WorthQueryManagedIndexControl<'_>,
-    ) -> Result<Self::Summary, Stop> {
+    ) -> Result<&'node Self::Summary, Stop> {
         control.checkpoint(1)?;
-        Ok(node.bounds)
+        Ok(&node.summary)
     }
     fn summary_may_match(
         &self,
-        bounds: Self::Summary,
+        bounds: &Self::Summary,
         _sources: &WorthQueryManagedIndexSummarySources<'_, '_, Catalog, Index>,
         probe: &Coordinates,
         control: &WorthQueryManagedIndexControl<'_>,

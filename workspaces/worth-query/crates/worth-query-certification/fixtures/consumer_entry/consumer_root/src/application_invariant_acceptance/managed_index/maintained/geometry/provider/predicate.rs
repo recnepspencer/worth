@@ -1,9 +1,9 @@
 //! Fixed exact box union is the qualified release algebra; no Probe loans in merge.
 use super::*;
-#[derive(Clone, Copy, Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq)]
 pub struct PredicateBounds(Box2);
 impl WorthQueryManagedIndexPredicateSummary for PredicateBounds {
-    fn merge(own: Self, children: [Option<Self>; 2]) -> Self {
+    fn merge(own: &Self, children: [Option<&Self>; 2]) -> Self {
         Self(
             children
                 .into_iter()
@@ -37,7 +37,7 @@ impl WorthQueryManagedIndexPredicateProvider<Catalog, BoxIndex> for Provider {
     }
     fn predicate_region_may_match(
         &self,
-        summary: PredicateBounds,
+        summary: &PredicateBounds,
         _: [&Coordinates; 2],
         row: WorthQueryManagedIndexSourceRow<'_, Catalog, BoxIndex>,
         control: &WorthQueryManagedIndexControl<'_>,

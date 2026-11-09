@@ -116,7 +116,7 @@ pub(super) use definition::PrefixSourceIndex;
 impl<I: PrefixSourceIndex> WorthQueryManagedIndexProvider<Catalog, I> for Provider {
     fn decompose(
         &self,
-        node: Node,
+        node: &Node,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<WorthQueryManagedIndexNodeRegion, Stop> {
         structure::describe(&self.0, node, control)
@@ -142,7 +142,7 @@ impl<I: PrefixSourceIndex> WorthQueryManagedIndexProvider<Catalog, I> for Provid
     }
     fn merge_summaries(
         &self,
-        parts: [Option<Self::Summary>; 3],
+        parts: [Option<&Self::Summary>; 3],
         sources: &WorthQueryManagedIndexSummarySources<'_, '_, Catalog, I>,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<Self::Summary, Stop> {
@@ -166,17 +166,17 @@ impl<I: PrefixSourceIndex> WorthQueryManagedIndexProvider<Catalog, I> for Provid
         self.0.cost_stages.record(cost_stages::Stage::MergeEnd);
         result
     }
-    fn node_summary(
+    fn node_summary<'node>(
         &self,
-        node: Node,
+        node: &'node Node,
         control: &WorthQueryManagedIndexControl<'_>,
-    ) -> Result<Self::Summary, Stop> {
+    ) -> Result<&'node Self::Summary, Stop> {
         control.checkpoint(1)?;
-        Ok(node.bounds)
+        Ok(&node.bounds)
     }
     fn summary_may_match(
         &self,
-        bounds: Self::Summary,
+        bounds: &Self::Summary,
         sources: &WorthQueryManagedIndexSummarySources<'_, '_, Catalog, I>,
         probe: &query::Probe,
         control: &WorthQueryManagedIndexControl<'_>,
@@ -285,7 +285,7 @@ impl<I: PrefixSourceIndex> WorthQueryManagedIndexProvider<Catalog, I> for Provid
             // first child is therefore a retained edge when describe duplicates
             // it. No pure edit can replace that child before the hostile check.
             if let Some(root) = root {
-                let node = nodes.get(root)?;
+                let node = *nodes.get(root)?;
                 nodes.replace(root, node)?;
             }
             return Ok(root);

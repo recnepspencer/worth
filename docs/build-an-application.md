@@ -6889,6 +6889,13 @@ query with `.managed_index(Index::reference(), probe_parameter)`. The contributi
 installs the matching pure provider with `setup.managed_index::<Index, _>(provider)`.
 Providers borrow disclosed, query-bound Source rows and finite node/candidate
 writers; they receive no mutation handle or reusable read permission.
+`Node` and `Summary` require `Clone`, so summaries may be owned exact values,
+including heap-backed rational bounds. `node_summary` borrows the node and returns
+its summary by reference; `merge_summaries` borrows its parts, and summary and
+predicate evaluation borrow their inputs. Probes do not clone visited summaries.
+Writer `get` returns a borrow guard; copy or clone only when an edit needs an owned
+node. Query moves cold nodes into sealed pages and clones touched warm pages to
+preserve the retained predecessor. `Denial` stays `Copy`.
 
 For repeated required String reads, use
 `row.with_text(name_selector, |name| name.starts_with("al"))`. Nested callbacks

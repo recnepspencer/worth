@@ -17,7 +17,7 @@ where
     for change in changes {
         let source = change.after().ok_or_else(storage::invalid)?;
         let id = nodes.before_source_node(source)?;
-        let mut node = nodes.get(id)?;
+        let mut node = nodes.get(id)?.material;
         if !matches!(node.links, worth_query_consumer_values::BoxNodeLinks::Leaf { source: actual } if actual == source)
         {
             return Err(storage::invalid());
@@ -25,7 +25,7 @@ where
         let bounds = bounds(after, source, calls)?;
         node.bounds = bounds;
         node.last_bounds = bounds;
-        nodes.replace(id, node)?;
+        nodes.replace(id, node.into())?;
     }
     Ok(())
 }

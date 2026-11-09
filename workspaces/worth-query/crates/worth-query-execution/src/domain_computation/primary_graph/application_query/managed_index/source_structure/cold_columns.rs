@@ -1,6 +1,6 @@
 //! A cold physical roster has no predecessor pages or warm edit directory.
 use super::*;
-use std::cell::Cell;
+use std::cell::RefCell;
 use worth_execution::{ExecutionArray, ExecutionRequestArrayBuilder};
 
 impl SourceTree {
@@ -30,17 +30,17 @@ impl SourceTree {
                     return Err(control.refuse(Stop::SourceStructureIncomplete));
                 }
                 let parent = &parents.elements()[child];
-                if parent.get().is_some() {
+                if parent.borrow().is_some() {
                     return Err(control.refuse(Stop::DuplicateNodeParent));
                 }
-                parent.set(Some(ordinal));
+                *parent.borrow_mut() = Some(ordinal);
                 parent_count += 1;
             }
             if let Some(slot) = region.source {
                 maps::lookup(control, image.len(), size_of::<Slot>())?;
                 image.validate_slot(slot, control)?;
             }
-            regions.elements()[ordinal].set(Some(region));
+            *regions.elements()[ordinal].borrow_mut() = Some(region);
             region_count += 1;
         }
         let sources = super::cold_postings::capture(edits, execution, control)?;
@@ -63,13 +63,13 @@ pub(super) fn column<T>(
     count: usize,
     execution: &ExecutionRequest<'_, '_>,
     control: &Control<'_>,
-) -> Result<ExecutionArray<Cell<Option<T>>>, Stop> {
+) -> Result<ExecutionArray<RefCell<Option<T>>>, Stop> {
     let mut column = ExecutionRequestArrayBuilder::allocate(*execution, count)
         .map_err(|cause| control.refuse(Stop::Storage(cause)))?;
     for _ in 0..count {
         control.checkpoint(1)?;
         column
-            .push(Cell::new(None))
+            .push(RefCell::new(None))
             .map_err(|cause| control.refuse(Stop::Storage(cause)))?;
     }
     column
