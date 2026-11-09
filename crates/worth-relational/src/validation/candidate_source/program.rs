@@ -9,6 +9,7 @@ use crate::schema::data::RelationalSchemaRegistry;
 use crate::validation::data::CustomInvariantAccessContract;
 
 mod bindings;
+mod ordered_predecessor;
 pub(crate) use bindings::SourceBindingCache;
 mod projection_routes;
 pub use projection_routes::ManagedIndexSourceProjectionRoute;
@@ -24,6 +25,7 @@ pub(crate) struct SourceProgram {
     // In-memory bind order only; never persist, content-hash, or include in evidence.
     order: u64,
     pub(crate) path: DerivedRelationHandle,
+    pub(crate) predecessor: Option<crate::identity::data::KindId>,
     pub(crate) fields: Arc<[ManagedIndexSourceField]>,
     pub(crate) routes: Arc<[ManagedIndexSourceProjectionRoute]>,
     pub(crate) issuer: ManagedIndexSourceAudienceIssuer,
@@ -88,7 +90,9 @@ impl RelationalSchemaRegistry {
         projection_routes::validate_fields(self, row, &fields)?;
         projection_routes::validate_routes(self, row, &routes)?;
         projection_routes::validate_route_names(&routes)?;
-        path.entry.managed_source_binding.bind(path, fields, routes)
+        path.entry
+            .managed_source_binding
+            .bind(path, fields, routes, None)
     }
 }
 

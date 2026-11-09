@@ -54,6 +54,7 @@ pub(super) fn write(
     query_binding_reference::write(output, &parts.source.binding)?;
     output.u16(match parts.source.scope {
         ApplicationManagedIndexSourceScope::SameAdmittedScope => 1,
+        ApplicationManagedIndexSourceScope::OrderedPredecessor => 2,
     })?;
     output.u16(match parts.source.parameters {
         ApplicationManagedIndexSourceParameters::NoParameters => 1,
@@ -130,6 +131,7 @@ pub(super) fn decode(
     let binding = query_binding_reference::decode(input)?;
     let scope = match input.u16()? {
         1 => ApplicationManagedIndexSourceScope::SameAdmittedScope,
+        2 => ApplicationManagedIndexSourceScope::OrderedPredecessor,
         _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
     };
     let parameters = match input.u16()? {

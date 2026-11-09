@@ -7456,7 +7456,8 @@ before/after Source rows, changed occurrences and isolated node writer. Share
 unchanged nodes; do not replace a warm update with a complete Source rebuild.
 Provider and controlled-work refusals prevent publication.
 
-The Source must use `SameAdmittedScope` with `NoParameters`, public disclosure,
+The Source uses `SameAdmittedScope` or declares `SOURCE_SCOPE =
+ApplicationManagedIndexSourceScope::OrderedPredecessor`, with `NoParameters`, public disclosure,
 physical scalar fields and supported stored/reverse/composed/union membership
 paths. Direct endpoint result relations may project scalar fields from the
 related entity. Their actual relation occurrences preserve cardinality: two
@@ -7472,6 +7473,18 @@ Source result limits remain enforced; unavailable material is not an empty set.
 Native discovers affected scopes from actual before/after changes, including
 scopes with no open public handle, and prepares their roots before validation.
 Applications do not supply an affected-scope list.
+
+`OrderedPredecessor` requires exactly one forward `ordered_events` membership
+root and a to-one order relation. Native derives the predecessor from that
+relation; another membership or a non-to-one predecessor returns a typed
+installation refusal. The retained provider program and version must match.
+At birth, a successor shares immutable predecessor pages and applies its step
+delta through copy-on-touch. The first scope builds its own membership. A missing
+retained predecessor permits one cold successor build under `AdmitRebuild`, or a
+typed refusal under `Refuse`; preparation never recursively builds predecessors.
+Changed prepared successors use same-scope updates; unprepared successors cannot
+be read as current. Every read retains independent branch, generation, image
+and READ admission.
 
 Inside a mutation handler, read a managed Parent through
 `DecisionReader::index_query`. Declare the Parent's projected fields in the
@@ -7607,8 +7620,8 @@ whole-request SDK growth guards, including Source acquisition, reverse-scope
 discovery, provider updates, rules and publication. Before/after public probes
 also verify authored membership with bounded summary comparisons. Cold setup is
 admitted and invoiced separately; unchanged warm roots are never rebuilt.
-This evidence covers the indirect geometry composition. Prefix-specific large
-qualification remains open. Retaining a one-shot response does not register a
+This evidence covers the indirect geometry composition. Ordered-predecessor
+chain qualification is separate from these same-scope prefix courts. Retaining a one-shot response does not register a
 live predicate or qualify later retained-query routing.
 
 A branch created through `ForkExact` attaches the selected immutable managed

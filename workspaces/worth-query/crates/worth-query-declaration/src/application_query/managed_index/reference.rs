@@ -15,6 +15,9 @@ pub trait ApplicationManagedIndexBinding<Schema: ApplicationSchema>: Sized + 'st
     const NAME: &'static str;
     const PROVIDER: &'static str;
     const PROVIDER_VERSION: u32;
+    /// Ordered predecessor reuse requires one forward ordered-events root.
+    const SOURCE_SCOPE: super::ApplicationManagedIndexSourceScope =
+        super::ApplicationManagedIndexSourceScope::SameAdmittedScope;
     /// Source structure only; this grants no complete query or narrowed influence.
     const STRUCTURE: super::ApplicationManagedIndexSourceStructure =
         super::ApplicationManagedIndexSourceStructure::Opaque;

@@ -30,6 +30,10 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     BindingNotInstalled,
     /// A declared managed index has no configured executable provider.
     MissingManagedIndexProvider,
+    /// Ordered predecessor reuse requires an ordered-events membership root.
+    OrderedPredecessorMembershipRequired,
+    /// The predecessor must have a declared source maximum of one.
+    OrderedPredecessorMustBeToOne,
     /// Exact access requires its separately declared executable refiner.
     MissingManagedIndexRefinement,
     /// A managed provider differs from its exact installed contract or version.
