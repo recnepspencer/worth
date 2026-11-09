@@ -3,6 +3,7 @@ use crate::authority::mutation::{AdjacencyDelta, MutationEffect};
 use crate::transactions::data::RecordRef;
 
 pub(super) struct AggregateChanges {
+    pub(super) has_entity_deletions: bool,
     pub(super) adjacency: Vec<AdjacencyDelta>,
     pub(super) records: Vec<RecordRef>,
 }
@@ -10,6 +11,7 @@ pub(super) struct AggregateChanges {
 impl AggregateChanges {
     pub(super) fn from_applied(effect: MutationEffect) -> Self {
         Self {
+            has_entity_deletions: effect.publication.has_entity_deletions,
             adjacency: effect.adjacency.deltas,
             records: effect.publication.changed_records,
         }

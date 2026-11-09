@@ -852,6 +852,7 @@ dependencies = [
  "worth-query-host",
  "worth-query-testkit-document-retention",
  "worth-relational",
+ "worth-testkit-relational",
 ]
 
 [[package]]
