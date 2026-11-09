@@ -11,6 +11,7 @@ use worth_query_installation::facade::{
 use worth_foundational::facade::ProgramSupportStatus;
 mod durable_retirement;
 mod interpretation_membership;
+mod original_expiry;
 mod original_readmission;
 mod original_transfer;
 use interpretation_membership::InterpretationMembership;

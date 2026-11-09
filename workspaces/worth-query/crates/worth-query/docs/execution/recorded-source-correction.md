@@ -101,6 +101,16 @@ discharges an unperformed preparation. After reopen its key answers
 The terminal command disposition remains authoritative when its material becomes
 optional. Dropping a live pin never publishes a durable release.
 
+The owning directory runtime can call
+`expire_optional_correction_material(&execution, &coordinates)`. A mandatory pin
+refuses with `MaterialPinned`. Acknowledged expiry preserves the original key,
+intent, lineage and Native receipt, then releases only the matching durable
+interpretation. A selected view must recheck the current receiver; expired
+payload answers `RetainedMaterialExpired` even through a previously selected
+view. A support-disposal refusal keeps that obligation owned. Retry, close and
+cold admission settle it through the original owner before completion or service.
+Expiry never runs an inverse or changes authored fields.
+
 ## Select, prepare and publish
 
 Import the runtime API from `worth_query_host::facade::application_entry`:

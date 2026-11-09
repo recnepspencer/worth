@@ -93,6 +93,9 @@ impl PrimaryProviderCustody {
                 Ok(Progress::Advanced)
             }
             ProviderRetirementStage::CorrectionMaterial => {
+                provider
+                    .settle_expired_correction_meanings(request)
+                    .map_err(Denial::CorrectionRetention)?;
                 if let Some(owner) = provider.correction_material.get_mut() {
                     owner
                         .finish_retirement(request)

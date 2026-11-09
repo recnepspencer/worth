@@ -12,6 +12,7 @@ use worth_execution::ExecutionRequest;
 use worth_runtime_world::facade::WorldProgramActivationHistory;
 mod authored_key;
 mod capture;
+mod expiry;
 mod native_source;
 mod original_join;
 mod original_observation;

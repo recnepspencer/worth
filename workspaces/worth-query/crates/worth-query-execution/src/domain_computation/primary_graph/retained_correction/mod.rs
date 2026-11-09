@@ -1,11 +1,14 @@
 //! The Query receiver owns semantic material, publication and mandatory uses.
 pub(super) mod catalog;
+mod expiry;
 mod journal;
 mod mutation;
 mod observation;
 mod pins;
 mod prepared_commands;
 mod readmission;
+mod retention_denial;
+pub use retention_denial::WorthQueryCorrectionRetentionDenial;
 pub(super) mod record;
 use crate::domain_computation::application_aftermath::correction_material::{
     QueryCorrectionMaterialDenial as Denial, QueryCorrectionMaterialFrame, QueryCorrectionsMedium,
@@ -22,7 +25,7 @@ pub(in crate::domain_computation::primary_graph) struct CorrectionMaterialOwner 
     publication: Mutex<()>,
     state: Mutex<MaterialState>,
 }
-struct MaterialPublication<'a> {
+pub(in crate::domain_computation::primary_graph) struct MaterialPublication<'a> {
     owner: &'a CorrectionMaterialOwner,
     _driver: MutexGuard<'a, ()>,
 }

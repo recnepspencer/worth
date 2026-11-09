@@ -1,4 +1,5 @@
 //! Public directory originals and corrections use the shared installed handler.
+mod expiry;
 mod prepared_reopen;
 mod program;
 use program::*;

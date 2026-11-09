@@ -325,3 +325,5 @@ pub mod parameter_reference;
 pub mod public_membership;
 #[path = "public_scoped/mod.rs"]
 pub mod public_scoped;
+
+mod home_read;

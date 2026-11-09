@@ -131,15 +131,18 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         };
         self.correction_material_admission = std::sync::OnceLock::from(material_admission);
         let admission =
-            match support
-                .lifecycle()
-                .readmit_journal(obligations, &originals, execution)
+            match self.runtime.runtime().runtime.primary_provider
+                .readmit_retained_program_support(support.lifecycle(), obligations, &originals, execution)
             {
                 Ok(admission) => admission,
                 Err(cause) => {
                     return Err(QueryHomeCustodyReadmissionRefused {
                         query: self,
-                        cause: QueryHomeCustodyReadmissionDenial::ProgramSupport(cause),
+                        cause: match cause {
+                            crate::domain_computation::primary_graph::WorthQueryCorrectionRetentionDenial::Material(cause) => QueryHomeCustodyReadmissionDenial::CorrectionMaterial(cause),
+                            crate::domain_computation::primary_graph::WorthQueryCorrectionRetentionDenial::ProgramSupport(cause) => QueryHomeCustodyReadmissionDenial::ProgramSupport(cause),
+                            crate::domain_computation::primary_graph::WorthQueryCorrectionRetentionDenial::World(cause) => QueryHomeCustodyReadmissionDenial::ProgramHistorySource(cause),
+                        },
                     })
                 }
             };

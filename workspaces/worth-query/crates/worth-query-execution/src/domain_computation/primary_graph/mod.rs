@@ -139,6 +139,7 @@ pub(in crate::domain_computation::primary_graph) use provider::OutstandingDispat
 pub(in crate::domain_computation) use provider::PrimaryDecisionReadSetComparison;
 pub(in crate::domain_computation) use provider::QueryPreparingApplicationCommit;
 pub(in crate::domain_computation) use provider::RegisteredPrimaryRead;
+pub use retained_correction::WorthQueryCorrectionRetentionDenial;
 pub(crate) mod component_selection;
 mod request_local;
 pub(crate) mod resolution;
