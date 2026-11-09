@@ -1,0 +1,39 @@
+command: python target/lane-evidence/landing2a_current_public_reviewfix.py root residency_failure_matrix_declared_current_doors_preserve_every_failure_class residency_failure_matrix_aspect_history_doors_cover_every_subject_and_class
+HEAD: 427700edd0d5d4e0437647eb8f7c7722f0018ebf
+git_status_short_empty: false
+start_utc: 2026-11-09T19:33:04.064930+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+prebuild: cargo metadata --offline --format-version 1 --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml"
+prebuild: cargo test --message-format=json --no-run --package worth-court-relational-cold-residency --all-targets --profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml" --unit-graph -Z unstable-options
+prebuild: cargo nextest list --cargo-message-format=json --package worth-court-relational-cold-residency --all-targets --cargo-profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml" --list-type binaries-only --message-format json
+   Compiling worth-court-relational-cold-residency v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-court-relational-cold-residency)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 7.89s
+prebuild: cargo nextest list --cargo-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\landing2a-current-public-proof-root-reviewfix\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\landing2a-current-public-proof-root-reviewfix\build\binaries.json" --message-format json --ignore-default-filter -E "test(residency_failure_matrix_declared_current_doors_preserve_every_failure_class) | test(residency_failure_matrix_aspect_history_doors_cover_every_subject_and_class)"
+prebuild: cargo nextest run --cargo-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\landing2a-current-public-proof-root-reviewfix\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\landing2a-current-public-proof-root-reviewfix\build\binaries.json" --profile ci --config-file "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\landing2a-current-public-proof-root-reviewfix\nextest.toml" --ignore-default-filter --no-fail-fast --no-tests=fail --message-format libtest-json -E "test(=relational::relational_certification::cold_residency::current_reads::aspect_history_matrix::residency_failure_matrix_aspect_history_doors_cover_every_subject_and_class) | test(=relational::relational_certification::cold_residency::current_reads::current_failure_matrix::residency_failure_matrix_declared_current_doors_preserve_every_failure_class)"
+info: experimental features enabled: wrapper-scripts
+────────────
+ Nextest run ID 5e35aee0-207e-4944-b23d-6e18dd922523 with nextest profile: ci
+    Starting 2 tests across 1 binary (28 tests skipped)
+        PASS [  19.365s] (1/2) worth-court-relational-cold-residency::worth_court_relational_cold_residency relational::relational_certification::cold_residency::current_reads::aspect_history_matrix::residency_failure_matrix_aspect_history_doors_cover_every_subject_and_class
+        PASS [  22.983s] (2/2) worth-court-relational-cold-residency::worth_court_relational_cold_residency relational::relational_certification::cold_residency::current_reads::current_failure_matrix::residency_failure_matrix_declared_current_doors_preserve_every_failure_class
+{"type":"suite","event":"started","test_count":2}
+{"type":"test","event":"started","name":"worth-court-relational-cold-residency::worth_court_relational_cold_residency$relational::relational_certification::cold_residency::current_reads::current_failure_matrix::residency_failure_matrix_declared_current_doors_preserve_every_failure_class"}
+{"type":"test","event":"started","name":"worth-court-relational-cold-residency::worth_court_relational_cold_residency$relational::relational_certification::cold_residency::current_reads::aspect_history_matrix::residency_failure_matrix_aspect_history_doors_cover_every_subject_and_class"}
+{"type":"test","event":"ok","name":"worth-court-relational-cold-residency::worth_court_relational_cold_residency$relational::relational_certification::cold_residency::current_reads::aspect_history_matrix::residency_failure_matrix_aspect_history_doors_cover_every_subject_and_class","exec_time":19.3651601}
+{"type":"test","event":"ok","name":"worth-court-relational-cold-residency::worth_court_relational_cold_residency$relational::relational_certification::cold_residency::current_reads::current_failure_matrix::residency_failure_matrix_declared_current_doors_preserve_every_failure_class","exec_time":22.9834409}
+{"type":"suite","event":"ok","passed":2,"failed":0,"ignored":0,"measured":0,"filtered_out":28,"exec_time":42.348601}
+────────────
+     Summary [  22.984s] 2 tests run: 2 passed, 28 skipped
+
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-landing2a-current-public-proof-root-reviewfix-build-ca-427700edd0d5-202611091933091249170000-bd70f6cd3bf3.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-landing2a-current-public-proof-root-reviewfix-build-bi-427700edd0d5-202611091933150625490000-93eb2b1f95a0.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-landing2a-current-public-proof-root-reviewfix-build-bi-427700edd0d5-202611091933159375760000-3c3dbead26d0.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-landing2a-current-public-proof-root-reviewfix-selectio-427700edd0d5-202611091933323020950000-7f410452df32.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-landing2a-current-public-proof-root-reviewfix-run.log-427700edd0d5-202611091933337678160000-4b443a8d498b.log
+EVIDENCE_TEST_COUNTS: 2,0,0
+
+end_utc: 2026-11-09T19:33:57.347257+00:00
+exit_code: 0
+tests_passed: 2
+tests_failed: 0
+tests_ignored: 0

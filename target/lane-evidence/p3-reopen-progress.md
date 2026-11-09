@@ -397,3 +397,42 @@ Mandatoryboundary remains exact14(3unmigratedownedproviders,11assignedelsewhere)
 noneonnewAPI/courts. ScopedfreshreviewAPPROVE,nofindingsopen. Committhissafe
 point,thencontinueadapterdecomposition. No newtestexecutionafter16/0/0:later
 sourcehunksareexpectannotations,unusedimports,uncalledcfgtesthook,andformatting.
+
+427700edd0 commits the reviewed lineage/source slice. Next coherent current-read
+family prepares15publiccourts before anycompile: all current/projection/snapshot
+doors, accepted pin semantics, failure/aspect matrices, metadata, materialization
+and original retirement versions. Native originals stay mounted until proof and
+review. No new product API or testkit backing change. C2 split of exact dictionary
+staging and direct cold probes is explicit; public suffixes are retained. First
+owned build/run for this slice follows now.
+
+Currentfamilyfirstbuilddiagnosticsclassified/fixedtogether:2missingtransaction
+imports,main-versionreadsreplacedwithactualissuedmainobservation(oractualdelete
+resultversion),andmaterializationusestheexistingpublicpublication/settlement
+ports. One minimal real-owner DATA getter source_records() on original suspension
+completion preserves its prepublication record claim;6linebranch/materialization
+merge seam,no new type/constructor/witness/control. Reviewer P2 naming fixed;
+privateColdprobesremainC2. Secondbuild/runfollowscompletebatch,no budgetchanges.
+
+Currentpublicpacket15/0/0. Exactoriginalclosurederivedfrommounted#[path]edges:
+17files/15tests. Portkeepsallpublicassertions;2privateprobe/dictionarysubclaims
+getexact427700edd0restoreentriesC2. Removeold17filefamily/mountandshrinkbaseline
+by16rows(noadditions). FirstrootClippyfollowscompleteconsumerretirement.
+
+CurrentrootClippygreenexit0,same32/23warnings. Beforephasecompletion,split
+currentfixturefieldmeaningsandexactreadbasisfrompublicationrecipes(one named
+responsibility per file). Bodies unchanged; one final cold-court-onlyClippy
+checks this extraction (fourth blocking round),reuseRootClippyand15/0/0.
+
+Boundaryreviewfinds2newownedBC9002s:copiednestedexhaustivecategoryfilesin
+externalcourt,forbiddenbelowtoplevel. This is our topologydefect,not an allowed
+carryover. Foldbothtestsintoowningmatrixfiles(under400),preserveeveryassertion,
+removechildfileswithoutbaselineaddition. Review-fixroundchecksnewcourt,and
+rerunsonlythe2relocatednamesbecausefulltestidentity/selectionchanged. No15case
+repeat. Other14findingsremainactive. Extra verification is the one review-fix
+round for this slice; count each actualcommand in report.
+
+Correctedcurrentslice15/0/0plusrelocated2/0/0;Root/courtClippygreen,no new
+warnings;fmt/22filecaps/contextgreen;boundary14(3ownedunmigratedproviders).
+FreshcorrectedindependentreviewAPPROVE,nofindingsopen.Committhissafe point.
+Thisturncounts1cargo check,5Clippy,6focusedbuilds,4selectedtestruns.

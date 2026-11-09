@@ -11,3 +11,10 @@ mod lineage_event_matrix;
 mod lineage_integrity;
 
 mod canonical_source;
+
+mod current_publications;
+mod current_reads;
+mod current_source;
+
+mod current_field_meanings;
+mod current_read_basis;

@@ -1,0 +1,3970 @@
+[
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/checkpoint_restart_bound.rs",
+    "name": "checkpoint_restart_cycles_preserve_full_reads_and_retention",
+    "line": 27,
+    "assertions": [
+      {
+        "line": 99,
+        "text": "assert!(layers < HISTORY_CAPTURE_MAX_LAYERS + 1)"
+      },
+      {
+        "line": 100,
+        "text": "assert!(input < HISTORY_CAPTURE_INPUT_TARGET)"
+      },
+      {
+        "line": 124,
+        "text": "assert_eq!( reader.read_entity(execution, entity).unwrap().effective(), Some(&expected) )"
+      },
+      {
+        "line": 129,
+        "text": "assert!( consolidations >= 2, \"real runtime capture must repeatedly consolidate\" )"
+      }
+    ],
+    "calls": [
+      "store",
+      "copy_original_transport_for_request",
+      "unwrap",
+      "read_entity",
+      "effective",
+      "cloned",
+      "acquire_partition_edition",
+      "demand_partition_head",
+      "checkpoint",
+      "iter",
+      "flat_map",
+      "chain",
+      "map",
+      "keys",
+      "copied",
+      "filter",
+      "contains",
+      "durability_authority",
+      "native_checkpoint_with_policy",
+      "allocation_policy",
+      "clone",
+      "fold_span",
+      "max",
+      "covered_position",
+      "covered_branch_transitions",
+      "retention",
+      "run_pass"
+    ],
+    "index": 0,
+    "category": 2,
+    "boundary": "Private history capture limits and directory.fold_span; retain layer/input bounds and consolidation count.",
+    "private_assertion_lines": [
+      99,
+      100,
+      129
+    ],
+    "private_assertions": [
+      {
+        "line": 99,
+        "text": "assert!(layers < HISTORY_CAPTURE_MAX_LAYERS + 1)"
+      },
+      {
+        "line": 100,
+        "text": "assert!(input < HISTORY_CAPTURE_INPUT_TARGET)"
+      },
+      {
+        "line": 129,
+        "text": "assert!( consolidations >= 2, \"real runtime capture must repeatedly consolidate\" )"
+      }
+    ],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/checkpoint_restart_bound.rs"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_candidates.rs",
+    "name": "candidate_invariant_discovery_refuses_stickily_without_publishing_round_effects",
+    "line": 149,
+    "assertions": [
+      {
+        "line": 179,
+        "text": "assert_eq!( failure.subject, crate::storage::data::RelationalStorageSubject::Region(REMOTE) )"
+      },
+      {
+        "line": 183,
+        "text": "assert_eq!(failure.cause, Cause::IntegrityMismatch)"
+      },
+      {
+        "line": 186,
+        "text": "assert_eq!(run(), Err(failure))"
+      },
+      {
+        "line": 187,
+        "text": "assert_eq!(source.reads.load(Ordering::Relaxed), reads)"
+      },
+      {
+        "line": 189,
+        "text": "assert_eq!( after.preparation_packet_count, before.preparation_packet_count )"
+      },
+      {
+        "line": 193,
+        "text": "assert_eq!( after.invariant_entity_slot_scans, before.invariant_entity_slot_scans )"
+      },
+      {
+        "line": 197,
+        "text": "assert_eq!(runtime.publication.diagnostics.snapshot(), diagnostics)"
+      },
+      {
+        "line": 198,
+        "text": "assert_eq!(runtime.services.symbols.snapshot(), dictionary)"
+      },
+      {
+        "line": 199,
+        "text": "assert_eq!(runtime.history().latest_patch_stream_position(), frontier)"
+      },
+      {
+        "line": 200,
+        "text": "assert_eq!(attached_test_medium(&runtime).offered().len(), offered)"
+      }
+    ],
+    "calls": [
+      "performance_access",
+      "counters",
+      "snapshot",
+      "history",
+      "latest_patch_stream_position",
+      "offered",
+      "len",
+      "store",
+      "validate",
+      "map",
+      "prepare_branch_transaction",
+      "commit",
+      "map_err",
+      "expect_err",
+      "load"
+    ],
+    "index": 4,
+    "category": 2,
+    "boundary": "Private performance_access counters and services.symbols.snapshot equality, alongside typed public invariant-preparation refusal.",
+    "private_assertion_lines": [
+      189,
+      193,
+      198
+    ],
+    "private_assertions": [
+      {
+        "line": 189,
+        "text": "assert_eq!( after.preparation_packet_count, before.preparation_packet_count )"
+      },
+      {
+        "line": 193,
+        "text": "assert_eq!( after.invariant_entity_slot_scans, before.invariant_entity_slot_scans )"
+      },
+      {
+        "line": 198,
+        "text": "assert_eq!(runtime.services.symbols.snapshot(), dictionary)"
+      }
+    ],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_candidates.rs"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_candidates.rs",
+    "name": "a_region_retry_spends_the_applied_draft_identity_and_settles_one_round",
+    "line": 205,
+    "assertions": [
+      {
+        "line": 225,
+        "text": "assert!( id.slot_index() > floor, \"the discarded applied candidate cannot reuse an identity\" )"
+      },
+      {
+        "line": 229,
+        "text": "assert!( id.slot_index() < floor + 16, \"retry growth has bounded headroom\" )"
+      },
+      {
+        "line": 234,
+        "text": "assert!((warm_floor..warm_floor + 16).contains(&warm_slot))"
+      },
+      {
+        "line": 235,
+        "text": "assert!( id.slot_index() > warm_slot, \"cold discovery abandons an extra applied identity\" )"
+      },
+      {
+        "line": 241,
+        "text": "assert!(after_cold.preparation_packet_count > before_cold.preparation_packet_count)"
+      },
+      {
+        "line": 242,
+        "text": "assert_eq!( after_cold.preparation_packet_count - before_cold.preparation_packet_count, after_warm.preparation_packet_count - before_warm.preparation_packet_count )"
+      },
+      {
+        "line": 246,
+        "text": "assert_eq!( after_cold.invariant_entity_slot_scans - before_cold.invariant_entity_slot_scans, after_warm.invariant_entity_slot_scans - before_warm.invariant_entity_slot_scans )"
+      },
+      {
+        "line": 250,
+        "text": "assert!(source.reads.load(Ordering::Relaxed) < 24)"
+      }
+    ],
+    "calls": [
+      "observe_branch",
+      "main_branch_identity",
+      "unwrap",
+      "demand_regions_full",
+      "performance_access",
+      "counters",
+      "commit",
+      "slot_index",
+      "contains",
+      "load"
+    ],
+    "index": 5,
+    "category": 2,
+    "boundary": "Private entity_arena.slot_count floor, abandoned identity slot inequalities/headroom, and cold/warm packet/scan deltas.",
+    "private_assertion_lines": [
+      225,
+      229,
+      234,
+      235,
+      241,
+      242,
+      246
+    ],
+    "private_assertions": [
+      {
+        "line": 225,
+        "text": "assert!( id.slot_index() > floor, \"the discarded applied candidate cannot reuse an identity\" )"
+      },
+      {
+        "line": 229,
+        "text": "assert!( id.slot_index() < floor + 16, \"retry growth has bounded headroom\" )"
+      },
+      {
+        "line": 234,
+        "text": "assert!((warm_floor..warm_floor + 16).contains(&warm_slot))"
+      },
+      {
+        "line": 235,
+        "text": "assert!( id.slot_index() > warm_slot, \"cold discovery abandons an extra applied identity\" )"
+      },
+      {
+        "line": 241,
+        "text": "assert!(after_cold.preparation_packet_count > before_cold.preparation_packet_count)"
+      },
+      {
+        "line": 242,
+        "text": "assert_eq!( after_cold.preparation_packet_count - before_cold.preparation_packet_count, after_warm.preparation_packet_count - before_warm.preparation_packet_count )"
+      },
+      {
+        "line": 246,
+        "text": "assert_eq!( after_cold.invariant_entity_slot_scans - before_cold.invariant_entity_slot_scans, after_warm.invariant_entity_slot_scans - before_warm.invariant_entity_slot_scans )"
+      }
+    ],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_candidates.rs"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_envelope_lifetime.rs",
+    "name": "settled_live_nonhead_envelopes_release_only_when_a_durable_copy_exists",
+    "line": 5,
+    "assertions": [
+      {
+        "line": 29,
+        "text": "assert!( runtime.history.retired_branch_root_count() < 4, \"a single retired version fits reclamation headroom\" )"
+      },
+      {
+        "line": 34,
+        "text": "assert!( weak.upgrade().is_none(), \"a settled nonhead without a reader must release its journal-backed body\" )"
+      },
+      {
+        "line": 39,
+        "text": "assert!( weak.upgrade().is_some(), \"memory-only history has no other copy\" )"
+      },
+      {
+        "line": 52,
+        "text": "assert!( !patches.is_empty(), \"released bodies read back from their durable journal\" )"
+      }
+    ],
+    "calls": [
+      "history",
+      "branch_head",
+      "into",
+      "unwrap",
+      "demand_commit_envelope",
+      "reclaim_retired_branch_roots",
+      "retired_branch_root_count",
+      "upgrade",
+      "is_none",
+      "is_some",
+      "bounded_canonical_commit_patches",
+      "is_empty"
+    ],
+    "index": 9,
+    "category": 2,
+    "boundary": "Private history retired-root reclamation and retired_branch_root_count plus exact body Weak residency distinctions durable vs memory-only.",
+    "private_assertion_lines": [
+      29,
+      34,
+      39
+    ],
+    "private_assertions": [
+      {
+        "line": 29,
+        "text": "assert!( runtime.history.retired_branch_root_count() < 4, \"a single retired version fits reclamation headroom\" )"
+      },
+      {
+        "line": 34,
+        "text": "assert!( weak.upgrade().is_none(), \"a settled nonhead without a reader must release its journal-backed body\" )"
+      },
+      {
+        "line": 39,
+        "text": "assert!( weak.upgrade().is_some(), \"memory-only history has no other copy\" )"
+      }
+    ],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_envelope_lifetime.rs"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_envelope_lifetime.rs",
+    "name": "released_live_history_remains_in_external_capture_and_retained_recovery",
+    "line": 104,
+    "assertions": [
+      {
+        "line": 125,
+        "text": "assert!( resident < 4, \"released journal bodies fit head and reclamation headroom\" )"
+      },
+      {
+        "line": 142,
+        "text": "assert_eq!( recovered .history() .demand_commit_envelope(execution, *id) .unwrap() .unwrap() .commit .commit_id, *id )"
+      },
+      {
+        "line": 169,
+        "text": "assert_eq!( reopened .history() .demand_commit_envelope(execution, id) .unwrap() .unwrap() .commit .commit_id, id )"
+      },
+      {
+        "line": 180,
+        "text": "assert!( reads.commit_reads.lock().unwrap().len() < 32, \"head admission and one selected read per commit have bounded headroom\" )"
+      }
+    ],
+    "calls": [
+      "reclaim_retired_branch_roots",
+      "commit_artifacts",
+      "into_iter",
+      "map",
+      "commit_id",
+      "filter",
+      "resident_envelope",
+      "is_some",
+      "count",
+      "durability",
+      "recovery_plan",
+      "unwrap",
+      "durability_recovery",
+      "recover",
+      "history",
+      "demand_commit_envelope",
+      "store",
+      "recovery_plan_from_source",
+      "lock",
+      "len"
+    ],
+    "index": 11,
+    "category": 1,
+    "boundary": "Revised classification: mixed public recovery with a narrow C2 resident subclaim. Preserve BOTH actual recovery paths: durability().recovery_plan -> durability_recovery().recover, then external native capture -> recovery_plan_from_source -> recover. Enumerate authentic commit IDs from captured create/update results or public history/export; for every ID compare public replay().canonical_commit_envelope(...).commit.commit_id after both recoveries. Preserve provider commit_reads.len()<32; this is externally observed I/O, not private resident accounting. Only resident_envelope count<4 at line125 and its explicit reclaim_retired_branch_roots posture move to C2 with the restore pointer; do not defer/drop the public loops at lines142 and169. Replace private commit_artifacts and demand_commit_envelope rather than losing the recovery coverage.",
+    "private_assertion_lines": [
+      125
+    ],
+    "private_assertions": [
+      {
+        "line": 125,
+        "text": "assert!( resident < 4, \"released journal bodies fit head and reclamation headroom\" )"
+      }
+    ],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_envelope_lifetime.rs",
+    "claim_parts": [
+      {
+        "category": 1,
+        "claim": "Every actual commit survives retained recovery and external checkpoint/source recovery; public envelope identity and provider-read bound preserved",
+        "assertion_lines": [
+          142,
+          169,
+          180
+        ]
+      },
+      {
+        "category": 2,
+        "claim": "Exact resident envelope count<4 after private retired-root reclamation",
+        "assertion_lines": [
+          125
+        ],
+        "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_envelope_lifetime.rs"
+      }
+    ]
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_envelope_lifetime.rs",
+    "name": "recovered_nonhead_tail_envelopes_release_their_actual_journal_backed_bodies",
+    "line": 187,
+    "assertions": [
+      {
+        "line": 211,
+        "text": "assert_eq!( source.commit_reads.lock().unwrap().len(), 0, \"tail replay already owns its readmitted frames\" )"
+      },
+      {
+        "line": 220,
+        "text": "assert!(runtime .history .commit_artifact(head.commit_id) .unwrap() .resident_envelope() .is_some())"
+      },
+      {
+        "line": 226,
+        "text": "assert!( runtime .history .commit_artifacts() .iter() .all(|artifact| artifact .envelope_residency() .resident_payload_bytes() .is_none()), \"journal placement releases encoded duplicate buffers too\" )"
+      },
+      {
+        "line": 248,
+        "text": "assert!( weak.upgrade().is_none(), \"replay must not turn a nonhead journal body into permanent memory truth\" )"
+      },
+      {
+        "line": 252,
+        "text": "assert_eq!( runtime .history() .demand_commit_envelope(execution, receipt.commit_id) .unwrap() .unwrap() .commit, receipt )"
+      }
+    ],
+    "calls": [
+      "store",
+      "values",
+      "map",
+      "clone",
+      "unwrap",
+      "collect",
+      "keys",
+      "nth",
+      "durability",
+      "recovery_plan_from_source",
+      "durability_recovery",
+      "recover",
+      "reclaim_retired_branch_roots",
+      "lock",
+      "len",
+      "history",
+      "branch_head",
+      "into",
+      "commit_artifact",
+      "resident_envelope",
+      "is_some",
+      "commit_artifacts",
+      "iter",
+      "all",
+      "envelope_residency",
+      "resident_payload_bytes",
+      "is_none",
+      "immutable_commit_receipt_at_patch_stream_position",
+      "demand_commit_envelope",
+      "upgrade"
+    ],
+    "index": 12,
+    "category": 2,
+    "boundary": "Private commit_artifact resident_envelope and envelope_residency resident_payload_bytes plus exact Weak release.",
+    "private_assertion_lines": [
+      220,
+      226,
+      248
+    ],
+    "private_assertions": [
+      {
+        "line": 220,
+        "text": "assert!(runtime .history .commit_artifact(head.commit_id) .unwrap() .resident_envelope() .is_some())"
+      },
+      {
+        "line": 226,
+        "text": "assert!( runtime .history .commit_artifacts() .iter() .all(|artifact| artifact .envelope_residency() .resident_payload_bytes() .is_none()), \"journal placement releases encoded duplicate buffers too\" )"
+      },
+      {
+        "line": 248,
+        "text": "assert!( weak.upgrade().is_none(), \"replay must not turn a nonhead journal body into permanent memory truth\" )"
+      }
+    ],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_envelope_lifetime.rs"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_envelope_matrix/exhaustive.rs",
+    "name": "residency_failure_matrix_envelope_doors_preserve_every_failure_class",
+    "line": 4,
+    "assertions": [
+      {
+        "line": 82,
+        "text": "assert_eq!( door.read(&runtime, execution, &receipt, position), Err(expected), \"{door:?} x {cause:?}, tail-only {tail_only}\" )"
+      },
+      {
+        "line": 96,
+        "text": "assert_eq!( runtime .history() .demand_commit_envelope(execution, receipt.commit_id), Err(expected), \"body reads must share export/capture damage\" )"
+      },
+      {
+        "line": 103,
+        "text": "assert_eq!( door.read(&runtime, execution, &receipt, position), Err(expected) )"
+      },
+      {
+        "line": 107,
+        "text": "assert_eq!( source .commit_reads .lock() .unwrap() .iter() .filter(|read| **read == position) .count(), reads )"
+      },
+      {
+        "line": 118,
+        "text": "assert!( door.read(&runtime, execution, &receipt, position).unwrap() > 0, \"retry returns genuine body contents\" )"
+      },
+      {
+        "line": 122,
+        "text": "assert!( source .commit_reads .lock() .unwrap() .iter() .filter(|read| **read == position) .count() > reads )"
+      },
+      {
+        "line": 133,
+        "text": "assert_eq!(runtime.history().latest_patch_stream_position(), frontier)"
+      },
+      {
+        "line": 134,
+        "text": "assert_eq!(attached_test_medium(&runtime).offered().len(), offered)"
+      }
+    ],
+    "calls": [
+      "map",
+      "into_iter",
+      "chain",
+      "profile",
+      "schema_registry",
+      "build_durable",
+      "attachment",
+      "expect",
+      "values",
+      "clone",
+      "unwrap",
+      "collect",
+      "store",
+      "keys",
+      "rev",
+      "nth",
+      "durability",
+      "recovery_plan_from_source",
+      "durability_recovery",
+      "recover",
+      "reclaim_retired_branch_roots",
+      "history",
+      "immutable_commit_receipt_at_patch_stream_position",
+      "latest_patch_stream_position",
+      "offered",
+      "len",
+      "lock",
+      "insert",
+      "read",
+      "clear",
+      "iter",
+      "filter",
+      "count",
+      "demand_commit_envelope"
+    ],
+    "index": 13,
+    "category": 1,
+    "boundary": "EnvelopeDoor uses public history summaries/inspection/compiled artifact, bounded patches, patch stream, canonical artifact export, checkpoints, replay and mint_change_receipt. Replace private demand_commit_envelope with public replay().canonical_commit_envelope. Preserve all failure classes and provider logs.",
+    "private_assertion_lines": [],
+    "private_assertions": [],
+    "restore": null
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_fork_edits.rs",
+    "name": "head_probes_admit_each_forks_shared_region_without_reading_history",
+    "line": 5,
+    "assertions": [
+      {
+        "line": 21,
+        "text": "assert!(matches!( selected.state().root().probe_head_region_with_symbols( cold.entities[0].partition_id, &runtime.services.symbols, ), crate::storage::residency::PartitionHeadProbe::Cold ))"
+      },
+      {
+        "line": 36,
+        "text": "assert_eq!(read_entity_name(&record).as_deref(), Some(\"source\"))"
+      },
+      {
+        "line": 37,
+        "text": "assert!(matches!( selected.state().root().probe_head_region_with_symbols( cold.entities[0].partition_id, &runtime.services.symbols, ), crate::storage::residency::PartitionHeadProbe::Resident(_) ))"
+      }
+    ],
+    "calls": [
+      "fork",
+      "unwrap",
+      "selected_branch_state",
+      "with_symbol_admission",
+      "state",
+      "root",
+      "probe_head_region_with_symbols",
+      "get_current_partition",
+      "and_then",
+      "entity_record",
+      "expect",
+      "as_deref"
+    ],
+    "index": 17,
+    "category": 2,
+    "boundary": "Private selected_branch_state and probe_head_region_with_symbols Cold->Resident assertions in each fork; public record read alone loses this state claim.",
+    "private_assertion_lines": [
+      21,
+      37
+    ],
+    "private_assertions": [
+      {
+        "line": 21,
+        "text": "assert!(matches!( selected.state().root().probe_head_region_with_symbols( cold.entities[0].partition_id, &runtime.services.symbols, ), crate::storage::residency::PartitionHeadProbe::Cold ))"
+      },
+      {
+        "line": 37,
+        "text": "assert!(matches!( selected.state().root().probe_head_region_with_symbols( cold.entities[0].partition_id, &runtime.services.symbols, ), crate::storage::residency::PartitionHeadProbe::Resident(_) ))"
+      }
+    ],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_fork_edits.rs"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_fork_edits.rs",
+    "name": "cold_forks_edit_existing_ring_records_in_both_orders_and_checkpoint",
+    "line": 49,
+    "assertions": [
+      {
+        "line": 86,
+        "text": "assert!(records[0].is_some())"
+      },
+      {
+        "line": 87,
+        "text": "assert_eq!( read_entity_name(records[0].as_ref().unwrap()).as_deref(), Some(label.as_str()) )"
+      },
+      {
+        "line": 91,
+        "text": "assert!(records[2].is_none())"
+      },
+      {
+        "line": 103,
+        "text": "assert_eq!( reader.read_entity(execution, id).unwrap().effective(), record.as_ref() )"
+      },
+      {
+        "line": 131,
+        "text": "assert!(relations.len() >= 2)"
+      },
+      {
+        "line": 133,
+        "text": "assert_eq!( reader.read_relation(execution, id).unwrap().effective(), expected.read_relation(execution, id).unwrap().effective() )"
+      }
+    ],
+    "calls": [
+      "fork",
+      "unwrap",
+      "into_iter",
+      "enumerate",
+      "iter",
+      "map",
+      "read_entity",
+      "effective",
+      "cloned",
+      "is_some",
+      "as_ref",
+      "as_deref",
+      "as_str",
+      "is_none",
+      "durability_authority",
+      "native_checkpoint",
+      "allocation_policy",
+      "durability_recovery",
+      "restore_native_checkpoint",
+      "zip",
+      "branch_cell",
+      "into",
+      "root",
+      "demand_region_head",
+      "head_view",
+      "relation_arena",
+      "occupied_slots_iter",
+      "filter_map",
+      "get_slot",
+      "generation",
+      "len",
+      "read_relation"
+    ],
+    "index": 18,
+    "category": 1,
+    "boundary": "Public fork, transaction read/update/delete/create, native_checkpoint/restore_native_checkpoint. Obtain old/new relation IDs from public commit envelope/adjacency instead of private arena iteration; retain len>=2 and every entity/relation equality.",
+    "private_assertion_lines": [],
+    "private_assertions": [],
+    "restore": null
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_historical_index_matrix/exhaustive.rs",
+    "name": "residency_failure_matrix_historical_index_builds_preserve_full_source_failures",
+    "line": 4,
+    "assertions": [
+      {
+        "line": 12,
+        "text": "assert_eq!( fixture.source.reads.load(Ordering::Relaxed), 0, \"metadata selection performs no hidden load\" )"
+      },
+      {
+        "line": 30,
+        "text": "assert_eq!( target_reads(&fixture, target), before, \"index metadata suffices; the unused nonhead body stays cold\" )"
+      },
+      {
+        "line": 35,
+        "text": "assert!(fixture .runtime .history .canonical_envelope(fixture.generation.source_commit_id) .is_none())"
+      },
+      {
+        "line": 47,
+        "text": "assert_eq!(actual, Err(expected), \"historical {subject:?} x {cause:?}\")"
+      },
+      {
+        "line": 51,
+        "text": "assert_eq!(build(&fixture, execution), Err(expected))"
+      },
+      {
+        "line": 52,
+        "text": "assert_eq!( target_reads(&fixture, target), reads, \"only the failed subject is sticky\" )"
+      },
+      {
+        "line": 59,
+        "text": "assert!(target_reads(&fixture, target) > reads)"
+      },
+      {
+        "line": 62,
+        "text": "assert_eq!( fixture.runtime.history().latest_patch_stream_position(), frontier )"
+      },
+      {
+        "line": 66,
+        "text": "assert_eq!( attached_test_medium(&fixture.runtime).offered().len(), offered )"
+      },
+      {
+        "line": 70,
+        "text": "assert_eq!( fixture.runtime.patch_position_reservation_counters(), reservations )"
+      }
+    ],
+    "calls": [
+      "target",
+      "load",
+      "history",
+      "latest_patch_stream_position",
+      "offered",
+      "len",
+      "patch_position_reservation_counters",
+      "lock",
+      "unwrap",
+      "insert",
+      "canonical_envelope",
+      "is_none",
+      "clear"
+    ],
+    "index": 19,
+    "category": 2,
+    "boundary": "Private assert_cold helper exact interner absence and canonical_envelope absence; direct matrix canonical_envelope is_none also material.",
+    "private_assertion_lines": [
+      35
+    ],
+    "private_assertions": [
+      {
+        "line": 35,
+        "text": "assert!(fixture .runtime .history .canonical_envelope(fixture.generation.source_commit_id) .is_none())"
+      }
+    ],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_historical_index_matrix/exhaustive.rs"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_historical_index_matrix.rs",
+    "name": "historical_index_reconstruction_uses_the_old_value_and_full_cold_history",
+    "line": 69,
+    "assertions": [
+      {
+        "line": 77,
+        "text": "assert_eq!( fixture .runtime .services .symbols .interner_snapshot() .resolve(fixture.history_symbol.unwrap()), Some(\"paged-view-value-0300\") )"
+      },
+      {
+        "line": 86,
+        "text": "assert_eq!( fixture.runtime.history().latest_patch_stream_position(), journal )"
+      },
+      {
+        "line": 90,
+        "text": "assert_eq!( attached_test_medium(&fixture.runtime).offered().len(), offered )"
+      }
+    ],
+    "calls": [
+      "history",
+      "latest_patch_stream_position",
+      "offered",
+      "len",
+      "unwrap",
+      "interner_snapshot",
+      "resolve"
+    ],
+    "index": 20,
+    "category": 2,
+    "boundary": "Private assert_cold helper and exact interner.resolve(history_symbol)==Some(paged-view-value-0300); public old index-entry behavior can split.",
+    "private_assertion_lines": [
+      77
+    ],
+    "private_assertions": [
+      {
+        "line": 77,
+        "text": "assert_eq!( fixture .runtime .services .symbols .interner_snapshot() .resolve(fixture.history_symbol.unwrap()), Some(\"paged-view-value-0300\") )"
+      }
+    ],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_historical_index_matrix.rs"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_index_custody.rs",
+    "name": "an_older_index_directory_retains_its_cold_frame_after_home_replacement",
+    "line": 97,
+    "assertions": [
+      {
+        "line": 139,
+        "text": "assert_eq!( pin.index_generation(fixture.index), Some(fixture.generation.generation_id) )"
+      },
+      {
+        "line": 143,
+        "text": "assert!(source .producer .member_reads .lock() .unwrap() .contains(&fixture.member))"
+      },
+      {
+        "line": 153,
+        "text": "assert_eq!( source.owners.load(Ordering::Acquire), 0, \"the final cold image owner releases placement\" )"
+      }
+    ],
+    "calls": [
+      "iter",
+      "find_map",
+      "is_ok",
+      "then_some",
+      "expect",
+      "clone",
+      "unwrap",
+      "store",
+      "observe_branch",
+      "main_branch_identity",
+      "read_truth",
+      "project_observation",
+      "observation",
+      "pin_view_read_capability",
+      "index_generation",
+      "lock",
+      "contains",
+      "load"
+    ],
+    "index": 21,
+    "category": 1,
+    "boundary": "Public durable-source custody trait and pin_view_read_capability/index_generation; provider-owned owners count is external lifecycle evidence, not internal runtime physical pins. Preserve member demand and last-owner release.",
+    "private_assertion_lines": [],
+    "private_assertions": [],
+    "restore": null
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_index_frontier.rs",
+    "name": "residency_cold_index_frontier_prevents_reissue_before_any_image_demand",
+    "line": 5,
+    "assertions": [
+      {
+        "line": 16,
+        "text": "assert!(reserved.0 > fixture.generation.generation_id.0)"
+      },
+      {
+        "line": 17,
+        "text": "assert_eq!(fixture.source.reads.load(Ordering::Relaxed), 0)"
+      },
+      {
+        "line": 29,
+        "text": "assert_eq!(owner.snapshot().generation_frontier(), reserved.0 + 1)"
+      },
+      {
+        "line": 30,
+        "text": "assert_eq!(fixture.source.reads.load(Ordering::Relaxed), 0)"
+      },
+      {
+        "line": 35,
+        "text": "assert!(fixture.source.reads.load(Ordering::Relaxed) > 0)"
+      },
+      {
+        "line": 37,
+        "text": "assert_eq!( loaded .iter() .find(|generation| generation.generation_id == fixture.generation.generation_id) .map(Arc::as_ref), Some(fixture.generation.as_ref()) )"
+      },
+      {
+        "line": 44,
+        "text": "assert_eq!( loaded .iter() .find(|generation| generation.generation_id == reserved) .map(Arc::as_ref), Some(&published) )"
+      }
+    ],
+    "calls": [
+      "reserve_generation_ids",
+      "unwrap",
+      "next_generation_id",
+      "load",
+      "as_ref",
+      "clone",
+      "publish_generations_admitted",
+      "publish_generation",
+      "snapshot",
+      "generation_frontier",
+      "definition_read_binding",
+      "demand_checkpoint_image",
+      "all_generations",
+      "iter",
+      "find",
+      "map"
+    ],
+    "index": 22,
+    "category": 2,
+    "boundary": "Direct runtime.indexes reserve_generation_ids/next_generation_id/publish_generation[publish_generations_admitted], generation_frontier and demand_checkpoint_image; private owner actions and allocator frontier.",
+    "private_assertion_lines": [
+      16,
+      29,
+      37,
+      44
+    ],
+    "private_assertions": [
+      {
+        "line": 16,
+        "text": "assert!(reserved.0 > fixture.generation.generation_id.0)"
+      },
+      {
+        "line": 29,
+        "text": "assert_eq!(owner.snapshot().generation_frontier(), reserved.0 + 1)"
+      },
+      {
+        "line": 37,
+        "text": "assert_eq!( loaded .iter() .find(|generation| generation.generation_id == fixture.generation.generation_id) .map(Arc::as_ref), Some(fixture.generation.as_ref()) )"
+      },
+      {
+        "line": 44,
+        "text": "assert_eq!( loaded .iter() .find(|generation| generation.generation_id == reserved) .map(Arc::as_ref), Some(&published) )"
+      }
+    ],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_index_frontier.rs"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_index_matrix/exhaustive.rs",
+    "name": "residency_failure_matrix_index_doors_preserve_every_failure_class",
+    "line": 4,
+    "assertions": [
+      {
+        "line": 16,
+        "text": "assert!(runtime .read_truth() .visible_entity_at_version(execution, entity, runtime.current_version_id()) .unwrap() .is_some())"
+      },
+      {
+        "line": 25,
+        "text": "assert_eq!( runtime .index_access() .generation_residency_for_observation(index, &observation_basis.observation()), crate::indexes::data::DerivedIndexGenerationResidency::DeferredImage )"
+      },
+      {
+        "line": 31,
+        "text": "assert_eq!( runtime.index_access().generation_residency_for_observation( DerivedIndexId(0), &observation_basis.observation() ), crate::indexes::data::DerivedIndexGenerationResidency::Absent )"
+      },
+      {
+        "line": 38,
+        "text": "assert_eq!(source.reads.load(Ordering::Relaxed), observed_reads)"
+      },
+      {
+        "line": 51,
+        "text": "assert_eq!( door.read(&runtime, execution, index, &generation), Err(expected), \"{door:?} x {cause:?}: a cold index must not become absence\" )"
+      },
+      {
+        "line": 56,
+        "text": "assert_eq!(runtime.history().latest_patch_stream_position(), frontier)"
+      },
+      {
+        "line": 57,
+        "text": "assert_eq!(attached_test_medium(&runtime).offered().len(), offered)"
+      },
+      {
+        "line": 58,
+        "text": "assert_eq!( runtime.patch_position_reservation_counters(), reservations, \"index refusal is pre-position\" )"
+      },
+      {
+        "line": 76,
+        "text": "assert_eq!( door.read(&runtime, execution, index, &generation), Err(expected) )"
+      },
+      {
+        "line": 84,
+        "text": "assert_eq!(failed_reads(), failed_before)"
+      },
+      {
+        "line": 86,
+        "text": "assert_eq!(source.reads.load(Ordering::Relaxed), reads)"
+      },
+      {
+        "line": 89,
+        "text": "assert!( door.read(&runtime, execution, index, &generation).unwrap(), \"retry must retain a genuine generation\" )"
+      },
+      {
+        "line": 93,
+        "text": "assert!(source.reads.load(Ordering::Relaxed) > reads)"
+      }
+    ],
+    "calls": [
+      "read_truth",
+      "visible_entity_at_version",
+      "current_version_id",
+      "unwrap",
+      "is_some",
+      "observe_branch",
+      "main_branch_identity",
+      "load",
+      "index_access",
+      "generation_residency_for_observation",
+      "observation",
+      "history",
+      "latest_patch_stream_position",
+      "offered",
+      "len",
+      "patch_position_reservation_counters",
+      "lock",
+      "insert",
+      "read",
+      "clear",
+      "iter",
+      "filter",
+      "count"
+    ],
+    "index": 23,
+    "category": 1,
+    "boundary": "Public generation_residency_for_observation, read_latest_generation/read_published_generation_for_commit/read_published_generation_for_observation/read_generations_for_version; public builds/pins/field prep/validation/prepare/commit. Preserve DeferredImage/Absent and every failure/effect assertion.",
+    "private_assertion_lines": [],
+    "private_assertions": [],
+    "restore": null
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_invariants.rs",
+    "name": "invariant_storage_refusal_is_sticky_and_does_not_settle_provisional_counts",
+    "line": 68,
+    "assertions": [
+      {
+        "line": 80,
+        "text": "assert_eq!( first, RelationalExecutionDenialCause::StorageUnavailable( crate::storage::data::RelationalStorageUnavailable { subject: crate::storage::data::RelationalStorageSubject::Region( entity.partition_id ), cause: Cause::IntegrityMismatch, }, ) )"
+      },
+      {
+        "line": 92,
+        "text": "assert!(reads > 0)"
+      },
+      {
+        "line": 94,
+        "text": "assert_eq!( storage_cause( runtime .validation() .mutation_sensitive_state(execution) .unwrap_err() ), first )"
+      },
+      {
+        "line": 103,
+        "text": "assert_eq!(counter.reads.load(Ordering::Relaxed), reads)"
+      },
+      {
+        "line": 105,
+        "text": "assert_eq!( after.preparation_packet_count, before.preparation_packet_count )"
+      },
+      {
+        "line": 109,
+        "text": "assert_eq!( after.invariant_entity_slot_scans, before.invariant_entity_slot_scans )"
+      },
+      {
+        "line": 113,
+        "text": "assert_eq!( after.invariant_authoritative_entity_records_materialized, before.invariant_authoritative_entity_records_materialized )"
+      },
+      {
+        "line": 117,
+        "text": "assert_eq!(runtime.history().latest_patch_stream_position(), frontier)"
+      },
+      {
+        "line": 118,
+        "text": "assert!(attached_test_medium(&runtime).offered().is_empty())"
+      }
+    ],
+    "calls": [
+      "performance_access",
+      "counters",
+      "history",
+      "latest_patch_stream_position",
+      "validation",
+      "mutation_sensitive_state",
+      "unwrap_err",
+      "load",
+      "store",
+      "offered",
+      "is_empty"
+    ],
+    "index": 25,
+    "category": 2,
+    "boundary": "Private preparation_packet_count/invariant_entity_slot_scans/invariant_authoritative_entity_records_materialized unchanged on refusal.",
+    "private_assertion_lines": [
+      105,
+      109,
+      113
+    ],
+    "private_assertions": [
+      {
+        "line": 105,
+        "text": "assert_eq!( after.preparation_packet_count, before.preparation_packet_count )"
+      },
+      {
+        "line": 109,
+        "text": "assert_eq!( after.invariant_entity_slot_scans, before.invariant_entity_slot_scans )"
+      },
+      {
+        "line": 113,
+        "text": "assert_eq!( after.invariant_authoritative_entity_records_materialized, before.invariant_authoritative_entity_records_materialized )"
+      }
+    ],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_invariants.rs"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_invariants.rs",
+    "name": "cold_and_warm_invariant_reads_settle_one_round_of_evidence",
+    "line": 122,
+    "assertions": [
+      {
+        "line": 131,
+        "text": "assert!( !cold.results().is_empty(), \"the fixture must execute a real native rule\" )"
+      },
+      {
+        "line": 137,
+        "text": "assert!(reads > 0)"
+      },
+      {
+        "line": 142,
+        "text": "assert_eq!(cold.results(), warm.results())"
+      },
+      {
+        "line": 144,
+        "text": "assert_eq!(counter.reads.load(Ordering::Relaxed), reads)"
+      },
+      {
+        "line": 147,
+        "text": "assert!(cold_packets > 0)"
+      },
+      {
+        "line": 148,
+        "text": "assert_eq!( cold_packets, warm_packets, \"a discarded round must not publish its counters\" )"
+      },
+      {
+        "line": 152,
+        "text": "assert_eq!( after_cold.invariant_entity_slot_scans - before.invariant_entity_slot_scans, after_warm.invariant_entity_slot_scans - after_cold.invariant_entity_slot_scans, )"
+      }
+    ],
+    "calls": [
+      "performance_access",
+      "counters",
+      "validation",
+      "mutation_sensitive_state",
+      "unwrap",
+      "results",
+      "is_empty",
+      "load"
+    ],
+    "index": 26,
+    "category": 2,
+    "boundary": "Private exact cold/warm packet and invariant slot-scan settlement deltas; keep public result equality too.",
+    "private_assertion_lines": [
+      147,
+      148,
+      152
+    ],
+    "private_assertions": [
+      {
+        "line": 147,
+        "text": "assert!(cold_packets > 0)"
+      },
+      {
+        "line": 148,
+        "text": "assert_eq!( cold_packets, warm_packets, \"a discarded round must not publish its counters\" )"
+      },
+      {
+        "line": 152,
+        "text": "assert_eq!( after_cold.invariant_entity_slot_scans - before.invariant_entity_slot_scans, after_warm.invariant_entity_slot_scans - after_cold.invariant_entity_slot_scans, )"
+      }
+    ],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_invariants.rs"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_invariants.rs",
+    "name": "the_invariant_orchestrator_uses_head_while_full_history_failure_stays_typed",
+    "line": 159,
+    "assertions": [
+      {
+        "line": 193,
+        "text": "assert_eq!(counter.reads.load(Ordering::Relaxed), 0)"
+      },
+      {
+        "line": 200,
+        "text": "assert!(!cold.results().is_empty())"
+      },
+      {
+        "line": 202,
+        "text": "assert!(reads > 0)"
+      },
+      {
+        "line": 203,
+        "text": "assert!(!counter.member_reads.lock().unwrap().contains(&history))"
+      },
+      {
+        "line": 208,
+        "text": "assert_eq!(cold.results(), warm.results())"
+      },
+      {
+        "line": 209,
+        "text": "assert_eq!(counter.reads.load(Ordering::Relaxed), reads)"
+      },
+      {
+        "line": 214,
+        "text": "assert_eq!( full, RelationalExecutionDenialCause::StorageUnavailable( crate::storage::data::RelationalStorageUnavailable { subject: crate::storage::data::RelationalStorageSubject::Region( entity.partition_id ), cause: Cause::Damaged, }, ) )"
+      },
+      {
+        "line": 227,
+        "text": "assert_eq!( runtime .storage_access() .storage_stats(execution) .unwrap_err(), full )"
+      },
+      {
+        "line": 234,
+        "text": "assert_eq!(counter.reads.load(Ordering::Relaxed), reads)"
+      },
+      {
+        "line": 235,
+        "text": "assert_eq!(runtime.history().latest_patch_stream_position(), position)"
+      },
+      {
+        "line": 236,
+        "text": "assert!(attached_test_medium(&runtime).offered().is_empty())"
+      }
+    ],
+    "calls": [
+      "keys",
+      "copied",
+      "durability_authority",
+      "native_checkpoint_with_policy",
+      "allocation_policy",
+      "clone",
+      "unwrap",
+      "bytes",
+      "strip_prefix",
+      "iter",
+      "find",
+      "load",
+      "lock",
+      "history",
+      "latest_patch_stream_position",
+      "validation",
+      "mutation_sensitive_state",
+      "results",
+      "is_empty",
+      "contains",
+      "storage_access",
+      "storage_stats",
+      "unwrap_err",
+      "offered"
+    ],
+    "index": 27,
+    "category": 1,
+    "boundary": "Public validation().mutation_sensitive_state and storage_access().storage_stats; source member log distinguishes Head vs history and results/typed sticky failure/frontier remain public.",
+    "private_assertion_lines": [],
+    "private_assertions": [],
+    "restore": null
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_isolation.rs",
+    "name": "a_relation_bearing_cold_commit_loads_only_its_partition",
+    "line": 189,
+    "assertions": [
+      {
+        "line": 195,
+        "text": "assert!(reads < 12, \"one-partition commit loaded {reads} members\")"
+      }
+    ],
+    "calls": [
+      "load"
+    ],
+    "index": 28,
+    "category": 1,
+    "boundary": "Public transaction commit plus external source count reads<12. Provider I/O locality is already public observation, not private allocation accounting.",
+    "private_assertion_lines": [],
+    "private_assertions": [],
+    "restore": null
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_isolation.rs",
+    "name": "missing_history_damages_only_its_own_region",
+    "line": 199,
+    "assertions": [
+      {
+        "line": 214,
+        "text": "assert!( matches!(&first, crate::storage::residency::RelationalResidencyDemandFailure::StorageUnavailable(f) if f.subject == crate::storage::data::RelationalStorageSubject::Region(PartitionId(5))) )"
+      },
+      {
+        "line": 219,
+        "text": "assert_eq!( root.demand_regions_full(execution, &cold.runtime.services.symbols, [PartitionId(5)]) .unwrap_err(), first )"
+      },
+      {
+        "line": 224,
+        "text": "assert_eq!(cold.source.reads.load(Ordering::Relaxed), reads)"
+      },
+      {
+        "line": 231,
+        "text": "assert!(reader .read_entity(execution, *entity) .unwrap() .effective() .is_some())"
+      }
+    ],
+    "calls": [
+      "branch_cell",
+      "into",
+      "unwrap",
+      "root",
+      "demand_regions_full",
+      "unwrap_err",
+      "load",
+      "iter",
+      "filter",
+      "read_entity",
+      "effective",
+      "is_some"
+    ],
+    "index": 29,
+    "category": 1,
+    "boundary": "Public read_truth().visible_entity_at_version for damaged region Full demand yields same StorageUnavailable subject/cause; repeat without provider reload, preserve healthy transaction reads/writes. Replace private demand_regions_full, not its failure/locality claims.",
+    "private_assertion_lines": [],
+    "private_assertions": [],
+    "restore": null
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_isolation.rs",
+    "name": "fork_of_a_cold_runtime_shares_cells_and_both_copies_can_read_and_write",
+    "line": 241,
+    "assertions": [
+      {
+        "line": 246,
+        "text": "assert_eq!( cold.source.reads.load(Ordering::Relaxed), 0, \"fork must perform no I/O\" )"
+      },
+      {
+        "line": 253,
+        "text": "assert!(reader .read_entity(execution, cold.entities[id - 1]) .unwrap() .effective() .is_some())"
+      },
+      {
+        "line": 264,
+        "text": "assert!(reader .read_entity(execution, *entity) .unwrap() .effective() .is_some())"
+      }
+    ],
+    "calls": [
+      "fork",
+      "unwrap",
+      "load",
+      "read_entity",
+      "effective",
+      "is_some"
+    ],
+    "index": 30,
+    "category": 1,
+    "boundary": "Public fork and transaction reads/commits; preserve zero-I/O fork and readable/writable contents in both copies.",
+    "private_assertion_lines": [],
+    "private_assertions": [],
+    "restore": null
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_lineage_events.rs",
+    "name": "a_reopened_lineage_resolution_follows_only_its_actual_event_pages",
+    "line": 5,
+    "assertions": [
+      {
+        "line": 14,
+        "text": "assert_eq!(observed.resolved, fixture.expected.resolved)"
+      },
+      {
+        "line": 15,
+        "text": "assert_eq!( observed.traversed_event_ids, fixture.expected.traversed_event_ids )"
+      },
+      {
+        "line": 19,
+        "text": "assert_eq!(observed.digest_basis(), fixture.expected.digest_basis())"
+      },
+      {
+        "line": 20,
+        "text": "assert!( fixture.runtime.lineage.event_count() < 601 / 2, \"a lineage query leaves unrelated node ranges' events cold\" )"
+      }
+    ],
+    "calls": [
+      "lineage_access",
+      "resolve_historical_lineage",
+      "unwrap",
+      "digest_basis",
+      "event_count"
+    ],
+    "index": 35,
+    "category": 2,
+    "boundary": "Private lineage.event_count()<601/2 is exact resident event-index evidence, beyond semantic resolved/traversed IDs and digest equality.",
+    "private_assertion_lines": [
+      20
+    ],
+    "private_assertions": [
+      {
+        "line": 20,
+        "text": "assert!( fixture.runtime.lineage.event_count() < 601 / 2, \"a lineage query leaves unrelated node ranges' events cold\" )"
+      }
+    ],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_lineage_events.rs"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_lineage_events.rs",
+    "name": "a_shared_event_page_is_admitted_once_into_each_forked_lineage_authority",
+    "line": 27,
+    "assertions": [
+      {
+        "line": 38,
+        "text": "assert_eq!( fork.lineage.event_count(), 0, \"the fork's index has not admitted shared bytes yet\" )"
+      },
+      {
+        "line": 47,
+        "text": "assert_eq!(first.digest_basis(), second.digest_basis())"
+      },
+      {
+        "line": 48,
+        "text": "assert_eq!(second.resolved, fixture.expected.resolved)"
+      },
+      {
+        "line": 49,
+        "text": "assert!(fork.lineage.event_count() < 601 / 2)"
+      },
+      {
+        "line": 56,
+        "text": "assert_eq!(warm.digest_basis(), fixture.expected.digest_basis())"
+      },
+      {
+        "line": 58,
+        "text": "assert_eq!( fork.lineage.event_count(), admitted, \"a warm query never reinstalls its page\" )"
+      },
+      {
+        "line": 63,
+        "text": "assert_eq!(fixture.source.member_reads.lock().unwrap().len(), reads)"
+      }
+    ],
+    "calls": [
+      "fork",
+      "unwrap",
+      "lineage_access",
+      "resolve_historical_lineage",
+      "lock",
+      "len",
+      "event_count",
+      "digest_basis"
+    ],
+    "index": 36,
+    "category": 2,
+    "boundary": "Private fork.lineage.event_count==0, bounded admitted count and unchanged warm event count prove per-runtime index admission.",
+    "private_assertion_lines": [
+      38,
+      49,
+      58
+    ],
+    "private_assertions": [
+      {
+        "line": 38,
+        "text": "assert_eq!( fork.lineage.event_count(), 0, \"the fork's index has not admitted shared bytes yet\" )"
+      },
+      {
+        "line": 49,
+        "text": "assert!(fork.lineage.event_count() < 601 / 2)"
+      },
+      {
+        "line": 58,
+        "text": "assert_eq!( fork.lineage.event_count(), admitted, \"a warm query never reinstalls its page\" )"
+      }
+    ],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_lineage_events.rs"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_lineage_events.rs",
+    "name": "node_range_boundaries_keep_neighboring_event_members_cold",
+    "line": 126,
+    "assertions": [
+      {
+        "line": 153,
+        "text": "assert_eq!(resolution.resolved, vec![seed])"
+      },
+      {
+        "line": 154,
+        "text": "assert!( resolution.traversed_event_ids.is_empty(), \"this producer lineage was never replaced\" )"
+      },
+      {
+        "line": 158,
+        "text": "assert!(!fixture .source .member_reads .lock() .unwrap() .contains(&unrelated))"
+      },
+      {
+        "line": 164,
+        "text": "assert!(fixture.runtime.lineage.event_count() < 601 / 2)"
+      }
+    ],
+    "calls": [
+      "checkpoint_selection",
+      "snapshot",
+      "unwrap",
+      "iter",
+      "find",
+      "any",
+      "contains",
+      "lineage_access",
+      "resolve_historical_lineage",
+      "is_empty",
+      "lock",
+      "event_count"
+    ],
+    "index": 38,
+    "category": 2,
+    "boundary": "Private lineage.event_count()<601/2 and raw seed selection; preserve neighboring-event provider no-read and exact unchanged lineage result.",
+    "private_assertion_lines": [
+      164
+    ],
+    "private_assertions": [
+      {
+        "line": 164,
+        "text": "assert!(fixture.runtime.lineage.event_count() < 601 / 2)"
+      }
+    ],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_lineage_events.rs"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_lineage_events.rs",
+    "name": "native_capture_from_a_fork_uses_shared_resident_event_pages_without_losing_rows",
+    "line": 168,
+    "assertions": [
+      {
+        "line": 181,
+        "text": "assert_eq!( fork.lineage.event_count(), 0, \"shared residency does not populate another runtime's index\" )"
+      },
+      {
+        "line": 248,
+        "text": "assert_eq!( observed, expected, \"a no-load native capture must preserve every shared event row\" )"
+      },
+      {
+        "line": 252,
+        "text": "assert_eq!(fixture.source.reads.load(Ordering::Relaxed), reads)"
+      },
+      {
+        "line": 253,
+        "text": "assert_eq!( fork.lineage.event_count(), 0, \"capture reads resident pages without rewriting the runtime's query index\" )"
+      }
+    ],
+    "calls": [
+      "fork",
+      "unwrap",
+      "demand_event_pages",
+      "event_count",
+      "checkpoint_selection",
+      "snapshot",
+      "demand_symbol_ids",
+      "iter",
+      "map",
+      "demand_node",
+      "acquire_partition_edition",
+      "demand_all",
+      "observe_branch",
+      "main_branch_identity",
+      "observation",
+      "selected_root",
+      "demand_all_full",
+      "load",
+      "durability_authority",
+      "native_checkpoint_with_policy",
+      "allocation_policy",
+      "clone",
+      "bytes",
+      "strip_prefix",
+      "flat_map",
+      "copied"
+    ],
+    "index": 39,
+    "category": 2,
+    "boundary": "Private demand_event_pages/demand_symbol_ids/demand_node/full-root warming creates partial per-runtime admission; exact fork.lineage.event_count==0 before/after no-load export is resident-only.",
+    "private_assertion_lines": [
+      181,
+      253
+    ],
+    "private_assertions": [
+      {
+        "line": 181,
+        "text": "assert_eq!( fork.lineage.event_count(), 0, \"shared residency does not populate another runtime's index\" )"
+      },
+      {
+        "line": 253,
+        "text": "assert_eq!( fork.lineage.event_count(), 0, \"capture reads resident pages without rewriting the runtime's query index\" )"
+      }
+    ],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_lineage_events.rs"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_lineage_matrix/exhaustive.rs",
+    "name": "residency_failure_matrix_lineage_doors_preserve_every_failure_class",
+    "line": 4,
+    "assertions": [
+      {
+        "line": 25,
+        "text": "assert_eq!( door.read(&fixture, execution), Err(expected), \"{door:?} x {cause:?}\" )"
+      },
+      {
+        "line": 44,
+        "text": "assert_eq!(door.read(&fixture, execution), Err(expected))"
+      },
+      {
+        "line": 49,
+        "text": "assert_eq!(failed_reads(), failed_before)"
+      },
+      {
+        "line": 51,
+        "text": "assert_eq!(fixture.source.reads.load(Ordering::Relaxed), reads)"
+      },
+      {
+        "line": 55,
+        "text": "assert!(fixture.source.reads.load(Ordering::Relaxed) > reads)"
+      },
+      {
+        "line": 57,
+        "text": "assert_eq!( fixture .runtime .lineage_access() .for_record(execution, fixture.expected.entity_id()) .unwrap(), Some(fixture.expected.clone()) )"
+      },
+      {
+        "line": 66,
+        "text": "assert!( fixture .runtime .lineage .node(fixture.expected.lineage_id()) .is_some(), \"retry must admit the requested node\" )"
+      },
+      {
+        "line": 75,
+        "text": "assert_eq!( fixture.runtime.history().latest_patch_stream_position(), frontier )"
+      },
+      {
+        "line": 79,
+        "text": "assert_eq!( attached_test_medium(&fixture.runtime).offered().len(), offered )"
+      }
+    ],
+    "calls": [
+      "history",
+      "latest_patch_stream_position",
+      "offered",
+      "len",
+      "lock",
+      "unwrap",
+      "insert",
+      "read",
+      "clear",
+      "load",
+      "iter",
+      "filter",
+      "count",
+      "lineage_access",
+      "for_record",
+      "entity_id",
+      "clone",
+      "node",
+      "lineage_id",
+      "is_some"
+    ],
+    "index": 40,
+    "category": 2,
+    "boundary": "Direct lineage.node(...).is_some retry assertion; NodeDoor Graph/Divergence cfg(test) and Point/RecordHistory lack public raw doors. Split public observation/history/checkpoint cases, keep exact node residency C2.",
+    "private_assertion_lines": [
+      66
+    ],
+    "private_assertions": [
+      {
+        "line": 66,
+        "text": "assert!( fixture .runtime .lineage .node(fixture.expected.lineage_id()) .is_some(), \"retry must admit the requested node\" )"
+      }
+    ],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_lineage_matrix/exhaustive.rs"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_lineage_nodes.rs",
+    "name": "a_cold_lineage_point_read_loads_one_node_page_and_no_region_history",
+    "line": 9,
+    "assertions": [
+      {
+        "line": 20,
+        "text": "assert_eq!(observed, fixture.expected)"
+      },
+      {
+        "line": 21,
+        "text": "assert!(fixture.runtime.lineage.node_count() <= 256)"
+      },
+      {
+        "line": 22,
+        "text": "assert!( fixture.runtime.lineage.node_count() < POPULATION / 2, \"point demand leaves unrelated node pages cold\" )"
+      },
+      {
+        "line": 27,
+        "text": "assert_eq!( reads .iter() .filter(|locator| **locator == fixture.page.member) .count(), 1 )"
+      },
+      {
+        "line": 34,
+        "text": "assert!( !reads.contains(&fixture.region_history), \"record association requires Head only\" )"
+      },
+      {
+        "line": 38,
+        "text": "assert_eq!( fixture.source.commit_reads.lock().unwrap().len(), commits, \"node lookup does not replay envelopes\" )"
+      }
+    ],
+    "calls": [
+      "lock",
+      "unwrap",
+      "len",
+      "lineage_access",
+      "for_record",
+      "entity_id",
+      "node_count",
+      "iter",
+      "filter",
+      "count",
+      "contains"
+    ],
+    "index": 41,
+    "category": 2,
+    "boundary": "Private lineage.node_count<=256 and <POPULATION/2; direct lineage point action has no public exact-node observer. Retain one-member/no-region-history/no-envelope-read too.",
+    "private_assertion_lines": [
+      21,
+      22
+    ],
+    "private_assertions": [
+      {
+        "line": 21,
+        "text": "assert!(fixture.runtime.lineage.node_count() <= 256)"
+      },
+      {
+        "line": 22,
+        "text": "assert!( fixture.runtime.lineage.node_count() < POPULATION / 2, \"point demand leaves unrelated node pages cold\" )"
+      }
+    ],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_lineage_nodes.rs"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_lineage_nodes.rs",
+    "name": "every_node_guard_preserves_a_sticky_typed_page_failure_without_publication",
+    "line": 143,
+    "assertions": [
+      {
+        "line": 164,
+        "text": "assert_eq!(fixture.runtime.lineage.node_count(), 0)"
+      },
+      {
+        "line": 177,
+        "text": "assert_eq!(door.read(&fixture, execution), Err(expected), \"{door:?}\")"
+      },
+      {
+        "line": 180,
+        "text": "assert!( fixture .runtime .lineage .node(fixture.expected.lineage_id()) .is_none(), \"damaged page admits no node\" )"
+      },
+      {
+        "line": 189,
+        "text": "assert_eq!(door.read(&fixture, execution), Err(expected), \"{door:?}\")"
+      },
+      {
+        "line": 190,
+        "text": "assert_eq!(fixture.source.reads.load(Ordering::Relaxed), reads)"
+      },
+      {
+        "line": 191,
+        "text": "assert_eq!(fixture.runtime.lineage.node_count(), admitted_nodes)"
+      },
+      {
+        "line": 192,
+        "text": "assert_eq!( fixture.runtime.history().latest_patch_stream_position(), position )"
+      },
+      {
+        "line": 196,
+        "text": "assert_eq!( attached_test_medium(&fixture.runtime).offered().len(), offered )"
+      }
+    ],
+    "calls": [
+      "acquire_partition_edition",
+      "demand_partition_head",
+      "entity_id",
+      "unwrap",
+      "commit_artifacts",
+      "demand_envelope",
+      "node_count",
+      "history",
+      "latest_patch_stream_position",
+      "offered",
+      "len",
+      "lock",
+      "read",
+      "load",
+      "node",
+      "lineage_id",
+      "is_none"
+    ],
+    "index": 42,
+    "category": 2,
+    "boundary": "Private lineage.node_count zero/unchanged, node(...).is_none on damage, direct commit-artifact warming and dormant graph/divergence cases.",
+    "private_assertion_lines": [
+      164,
+      180,
+      191
+    ],
+    "private_assertions": [
+      {
+        "line": 164,
+        "text": "assert_eq!(fixture.runtime.lineage.node_count(), 0)"
+      },
+      {
+        "line": 180,
+        "text": "assert!( fixture .runtime .lineage .node(fixture.expected.lineage_id()) .is_none(), \"damaged page admits no node\" )"
+      },
+      {
+        "line": 191,
+        "text": "assert_eq!(fixture.runtime.lineage.node_count(), admitted_nodes)"
+      }
+    ],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_lineage_nodes.rs"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_members.rs",
+    "name": "a_cold_point_read_keeps_cross_partition_kind_authority_after_an_unrelated_write",
+    "line": 206,
+    "assertions": [
+      {
+        "line": 243,
+        "text": "panic!(\"first capture owns all members\")"
+      },
+      {
+        "line": 319,
+        "text": "assert!(reader .read_entity(execution, source_entity) .unwrap() .effective() .is_some())"
+      },
+      {
+        "line": 331,
+        "text": "assert_eq!( lease .head_view() .outgoing(source_entity) .iter() .copied() .collect::<Vec<_>>(), changed_relations(&relation) )"
+      }
+    ],
+    "calls": [
+      "durability_authority",
+      "native_checkpoint_with_policy",
+      "allocation_policy",
+      "unwrap",
+      "covered_position",
+      "covered_branch_transitions",
+      "offered",
+      "members",
+      "iter",
+      "map",
+      "clone",
+      "collect",
+      "position",
+      "as_bytes",
+      "to_vec",
+      "unshared_state_mut",
+      "expect",
+      "attach_recovered_medium",
+      "detach_medium",
+      "durability",
+      "recovery_plan_from_source",
+      "durability_recovery",
+      "recover",
+      "keys",
+      "copied",
+      "create_entity_in_partition",
+      "read_entity",
+      "effective",
+      "is_some",
+      "demand_region_head",
+      "head_view",
+      "outgoing"
+    ],
+    "index": 49,
+    "category": 1,
+    "boundary": "Public transactions and checkpoint paths; replace private Head lease outgoing with projected try_visit_adjacency_ids or storage_access().outgoing_relations_for_entity; preserve exact receipt relation IDs and readable cross-partition entity.",
+    "private_assertion_lines": [],
+    "private_assertions": [],
+    "restore": null
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_merge_history_matrix/exhaustive.rs",
+    "name": "residency_failure_matrix_nonhead_merge_history_covers_every_door_and_class",
+    "line": 4,
+    "assertions": [
+      {
+        "line": 24,
+        "text": "assert_eq!( fixture.runtime.history().latest_patch_stream_position(), frontier, \"{door:?} must not reserve a position\" )"
+      },
+      {
+        "line": 29,
+        "text": "assert_eq!( attached_test_medium(&fixture.runtime).offered().len(), offered )"
+      },
+      {
+        "line": 33,
+        "text": "assert_eq!( fixture.runtime.patch_position_reservation_counters(), reservations )"
+      },
+      {
+        "line": 37,
+        "text": "assert_eq!(actual, Err(expected), \"{door:?} x {cause:?}\")"
+      },
+      {
+        "line": 51,
+        "text": "assert_eq!(door.run(&fixture, execution), Err(expected))"
+      },
+      {
+        "line": 52,
+        "text": "assert_eq!(reads(), before)"
+      },
+      {
+        "line": 54,
+        "text": "assert!(door.run(&fixture, execution).unwrap() > 0)"
+      },
+      {
+        "line": 55,
+        "text": "assert!(reads() > before)"
+      },
+      {
+        "line": 57,
+        "text": "assert_eq!( fixture.runtime.history().latest_patch_stream_position(), frontier )"
+      },
+      {
+        "line": 61,
+        "text": "assert_eq!( fixture.runtime.patch_position_reservation_counters(), reservations )"
+      },
+      {
+        "line": 65,
+        "text": "assert_eq!( attached_test_medium(&fixture.runtime).offered().len(), offered )"
+      }
+    ],
+    "calls": [
+      "history",
+      "latest_patch_stream_position",
+      "offered",
+      "len",
+      "patch_position_reservation_counters",
+      "lock",
+      "unwrap",
+      "insert",
+      "run",
+      "clear",
+      "iter",
+      "filter",
+      "count"
+    ],
+    "index": 50,
+    "category": 2,
+    "boundary": "Private HistoryPlan invokes plan_history_scope_for_test and asserts target_delta/source_delta touched record, intermediate commit_ids and row.envelopes length. Public MergePlanningArtifactCore exposes no such envelope lists. Split IndependentPreparation/TransactionParents public subfamilies; retain exact delta evidence C2.",
+    "private_assertion_lines": [],
+    "private_assertions": [],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_merge_history_matrix/exhaustive.rs",
+    "inherited_private_assertions": [
+      {
+        "path": "crates/worth-relational/src/tests/durability/medium/cold_merge_history_matrix.rs",
+        "line": 45,
+        "text": "assert!(plan .target_delta .touched_records .iter() .any(|row| row.target == overlap))"
+      },
+      {
+        "path": "crates/worth-relational/src/tests/durability/medium/cold_merge_history_matrix.rs",
+        "line": 56,
+        "text": "assert!(row .commit_ids() .any(|id| id == fixture.intermediate.commit_id))"
+      }
+    ]
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_merge_history_matrix.rs",
+    "name": "a_cold_intermediate_source_commit_cannot_disappear_from_merge_parent_conflicts",
+    "line": 109,
+    "assertions": [
+      {
+        "line": 114,
+        "text": "assert!(Door::TransactionParents.run(&fixture, execution).unwrap() > 0)"
+      },
+      {
+        "line": 115,
+        "text": "assert_eq!( fixture.runtime.history().latest_patch_stream_position(), before )"
+      }
+    ],
+    "calls": [
+      "history",
+      "latest_patch_stream_position",
+      "run",
+      "unwrap"
+    ],
+    "index": 51,
+    "category": 1,
+    "boundary": "This test selects only TransactionParents, not helper HistoryPlan. Public owner-issued merge transaction/commit preserves DiagnosticCode::MergeConflictOverlap and unchanged frontier.",
+    "private_assertion_lines": [],
+    "private_assertions": [],
+    "restore": null
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_merge_index_matrix/exhaustive.rs",
+    "name": "residency_failure_matrix_merge_planning_and_commit_leave_unconsulted_generations_cold",
+    "line": 4,
+    "assertions": [
+      {
+        "line": 23,
+        "text": "assert!(!fixture .source .member_reads .lock() .unwrap() .contains(&member))"
+      },
+      {
+        "line": 29,
+        "text": "assert_eq!( fixture.runtime.history().latest_patch_stream_position(), frontier )"
+      },
+      {
+        "line": 33,
+        "text": "assert_eq!( attached_test_medium(&fixture.runtime).offered().len(), offers )"
+      },
+      {
+        "line": 37,
+        "text": "assert_eq!( fixture.runtime.patch_position_reservation_counters(), positions )"
+      },
+      {
+        "line": 45,
+        "text": "assert!( !fixture .source .member_reads .lock() .unwrap() .contains(&member), \"selected-state merge consumes no generation payload even with {cause:?} armed\" )"
+      },
+      {
+        "line": 70,
+        "text": "assert!(rebuilt.failed_indexes.is_empty())"
+      },
+      {
+        "line": 71,
+        "text": "assert!( fixture .source .member_reads .lock() .unwrap() .contains(&member), \"explicit reconstruction actually admits the image\" )"
+      },
+      {
+        "line": 86,
+        "text": "assert_eq!(generation.source_commit_id, outcome.commit.commit.commit_id)"
+      },
+      {
+        "line": 88,
+        "text": "panic!(\"actual entity index\")"
+      },
+      {
+        "line": 90,
+        "text": "assert_eq!( entries.keys().cloned().collect::<Vec<_>>(), fixture.expected_index_keys )"
+      },
+      {
+        "line": 98,
+        "text": "assert_eq!( indexed, actual.entities().iter().map(|row| row.entity_id).collect() )"
+      }
+    ],
+    "calls": [
+      "lock",
+      "unwrap",
+      "insert",
+      "history",
+      "latest_patch_stream_position",
+      "offered",
+      "len",
+      "patch_position_reservation_counters",
+      "prepare_merge_execution",
+      "contains",
+      "execute_prepared_merge",
+      "read_truth",
+      "read_snapshot",
+      "entities",
+      "clear",
+      "index_authority",
+      "build_for_commit",
+      "into",
+      "is_empty",
+      "index_access",
+      "read_latest_generation",
+      "keys",
+      "cloned",
+      "values",
+      "flat_map",
+      "iter",
+      "copied",
+      "map",
+      "collect"
+    ],
+    "index": 52,
+    "category": 1,
+    "boundary": "Public owner-bound prepare_merge_execution/execute_prepared_merge, index_authority().build_for_commit/read_latest_generation, read_snapshot; preserve source no-generation-demand until explicit rebuild and exact warm-reference index keys/entity parity.",
+    "private_assertion_lines": [],
+    "private_assertions": [],
+    "restore": null
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_merge_member_matrix/exhaustive.rs",
+    "name": "residency_failure_matrix_merge_planning_preserves_versioned_footprints",
+    "line": 4,
+    "assertions": [
+      {
+        "line": 11,
+        "text": "assert!( !targets.is_empty(), \"each cell injects actual named members\" )"
+      },
+      {
+        "line": 26,
+        "text": "assert_eq!( fixture.runtime.history().latest_patch_stream_position(), frontier )"
+      },
+      {
+        "line": 30,
+        "text": "assert_eq!( attached_test_medium(&fixture.runtime).offered().len(), offered )"
+      },
+      {
+        "line": 34,
+        "text": "assert_eq!( fixture.runtime.patch_position_reservation_counters(), reservations )"
+      },
+      {
+        "line": 39,
+        "text": "assert_eq!(prepared.unwrap_err(), expected, \"{subject:?} x {cause:?}\")"
+      },
+      {
+        "line": 53,
+        "text": "assert_eq!( fixture .runtime .prepare_merge_execution(execution, request()) .unwrap_err(), expected )"
+      },
+      {
+        "line": 60,
+        "text": "assert_eq!(failed_reads(), before)"
+      },
+      {
+        "line": 67,
+        "text": "assert!(failed_reads() > before)"
+      },
+      {
+        "line": 71,
+        "text": "assert!( !fixture .source .member_reads .lock() .unwrap() .iter() .any(|member| targets.contains(member)), \"unconsulted {subject:?}\" )"
+      },
+      {
+        "line": 82,
+        "text": "panic!(\"current merge touched {subject:?}: {failure:?}\")"
+      },
+      {
+        "line": 85,
+        "text": "assert_eq!( fixture.runtime.patch_position_reservation_counters(), reservations )"
+      },
+      {
+        "line": 96,
+        "text": "assert_eq!( fixture.source.member_reads.lock().unwrap().len(), reads, \"combined execution reuses admitted planning members\" )"
+      },
+      {
+        "line": 101,
+        "text": "assert_eq!( fixture.source.commit_reads.lock().unwrap().len(), commits, \"execution reuses admitted planning envelopes\" )"
+      },
+      {
+        "line": 106,
+        "text": "assert_eq!(outcome.structural_summary.adopted_source_record_count, 1)"
+      }
+    ],
+    "calls": [
+      "targets",
+      "is_empty",
+      "lock",
+      "unwrap",
+      "extend",
+      "iter",
+      "map",
+      "history",
+      "latest_patch_stream_position",
+      "offered",
+      "len",
+      "patch_position_reservation_counters",
+      "prepare_merge_execution",
+      "expected",
+      "unwrap_err",
+      "clear",
+      "filter",
+      "contains",
+      "count",
+      "any",
+      "unwrap_or_else",
+      "execute_prepared_merge",
+      "read_truth",
+      "read_snapshot",
+      "entities"
+    ],
+    "index": 53,
+    "category": 1,
+    "boundary": "Same public owner-bound merge paths, exact typed refusals/retry, no reservation/effects, provider member/commit reuse and adopted-source record evidence. Shared recovered_shape(symbols=true) fixture exact interner-absence assertion must be retained separately C2.",
+    "private_assertion_lines": [],
+    "private_assertions": [],
+    "restore": null
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_merges.rs",
+    "name": "cold_merge_preparation_refuses_region_damage_without_journal_effects",
+    "line": 206,
+    "assertions": [
+      {
+        "line": 223,
+        "text": "assert_eq!( runtime .prepare_merge_execution(execution, request()) .unwrap_err(), expected )"
+      },
+      {
+        "line": 230,
+        "text": "assert!( reads > 0, \"merge preparation must actually cross a cold region\" )"
+      },
+      {
+        "line": 235,
+        "text": "assert_eq!( runtime .prepare_merge_execution(execution, request()) .unwrap_err(), expected )"
+      },
+      {
+        "line": 241,
+        "text": "assert_eq!( source.reads.load(Ordering::Relaxed), reads, \"damage stays sticky\" )"
+      },
+      {
+        "line": 246,
+        "text": "assert_eq!(runtime.history().latest_patch_stream_position(), position)"
+      },
+      {
+        "line": 247,
+        "text": "assert_eq!(attached_test_medium(&runtime).offered().len(), offered)"
+      }
+    ],
+    "calls": [
+      "history",
+      "latest_patch_stream_position",
+      "offered",
+      "len",
+      "store",
+      "prepare_merge_execution",
+      "unwrap_err",
+      "load"
+    ],
+    "index": 54,
+    "category": 1,
+    "boundary": "Public owner-bound prepare_merge_execution; exact typed sticky region denial, provider no reread and no journal/frontier effects.",
+    "private_assertion_lines": [],
+    "private_assertions": [],
+    "restore": null
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_merges.rs",
+    "name": "independent_merge_executes_from_a_real_cold_checkpoint",
+    "line": 251,
+    "assertions": [
+      {
+        "line": 263,
+        "text": "assert!(source.reads.load(Ordering::Relaxed) > 0)"
+      },
+      {
+        "line": 265,
+        "text": "assert_eq!(outcome.structural_summary.adopted_source_record_count, 1)"
+      },
+      {
+        "line": 266,
+        "text": "assert_eq!(changed_entities(&outcome.commit).len(), 1)"
+      },
+      {
+        "line": 272,
+        "text": "assert_eq!( view.entities().len(), 3, \"main retains its own records and the adopted feature record\" )"
+      }
+    ],
+    "calls": [
+      "prepare_merge_execution",
+      "unwrap",
+      "load",
+      "execute_prepared_merge",
+      "len",
+      "read_truth",
+      "read_snapshot",
+      "entities"
+    ],
+    "index": 55,
+    "category": 1,
+    "boundary": "Public owner-bound merge prepare/execute, structural_summary and changed public patches/read_snapshot; preserve adopted one, changed one and actual three-entity result.",
+    "private_assertion_lines": [],
+    "private_assertions": [],
+    "restore": null
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_observation_reads.rs",
+    "name": "retained_observation_region_guards_preserve_sticky_storage_failure",
+    "line": 68,
+    "assertions": [
+      {
+        "line": 90,
+        "text": "assert_eq!(door.read(&fixture, execution), Err(denial), \"{door:?}\")"
+      },
+      {
+        "line": 93,
+        "text": "assert_eq!(door.read(&fixture, execution), Err(denial), \"{door:?}\")"
+      },
+      {
+        "line": 94,
+        "text": "assert_eq!(fixture.source.reads.load(Ordering::Relaxed), reads)"
+      },
+      {
+        "line": 95,
+        "text": "assert_eq!( fixture.runtime.history().latest_patch_stream_position(), position )"
+      },
+      {
+        "line": 99,
+        "text": "assert_eq!( attached_test_medium(&fixture.runtime).offered().len(), offered )"
+      }
+    ],
+    "calls": [
+      "demand_node",
+      "lineage_id",
+      "unwrap",
+      "history",
+      "latest_patch_stream_position",
+      "offered",
+      "len",
+      "lock",
+      "read",
+      "load"
+    ],
+    "index": 60,
+    "category": 1,
+    "boundary": "Public entity_record_at_observation/relation_record_at_observation/record_history_at_observation/visible_entities_for_lineages_at_observation; preserve exact sticky region failures, source logs/frontier/offers. Private prerequisite node warming needs separate fixture treatment, not a new exposed demand_node.",
+    "private_assertion_lines": [],
+    "private_assertions": [],
+    "restore": null
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_observation_reads.rs",
+    "name": "lineage_point_guard_preserves_a_cold_mirror_head_failure",
+    "line": 107,
+    "assertions": [
+      {
+        "line": 118,
+        "text": "assert_eq!(read(), Err(expected(&fixture)))"
+      },
+      {
+        "line": 121,
+        "text": "assert_eq!(read(), Err(expected(&fixture)))"
+      },
+      {
+        "line": 122,
+        "text": "assert_eq!(fixture.source.reads.load(Ordering::Relaxed), reads)"
+      },
+      {
+        "line": 123,
+        "text": "assert_eq!(fixture.runtime.lineage.node_count(), 0)"
+      }
+    ],
+    "calls": [
+      "lock",
+      "unwrap",
+      "lineage_access",
+      "for_record",
+      "entity_id",
+      "load",
+      "node_count"
+    ],
+    "index": 61,
+    "category": 2,
+    "boundary": "Private lineage.node_count()==0 and private lineage_access().for_record action; public ID-only analogue does not preserve exact node evidence.",
+    "private_assertion_lines": [
+      123
+    ],
+    "private_assertions": [
+      {
+        "line": 123,
+        "text": "assert_eq!(fixture.runtime.lineage.node_count(), 0)"
+      }
+    ],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_observation_reads.rs"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_pins.rs",
+    "name": "replay_pinning_refuses_a_damaged_mirror_without_installing_retention",
+    "line": 146,
+    "assertions": [
+      {
+        "line": 153,
+        "text": "assert!( runtime.visibility.replay_retention_versions().is_empty(), \"fixture has no prior replay retention\" )"
+      },
+      {
+        "line": 169,
+        "text": "assert_eq!( observed, Err(expected.into()), \"cache={:?}; reads={}\", crate::visibility::cache_state::cached_historical_state_for_version( runtime, fixture.historical_version ) .map(|state| ( state.pinned_entity_count, state.pinned_relation_count, state.pinned_partitions.keys().copied().collect::<Vec<_>>() )), fixture.source.reads.load(Ordering::Relaxed) - reads_before )"
+      },
+      {
+        "line": 184,
+        "text": "assert!(runtime.visibility.replay_retention_versions().is_empty())"
+      },
+      {
+        "line": 186,
+        "text": "assert!(reads > 0)"
+      },
+      {
+        "line": 188,
+        "text": "assert_eq!( runtime .history_authority() .retain_version_for_replay(execution, fixture.historical_version), Err(expected.into()) )"
+      },
+      {
+        "line": 194,
+        "text": "assert_eq!( fixture.source.reads.load(Ordering::Relaxed), reads, \"mirror damage stays sticky\" )"
+      },
+      {
+        "line": 199,
+        "text": "assert!(runtime.visibility.replay_retention_versions().is_empty())"
+      },
+      {
+        "line": 200,
+        "text": "assert_eq!(runtime.history().latest_patch_stream_position(), position)"
+      },
+      {
+        "line": 201,
+        "text": "assert_eq!(attached_test_medium(runtime).offered().len(), offered)"
+      }
+    ],
+    "calls": [
+      "history",
+      "latest_patch_stream_position",
+      "offered",
+      "len",
+      "replay_retention_versions",
+      "is_empty",
+      "load",
+      "store",
+      "history_authority",
+      "retain_version_for_replay",
+      "into",
+      "map",
+      "keys",
+      "copied"
+    ],
+    "index": 62,
+    "category": 2,
+    "boundary": "Private visibility.replay_retention_versions empty before/after denial, cached historical-state diagnostics. Public retention refusal alone loses installed-retention proof.",
+    "private_assertion_lines": [
+      153,
+      184,
+      199
+    ],
+    "private_assertions": [
+      {
+        "line": 153,
+        "text": "assert!( runtime.visibility.replay_retention_versions().is_empty(), \"fixture has no prior replay retention\" )"
+      },
+      {
+        "line": 184,
+        "text": "assert!(runtime.visibility.replay_retention_versions().is_empty())"
+      },
+      {
+        "line": 199,
+        "text": "assert!(runtime.visibility.replay_retention_versions().is_empty())"
+      }
+    ],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_pins.rs"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_pins.rs",
+    "name": "replay_retention_releases_from_owned_resident_custody_after_cache_clear",
+    "line": 261,
+    "assertions": [
+      {
+        "line": 266,
+        "text": "assert_eq!( runtime .history_authority() .retain_version_for_replay(execution, fixture.historical_version), Ok(true) )"
+      },
+      {
+        "line": 272,
+        "text": "assert_eq!(replay_pin_count(&fixture), 1)"
+      },
+      {
+        "line": 273,
+        "text": "assert_eq!( runtime .history_authority() .retain_version_for_replay(execution, fixture.historical_version), Ok(true) )"
+      },
+      {
+        "line": 279,
+        "text": "assert_eq!( replay_pin_count(&fixture), 1, \"additional retention references share physical pins\" )"
+      },
+      {
+        "line": 287,
+        "text": "assert!(runtime .history_authority() .release_version_replay_retention(fixture.historical_version))"
+      },
+      {
+        "line": 290,
+        "text": "assert_eq!(replay_pin_count(&fixture), 1)"
+      },
+      {
+        "line": 291,
+        "text": "assert!(runtime .history_authority() .release_version_replay_retention(fixture.historical_version))"
+      },
+      {
+        "line": 294,
+        "text": "assert_eq!(replay_pin_count(&fixture), 0)"
+      },
+      {
+        "line": 295,
+        "text": "assert!(!runtime .history_authority() .release_version_replay_retention(fixture.historical_version))"
+      },
+      {
+        "line": 298,
+        "text": "assert_eq!( fixture.source.reads.load(Ordering::Relaxed), reads, \"release performs no cold loads\" )"
+      }
+    ],
+    "calls": [
+      "history_authority",
+      "retain_version_for_replay",
+      "load",
+      "clear",
+      "store",
+      "release_version_replay_retention"
+    ],
+    "index": 64,
+    "category": 2,
+    "boundary": "Private visibility.cached_historical_states.clear and replay_pin_count sequence1,1,1,0; preserve public retain/release/extra-release false and provider no loads.",
+    "private_assertion_lines": [
+      272,
+      279,
+      290,
+      294
+    ],
+    "private_assertions": [
+      {
+        "line": 272,
+        "text": "assert_eq!(replay_pin_count(&fixture), 1)"
+      },
+      {
+        "line": 279,
+        "text": "assert_eq!( replay_pin_count(&fixture), 1, \"additional retention references share physical pins\" )"
+      },
+      {
+        "line": 290,
+        "text": "assert_eq!(replay_pin_count(&fixture), 1)"
+      },
+      {
+        "line": 294,
+        "text": "assert_eq!(replay_pin_count(&fixture), 0)"
+      }
+    ],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_pins.rs"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_preparation_failure_matrix/exhaustive.rs",
+    "name": "residency_failure_matrix_remote_invariant_heads_cover_every_preparation_door_and_class",
+    "line": 4,
+    "assertions": [
+      {
+        "line": 10,
+        "text": "assert!(!placements.heads.is_empty())"
+      },
+      {
+        "line": 23,
+        "text": "assert_eq!( failure, RelationalStorageUnavailable { subject: RelationalStorageSubject::Region(REMOTE), cause }, \"{door:?}\" )"
+      },
+      {
+        "line": 31,
+        "text": "assert_eq!(runtime.history().latest_patch_stream_position(), frontier)"
+      },
+      {
+        "line": 32,
+        "text": "assert_eq!(attached_test_medium(&runtime).offered().len(), offered)"
+      },
+      {
+        "line": 33,
+        "text": "assert_eq!(runtime.publication.diagnostics.snapshot(), diagnostics)"
+      },
+      {
+        "line": 34,
+        "text": "assert_eq!(runtime.services.symbols.snapshot(), symbols)"
+      },
+      {
+        "line": 36,
+        "text": "assert_eq!( after.preparation_packet_count, before.preparation_packet_count )"
+      },
+      {
+        "line": 40,
+        "text": "assert_eq!( after.invariant_entity_slot_scans, before.invariant_entity_slot_scans )"
+      },
+      {
+        "line": 47,
+        "text": "assert_eq!(door.run(execution, &runtime), Err(failure))"
+      },
+      {
+        "line": 48,
+        "text": "assert_eq!(source.reads.load(Ordering::Relaxed), reads)"
+      },
+      {
+        "line": 49,
+        "text": "assert_eq!(runtime.history().latest_patch_stream_position(), frontier)"
+      },
+      {
+        "line": 50,
+        "text": "assert_eq!(attached_test_medium(&runtime).offered().len(), offered)"
+      },
+      {
+        "line": 51,
+        "text": "assert_eq!(runtime.publication.diagnostics.snapshot(), diagnostics)"
+      },
+      {
+        "line": 52,
+        "text": "assert_eq!(runtime.services.symbols.snapshot(), symbols)"
+      },
+      {
+        "line": 55,
+        "text": "panic!(\"retry {door:?} x {cause:?}: {failure:?}\")"
+      },
+      {
+        "line": 56,
+        "text": "assert!(source.reads.load(Ordering::Relaxed) > reads)"
+      },
+      {
+        "line": 58,
+        "text": "assert!(runtime.history().latest_patch_stream_position() > frontier)"
+      },
+      {
+        "line": 59,
+        "text": "assert!(attached_test_medium(&runtime).offered().len() > offered)"
+      },
+      {
+        "line": 61,
+        "text": "assert_eq!(runtime.history().latest_patch_stream_position(), frontier)"
+      },
+      {
+        "line": 62,
+        "text": "assert_eq!(attached_test_medium(&runtime).offered().len(), offered)"
+      }
+    ],
+    "calls": [
+      "is_empty",
+      "history",
+      "latest_patch_stream_position",
+      "offered",
+      "len",
+      "snapshot",
+      "performance_access",
+      "counters",
+      "lock",
+      "unwrap",
+      "extend",
+      "iter",
+      "map",
+      "run",
+      "unwrap_err",
+      "clear",
+      "load",
+      "unwrap_or_else"
+    ],
+    "index": 65,
+    "category": 2,
+    "boundary": "Private services.symbols.snapshot equality plus preparation_packet_count/invariant_entity_slot_scans preserved for each failure class, beyond public refusal/no-effects.",
+    "private_assertion_lines": [
+      34,
+      36,
+      40,
+      52
+    ],
+    "private_assertions": [
+      {
+        "line": 34,
+        "text": "assert_eq!(runtime.services.symbols.snapshot(), symbols)"
+      },
+      {
+        "line": 36,
+        "text": "assert_eq!( after.preparation_packet_count, before.preparation_packet_count )"
+      },
+      {
+        "line": 40,
+        "text": "assert_eq!( after.invariant_entity_slot_scans, before.invariant_entity_slot_scans )"
+      },
+      {
+        "line": 52,
+        "text": "assert_eq!(runtime.services.symbols.snapshot(), symbols)"
+      }
+    ],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_preparation_failure_matrix/exhaustive.rs"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_preparation_failure_matrix/exhaustive.rs",
+    "name": "residency_failure_matrix_remote_current_invariants_never_consult_history",
+    "line": 70,
+    "assertions": [
+      {
+        "line": 76,
+        "text": "assert!(!placements.history.is_empty())"
+      },
+      {
+        "line": 84,
+        "text": "assert!( !source .member_reads .lock() .unwrap() .iter() .any(|member| placements.history.contains(member)), \"{door:?} x {cause:?}\" )"
+      }
+    ],
+    "calls": [
+      "is_empty",
+      "lock",
+      "unwrap",
+      "extend",
+      "iter",
+      "map",
+      "run",
+      "any",
+      "contains"
+    ],
+    "index": 66,
+    "category": 1,
+    "boundary": "Public validate/prepare_branch_transaction/commit plus provider member log prove remote current invariant never reads history. Shared preparation fixture Cold-probe/arena-floor assertions remain separately C2.",
+    "private_assertion_lines": [],
+    "private_assertions": [],
+    "restore": null
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_projection_adjacency_matrix/exhaustive.rs",
+    "name": "residency_failure_matrix_projection_adjacency_guards_selected_heads",
+    "line": 4,
+    "assertions": [
+      {
+        "line": 25,
+        "text": "assert!(transaction .read_entity(execution, cold.entities[0]) .unwrap() .effective() .is_some())"
+      },
+      {
+        "line": 68,
+        "text": "assert!( !cold .source .member_reads .lock() .unwrap() .iter() .any(|member| targets.contains(member)), \"anchor demand leaves the actual remote text page cold\" )"
+      },
+      {
+        "line": 106,
+        "text": "assert_eq!( actual, Err(expected), \"{subject:?} x {door:?} x historical={historical} x {cause:?}\" )"
+      },
+      {
+        "line": 124,
+        "text": "assert_eq!(door.read(&cold, execution, historical), Err(expected))"
+      },
+      {
+        "line": 125,
+        "text": "assert_eq!( failed_reads(), failed_before, \"the proven damaged subject is never read again\" )"
+      },
+      {
+        "line": 133,
+        "text": "assert_eq!(cold.source.reads.load(Ordering::Relaxed), reads)"
+      },
+      {
+        "line": 137,
+        "text": "assert!(cold.source.reads.load(Ordering::Relaxed) > reads)"
+      },
+      {
+        "line": 140,
+        "text": "panic!(\"unconsulted {subject:?} x {door:?} x historical={historical}: {error:?}\")"
+      },
+      {
+        "line": 141,
+        "text": "assert!( !cold .source .member_reads .lock() .unwrap() .iter() .any(|member| targets.contains(member)), \"unconsulted {subject:?} x {door:?}\" )"
+      },
+      {
+        "line": 152,
+        "text": "assert_eq!( cold.runtime.history().latest_patch_stream_position(), frontier )"
+      },
+      {
+        "line": 156,
+        "text": "assert_eq!(attached_test_medium(&cold.runtime).offered().len(), offered)"
+      }
+    ],
+    "calls": [
+      "remote",
+      "read_entity",
+      "unwrap",
+      "effective",
+      "is_some",
+      "map",
+      "iter",
+      "find",
+      "symbols",
+      "collect",
+      "flat_map",
+      "chain",
+      "filter",
+      "history",
+      "lock",
+      "any",
+      "contains",
+      "extend",
+      "latest_patch_stream_position",
+      "offered",
+      "len",
+      "unwrap_or",
+      "try_into",
+      "read",
+      "required",
+      "clear",
+      "load",
+      "count",
+      "unwrap_or_else"
+    ],
+    "index": 67,
+    "category": 2,
+    "boundary": "Inherited cold_projection_adjacency_matrix.rs Door::BoundedIncoming asserts exact interner.resolve(remote_symbol)==Some(remote-paged-edge). Preserve this dictionary claim C2; public callback/typed-source-failure matrix portions may split.",
+    "private_assertion_lines": [],
+    "private_assertions": [],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_projection_adjacency_matrix/exhaustive.rs",
+    "inherited_private_assertions": [
+      {
+        "path": "crates/worth-relational/src/tests/durability/medium/cold_projection_adjacency_matrix.rs",
+        "line": 81,
+        "text": "assert_eq!(cold.runtime.services.symbols.interner_snapshot().resolve(symbol), Some(\"remote-paged-edge\"), \"actual incoming value={value:?}; member reads={:?}\", cold.source.member_reads.lock().unwrap())"
+      }
+    ]
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_projection_adjacency_matrix.rs",
+    "name": "projection_adjacency_discovery_settles_only_one_accepted_round",
+    "line": 174,
+    "assertions": [
+      {
+        "line": 183,
+        "text": "assert!(cold.source.reads.load(Ordering::Relaxed) > 0)"
+      },
+      {
+        "line": 187,
+        "text": "assert!(warm.adjacency_kind_slices_leased > 0)"
+      },
+      {
+        "line": 188,
+        "text": "assert_eq!( initial.adjacency_kind_slices_leased, warm.adjacency_kind_slices_leased, \"{door:?} historical={historical}\" )"
+      },
+      {
+        "line": 192,
+        "text": "assert_eq!( initial.visible_authoritative_relation_records_materialized, warm.visible_authoritative_relation_records_materialized )"
+      }
+    ],
+    "calls": [
+      "performance_access",
+      "reset_counters",
+      "read",
+      "unwrap",
+      "counters",
+      "load"
+    ],
+    "index": 68,
+    "category": 2,
+    "boundary": "Private performance_access reset/counters: exact adjacency_kind_slices_leased and visible_authoritative_relation_records_materialized cold/warm equality.",
+    "private_assertion_lines": [
+      187,
+      188,
+      192
+    ],
+    "private_assertions": [
+      {
+        "line": 187,
+        "text": "assert!(warm.adjacency_kind_slices_leased > 0)"
+      },
+      {
+        "line": 188,
+        "text": "assert_eq!( initial.adjacency_kind_slices_leased, warm.adjacency_kind_slices_leased, \"{door:?} historical={historical}\" )"
+      },
+      {
+        "line": 192,
+        "text": "assert_eq!( initial.visible_authoritative_relation_records_materialized, warm.visible_authoritative_relation_records_materialized )"
+      }
+    ],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_projection_adjacency_matrix.rs"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_projection_adjacency_matrix.rs",
+    "name": "an_exhausted_frontier_never_demands_an_unvisited_anchor",
+    "line": 200,
+    "assertions": [
+      {
+        "line": 221,
+        "text": "assert!(view .bounded_incoming_relations_for_frontier( execution, &std::collections::BTreeSet::from([cold.entities[0]]), KindId(2), Some(0) ) .unwrap() .is_err())"
+      },
+      {
+        "line": 230,
+        "text": "assert_eq!(cold.source.reads.load(Ordering::Relaxed), 0)"
+      }
+    ],
+    "calls": [
+      "store",
+      "observe_branch",
+      "main_branch_identity",
+      "unwrap",
+      "read_truth",
+      "try_project_historical_version",
+      "current_version_id",
+      "project_observation",
+      "observation",
+      "bounded_incoming_relations_for_frontier",
+      "is_err",
+      "load"
+    ],
+    "index": 69,
+    "category": 1,
+    "boundary": "Public bounded_incoming_relations_for_frontier(...Some(0)) rejects before any source demand; preserve zero reads despite armed damaged source. This test does not enter private-dictionary Door::read.",
+    "private_assertion_lines": [],
+    "private_assertions": [],
+    "restore": null
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_read_matrix/exhaustive.rs",
+    "name": "residency_failure_matrix_full_read_subjects_cover_every_door_and_class",
+    "line": 4,
+    "assertions": [
+      {
+        "line": 26,
+        "text": "panic!(\"current scan touched {subject:?}: {failure:?}\")"
+      },
+      {
+        "line": 28,
+        "text": "assert_eq!( fixture .source .member_reads .lock() .unwrap() .iter() .filter(|member| fixture.targets.contains(member)) .count(), target_reads_before, \"current scans open no additional historical member\" )"
+      },
+      {
+        "line": 41,
+        "text": "assert!(fixture .runtime .services .symbols .interner_snapshot() .resolve(symbol) .is_none())"
+      },
+      {
+        "line": 49,
+        "text": "assert_eq!( fixture.runtime.history().latest_patch_stream_position(), frontier )"
+      },
+      {
+        "line": 53,
+        "text": "assert_eq!( attached_test_medium(&fixture.runtime).offered().len(), offered )"
+      },
+      {
+        "line": 61,
+        "text": "panic!(\"{subject:?} x {door:?} x {cause:?}: {denial:?}\")"
+      },
+      {
+        "line": 63,
+        "text": "assert_eq!(failure.cause, cause, \"{subject:?} x {door:?}\")"
+      },
+      {
+        "line": 79,
+        "text": "assert_eq!( fixture.run(door, execution), Err(denial), \"{subject:?} x {door:?} x {cause:?}\" )"
+      },
+      {
+        "line": 88,
+        "text": "assert_eq!(failed_reads(), failed_before)"
+      },
+      {
+        "line": 90,
+        "text": "assert_eq!(fixture.source.reads.load(Ordering::Relaxed), reads)"
+      },
+      {
+        "line": 94,
+        "text": "panic!(\"retry {subject:?} x {door:?} x {cause:?}: {failure:?}\")"
+      },
+      {
+        "line": 96,
+        "text": "assert!(fixture.source.reads.load(Ordering::Relaxed) > reads)"
+      },
+      {
+        "line": 98,
+        "text": "assert_eq!( fixture.runtime.history().latest_patch_stream_position(), frontier )"
+      },
+      {
+        "line": 102,
+        "text": "assert_eq!( attached_test_medium(&fixture.runtime).offered().len(), offered )"
+      }
+    ],
+    "calls": [
+      "prepare",
+      "history",
+      "latest_patch_stream_position",
+      "offered",
+      "len",
+      "lock",
+      "unwrap",
+      "iter",
+      "filter",
+      "contains",
+      "count",
+      "inject",
+      "is_current_projection_scan",
+      "run",
+      "unwrap_or_else",
+      "interner_snapshot",
+      "resolve",
+      "is_none",
+      "unwrap_err",
+      "assert_subject",
+      "clear",
+      "load"
+    ],
+    "index": 70,
+    "category": 2,
+    "boundary": "Direct private interner.resolve(symbol).is_none asserts exact historical meaning remains absent for current scans; retain all47 public consumer/failure cells when splitting.",
+    "private_assertion_lines": [
+      41
+    ],
+    "private_assertions": [
+      {
+        "line": 41,
+        "text": "assert!(fixture .runtime .services .symbols .interner_snapshot() .resolve(symbol) .is_none())"
+      }
+    ],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_read_matrix/exhaustive.rs"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_reserved_checkpoint.rs",
+    "name": "a_reserved_candidate_published_after_another_branch_checkpoint_keeps_its_pages",
+    "line": 32,
+    "assertions": [
+      {
+        "line": 102,
+        "text": "assert_eq!( reopened .services .symbols .snapshot() .entries .iter() .find(|(id, _)| *id == symbol) .map(|(_, value)| value), Some(&text) )"
+      },
+      {
+        "line": 116,
+        "text": "assert!( read.effective().is_some(), \"the published record survives the checkpoint\" )"
+      },
+      {
+        "line": 120,
+        "text": "assert_eq!( reopened .lineage_access() .for_record(execution, entity) .unwrap(), Some(expected_node) )"
+      },
+      {
+        "line": 135,
+        "text": "assert!(!decoded.manifest.lineage.is_empty())"
+      }
+    ],
+    "calls": [
+      "push_batch",
+      "allocation_policy",
+      "unwrap",
+      "prepare_branch_transaction",
+      "members",
+      "iter",
+      "map",
+      "publish_prepared_candidate",
+      "lineage_access",
+      "for_record",
+      "snapshot",
+      "bytes",
+      "strip_prefix",
+      "durability_recovery",
+      "recover",
+      "demand_symbol_ids",
+      "find",
+      "read_entity",
+      "effective",
+      "is_some",
+      "observe_branch",
+      "main_branch_identity",
+      "demand_regions_full",
+      "is_empty"
+    ],
+    "index": 71,
+    "category": 2,
+    "boundary": "Private exact services.symbols.snapshot entries/demand_symbol_ids equality across checkpoints and private lineage node observation; retain public reserved-publication/reopened entity behavior too.",
+    "private_assertion_lines": [
+      102
+    ],
+    "private_assertions": [
+      {
+        "line": 102,
+        "text": "assert_eq!( reopened .services .symbols .snapshot() .entries .iter() .find(|(id, _)| *id == symbol) .map(|(_, value)| value), Some(&text) )"
+      }
+    ],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_reserved_checkpoint.rs"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_ring_dictionary.rs",
+    "name": "the_remote_ring_label_stays_cold_until_its_incoming_edge_is_read",
+    "line": 84,
+    "assertions": [
+      {
+        "line": 89,
+        "text": "assert!( cold.runtime .services .symbols .interner_snapshot() .resolve(symbol) .is_none(), \"reopen must not admit the remote field text\" )"
+      },
+      {
+        "line": 102,
+        "text": "assert!( cold.runtime .services .symbols .interner_snapshot() .resolve(symbol) .is_none(), \"the anchor's dictionary closure excludes the remote label\" )"
+      },
+      {
+        "line": 133,
+        "text": "assert!( matches!( answer, Err(crate::execution::RelationalExecutionDenialCause::StorageUnavailable(_)) ), \"incoming={answer:?}; symbol={symbol:?}; reads={:?}\", cold.source.member_reads.lock().unwrap() )"
+      }
+    ],
+    "calls": [
+      "unwrap",
+      "interner_snapshot",
+      "resolve",
+      "is_none",
+      "read_entity",
+      "iter",
+      "find",
+      "lock",
+      "insert",
+      "observe_branch",
+      "main_branch_identity",
+      "read_truth",
+      "project_observation",
+      "observation",
+      "bounded_incoming_relations_of_kind"
+    ],
+    "index": 73,
+    "category": 2,
+    "boundary": "Private interner.resolve(remote_symbol).is_none at reopen and after anchor read is central; preserve incoming typed page refusal along with these exact dictionary assertions.",
+    "private_assertion_lines": [
+      89,
+      102
+    ],
+    "private_assertions": [
+      {
+        "line": 89,
+        "text": "assert!( cold.runtime .services .symbols .interner_snapshot() .resolve(symbol) .is_none(), \"reopen must not admit the remote field text\" )"
+      },
+      {
+        "line": 102,
+        "text": "assert!( cold.runtime .services .symbols .interner_snapshot() .resolve(symbol) .is_none(), \"the anchor's dictionary closure excludes the remote label\" )"
+      }
+    ],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_ring_dictionary.rs"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_symbol_failure_matrix/exhaustive.rs",
+    "name": "residency_failure_matrix_symbol_buckets_cover_every_preparation_door_and_class",
+    "line": 4,
+    "assertions": [
+      {
+        "line": 29,
+        "text": "assert!( matches!(failure.subject, RelationalStorageSubject::Symbols { .. }), \"{door:?} x {cause:?}: {failure:?}\" )"
+      },
+      {
+        "line": 33,
+        "text": "assert_eq!(failure.cause, cause, \"{door:?}\")"
+      },
+      {
+        "line": 34,
+        "text": "assert_eq!( fixture.runtime.history().latest_patch_stream_position(), frontier )"
+      },
+      {
+        "line": 38,
+        "text": "assert_eq!( attached_test_medium(&fixture.runtime).offered().len(), offered )"
+      },
+      {
+        "line": 42,
+        "text": "assert_eq!( fixture.runtime.publication.diagnostics.snapshot(), diagnostics )"
+      },
+      {
+        "line": 46,
+        "text": "assert_eq!(fixture.runtime.services.symbols.snapshot(), symbols)"
+      },
+      {
+        "line": 50,
+        "text": "assert_eq!(door.run(execution, &fixture), Err(failure))"
+      },
+      {
+        "line": 51,
+        "text": "assert_eq!(fixture.source.reads.load(Ordering::Relaxed), reads)"
+      },
+      {
+        "line": 52,
+        "text": "assert_eq!( fixture.runtime.history().latest_patch_stream_position(), frontier )"
+      },
+      {
+        "line": 56,
+        "text": "assert_eq!( attached_test_medium(&fixture.runtime).offered().len(), offered )"
+      },
+      {
+        "line": 60,
+        "text": "assert_eq!( fixture.runtime.publication.diagnostics.snapshot(), diagnostics )"
+      },
+      {
+        "line": 64,
+        "text": "assert_eq!(fixture.runtime.services.symbols.snapshot(), symbols)"
+      },
+      {
+        "line": 67,
+        "text": "panic!(\"retry {door:?} x {cause:?}: {failure:?}\")"
+      },
+      {
+        "line": 68,
+        "text": "assert!(fixture.source.reads.load(Ordering::Relaxed) > reads)"
+      },
+      {
+        "line": 70,
+        "text": "assert!(fixture.runtime.history().latest_patch_stream_position() > frontier)"
+      },
+      {
+        "line": 71,
+        "text": "assert!(attached_test_medium(&fixture.runtime).offered().len() > offered)"
+      },
+      {
+        "line": 73,
+        "text": "assert_eq!( fixture.runtime.history().latest_patch_stream_position(), frontier )"
+      },
+      {
+        "line": 77,
+        "text": "assert_eq!( attached_test_medium(&fixture.runtime).offered().len(), offered )"
+      }
+    ],
+    "calls": [
+      "history",
+      "latest_patch_stream_position",
+      "offered",
+      "len",
+      "snapshot",
+      "lock",
+      "unwrap",
+      "insert",
+      "run",
+      "expect_err",
+      "clear",
+      "load",
+      "unwrap_or_else"
+    ],
+    "index": 75,
+    "category": 2,
+    "boundary": "Private services.symbols.snapshot equality before/after each preparation failure. Diagnostics can use public accessor; exact dictionary contents cannot be replaced with source logs.",
+    "private_assertion_lines": [
+      46,
+      64
+    ],
+    "private_assertions": [
+      {
+        "line": 46,
+        "text": "assert_eq!(fixture.runtime.services.symbols.snapshot(), symbols)"
+      },
+      {
+        "line": 64,
+        "text": "assert_eq!(fixture.runtime.services.symbols.snapshot(), symbols)"
+      }
+    ],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_symbol_failure_matrix/exhaustive.rs"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_symbol_read_doors.rs",
+    "name": "every_full_read_door_admits_its_runtime_dictionary_or_preserves_page_damage",
+    "line": 8,
+    "assertions": [
+      {
+        "line": 33,
+        "text": "assert_eq!( fixture .source .member_reads .lock() .unwrap() .iter() .filter(|member| **member == fixture.historical_page) .count(), history_reads_before )"
+      },
+      {
+        "line": 44,
+        "text": "assert!(fixture .runtime .services .symbols .interner_snapshot() .resolve(fixture.historical) .is_none())"
+      },
+      {
+        "line": 51,
+        "text": "assert_eq!( fixture.runtime.history().latest_patch_stream_position(), frontier )"
+      },
+      {
+        "line": 62,
+        "text": "assert!( matches!(failure, RelationalExecutionDenialCause::StorageUnavailable( RelationalStorageUnavailable { subject: RelationalStorageSubject::Symbols { first, last }, cause: Cause::Damaged, } ) if first <= fixture.historical && fixture.historical <= last), \"{door:?}: {failure:?}\" )"
+      },
+      {
+        "line": 73,
+        "text": "assert_eq!( door.run(execution, &fixture.runtime, fixture.entity) .unwrap_err(), failure, \"{door:?}\" )"
+      },
+      {
+        "line": 79,
+        "text": "assert_eq!(fixture.source.reads.load(Ordering::Relaxed), reads)"
+      },
+      {
+        "line": 81,
+        "text": "assert_eq!( transaction .read_entity(execution, fixture.entity) .unwrap() .effective() .unwrap() .entity_id, fixture.entity, \"a history-only page failure must not poison Head: {door:?}\" )"
+      },
+      {
+        "line": 94,
+        "text": "assert_eq!( fixture .runtime .services .symbols .interner_snapshot() .resolve(fixture.historical), Some(\"paged-view-value-0300\"), \"{door:?} must admit Full meanings into its own runtime\" )"
+      },
+      {
+        "line": 105,
+        "text": "assert_eq!( fixture.runtime.history().latest_patch_stream_position(), frontier )"
+      }
+    ],
+    "calls": [
+      "into_iter",
+      "filter",
+      "is_checkpoint",
+      "prepare",
+      "history",
+      "latest_patch_stream_position",
+      "lock",
+      "unwrap",
+      "iter",
+      "count",
+      "is_current_projection_scan",
+      "run",
+      "interner_snapshot",
+      "resolve",
+      "is_none",
+      "unwrap_err",
+      "load",
+      "read_entity",
+      "effective"
+    ],
+    "index": 76,
+    "category": 2,
+    "boundary": "Private interner historical absence for current scans and exact resolution paged-view-value-0300 after Full; keep typed page failure, stickiness and healthy Head assertions too.",
+    "private_assertion_lines": [
+      44,
+      94
+    ],
+    "private_assertions": [
+      {
+        "line": 44,
+        "text": "assert!(fixture .runtime .services .symbols .interner_snapshot() .resolve(fixture.historical) .is_none())"
+      },
+      {
+        "line": 94,
+        "text": "assert_eq!( fixture .runtime .services .symbols .interner_snapshot() .resolve(fixture.historical), Some(\"paged-view-value-0300\"), \"{door:?} must admit Full meanings into its own runtime\" )"
+      }
+    ],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_symbol_read_doors.rs"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_symbol_view_levels.rs",
+    "name": "head_symbols_never_cover_full_history_or_inherit_its_page_damage",
+    "line": 19,
+    "assertions": [
+      {
+        "line": 40,
+        "text": "assert_eq!(current.entity_id, fixture.entity)"
+      },
+      {
+        "line": 46,
+        "text": "assert!( matches!(value, AspectValue::String(InternedString::Symbol(symbol)) if symbol.0 == fixture.current.0) )"
+      },
+      {
+        "line": 50,
+        "text": "assert_eq!( symbols.resolve(fixture.current), Some(\"paged-view-value-0600\") )"
+      },
+      {
+        "line": 54,
+        "text": "assert!( symbols.resolve(fixture.historical).is_none(), \"Head must not admit the history-only page of a physically Full cell\" )"
+      },
+      {
+        "line": 58,
+        "text": "assert!( fixture.runtime.services.symbols.snapshot().entries.len() < 400, \"one current closure has ample headroom below the 601 admitted texts\" )"
+      },
+      {
+        "line": 78,
+        "text": "panic!(\"the selected bad symbol page must preserve its storage failure\")"
+      },
+      {
+        "line": 80,
+        "text": "assert!( matches!(failure.subject, RelationalStorageSubject::Symbols { first, last } if first <= fixture.historical && fixture.historical <= last) )"
+      },
+      {
+        "line": 84,
+        "text": "assert_eq!(failure.cause, Cause::Damaged)"
+      },
+      {
+        "line": 87,
+        "text": "assert!( matches!(read_full(), Err(RelationalResidencyDemandFailure::StorageUnavailable(retry)) if retry == failure) )"
+      },
+      {
+        "line": 96,
+        "text": "assert_eq!(again, current)"
+      },
+      {
+        "line": 97,
+        "text": "assert_eq!(fixture.source.reads.load(Ordering::Relaxed), reads)"
+      },
+      {
+        "line": 99,
+        "text": "assert!( read_full().unwrap().unwrap() > 1, \"Full must retain both real committed field versions\" )"
+      },
+      {
+        "line": 103,
+        "text": "assert_eq!( fixture .runtime .services .symbols .interner_snapshot() .resolve(fixture.historical), Some(\"paged-view-value-0300\") )"
+      },
+      {
+        "line": 118,
+        "text": "assert!(probe_full(execution, &source, |view| view .get_partition(fixture.entity.partition_id) .is_some()) .unwrap())"
+      },
+      {
+        "line": 122,
+        "text": "assert!( matches!( selected.state().root().probe_head_region_with_symbols( fixture.entity.partition_id, &covered.services.symbols, ), crate::storage::residency::PartitionHeadProbe::Resident(_) ), \"a Full symbol guard must cover Head without recollecting the view\" )"
+      },
+      {
+        "line": 133,
+        "text": "assert_eq!( fixture.runtime.history().latest_patch_stream_position(), frontier )"
+      }
+    ],
+    "calls": [
+      "selected_branch_state",
+      "unwrap",
+      "with_symbol_admission",
+      "history",
+      "latest_patch_stream_position",
+      "lock",
+      "read_entity",
+      "effective",
+      "cloned",
+      "expect",
+      "interner_snapshot",
+      "resolve",
+      "is_none",
+      "snapshot",
+      "len",
+      "get_partition",
+      "map",
+      "metadata_history_at",
+      "slot_index",
+      "unwrap_err",
+      "load",
+      "fork",
+      "is_some",
+      "state",
+      "root",
+      "probe_head_region_with_symbols"
+    ],
+    "index": 77,
+    "category": 2,
+    "boundary": "Private exact interner/Symbol identity, dictionary entries.len<400, metadata_history_at and Head/Full coverage probes. Entire distinction is internal meaning admission evidence.",
+    "private_assertion_lines": [
+      46,
+      50,
+      54,
+      58,
+      99,
+      103,
+      118,
+      122
+    ],
+    "private_assertions": [
+      {
+        "line": 46,
+        "text": "assert!( matches!(value, AspectValue::String(InternedString::Symbol(symbol)) if symbol.0 == fixture.current.0) )"
+      },
+      {
+        "line": 50,
+        "text": "assert_eq!( symbols.resolve(fixture.current), Some(\"paged-view-value-0600\") )"
+      },
+      {
+        "line": 54,
+        "text": "assert!( symbols.resolve(fixture.historical).is_none(), \"Head must not admit the history-only page of a physically Full cell\" )"
+      },
+      {
+        "line": 58,
+        "text": "assert!( fixture.runtime.services.symbols.snapshot().entries.len() < 400, \"one current closure has ample headroom below the 601 admitted texts\" )"
+      },
+      {
+        "line": 99,
+        "text": "assert!( read_full().unwrap().unwrap() > 1, \"Full must retain both real committed field versions\" )"
+      },
+      {
+        "line": 103,
+        "text": "assert_eq!( fixture .runtime .services .symbols .interner_snapshot() .resolve(fixture.historical), Some(\"paged-view-value-0300\") )"
+      },
+      {
+        "line": 118,
+        "text": "assert!(probe_full(execution, &source, |view| view .get_partition(fixture.entity.partition_id) .is_some()) .unwrap())"
+      },
+      {
+        "line": 122,
+        "text": "assert!( matches!( selected.state().root().probe_head_region_with_symbols( fixture.entity.partition_id, &covered.services.symbols, ), crate::storage::residency::PartitionHeadProbe::Resident(_) ), \"a Full symbol guard must cover Head without recollecting the view\" )"
+      }
+    ],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_symbol_view_levels.rs"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_symbols.rs",
+    "name": "cold_symbol_buckets_refuse_each_preparation_door_without_journal_effects_and_stay_damaged",
+    "line": 210,
+    "assertions": [
+      {
+        "line": 228,
+        "text": "assert!( matches!(failure.subject, RelationalStorageSubject::Symbols { .. }), \"{door:?}: {failure:?}\" )"
+      },
+      {
+        "line": 232,
+        "text": "assert_eq!(failure.cause, Cause::Damaged)"
+      },
+      {
+        "line": 235,
+        "text": "assert_eq!(door.run(execution, &fixture), Err(failure))"
+      },
+      {
+        "line": 236,
+        "text": "assert_eq!( fixture.source.reads.load(Ordering::Relaxed), reads, \"{door:?} damage is sticky\" )"
+      },
+      {
+        "line": 241,
+        "text": "assert_eq!( fixture.runtime.services.symbols.snapshot(), symbols, \"failed bucket or draft publishes no meaning\" )"
+      },
+      {
+        "line": 246,
+        "text": "assert_eq!( fixture.runtime.history().latest_patch_stream_position(), frontier )"
+      },
+      {
+        "line": 250,
+        "text": "assert_eq!( attached_test_medium(&fixture.runtime).offered().len(), offered )"
+      }
+    ],
+    "calls": [
+      "history",
+      "latest_patch_stream_position",
+      "offered",
+      "len",
+      "snapshot",
+      "lock",
+      "unwrap",
+      "run",
+      "expect_err",
+      "load"
+    ],
+    "index": 78,
+    "category": 2,
+    "boundary": "Private services.symbols.snapshot exact equality after failed preparation; preserve typed sticky bucket denial and frontier/offers too.",
+    "private_assertion_lines": [
+      241
+    ],
+    "private_assertions": [
+      {
+        "line": 241,
+        "text": "assert_eq!( fixture.runtime.services.symbols.snapshot(), symbols, \"failed bucket or draft publishes no meaning\" )"
+      }
+    ],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_symbols.rs"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_symbols.rs",
+    "name": "a_cold_symbol_probe_spends_the_abandoned_record_identity_and_reads_only_touched_buckets",
+    "line": 258,
+    "assertions": [
+      {
+        "line": 273,
+        "text": "assert!( relation.slot_index() > fixture.relation_floor, \"a discarded symbol-probe draft cannot reuse its identity\" )"
+      },
+      {
+        "line": 277,
+        "text": "assert!( relation.slot_index() < fixture.relation_floor + 16, \"retry growth uses headroom\" )"
+      },
+      {
+        "line": 281,
+        "text": "assert!( fixture.source.reads.load(Ordering::Relaxed) < 16, \"one root and touched buckets fit bounded headroom\" )"
+      },
+      {
+        "line": 285,
+        "text": "assert!( fixture.runtime.services.symbols.snapshot().entries.len() < POPULATION / 2, \"operation must not load the dictionary population\" )"
+      }
+    ],
+    "calls": [
+      "commit",
+      "unwrap",
+      "iter",
+      "find_map",
+      "slot_index",
+      "load",
+      "snapshot",
+      "len"
+    ],
+    "index": 79,
+    "category": 2,
+    "boundary": "Private relation-arena slot floor, spent-draft slot/headroom inequalities and dictionary entries.len<POPULATION/2; provider I/O bound retained alongside.",
+    "private_assertion_lines": [
+      273,
+      277,
+      285
+    ],
+    "private_assertions": [
+      {
+        "line": 273,
+        "text": "assert!( relation.slot_index() > fixture.relation_floor, \"a discarded symbol-probe draft cannot reuse its identity\" )"
+      },
+      {
+        "line": 277,
+        "text": "assert!( relation.slot_index() < fixture.relation_floor + 16, \"retry growth uses headroom\" )"
+      },
+      {
+        "line": 285,
+        "text": "assert!( fixture.runtime.services.symbols.snapshot().entries.len() < POPULATION / 2, \"operation must not load the dictionary population\" )"
+      }
+    ],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_symbols.rs"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_tail_matrix/exhaustive.rs",
+    "name": "residency_failure_matrix_tail_recovery_stages_every_consumed_subject_before_effects",
+    "line": 4,
+    "assertions": [
+      {
+        "line": 67,
+        "text": "assert!( !targets.is_empty(), \"{input:?} names actual producer members\" )"
+      },
+      {
+        "line": 94,
+        "text": "panic!(\"typed durable refusal required\")"
+      },
+      {
+        "line": 96,
+        "text": "assert_eq!( error.class, RecoveryFailureClass::ColdStorageUnavailable, \"{input:?} x {cause:?}\" )"
+      },
+      {
+        "line": 122,
+        "text": "assert_eq!( error.storage_unavailable, Some(RelationalStorageUnavailable { subject: expected_subject, cause }) )"
+      },
+      {
+        "line": 129,
+        "text": "assert_eq!(runtime.history().latest_patch_stream_position(), frontier)"
+      },
+      {
+        "line": 130,
+        "text": "assert!(runtime .history() .branch_head(&crate::history::data::BranchId(\"main\".into())) .is_none())"
+      },
+      {
+        "line": 134,
+        "text": "assert_eq!(runtime.patch_position_reservation_counters(), reservations)"
+      },
+      {
+        "line": 135,
+        "text": "assert_eq!(attached_test_medium(&runtime).offered().len(), offers)"
+      },
+      {
+        "line": 140,
+        "text": "panic!(\"tail update consulted {input:?}: {failure:?}\")"
+      },
+      {
+        "line": 142,
+        "text": "assert!(!fixture .source .member_reads .lock() .unwrap() .iter() .any(|member| targets.contains(&ColdRead::Member(*member))))"
+      },
+      {
+        "line": 149,
+        "text": "assert!(!fixture .source .commit_reads .lock() .unwrap() .iter() .any(|position| targets.contains(&ColdRead::Commit(*position))))"
+      },
+      {
+        "line": 170,
+        "text": "assert_eq!( value, &worth_foundational::facade::AspectValue::String( worth_foundational::facade::InternedString::Raw(\"member-after\".into()) ) )"
+      },
+      {
+        "line": 176,
+        "text": "assert_eq!( attached_test_medium(&runtime).offered().len(), offers, \"recovery never offers an artifact\" )"
+      }
+    ],
+    "calls": [
+      "iter",
+      "flat_map",
+      "chain",
+      "map",
+      "collect",
+      "filter",
+      "copied",
+      "checkpoint",
+      "unwrap",
+      "covered",
+      "tail",
+      "position",
+      "is_empty",
+      "lock",
+      "extend",
+      "history",
+      "latest_patch_stream_position",
+      "offered",
+      "len",
+      "patch_position_reservation_counters",
+      "copy_original_transport_for_request",
+      "unwrap_err",
+      "find",
+      "try_into",
+      "branch_head",
+      "into",
+      "is_none",
+      "clear",
+      "unwrap_or_else",
+      "any",
+      "contains",
+      "read_entity",
+      "effective",
+      "cloned",
+      "expect"
+    ],
+    "index": 80,
+    "category": 1,
+    "boundary": "Public recovery/copy original transport, typed ColdStorageUnavailable subject/cause, reservation/frontier observations, provider logs/offers and returned entity member-after value. Producer public admit_field_text/record payload can identify target symbol without private interner lookup.",
+    "private_assertion_lines": [],
+    "private_assertions": [],
+    "restore": null
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_unique_symbols.rs",
+    "name": "cold_head_warm_and_full_warm_uniqueness_reuse_the_original_paged_field_identity",
+    "line": 10,
+    "assertions": [
+      {
+        "line": 33,
+        "text": "assert!(matches!( medium.publish(&artifact), crate::durability::medium::DurablePublicationFate::Committed ))"
+      },
+      {
+        "line": 51,
+        "text": "assert_eq!(source.reads.load(Ordering::Relaxed), 0)"
+      },
+      {
+        "line": 52,
+        "text": "assert!(receiving .services .symbols .interner_snapshot() .resolve(symbol) .is_none())"
+      },
+      {
+        "line": 60,
+        "text": "assert!(read .read_entity(execution, entity) .unwrap() .effective() .is_some())"
+      },
+      {
+        "line": 88,
+        "text": "assert_eq!( value, worth_foundational::facade::AspectValue::String( worth_foundational::facade::InternedString::Symbol( worth_foundational::facade::Symbol(symbol.0) ) ) )"
+      },
+      {
+        "line": 129,
+        "text": "panic!(\"the duplicate must be a typed uniqueness conflict\")"
+      },
+      {
+        "line": 131,
+        "text": "assert_eq!(duplicate, value)"
+      },
+      {
+        "line": 132,
+        "text": "assert_eq!(receiving.history().latest_patch_stream_position(), frontier)"
+      },
+      {
+        "line": 133,
+        "text": "assert_eq!(attached_test_medium(&receiving).offered().len(), offers)"
+      },
+      {
+        "line": 134,
+        "text": "assert_eq!( receiving.patch_position_reservation_counters(), reservations )"
+      }
+    ],
+    "calls": [
+      "attachment",
+      "interner_snapshot",
+      "symbol",
+      "unwrap",
+      "store",
+      "values",
+      "clone",
+      "publish",
+      "durability",
+      "recovery_plan_from_source",
+      "durability_recovery",
+      "recover",
+      "load",
+      "resolve",
+      "is_none",
+      "read_entity",
+      "effective",
+      "is_some",
+      "selected_branch_state",
+      "state",
+      "root",
+      "demand_all_full",
+      "history",
+      "latest_patch_stream_position",
+      "offered",
+      "len",
+      "patch_position_reservation_counters",
+      "observe_branch",
+      "main_branch_identity",
+      "as_slice",
+      "into",
+      "admit_field_text",
+      "field_value_for",
+      "push_batch",
+      "push",
+      "allocation_policy",
+      "commit",
+      "unwrap_err"
+    ],
+    "index": 81,
+    "category": 2,
+    "boundary": "Private interner original symbol/absence, direct demand_all_full setup, equality with exact original Symbol and duplicate conflict value; preserve no-effects/public uniqueness too.",
+    "private_assertion_lines": [
+      52,
+      88,
+      131
+    ],
+    "private_assertions": [
+      {
+        "line": 52,
+        "text": "assert!(receiving .services .symbols .interner_snapshot() .resolve(symbol) .is_none())"
+      },
+      {
+        "line": 88,
+        "text": "assert_eq!( value, worth_foundational::facade::AspectValue::String( worth_foundational::facade::InternedString::Symbol( worth_foundational::facade::Symbol(symbol.0) ) ) )"
+      },
+      {
+        "line": 131,
+        "text": "assert_eq!(duplicate, value)"
+      }
+    ],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_unique_symbols.rs"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_visibility.rs",
+    "name": "cold_visibility_doors_preserve_storage_failure_and_never_advance_publication",
+    "line": 8,
+    "assertions": [
+      {
+        "line": 29,
+        "text": "assert!( matches!(failure, RelationalExecutionDenialCause::StorageUnavailable( crate::storage::data::RelationalStorageUnavailable { subject: crate::storage::data::RelationalStorageSubject::Region(partition), cause: Cause::IntegrityMismatch, }) if partition == entity.partition_id), \"{door:?}: {failure:?}\" )"
+      },
+      {
+        "line": 38,
+        "text": "assert!(reads > 0)"
+      },
+      {
+        "line": 40,
+        "text": "assert_eq!( door.run(execution, &runtime, entity).unwrap_err(), failure, \"{door:?}\" )"
+      },
+      {
+        "line": 45,
+        "text": "assert_eq!(counter.reads.load(Ordering::Relaxed), reads)"
+      },
+      {
+        "line": 46,
+        "text": "assert_eq!(runtime.history().latest_patch_stream_position(), before)"
+      },
+      {
+        "line": 47,
+        "text": "assert!(attached_test_medium(&runtime).offered().is_empty())"
+      }
+    ],
+    "calls": [
+      "durability",
+      "recovery_plan_from_source",
+      "unwrap",
+      "durability_recovery",
+      "recover",
+      "prepare",
+      "history",
+      "latest_patch_stream_position",
+      "run",
+      "unwrap_err",
+      "load",
+      "store",
+      "offered",
+      "is_empty"
+    ],
+    "index": 82,
+    "category": 1,
+    "boundary": "Public ReadDoor inventory in cold_read_door.rs (re-exported by cold_visibility.rs): projected/snapshot/version/observation reads, inspection and retention. Preserve typed region IntegrityMismatch, sticky provider no-retry and no publication.",
+    "private_assertion_lines": [],
+    "private_assertions": [],
+    "restore": null
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_visibility.rs",
+    "name": "cold_and_warm_visibility_preserve_an_observation_across_a_later_commit",
+    "line": 52,
+    "assertions": [
+      {
+        "line": 70,
+        "text": "assert!(matches!( attachment.publish(&artifact), crate::durability::medium::DurablePublicationFate::Committed ))"
+      },
+      {
+        "line": 99,
+        "text": "assert_eq!(cold, expected)"
+      },
+      {
+        "line": 106,
+        "text": "assert_eq!(warm, expected)"
+      },
+      {
+        "line": 107,
+        "text": "assert_eq!(counter.reads.load(Ordering::Relaxed), reads)"
+      },
+      {
+        "line": 114,
+        "text": "assert_eq!(retained.entities, vec![expected])"
+      }
+    ],
+    "calls": [
+      "read_truth",
+      "visible_entity_at_version",
+      "current_version_id",
+      "unwrap",
+      "store",
+      "attachment",
+      "values",
+      "clone",
+      "publish",
+      "profile",
+      "schema_registry",
+      "build_durable",
+      "expect",
+      "durability",
+      "recovery_plan_from_source",
+      "durability_recovery",
+      "recover",
+      "observation",
+      "load",
+      "read_observation"
+    ],
+    "index": 83,
+    "category": 1,
+    "boundary": "Public visible_entity_at_version/read_observation plus later commit; preserve producer-record equality, cold/warm no-reload, retained original record after newer write.",
+    "private_assertion_lines": [],
+    "private_assertions": [],
+    "restore": null
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/cold_visibility_round_counters.rs",
+    "name": "discarded_visibility_rounds_settle_only_accepted_materialization_and_leases",
+    "line": 4,
+    "assertions": [
+      {
+        "line": 41,
+        "text": "assert!( cold.source.reads.load(Ordering::Relaxed) > reads, \"the selected cold path actually readmits another carrier\" )"
+      },
+      {
+        "line": 47,
+        "text": "assert_eq!(read(), first)"
+      },
+      {
+        "line": 48,
+        "text": "assert!(first > 0, \"the producer populated the selected path\")"
+      },
+      {
+        "line": 51,
+        "text": "assert!( warm.visible_authoritative_entity_records_materialized > 0, \"the selected paid scan actually settles materialization instrumentation\" )"
+      },
+      {
+        "line": 56,
+        "text": "assert!( warm.adjacency_kind_slices_leased > 0, \"the selected traversal actually settles a substrate lease\" )"
+      },
+      {
+        "line": 61,
+        "text": "assert_eq!( initial.visible_authoritative_entity_records_materialized, warm.visible_authoritative_entity_records_materialized, \"discarded scan rounds have no materialization effect\" )"
+      },
+      {
+        "line": 66,
+        "text": "assert_eq!( initial.adjacency_kind_slices_leased, warm.adjacency_kind_slices_leased, \"discarded adjacency rounds have no lease-ledger effect\" )"
+      }
+    ],
+    "calls": [
+      "current_version_id",
+      "read_truth",
+      "visible_entity_at_version",
+      "unwrap",
+      "bounded_visible_entities_of_kind",
+      "records",
+      "len",
+      "incoming_relations_of_kind_at_version",
+      "performance_access",
+      "reset_counters",
+      "load",
+      "counters"
+    ],
+    "index": 84,
+    "category": 2,
+    "boundary": "Private performance_access reset/counters and exact materialization/lease counts prove discarded rounds settle nothing.",
+    "private_assertion_lines": [
+      51,
+      56,
+      61,
+      66
+    ],
+    "private_assertions": [
+      {
+        "line": 51,
+        "text": "assert!( warm.visible_authoritative_entity_records_materialized > 0, \"the selected paid scan actually settles materialization instrumentation\" )"
+      },
+      {
+        "line": 56,
+        "text": "assert!( warm.adjacency_kind_slices_leased > 0, \"the selected traversal actually settles a substrate lease\" )"
+      },
+      {
+        "line": 61,
+        "text": "assert_eq!( initial.visible_authoritative_entity_records_materialized, warm.visible_authoritative_entity_records_materialized, \"discarded scan rounds have no materialization effect\" )"
+      },
+      {
+        "line": 66,
+        "text": "assert_eq!( initial.adjacency_kind_slices_leased, warm.adjacency_kind_slices_leased, \"discarded adjacency rounds have no lease-ledger effect\" )"
+      }
+    ],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/cold_visibility_round_counters.rs"
+  },
+  {
+    "path": "crates/worth-relational/src/tests/durability/medium/replay_pin_concurrency.rs",
+    "name": "concurrent_replay_references_share_one_physical_pin_set",
+    "line": 5,
+    "assertions": [
+      {
+        "line": 38,
+        "text": "assert_eq!( runtime .history_authority() .retain_version_for_replay(execution, version), Ok(true) )"
+      },
+      {
+        "line": 60,
+        "text": "assert_eq!( count(), 1, \"concurrent references share exactly one physical pin set\" )"
+      },
+      {
+        "line": 70,
+        "text": "assert!(runtime .history_authority() .release_version_replay_retention(version))"
+      },
+      {
+        "line": 80,
+        "text": "assert_eq!(count(), 0)"
+      },
+      {
+        "line": 81,
+        "text": "assert!(!runtime .history_authority() .release_version_replay_retention(version))"
+      }
+    ],
+    "calls": [
+      "map",
+      "push_batch",
+      "push",
+      "iter",
+      "collect",
+      "allocation_policy",
+      "unwrap",
+      "commit",
+      "current_version_id",
+      "spawn",
+      "wait",
+      "history_authority",
+      "retain_version_for_replay",
+      "join",
+      "partition",
+      "replay_pin_count",
+      "slot_index",
+      "release_version_replay_retention"
+    ],
+    "index": 85,
+    "category": 2,
+    "boundary": "Private partition.replay_pin_count exact1 then0 establishes one physical pin set under concurrent references; keep public retain/release result assertions.",
+    "private_assertion_lines": [
+      60,
+      80
+    ],
+    "private_assertions": [
+      {
+        "line": 60,
+        "text": "assert_eq!( count(), 1, \"concurrent references share exactly one physical pin set\" )"
+      },
+      {
+        "line": 80,
+        "text": "assert_eq!(count(), 0)"
+      }
+    ],
+    "restore": "restore from 2a51552fc5:crates/worth-relational/src/tests/durability/medium/replay_pin_concurrency.rs"
+  }
+]

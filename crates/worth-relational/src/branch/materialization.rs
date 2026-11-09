@@ -127,6 +127,12 @@ pub struct RelationalMaterializationSuspensionCompletion {
 }
 
 impl RelationalMaterializationSuspensionCompletion {
+    /// Descriptive source records captured by this original prepared suspension.
+    /// Reading them grants no suspension custody or publication completion.
+    pub fn source_records(&self) -> &[RelationalMaterializationRecord] {
+        self.records.as_slice()
+    }
+
     pub fn complete(
         self,
         commit: crate::transactions::data::CommitResult,

@@ -1,0 +1,27 @@
+Command: ["cargo", "nextest", "run", "--cargo-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\landing2a-current-public-proof-root-reviewfix\\build\\cargo-metadata.json", "--binaries-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\landing2a-current-public-proof-root-reviewfix\\build\\binaries.json", "--profile", "ci", "--config-file", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\landing2a-current-public-proof-root-reviewfix\\nextest.toml", "--ignore-default-filter", "--no-fail-fast", "--no-tests=fail", "--message-format", "libtest-json", "-E", "test(=relational::relational_certification::cold_residency::current_reads::aspect_history_matrix::residency_failure_matrix_aspect_history_doors_cover_every_subject_and_class) | test(=relational::relational_certification::cold_residency::current_reads::current_failure_matrix::residency_failure_matrix_declared_current_doors_preserve_every_failure_class)"]
+Working directory: C:\programming\worth worktees\worktrees\m3-p3-reopen
+HEAD: 427700edd0d5d4e0437647eb8f7c7722f0018ebf
+Git status --short empty: False
+Start: 2026-11-09T19:33:33.767816+00:00
+
+{"type": "cargo-invocation", "command": ["cargo", "nextest", "run", "--cargo-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\landing2a-current-public-proof-root-reviewfix\\build\\cargo-metadata.json", "--binaries-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\landing2a-current-public-proof-root-reviewfix\\build\\binaries.json", "--profile", "ci", "--config-file", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\landing2a-current-public-proof-root-reviewfix\\nextest.toml", "--ignore-default-filter", "--no-fail-fast", "--no-tests=fail", "--message-format", "libtest-json", "-E", "test(=relational::relational_certification::cold_residency::current_reads::aspect_history_matrix::residency_failure_matrix_aspect_history_doors_cover_every_subject_and_class) | test(=relational::relational_certification::cold_residency::current_reads::current_failure_matrix::residency_failure_matrix_declared_current_doors_preserve_every_failure_class)"], "cwd": "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen", "capture": "ordered", "mode": "build", "target_dir": "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target", "cargo_profile": "test"}
+info: experimental features enabled: wrapper-scripts
+────────────
+ Nextest run ID 5e35aee0-207e-4944-b23d-6e18dd922523 with nextest profile: ci
+    Starting 2 tests across 1 binary (28 tests skipped)
+        PASS [  19.365s] (1/2) worth-court-relational-cold-residency::worth_court_relational_cold_residency relational::relational_certification::cold_residency::current_reads::aspect_history_matrix::residency_failure_matrix_aspect_history_doors_cover_every_subject_and_class
+        PASS [  22.983s] (2/2) worth-court-relational-cold-residency::worth_court_relational_cold_residency relational::relational_certification::cold_residency::current_reads::current_failure_matrix::residency_failure_matrix_declared_current_doors_preserve_every_failure_class
+{"type":"suite","event":"started","test_count":2}
+{"type":"test","event":"started","name":"worth-court-relational-cold-residency::worth_court_relational_cold_residency$relational::relational_certification::cold_residency::current_reads::current_failure_matrix::residency_failure_matrix_declared_current_doors_preserve_every_failure_class"}
+{"type":"test","event":"started","name":"worth-court-relational-cold-residency::worth_court_relational_cold_residency$relational::relational_certification::cold_residency::current_reads::aspect_history_matrix::residency_failure_matrix_aspect_history_doors_cover_every_subject_and_class"}
+{"type":"test","event":"ok","name":"worth-court-relational-cold-residency::worth_court_relational_cold_residency$relational::relational_certification::cold_residency::current_reads::aspect_history_matrix::residency_failure_matrix_aspect_history_doors_cover_every_subject_and_class","exec_time":19.3651601}
+{"type":"test","event":"ok","name":"worth-court-relational-cold-residency::worth_court_relational_cold_residency$relational::relational_certification::cold_residency::current_reads::current_failure_matrix::residency_failure_matrix_declared_current_doors_preserve_every_failure_class","exec_time":22.9834409}
+{"type":"suite","event":"ok","passed":2,"failed":0,"ignored":0,"measured":0,"filtered_out":28,"exec_time":42.348601}
+────────────
+     Summary [  22.984s] 2 tests run: 2 passed, 28 skipped
+
+
+{"type": "cargo-result", "exit_code": 0}
+
+End: 2026-11-09T19:33:57.172569+00:00
+Exit code: 0

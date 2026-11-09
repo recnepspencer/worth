@@ -1743,3 +1743,8 @@ are distinct from selected-observation ancestry. Ordinary discovery retains the
 existing collection policy. `DurabilityAccess::external_canonical_source_availability`
 reports actual port presence, without validating artifacts. These are platform
 facade observations; applications continue through Query's two audience facades.
+
+A platform owner preparing materialization suspension may inspect
+`RelationalMaterializationSuspensionCompletion::source_records()` before
+publishing. It borrows the original prepared manifest as DATA; the actual
+publication result is still required to complete suspension custody.

@@ -6,8 +6,6 @@ mod cold_source;
 use cold_source::MemberSource;
 #[path = "cold_candidates.rs"]
 mod cold_candidates;
-#[path = "cold_current_matrix.rs"]
-mod cold_current_matrix;
 #[path = "cold_envelope_lifetime.rs"]
 mod cold_envelope_lifetime;
 #[path = "cold_envelope_matrix.rs"]

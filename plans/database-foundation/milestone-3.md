@@ -59,6 +59,22 @@ each invariant is enforced and where each new type lives.
   Its only callers were the already-moved private pin courts; the shipping
   funded `demand_replay_pins` and its resident implementation remain unchanged.
 
+- C2: the exact cached-Head/absent-per-runtime-dictionary preparation window in
+  `metadata_pin_refuses_shared_head_until_its_runtime_has_the_aspect_meanings`:
+  `restore from 427700edd0:crates/worth-relational/src/tests/durability/medium/cold_metadata_pins.rs`.
+  Preserve private `demand_region_head_cached`, its no-read assertion and the
+  original `SymbolsNotResident` refusal. Its public read/pin suffix is retained
+  as `fork_metadata_pin_after_public_head_read_preserves_original_aspect_revision`.
+- C2: the two direct Cold residency probes in
+  `residency_retained_kind_demands_only_its_cold_head_and_preserves_damage`:
+  `restore from 427700edd0:crates/worth-relational/src/tests/durability/medium/cold_materialization_doors.rs`.
+  Preserve the before-kind Head-Cold and after-kind Full-Cold observations.
+  Actual suspension, retained kind and typed storage refusal remain in
+  `retained_kind_after_public_suspension_preserves_kind_and_storage_refusal`.
+  Original fixture dependency: `restore from 427700edd0:crates/worth-relational/src/tests/durability/medium/cold_current_fixture.rs`.
+  These private claims are moved, not retired; a public I/O count is not their
+  physical residency/dictionary observation.
+
 ## Phase map
 
 | Phase | Name | Depends on | Lands |

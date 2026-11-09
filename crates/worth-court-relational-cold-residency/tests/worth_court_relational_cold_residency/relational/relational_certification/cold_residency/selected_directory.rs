@@ -9,6 +9,7 @@ use worth_relational::facade::{
 #[derive(Deserialize)]
 pub(super) struct Directory {
     pub lineage: Vec<Page>,
+    pub symbols: Vec<Page>,
     pub lineage_events: Vec<EventPage>,
     pub mirror: Vec<Region>,
     pub roots: Vec<Component>,
