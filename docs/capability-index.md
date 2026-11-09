@@ -153,6 +153,11 @@ The existing owner funds Full materialization from that request; an unavailable
 retained basis returns `HistoricalVisibilityDenial` rather than inferred absence.
 Exact owner-issued observations remain readable through `read_observation`.
 
+Native index DATA inspection uses the projection's request-aware
+`bounded_index_relations_for_frontier`. It includes audit-retained edges under
+the same visibility rule as index maintenance; ordinary frontier queries retain
+their Live-only rule. The result preserves typed storage and work-bound refusals.
+
 Native conditional observation owners borrow the genuine computed effect through
 `BridgeConditionalCausalObservation::computed_evaluation()` and its observed
 before/after Signal versions. The original Signal verdict, suppression reason

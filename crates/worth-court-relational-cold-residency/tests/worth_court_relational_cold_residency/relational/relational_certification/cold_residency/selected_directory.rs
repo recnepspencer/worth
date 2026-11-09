@@ -18,6 +18,12 @@ pub(super) struct Directory {
     pub commits: Vec<CommitPlacement>,
     pub derived_indexes: RelationalDurableMemberLocator,
     pub index_definitions: Vec<DerivedIndexDefinition>,
+    pub symbol_buckets: Vec<SymbolBucket>,
+}
+#[derive(Deserialize)]
+pub(super) struct SymbolBucket {
+    pub bucket: u8,
+    pub pages: Vec<RelationalDurableMemberLocator>,
 }
 #[derive(Deserialize, Clone, Copy)]
 pub(super) struct Page {

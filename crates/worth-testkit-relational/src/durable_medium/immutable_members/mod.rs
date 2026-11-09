@@ -206,6 +206,29 @@ impl ImmutableCheckpointMemberSource {
         self.with_physical_members(members)
     }
 
+    /// Replace a physical placement with exactly the newly selected membership.
+    /// Carried members retain their actual prior bytes; unselected bytes disappear.
+    pub fn with_selected_members(
+        &self,
+        entries: &[worth_relational::facade::durability::RelationalCheckpointMember],
+    ) -> std::sync::Arc<Self> {
+        use worth_relational::facade::durability::RelationalCheckpointMember as Member;
+        let members = entries
+            .iter()
+            .map(|entry| match entry {
+                Member::New { locator, bytes } => (*locator, bytes.clone()),
+                Member::Carried { locator } => (
+                    *locator,
+                    self.members
+                        .get(locator)
+                        .expect("selected carried member has actual prior bytes")
+                        .clone(),
+                ),
+            })
+            .collect();
+        self.with_physical_members(members)
+    }
+
     fn with_physical_members(
         &self,
         members: BTreeMap<RelationalDurableMemberLocator, worth_execution::ExecutionImmutableBytes>,

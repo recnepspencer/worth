@@ -20,3 +20,16 @@ pub(super) fn copy_input(
     );
     (input, source)
 }
+
+/// Retain the same actual source fate for a staged retry or recapture journey.
+pub(super) fn copy_transport(
+    input: &worth_relational::facade::durability::RelationalDurableRecoverySource,
+    source: std::sync::Arc<dyn worth_relational::facade::durability::RelationalDurableColdSource>,
+) -> worth_relational::facade::durability::RelationalDurableRecoverySource {
+    worth_relational::facade::durability::RelationalDurableRecoverySource::new(
+        input.checkpoint().cloned(),
+        input.tail().to_vec(),
+        input.transitions().to_vec(),
+        source,
+    )
+}

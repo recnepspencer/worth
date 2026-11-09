@@ -204,6 +204,75 @@ each invariant is enforced and where each new type lives.
   monotonic generations and the original <old+16 bound; they do not stand in for
   these private allocator actions. No claim is retired.
 
+- C2 (2026-11-09 Landing2a move ruling, not retirement): exact mirror-Head
+  residency preparation, capture layer/input bounds and >=2 consolidation
+  count in `checkpoint_restart_cycles_preserve_full_reads_and_retention`:
+  `restore from 3fa8da0cb4:crates/worth-relational/src/tests/durability/medium/checkpoint_restart_bound.rs`.
+  Its public counterpart preserves three initial updates, 32 iterations, both
+  genuine recoveries per iteration, selected-root and mirror Head exclusion,
+  exact selected New/Carried membership (unselected bytes disappear), retention
+  and exact record comparison. It does not claim to reproduce private Head-only
+  preparation or prove repeated consolidation.
+- C2: shared merge fixture's exact resident dictionary absence in
+  `recovered_shape`, used by the two basic merge courts and member/index matrices:
+  `restore from 3fa8da0cb4:crates/worth-relational/src/tests/durability/medium/cold_merges.rs`.
+  Public counterparts retain all typed refusals/retries, source reuse, effects,
+  adopted/changed counts, memory-reference records and exact index key/entity
+  parity. Functional contributing-commit provenance remains HAPPY in the two
+  separate merge-history courts; it is not moved with this dictionary claim.
+- C2: exact receiver dictionary snapshot equality and provisional preparation
+  packet/invariant slot-scan work accounting in
+  `residency_failure_matrix_remote_invariant_heads_cover_every_preparation_door_and_class`:
+  `restore from 3fa8da0cb4:crates/worth-relational/src/tests/durability/medium/cold_preparation_failure_matrix/exhaustive.rs`.
+  Restore original Main Full/remote Cold/floor setup with it from
+  `restore from 3fa8da0cb4:crates/worth-relational/src/tests/durability/medium/cold_candidates.rs`.
+  Both public matrices retain Validation/Candidate/Commit, all six causes,
+  diagnostics Vec equality, sticky/transient I/O, publication effects
+  and exact History noninterference. Public outcomes do not replace private work.
+- C2: private accepted-round adjacency lease/materialization counter equality in
+  `projection_adjacency_discovery_settles_only_one_accepted_round`, plus exact
+  resident dictionary text resolution in the incoming-door fixture:
+  `restore from 3fa8da0cb4:crates/worth-relational/src/tests/durability/medium/cold_projection_adjacency_matrix.rs`.
+  Public counterpart `cold_and_warm_projection_adjacency_reads_preserve_actual_edges`
+  retains genuine cold/warm nine-door reads and adds warm no-I/O. The public
+  nine-door/six-subject/six-cause matrix retains all current/historical, callbacks,
+  exact failures/retries, unconsulted sources and publication assertions. The
+  two genuine index DATA readers include audit-retained edges, never Live-only
+  replacements. Exact private work accounting stays with this C2 original.
+- C2: exact interner absence before/after anchor read in
+  `the_remote_ring_label_stays_cold_until_its_incoming_edge_is_read`, and private
+  dictionary resolution in its real paged-edge preparation:
+  `restore from 3fa8da0cb4:crates/worth-relational/src/tests/durability/medium/cold_ring_dictionary.rs`.
+  Restore the exact original physical shape from
+  `restore from 3fa8da0cb4:crates/worth-relational/src/tests/durability/medium/cold_isolation.rs`.
+  Public counterpart preserves incoming-edge typed refusal and proves the actual
+  page is unconsulted before/after anchor read, then physically demanded.
+- C2: exact resident dictionary snapshot equality in
+  `cold_symbol_buckets_refuse_each_preparation_door_without_journal_effects_and_stay_damaged`,
+  and arena spent-slot/floor/+16 headroom plus <population/2 resident-dictionary
+  assertions in `a_cold_symbol_probe_spends_the_abandoned_record_identity_and_reads_only_touched_buckets`:
+  `restore from 3fa8da0cb4:crates/worth-relational/src/tests/durability/medium/cold_symbols.rs`.
+  Matrix dictionary equality:
+  `restore from 3fa8da0cb4:crates/worth-relational/src/tests/durability/medium/cold_symbol_failure_matrix/exhaustive.rs`.
+  Preserve original 600 client-key entities plus selected collision key. Public
+  counterparts keep all five doors including Preview, all six causes, exact
+  diagnostics/effects/sticky/retry behavior and successful actual relation with
+  original <16 source reads. Public successful case is named
+  `cold_symbol_publication_reads_only_touched_buckets`, not a spent-slot claim.
+- C2: exact resident symbol absence and private direct Full-warming preparation in
+  `cold_head_warm_and_full_warm_uniqueness_reuse_the_original_paged_field_identity`:
+  `restore from 3fa8da0cb4:crates/worth-relational/src/tests/durability/medium/cold_unique_symbols.rs`.
+  Public counterpart keeps all three warmth postures (actual public snapshot
+  Full read), original producer-admitted symbol identity, exact public duplicate
+  conflict payload equality and all frontier/offers/reservation assertions.
+- C2: resident dictionary inventory/demand/resolution loop and exact private
+  root warming in `a_reserved_candidate_published_after_another_branch_checkpoint_keeps_its_pages`:
+  `restore from 3fa8da0cb4:crates/worth-relational/src/tests/durability/medium/cold_reserved_checkpoint.rs`.
+  Public counterpart keeps exact reservation/publication order, both actual
+  selected captures and ACKs, original member membership, reopen/record survival,
+  exact counted lineage-node equality, public Full record demand and emitted
+  nonempty lineage directory. No root, mutable constructor or counter is exposed.
+
 ## Phase map
 
 | Phase | Name | Depends on | Lands |

@@ -1,45 +1,6 @@
 //! Producer checkpoint and journal-prefix recovery fixture.
 use super::*;
 
-pub(super) fn fixture_with_history(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    with_tail: bool,
-    updates: usize,
-) -> (
-    RelationalDurableRecoverySource,
-    Arc<MemberSource>,
-    crate::identity::data::EntityId,
-) {
-    fixture_from_runtime(
-        execution,
-        durable_runtime_with_test_schema(),
-        with_tail,
-        updates,
-    )
-}
-
-pub(super) fn fixture_from_runtime(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: crate::runtime::RelationalRuntime,
-    with_tail: bool,
-    updates: usize,
-) -> (
-    RelationalDurableRecoverySource,
-    Arc<MemberSource>,
-    crate::identity::data::EntityId,
-) {
-    let entity = create_entity(execution, &runtime, "member-before");
-    for update in 0..updates {
-        update_entity_and_release_snapshot(
-            execution,
-            &runtime,
-            entity,
-            &format!("member-update-{update}"),
-        );
-    }
-    checkpoint_fixture(execution, runtime, entity, with_tail)
-}
-
 pub(super) fn checkpoint_fixture(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: crate::runtime::RelationalRuntime,

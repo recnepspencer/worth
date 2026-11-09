@@ -14,12 +14,12 @@ use worth_testkit_relational::aspect_storage::publications::{
     begin_main_transaction, changed_entities, release_test_commit_snapshot,
 };
 #[derive(Clone, Copy, Debug)]
-enum PreparationDoor {
+pub(super) enum PreparationDoor {
     Validation,
     Candidate,
     Commit,
 }
-fn transaction(
+pub(super) fn transaction(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
 ) -> worth_relational::facade::mvcc::BranchBoundRelationalTransaction {
@@ -40,7 +40,7 @@ fn transaction(
     transaction
 }
 
-fn storage(
+pub(super) fn storage(
     error: TransactionCommitError,
 ) -> worth_relational::facade::storage::RelationalStorageUnavailable {
     let TransactionCommitError::Preparation { error, .. } = error else {
@@ -50,6 +50,25 @@ fn storage(
         panic!("storage refusal retains its native payload: {error:?}");
     };
     failure
+}
+
+impl PreparationDoor {
+    pub(super) const ALL: [Self; 3] = [Self::Validation, Self::Candidate, Self::Commit];
+    pub(super) fn run(
+        self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    ) -> Result<(), worth_relational::facade::storage::RelationalStorageUnavailable> {
+        let transaction = transaction(request, runtime);
+        match self {
+            Self::Validation => transaction.validate(request, runtime).map(|_| ()),
+            Self::Candidate => runtime
+                .prepare_branch_transaction(request, transaction)
+                .map(|_| ()),
+            Self::Commit => transaction.commit(request, runtime).map(|_| ()),
+        }
+        .map_err(storage)
+    }
 }
 
 #[test]

@@ -22,8 +22,9 @@ pub(super) struct CandidateFixture {
     pub source: Arc<ImmutableCheckpointMemberSource>,
     pub medium: Arc<TestDurableMedium>,
     pub remote: EntityId,
+    pub directory: super::selected_directory::Directory,
 }
-fn runtime(medium: &Arc<TestDurableMedium>) -> RelationalRuntime {
+pub(super) fn runtime(medium: &Arc<TestDurableMedium>) -> RelationalRuntime {
     RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(schema())
@@ -41,6 +42,7 @@ pub(super) fn recovered(request: &ExecutionRequest<'_, '_>) -> CandidateFixture 
     let remote = region_publications::create_entity(request, &producer, "remote-value", REMOTE);
     let entity = create_entity(request, &producer, "member-before");
     let original = capture_source(request, producer, medium, entity, false);
+    let directory = super::selected_directory::read(&original.input);
     let medium = TestDurableMedium::new();
     let attachment = medium.attachment();
     for bytes in original.source.commits.values() {
@@ -78,5 +80,6 @@ pub(super) fn recovered(request: &ExecutionRequest<'_, '_>) -> CandidateFixture 
         source: original.source,
         medium,
         remote,
+        directory,
     }
 }
