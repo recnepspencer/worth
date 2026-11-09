@@ -209,7 +209,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             .parameters
             .bindings()
             .iter()
-            .find(|(name, _)| *name == parameter.as_str())
+            .find(|(name, _)| name.as_ref() == parameter.as_str())
             .map(|(_, value)| value)
             .ok_or(ReceiverCause::Refused(Refusal::MissingProbe))?;
         let lease = adapter
