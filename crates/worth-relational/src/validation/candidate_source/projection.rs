@@ -1,5 +1,6 @@
 //! Borrow scalar projections from the actual Native-admitted observation.
-use worth_foundational::facade::{AspectValue, ContractValidatedAspectValueView};
+use crate::runtime::RelationalProjectedFieldObservation as Observation;
+use worth_foundational::facade::ContractValidatedAspectValueView;
 use worth_proof::AdmittedManagedIndexSourceAudience;
 
 use super::program::ManagedIndexSourceProgram;
@@ -26,7 +27,7 @@ impl<'source> ManagedIndexSourceProjection<'source> {
         row: EntityId,
         kind: crate::identity::data::KindId,
         field: &super::ManagedIndexSourceField,
-    ) -> Result<Option<&AspectValue>, Denial> {
+    ) -> Result<Observation<'_>, Denial> {
         match &self.backing {
             SourceProjectionBacking::Invariant {
                 relations,
@@ -58,9 +59,9 @@ impl<'source> ManagedIndexSourceProjection<'source> {
 fn field_value<'a>(
     aspect: Option<&'a worth_foundational::facade::ContractValidatedAspectValue>,
     field: &super::ManagedIndexSourceField,
-) -> Result<Option<&'a AspectValue>, Denial> {
+) -> Result<Observation<'a>, Denial> {
     let Some(aspect) = aspect else {
-        return Ok(None);
+        return Ok(Observation::AspectAbsent);
     };
     let ContractValidatedAspectValueView::Struct(fields) = aspect.view() else {
         return Err(Definition::InvalidExpression.into());
@@ -71,7 +72,9 @@ fn field_value<'a>(
         .fields()
         .first()
         .ok_or(Definition::InvalidExpression)?;
-    Ok(fields.get(key))
+    Ok(fields
+        .get(key)
+        .map_or(Observation::FieldAbsent, Observation::Present))
 }
 mod access;
 mod content;

@@ -15,6 +15,13 @@ use worth_query_host::facade::primary_graph::*;
 pub(super) mod cost_stages;
 #[cfg(test)]
 include!("prefix/installed_version.rs");
+#[cfg(test)]
+#[allow(
+    clippy::duplicate_mod,
+    reason = "The provider fixture is instantiated for distinct Catalog schemas."
+)]
+#[path = "prefix/source_updates.rs"]
+pub(super) mod source_updates;
 #[path = "prefix/storage.rs"]
 mod storage;
 
@@ -45,6 +52,8 @@ fn text_denial(cause: WorthQueryManagedIndexTextReadDenial) -> Stop {
 }
 #[derive(Default)]
 pub struct Calls {
+    #[cfg(test)]
+    pub(super) source_updates: Mutex<Option<source_updates::Observer>>,
     #[cfg(test)]
     pub omit_refinement: std::sync::atomic::AtomicBool,
     #[cfg(test)]
@@ -266,6 +275,8 @@ impl<I: PrefixSourceIndex> WorthQueryManagedIndexProvider<Catalog, I> for Provid
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<Option<WorthQueryManagedIndexNodeId>, Stop> {
         self.0.updates.fetch_add(1, Ordering::SeqCst);
+        #[cfg(test)]
+        source_updates::record(&self.0, before, after, changes)?;
         #[cfg(test)]
         self.0.cost_stages.record(cost_stages::Stage::UpdateBegin);
         #[cfg(test)]

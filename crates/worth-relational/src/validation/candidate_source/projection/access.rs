@@ -217,7 +217,7 @@ impl ManagedIndexSourceProjection<'_> {
         row: EntityId,
         kind: crate::identity::data::KindId,
         field: &super::super::ManagedIndexSourceField,
-        project: impl FnOnce(Option<&AspectValue>) -> T,
+        project: impl FnOnce(Observation<'_>) -> T,
     ) -> Result<T, Denial> {
         match &self.backing {
             SourceProjectionBacking::Invariant { .. } => {
