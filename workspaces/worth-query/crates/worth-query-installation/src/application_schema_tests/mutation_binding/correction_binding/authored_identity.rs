@@ -54,6 +54,56 @@ mutation_binding!(
     test_principal_binding::<MutationSchema>(),
     RetiredOutputs
 );
+struct CreatedMemberOutputs;
+struct RetiredMemberOutputs;
+struct CreatedMembers;
+struct RetiredMembers;
+macro_rules! member_family {
+    ($Outputs:ident, $Family:ident, $posture:ident, $prefix:literal) => {
+        impl ApplicationMutationOutputContract<MutationSchema> for $Outputs {
+            const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = &[];
+            const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] =
+                &[<$Family as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR];
+        }
+        impl WorthQueryApplicationOutputRoleFamily for $Family {
+            type Schema = MutationSchema;
+            type Contract = $Outputs;
+            type Entity = FixtureEntity;
+            const PREFIX: &'static str = $prefix;
+            const POSTURES: ApplicationMutationOutputPostureSet =
+                ApplicationMutationOutputPostureSet::one(Posture::$posture);
+            const MINIMUM: usize = 0;
+        }
+    };
+}
+member_family!(CreatedMemberOutputs, CreatedMembers, Create, "created.");
+member_family!(RetiredMemberOutputs, RetiredMembers, Retire, "retired.");
+mutation_binding!(
+    CreatedMembersBinding,
+    "fixture.authored.create-members.v1",
+    TestOperation<MutationSchema>,
+    TestInput,
+    TestInputBinding,
+    MutationDecision,
+    MutationDenialBinding,
+    "fixture.authored.create-members-handler.v1",
+    FixturePrincipalIdentityField::at("PrincipalIdentityField"),
+    test_principal_binding::<MutationSchema>(),
+    CreatedMemberOutputs
+);
+mutation_binding!(
+    RetiredMembersBinding,
+    "fixture.authored.retire-members.v1",
+    TestOperation<MutationSchema>,
+    TestInput,
+    TestInputBinding,
+    MutationDecision,
+    MutationDenialBinding,
+    "fixture.authored.retire-members-handler.v1",
+    FixturePrincipalIdentityField::at("PrincipalIdentityField"),
+    test_principal_binding::<MutationSchema>(),
+    RetiredMemberOutputs
+);
 
 #[test]
 fn authored_family_rejects_missing_role_or_changed_logical_key_meaning() {
@@ -194,12 +244,12 @@ fn a_live_member_owner_requires_its_exact_relation_demand_and_cardinality() {
     use worth_query_declaration::facade::application_schema::{
         ApplicationRelationCardinality, ApplicationRelationIntegrity,
     };
-    let source = RetiredBinding::descriptor();
-    let inverse = CreatedBinding::descriptor();
-    let inventory = BTreeMap::from([
-        (source.identity().to_owned(), &source),
-        (inverse.identity().to_owned(), &inverse),
-    ]);
+    let families = (
+        RetiredMembersBinding::descriptor(),
+        CreatedMembersBinding::descriptor(),
+    );
+    // A live owner's members are role families; an exactly-one role is refused.
+    let exact = (RetiredBinding::descriptor(), CreatedBinding::descriptor());
     let queries = [disclosure::HistoryBinding::descriptor()];
     let field = worth_query_declaration::facade::application_schema::fragment::FieldSelection::<
         InstallationFields,
@@ -232,7 +282,22 @@ fn a_live_member_owner_requires_its_exact_relation_demand_and_cardinality() {
         "missing-relation",
         "optional-owner",
         "many-owners",
+        "exact-roles",
     ] {
+        let (source, inverse) = if axis == "exact-roles" {
+            &exact
+        } else {
+            &families
+        };
+        let inventory = BTreeMap::from([
+            (source.identity().to_owned(), source),
+            (inverse.identity().to_owned(), inverse),
+        ]);
+        let roles = if axis == "exact-roles" {
+            ("retired", "created")
+        } else {
+            ("retired.", "created.")
+        };
         let declared_owner = if axis == "wrong-direction" {
             PortablePreImageRelationLocus::from_untrusted_fields(
                 "MemberOf".into(),
@@ -247,8 +312,8 @@ fn a_live_member_owner_requires_its_exact_relation_demand_and_cardinality() {
                 family: identity("authored-fixture.v1"),
                 logical_key: Box::new(key.clone()),
                 binding_unit: None,
-                source_role: "retired".into(),
-                inverse_role: "created".into(),
+                source_role: roles.0.into(),
+                inverse_role: roles.1.into(),
                 source_posture: Posture::Retire,
             })
             .with_live_member_owner(declared_owner.clone());

@@ -252,15 +252,26 @@ pub(super) fn delete_one(
     host: &world::Host,
     request: &world::Request<'_, '_, '_>,
 ) -> WorthQueryApplicationCommitReceipt {
+    let head = local_member::Delete {
+        owner: "roster".into(),
+        members: vec!["part-0".into()],
+        operand: Some("part-1".into()),
+        notes: Vec::new(),
+        revalue: None,
+    };
+    delete(host, request, head, "delete-one")
+}
+pub(super) fn delete(
+    host: &world::Host,
+    request: &world::Request<'_, '_, '_>,
+    input: local_member::Delete,
+    key: &str,
+) -> WorthQueryApplicationCommitReceipt {
     let result = request
         .advanced()
-        .mutate(local_member::Delete {
-            owner: "roster".into(),
-            key: "part-0".into(),
-            operand: "part-1".into(),
-        })
+        .mutate(input)
         .without_source()
-        .idempotency(&"delete-one".to_owned())
+        .idempotency(&key.to_owned())
         .execute_in_program(
             host,
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,

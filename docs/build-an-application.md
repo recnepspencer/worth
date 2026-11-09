@@ -4274,23 +4274,48 @@ in decision support; deleting another holder or claiming the value twice still
 refuses. An empty roster retains its intra-member empty loci from the genuinely
 observed empty owner adjacency, rather than inventing a member to read.
 
-A local recorded correction can delete one member while its owner stays live.
-Declare the member itself with
-`ApplicationAuthoredCorrection::restore_retired::<C, MemberFamily, Deleted, Restored>()`
-and append `.owned_member_of(MemberOf::reference())`. This names the same
-exactly-one owner relation used by the roster; it does not request a roster
-replacement. Demand and observe that relation, every changed incident relation,
-the logical key and all fields to restore. The original Retire output identifies
-the deleted member. Native's validated relation footprint matches its retained
-family key to exactly one fresh member and carries that old-to-fresh pair into
-relation inversion. The original live owner must remain its owner, and the
-retained member fields must match exactly. A changed key refuses with
-`IncompleteInverse`, duplicate recreated keys with `RepeatedInverse`, a different
-owner with `ForeignEndpoint`, an additional recreated member with `ExtraInverse`,
-and changed retained fields with `RestoredFieldMismatch`. These typed pre-image
-failures name the affected member through `relation_preimage_failure()` and
-publish no effects. This uses the same total retained-byte bound and never
-re-evaluates the original candidate or recreates the unaffected roster.
+A local recorded correction can delete zero to many members of several
+families while their owners stay live. Declare each family with its own owner
+relation:
+
+```rust
+ApplicationAuthoredCorrection::live_owner_members::<C, MemberFamily, Deleted, Restored, _, _>(
+    MemberOf::reference(),
+)
+.and_live_owner_members::<C, NoteFamily, DeletedNotes, RestoredNotes, _, _>(
+    NoteOf::reference(),
+)
+```
+
+`Deleted` and `Restored` are output-role families with minimum zero and one
+lifecycle posture each; an exactly-one role is refused at installation. The
+inverse answers each source role through the inverse family role with the same
+suffix. Each owner relation is the same exactly-one relation used by the
+roster and must be in the relation demand; this never requests a roster
+replacement. Demand and observe every changed incident relation, the logical
+key and all fields to restore. A demanded relation the mutation did not change
+retains as empty, so `relation_count` there reports the mutation's own changes.
+A mutation that moves no member commits, and its inverse restores none.
+The retained fields are the mutation's own changes: every demanded field of
+each member it retires, and each demanded field it changes on a record that
+stays. Witness a staying member through a Preserve family role and read its
+prior value with `field_for_family_member`; a field the mutation left alone is
+absent.
+
+Each original Retire role identifies one deleted member. Native's validated
+relation footprint matches its retained family key to exactly one fresh member
+and carries that old-to-fresh pair into relation inversion. The family's
+logical key is the only correspondence. The original live owner must remain its
+owner, and the retained member fields must match exactly. A changed key refuses
+with `IncompleteInverse`, duplicate recreated keys with `RepeatedInverse`, a
+different owner with `ForeignEndpoint`, a recreated member of a declared family
+that the source did not retire with `ExtraInverse`, and changed retained fields
+with `RestoredFieldMismatch`. These typed pre-image failures name the affected
+member through `relation_preimage_failure()` and publish no effects. This uses
+the same total retained-byte bound and never re-evaluates the original
+candidate or recreates the unaffected roster. The member pass costs one
+correspondence probe per created member against the recorded members; it never
+reads a roster.
 
 Historical member fields are read using `family_member_suffix`,
 `family_member_entity` and `field_for_family_member` on the recorded pre-image.

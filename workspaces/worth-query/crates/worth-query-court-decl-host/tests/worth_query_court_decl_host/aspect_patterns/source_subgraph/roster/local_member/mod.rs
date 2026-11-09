@@ -1,4 +1,4 @@
-//! One keyed member leaves and returns while its owner and operand stay live.
+//! Keyed members and notes leave and return while their owner stays live.
 use super::*;
 mod operations;
 pub use operations::*;

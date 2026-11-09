@@ -24,6 +24,32 @@ pub(super) fn authored_anchor(
     let Some(identity) = identity else {
         return Ok(None);
     };
+    if identity.live_member_owner().is_some() {
+        // Every member this mutation retires under a live owner is its own
+        // authored source. Retiring none leaves an ordinary publication.
+        let mut members =
+            attempt
+                .native_publication_roles()
+                .filter_map(|(role, posture, entity, target)| match target {
+                    EntityReference::Existing(id)
+                        if posture == Posture::Retire
+                            && std::iter::once(identity).chain(identity.co_anchors()).any(
+                                |family| {
+                                    family
+                                        .member_role_suffix(role, posture, entity, false)
+                                        .is_some()
+                                },
+                            ) =>
+                    {
+                        Some(*id)
+                    }
+                    _ => None,
+                });
+        let Some(anchor) = members.next() else {
+            return Ok(None);
+        };
+        return Ok(Some((anchor, members.collect())));
+    }
     let parts = identity.parts();
     if parts.source_posture != Posture::Retire {
         return Ok(None);

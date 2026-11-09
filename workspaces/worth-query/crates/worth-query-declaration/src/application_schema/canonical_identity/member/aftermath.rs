@@ -182,6 +182,11 @@ fn append_authored_identity(
         basis.text(format!("{locus}.member-owner.from"), owner.from());
         basis.text(format!("{locus}.member-owner.to"), owner.to());
     }
+    if let Some(owner) = identity.live_member_owner() {
+        basis.text(format!("{locus}.live-owner.relation"), owner.relation());
+        basis.text(format!("{locus}.live-owner.from"), owner.from());
+        basis.text(format!("{locus}.live-owner.to"), owner.to());
+    }
     let parts = identity.parts();
     basis.text(format!("{locus}.family"), parts.family.as_str());
     basis.text(format!("{locus}.source-role"), &parts.source_role);

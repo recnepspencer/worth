@@ -2,6 +2,8 @@
 use super::*;
 mod schema;
 pub(super) use schema::*;
+mod notes;
+pub(super) use notes::*;
 pub(super) mod local_member;
 mod operations;
 pub(super) use operations::*;
@@ -30,6 +32,7 @@ pub struct Image {
 }
 pub type AnchorTarget = WorthQueryInvariantMutationTarget<Schema, Source>;
 pub type MemberTarget = WorthQueryInvariantMutationTarget<Schema, Member>;
+pub type NoteTarget = WorthQueryInvariantMutationTarget<Schema, Note>;
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {

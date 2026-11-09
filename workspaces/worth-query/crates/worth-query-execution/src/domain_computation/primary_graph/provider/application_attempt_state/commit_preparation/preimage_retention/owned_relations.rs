@@ -1,4 +1,4 @@
-//! An observed empty owner adjacency closes intra-roster loci with no possible endpoint.
+//! A demanded relation locus the mutation did not change is closed by its declaration.
 use super::*;
 use crate::domain_computation::primary_graph::admitted_capture::checkpoint;
 use crate::domain_computation::primary_graph::application_attempt::{
@@ -21,7 +21,16 @@ pub(super) fn is_empty(
     let Some(identity) = identity else {
         return Ok(false);
     };
-    let Some(anchors) = super::authored_anchors::select(attempt)? else {
+    // Live-owner member families retain the mutation's own relation changes,
+    // which Native's validated draft already holds completely. A demanded kind
+    // it did not change has nothing to restore, also when no member moved.
+    if identity.live_member_owner().is_some() {
+        return Ok(true);
+    }
+    // An observed empty owner adjacency closes intra-roster loci with no possible endpoint.
+    let Some(anchors) =
+        super::authored_anchors::select(attempt)?.map(|selection| selection.anchors)
+    else {
         return Ok(false);
     };
     for member in identity.co_anchors() {

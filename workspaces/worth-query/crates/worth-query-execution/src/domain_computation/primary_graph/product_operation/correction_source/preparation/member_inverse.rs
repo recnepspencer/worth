@@ -1,12 +1,16 @@
 //! Retained member truth selects Native's one correspondence projection.
-use super::relation_inverse::{base, fail};
+use super::relation_inverse::{base, fail, request_stop};
 use super::*;
 use crate::domain_computation::application_aftermath::retained_preimage::WorthQueryRetainedPreImageField;
 use crate::domain_computation::application_aftermath::{
     WorthQueryRelationPreImageDenial as Kind, WorthQueryRetainedPreImage,
 };
+use crate::domain_computation::primary_graph::admitted_capture::checkpoint;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
 use crate::domain_computation::WorthQueryProviderSessionFailure as Denial;
+use worth_foundational::facade::{AspectFieldLocator, AspectValue};
+use worth_query_declaration::facade::application_aftermath::DeclaredAuthoredCorrection;
+use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture as Posture;
 use worth_query_declaration::facade::application_schema::ApplicationSchemaMember;
 use worth_relational::facade::{
     identity::KindId,
@@ -14,132 +18,214 @@ use worth_relational::facade::{
     transactions::RecordRef,
 };
 
-pub(super) struct MemberInverse<'a> {
+struct MemberInverse<'a> {
     original: EntityId,
     kind: KindId,
-    key: &'a WorthQueryRetainedPreImageField,
-    fields: Vec<(
-        &'a worth_foundational::facade::AspectFieldLocator,
-        &'a worth_foundational::facade::AspectValue,
-    )>,
+    key_field: (&'a str, &'a str),
+    key: Option<&'a WorthQueryRetainedPreImageField>,
     owner_kind: KindId,
-    owner: EntityId,
+    owner: Option<EntityId>,
+    fields: std::ops::Range<usize>,
+}
+
+/// Every member the source retired under a live owner, and every entity kind
+/// its declared families may restore. Zero members is the exact inverse of a
+/// source that retired none.
+pub(super) struct MemberInverses<'a> {
+    members: Vec<MemberInverse<'a>>,
+    fields: Vec<(&'a AspectFieldLocator, &'a AspectValue)>,
+    kinds: Vec<KindId>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 impl WorthQueryPreparedCorrectionSource {
-    pub(super) fn member_inverse<'a>(
-        &self,
+    /// Runs only for an inverse whose declaration names live-owner member
+    /// families. Work is one pass over the retained fields and one over the
+    /// retained relation rows, each with a point lookup among the recorded
+    /// members; it never reads a roster or a thread.
+    pub(super) fn member_inverses<'a>(
+        &'a self,
         retained: &'a WorthQueryRetainedPreImage,
         layout: &WorthQueryPrimaryGraphLayout,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<Option<MemberInverse<'a>>, Denial> {
-        let Some(declaration) = self.authored_declaration() else {
-            return Ok(None);
+    ) -> Result<MemberInverses<'a>, Denial> {
+        let mut inverses = MemberInverses {
+            members: Vec::new(),
+            fields: Vec::new(),
+            kinds: Vec::new(),
+            _memory: None,
         };
-        let Some(owner) = declaration.live_member_owner() else {
-            return Ok(None);
+        let Some(prepared) = self.authored_identity.as_ref() else {
+            return Ok(inverses);
         };
-        let parts = declaration.parts();
-        let ApplicationSchemaMember::Field {
-            entity,
-            aspect,
-            field,
-            ..
-        } = parts.logical_key.as_ref()
-        else {
-            return Err(base("installed member key missing"));
+        let declaration = prepared.declaration();
+        if declaration.live_member_owner().is_none() {
+            return Ok(inverses);
+        }
+        let key_field = |declaration: &'a DeclaredAuthoredCorrection| match declaration
+            .parts()
+            .logical_key
+            .as_ref()
+        {
+            ApplicationSchemaMember::Field {
+                entity,
+                aspect,
+                field,
+                ..
+            } => layout
+                .entity_kind(entity)
+                .map(|kind| (kind, (aspect.as_str(), field.as_str())))
+                .ok_or_else(|| base("installed member family missing")),
+            _ => Err(base("installed member key missing")),
         };
-        let original = self
-            .material
-            .commit_evidence()
-            .output_correspondence()
-            .native_witness_roles()
-            .find_map(|(role, posture, kind, id)| {
-                (role == parts.source_role && posture == parts.source_posture && kind == entity)
-                    .then_some(id)
-            })
-            .ok_or_else(|| base("retired member output missing"))?;
-        let key = retained
-            .fields()
-            .iter()
-            .find(|value| {
-                value.target_record() == &RecordRef::Entity(original)
-                    && value.locus().entity() == entity
-                    && value.locus().aspect() == aspect
-                    && value.locus().field() == field
-            })
-            .ok_or_else(|| fail(Kind::MissingObservation, vec![RecordRef::Entity(original)]))?;
-        let owner_kind = layout
-            .relation(owner.relation())
-            .ok_or_else(|| base("installed owner relation missing"))?
-            .kind;
-        let owner = retained
-            .relations()
-            .iter()
-            .find_map(|row| {
-                let mutation = row.mutation();
-                (mutation.kind() == owner_kind && mutation.after().is_none())
-                    .then(|| mutation.before())
-                    .flatten()
-                    .and_then(|(from, to)| (from == original).then_some(to))
-            })
-            .ok_or_else(|| fail(Kind::MissingObservation, vec![RecordRef::Entity(original)]))?;
-        let bytes = retained
-            .fields()
+        for family in std::iter::once(declaration).chain(declaration.co_anchors()) {
+            if family.parts().source_posture == Posture::Retire {
+                let (kind, _) = key_field(family)?;
+                if !inverses.kinds.contains(&kind) {
+                    inverses.kinds.push(kind);
+                }
+            }
+        }
+        let recorded = prepared.live_members();
+        let bytes = recorded
             .len()
-            .checked_mul(size_of::<(
-                &worth_foundational::facade::AspectFieldLocator,
-                &worth_foundational::facade::AspectValue,
-            )>())
+            .checked_mul(
+                size_of::<MemberInverse<'_>>()
+                    + size_of::<(EntityId, usize)>()
+                    + size_of::<RecordedMemberRestoration<'_>>(),
+            )
+            .and_then(|bytes| {
+                retained
+                    .fields()
+                    .len()
+                    .checked_mul(size_of::<(usize, &AspectFieldLocator, &AspectValue)>() * 2)
+                    .and_then(|fields| bytes.checked_add(fields))
+            })
             .and_then(|bytes| u64::try_from(bytes).ok())
             .ok_or_else(|| base("member preimage projection size overflow"))?;
-        let memory = execution
+        inverses._memory = execution
             .allocation_policy()
             .reserve_memory(bytes)
             .map_err(Denial::allocation_denied)?;
-        let mut fields = Vec::new();
-        fields
+        let failed = |_| base("member preimage projection allocation failed");
+        inverses
+            .members
+            .try_reserve_exact(recorded.len())
+            .map_err(failed)?;
+        let mut index = std::collections::BTreeMap::new();
+        for member in recorded {
+            let declared = member.declaration();
+            if declared.parts().source_posture != Posture::Retire {
+                continue;
+            }
+            let owner = declared
+                .live_member_owner()
+                .ok_or_else(|| base("recorded member lost its live owner"))?;
+            let (kind, key_field) = key_field(declared)?;
+            index.insert(member.original(), inverses.members.len());
+            inverses.members.push(MemberInverse {
+                original: member.original(),
+                kind,
+                key_field,
+                key: None,
+                owner_kind: layout
+                    .relation(owner.relation())
+                    .ok_or_else(|| base("installed owner relation missing"))?
+                    .kind,
+                owner: None,
+                fields: 0..0,
+            });
+        }
+        if inverses.members.is_empty() {
+            return Ok(inverses);
+        }
+        let mut staged = Vec::new();
+        staged
             .try_reserve_exact(retained.fields().len())
-            .map_err(|_| base("member preimage projection allocation failed"))?;
+            .map_err(failed)?;
+        inverses
+            .fields
+            .try_reserve_exact(retained.fields().len())
+            .map_err(failed)?;
+        let members = &mut inverses.members;
+        let fields = &mut inverses.fields;
         execution
             .run_native_with_checkpoint(|context| {
+                let stop = |cause| request_stop(worth_execution::WorkCeilingDenial::Stopped(cause));
                 for value in retained.fields() {
-                    crate::domain_computation::primary_graph::admitted_capture::checkpoint(
-                        context, 1,
-                    )
-                    .map_err(|cause| {
-                        super::relation_inverse::request_stop(
-                            worth_execution::WorkCeilingDenial::Stopped(cause),
-                        )
-                    })?;
-                    if value.target_record() == &RecordRef::Entity(original) {
-                        fields.push((value.locator(), value.value()));
+                    checkpoint(context, 1).map_err(stop)?;
+                    let RecordRef::Entity(target) = value.target_record() else {
+                        continue;
+                    };
+                    let Some(&member) = index.get(target) else {
+                        continue;
+                    };
+                    let locus = value.locus();
+                    if (locus.aspect(), locus.field()) == members[member].key_field {
+                        members[member].key = Some(value);
+                    }
+                    staged.push((member, value.locator(), value.value()));
+                }
+                checkpoint(context, staged.len() as u64).map_err(stop)?;
+                staged.sort_by_key(|(member, _, _)| *member);
+                for (member, locator, value) in staged {
+                    let end = fields.len() + 1;
+                    let range = &mut members[member].fields;
+                    if range.start == range.end {
+                        range.start = end - 1;
+                    }
+                    range.end = end;
+                    fields.push((locator, value));
+                }
+                for row in retained.relations() {
+                    checkpoint(context, 1).map_err(stop)?;
+                    let mutation = row.mutation();
+                    let (Some((from, to)), None) = (mutation.before(), mutation.after()) else {
+                        continue;
+                    };
+                    if let Some(&member) = index.get(&from)
+                        && members[member].owner_kind == mutation.kind()
+                        && members[member].owner.is_none()
+                    {
+                        members[member].owner = Some(to);
                     }
                 }
                 Ok::<_, Denial>(())
             })
-            .map_err(super::relation_inverse::request_stop)?
+            .map_err(request_stop)?
             .0?;
-        Ok(Some(MemberInverse {
-            original,
-            kind: key.entity_kind(),
-            key,
-            fields,
-            owner_kind,
-            owner,
-            _memory: memory,
-        }))
+        if let Some(member) = inverses
+            .members
+            .iter()
+            .find(|member| member.key.is_none() || member.owner.is_none())
+        {
+            return Err(fail(
+                Kind::MissingObservation,
+                vec![RecordRef::Entity(member.original)],
+            ));
+        }
+        Ok(inverses)
     }
 }
-impl MemberInverse<'_> {
-    pub(super) fn selector(&self) -> RecordedMemberRestoration<'_> {
-        RecordedMemberRestoration {
-            original: self.original,
-            kind: self.kind,
-            owner: (self.owner_kind, self.owner),
-            key: (self.key.locator(), self.key.value()),
-            fields: &self.fields,
-        }
+impl MemberInverses<'_> {
+    /// Entity kinds whose every birth must be one recorded member.
+    pub(super) fn kinds(&self) -> &[KindId] {
+        &self.kinds
+    }
+
+    pub(super) fn selectors(&self) -> Vec<RecordedMemberRestoration<'_>> {
+        self.members
+            .iter()
+            .filter_map(|member| {
+                let key = member.key?;
+                Some(RecordedMemberRestoration {
+                    original: member.original,
+                    kind: member.kind,
+                    owner: (member.owner_kind, member.owner?),
+                    key: (key.locator(), key.value()),
+                    fields: &self.fields[member.fields.clone()],
+                })
+            })
+            .collect()
     }
 }
 
