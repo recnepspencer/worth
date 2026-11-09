@@ -17,6 +17,7 @@ mod identity_target_index;
 mod lowering;
 mod planning;
 mod planning_artifact;
+mod planning_observation;
 mod policy;
 mod proof_packet;
 mod proof_packet_canonical;
@@ -33,4 +34,5 @@ pub(crate) use lowering::{
     blocked_reason_for_deletion_class, blocked_reason_for_topology_resolution_class,
 };
 pub(crate) use planning_artifact::lowered_artifact_execution_authority_contract;
+pub use planning_observation::RelationalMergePlanningObservation;
 pub(crate) use policy::{aggregate_record_resolution, ownership_surface_for_policies};

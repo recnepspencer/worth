@@ -1,0 +1,36 @@
+command: python target/lane-evidence/landing2a_merge_owner.py root
+HEAD: 9addca717914f10d9d9187f41e46267ada05677b
+git_status_short_empty: false
+start_utc: 2026-11-09T23:07:10.298904+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+prebuild: cargo metadata --offline --format-version 1 --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml"
+prebuild: cargo test --message-format=json --no-run --package worth-court-relational-cold-residency --test worth_court_relational_cold_residency --profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml" --unit-graph -Z unstable-options
+prebuild: cargo nextest list --cargo-message-format=json --package worth-court-relational-cold-residency --test worth_court_relational_cold_residency --cargo-profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml" --list-type binaries-only --message-format json
+   Compiling worth-court-relational-cold-residency v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-court-relational-cold-residency)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 13.42s
+prebuild: cargo nextest list --cargo-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\landing2a-merge-owner-root-intermediate-cold\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\landing2a-merge-owner-root-intermediate-cold\build\binaries.json" --message-format json --ignore-default-filter -E test(cold_intermediate_source_commit_remains_in_shipping_merge_overlap)
+prebuild: cargo nextest run --cargo-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\landing2a-merge-owner-root-intermediate-cold\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\landing2a-merge-owner-root-intermediate-cold\build\binaries.json" --profile ci --config-file "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\landing2a-merge-owner-root-intermediate-cold\nextest.toml" --ignore-default-filter --no-fail-fast --no-tests=fail --message-format libtest-json -E test(=relational::relational_certification::cold_residency::merge_history_contributions::cold_intermediate_source_commit_remains_in_shipping_merge_overlap)
+info: experimental features enabled: wrapper-scripts
+────────────
+ Nextest run ID 9785c1d4-a49c-4882-8ec7-3acf2dbaa6cf with nextest profile: ci
+    Starting 1 test across 1 binary (84 tests skipped)
+        PASS [   7.158s] (1/1) worth-court-relational-cold-residency::worth_court_relational_cold_residency relational::relational_certification::cold_residency::merge_history_contributions::cold_intermediate_source_commit_remains_in_shipping_merge_overlap
+{"type":"suite","event":"started","test_count":1}
+{"type":"test","event":"started","name":"worth-court-relational-cold-residency::worth_court_relational_cold_residency$relational::relational_certification::cold_residency::merge_history_contributions::cold_intermediate_source_commit_remains_in_shipping_merge_overlap"}
+{"type":"test","event":"ok","name":"worth-court-relational-cold-residency::worth_court_relational_cold_residency$relational::relational_certification::cold_residency::merge_history_contributions::cold_intermediate_source_commit_remains_in_shipping_merge_overlap","exec_time":7.1575689}
+{"type":"suite","event":"ok","passed":1,"failed":0,"ignored":0,"measured":0,"filtered_out":84,"exec_time":7.1575689}
+────────────
+     Summary [   7.158s] 1 test run: 1 passed, 84 skipped
+
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-landing2a-merge-owner-root-intermediate-cold-build-car-9addca717914-202611092307190463110000-0e0f4ec4d3de.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-landing2a-merge-owner-root-intermediate-cold-build-bin-9addca717914-202611092307204370510000-5f418b0dcd64.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-landing2a-merge-owner-root-intermediate-cold-build-bin-9addca717914-202611092307219120850000-235e80b26bee.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-landing2a-merge-owner-root-intermediate-cold-selection-9addca717914-202611092307408699420000-b1b3c6a83db3.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-landing2a-merge-owner-root-intermediate-cold-run.log-9addca717914-202611092307425882380000-2aff9fb6fa1c.log
+EVIDENCE_TEST_COUNTS: 1,0,0
+
+end_utc: 2026-11-09T23:07:50.269215+00:00
+exit_code: 0
+tests_passed: 1
+tests_failed: 0
+tests_ignored: 0

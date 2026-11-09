@@ -106,3 +106,5 @@ mod symbol_uniqueness;
 mod tail_recovery_matrix;
 mod tail_recovery_source;
 mod tail_recovery_subject;
+
+mod merge_history_contributions;

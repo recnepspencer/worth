@@ -484,3 +484,42 @@ Seventeen-court source reviewAPPROVE afterprecompileKindIdimportfix. Auditcorrec
 FourthroundClippyexit0,32prod/24testwarnings,one newunusedLocatorparentimportafterretirement. Removeexactimport;fifthreview-fixroundRoot-onlyClippy,reusegreenunchangedcourt/testkitinputs,no testrepeat. Caps35/fmt-sourcepass,functions16cohesiveclosedmatrix/fixture/ownerdispatchadvisories0scanerrors. FreshfinalreviewsourceAPPROVE,finalevidencependingClippyclean+boundary/context/fmt. Twofunctionalmergehistorycourtsremainblockedonactualcreationcapabilitydecision,noprivatesetter/proxy.
 
 Seventeencourtslicegatescomplete:qualified17/0/0+selectedplacement/Full2/0/0;Root/testkit/courtClippyexit0,andcleanRoot32/23queuedwarningsonly;fmt/context/caps35pass;16functionadvisoriesreviewedcohesive;boundarysame14noneinchangedfiles(3ownedadaptersremain). FreshfinalindependentreviewAPPROVE,nofindingsopen. Commitreviewedsafe point. Counts1cargo check,13Clippy,17focusedbuilds,12selectedtestruns. TwooriginalmergehistorytestsremainHAPPYpendingcreationcontractdecision;32deadcode/CompleteACKqualificationnotstartedoutoforder. Noignoredtest/oracle/scale/scenario/QueryStorebuild/merge/push.
+
+
+2026-11-09 merge-parent ruling applied: actual-delta planning observation and two
+replacement halves prepared in one batch. Initial independent design REJECT
+caught eager inline restoration; revised composition explicitly places cold
+proof in public shipping merge and exact Conflict/diagnostic in Native owner
+validation over its restored originals. No public merge-parent transaction door.
+C4 fault move and obsolete adapter closure follow only after replacement green.
+This turn so far: 0checks/0Clippy/0builds/0runs.
+
+First focused public prebuild failed before tests: both diagnostics were the same
+RecordRef non-Copy move in test observation arguments. Clone descriptive record
+at both uses; no owner behavior change. Whole diagnostic family fixed before
+second build. Revised design/source reviewer APPROVE. Counts0check/0Clippy/1build/0run.
+
+Public merge first run0/1/0: fixture incorrectly demanded zero reads for every
+canonical body at recovery, although root admission reads heads. Preserve the
+actual claim: intermediate nonhead position has no read before planning and a
+real read afterwards. No covered body is cleared/evicted. Original court only
+asserted intermediate cold, not all history cold. Correct fixture before next
+batched public/owner verification. Counts0check/0Clippy/2build/1run.
+
+Both merge replacement halves pass1/0/0 each; no ignored body ran. Remove old
+HAPPY court only after those results, preserve matrix+fixtures via exact C4
+restore9addca7179, delete obsolete cold adapters and mounts. Baseline transfers
+only original ExecutionRequest allowance to actual owner unit, net minus3rows.
+4focused builds/3runs so far; no check/Clippy. Fifth blocking round justified:
+Root/court Clippy must compile completed consumer/adapter deletion, detecting
+stale mounts/imports after otherwise green replacement evidence. No test repeat.
+
+Merge-history slice phase gates: Root/coldcourt Clippy exits0, same32lib/23test
+warnings (next owned gate), no new diagnostic. Fmt/context/caps11 pass. Functions
+3cohesive fixture/scenario advisories,0scanerrors. Boundary12:1remainingowned
+runtime_attachment plus11routed others; none in this slice. Coldsource2 removed.
+Fresh final independent review requested. Counts0check/1Clippy/4builds/3runs.
+
+Fresh final independent review APPROVE, no open findings for mergehistory slice.
+Commit reviewed safe point; then runtimeattachment consumer cutover,32warnings,
+CompleteACK. No ownership/async blocker. Full logledger merge-owner-lanes.md.

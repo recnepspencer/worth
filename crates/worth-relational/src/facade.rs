@@ -205,7 +205,7 @@ pub mod merge {
         SchemaDeclaredCorrespondenceValidationSummary, TopologyExecutionClass,
         TopologyRegionConflictReason, TopologyRewireAdmissionPolicy,
     };
-    pub use crate::merge::MergeAccess;
+    pub use crate::merge::{MergeAccess, RelationalMergePlanningObservation};
     pub use crate::transactions::data::MergeExecutionOutcome;
 }
 

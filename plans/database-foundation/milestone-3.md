@@ -19,6 +19,18 @@ each invariant is enforced and where each new type lives.
 
 ## Moved courts
 
+### C4 - Injected faults
+
+- `residency_failure_matrix_nonhead_merge_history_covers_every_door_and_class`:
+  `restore from 9addca7179:crates/worth-relational/src/tests/durability/medium/cold_merge_history_matrix/exhaustive.rs`.
+  Moved under the coordinator's 2026-11-09 merge-parent ruling. C4 owns the
+  cold-read fault matrix for merge history (every door and cause). Its original
+  fixture, door dispatch and cold provider are retained at the same restore SHA
+  in the parent `cold_merge_history_matrix.rs`, `cold_merge_history_fixture.rs`,
+  `cold_recovery_fixture.rs`, `cold_read_matrix.rs`, `cold_source.rs` and
+  `cold_source/protected_reads.rs`. This is relocation, not retirement or
+  weakened fault assertions.
+
 ### C2 - Cost and bounds: backing and work budgets
 
 - `request_root_refusal_preserves_original_and_releases_partial_backing`:

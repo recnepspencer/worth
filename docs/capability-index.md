@@ -1758,3 +1758,13 @@ A platform owner preparing materialization suspension may inspect
 `RelationalMaterializationSuspensionCompletion::source_records()` before
 publishing. It borrows the original prepared manifest as DATA; the actual
 publication result is still required to complete suspension custody.
+
+### Native merge history contributions
+
+Platform consumers can call `runtime.merge().inspect_planning_scope_with_contributions(request,
+owner_bound_request)` through `worth_relational::facade::merge`. The immutable
+`RelationalMergePlanningObservation` retains the shipping planner's actual
+originals and exposes per-record target/source contributing `CommitId` iterators
+alongside the existing artifact. Bind the request with
+`runtime.bind_merge_planning_request`; this observation grants no merge-parent
+transaction admission or publication authority.

@@ -1,0 +1,129 @@
+command: python target/lane-evidence/landing2a_merge_owner.py native
+HEAD: 9addca717914f10d9d9187f41e46267ada05677b
+git_status_short_empty: false
+start_utc: 2026-11-09T23:07:58.846795+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+prebuild: cargo metadata --offline --format-version 1 --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml"
+prebuild: cargo test --message-format=json --no-run --package worth-relational --lib --profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml" --unit-graph -Z unstable-options
+prebuild: cargo nextest list --cargo-message-format=json --package worth-relational --lib --cargo-profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml" --list-type binaries-only --message-format json
+   Compiling worth-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-relational)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3m 04s
+prebuild: cargo nextest list --cargo-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\landing2a-merge-owner-native-intermediate-cold\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\landing2a-merge-owner-native-intermediate-cold\build\binaries.json" --message-format json --ignore-default-filter -E test(restored_intermediate_source_commit_refuses_merge_parent_overlap)
+prebuild: cargo nextest run --cargo-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\landing2a-merge-owner-native-intermediate-cold\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\landing2a-merge-owner-native-intermediate-cold\build\binaries.json" --profile ci --config-file "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\landing2a-merge-owner-native-intermediate-cold\nextest.toml" --ignore-default-filter --no-fail-fast --no-tests=fail --message-format libtest-json -E test(=mvcc::validation::merge_history_tests::restored_intermediate_source_commit_refuses_merge_parent_overlap)
+info: experimental features enabled: wrapper-scripts
+────────────
+ Nextest run ID f3c7887b-af69-4663-b399-6c348bc871f0 with nextest profile: ci
+    Starting 1 test across 1 binary (2432 tests skipped)
+{"type":"suite","event":"started","test_count":32}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$storage::substrate::shared_column::tests::synthetic_dense_column_bootstrap_benchmark"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":31,"measured":0,"filtered_out":2401,"exec_time":0}
+{"type":"suite","event":"started","test_count":32}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::durability::contracts::native_checkpoint_restore_benchmark::synthetic_native_restore_and_image_digest_benchmark"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":31,"measured":0,"filtered_out":2401,"exec_time":0}
+{"type":"suite","event":"started","test_count":32}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::lineage::fork_scale::retained_fork_lineage_ancestry_is_flat_at_scale_profile"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":31,"measured":0,"filtered_out":2401,"exec_time":0}
+{"type":"suite","event":"started","test_count":32}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::lineage::fork_scale::selected_main_lineage_is_flat_at_65_536_unrelated_commits"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":31,"measured":0,"filtered_out":2401,"exec_time":0}
+{"type":"suite","event":"started","test_count":32}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::artifact_recoverability_matrix::perf_artifact_recoverability_matrix"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":31,"measured":0,"filtered_out":2401,"exec_time":0}
+{"type":"suite","event":"started","test_count":32}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::cad_topology_matrix::perf_cad_topology_matrix"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":31,"measured":0,"filtered_out":2401,"exec_time":0}
+{"type":"suite","event":"started","test_count":32}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::chip_simulator_matrix::perf_chip_simulator_matrix"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":31,"measured":0,"filtered_out":2401,"exec_time":0}
+{"type":"suite","event":"started","test_count":32}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::commit_delta_matrix::perf_commit_delta_matrix"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":31,"measured":0,"filtered_out":2401,"exec_time":0}
+{"type":"suite","event":"started","test_count":32}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::downstream_runtime_mock_matrix::perf_downstream_runtime_mock_matrix"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":31,"measured":0,"filtered_out":2401,"exec_time":0}
+{"type":"suite","event":"started","test_count":32}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::durability_append_matrix::perf_durability_append_matrix"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":31,"measured":0,"filtered_out":2401,"exec_time":0}
+{"type":"suite","event":"started","test_count":32}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::game_engine_matrix::perf_game_engine_matrix"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":31,"measured":0,"filtered_out":2401,"exec_time":0}
+{"type":"suite","event":"started","test_count":32}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::geometry_artifact_decomposition_matrix::perf_geometry_artifact_decomposition_matrix"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":31,"measured":0,"filtered_out":2401,"exec_time":0}
+{"type":"suite","event":"started","test_count":32}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::geometry_kernel_matrix::perf_geometry_kernel_matrix"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":31,"measured":0,"filtered_out":2401,"exec_time":0}
+{"type":"suite","event":"started","test_count":32}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::hot_cold_path_matrix::perf_hot_cold_path_matrix"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":31,"measured":0,"filtered_out":2401,"exec_time":0}
+{"type":"suite","event":"started","test_count":32}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::index_parity_matrix::perf_index_parity_matrix"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":31,"measured":0,"filtered_out":2401,"exec_time":0}
+{"type":"suite","event":"started","test_count":32}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::inspection_budget_matrix::perf_inspection_budget_matrix"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":31,"measured":0,"filtered_out":2401,"exec_time":0}
+{"type":"suite","event":"started","test_count":32}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::invariant_materialization_matrix::perf_invariant_materialization_matrix"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":31,"measured":0,"filtered_out":2401,"exec_time":0}
+{"type":"suite","event":"started","test_count":32}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::merge_lineage_matrix::perf_merge_lineage_matrix"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":31,"measured":0,"filtered_out":2401,"exec_time":0}
+{"type":"suite","event":"started","test_count":32}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::mixed_load_matrix::perf_mixed_load_matrix"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":31,"measured":0,"filtered_out":2401,"exec_time":0}
+{"type":"suite","event":"started","test_count":32}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::performance_harness_matrix::perf_harness_measurement_matrix"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":31,"measured":0,"filtered_out":2401,"exec_time":0}
+{"type":"suite","event":"started","test_count":32}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::profile_matrix::capture::perf_profile_matrix"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":31,"measured":0,"filtered_out":2401,"exec_time":0}
+{"type":"suite","event":"started","test_count":32}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::query_packet_matrix::perf_query_packet_matrix"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":31,"measured":0,"filtered_out":2401,"exec_time":0}
+{"type":"suite","event":"started","test_count":32}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::recoverability_policy_matrix::perf_recoverability_policy_matrix"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":31,"measured":0,"filtered_out":2401,"exec_time":0}
+{"type":"suite","event":"started","test_count":32}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::replay_recovery_matrix::perf_replay_recovery_matrix"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":31,"measured":0,"filtered_out":2401,"exec_time":0}
+{"type":"suite","event":"started","test_count":32}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::retention_reclaim_matrix::perf_retention_reclaim_matrix"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":31,"measured":0,"filtered_out":2401,"exec_time":0}
+{"type":"suite","event":"started","test_count":32}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::rocketship_scale_matrix::perf_rocketship_scale_matrix"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":31,"measured":0,"filtered_out":2401,"exec_time":0}
+{"type":"suite","event":"started","test_count":32}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::snapshot_materialization_matrix::perf_snapshot_materialization_matrix"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":31,"measured":0,"filtered_out":2401,"exec_time":0}
+{"type":"suite","event":"started","test_count":32}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::sustained_load_matrix::perf_sustained_load_matrix"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":31,"measured":0,"filtered_out":2401,"exec_time":0}
+{"type":"suite","event":"started","test_count":32}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::workflow_matrix::perf_workflow_matrix"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":31,"measured":0,"filtered_out":2401,"exec_time":0}
+{"type":"suite","event":"started","test_count":32}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::publication::cdc::certification::seeded_resume::cdc_certification_rewrite_storm_preserves_exact_suffix_under_tiny_windows"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":31,"measured":0,"filtered_out":2401,"exec_time":0}
+{"type":"suite","event":"started","test_count":32}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::publication::cdc::certification::seeded_resume::cdc_certification_thousand_step_random_resume_matrix_converges"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":31,"measured":0,"filtered_out":2401,"exec_time":0}
+        PASS [   6.965s] (1/1) worth-relational mvcc::validation::merge_history_tests::restored_intermediate_source_commit_refuses_merge_parent_overlap
+{"type":"suite","event":"started","test_count":32}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$mvcc::validation::merge_history_tests::restored_intermediate_source_commit_refuses_merge_parent_overlap"}
+{"type":"test","event":"ok","name":"worth-relational::worth_relational$mvcc::validation::merge_history_tests::restored_intermediate_source_commit_refuses_merge_parent_overlap","exec_time":6.9650261}
+{"type":"suite","event":"ok","passed":1,"failed":0,"ignored":31,"measured":0,"filtered_out":2401,"exec_time":6.9650261}
+────────────
+     Summary [   6.974s] 1 test run: 1 passed, 2432 skipped
+
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-landing2a-merge-owner-native-intermediate-cold-build-c-9addca717914-202611092308061031510000-621f550a5c97.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-landing2a-merge-owner-native-intermediate-cold-build-b-9addca717914-202611092308072453590000-7a2635039c55.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-landing2a-merge-owner-native-intermediate-cold-build-b-9addca717914-202611092308081664290000-edea593fdb02.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-landing2a-merge-owner-native-intermediate-cold-selecti-9addca717914-202611092311190402490000-18c1b04fa268.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-landing2a-merge-owner-native-intermediate-cold-run.log-9addca717914-202611092311201956660000-138fc9bb4987.log
+EVIDENCE_TEST_COUNTS: 1,0,0
+
+end_utc: 2026-11-09T23:11:27.792733+00:00
+exit_code: 0
+tests_passed: 1
+tests_failed: 0
+tests_ignored: 0
