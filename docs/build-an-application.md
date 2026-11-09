@@ -334,6 +334,22 @@ resolver authority. The 16 MiB content frame limit refuses at admission before
 effects; it never redirects the value to InlineBytes. Representation follows
 meaning and authority, never a size threshold.
 
+The typed content door is `content(entity, content_field(Field::at("Field"), Format))`.
+It returns `Result<Option<AdmittedContent<Format>>, ContentReadDenial>` on
+`DecisionReader`, `WorthQueryApplicationInvariantProjectionReader`,
+`WorthQueryApplicationOperationInvariantProjectionReader`,
+`WorthQueryComputationReader`, and `WorthQueryApplicationInvariantReadView`.
+For the invariant view, pass its own `WorthQueryApplicationInvariantEntity`;
+other readers use their resolved `WorthQueryInvariantEntityIdentity`.
+`payload()` borrows the admitted immutable bytes. An absent optional aspect or
+field returns `None`; a missing required field, missing content, mismatched
+format or invalid frame is a typed refusal. The installed field remains the
+dependency, so replacing its content identity invalidates consumers. Each read
+uses its reader's original request and work allowance. Refusals remain sticky
+through projection and invariant completion even if a callback catches them.
+The Host `primary_graph`, `application_invariants` and
+`application_contribution` facades export the content custody and denial types.
+
 The immutable
 `InlineBytes` carrier admits at most **4,294,967,290 payload bytes**
 (`u32::MAX - 5`). The existing native scalar frame uses a 32-bit body length;

@@ -63,3 +63,6 @@ pub use crate::domain_computation::primary_graph::{
 pub use crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase;
 
 pub use crate::domain_computation::primary_graph::WorthQueryMemberExecution;
+
+// Typed immutable content shared by the public reader doors.
+pub use crate::domain_computation::primary_graph::{AdmittedContent, ContentReadDenial};

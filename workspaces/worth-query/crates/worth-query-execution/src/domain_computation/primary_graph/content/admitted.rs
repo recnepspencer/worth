@@ -19,16 +19,11 @@ pub struct AdmittedContent<C: ApplicationContentBinding> {
     _format: PhantomData<fn() -> C>,
 }
 impl<C: ApplicationContentBinding> AdmittedContent<C> {
-    pub(in crate::domain_computation::primary_graph) fn new(
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        frame: RelationalContentFrame,
-        recipe: &worth_query_declaration::facade::application_schema::ApplicationContentBindingRecipe,
-    ) -> Result<Self, worth_relational::facade::content::RelationalContentDenial> {
-        super::staging::require_contract(execution, &frame, recipe)?;
-        Ok(Self {
+    pub(super) fn from_resolved_frame(frame: RelationalContentFrame) -> Self {
+        Self {
             frame,
             _format: PhantomData,
-        })
+        }
     }
     pub fn identity(&self) -> worth_foundational::facade::ContentRefId {
         self.frame.identity()

@@ -47,3 +47,6 @@ pub use worth_relational::facade::runtime::CustomInvariantLeaseBudget;
 pub use worth_execution::{MemoryLimitDenial, MemoryLimitLevel};
 /// Direction of traversal relative to a stored relation's source and target.
 pub use worth_foundational::facade::RelationDirection;
+
+// Typed immutable content shared by the public reader doors.
+pub use crate::domain_computation::primary_graph::{AdmittedContent, ContentReadDenial};

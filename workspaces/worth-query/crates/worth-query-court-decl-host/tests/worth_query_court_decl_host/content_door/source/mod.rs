@@ -15,6 +15,8 @@ pub use provider::Provider;
 pub use rule::{definition, resolve, CheckSamples};
 #[derive(Default)]
 pub struct Calls {
+    pub reader_impostor: AtomicUsize,
+    pub reader_bytes: Mutex<Vec<Vec<u8>>>,
     pub cancel_content: Mutex<Option<WorthQueryCancellationSource>>,
     pub content_reads: AtomicUsize,
     pub exact_reads: AtomicUsize,

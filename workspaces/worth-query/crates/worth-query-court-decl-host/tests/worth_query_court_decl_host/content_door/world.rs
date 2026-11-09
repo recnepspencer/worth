@@ -13,7 +13,13 @@ impl ApplicationProgramDefinition<Schema> for Program {
             ApplicationLocalRuleRef<Schema, Feature, source::CheckSamples>,
             ApplicationCommitBoundary,
         >,
-        ApplicationRuleLeaf,
+        ApplicationRuleList<
+            ApplicationRuleAt<
+                ApplicationLocalRuleRef<Schema, Feature, readers::invariant::CheckContent>,
+                ApplicationCommitBoundary,
+            >,
+            ApplicationRuleLeaf,
+        >,
     >;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("content-door.program.v1");
@@ -25,6 +31,8 @@ impl ApplicationProgramDefinition<Schema> for Program {
             .finish_action()
             .native_action::<revision::Binding>()
             .finish_action()
+            .derived_artifact::<readers::computation::Artifact>()
+            .managed_computation::<readers::computation::Computation>()
             .native_action::<operation::Binding>()
             .finish_action()
             .finish()]
@@ -46,12 +54,30 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         setup.invariant(
             source::CheckSamples::reference(),
             ApplicationInvariantExecutionPoint::CommitBoundary,
-            move |resolver| source::resolve(resolver, calls.clone()),
+            {
+                let calls = calls.clone();
+                move |resolver| source::resolve(resolver, calls)
+            },
+        )?;
+        setup.invariant(
+            readers::invariant::CheckContent::reference(),
+            ApplicationInvariantExecutionPoint::CommitBoundary,
+            {
+                let calls = calls.clone();
+                move |resolver| readers::invariant::resolve(resolver, calls)
+            },
         )?;
         setup.handler::<source::expectation::Binding, _>(source::expectation::Handler)?;
         setup.handler::<created_content::Binding, _>(created_content::Handler)?;
         setup.handler::<revision::Binding, _>(revision::Handler)?;
-        setup.handler::<operation::Binding, _>(operation::Handler { cancellation })
+        let computation = setup
+            .partitioned_computation::<Feature, readers::computation::Computation, _>(
+                readers::computation::Owner,
+            )?;
+        setup.handler::<operation::Binding, _>(operation::Handler {
+            cancellation,
+            computation,
+        })
     }
 }
 pub type Host = WorthQueryProgramApplicationRuntime<Schema, Program>;
@@ -65,7 +91,17 @@ pub fn install_with_calls(
     cancellation: Option<WorthQueryCancellationSource>,
     calls: std::sync::Arc<source::Calls>,
 ) -> Host {
-    in_memory_program(
+    install_with_projection(cancellation, calls).0
+}
+pub fn install_with_projection(
+    cancellation: Option<WorthQueryCancellationSource>,
+    calls: std::sync::Arc<source::Calls>,
+) -> (
+    Host,
+    WorthQueryApplicationInvariantProjectionAuthority<Schema>,
+) {
+    let mut projection = None;
+    let host = in_memory_program(
         ApplicationProgramAuthoring::<Schema, Program>::begin()
             .validated_program()
             .unwrap(),
@@ -74,6 +110,7 @@ pub fn install_with_calls(
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         host_limits(WorthQueryAdmissionClock::system()),
         |_, graph, installed| {
+            projection = Some(graph.retain_invariant_projection_authority());
             graph.bind_principal(
                 &installed.principal_binding(Actor::reference()).unwrap(),
                 WorthQueryApplicationPrincipalKey::new("operator").unwrap(),
@@ -91,7 +128,8 @@ pub fn install_with_calls(
             Ok(())
         },
     )
-    .unwrap()
+    .unwrap();
+    (host, projection.unwrap())
 }
 pub fn try_edit(
     host: &Host,

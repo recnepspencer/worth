@@ -5,6 +5,7 @@ pub enum CustomInvariantFailureCause {
     DeclaredValue(super::CustomInvariantRefusal),
     Access(super::CustomInvariantAccessDenial),
     Stopped,
+    Content(crate::execution::RelationalExecutionDenialCause),
     Interrupted(super::CustomInvariantInterruption),
     ManagedIndex { detail: String },
     Allocation,

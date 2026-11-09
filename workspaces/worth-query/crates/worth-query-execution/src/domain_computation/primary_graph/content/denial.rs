@@ -5,6 +5,8 @@ use worth_relational::facade::content::RelationalContentDenial;
 
 #[derive(Debug)]
 pub enum ContentReadDenial {
+    InvariantAccess(Box<super::super::application_invariant::WorthQueryInvariantAccessDenial>),
+    InvariantSource(Box<worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial>),
     Field(HandlerExecutionDenial),
     Admission(WorthQueryValueDecodeDenial),
     Content(RelationalContentDenial),
