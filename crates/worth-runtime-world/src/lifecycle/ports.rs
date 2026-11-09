@@ -47,12 +47,18 @@ impl RuntimeWorldOwnerUnavailable {
 #[path = "ports/branch_creation.rs"]
 mod branch_creation;
 pub(crate) use branch_creation::RuntimeWorldBranchCreationRequest;
+pub use branch_creation::{
+    RuntimeWorldBranchCreationCompletion, RuntimeWorldBranchCreationNoEffect,
+    RuntimeWorldBranchCreationRelease, RuntimeWorldHomeBranchCreationRequest,
+};
 
 /// Terminal owned by the branch-creation service. A performed value is a new
-/// product reference occurrence; a partial value keeps performed owner work
-/// in the bounded recovery authority without publishing a product head.
+/// product reference occurrence; a partial value keeps the original custody
+/// and any actual owner work in the bounded recovery authority.
 #[derive(Debug)]
 pub enum RuntimeWorldBranchCreationOutcome {
+    NoEffect(RuntimeWorldBranchCreationNoEffect),
+    ReleasedOriginal(RuntimeWorldBranchCreationRelease),
     Performed(ProductBranchObservation),
     ProductUnpublished(ProductUnpublishedOwnerEffects),
 }
@@ -199,10 +205,19 @@ pub(crate) trait RuntimeWorldBranchService:
         &self,
         source: &ProductBranchObservation,
     ) -> Result<crate::branch::RetainedProductBranchCreationSource, RuntimeWorldBranchAdmissionDenial>;
+    fn reserve_creation_name_ordinal(&self) -> Result<u64, RuntimeWorldBranchAdmissionDenial>;
+
     fn create_product_branch(
         &self,
         request: RuntimeWorldBranchCreationRequest<'_, '_, '_>,
     ) -> Result<RuntimeWorldBranchCreationOutcome, RuntimeWorldBranchAdmissionDenial>;
+
+    fn resume_creation(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        handle: &crate::recovery::ProductUnpublishedRecoveryHandle,
+        cancellation: &RuntimeWorldCancellationToken,
+    ) -> Result<RuntimeWorldBranchCreationOutcome, crate::recovery::RuntimeWorldRecoveryDenial>;
 
     /// Retire the installed occurrence proved by this observation. Later head
     /// movement is allowed; a recreated name is a different occurrence.

@@ -40,12 +40,22 @@ pub(super) struct Fixture {
 }
 impl Fixture {
     pub(super) fn new(request: &ExecutionRequest<'_, '_>) -> Self {
-        Self::fresh(request, false)
+        Self::fresh(request, false, RuntimeWorldBudgets::without_policy_limits())
     }
     pub(super) fn journal(request: &ExecutionRequest<'_, '_>) -> Self {
-        Self::fresh(request, true)
+        Self::fresh(request, true, RuntimeWorldBudgets::without_policy_limits())
     }
-    fn fresh(request: &ExecutionRequest<'_, '_>, journal: bool) -> Self {
+    pub(super) fn journal_with_budgets(
+        request: &ExecutionRequest<'_, '_>,
+        budgets: RuntimeWorldBudgets,
+    ) -> Self {
+        Self::fresh(request, true, budgets)
+    }
+    fn fresh(
+        request: &ExecutionRequest<'_, '_>,
+        journal: bool,
+        budgets: RuntimeWorldBudgets,
+    ) -> Self {
         let (mut native, medium) =
             worth_testkit_relational::initial_input_source::initialized(request);
         let plan = native
@@ -72,6 +82,7 @@ impl Fixture {
             Admission::Fresh(admission),
             signal,
             signal_medium,
+            budgets,
         )
         .unwrap()
     }
@@ -120,6 +131,7 @@ impl Fixture {
             Admission::Recovered(authority),
             signal,
             signal_medium,
+            RuntimeWorldBudgets::without_policy_limits(),
         )
     }
     fn attach(
@@ -130,6 +142,7 @@ impl Fixture {
         admission: Admission,
         signal: SignalDurableOwner<(), (), (), (), ()>,
         signal_medium: Arc<signal_medium::Medium>,
+        budgets: RuntimeWorldBudgets,
     ) -> Result<Self, WorldReadmissionDenial> {
         let native = Arc::new(native);
         let source =
@@ -158,7 +171,7 @@ impl Fixture {
         let attachment = RuntimeWorldAuthoredSignalAttachment::install(&signal, request).unwrap();
         let builder = RuntimeWorldOwner::builder()
             .with_authored_signal(attachment)
-            .with_budgets(RuntimeWorldBudgets::without_policy_limits())
+            .with_budgets(budgets)
             .with_clock(RuntimeWorldClock::from_source(Clock))
             .with_execution_policy(ExecutionRequestPolicy::for_workers(
                 ExecutionPosture::Serial,

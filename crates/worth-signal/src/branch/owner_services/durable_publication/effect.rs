@@ -24,6 +24,14 @@ pub(super) enum ReservedSignalBranches {
     },
 }
 impl ReservedSignalBranches {
+    pub(super) fn kind(self) -> worth_foundational::facade::SignalBranchEffectKind {
+        use worth_foundational::facade::SignalBranchEffectKind as Kind;
+        match self {
+            Self::Advanced(_) => Kind::Advanced,
+            Self::Forked { .. } => Kind::Forked,
+        }
+    }
+
     pub(super) fn target(self) -> SignalBranchId {
         match self {
             Self::Advanced(branch) => branch,
@@ -53,6 +61,15 @@ pub enum SignalDurableOwnerEffect {
 pub struct SignalDurableForkResult {
     pub(super) outcome: SignalBranchForkOutcome,
     pub(super) _memory: Option<worth_execution::ExecutionMemoryReservation>,
+}
+impl SignalDurableOwnerEffect {
+    pub fn kind(&self) -> worth_foundational::facade::SignalBranchEffectKind {
+        use worth_foundational::facade::SignalBranchEffectKind as Kind;
+        match self {
+            Self::Advanced(_) => Kind::Advanced,
+            Self::Forked(_) => Kind::Forked,
+        }
+    }
 }
 impl SignalDurableForkResult {
     pub fn result(&self) -> &SignalBranchForkOutcome {

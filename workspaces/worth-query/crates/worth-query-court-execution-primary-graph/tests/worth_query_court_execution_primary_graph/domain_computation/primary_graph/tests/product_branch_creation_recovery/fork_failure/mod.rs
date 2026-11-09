@@ -6,7 +6,7 @@ use worth_query_execution::facade::product::WorthQueryProductBranchCreationRecov
 use worth_runtime_world::facade::ProductBranchCreationIntent;
 use worth_runtime_world::facade::ProductBranchCreationPlans;
 use worth_runtime_world::facade::RelationalBranchCreationPlan;
-use worth_runtime_world::facade::RuntimeWorldBranchCreationOutcome;
+use worth_query_execution::facade::product::WorthQueryProductBranchCreationOutcome;
 use worth_runtime_world::facade::RuntimeWorldCancellationSource;
 use worth_runtime_world::facade::SignalBranchCreationPlan;
 
@@ -35,7 +35,7 @@ pub fn create(
     )
     .expect("the owner-driven collision fixture is valid");
     let cancellation = RuntimeWorldCancellationSource::new();
-    let RuntimeWorldBranchCreationOutcome::Performed(occupied) =
+    let WorthQueryProductBranchCreationOutcome::Performed(occupied) =
         (*(*world.application.runtime_for_test()).product_runtime_for_test())
             .create_product_branch_for_test(execution, &source, None, intent, &cancellation.token())
             .expect("the real Signal destination is occupied through World")

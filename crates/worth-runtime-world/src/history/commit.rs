@@ -15,6 +15,7 @@ use super::OrdinaryParent;
 
 #[path = "commit/component_evidence.rs"]
 mod component_evidence;
+mod creation_readmission;
 mod readmission;
 pub(crate) use readmission::ReadmittedWorldCommitDenial;
 

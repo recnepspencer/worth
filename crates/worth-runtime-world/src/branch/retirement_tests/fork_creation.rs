@@ -248,6 +248,10 @@ pub(super) fn create_forked_branch(
     )
     .expect("owner-issued fork reaches a performed branch outcome")
     {
+        RuntimeWorldBranchCreationOutcome::NoEffect(_)
+        | RuntimeWorldBranchCreationOutcome::ReleasedOriginal(_) => {
+            panic!("memory creation cannot return a Home publication fate")
+        }
         RuntimeWorldBranchCreationOutcome::Performed(observation) => observation,
         RuntimeWorldBranchCreationOutcome::ProductUnpublished(_) => {
             panic!("fully admitted fork unexpectedly became unpublished")

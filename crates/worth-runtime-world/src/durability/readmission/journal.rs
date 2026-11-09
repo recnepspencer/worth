@@ -99,16 +99,27 @@ impl WorldCheckpointImage {
                 {
                     return Err(WorldReadmissionDenial::BranchLineage);
                 }
-                let image_head = WorldImageHead::branch(record.clone());
+                let image_head = WorldImageHead::branch(record.clone(), position);
+                self.remember_reference(&image_head, execution)?;
                 insert(&mut self.branches, &key, &(), execution)?;
                 insert(&mut self.heads, &key, &image_head, execution)?;
                 insert(&mut self.history, &head.commit, &image_head, execution)?;
             }
+            WorldRecord::CreationIntent(_) => {
+                self.collect_creation_intent(record.clone(), position, digest, execution)?
+            }
+            WorldRecord::BranchCreated(_) => {
+                self.collect_created_branch(record.clone(), position, digest, execution)?
+            }
+            WorldRecord::CreationReleased {
+                association,
+                custody,
+            } => self.admit_creation_release(association, *custody, position, digest, execution)?,
             WorldRecord::OpenAttempt(open) => {
                 // Exact branch activation/history admission owns this revision.
                 // The Home descriptor may still name a different branch's program.
                 let attempt = open.association.attempt();
-                if self.opens.contains_key(&attempt) {
+                if self.opens.contains_key(&attempt) || self.creations.contains_key(&attempt) {
                     return Err(WorldReadmissionDenial::DuplicateIdentity);
                 }
                 let admitted = AdmittedWorldOpenAttempt::from_validated_journal(
@@ -159,7 +170,7 @@ impl WorldCheckpointImage {
                 {
                     return Err(WorldReadmissionDenial::ConflictingOpenAttempt);
                 }
-                self.admit_occurrence(
+                self.collect_occurrence(
                     open.association.attempt(),
                     owners.clone(),
                     *publishing_incarnation,
@@ -228,12 +239,33 @@ impl WorldCheckpointImage {
             }
             insert(&mut commits, &open.commit, &(), execution)?;
             insert(&mut custody, &open.custody, &(), execution)?;
-            if self
-                .history
-                .get(&open.expected.commit)
-                .is_none_or(|head| !head.matches(&open.expected))
-            {
+            if self.recorded_reference(&open.expected).is_none() {
                 return Err(WorldReadmissionDenial::MissingPredecessor);
+            }
+        }
+        for original in self.creations.values() {
+            let intent = original.intent();
+            if custody.contains_key(&intent.custody) {
+                return Err(WorldReadmissionDenial::DuplicateIdentity);
+            }
+            insert(&mut custody, &intent.custody, &(), execution)?;
+            if self.recorded_reference(&intent.source).is_none() {
+                return Err(WorldReadmissionDenial::MissingPredecessor);
+            }
+            // Exact reuse shares its producer's commit, never its original
+            // attempt or custody. A real owner fork reserves a new commit.
+            if intent.destination.commit != intent.source.commit {
+                if commits.contains_key(&intent.destination.commit) {
+                    return Err(WorldReadmissionDenial::DuplicateIdentity);
+                }
+                if let Some(selected) = self.history.get(&intent.destination.commit) {
+                    if !matches!(&selected.record().record,
+                        WorldRecord::BranchCreated(created) if &created.intent == intent)
+                    {
+                        return Err(WorldReadmissionDenial::DuplicateIdentity);
+                    }
+                }
+                insert(&mut commits, &intent.destination.commit, &(), execution)?;
             }
         }
         Ok(())

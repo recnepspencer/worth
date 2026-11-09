@@ -10,10 +10,10 @@ use super::{
 /// settlement. The resident slot is Busy during the owner call, while this token holds
 /// the exact record and the catalog keeps its slot and metadata charge.
 pub(crate) struct ReservedProductUnpublishedRecordUpdate {
-    catalog: ProductUnpublishedRecoveryCatalog,
-    identity: ProductUnpublishedOwnerEffectsIdentity,
-    record: Option<Arc<ProductUnpublishedOwnerEffectsRecord>>,
-    armed: bool,
+    pub(super) catalog: ProductUnpublishedRecoveryCatalog,
+    pub(super) identity: ProductUnpublishedOwnerEffectsIdentity,
+    pub(super) record: Option<Arc<ProductUnpublishedOwnerEffectsRecord>>,
+    pub(super) armed: bool,
 }
 
 impl std::fmt::Debug for ReservedProductUnpublishedRecordUpdate {

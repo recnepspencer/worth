@@ -175,7 +175,7 @@ impl WorldRecoveredUnpublishedEffects {
                     Outcome::Pending(self)
                 }
                 WorldDurablePublicationStop::Refused(cause) => Outcome::Refused {
-                    cause: WorldRecoveredContinuationDenial::Durable(cause),
+                    cause: WorldRecoveredContinuationDenial::Durable(cause.into_cause()),
                     custody: self,
                 },
                 WorldDurablePublicationStop::EvidenceRequired => Outcome::EvidenceRequired(self),

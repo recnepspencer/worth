@@ -32,6 +32,32 @@ where
             if association.attempt().owner() != binding.owner() {
                 return ControlFlow::Break(D::ForeignOwner);
             }
+            if let Some(intent) = recovered.creations.get(&association.attempt()) {
+                let original = intent.intent();
+                if &original.association != association {
+                    return ControlFlow::Break(D::ConflictingCreationIntent);
+                }
+                let crate::branch::SignalBranchCreationPlan::ForkExact { target } = &original.signal else {
+                    return ControlFlow::Break(D::CreationEvidenceMismatch);
+                };
+                match effect.change() {
+                    worth_signal::facade::durability::SignalAuthoredBranchChange::Created { name, parent: Some(_) }
+                        if name == target.as_str() => {}
+                    worth_signal::facade::durability::SignalAuthoredBranchChange::Created { .. }
+                    | worth_signal::facade::durability::SignalAuthoredBranchChange::Advanced
+                    | worth_signal::facade::durability::SignalAuthoredBranchChange::SnapshotCaptured
+                    | worth_signal::facade::durability::SignalAuthoredBranchChange::Restored
+                    | worth_signal::facade::durability::SignalAuthoredBranchChange::Retired =>
+                        return ControlFlow::Break(D::CreationEvidenceMismatch),
+                }
+                let Some(selected) = recovered.created.get(&association.attempt()) else {
+                    return ControlFlow::Break(unclean());
+                };
+                if selected.created().components.signal.point().reference() != effect.reference() {
+                    return ControlFlow::Break(D::CreationEvidenceMismatch);
+                }
+                return ControlFlow::Continue(());
+            }
             let Some(open) = recovered.opens.get(&association.attempt()) else {
                 return ControlFlow::Break(unclean());
             };

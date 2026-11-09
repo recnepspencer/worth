@@ -154,8 +154,8 @@ fn empty_world_requires_its_actual_native_recovery_authority_before_construction
     );
     assert!(matches!(
         refused,
-        Err(WorldReadmissionDenial::NativeDiscovery(
-            worth_relational::facade::durability::RelationalAssociatedEffectRefusal::ForeignRuntime
+        Err(WorldReadmissionDenial::NativeForkDiscovery(
+            worth_relational::facade::durability::RelationalForkReadmissionCause::ForeignRuntime
         ))
     ));
     assert!(Arc::ptr_eq(

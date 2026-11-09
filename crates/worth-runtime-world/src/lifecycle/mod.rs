@@ -9,6 +9,7 @@ pub use interim_checkpoint::{
 mod close;
 pub(crate) use close::{checkpoint_close_step, RecoveredCloseReceipt};
 pub mod owner;
+pub(crate) use owner::WorldDurableCreationCustody;
 mod owner_inputs;
 mod ports;
 
@@ -45,7 +46,11 @@ pub use builder::{
 pub use public_owner::RuntimeWorldOwner;
 pub use service_ports::*;
 
-pub use ports::RuntimeWorldBranchCreationOutcome;
+pub use ports::{
+    RuntimeWorldBranchCreationCompletion, RuntimeWorldBranchCreationNoEffect,
+    RuntimeWorldBranchCreationOutcome, RuntimeWorldBranchCreationRelease,
+    RuntimeWorldHomeBranchCreationRequest,
+};
 
 mod service_denial;
 pub use service_denial::RuntimeWorldServiceDenial;
@@ -72,6 +77,8 @@ pub use close::{
 };
 
 mod authored_signal;
+pub(crate) use authored_signal::PreparedWorldSignalFork;
+pub use authored_signal::WorldSignalForkPreparationDenial;
 pub use authored_signal::{
     RuntimeWorldAuthoredSignalAttachment, RuntimeWorldAuthoredSignalAttachmentDenial,
 };

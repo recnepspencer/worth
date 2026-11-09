@@ -230,10 +230,10 @@ fn retained_output_selection_has_fixed_work_with_100k_unrelated_partitions() {
 
 #[test]
 fn fork_selection_uses_ancestor_partition_and_retirement_prunes_its_locator() {
+    use worth_query_execution::facade::product::WorthQueryProductBranchCreationOutcome;
     use worth_runtime_world::facade::ProductBranchCreationIntent;
     use worth_runtime_world::facade::ProductBranchCreationPlans;
     use worth_runtime_world::facade::RelationalBranchCreationPlan;
-    use worth_runtime_world::facade::RuntimeWorldBranchCreationOutcome;
     use worth_runtime_world::facade::RuntimeWorldCancellationSource;
     use worth_runtime_world::facade::SignalBranchCreationPlan;
 
@@ -260,7 +260,7 @@ fn fork_selection_uses_ancestor_partition_and_retirement_prunes_its_locator() {
         ),
     )
     .expect("the fork intent is valid");
-    let RuntimeWorldBranchCreationOutcome::Performed(child) = world
+    let WorthQueryProductBranchCreationOutcome::Performed(child) = world
         .application
         .product_runtime()
         .create_product_branch_for_test(

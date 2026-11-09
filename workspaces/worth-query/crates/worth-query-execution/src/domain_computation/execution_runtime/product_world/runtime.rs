@@ -38,7 +38,6 @@ pub struct WorthQueryProductRuntime {
     pub(crate) owner_cleanup: WorthQueryProductBranchOwnerCleanupRegistry,
     pub(crate) default_branch: ProductBranchIdentity,
     pub(crate) default_occurrence: ProductBranchIncarnation,
-    next_public_branch_ordinal: Arc<std::sync::atomic::AtomicU64>,
     pub(crate) root_identity: Arc<WorthQueryProductRootIdentity>,
     pub(crate) recovered_root_authority:
         Option<Arc<worth_runtime_world::facade::RecoveredRuntimeWorldRootAuthority>>,
@@ -92,7 +91,6 @@ impl WorthQueryProductRuntime {
             owner_cleanup,
             default_branch,
             default_occurrence,
-            next_public_branch_ordinal: Arc::new(std::sync::atomic::AtomicU64::new(1)),
             root_identity: Arc::new(WorthQueryProductRootIdentity { _private: () }),
             recovered_root_authority,
         }
@@ -119,26 +117,13 @@ impl WorthQueryProductRuntime {
         &self.default_branch
     }
 
-    pub(crate) fn reserve_public_branch_ordinal(&self) -> Option<u64> {
-        {
-            let update_counter = &self.next_public_branch_ordinal;
-            let mut current = update_counter.load(std::sync::atomic::Ordering::Relaxed);
-            loop {
-                let Some(updated_value) = current.checked_add(1) else {
-                    break Err(current);
-                };
-                match update_counter.compare_exchange_weak(
-                    current,
-                    updated_value,
-                    std::sync::atomic::Ordering::Relaxed,
-                    std::sync::atomic::Ordering::Relaxed,
-                ) {
-                    Ok(previous) => break Ok(previous),
-                    Err(reloaded_value) => current = reloaded_value,
-                }
-            }
-        }
-        .ok()
+    pub(crate) fn reserve_public_branch_ordinal(
+        &self,
+    ) -> Result<u64, super::WorthQueryProductBranchCreationDenial> {
+        self.owner
+            .branch_port()
+            .reserve_creation_name_ordinal()
+            .map_err(super::WorthQueryProductBranchCreationDenial::World)
     }
 
     pub(crate) fn root_identity(&self) -> Arc<WorthQueryProductRootIdentity> {

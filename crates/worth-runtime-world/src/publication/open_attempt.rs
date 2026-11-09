@@ -87,7 +87,9 @@ impl WorldPendingOpenAttempt {
             }
             Err(WorldDurablePublicationStop::Refused(cause)) => {
                 self.original.custody.retain_durable_open(None);
-                WorldOpenAttemptOutcome::Refused(WorldOpenAttemptRefusal::Durable(cause))
+                WorldOpenAttemptOutcome::Refused(WorldOpenAttemptRefusal::Durable(
+                    cause.into_cause(),
+                ))
             }
         }
     }

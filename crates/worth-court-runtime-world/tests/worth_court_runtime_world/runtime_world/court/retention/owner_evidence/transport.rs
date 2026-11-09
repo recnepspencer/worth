@@ -17,9 +17,9 @@ fn normalized_checkpoint_refuses_a_retired_world_row_dialect() {
     let journey = Journey::new(&request, 1);
     let checkpoint = journey.checkpoint(&request);
     let mut selected = checkpoint.bytes().to_vec();
-    assert_eq!(&selected[8..12], &2u32.to_le_bytes());
-    assert_eq!(&selected[52..56], &4u32.to_le_bytes());
-    selected[52..56].copy_from_slice(&3u32.to_le_bytes());
+    assert_eq!(&selected[8..12], &3u32.to_le_bytes());
+    assert_eq!(&selected[52..56], &5u32.to_le_bytes());
+    selected[52..56].copy_from_slice(&4u32.to_le_bytes());
     rehash(&mut selected);
     let denial = journey.refusal(&request, Some(selected), |_| {});
     assert!(matches!(

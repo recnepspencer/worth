@@ -220,9 +220,8 @@ fn composite_fork_refusals_release_destination_and_original_grant_resumes_the_sa
         } else {
             SignalOwnerCancellationSource::new().token()
         };
-        let result = composite.mutation_port().begin_composite_fork(
+        let result = binding.begin(
             execution,
-            binding,
             grant,
             Box::new(SignalOnlyForkPublication),
             &token,

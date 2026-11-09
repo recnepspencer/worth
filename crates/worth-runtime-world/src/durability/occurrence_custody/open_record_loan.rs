@@ -42,7 +42,10 @@ impl Drop for OpenRecordLoan<'_> {
                 | WorldRecord::Branch { .. }
                 | WorldRecord::OpenAttempt(_)
                 | WorldRecord::Released { .. }
-                | WorldRecord::Continued { .. } => {
+                | WorldRecord::Continued { .. }
+                | WorldRecord::CreationIntent(_)
+                | WorldRecord::BranchCreated(_)
+                | WorldRecord::CreationReleased { .. } => {
                     unreachable!("only an actual occurrence can be loaned")
                 }
             }

@@ -106,6 +106,10 @@ fn create_reused_branch(
     )
     .expect("exact reuse is admitted")
     {
+        RuntimeWorldBranchCreationOutcome::NoEffect(_)
+        | RuntimeWorldBranchCreationOutcome::ReleasedOriginal(_) => {
+            panic!("memory creation cannot return a Home publication fate")
+        }
         RuntimeWorldBranchCreationOutcome::Performed(observation) => observation,
         RuntimeWorldBranchCreationOutcome::ProductUnpublished(_) => {
             panic!("exact reuse did not produce a branch observation")

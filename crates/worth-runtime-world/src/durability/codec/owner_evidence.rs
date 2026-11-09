@@ -21,7 +21,7 @@ pub(in crate::durability) fn write(out: &mut Emit<'_>, owners: &Owners) -> Resul
         }
     }
 }
-fn signal_bytes(out: &mut Emit<'_>, signal: &WorldSignalEvidence) -> Result<(), Frame> {
+pub(super) fn signal_bytes(out: &mut Emit<'_>, signal: &WorldSignalEvidence) -> Result<(), Frame> {
     const MAXIMUM: usize =
         worth_signal::facade::durability::SignalRecordedSourcePoint::MAXIMUM_ENCODED_BYTES;
     let unused = MAXIMUM
@@ -47,7 +47,7 @@ pub(in crate::durability) fn read(
         _ => return Err(Frame::Malformed.into()),
     })
 }
-fn read_signal(
+pub(super) fn read_signal(
     input: &mut Read<'_>,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<WorldSignalEvidence, Medium> {

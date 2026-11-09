@@ -37,9 +37,11 @@ pub use readmission_custody::WorldNativeReadmissionCustody;
 mod release_evidence;
 mod root_readmission;
 pub(crate) use artifact::{
-    DurableWorldHead, PreparedWorldArtifact, WorldArtifactInput, WorldHeadInput,
+    DurableWorldHead, PreparedWorldArtifact, WorldArtifactInput, WorldBranchCreatedRecord,
+    WorldCreatedBranchOwnerEvidence, WorldCreationIntentInput, WorldHeadInput,
     WorldOpenAttemptInput, WorldOpenAttemptRecord, WorldOpenComponentIntent, WorldRecord,
-    WorldRelationalEvidence,
+    WorldRecordedRelationalCreationPlan, WorldRelationalCreationInput, WorldRelationalEvidence,
+    WorldRelationalForkEvidence,
 };
 pub use artifact::{
     WorldDurableArtifact, WorldDurableFrameDenial, WORLD_ARTIFACT_PROTOCOL, WORLD_ARTIFACT_VERSION,
@@ -49,8 +51,9 @@ pub(crate) use association::{
     decode_association, encode_association, encode_home_transition_association,
 };
 pub(crate) use binding::{
-    ActualWorldPublication, HomeProgramBindingReservation, WorldCommittedPublication,
-    WorldDurableMediumBinding, WorldDurablePublicationStop,
+    ActualWorldNoEffectPublication, ActualWorldPublication, HomeProgramBindingReservation,
+    WorldCommittedPublication, WorldDurableMediumBinding, WorldDurablePublicationStop,
+    WorldPublicationRefusal,
 };
 pub(crate) use frontiers::WorldIdentityFrontiers;
 pub use medium::{

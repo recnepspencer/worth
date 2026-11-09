@@ -17,6 +17,8 @@ use crate::branch::{
 
 use super::RelationalCanonicalPublicationRoutes;
 
+#[path = "branch_transition_stream/associated_originals.rs"]
+mod associated_originals;
 #[path = "branch_transition_stream/retained_log.rs"]
 mod retained_log;
 #[path = "branch_transition_stream/schema_inputs.rs"]

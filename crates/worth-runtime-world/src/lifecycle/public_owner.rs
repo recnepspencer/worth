@@ -92,6 +92,7 @@ where
                 | super::RuntimeWorldCloseDenial::PublicationFrontierChanged
                 | super::RuntimeWorldCloseDenial::UnresolvedBusinessCustody
                 | super::RuntimeWorldCloseDenial::CleanupRequired
+                | super::RuntimeWorldCloseDenial::DurableCreationPending { .. }
                 | super::RuntimeWorldCloseDenial::RecoveredNativeRetirement(_)
                 | super::RuntimeWorldCloseDenial::CloseProgressPoisoned
                 | super::RuntimeWorldCloseDenial::CloseProgressInvariant

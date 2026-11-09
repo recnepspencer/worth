@@ -91,6 +91,10 @@ fn stale_product_head_after_fork_before_advance_retains_fork_and_winner_evidence
     assert_ne!(winner.selected_commit(), source.selected_commit());
     let effects = match outcome {
         RuntimeWorldBranchCreationOutcome::ProductUnpublished(effects) => effects,
+        RuntimeWorldBranchCreationOutcome::NoEffect(_)
+        | RuntimeWorldBranchCreationOutcome::ReleasedOriginal(_) => {
+            panic!("memory creation cannot return a Home publication fate")
+        }
         RuntimeWorldBranchCreationOutcome::Performed(_) => {
             panic!("a creation whose product head moved cannot install its destination")
         }

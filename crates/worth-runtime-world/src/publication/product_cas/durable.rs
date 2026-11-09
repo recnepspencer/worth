@@ -188,7 +188,7 @@ impl WorldPendingDurablePublication {
             }
             Err(WorldDurablePublicationStop::Refused(cause)) => self
                 .ready
-                .durable_recovery(WorldDurablePublicationDenial::Medium(cause)),
+                .durable_recovery(WorldDurablePublicationDenial::Medium(cause.into_cause())),
             Err(WorldDurablePublicationStop::Unresolved) => self
                 .ready
                 .durable_recovery(WorldDurablePublicationDenial::Indeterminate),

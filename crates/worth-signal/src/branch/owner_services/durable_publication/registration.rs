@@ -64,11 +64,14 @@ where
         phase: TaskPhase<D, I, T>,
     ) -> Result<SignalDurableAdvanceTask, SignalDurableAdvanceDenial> {
         let slot = self.state.task(self.original)?;
-        slot.lock()
-            .map_err(|_| SignalDurableAdvanceDenial::PublicationStatePoisoned)?
-            .phase = phase;
+        let mut slot = slot
+            .lock()
+            .map_err(|_| SignalDurableAdvanceDenial::PublicationStatePoisoned)?;
+        slot.phase = phase;
+        let kind = slot.branches.kind();
+        drop(slot);
         self.armed = false;
-        Ok(self.state.handle(self.original))
+        Ok(self.state.handle(self.original, kind))
     }
 }
 impl<D, I, T> SignalDurablePublicationState<D, I, T>

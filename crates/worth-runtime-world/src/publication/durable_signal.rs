@@ -30,6 +30,7 @@ enum State {
 pub(crate) struct WorldDurableSignalAdvance {
     state: Mutex<Option<State>>,
     original: worth_foundational::facade::SignalBranchAdvanceIdentity,
+    kind: worth_foundational::facade::SignalBranchEffectKind,
     result_funding: Mutex<Option<ExecutionMemoryReservation>>,
     _funding: Option<ExecutionMemoryReservation>,
 }
@@ -51,6 +52,7 @@ pub(crate) enum WorldDurableSignalProgress {
     ProvenNoEffect,
     Indeterminate,
 }
+#[derive(Debug)]
 pub(crate) struct WorldDurableSignalBacking {
     task: Option<ExecutionMemoryReservation>,
     result: Option<ExecutionMemoryReservation>,
@@ -75,6 +77,7 @@ impl WorldDurableSignalBacking {
     pub(crate) fn retain(self, task: SignalDurableAdvanceTask) -> Arc<WorldDurableSignalAdvance> {
         Arc::new(WorldDurableSignalAdvance {
             original: task.original(),
+            kind: task.effect_kind(),
             state: Mutex::new(Some(State::Pending { task, denial: None })),
             result_funding: Mutex::new(self.result),
             _funding: self.task,
@@ -82,6 +85,10 @@ impl WorldDurableSignalBacking {
     }
 }
 impl WorldDurableSignalAdvance {
+    pub(crate) fn effect_kind(&self) -> worth_foundational::facade::SignalBranchEffectKind {
+        self.kind
+    }
+
     pub(crate) fn original(&self) -> worth_foundational::facade::SignalBranchAdvanceIdentity {
         self.original
     }

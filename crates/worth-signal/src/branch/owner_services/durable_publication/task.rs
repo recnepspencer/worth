@@ -191,6 +191,7 @@ pub(super) trait SignalDurableAdvanceDriver: Send + Sync {
 }
 #[must_use = "drive the original task to a terminal answer; dropping this handle does not cancel its owner task"]
 pub struct SignalDurableAdvanceTask {
+    pub(super) kind: worth_foundational::facade::SignalBranchEffectKind,
     pub(super) original: SignalBranchAdvanceIdentity,
     pub(super) driver: Weak<dyn SignalDurableAdvanceDriver>,
 }
@@ -211,6 +212,10 @@ impl SignalDurableAdvanceDriveRefusal {
     }
 }
 impl SignalDurableAdvanceTask {
+    pub const fn effect_kind(&self) -> worth_foundational::facade::SignalBranchEffectKind {
+        self.kind
+    }
+
     pub const fn original(&self) -> SignalBranchAdvanceIdentity {
         self.original
     }

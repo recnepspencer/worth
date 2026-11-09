@@ -1,9 +1,17 @@
 use super::WorldRelationalReleaseEvidence;
 use std::sync::Arc;
+mod creation;
 mod owner_evidence;
+pub(crate) use creation::{
+    WorldBranchCreatedRecord, WorldCreatedBranchOwnerEvidence, WorldCreationIntentRecord,
+    WorldRecordedRelationalCreationPlan, WorldRelationalForkEvidence,
+};
 pub(crate) use owner_evidence::{WorldOccurrenceOwnerEvidence, WorldSignalEvidence};
 mod record_input;
-pub(crate) use record_input::{WorldArtifactInput, WorldHeadInput, WorldOpenAttemptInput};
+pub(crate) use record_input::{
+    WorldArtifactInput, WorldCreationIntentInput, WorldHeadInput, WorldOpenAttemptInput,
+    WorldRelationalCreationInput,
+};
 mod record_custody;
 pub(crate) use record_custody::PreparedWorldArtifact;
 pub(crate) use record_custody::WorldArtifactFrame;
@@ -18,7 +26,7 @@ use worth_foundational::facade::{
 };
 pub const WORLD_ARTIFACT_PROTOCOL: BoundaryProtocolIdentity =
     BoundaryProtocolIdentity::new("worth.world.artifact");
-pub const WORLD_ARTIFACT_VERSION: BoundaryProtocolVersion = BoundaryProtocolVersion::new(4);
+pub const WORLD_ARTIFACT_VERSION: BoundaryProtocolVersion = BoundaryProtocolVersion::new(5);
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct DurableWorldHead {
@@ -68,6 +76,12 @@ pub(crate) enum WorldRecord {
         components: super::RecordedWorldInitialComponents,
     },
     OpenAttempt(WorldOpenAttemptRecord),
+    CreationIntent(WorldCreationIntentRecord),
+    BranchCreated(WorldBranchCreatedRecord),
+    CreationReleased {
+        association: CompositeAttemptAssociation,
+        custody: DurableProductUnpublishedOwnerEffectsIdentity,
+    },
     Occurrence {
         open: WorldOpenAttemptRecord,
         owners: WorldOccurrenceOwnerEvidence,
@@ -88,6 +102,9 @@ impl WorldRecord {
         match self {
             Self::Owner { owner } => *owner,
             Self::Branch { head, .. } => head.branch.owner(),
+            Self::CreationIntent(intent) => intent.association.attempt().owner(),
+            Self::BranchCreated(created) => created.intent.association.attempt().owner(),
+            Self::CreationReleased { association, .. } => association.attempt().owner(),
             Self::OpenAttempt(open) | Self::Occurrence { open, .. } => {
                 open.association.attempt().owner()
             }
@@ -98,10 +115,14 @@ impl WorldRecord {
     }
     pub(crate) const fn journal(&self) -> WorldDurableJournal {
         match self {
-            Self::Owner { .. } | Self::Branch { .. } => WorldDurableJournal::Branches,
-            Self::OpenAttempt(_) | Self::Released { .. } | Self::Continued { .. } => {
-                WorldDurableJournal::Custody
+            Self::Owner { .. } | Self::Branch { .. } | Self::BranchCreated(_) => {
+                WorldDurableJournal::Branches
             }
+            Self::OpenAttempt(_)
+            | Self::Released { .. }
+            | Self::Continued { .. }
+            | Self::CreationIntent(_)
+            | Self::CreationReleased { .. } => WorldDurableJournal::Custody,
             Self::Occurrence { .. } => WorldDurableJournal::Occurrences,
         }
     }
@@ -159,7 +180,10 @@ impl WorldDurableArtifact {
             | WorldRecord::Branch { .. }
             | WorldRecord::Occurrence { .. }
             | WorldRecord::Released { .. }
-            | WorldRecord::Continued { .. } => None,
+            | WorldRecord::Continued { .. }
+            | WorldRecord::CreationIntent(_)
+            | WorldRecord::BranchCreated(_)
+            | WorldRecord::CreationReleased { .. } => None,
         }
     }
     pub fn as_bytes(&self) -> &[u8] {

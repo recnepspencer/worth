@@ -106,18 +106,20 @@ pub use crate::publication::{
 
 pub use crate::lifecycle::{
     MissingRuntimeWorldInput, PreparedWorldHomeProgramBinding, PreparedWorldRelationalCutover,
-    RuntimeWorldBranchCreationOutcome, RuntimeWorldBranchPort, RuntimeWorldBuildDenial,
-    RuntimeWorldClock, RuntimeWorldClockSource, RuntimeWorldCloseDenial, RuntimeWorldCloseReport,
-    RuntimeWorldExecutionPlacement, RuntimeWorldInspectionPort, RuntimeWorldInstant,
-    RuntimeWorldLifecyclePort, RuntimeWorldObservationPort,
-    RuntimeWorldOwnedAsyncManagedRevalidationDenial, RuntimeWorldOwnedAsyncRequestAdmissionDenial,
-    RuntimeWorldOwnedAsyncRevalidationDenial, RuntimeWorldOwner, RuntimeWorldOwnerBuilder,
-    RuntimeWorldOwnerLifecycleObservation, RuntimeWorldOwnerUnavailable,
-    RuntimeWorldPreCloseAdmission, RuntimeWorldPublicationPort, RuntimeWorldRecoveredCustodyReport,
-    RuntimeWorldRecoveryPort, RuntimeWorldResultSnapshotCleanup,
-    RuntimeWorldResultSnapshotCleanupDenial, RuntimeWorldResultSnapshotCleanupProgress,
-    RuntimeWorldResultSnapshotCleanupReport, RuntimeWorldRetainedRecordReport,
-    RuntimeWorldServiceDenial, RuntimeWorldUnboundHomeBuilder, WorldHomeProgramBindingDenial,
+    RuntimeWorldBranchCreationCompletion, RuntimeWorldBranchCreationNoEffect,
+    RuntimeWorldBranchCreationOutcome, RuntimeWorldBranchCreationRelease, RuntimeWorldBranchPort,
+    RuntimeWorldBuildDenial, RuntimeWorldClock, RuntimeWorldClockSource, RuntimeWorldCloseDenial,
+    RuntimeWorldCloseReport, RuntimeWorldExecutionPlacement, RuntimeWorldHomeBranchCreationRequest,
+    RuntimeWorldInspectionPort, RuntimeWorldInstant, RuntimeWorldLifecyclePort,
+    RuntimeWorldObservationPort, RuntimeWorldOwnedAsyncManagedRevalidationDenial,
+    RuntimeWorldOwnedAsyncRequestAdmissionDenial, RuntimeWorldOwnedAsyncRevalidationDenial,
+    RuntimeWorldOwner, RuntimeWorldOwnerBuilder, RuntimeWorldOwnerLifecycleObservation,
+    RuntimeWorldOwnerUnavailable, RuntimeWorldPreCloseAdmission, RuntimeWorldPublicationPort,
+    RuntimeWorldRecoveredCustodyReport, RuntimeWorldRecoveryPort,
+    RuntimeWorldResultSnapshotCleanup, RuntimeWorldResultSnapshotCleanupDenial,
+    RuntimeWorldResultSnapshotCleanupProgress, RuntimeWorldResultSnapshotCleanupReport,
+    RuntimeWorldRetainedRecordReport, RuntimeWorldServiceDenial, RuntimeWorldUnboundHomeBuilder,
+    WorldHomeProgramBindingDenial, WorldSignalForkPreparationDenial,
 };
 
 pub use crate::publication::{

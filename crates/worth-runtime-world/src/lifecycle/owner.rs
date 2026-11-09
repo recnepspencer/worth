@@ -19,6 +19,7 @@ use super::owner_inputs::{RuntimeWorldInstalledOwnerInputs, RuntimeWorldOwnerInp
 
 mod bootstrap;
 mod branch_service;
+pub(crate) use branch_service::WorldDurableCreationCustody;
 mod checkpoint_origin;
 mod construction;
 mod current_read_publication;

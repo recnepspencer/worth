@@ -43,9 +43,11 @@ where
     pub(super) fn handle(
         self: &Arc<Self>,
         original: SignalBranchAdvanceIdentity,
+        kind: worth_foundational::facade::SignalBranchEffectKind,
     ) -> SignalDurableAdvanceTask {
         let driver: Arc<dyn SignalDurableAdvanceDriver> = self.clone();
         SignalDurableAdvanceTask {
+            kind,
             original,
             driver: Arc::downgrade(&driver),
         }

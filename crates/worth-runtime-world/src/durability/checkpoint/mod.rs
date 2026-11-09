@@ -2,7 +2,7 @@
 pub const WORLD_CHECKPOINT_PROTOCOL: worth_foundational::facade::BoundaryProtocolIdentity =
     worth_foundational::facade::BoundaryProtocolIdentity::new("worth.world.checkpoint");
 pub const WORLD_CHECKPOINT_VERSION: worth_foundational::facade::BoundaryProtocolVersion =
-    worth_foundational::facade::BoundaryProtocolVersion::new(2);
+    worth_foundational::facade::BoundaryProtocolVersion::new(3);
 mod acknowledgement;
 mod coordinates;
 mod coverage;

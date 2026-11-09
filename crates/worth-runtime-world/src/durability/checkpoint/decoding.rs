@@ -36,6 +36,12 @@ impl WorldCheckpointImage {
         read_rows(&mut read, &mut image, false, request)?;
         read_dispositions(&mut read, &mut image, request)?;
         read_occurrences(&mut read, &mut image, capture_incarnation, request)?;
+        for created in image.created.values() {
+            if created.created().publishing_incarnation > capture_incarnation {
+                return Err(Denial::FutureIncarnation);
+            }
+        }
+        image.resolve_collected_history(request)?;
         image.validate_open_identities(request)?;
         image.validate_image_coordinates(&coverage, request)?;
         if [
@@ -135,11 +141,18 @@ fn read_rows(
         let row = bytes(read, super::framing::MAXIMUM)?;
         let record =
             decoded::admit(row, image.binding.owner().home(), request).map_err(Denial::Medium)?;
-        match (&record.record, branch) {
-            (WorldRecord::Branch { .. }, true) => {}
-            (WorldRecord::OpenAttempt(_), false) => {}
-            _ => return Err(Denial::WrongJournal),
+        let allowed = match &record.record {
+            WorldRecord::Branch { .. } | WorldRecord::BranchCreated(_) => branch,
+            WorldRecord::OpenAttempt(_) | WorldRecord::CreationIntent(_) => !branch,
+            WorldRecord::Owner { .. }
+            | WorldRecord::Occurrence { .. }
+            | WorldRecord::Released { .. }
+            | WorldRecord::Continued { .. }
+            | WorldRecord::CreationReleased { .. } => false,
         };
+        if !allowed {
+            return Err(Denial::WrongJournal);
+        }
         if record.record.owner() != image.binding.owner() {
             return Err(Denial::ForeignOwner);
         }
@@ -169,7 +182,23 @@ fn read_dispositions(
         super::framing::charge(request, 1).map_err(Denial::Medium)?;
         let (position, digest) = location(read)?;
         let attempt = attempt(read, image)?;
-        let value = match read.fixed::<1>().map_err(frame)? {
+        let tag = read.fixed::<1>().map_err(frame)?;
+        if tag == [3] {
+            let intent = image
+                .creations
+                .get(&attempt)
+                .ok_or(Denial::MissingCreationIntent)?
+                .clone();
+            image.admit_creation_release(
+                &intent.intent().association,
+                intent.intent().custody,
+                position,
+                digest,
+                request,
+            )?;
+            continue;
+        }
+        let value = match tag {
             [0] => RecoveredCustodyDisposition::Released(None),
             [1] => RecoveredCustodyDisposition::Released(Some(
                 WorldRelationalReleaseEvidence::from_json_in(
@@ -218,7 +247,7 @@ fn read_occurrences(
         if publishing > capture_incarnation {
             return Err(Denial::FutureIncarnation);
         }
-        image.admit_occurrence(attempt, owners, publishing, position, digest, request)?;
+        image.collect_occurrence(attempt, owners, publishing, position, digest, request)?;
         previous_position = position;
     }
     Ok(())

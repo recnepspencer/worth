@@ -16,6 +16,30 @@ pub struct RelationalForkPort {
 }
 
 impl RelationalForkPort {
+    /// Observe the actual canonical/transition originals before a composing
+    /// owner's creation intent. Both streams are fixed by the same existing
+    /// position reservation; the returned coordinates grant no fork authority.
+    pub fn observe_original_frontiers(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        (
+            crate::publication::patch::data::PatchStreamPosition,
+            super::RelationalBranchTransitionSequence,
+        ),
+        super::RelationalBranchTransitionStop<super::RelationalForkDenial>,
+    > {
+        let _operation =
+            self.lifecycle
+                .admit()
+                .ok_or(super::RelationalBranchTransitionStop::Denied(
+                    super::RelationalForkDenial::OwnerUnavailable,
+                ))?;
+        self.owner
+            .observe_original_frontiers(execution)
+            .map_err(super::RelationalBranchTransitionStop::RequestStopped)
+    }
+
     pub(crate) fn new(
         runtime_instance_id: u64,
         lifecycle: RelationalRuntimeOwnerBinding,

@@ -148,6 +148,7 @@ pub(super) fn published(
         publishing_incarnation: HomeIncarnation::initial(),
     };
     admit(&mut image, &occurrence, 1, request).unwrap();
+    image.resolve_collected_history(request).unwrap();
     image.validate_open_identities(request).unwrap();
     (image, open)
 }

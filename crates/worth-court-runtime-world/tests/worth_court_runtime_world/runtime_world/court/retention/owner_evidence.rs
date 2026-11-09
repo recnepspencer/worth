@@ -3,7 +3,7 @@ use sha2::{Digest, Sha256};
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::*;
 use worth_runtime_world::facade::*;
-mod journey;
+pub(super) mod journey;
 use journey::*;
 mod authored_retirement;
 mod durable_cancellation;

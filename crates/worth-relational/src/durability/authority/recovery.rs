@@ -1,3 +1,4 @@
+mod associated_branch_transitions;
 mod catalog_readmission;
 mod fork_effect;
 use crate::durability::data::RelationalRecoveryStop;

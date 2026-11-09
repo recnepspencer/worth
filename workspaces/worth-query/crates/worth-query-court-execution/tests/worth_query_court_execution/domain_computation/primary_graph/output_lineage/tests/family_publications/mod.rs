@@ -1,4 +1,5 @@
 //! Index selection only: these descriptive owner fixtures grant no current seal.
+use worth_query_execution::facade::product::WorthQueryProductBranchCreationOutcome;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryCheckpointOutputRole;
 pub use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture as WorthQueryApplicationOutputPosture;
 pub use std::sync::Arc;
@@ -65,7 +66,7 @@ impl Court {
         .unwrap();
         let host_request = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-        let RuntimeWorldBranchCreationOutcome::Performed(child) = world
+        let WorthQueryProductBranchCreationOutcome::Performed(child) = world
             .application
             .product_runtime()
             .create_product_branch_for_test(

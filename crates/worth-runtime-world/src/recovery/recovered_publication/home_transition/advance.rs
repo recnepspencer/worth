@@ -73,7 +73,7 @@ impl OriginalHomeTransitionContinuation {
                         }
                         Err(WorldDurablePublicationStop::Refused(cause)) => {
                             loan.unsubmit();
-                            return Err(Denial::Medium(cause));
+                            return Err(Denial::Medium(cause.into_cause()));
                         }
                     }
                 }

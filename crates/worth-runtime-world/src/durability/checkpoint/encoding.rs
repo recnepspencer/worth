@@ -64,12 +64,19 @@ impl WorldCheckpointImage {
             location(out, branch.position, &branch.digest)?;
             semantic_row(out, &branch.record().record, request, stop)?;
         }
-        number(out, self.opens.len() as u64)?;
+        number(out, (self.opens.len() + self.creations.len()) as u64)?;
         for open in self.opens.values() {
             location(out, open.position(), open.digest())?;
             semantic_row(out, &open.record().record, request, stop)?;
         }
-        number(out, self.dispositions.len() as u64)?;
+        for intent in self.creations.values() {
+            location(out, intent.position(), intent.digest())?;
+            semantic_row(out, &intent.record().record, request, stop)?;
+        }
+        number(
+            out,
+            (self.dispositions.len() + self.creation_releases.len()) as u64,
+        )?;
         for disposition in self.dispositions.values() {
             location(out, disposition.position(), disposition.digest())?;
             number(out, disposition.open().association.attempt().ordinal())?;
@@ -86,6 +93,14 @@ impl WorldCheckpointImage {
                     )?;
                 }
             }
+        }
+        for release in self.creation_releases.values() {
+            location(out, release.position(), release.digest())?;
+            number(
+                out,
+                release.intent().intent().association.attempt().ordinal(),
+            )?;
+            out(&[3])?;
         }
         number(out, self.occurrences.len() as u64)?;
         for occurrence in self.occurrences.values() {

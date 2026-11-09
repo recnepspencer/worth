@@ -2,7 +2,7 @@
 use super::super::artifact_source::Fixture;
 use super::*;
 use worth_relational::facade::mvcc::RelationalTransactionIntent;
-pub(super) struct Journey {
+pub(in super::super) struct Journey {
     pub fixture: Fixture,
     pub expected: Vec<u8>,
     pub open: Vec<u8>,
@@ -16,15 +16,18 @@ impl Journey {
             WorldDurableBootstrapOutcome::Performed(value) => value.product_branch().clone(),
             other => panic!("real bootstrap: {other:?}"),
         };
-        let mut journey = Self {
+        let mut journey = Self::from_fixture(fixture);
+        journey.advance(request, root, tag);
+        journey
+    }
+    pub fn from_fixture(fixture: Fixture) -> Self {
+        Self {
             fixture,
             expected: Vec::new(),
             open: Vec::new(),
             occurrence: Vec::new(),
             signal: None,
-        };
-        journey.advance(request, root, tag);
-        journey
+        }
     }
     pub fn advance(
         &mut self,
@@ -164,7 +167,7 @@ impl Journey {
         payload[0] = 4;
         payload.extend_from_slice(&owners);
         payload.extend_from_slice(&1u64.to_le_bytes());
-        self.expected = frame(b"WWRLDART", 4, &payload);
+        self.expected = frame(b"WWRLDART", 5, &payload);
         drop(subjects);
         drop(performed.consume());
         drop(root);
@@ -209,7 +212,7 @@ pub(super) fn bytes(
     bytes.extend_from_slice(input).unwrap();
     bytes.seal_immutable_bytes().unwrap()
 }
-pub(super) fn frame(magic: &[u8; 8], version: u32, payload: &[u8]) -> Vec<u8> {
+pub(in super::super) fn frame(magic: &[u8; 8], version: u32, payload: &[u8]) -> Vec<u8> {
     let mut bytes = Vec::from(magic);
     bytes.extend_from_slice(&version.to_le_bytes());
     bytes.extend_from_slice(&(payload.len() as u64).to_le_bytes());
@@ -217,7 +220,7 @@ pub(super) fn frame(magic: &[u8; 8], version: u32, payload: &[u8]) -> Vec<u8> {
     bytes.extend_from_slice(payload);
     bytes
 }
-pub(super) fn rehash(bytes: &mut [u8]) {
+pub(in super::super) fn rehash(bytes: &mut [u8]) {
     let hash = Sha256::digest(&bytes[52..]);
     bytes[20..52].copy_from_slice(&hash);
 }

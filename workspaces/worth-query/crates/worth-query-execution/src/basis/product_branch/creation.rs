@@ -6,13 +6,14 @@ use worth_query_declaration::facade::branch::{
 };
 use worth_runtime_world::facade::{
     ProductBranchCreationIntent, ProductBranchCreationPlans, RelationalBranchCreationPlan,
-    RuntimeWorldBranchCreationOutcome, RuntimeWorldCancellationSource, SignalBranchCreationPlan,
+    RuntimeWorldCancellationSource, SignalBranchCreationPlan,
 };
 
 use super::{WorthQueryProductBranch, WorthQueryProductBranches};
 mod expected_source;
 use crate::domain_computation::execution_runtime::product_world::{
-    WorthQueryProductBranchCreationDenial, WorthQueryProductRuntime,
+    WorthQueryProductBranchCreationDenial, WorthQueryProductBranchCreationOutcome,
+    WorthQueryProductRuntime,
 };
 use expected_source::ForkSource;
 
@@ -40,7 +41,8 @@ pub(crate) trait WorthQuerySourceProgramResolver {
 #[derive(Debug)]
 pub enum WorthQueryProductBranchCreateError {
     ComponentsIncomplete,
-    IdentityExhausted,
+    NoEffect(crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchCreationNoEffect),
+    ReleasedOriginal(crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchCreationRelease),
     SourceAdmission(super::WorthQueryProductBranchAdmissionDenial),
     Creation(WorthQueryProductBranchCreationDenial),
     ProductUnpublished(super::WorthQueryProductBranchCreationRecovery),
@@ -135,7 +137,7 @@ impl<'runtime> WorthQueryProductBranchFork<'runtime> {
         let signal = component_plan(components.signal())?;
         let ordinal = runtime
             .reserve_public_branch_ordinal()
-            .ok_or(WorthQueryProductBranchCreateError::IdentityExhausted)?;
+            .map_err(WorthQueryProductBranchCreateError::Creation)?;
         // ordinal is u64: this fixed ASCII prefix, at most 20 decimal digits,
         // and the fixed component suffixes fit both native name grammars/bounds.
         let product_name = format!("query-product-{ordinal}");
@@ -186,30 +188,23 @@ impl<'runtime> WorthQueryProductBranchFork<'runtime> {
                 source_program.as_ref(),
                 intent,
                 &cancellation.token(),
+                output_lineage,
             )
             .map_err(WorthQueryProductBranchCreateError::Creation)?
         {
-            RuntimeWorldBranchCreationOutcome::Performed(observation) => {
-                if let Some(output_lineage) = output_lineage {
-                    output_lineage
-                        .lock()
-                        .unwrap_or_else(std::sync::PoisonError::into_inner)
-                        .register_fork(source.observation(), &observation);
-                }
-                Ok((
-                    WorthQueryProductBranch::from_occurrence(observation.lifecycle_incarnation()),
-                    source,
-                ))
+            WorthQueryProductBranchCreationOutcome::NoEffect(actual) => {
+                Err(WorthQueryProductBranchCreateError::NoEffect(actual))
             }
-            RuntimeWorldBranchCreationOutcome::ProductUnpublished(effects) => {
-                Err(WorthQueryProductBranchCreateError::ProductUnpublished(
-                    super::WorthQueryProductBranchCreationRecovery::new(
-                        effects,
-                        runtime.owner.recovery_port(),
-                        runtime.clone(),
-                    ),
-                ))
+            WorthQueryProductBranchCreationOutcome::ReleasedOriginal(actual) => {
+                Err(WorthQueryProductBranchCreateError::ReleasedOriginal(actual))
             }
+            WorthQueryProductBranchCreationOutcome::Performed(observation) => Ok((
+                WorthQueryProductBranch::from_occurrence(observation.lifecycle_incarnation()),
+                source,
+            )),
+            WorthQueryProductBranchCreationOutcome::ProductUnpublished(recovery) => Err(
+                WorthQueryProductBranchCreateError::ProductUnpublished(recovery),
+            ),
         }
     }
 }

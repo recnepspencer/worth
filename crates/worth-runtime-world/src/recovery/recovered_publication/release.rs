@@ -223,7 +223,7 @@ impl WorldRecoveredUnpublishedEffects {
             }
             Err(WorldDurablePublicationStop::Refused(cause)) => {
                 WorldRecoveredReleaseOutcome::Refused {
-                    cause,
+                    cause: cause.into_cause(),
                     custody: self,
                 }
             }

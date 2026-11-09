@@ -54,7 +54,12 @@ where
             .upgrade()
             .ok_or(SignalDurableAdvanceDenial::OwnerUnavailable)?;
         state.require_standalone()?;
-        state.task(original)?;
-        Ok(state.handle(original))
+        let task = state.task(original)?;
+        let kind = task
+            .lock()
+            .map_err(|_| SignalDurableAdvanceDenial::PublicationStatePoisoned)?
+            .branches
+            .kind();
+        Ok(state.handle(original, kind))
     }
 }

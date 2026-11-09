@@ -80,7 +80,8 @@ where
             return Err(Dn::CompositeOwnerNotAttached);
         }
         Self::admit_fork_owner(&state, &reservation.source)?;
-        SignalCompositeForkBinding::capture(execution, reservation, association).map_err(Dn::Frame)
+        SignalCompositeForkBinding::capture(execution, reservation, association, self.state.clone())
+            .map_err(Dn::Frame)
     }
     pub fn begin_fork(
         &self,
@@ -90,26 +91,6 @@ where
         cancellation: &SignalOwnerCancellationToken,
     ) -> Result<SignalDurableAdvanceTask, SignalDurableAdvanceDenial> {
         self.begin_prepared_fork(execution, reservation, publication, cancellation, None)
-    }
-    pub fn begin_composite_fork(
-        &self,
-        execution: ExecutionRequest<'_, '_>,
-        binding: SignalCompositeForkBinding<D, I, T>,
-        grant: AdmittedCompositeSignalPublication,
-        publication: Box<dyn SignalDurableForkPublication>,
-        cancellation: &SignalOwnerCancellationToken,
-    ) -> Result<SignalDurableAdvanceTask, SignalDurableAdvanceDenial> {
-        self.begin_prepared_fork(
-            execution,
-            binding.reservation,
-            publication,
-            cancellation,
-            Some(CompositePublicationAuthorization {
-                grant,
-                association: binding.association,
-                commitment: binding.commitment,
-            }),
-        )
     }
     fn admit_fork_owner(
         state: &SignalDurablePublicationState<D, I, T>,
@@ -169,5 +150,39 @@ where
             &execution,
         )?;
         registered.seal(phase)
+    }
+}
+
+impl<D, I, T> SignalCompositeForkBinding<D, I, T>
+where
+    D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
+    I: Copy + Ord + Send + Sync + 'static,
+    T: Copy + Ord + Send + Sync + 'static,
+{
+    /// Consume this original owner's prepared fork. Forking has no application
+    /// mutation closure or context, so its retained binding carries no such lifetime.
+    pub fn begin(
+        self,
+        execution: ExecutionRequest<'_, '_>,
+        grant: AdmittedCompositeSignalPublication,
+        publication: Box<dyn SignalDurableForkPublication>,
+        cancellation: &SignalOwnerCancellationToken,
+    ) -> Result<SignalDurableAdvanceTask, SignalDurableAdvanceDenial> {
+        let state = self
+            .publication
+            .upgrade()
+            .ok_or(SignalDurableAdvanceDenial::OwnerUnavailable)?;
+        let port = SignalDurableBranchMutationPort::<D, I, (), (), T>::from_owner(&state);
+        port.begin_prepared_fork(
+            execution,
+            self.reservation,
+            publication,
+            cancellation,
+            Some(CompositePublicationAuthorization {
+                grant,
+                association: self.association,
+                commitment: self.commitment,
+            }),
+        )
     }
 }

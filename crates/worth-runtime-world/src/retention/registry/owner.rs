@@ -219,12 +219,32 @@ where
         commit: &CompositeRuntimeWorldCommit,
         capacity: super::super::ReservedObservationCapacity,
     ) -> Result<ObservationRetentionObligation, RetentionObligationDenial> {
-        assert_eq!(capacity.owner_identity(), self.lock().owner_identity);
-        self.issue_pair(
+        self.issue_retained_observation(commit, &mut Some(capacity))
+    }
+
+    /// Keep the original reservation in its custody until both component pins
+    /// have been acquired. A failed preparation can retry without readmission.
+    pub(crate) fn issue_retained_observation(
+        &self,
+        commit: &CompositeRuntimeWorldCommit,
+        capacity: &mut Option<super::super::ReservedObservationCapacity>,
+    ) -> Result<ObservationRetentionObligation, RetentionObligationDenial> {
+        assert_eq!(
+            capacity
+                .as_ref()
+                .expect("reserved observation")
+                .owner_identity(),
+            self.lock().owner_identity
+        );
+        let pair = self.issue_pair(
             commit.basis(),
             ComponentBasisDependencyClass::AdmittedObservation,
-        )
-        .map(|pair| ObservationRetentionObligation::owner_issued(commit, pair, capacity))
+        )?;
+        Ok(ObservationRetentionObligation::owner_issued(
+            commit,
+            pair,
+            capacity.take().expect("the original reservation"),
+        ))
     }
 
     #[cfg(test)]

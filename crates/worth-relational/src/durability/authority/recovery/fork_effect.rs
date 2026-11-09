@@ -47,6 +47,13 @@ pub struct ReadmittedRelationalAssociatedFork {
     original: Arc<PositionedBranchTransition>,
 }
 impl ReadmittedRelationalAssociatedFork {
+    pub fn source_basis(&self) -> &crate::branch::AdmittedRelationalBranchBasis {
+        &self.source.basis
+    }
+    pub fn target_basis(&self) -> &crate::branch::AdmittedRelationalBranchBasis {
+        &self.target.basis
+    }
+
     pub fn original(&self) -> &PositionedBranchTransition {
         &self.original
     }

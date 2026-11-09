@@ -5,6 +5,11 @@ use worth_relational::facade::durability::{
 };
 
 pub struct WorldNativeReadmissionCustody {
+    pub(crate) creation_forks:
+        Vec<Option<worth_relational::facade::durability::ReadmittedRelationalAssociatedFork>>,
+    pub(crate) creation_signals:
+        Vec<Option<worth_signal::facade::durability::SignalReadmittedSourcePoint>>,
+    pub(crate) fork_retirements: Vec<crate::basis::NativeBasisRetirement>,
     pub(crate) roots: Vec<Option<RecoveredRelationalBranchBasis>>,
     pub(crate) publications:
         Vec<Option<RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>>>,
@@ -47,12 +52,23 @@ impl WorldNativeReadmissionCustody {
         branches: usize,
         occurrences: usize,
         opens: usize,
+        creations: usize,
     ) -> Result<Self, super::WorldReadmissionDenial> {
         use super::{WorldDurableMediumDenial as Medium, WorldReadmissionDenial as Denial};
         let failed = || Denial::RecoveryCapacity;
         let publications = opens;
+        let fork_shares = creations.checked_mul(2).ok_or_else(failed)?;
         let observations = occurrences.checked_add(branches).ok_or_else(failed)?;
         let quote = [
+            std::mem::size_of::<
+                Option<worth_relational::facade::durability::ReadmittedRelationalAssociatedFork>,
+            >()
+            .checked_mul(creations),
+            std::mem::size_of::<
+                Option<worth_signal::facade::durability::SignalReadmittedSourcePoint>,
+            >()
+            .checked_mul(creations),
+            std::mem::size_of::<crate::basis::NativeBasisRetirement>().checked_mul(fork_shares),
             std::mem::size_of::<Option<RecoveredRelationalBranchBasis>>().checked_mul(branches),
             std::mem::size_of::<super::PreparedCheckpointOccurrence>().checked_mul(branches),
             std::mem::size_of::<super::PreparedCheckpointOccurrence>().checked_mul(occurrences),
@@ -79,6 +95,9 @@ impl WorldNativeReadmissionCustody {
             .reserve_retained_memory(quote)
             .map_err(|cause| Denial::Medium(Medium::Request(cause)))?;
         Ok(Self {
+            creation_forks: Vec::with_capacity(creations),
+            creation_signals: Vec::with_capacity(creations),
+            fork_retirements: Vec::with_capacity(fork_shares),
             roots: Vec::with_capacity(branches),
             publications: Vec::with_capacity(publications),
             occurrence_owners: Vec::with_capacity(occurrences),

@@ -25,9 +25,8 @@ pub fn readmit_query_world(
         composition.conditional = Some(Arc::clone(&assembly));
         let result = (|| {
             let attachment =
-                worth_runtime_world::facade::RuntimeWorldAuthoredSignalAttachment::install(
-                    assembly.signal_owner(),
-                    request,
+                worth_runtime_world::facade::RuntimeWorldAuthoredSignalAttachment::install_bridge(
+                    &assembly, request,
                 )
                 .map_err(|cause| {
                     crate::ApplicationHomeOpenRefusal::SignalAttachment(Box::new(cause))

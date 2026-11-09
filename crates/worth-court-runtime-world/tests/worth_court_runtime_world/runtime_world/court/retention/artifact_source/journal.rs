@@ -1,5 +1,6 @@
 //! The journal model pins sealed publications or explicitly untrusted DATA cuts.
 use super::*;
+mod mutated_data;
 use sha2::{Digest, Sha256};
 use std::sync::Mutex;
 use worth_execution::ExecutionRequestArrayBuilder;
@@ -17,10 +18,19 @@ pub(in super::super) struct Recorder {
     program_source: worth_proof::InstalledBranchProgramSourceOwner,
     pub(in super::super) subjects: Mutex<Vec<WorldDurableArtifact>>,
     rows: Arc<Mutex<Vec<Stored>>>,
+    refused: std::sync::atomic::AtomicBool,
+    held: std::sync::atomic::AtomicBool,
     persist: bool,
     refuse_occurrence: std::sync::atomic::AtomicBool,
 }
 impl Recorder {
+    pub(in super::super) fn refuse_next_publication(&self) {
+        self.refused
+            .store(true, std::sync::atomic::Ordering::SeqCst);
+    }
+    pub(in super::super) fn hold_publication(&self, held: bool) {
+        self.held.store(held, std::sync::atomic::Ordering::SeqCst);
+    }
     pub(super) fn new(persist: bool) -> Arc<Self> {
         let program_source = worth_proof::InstalledBranchProgramSourceOwner::fresh();
         let authority = program_source.authority();
@@ -37,6 +47,8 @@ impl Recorder {
             program_source,
             subjects: Mutex::new(Vec::new()),
             rows: Arc::default(),
+            refused: std::sync::atomic::AtomicBool::new(false),
+            held: std::sync::atomic::AtomicBool::new(false),
             persist,
             refuse_occurrence: std::sync::atomic::AtomicBool::new(false),
         })
@@ -58,6 +70,8 @@ impl Recorder {
             program_source,
             subjects: Mutex::new(Vec::new()),
             rows: self.rows.clone(),
+            refused: std::sync::atomic::AtomicBool::new(false),
+            held: std::sync::atomic::AtomicBool::new(false),
             persist: self.persist,
             refuse_occurrence: std::sync::atomic::AtomicBool::new(false),
         })
@@ -142,7 +156,13 @@ impl RuntimeWorldDurableMedium for Recorder {
         _: &ExecutionRequest<'_, '_>,
     ) -> WorldPublicationObservation {
         self.subjects.lock().unwrap().push(subject.clone());
-        if !self.persist
+        if self.held.load(std::sync::atomic::Ordering::SeqCst) {
+            return WorldPublicationObservation::Pending;
+        }
+        if self
+            .refused
+            .swap(false, std::sync::atomic::Ordering::SeqCst)
+            || !self.persist
             || (subject.journal() == WorldDurableJournal::Occurrences
                 && self
                     .refuse_occurrence

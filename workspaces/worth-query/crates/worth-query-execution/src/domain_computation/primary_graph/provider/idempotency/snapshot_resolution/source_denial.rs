@@ -75,6 +75,13 @@ fn world_source(cause: worth_runtime_world::facade::WorldReadmissionDenial) -> D
         Source::Medium(cause) => medium(cause),
         Source::NativeRecorded(cause) => component(cause),
         Source::NativeDiscovery(cause) => native(cause),
+        Source::NativeForkDiscovery(cause) => fork_source(&cause),
+        Source::NativeFork(cause) => fork_source(cause.cause()),
+        Source::NativeForkRetirement(cause) => match cause {
+            worth_relational::facade::branch::RelationalBranchBasisRetirementDenial::Execution(cause) => idempotency_read_stop(cause.into()),
+            worth_relational::facade::branch::RelationalBranchBasisRetirementDenial::ForeignOwner
+            | worth_relational::facade::branch::RelationalBranchBasisRetirementDenial::Busy => Denial::Unavailable,
+        },
         Source::NativeCustody { cause, custody: _ } => world_source(*cause),
         Source::SignalSource(_)
         | Source::SignalDiscovery(_)
@@ -109,6 +116,9 @@ fn world_source(cause: worth_runtime_world::facade::WorldReadmissionDenial) -> D
         | Source::WrongJournal
         | Source::ForeignOwner
         | Source::DuplicateIdentity
+        | Source::MissingCreationIntent
+        | Source::ConflictingCreationIntent
+        | Source::CreationEvidenceMismatch
         | Source::MissingOpenAttempt
         | Source::ConflictingOpenAttempt
         | Source::ConflictingDisposition
@@ -119,6 +129,24 @@ fn world_source(cause: worth_runtime_world::facade::WorldReadmissionDenial) -> D
         | Source::RootPreparation(_)
         | Source::RootAdmission(_)
         | Source::FreshWorldSourceNotEmpty => Denial::Unavailable,
+    }
+}
+
+fn fork_source(
+    cause: &worth_relational::facade::durability::RelationalForkReadmissionCause,
+) -> Denial {
+    use worth_relational::facade::durability::RelationalForkReadmissionCause as Fork;
+    match cause {
+        Fork::Request(cause) => idempotency_read_stop(*cause),
+        Fork::ForeignRuntime
+        | Fork::OwnerUnavailable
+        | Fork::MissingOriginal(_)
+        | Fork::AssociationMismatch
+        | Fork::ArtifactDigestMismatch
+        | Fork::NotFork
+        | Fork::SourceMismatch
+        | Fork::TargetMismatch
+        | Fork::Component(_) => Denial::Unavailable,
     }
 }
 
@@ -247,6 +275,26 @@ mod tests {
     fn bridge_description_work_exhaustion_keeps_the_original_resource_stop() {
         assert_eq!(source(WorldDurableMediumDenial::BridgeDescription(
             worth_runtime_bridge::facade::RuntimeWorldBaselineRefusal::Request(WorkCeilingDenial::Stopped(KernelStop::WorkCeiling)))),
+            idempotency_read_stop(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted));
+    }
+    #[test]
+    fn native_fork_discovery_cancellation_keeps_the_original_control_stop() {
+        let cancelled =
+            worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled;
+        assert_eq!(
+            world_source(WorldReadmissionDenial::NativeForkDiscovery(
+                worth_relational::facade::durability::RelationalForkReadmissionCause::Request(
+                    cancelled
+                )
+            )),
+            idempotency_read_stop(cancelled)
+        );
+    }
+    #[test]
+    fn native_fork_retirement_exhaustion_keeps_the_original_resource_stop() {
+        assert_eq!(world_source(WorldReadmissionDenial::NativeForkRetirement(
+            worth_relational::facade::branch::RelationalBranchBasisRetirementDenial::Execution(
+                WorkCeilingDenial::Stopped(KernelStop::WorkCeiling)))),
             idempotency_read_stop(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted));
     }
 }

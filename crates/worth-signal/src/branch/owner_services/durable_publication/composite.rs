@@ -202,6 +202,6 @@ where
         authority
             .admit(&grant, &retained.commitment())
             .map_err(Dn::CompositeAdmission)?;
-        Ok(state.handle(original))
+        Ok(state.handle(original, slot.branches.kind()))
     }
 }

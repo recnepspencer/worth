@@ -37,6 +37,7 @@ mod retention_custody;
 pub use retention_custody::ProductUnpublishedRetentionPosture;
 mod abandoned;
 mod conditional_definition;
+mod creation_reactivation;
 
 /// Catalog-owned recovery custody. The public returned value below is only a
 /// view over this allocation, so dropping the caller capability cannot drop
@@ -244,6 +245,17 @@ impl ProductUnpublishedOwnerEffects {
         )
     }
 
+    pub fn creation_preparation_denial(
+        &self,
+    ) -> Option<&crate::lifecycle::WorldSignalForkPreparationDenial> {
+        self.record
+            .retention
+            .creation
+            .as_ref()?
+            .durable
+            .as_ref()?
+            .preparation_denial()
+    }
     pub fn retains_signal_definition(&self) -> bool {
         self.record.retention.retains_signal_definition()
     }

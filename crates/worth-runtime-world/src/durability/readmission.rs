@@ -5,10 +5,20 @@ use sha2::{Digest, Sha256};
 use worth_foundational::facade::{
     CompositeAttemptAssociation, DurableProductUnpublishedOwnerEffectsIdentity, WorldDurableJournal,
 };
+mod collected_occurrence;
+mod creation;
+mod creation_admission;
 mod disposition;
+pub(crate) use collected_occurrence::CollectedWorldOccurrence;
+pub(crate) use creation::{
+    AdmittedWorldCreationIntent, AdmittedWorldCreationRelease, RecordedWorldBranchCreated,
+};
+mod dependency_order;
 mod journal;
 mod occurrence;
 mod occurrence_admission;
+mod reference_history;
+pub(crate) use dependency_order::CollectedWorldHistoryStep;
 pub(crate) use disposition::{AdmittedWorldDisposition, PreparedWorldReleasedDisposition};
 mod open;
 pub(crate) use occurrence::{AdmittedWorldOccurrence, AdmittedWorldOccurrenceLocation};
@@ -25,6 +35,9 @@ pub enum WorldReadmissionDenial {
         cause: Box<WorldReadmissionDenial>,
         custody: Box<super::WorldNativeReadmissionCustody>,
     },
+    NativeForkRetirement(worth_relational::facade::branch::RelationalBranchBasisRetirementDenial),
+    NativeForkDiscovery(worth_relational::facade::durability::RelationalForkReadmissionCause),
+    NativeFork(Box<worth_relational::facade::durability::RefusedRelationalForkReadmission>),
     NativeDiscovery(worth_relational::facade::durability::RelationalAssociatedEffectRefusal),
     NativeComponent(Box<worth_relational::facade::durability::RefusedRelationalRecordedComponent>),
     NativePublication(
@@ -46,6 +59,9 @@ pub enum WorldReadmissionDenial {
     ForeignOwner,
     DuplicateIdentity,
     MissingOpenAttempt,
+    MissingCreationIntent,
+    ConflictingCreationIntent,
+    CreationEvidenceMismatch,
     ConflictingOpenAttempt,
     ConflictingDisposition,
     MissingPredecessor,

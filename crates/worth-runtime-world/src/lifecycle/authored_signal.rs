@@ -1,4 +1,7 @@
 //! One actual authored Signal owner is bound to one composing World issuer.
+mod fork;
+pub(crate) use fork::PreparedWorldSignalFork;
+pub use fork::WorldSignalForkPreparationDenial;
 use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 use worth_foundational::facade::{DurableSignalOwnerIdentity, HomeIncarnation};
@@ -20,10 +23,15 @@ where
     T: Copy + Ord + 'static,
 {
     pub(super) services: SignalCompositeOwnerServicePorts<D, I, E, Ctx, T>,
+    projection: WorldAuthoredSignalProjectionOwner,
     pub(super) issuer: InstalledCompositeSignalPublicationOwner,
     identity: DurableSignalOwnerIdentity,
     incarnation: HomeIncarnation,
     _funding: Option<ExecutionMemoryReservation>,
+}
+enum WorldAuthoredSignalProjectionOwner {
+    SignalOnly,
+    Bridge(std::sync::Weak<worth_runtime_bridge::facade::BridgeReadmittedAuthoredAssembly>),
 }
 #[derive(Debug)]
 pub enum RuntimeWorldAuthoredSignalAttachmentDenial {
@@ -42,6 +50,17 @@ where
         owner: &SignalDurableOwner<D, I, E, Ctx, T>,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Arc<Self>, RuntimeWorldAuthoredSignalAttachmentDenial> {
+        Self::install_projection(
+            owner,
+            request,
+            WorldAuthoredSignalProjectionOwner::SignalOnly,
+        )
+    }
+    fn install_projection(
+        owner: &SignalDurableOwner<D, I, E, Ctx, T>,
+        request: &ExecutionRequest<'_, '_>,
+        projection: WorldAuthoredSignalProjectionOwner,
+    ) -> Result<Arc<Self>, RuntimeWorldAuthoredSignalAttachmentDenial> {
         use RuntimeWorldAuthoredSignalAttachmentDenial as Denial;
         // Quote the complete Arc allocation before installing its affinity.
         let layout = std::alloc::Layout::new::<[std::sync::atomic::AtomicUsize; 2]>()
@@ -57,6 +76,7 @@ where
             .bind_composite_owner(issuer.authority(), request)
             .map_err(|cause| Denial::Signal(Box::new(cause)))?;
         Ok(Arc::new(Self {
+            projection,
             services,
             issuer,
             identity: owner.binding().owner(),
@@ -102,5 +122,18 @@ where
             return Err(Denial::StaleIncarnation);
         }
         Ok(())
+    }
+}
+
+impl RuntimeWorldAuthoredSignalAttachment<(), (), (), (), ()> {
+    pub fn install_bridge(
+        assembly: &Arc<worth_runtime_bridge::facade::BridgeReadmittedAuthoredAssembly>,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Arc<Self>, RuntimeWorldAuthoredSignalAttachmentDenial> {
+        Self::install_projection(
+            assembly.signal_owner(),
+            request,
+            WorldAuthoredSignalProjectionOwner::Bridge(Arc::downgrade(assembly)),
+        )
     }
 }

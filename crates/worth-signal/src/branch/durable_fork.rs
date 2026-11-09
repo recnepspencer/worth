@@ -37,9 +37,12 @@ where
 pub struct SignalCompositeForkBinding<D, I, T>
 where
     D: Copy + Ord + std::fmt::Debug + 'static,
-    I: Copy + Ord,
-    T: Copy + Ord,
+    I: Copy + Ord + 'static,
+    T: Copy + Ord + 'static,
 {
+    pub(crate) publication: std::sync::Weak<
+        crate::branch::owner_services::durable_publication::SignalDurablePublicationState<D, I, T>,
+    >,
     pub(crate) reservation: SignalDurableForkReservation<D, I, T>,
     pub(crate) association: CompositeAttemptAssociation,
     pub(crate) commitment: [u8; 32],
@@ -47,8 +50,8 @@ where
 impl<D, I, T> SignalCompositeForkBinding<D, I, T>
 where
     D: Copy + Ord + std::fmt::Debug + 'static,
-    I: Copy + Ord,
-    T: Copy + Ord,
+    I: Copy + Ord + 'static,
+    T: Copy + Ord + 'static,
 {
     pub fn commitment(&self) -> [u8; 32] {
         self.commitment
@@ -66,6 +69,13 @@ where
         execution: &ExecutionRequest<'_, '_>,
         reservation: SignalDurableForkReservation<D, I, T>,
         association: CompositeAttemptAssociation,
+        publication: std::sync::Weak<
+            crate::branch::owner_services::durable_publication::SignalDurablePublicationState<
+                D,
+                I,
+                T,
+            >,
+        >,
     ) -> Result<Self, SignalDurableFrameDenial> {
         let commitment = crate::durability::fork_commitment(
             execution,
@@ -75,6 +85,7 @@ where
             &association,
         )?;
         Ok(Self {
+            publication,
             reservation,
             association,
             commitment,

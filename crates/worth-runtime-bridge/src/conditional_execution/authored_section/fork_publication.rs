@@ -112,13 +112,7 @@ impl BridgeReadmittedAuthoredAssembly {
             binding.target(),
         )?;
         let refusal = Arc::clone(&pending.refusal);
-        let result = self.signal.mutation_port().begin_composite_fork(
-            execution,
-            binding,
-            grant,
-            pending,
-            cancellation,
-        );
+        let result = binding.begin(execution, grant, pending, cancellation);
         fork_result(result, refusal)
     }
     fn prepare_branch_fork(

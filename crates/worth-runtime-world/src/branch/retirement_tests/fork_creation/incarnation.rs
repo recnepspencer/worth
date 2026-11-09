@@ -160,6 +160,10 @@ fn partial_creation_under_the_shared_name(
     drop(held);
     match outcome {
         RuntimeWorldBranchCreationOutcome::ProductUnpublished(effects) => effects,
+        RuntimeWorldBranchCreationOutcome::NoEffect(_)
+        | RuntimeWorldBranchCreationOutcome::ReleasedOriginal(_) => {
+            panic!("memory creation cannot return a Home publication fate")
+        }
         RuntimeWorldBranchCreationOutcome::Performed(_) => {
             panic!("a held Signal destination must deny the Signal fork")
         }

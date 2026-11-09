@@ -47,7 +47,9 @@ impl WorldCheckpointImage {
         if self.history.contains_key(&open.commit) || self.occurrences.contains_key(&position) {
             return Err(WorldReadmissionDenial::DuplicateIdentity);
         }
-        let successor = WorldImageHead::occurrence(open.record().clone())?;
+        let successor =
+            WorldImageHead::occurrence(open.record().clone(), current.origin_position(), position)?;
+        self.remember_reference(&successor, execution)?;
         super::journal::insert(&mut self.history, &open.commit, &successor, execution)?;
         super::journal::insert(&mut self.heads, &key, &successor, execution)?;
         let occurrence = AdmittedWorldOccurrence::from_validated_source(

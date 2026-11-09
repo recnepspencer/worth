@@ -63,9 +63,16 @@ impl CompositeSignalOwnerResult {
             CompositeSignalOwnerResultKind::Advanced(outcome) => Some(
                 super::super::SignalAttemptProgress::advanced_arc(std::sync::Arc::clone(outcome)),
             ),
-            CompositeSignalOwnerResultKind::Durable(outcome) => Some(
-                super::super::SignalAttemptProgress::durable(std::sync::Arc::clone(outcome)),
-            ),
+            CompositeSignalOwnerResultKind::Durable(outcome) => {
+                match outcome.output.effect().kind() {
+                    worth_foundational::facade::SignalBranchEffectKind::Advanced => {
+                        Some(super::super::SignalAttemptProgress::durable(
+                            std::sync::Arc::clone(outcome),
+                        ))
+                    }
+                    worth_foundational::facade::SignalBranchEffectKind::Forked => None,
+                }
+            }
             CompositeSignalOwnerResultKind::RetainedExact
             | CompositeSignalOwnerResultKind::Forked(_)
             | CompositeSignalOwnerResultKind::Unresolved(_) => None,
@@ -75,13 +82,24 @@ impl CompositeSignalOwnerResult {
     pub fn advanced_outcome(&self) -> Option<&SignalBranchAdvanceOutcome> {
         match &self.result {
             CompositeSignalOwnerResultKind::Advanced(outcome) => Some(outcome),
-            _ => None,
+            CompositeSignalOwnerResultKind::RetainedExact
+            | CompositeSignalOwnerResultKind::Forked(_)
+            | CompositeSignalOwnerResultKind::Durable(_)
+            | CompositeSignalOwnerResultKind::Unresolved(_) => None,
         }
     }
     pub fn fork_outcome(&self) -> Option<&SignalBranchForkOutcome> {
         match &self.result {
             CompositeSignalOwnerResultKind::Forked(outcome) => Some(outcome),
-            _ => None,
+            CompositeSignalOwnerResultKind::Durable(actual) => match actual.output.effect() {
+                worth_signal::facade::durability::SignalDurableOwnerEffect::Forked(fork) => {
+                    Some(fork.result())
+                }
+                worth_signal::facade::durability::SignalDurableOwnerEffect::Advanced(_) => None,
+            },
+            CompositeSignalOwnerResultKind::RetainedExact
+            | CompositeSignalOwnerResultKind::Advanced(_)
+            | CompositeSignalOwnerResultKind::Unresolved(_) => None,
         }
     }
 
@@ -129,11 +147,17 @@ impl CompositeSignalOwnerResult {
         match &self.result {
             CompositeSignalOwnerResultKind::RetainedExact
             | CompositeSignalOwnerResultKind::Unresolved(_) => None,
-            CompositeSignalOwnerResultKind::Durable(result) => Some(
-                crate::history::CompositeSignalPublicationIdentity::Advanced(
-                    result.output.branch().basis().admission_identity().clone(),
-                ),
-            ),
+            CompositeSignalOwnerResultKind::Durable(result) => {
+                let basis = result.output.branch().basis().admission_identity().clone();
+                Some(match result.output.effect().kind() {
+                    worth_foundational::facade::SignalBranchEffectKind::Advanced => {
+                        crate::history::CompositeSignalPublicationIdentity::Advanced(basis)
+                    }
+                    worth_foundational::facade::SignalBranchEffectKind::Forked => {
+                        crate::history::CompositeSignalPublicationIdentity::Forked(basis)
+                    }
+                })
+            }
             CompositeSignalOwnerResultKind::Advanced(result) => Some(
                 crate::history::CompositeSignalPublicationIdentity::Advanced(
                     result.advanced_basis().admission_identity().clone(),
@@ -153,12 +177,19 @@ impl CompositeSignalOwnerResult {
                 self.posture() == CompositeComponentChangePosture::RetainExact
             }
             SignalComponentPlanPosture::AdvanceExact | SignalComponentPlanPosture::AdoptSettled => {
-                matches!(
-                    self.result,
-                    CompositeSignalOwnerResultKind::Advanced(_)
-                        | CompositeSignalOwnerResultKind::Durable(_)
-                        | CompositeSignalOwnerResultKind::Unresolved(_)
-                )
+                match &self.result {
+                    CompositeSignalOwnerResultKind::Advanced(_) => true,
+                    CompositeSignalOwnerResultKind::Durable(result) => {
+                        result.output.effect().kind()
+                            == worth_foundational::facade::SignalBranchEffectKind::Advanced
+                    }
+                    CompositeSignalOwnerResultKind::Unresolved(task) => {
+                        task.effect_kind()
+                            == worth_foundational::facade::SignalBranchEffectKind::Advanced
+                    }
+                    CompositeSignalOwnerResultKind::RetainedExact
+                    | CompositeSignalOwnerResultKind::Forked(_) => false,
+                }
             }
         }
     }
@@ -173,9 +204,16 @@ impl CompositeSignalOwnerResult {
             crate::branch::SignalBranchCreationPlan::ReuseExact => {
                 matches!(self.result, CompositeSignalOwnerResultKind::RetainedExact)
             }
-            crate::branch::SignalBranchCreationPlan::ForkExact { .. } => {
-                matches!(self.result, CompositeSignalOwnerResultKind::Forked(_))
-            }
+            crate::branch::SignalBranchCreationPlan::ForkExact { .. } => match &self.result {
+                CompositeSignalOwnerResultKind::Forked(_) => true,
+                CompositeSignalOwnerResultKind::Durable(result) => {
+                    result.output.effect().kind()
+                        == worth_foundational::facade::SignalBranchEffectKind::Forked
+                }
+                CompositeSignalOwnerResultKind::RetainedExact
+                | CompositeSignalOwnerResultKind::Advanced(_)
+                | CompositeSignalOwnerResultKind::Unresolved(_) => false,
+            },
         }
     }
 
@@ -186,7 +224,17 @@ impl CompositeSignalOwnerResult {
         &self,
         plan: &crate::branch::SignalBranchCreationPlan,
     ) -> bool {
-        matches!(self.result, CompositeSignalOwnerResultKind::RetainedExact)
-            || self.matches_creation_plan(plan)
+        match &self.result {
+            CompositeSignalOwnerResultKind::RetainedExact => true,
+            CompositeSignalOwnerResultKind::Unresolved(task) => match plan {
+                crate::branch::SignalBranchCreationPlan::ReuseExact => false,
+                crate::branch::SignalBranchCreationPlan::ForkExact { .. } => {
+                    task.effect_kind() == worth_foundational::facade::SignalBranchEffectKind::Forked
+                }
+            },
+            CompositeSignalOwnerResultKind::Advanced(_)
+            | CompositeSignalOwnerResultKind::Forked(_)
+            | CompositeSignalOwnerResultKind::Durable(_) => self.matches_creation_plan(plan),
+        }
     }
 }

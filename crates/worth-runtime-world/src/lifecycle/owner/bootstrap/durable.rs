@@ -240,7 +240,7 @@ where
                         RuntimeWorldBootstrapState::Unperformed,
                     );
                     drop(retired);
-                    return Outcome::Refused(Refusal::Medium(cause));
+                    return Outcome::Refused(Refusal::Medium(cause.into_cause()));
                 }
             }
         }

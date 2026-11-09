@@ -26,12 +26,12 @@ impl WorthQueryProductActivationRegistry {
     #[doc(hidden)]
     pub fn reserve_for_test(
         &self,
-    ) -> Result<WorthQueryProductActivationReservation<'_>, WorthQueryProductActivationDenial> {
+    ) -> Result<WorthQueryProductActivationReservation, WorthQueryProductActivationDenial> {
         Self::reserve(self)
     }
 }
 
-impl WorthQueryProductActivationReservation<'_> {
+impl WorthQueryProductActivationReservation {
     #[doc(hidden)]
     pub fn commit_for_test(self, branch: &ProductBranchObservation) {
         Self::commit(self, branch)
