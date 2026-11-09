@@ -1,5 +1,15 @@
 # H8 next slice: dispatch journal and retirement boundary
 
+## Current coordinator grant (supersedes the historical protection below)
+
+The integration prompt merging P-C `6ea7a7126e` explicitly grants the existing
+`facade/application_home_integration.rs` exports and
+`home_retirement.rs::preflight_supplied_home_owners` after that merge. P-C is
+keeping out of both until it merges the next integration head. These two seams
+are no longer blockers. H5's exact Query/Store cutover holds and the World
+public-API-only fence remain in force. The merge is currently resolved in the
+index; qualification and the final independent verdict are pending.
+
 Base 5d41be2990. Independent read-only boundary review h8_boundary_review, 2026-11-08. The completed first outbox-rebinding slice does not enable durable dispatch. No World or Native edits are authorized.
 
 ## Lawful route
