@@ -23,6 +23,7 @@ mod epoch;
 mod home_close;
 mod idempotency;
 mod native_preparation;
+mod signal_preparation;
 mod successor_compilation;
 use native_preparation::{transition_unshared, unshared};
 mod observation_policy;
@@ -88,41 +89,17 @@ fn existing(
 
 fn existing_from_preparation(
     query: NativePreparation,
-    mut home: UnsharedReadmittedApplicationHome,
+    home: UnsharedReadmittedApplicationHome,
     phase: &WorthQueryBootstrapAdvancementPhase<'_>,
 ) -> (
     Existing,
     DirectoryHome,
     worth_runtime_bridge::facade::RuntimeBridgeRelationalSource,
 ) {
-    let execution = phase.execution_request();
-    let query = finalize_native(query, &mut home, phase).unwrap_or_else(|refused| {
-        panic!(
-            "actual existing Native finalization: {:?}",
-            refused.reason()
-        )
-    });
-    let bridge = query.home_bridge_definition().unwrap();
-    let (budgets, clock, policy, execution_authority, conditionals) = query.home_world_resources();
-    let home = readmit_query_world(
-        home.share(),
-        ApplicationHomeWorldDefinition::new(
-            bridge,
-            "primary-application-source",
-            budgets,
-            clock,
-            policy,
-            execution_authority,
-            conditionals,
-        ),
-        &execution,
-    )
-    .unwrap_or_else(|_| panic!("actual World admission"))
-    .consume(|home| home);
-    let (source, bridge, conditional) = home.query_composition_parts().unwrap();
-    let witness = source.clone();
+    let (query, home, witness) = signal_preparation::existing_signal_program(query, home, phase);
+    let (_, _, conditional) = home.query_composition_parts().unwrap();
     let query = query
-        .attach_existing_home_registered_source(phase, source, bridge, conditional)
+        .attach_existing_home_authored_signal(conditional)
         .unwrap_or_else(|refused| panic!("actual existing source: {:?}", refused.reason()));
     (query, home, witness)
 }
@@ -272,6 +249,7 @@ fn unassociated_native_nine_cannot_replace_selected_world_eight_or_preflight_bri
                 root.clone(),
                 no_operation_admission,
                 Arc::new(ObservationMaintenanceMustRemainUnentered),
+                home.branch_program_source_owner(),
             )
             .unwrap_or_else(|refused| {
                 panic!("same selected World attachment: {}", refused.detail())
@@ -349,6 +327,7 @@ fn another_actual_home_world_basis_cannot_attach_to_this_existing_source() {
                 root_a.clone(),
                 no_operation_admission,
                 Arc::new(ObservationMaintenanceMustRemainUnentered),
+                home_b.branch_program_source_owner(),
             )
             .err()
             .expect("a genuine foreign Native observation is not this source's basis");

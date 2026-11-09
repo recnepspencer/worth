@@ -28,6 +28,7 @@ impl SignalLiveOwnerIdentity {
 enum AdmissionPosture {
     Available,
     Claimed(SignalLiveOwnerIdentity),
+    RetiredClaimed(SignalLiveOwnerIdentity),
     Retired,
 }
 struct AdmissionState {
@@ -103,7 +104,7 @@ impl SignalDurableOwnerAdmissionRegistry {
                 ))
             }
             AdmissionPosture::Claimed(holder) => Err(D::OwnerAlreadyReadmitted(holder)),
-            AdmissionPosture::Retired => Err(D::Unavailable),
+            AdmissionPosture::RetiredClaimed(_) | AdmissionPosture::Retired => Err(D::Unavailable),
         }
     }
     /// Irreversibly stop new admission before releasing the medium's serving share.
@@ -116,7 +117,7 @@ impl SignalDurableOwnerAdmissionRegistry {
                 Ok(())
             }
             AdmissionPosture::Claimed(holder) => Err(D::OwnerAlreadyReadmitted(holder)),
-            AdmissionPosture::Retired => Ok(()),
+            AdmissionPosture::RetiredClaimed(_) | AdmissionPosture::Retired => Ok(()),
         }
     }
 }
@@ -129,7 +130,9 @@ pub(crate) struct SignalDurableOwnerClaim {
 }
 impl worth_proof::AuthorityMarker for SignalDurableOwnerClaim {}
 mod no_effect_original;
+mod retirement;
 pub use no_effect_original::SignalNoEffectOriginal;
+pub(crate) use retirement::SignalDurableAdmissionRetirementDenial;
 impl std::fmt::Debug for SignalDurableOwnerClaim {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Debug::fmt(&self.identity, f)
@@ -149,6 +152,13 @@ impl Drop for SignalDurableOwnerClaim {
                     "only the original claim can release its owner"
                 );
                 *posture = AdmissionPosture::Available;
+            }
+            AdmissionPosture::RetiredClaimed(holder) => {
+                assert_eq!(
+                    holder, self.identity,
+                    "only the original stopped claim is reclaimed"
+                );
+                *posture = AdmissionPosture::Retired;
             }
             AdmissionPosture::Available | AdmissionPosture::Retired => {
                 panic!("live Signal admission was released without its original custody")

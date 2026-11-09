@@ -82,7 +82,7 @@ pub(in super::super) fn install(
             )
         })?;
     Ok(super::InstalledOutputComparison {
-        lowering,
+        lowering: super::InstalledConditionalRoute::from_installation(lowering),
         field: Arc::clone(field),
         role: role.into(),
         producer: producer.into(),

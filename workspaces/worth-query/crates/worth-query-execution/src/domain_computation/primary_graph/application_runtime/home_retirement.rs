@@ -174,9 +174,7 @@ impl<Schema: ApplicationSchema> RetiringPrimaryGraphRuntime<Schema> {
         &mut self,
         request: &ExecutionRequest<'_, '_>,
         native: &worth_relational::facade::runtime::RelationalRuntime,
-        bridge_owner: &std::sync::Arc<
-            std::sync::RwLock<worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly>,
-        >,
+        bridge_owner: &super::super::managed_bridge::conditional_owner::ConditionalOwner,
     ) -> Result<Progress, WorthQueryHomeRetirementDenial> {
         if self
             .runtime

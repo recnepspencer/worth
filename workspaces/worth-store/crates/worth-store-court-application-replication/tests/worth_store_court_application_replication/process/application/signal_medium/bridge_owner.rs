@@ -77,7 +77,9 @@ fn assert_sources(
             definition.bridge_bytes()
         );
         let actual: Vec<_> = owner
-            .with_authored_branch(*branch, |view| view.conditional_definitions().collect())
+            .with_authored_branch(*branch, |view| {
+                view.with_conditional_definitions(|items| items.collect::<Vec<_>>())
+            })
             .unwrap();
         assert_eq!(actual.len(), reference.program.lowerings.len());
         for (actual, expected) in actual.iter().zip(&reference.program.lowerings) {

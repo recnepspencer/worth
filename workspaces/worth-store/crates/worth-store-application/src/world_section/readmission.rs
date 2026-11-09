@@ -10,7 +10,17 @@ use worth_runtime_world::facade::RuntimeWorldOwner;
 #[cfg(feature = "certification-test-authority")]
 mod controls_for_test;
 mod query;
+mod query_programme;
+pub use query_programme::{
+    ApplicationHomeProgrammeHandoffDenial, ApplicationHomeProgrammeHandoffRefused,
+};
+mod signal;
+pub use signal::{
+    prepare_query_home_source, readmit_query_signal, PreparedQueryHomeSource,
+    SignalReadmittedApplicationHome,
+};
 mod refusal;
+pub(in crate::world_section) mod standalone_signal;
 mod transition;
 pub use query::{readmit_query_world, ApplicationHomeQueryCompositionDenial};
 pub use refusal::WorldHomeReadmissionRefused;
@@ -26,6 +36,10 @@ where
 {
     pub(super) home: crate::ReadmittedApplicationHome,
     pub(super) world: RuntimeWorldOwner<D, I, E, Ctx, T>,
+    pub(super) program_source_owner: std::sync::Arc<worth_proof::InstalledBranchProgramSourceOwner>,
+    pub(super) signal_checkpoint: worth_signal::facade::durability::SignalAuthoredCheckpointPort,
+    pub(super) standalone_signal:
+        Option<worth_signal::facade::durability::SignalDurableOwner<D, I, E, Ctx, T>>,
     pub(super) world_cleanup:
         Option<worth_runtime_world::facade::RuntimeWorldResultSnapshotCleanup>,
     pub(super) composition: Option<super::attachment::ApplicationHomeBridgeComposition>,
@@ -57,7 +71,9 @@ where
 {
     native.consume(|home| {
         let super::ApplicationWorldDefinition {
-            world: builder,
+            world: configuration,
+            signal: program,
+            vocabulary,
             bridge,
             graph_role,
         } = definition;
@@ -79,9 +95,40 @@ where
                     })
                 }
             };
+        let signal = match standalone_signal::readmit(&home, program, vocabulary, request) {
+            Ok(signal) => signal,
+            Err(cause) => {
+                return Err(WorldHomeReadmissionRefused {
+                    cause,
+                    home: Box::new(home),
+                    composition: Some(composition),
+                })
+            }
+        };
+        let attachment =
+            match worth_runtime_world::facade::RuntimeWorldAuthoredSignalAttachment::install(
+                &signal, request,
+            ) {
+                Ok(attachment) => attachment,
+                Err(cause) => {
+                    return Err(WorldHomeReadmissionRefused {
+                        cause: crate::ApplicationHomeOpenRefusal::SignalAttachment(Box::new(cause)),
+                        home: Box::new(home),
+                        composition: Some(composition),
+                    })
+                }
+            };
+        let builder = configuration.with_authored_signal(attachment);
         let bridge = composition.ordinary.runtime_world_correspondence_port();
+        let signal_checkpoint = signal.checkpoint_port();
         match readmit_attached_world(&home, builder, bridge, request) {
-            Ok(world) => Ok(finish_attachment(home, world, Some(composition))),
+            Ok(world) => Ok(finish_attachment(
+                home,
+                world,
+                Some(composition),
+                Some(signal),
+                signal_checkpoint,
+            )),
             Err(cause) => Err(WorldHomeReadmissionRefused {
                 cause,
                 home: Box::new(home),
@@ -93,7 +140,7 @@ where
 
 fn readmit_attached_world<D, I, E, Ctx, T>(
     home: &crate::ReadmittedApplicationHome,
-    builder: worth_runtime_world::facade::RuntimeWorldHomeBuilder<D, I, E, Ctx, T>,
+    builder: worth_runtime_world::facade::RuntimeWorldAuthoredHomeBuilder<D, I, E, Ctx, T>,
     bridge: worth_runtime_bridge::facade::RuntimeWorldCorrespondencePort,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<RuntimeWorldOwner<D, I, E, Ctx, T>, crate::ApplicationHomeOpenRefusal>
@@ -159,6 +206,10 @@ fn finish_attachment<D, I, E, Ctx, T>(
     mut home: crate::ReadmittedApplicationHome,
     world: RuntimeWorldOwner<D, I, E, Ctx, T>,
     composition: Option<super::attachment::ApplicationHomeBridgeComposition>,
+    standalone_signal: Option<
+        worth_signal::facade::durability::SignalDurableOwner<D, I, E, Ctx, T>,
+    >,
+    signal_checkpoint: worth_signal::facade::durability::SignalAuthoredCheckpointPort,
 ) -> WorldReconciled<WorldReadmittedApplicationHome<D, I, E, Ctx, T>>
 where
     D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
@@ -173,6 +224,12 @@ where
         }
         drop(prepared);
     }
+    let program_source_owner = home
+        .context
+        .world_slot
+        .as_ref()
+        .expect("same admitted slot")
+        .program_source_owner();
     drop(
         home.context
             .world_slot
@@ -186,6 +243,9 @@ where
     WorldReconciled::from_owner(WorldReadmittedApplicationHome {
         home,
         world,
+        standalone_signal,
+        signal_checkpoint,
+        program_source_owner,
         world_cleanup: None,
         composition,
     })
@@ -199,6 +259,13 @@ where
     Ctx: Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    /// Closed composition handoff: the program owner observes the selected
+    /// branch revision before minting its exact source attestation.
+    pub fn branch_program_source_owner(
+        &self,
+    ) -> std::sync::Arc<worth_proof::InstalledBranchProgramSourceOwner> {
+        std::sync::Arc::clone(&self.program_source_owner)
+    }
     pub fn world(&self) -> super::ApplicationWorldPorts<'_, D, I, E, Ctx, T> {
         super::ApplicationWorldPorts::borrow(&self.world)
     }

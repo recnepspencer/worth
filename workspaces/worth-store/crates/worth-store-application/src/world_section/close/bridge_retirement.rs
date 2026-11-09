@@ -2,13 +2,13 @@
 use crate::{
     world_section::ApplicationHomeBridgeComposition, ApplicationHomeCloseDenial as Denial,
 };
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 use worth_relational::facade::runtime::RelationalRuntime;
 use worth_runtime_bridge::facade::{
-    BridgeHomeRetirementProgress as Progress, BridgeSealedRuntimeAssembly, RetiredRuntimeBridge,
-    RetiredRuntimeBridgeRelationalSource, RetiringRuntimeBridge, RuntimeBridge,
-    RuntimeBridgeRelationalSource,
+    BridgeHomeRetirementProgress as Progress, BridgeReadmittedAuthoredAssembly,
+    RetiredRuntimeBridge, RetiredRuntimeBridgeRelationalSource, RetiringBridgeAuthoredAssembly,
+    RetiringRuntimeBridge, RuntimeBridge, RuntimeBridgeRelationalSource,
 };
 
 pub(crate) enum HomeBridgeCloseCustody {
@@ -29,8 +29,9 @@ struct HomeBridgeRetirementBacking {
 pub(crate) struct RetiringHomeBridgeComposition {
     source: Option<RuntimeBridgeRelationalSource>,
     ordinary: Option<RuntimeBridge>,
-    conditional_share: Option<Arc<RwLock<BridgeSealedRuntimeAssembly>>>,
-    conditional: Option<RwLock<BridgeSealedRuntimeAssembly>>,
+    conditional_share: Option<Arc<BridgeReadmittedAuthoredAssembly>>,
+    conditional: Option<BridgeReadmittedAuthoredAssembly>,
+    conditional_task: Option<RetiringBridgeAuthoredAssembly>,
     ordinary_task: Option<RetiringRuntimeBridge>,
     _retired_ordinary: Option<RetiredRuntimeBridge>,
     _retired_source: Option<RetiredRuntimeBridgeRelationalSource>,
@@ -60,8 +61,6 @@ impl ApplicationHomeBridgeComposition {
             })?;
         if let Some(conditional) = &self.conditional {
             conditional
-                .try_write()
-                .map_err(|_| Denial::WorldCompositionRetained)?
                 .preflight_home_retirement(request, native)
                 .map_err(Denial::Bridge)?;
         }
@@ -110,6 +109,7 @@ impl HomeBridgeCloseCustody {
                     ordinary: Some(ordinary),
                     conditional_share: conditional,
                     conditional: None,
+                    conditional_task: None,
                     ordinary_task: None,
                     _retired_ordinary: None,
                     _retired_source: None,
@@ -161,14 +161,21 @@ impl RetiringHomeBridgeComposition {
                     }
                     return Ok(Progress::Advanced);
                 }
-                let conditional = self
-                    .conditional
+                if let Some(conditional) = self.conditional.take() {
+                    match conditional.into_home_retirement(request, native) {
+                        Ok(task) => self.conditional_task = Some(task),
+                        Err((conditional, cause)) => {
+                            self.conditional = Some(conditional);
+                            return Err(Denial::Bridge(cause));
+                        }
+                    }
+                    return Ok(Progress::Advanced);
+                }
+                if self
+                    .conditional_task
                     .as_mut()
-                    .expect("same original owning assembly")
-                    .get_mut()
-                    .map_err(|_| Denial::WorldCompositionRetained)?;
-                if conditional
-                    .advance_home_retirement(request, native)
+                    .expect("same original authored assembly task")
+                    .advance(request, native)
                     .map_err(Denial::Bridge)?
                     == Progress::Complete
                 {

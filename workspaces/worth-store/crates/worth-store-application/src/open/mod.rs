@@ -19,6 +19,16 @@ pub enum ApplicationHomeOpenRefusal {
     RuntimeConstruction(worth_relational::facade::runtime::RelationalRuntimeConstructionDenial),
     Relational(worth_store_relational::RelationalSectionReadmissionDenial),
     World(worth_runtime_world::facade::WorldReadmissionDenial),
+    SignalSourceRequired,
+    SignalMedium(worth_signal::facade::durability::SignalDurableMediumDenial),
+    SignalImage(Box<worth_signal::facade::durability::SignalOwnerReadmissionDenial>),
+    SignalInitial(Box<worth_signal::facade::durability::SignalInitialSourceDenial>),
+    SignalInitialProgress(Box<crate::signal_medium::HomeSignalInitialSourceDenial>),
+    SignalReadmission(Box<worth_signal::facade::durability::SignalOwnerReadmissionDenial>),
+    SignalAttachment(Box<worth_runtime_world::facade::RuntimeWorldAuthoredSignalAttachmentDenial>),
+    BridgeInitial(Box<worth_runtime_bridge::facade::BridgeInitialSourceDenial>),
+    AuthoredBridge(Box<worth_runtime_bridge::facade::BridgeAuthoredReadmissionDenial>),
+
     BridgeSource(worth_runtime_bridge::facade::RelationalBridgeSourceConfigurationError),
     Bridge(worth_runtime_bridge::facade::BridgeBuildError),
     ConditionalBridge(worth_runtime_bridge::facade::BridgeConditionalDenial),
@@ -179,6 +189,7 @@ pub fn admit_home(
         )
         .map_err(ApplicationHomeOpenRefusal::Execution)?;
         let mut context = HomeContext {
+            signal_close_probe: std::sync::Mutex::new(None),
             world_preparation: None,
             opening_observation,
             transition,
@@ -190,6 +201,7 @@ pub fn admit_home(
             world_close_report: None,
             world_origin_retirement: None,
             world_owner_retirement: None,
+            signal_owner_retirement: None,
             world_close_checkpoint: std::sync::Mutex::new(world_close_checkpoint),
             world_slot: Some(world_slot),
             checkpoint,

@@ -44,6 +44,7 @@ pub enum WorthQueryHomeProgramTransitionDenial {
         >,
     ),
     Composition(worth_store_application::ApplicationHomeQueryCompositionDenial),
+    BridgeProgramme(Box<worth_runtime_bridge::facade::BridgeAuthoredProgrammeHandoffDenial>),
     Request(worth_execution::WorkCeilingDenial),
 }
 
@@ -60,24 +61,24 @@ pub enum WorthQueryHomeProgramTransitionOpenPhase<
     Successor(WorthQueryApplicationHomeOpenRefused<B, BP>),
     Configuration(WorthQueryHomeProgramTransitionDenial),
     BeforeCompilation {
-        predecessor: ReadmittedExistingHomeNativeMeaning<A, AP>,
+        predecessor: PreparedExistingHomeSignalProgram<A, AP>,
         successor: PreparedHomeApplication<B, BP>,
         home: DirectoryHome,
         cause: WorthQueryHomeProgramTransitionDenial,
     },
     Compilation {
-        predecessor: ReadmittedExistingHomeNativeMeaning<A, AP>,
+        predecessor: PreparedExistingHomeSignalProgram<A, AP>,
         successor: QueryHomeTransitionPreparationRefused<B, BP>,
         home: DirectoryHome,
     },
     Transition {
-        predecessor: ReadmittedExistingHomeNativeMeaning<A, AP>,
+        predecessor: PreparedExistingHomeSignalProgram<A, AP>,
         successor: PreparedHomeProgramTransitionTarget<B, BP>,
         home: DirectoryHome,
         cause: WorthQueryHomeProgramTransitionDenial,
     },
     Promotion {
-        predecessor: ReadmittedExistingHomeNativeMeaning<A, AP>,
+        predecessor: PreparedExistingHomeSignalProgram<A, AP>,
         successor: QueryHomeTransitionPromotionRefused<B, BP>,
         home: DirectoryHome,
     },
@@ -154,7 +155,7 @@ impl<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaComposition, BP>
     }
     #[inline(never)]
     pub(super) fn before_compilation(
-        predecessor: ReadmittedExistingHomeNativeMeaning<A, AP>,
+        predecessor: PreparedExistingHomeSignalProgram<A, AP>,
         successor: PreparedHomeApplication<B, BP>,
         home: DirectoryHome,
         cause: WorthQueryHomeProgramTransitionDenial,
@@ -172,7 +173,7 @@ impl<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaComposition, BP>
     }
     #[inline(never)]
     pub(super) fn compilation(
-        predecessor: ReadmittedExistingHomeNativeMeaning<A, AP>,
+        predecessor: PreparedExistingHomeSignalProgram<A, AP>,
         successor: QueryHomeTransitionPreparationRefused<B, BP>,
         home: DirectoryHome,
     ) -> Self {
@@ -186,7 +187,7 @@ impl<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaComposition, BP>
     }
     #[inline(never)]
     pub(super) fn transition(
-        predecessor: ReadmittedExistingHomeNativeMeaning<A, AP>,
+        predecessor: PreparedExistingHomeSignalProgram<A, AP>,
         successor: PreparedHomeProgramTransitionTarget<B, BP>,
         home: DirectoryHome,
         cause: WorthQueryHomeProgramTransitionDenial,
@@ -202,7 +203,7 @@ impl<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaComposition, BP>
     }
     #[inline(never)]
     pub(super) fn promotion(
-        predecessor: ReadmittedExistingHomeNativeMeaning<A, AP>,
+        predecessor: PreparedExistingHomeSignalProgram<A, AP>,
         successor: QueryHomeTransitionPromotionRefused<B, BP>,
         home: DirectoryHome,
     ) -> Self {

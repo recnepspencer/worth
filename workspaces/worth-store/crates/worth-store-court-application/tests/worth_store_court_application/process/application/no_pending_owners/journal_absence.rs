@@ -29,6 +29,17 @@ fn empty_unsupported_journals_admit_the_same_home_with_real_native_and_world_his
     let incarnation = home.incarnation();
     let native = home.relational().runtime().runtime_instance_id();
     let physical = home.physical_serving_for_test().runtime_identity();
+    for name in ["signal.definitions", "signal.advances"] {
+        assert!(
+            home.physical_serving_for_test()
+                .ordered_journal(OrderedJournalName::new(name).unwrap())
+                .unwrap()
+                .head()
+                .unwrap()
+                .is_some(),
+            "the actual Signal owner was readmitted from populated authored journals"
+        );
+    }
     let admitted = home.readmit_no_pending_owners(&execution).unwrap();
     assert_contended(directory.path(), &execution);
     let home = admitted.into_no_pending_home();
@@ -44,10 +55,11 @@ fn empty_unsupported_journals_admit_the_same_home_with_real_native_and_world_his
 
 #[test]
 fn each_unsupported_journal_entry_refuses_admission_and_returns_the_same_home() {
+    // M3 Phase 5 / "Interim refusals lifted" retires Signal journal absence.
+    // Signal's own framed readmission admits them before the World stage;
+    // this court still requires absence for every later, unadmitted owner.
     for name in [
         "home.transitions",
-        "signal.definitions",
-        "signal.advances",
         "query.obligations",
         "query.dispatch",
         "query.corrections",

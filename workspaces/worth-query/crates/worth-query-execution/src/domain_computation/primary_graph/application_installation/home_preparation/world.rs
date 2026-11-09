@@ -64,6 +64,7 @@ where
         root: ProductBranchObservation,
         directory_support: fn(worth_foundational::facade::DurableStateFamily, u8) -> Option<u8>,
         maintenance: std::sync::Arc<dyn crate::domain_computation::execution_runtime::product_world::WorthQueryHomeMaintenance>,
+        branch_program_source_owner: std::sync::Arc<worth_proof::InstalledBranchProgramSourceOwner>,
     ) -> Result<
         worth_proof::QueryReadmitted<ReadmittedHomeQueryService<Schema, Program>>,
         QueryHomeWorldAttachmentRefused<Schema, Program>,
@@ -88,6 +89,7 @@ where
             root,
             directory_support,
             maintenance,
+            branch_program_source_owner,
         )
     }
 }
@@ -110,24 +112,33 @@ where
         root: ProductBranchObservation,
         directory_support: fn(worth_foundational::facade::DurableStateFamily, u8) -> Option<u8>,
         maintenance: std::sync::Arc<dyn crate::domain_computation::execution_runtime::product_world::WorthQueryHomeMaintenance>,
+        branch_program_source_owner: std::sync::Arc<worth_proof::InstalledBranchProgramSourceOwner>,
     ) -> Result<
         worth_proof::QueryReadmitted<ReadmittedHomeQueryService<Schema, Program>>,
         QueryHomeWorldAttachmentRefused<Schema, Program>,
     > {
         let prepared = (|| {
-            let (provider, participation, authorization, handlers, resources, mutation_partitions) =
-                home_attachment::preflight_home_application(
+            let branches = observation
+                .observe_installed_product_branches(&phase.execution_request())
+                .map_err(|cause| {
+                    home_world_denial(format!("Home branch inventory refused: {cause:?}"))
+                })?;
+            for selected in branches.branches() {
+                self.bootstrap.readmit_home_branch_program(
                     phase,
-                    &mut self.bootstrap,
-                    &self.state.runtime,
-                    &self.state.authority,
-                    &self.state.installed,
-                    root.basis().relational_basis(),
+                    selected,
+                    &self.state.support.roster,
                 )?;
-            self.bootstrap.readmit_home_initial_program(
+                home_attachment::readmit_home_branch_basis(
+                    phase,
+                    &self.services.provider,
+                    selected.basis().relational_basis(),
+                )?;
+            }
+            home_attachment::bind_home_root_basis(
                 phase,
-                &root,
-                &self.state.support.initial_revision,
+                &self.services.provider,
+                root.basis().relational_basis(),
             )?;
             let relational = self
                 .bootstrap
@@ -140,9 +151,15 @@ where
                 .map_err(|cause| {
                     home_world_denial(format!("Home product source denied: {cause:?}"))
                 })?;
-            let product = WorthQueryProductRuntime::attach_home_world_ports(
+            let owner = self.bridge.conditional();
+            let authored = match owner {
+                crate::domain_computation::primary_graph::managed_bridge::conditional_execution::ConditionalExecutionOwner::Authored(owner) => owner,
+                crate::domain_computation::primary_graph::managed_bridge::conditional_execution::ConditionalExecutionOwner::Memory(_)
+                | crate::domain_computation::primary_graph::managed_bridge::conditional_execution::ConditionalExecutionOwner::Stopped => return Err(home_world_denial("Home requires the exact installed Native/Bridge basis and authored Signal owner")),
+            };
+            WorthQueryProductRuntime::attach_home_world_ports(
                 relational,
-                &mut self.bridge.conditional_lifecycle(),
+                authored,
                 self.state.limits.world.clone(),
                 publication_port,
                 branch,
@@ -152,30 +169,13 @@ where
                 root.clone(),
                 directory_support,
                 maintenance,
+                branch_program_source_owner,
+                &branches,
             )
-            .map_err(|cause| home_world_denial(cause.detail()))?;
-            Ok((
-                publication,
-                provider,
-                participation,
-                authorization,
-                handlers,
-                resources,
-                product,
-                mutation_partitions,
-            ))
+            .map_err(|cause| home_world_denial(cause.detail()))
         })();
-        let (
-            publication,
-            provider,
-            participation,
-            authorization,
-            handlers,
-            resources,
-            product,
-            mutation_partitions,
-        ) = match prepared {
-            Ok(prepared) => prepared,
+        let product = match prepared {
+            Ok(product) => product,
             Err(cause) => {
                 return Err(QueryHomeWorldAttachmentRefused {
                     custody: HomeWorldAttachmentCustody::Prepared {
@@ -186,14 +186,27 @@ where
                 })
             }
         };
-        // The actual configured providers remain in the refused preparation
-        // through every fallible attachment check. Success transfers them once.
+        // Transfer the same installed providers and routes only after every
+        // fallible attachment check has completed.
         let managed_indexes = std::mem::take(&mut self.bootstrap.managed_indexes);
         let HomeQueryPreparation {
             state,
             bootstrap,
             bridge,
+            services,
+            producers,
+            conditionals,
+            producer_routes,
+            readiness_routes,
         } = self;
+        let home_attachment::HomeApplicationServices {
+            provider,
+            participation,
+            authorization,
+            handlers,
+            resources,
+            mutation_partitions,
+        } = services;
         let mut application = home_attachment::finish_home_application(
             phase,
             bootstrap,
@@ -203,20 +216,17 @@ where
             provider,
             participation,
             authorization,
-            match state.authorization_time_source {
-                Some(source) => {
-                    crate::domain_computation::authorization::WorthQueryRuntimeClock::from_source(
-                        source,
-                    )
-                }
-                None => crate::domain_computation::authorization::WorthQueryRuntimeClock::system(),
-            },
+            state.authorization_clock,
             handlers,
             resources,
             managed_indexes,
             bridge,
             product,
             mutation_partitions,
+            producers,
+            conditionals,
+            producer_routes,
+            readiness_routes,
         );
         application.program_support = Some(
             super::super::super::program_occurrence::WorthQueryInstalledProgramSupport::installed(

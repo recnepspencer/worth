@@ -1,21 +1,19 @@
 //! One original Bridge payload advances through exclusive retirement phases.
-use std::sync::{Arc, RwLock};
-use worth_runtime_bridge::facade::{
-    BridgeSealedRuntimeAssembly, RetiredRuntimeBridge, RetiringRuntimeBridge, RuntimeBridge,
-};
+use super::conditional_owner::ConditionalOwner;
+use worth_runtime_bridge::facade::{RetiredRuntimeBridge, RetiringRuntimeBridge, RuntimeBridge};
 
 pub(super) enum InstalledBridgeCustody {
     Serving {
         ordinary: RuntimeBridge,
-        conditional: Arc<RwLock<BridgeSealedRuntimeAssembly>>,
+        conditional: ConditionalOwner,
     },
     // Field order preserves the original conditional-before-task destruction.
     Retiring {
-        conditional: Arc<RwLock<BridgeSealedRuntimeAssembly>>,
+        conditional: ConditionalOwner,
         ordinary: RetiringRuntimeBridge,
     },
     Retired {
-        conditional: Arc<RwLock<BridgeSealedRuntimeAssembly>>,
+        conditional: ConditionalOwner,
         ordinary: RetiredRuntimeBridge,
     },
     Released {
@@ -29,7 +27,7 @@ impl InstalledBridgeCustody {
             Self::Retiring { .. } | Self::Retired { .. } | Self::Released { .. } => None,
         }
     }
-    pub(super) fn conditional(&self) -> Option<&Arc<RwLock<BridgeSealedRuntimeAssembly>>> {
+    pub(super) fn conditional(&self) -> Option<&ConditionalOwner> {
         match self {
             Self::Serving { conditional, .. }
             | Self::Retiring { conditional, .. }

@@ -11,6 +11,7 @@ use super::runtime::WorthQueryProductRootIdentity;
 /// ports cannot extend the root's admission lifetime or choose a different head.
 #[derive(Clone)]
 pub struct WorthQueryProductPublicationBinding {
+    program_source: BranchProgramSourceCache,
     pub(super) adoption_preparation: Arc<super::adoption_preparation::AdoptionPreparationControl>,
     observation: ProductBranchObservation,
     publication: RuntimeWorldPublicationPort<(), (), (), (), ()>,
@@ -29,8 +30,10 @@ impl WorthQueryProductPublicationBinding {
         observation_port: RuntimeWorldObservationPort,
         clock: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldClock,
         root_identity: Arc<WorthQueryProductRootIdentity>,
+        branch_program_owner: Option<Arc<worth_proof::InstalledBranchProgramSourceOwner>>,
     ) -> Self {
         Self {
+            program_source: BranchProgramSourceCache::for_owner(branch_program_owner),
             adoption_preparation,
             observation,
             publication,
@@ -89,8 +92,11 @@ impl super::WorthQueryProductRuntime {
             self.owner.observation_port(),
             self.clock.clone(),
             self.root_identity(),
+            self.branch_program_source_owner.clone(),
         )
     }
 }
 
 mod court_doors_for_test;
+mod selected_program;
+use selected_program::BranchProgramSourceCache;

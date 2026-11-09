@@ -13,6 +13,13 @@ where
     I: Copy + Ord + 'static,
     T: Copy + Ord + 'static,
 {
+    pub(crate) fn published_advance_count(&self) -> Result<usize, Dn> {
+        Ok(self
+            .source
+            .lock()
+            .map_err(|_| Dn::PublicationStatePoisoned)?
+            .published_advance_count())
+    }
     pub(crate) fn binding(&self) -> &SignalDurableHomeBinding {
         self.medium.binding()
     }

@@ -197,6 +197,18 @@ impl RuntimeWorldObservationPort {
         }
         Ok(service)
     }
+    pub fn observe_installed_product_branches(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        crate::branch::ObservedProductBranches,
+        super::super::RuntimeWorldServiceDenial<crate::branch::ProductBranchInventoryDenial>,
+    > {
+        self.service()?
+            .observe_installed_product_branches(execution)
+            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+    }
+
     pub fn observe_product_branch(
         &self,
         branch: &crate::identity::ProductBranchIdentity,

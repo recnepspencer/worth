@@ -48,6 +48,8 @@ where
     T: Copy + Ord + 'static,
 {
     root: crate::branch::owner_services::SignalSealedOwnerRoot<D, I, T>,
+    pub(super) home_retirement:
+        std::sync::Mutex<Option<super::home_stop::SignalHomeRetirementBacking<D, I, E, Ctx, T>>>,
     _runtime: std::sync::Mutex<Box<SignalRuntime<D, I, E, Ctx, T>>>,
     pub(super) publication: Arc<SignalDurablePublicationState<D, I, T>>,
     port: SignalDurableBranchSourcePort<D, I, T>,
@@ -86,6 +88,7 @@ where
         );
         Ok(Self {
             root,
+            home_retirement: std::sync::Mutex::new(None),
             _runtime: std::sync::Mutex::new(runtime),
             publication,
             port,
@@ -134,11 +137,21 @@ where
     ) -> Result<(), crate::branch::SignalOwnerStopDenial> {
         self.root.commit_home_stop(request)
     }
+    /// Actual committed membership count; comparing observations grants no admission authority.
+    pub fn published_advance_count(&self) -> Result<usize, SignalOwnerReadmissionDenial> {
+        self.publication.published_advance_count()
+    }
     pub fn binding(&self) -> &SignalDurableHomeBinding {
         self.publication.binding()
     }
     pub fn basis_port(&self) -> crate::branch::owner_services::SignalBranchBasisPort<D, I, T> {
         self.basis.clone()
+    }
+    #[doc(hidden)]
+    pub fn signal_operation_control_for_test(
+        &self,
+    ) -> crate::branch::SignalOwnerOperationControlForTest {
+        self.root.operation_control_for_test()
     }
     pub fn source_port(&self) -> SignalDurableBranchSourcePort<D, I, T> {
         self.port.clone()

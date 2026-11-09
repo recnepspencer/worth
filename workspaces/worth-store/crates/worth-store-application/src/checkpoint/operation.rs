@@ -17,6 +17,7 @@ pub struct ApplicationHomeCheckpointOperation {
     serving: Arc<ServingPhysicalRuntime>,
     owner: Arc<HomeCheckpointOwner>,
     world: WorldCheckpointPort,
+    signal: worth_signal::facade::durability::SignalAuthoredCheckpointPort,
     native: RelationalSectionCompleteCheckpointPreparation,
     limits: ApplicationHomeCheckpointLimits,
 }
@@ -24,6 +25,7 @@ pub struct ApplicationHomeCheckpointOperation {
 pub struct RetiredApplicationHomeCheckpointOperation {
     _owner: Arc<HomeCheckpointOwner>,
     _world: WorldCheckpointPort,
+    _signal: worth_signal::facade::durability::SignalAuthoredCheckpointPort,
     _native: RelationalSectionCompleteCheckpointPreparation,
     _limits: ApplicationHomeCheckpointLimits,
 }
@@ -72,6 +74,7 @@ impl ApplicationHomeCheckpointOperation {
             serving,
             owner,
             world,
+            signal,
             native,
             limits,
         } = self;
@@ -80,6 +83,7 @@ impl ApplicationHomeCheckpointOperation {
         Ok(RetiredApplicationHomeCheckpointOperation {
             _owner: owner,
             _world: world,
+            _signal: signal,
             _native: native,
             _limits: limits,
         })
@@ -88,6 +92,7 @@ impl ApplicationHomeCheckpointOperation {
         serving: Arc<ServingPhysicalRuntime>,
         owner: Arc<HomeCheckpointOwner>,
         world: WorldCheckpointPort,
+        signal: worth_signal::facade::durability::SignalAuthoredCheckpointPort,
         native: RelationalSectionCompleteCheckpointPreparation,
         limits: ApplicationHomeCheckpointLimits,
     ) -> Self {
@@ -95,6 +100,7 @@ impl ApplicationHomeCheckpointOperation {
             serving,
             owner,
             world,
+            signal,
             native,
             limits,
         }
@@ -105,6 +111,7 @@ impl ApplicationHomeCheckpointOperation {
             &self.serving,
             &self.owner,
             Some(&self.world),
+            Some(&self.signal),
             request,
             |home, through, digest| self.native.prepare_home(home, through, digest, request),
             None,
@@ -123,6 +130,7 @@ impl ApplicationHomeCheckpointOperation {
             &self.serving,
             &self.owner,
             Some(&self.world),
+            Some(&self.signal),
             request,
             |home, through, digest| self.native.prepare_home(home, through, digest, request),
             None,

@@ -11,6 +11,7 @@ pub(crate) const RELATIONAL_INITIAL_INPUTS_ANCHOR: &str = "relational.initial-in
 #[derive(Clone, Copy)]
 pub(crate) enum HomeJournalAdmission {
     Native,
+    Signal,
     World,
     Transition,
     RequireAbsent,
@@ -49,11 +50,11 @@ pub(crate) const HOME_JOURNALS: [HomeJournal; 11] = [
     },
     HomeJournal {
         name: "signal.definitions",
-        admission: HomeJournalAdmission::RequireAbsent,
+        admission: HomeJournalAdmission::Signal,
     },
     HomeJournal {
         name: "signal.advances",
-        admission: HomeJournalAdmission::RequireAbsent,
+        admission: HomeJournalAdmission::Signal,
     },
     HomeJournal {
         name: "query.obligations",

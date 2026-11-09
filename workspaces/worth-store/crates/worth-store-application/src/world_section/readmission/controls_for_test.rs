@@ -33,6 +33,7 @@ where
             &self.home.context.serving,
             &self.home.context.checkpoint,
             Some(&world),
+            Some(&self.signal_checkpoint),
             execution,
             |home, through, digest| {
                 self.home

@@ -108,6 +108,33 @@ impl SelectedHomeSource {
             .map_err(|_| Denial::ReadSourceBusy)?;
         read::journal_payload(&cut, serving, name, position, 64 << 10, request)
     }
+    pub(crate) fn signal_journal_payload(
+        &self,
+        serving: &ServingPhysicalRuntime,
+        name: OrderedJournalName,
+        position: u64,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<
+        (
+            OrderedJournalEntry,
+            worth_execution::ExecutionImmutableBytes,
+        ),
+        Denial,
+    > {
+        let cut = self
+            .backing
+            .cut
+            .try_lock()
+            .map_err(|_| Denial::ReadSourceBusy)?;
+        read::journal_payload(
+            &cut,
+            serving,
+            name,
+            position,
+            worth_signal::facade::durability::SIGNAL_OWNER_FRAME_MAXIMUM_BYTES as u64,
+            request,
+        )
+    }
     pub(crate) fn native_journal_payload(
         &self,
         serving: &ServingPhysicalRuntime,

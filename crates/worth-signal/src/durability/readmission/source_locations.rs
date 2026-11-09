@@ -61,6 +61,11 @@ impl SignalDefinitionSourceRecord {
     }
 }
 impl SignalRecoveredSourceLocations {
+    pub(crate) fn published_advance_count(&self) -> usize {
+        // Entries are admitted committed originals; no entry is removed during this owner.
+        self.advances.len()
+    }
+
     pub(in crate::durability::readmission) fn from_original(
         definitions: Vec<RecordedDefinitionLocation>,
         advances: BTreeMap<SignalBranchAdvanceIdentity, RecordedAdvanceLocation>,

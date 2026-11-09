@@ -114,6 +114,7 @@ fn reopened_world_issuance_cannot_reuse_intent_only_attempt_assignments() {
     let mut outcome = port.open_publication_without_signal(
         &execution,
         source.clone(),
+        resumed.admit_initial_program_source(&source),
         worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
         &cancellation.token(),
         None,

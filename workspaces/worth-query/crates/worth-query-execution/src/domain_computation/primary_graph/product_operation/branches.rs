@@ -178,10 +178,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
             .pending_owner_cleanup()
             .into_iter()
             .map(|cleanup| {
-                WorthQueryApplicationProductBranchCleanup::new(
-                    cleanup,
-                    std::sync::Arc::clone(&conditional),
-                )
+                WorthQueryApplicationProductBranchCleanup::new(cleanup, conditional.clone())
             })
             .collect()
     }

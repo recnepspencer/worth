@@ -79,6 +79,20 @@ impl BridgeAuthoredConditionalExecution<'_> {
         }
     }
 
+    pub fn deliver_authoritative_change(
+        &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+        signal_basis: &super::BridgeConditionalSignalBasisBinding,
+        dependency_ordinal: usize,
+        request: crate::adapter::RelationalCommittedPatchRequest,
+    ) -> Result<crate::correspondence::CorrespondenceDeliveryOutcome, BridgeConditionalDenial> {
+        self.view().deliver_authoritative_change(
+            execution,
+            signal_basis,
+            dependency_ordinal,
+            request,
+        )
+    }
     pub fn execute(
         &self,
         execution_request: worth_execution::ExecutionRequest<'_, '_>,

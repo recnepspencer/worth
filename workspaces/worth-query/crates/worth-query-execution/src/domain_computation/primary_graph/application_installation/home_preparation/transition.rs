@@ -9,6 +9,7 @@ mod activation;
 mod authored_body;
 mod bridge;
 mod indexes;
+mod program_source;
 mod promotion;
 pub use authored_body::WorthQueryHomeProgramTransitionBodyDenial;
 mod author_source;
@@ -78,7 +79,7 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeApplication<Sche
         self,
         phase: &WorthQueryBootstrapAdvancementPhase<'_>,
         native: &RelationalRuntime,
-        predecessor: &ReadmittedExistingHomeNativeMeaning<Before, BeforeProgram>,
+        predecessor: &PreparedExistingHomeSignalProgram<Before, BeforeProgram>,
         basis: &AdmittedRelationalBranchBasis,
     ) -> Result<
         PreparedHomeProgramTransitionTarget<Schema, Program>,

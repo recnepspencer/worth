@@ -1,6 +1,11 @@
 //! Store's Signal adapter: two registered journals, opaque owner bytes.
 mod attachment;
+mod home_slot;
+mod initial_source;
 pub use attachment::StoreSignalMediumAttachmentRefused;
+pub(crate) use home_slot::UnclaimedSignalSlot;
+pub use initial_source::HomeSignalInitialSourceDenial;
+pub(crate) use initial_source::{HomeInitialSignalSource, OriginalSignalInitialSource};
 mod publication;
 mod publication_fate;
 mod publication_task;
@@ -21,6 +26,7 @@ use worth_store::physical_runtime::{AdmittedRecordPlacementPolicy, ServingPhysic
 pub struct StoreSignalMedium {
     serving: Mutex<Option<Arc<ServingPhysicalRuntime>>>,
     binding: SignalDurableHomeBinding,
+    home_source: Mutex<Option<crate::checkpoint::SelectedHomeSource>>,
     placement: AdmittedRecordPlacementPolicy,
     publications: SignalPublications,
     admission: SignalDurableOwnerAdmissionRegistry,
@@ -59,6 +65,7 @@ impl StoreSignalMedium {
             serving: Mutex::new(Some(Arc::clone(&serving))),
             binding,
             checkpoint,
+            home_source: Mutex::new(None),
             placement,
             publications: SignalPublications::default(),
             admission,
@@ -96,6 +103,21 @@ impl StoreSignalMedium {
             .map_err(D::Request)?;
         let admission = SignalDurableOwnerAdmissionRegistry::new(binding, execution)?;
         Ok((funding, admission))
+    }
+    pub(crate) fn physical_close_holder(
+        &self,
+        actual: &Arc<ServingPhysicalRuntime>,
+    ) -> crate::close::HomeSignalPhysicalHolder {
+        use crate::close::HomeSignalPhysicalHolder as Holder;
+        match self.serving.try_lock() {
+            Ok(share) => match share.as_ref() {
+                Some(share) if Arc::ptr_eq(share, actual) => {
+                    Holder::Retaining(self.binding.owner())
+                }
+                Some(_) | None => Holder::Released(self.binding.owner()),
+            },
+            Err(_) => Holder::InspectionBusy(self.binding.owner()),
+        }
     }
     fn serving(&self) -> Result<Arc<ServingPhysicalRuntime>, D> {
         self.serving
@@ -194,8 +216,13 @@ impl SignalDurableMedium for StoreSignalMedium {
             SignalPublicationTaskPosture::Unsettled => return Err(D::PublicationUnresolved),
             SignalPublicationTaskPosture::Terminal => {}
         }
-        execution.consult().map_err(D::Request)?;
         let mut serving = self.serving.try_lock().map_err(|_| D::PublicationBusy)?;
+        if serving.is_none() {
+            return Ok(());
+        }
+        execution
+            .check_live()
+            .map_err(|cause| D::Request(worth_execution::WorkCeilingDenial::Stopped(cause)))?;
         self.admission.retire()?;
         let original = serving.take();
         drop(serving);

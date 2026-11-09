@@ -63,10 +63,24 @@ where
         let _phase = self.lifecycle.try_prepared_initial_empty_stop_guard()?;
         let mut retention = self.retention.try_authored_home_close_guard()?;
         let mut conditional = self.conditional_retention.try_authored_home_close_guard()?;
+        let admission = self
+            ._durable_admission
+            .as_ref()
+            .map(|claim| claim.admission().prepare_retirement(&_phase))
+            .transpose()
+            .map_err(|cause| match cause {
+                crate::durability::SignalDurableAdmissionRetirementDenial::Busy => Denial::Busy,
+                crate::durability::SignalDurableAdmissionRetirementDenial::Poisoned => {
+                    Denial::Poisoned
+                }
+            })?;
         request.check_live().map_err(Denial::Stopped)?;
         // Nothing after this point may refuse or call cleanup/user code.
         retention.close();
         conditional.close();
+        if let Some(admission) = admission {
+            admission.commit();
+        }
         Ok(())
     }
     fn try_prepare_initial_empty_stop(

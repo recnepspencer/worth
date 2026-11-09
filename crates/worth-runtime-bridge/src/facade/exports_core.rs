@@ -9,6 +9,7 @@ pub use crate::adapter::{
     TruthWritebackAuthorityError, TruthWritebackReceipt, TruthWritebackRequest,
 };
 pub use crate::builder::{RuntimeBridgeBuilder, UnattachedRelationalBridgeBuilder};
+pub use crate::conditional_execution::BridgeAuthoredProgrammeHandoffDenial;
 pub use crate::conditional_execution::{
     BridgeAppliedConditionalInstallationExtension, BridgeAsyncEffectsIndeterminateObservation,
     BridgeAuthoredBranchDenial, BridgeAuthoredBranchView, BridgeAuthoredConditionalDeclaration,

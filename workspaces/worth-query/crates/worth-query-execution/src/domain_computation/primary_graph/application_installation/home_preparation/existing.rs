@@ -7,9 +7,9 @@ pub use source::{PreparedExistingHomeQueryRuntime, QueryExistingHomeSourceAttach
 pub use world::QueryExistingHomeWorldAttachmentRefused;
 
 pub struct ReadmittedExistingHomeNativeMeaning<Schema: ApplicationSchemaComposition, Program> {
-    state: HomeApplicationState<Schema, Program>,
-    schema: InstalledNativeSchemaMeaning,
-    restore_work: Option<worth_relational::facade::durability::CheckpointRestoreWork>,
+    pub(super) state: HomeApplicationState<Schema, Program>,
+    pub(super) schema: InstalledNativeSchemaMeaning,
+    pub(super) restore_work: Option<worth_relational::facade::durability::CheckpointRestoreWork>,
 }
 pub struct QueryExistingHomeNativeReadmissionRefused<Schema: ApplicationSchemaComposition, Program>
 {
@@ -101,23 +101,6 @@ impl<Schema: ApplicationSchemaComposition, Program>
         }
     }
 
-    pub(super) fn predecessor_activation(
-        &self,
-    ) -> (
-        &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
-        &WorthQueryProgramActivationCell,
-    ) {
-        (&self.state.support.initial_revision, &self.state.activation)
-    }
-
-    pub(super) fn predecessor_native_meaning(
-        &self,
-    ) -> (
-        &super::super::super::schema_layout::WorthQueryPrimaryGraphLayout,
-        &RelationalInitialSchemaInstallationReceipt,
-    ) {
-        (&self.schema.layout, &self.schema.receipt)
-    }
     pub fn home_bridge_definition(
         &self,
     ) -> Result<

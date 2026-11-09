@@ -67,7 +67,10 @@ where
         .read()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
     let exact = bridge
-        .admit_exact_conditional_signal_basis(&operation_anchor, product.signal_basis())
+        .memory()
+        .and_then(|owner| {
+            owner.admit_exact_conditional_signal_basis(&operation_anchor, product.signal_basis())
+        })
         .map_err(WorthQueryConditionalDefinitionPublicationDenial::BridgePreparation)?;
     let predecessor = exact.installed_lowering();
     let request = predecessor.successor_with_wake_provider(QueryTemporalPredicateProvider::<

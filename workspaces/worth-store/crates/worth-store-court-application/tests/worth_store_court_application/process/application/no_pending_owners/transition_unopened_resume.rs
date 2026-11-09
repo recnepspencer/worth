@@ -90,6 +90,7 @@ fn an_intent_only_restart_starts_its_original_assignment_once_and_keeps_refused_
             .prepare_readmitted_home_transition_step(
                 &empty_execution,
                 source.clone(),
+                fixture.admit_initial_program_source(&source),
                 RelationalTransactionIntent::ordinary(),
                 grant.plan(),
                 0,
@@ -115,6 +116,7 @@ fn an_intent_only_restart_starts_its_original_assignment_once_and_keeps_refused_
             .prepare_readmitted_home_transition_step(
                 &empty_execution,
                 source.clone(),
+                fixture.admit_initial_program_source(&source),
                 RelationalTransactionIntent::ordinary(),
                 grant.plan(),
                 0,
@@ -139,6 +141,7 @@ fn an_intent_only_restart_starts_its_original_assignment_once_and_keeps_refused_
             .prepare_readmitted_home_transition_step(
                 &execution,
                 source.clone(),
+                fixture.admit_initial_program_source(&source),
                 RelationalTransactionIntent::ordinary(),
                 grant.plan(),
                 0,
@@ -276,6 +279,7 @@ fn an_unopened_execution_witness_cannot_restart_a_durable_original_open() {
         .prepare_readmitted_home_transition_step(
             &execution,
             source.clone(),
+            fixture.admit_initial_program_source(&source),
             RelationalTransactionIntent::ordinary(),
             grant.plan(),
             0,

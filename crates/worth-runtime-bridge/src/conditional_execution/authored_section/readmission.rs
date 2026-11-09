@@ -119,6 +119,8 @@ impl Program {
     }
 }
 pub(in crate::conditional_execution) struct PreparedBranch {
+    pub(in crate::conditional_execution) graph_lifecycle:
+        worth_signal::facade::SignalGraphLifecycleProbe,
     pub(in crate::conditional_execution) graph_instance_id: u64,
     pub(in crate::conditional_execution) program: Arc<Program>,
     pub(in crate::conditional_execution) dependencies:
@@ -200,6 +202,7 @@ impl Installation<'_> {
             .map_err(|_| D::section(BridgeAuthoredSectionDenial::SizeLimit))?,
         )?;
         Ok(Box::new(PreparedBranch {
+            graph_lifecycle: branch.graph().lifecycle_probe(),
             graph_instance_id: branch
                 .graph()
                 .installed_graph_capability()

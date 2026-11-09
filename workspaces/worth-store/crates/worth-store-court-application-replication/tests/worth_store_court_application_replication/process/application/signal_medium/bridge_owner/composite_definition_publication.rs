@@ -22,7 +22,7 @@ fn composite_conditional_publication_rejects_foreign_grants_and_reopens_the_same
         .unwrap();
     let predecessor = owner
         .with_authored_branch(branch, |view| {
-            view.conditional_definitions().next().unwrap()
+            view.with_conditional_definitions(|items| items.next().unwrap())
         })
         .unwrap();
     let issuer = InstalledCompositeSignalPublicationOwner::fresh();
@@ -42,6 +42,7 @@ fn composite_conditional_publication_rejects_foreign_grants_and_reopens_the_same
         &execution,
         binding,
         grant,
+        &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token(),
         &predecessor,
         successor(&predecessor),
         |_| {
@@ -59,7 +60,7 @@ fn composite_conditional_publication_rejects_foreign_grants_and_reopens_the_same
     );
     assert!(owner
         .with_authored_branch(branch, |view| Arc::ptr_eq(
-            &view.conditional_definitions().next().unwrap(),
+            &view.with_conditional_definitions(|items| items.next().unwrap()),
             &predecessor
         ))
         .unwrap());
@@ -76,6 +77,7 @@ fn composite_conditional_publication_rejects_foreign_grants_and_reopens_the_same
             &execution,
             binding,
             issuer.admit_original(commitment),
+            &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token(),
             &predecessor,
             successor(&predecessor),
             |_| {
@@ -112,7 +114,7 @@ fn composite_conditional_publication_rejects_foreign_grants_and_reopens_the_same
     assert_eq!(admitted.original().association(), Some(&association));
     let current = owner
         .with_authored_branch(branch, |view| {
-            view.conditional_definitions().next().unwrap()
+            view.with_conditional_definitions(|items| items.next().unwrap())
         })
         .unwrap();
     assert!(matches!(
@@ -145,9 +147,7 @@ fn composite_conditional_publication_rejects_foreign_grants_and_reopens_the_same
     assert_eq!(calls.load(Ordering::Relaxed), 1);
     assert!(owner
         .with_authored_branch(branch, |view| matches!(
-            view.conditional_definitions()
-                .next()
-                .unwrap()
+            view.with_conditional_definitions(|items| items.next().unwrap())
                 .contract()
                 .condition(),
             BridgeConditionalCondition::Always
@@ -155,11 +155,11 @@ fn composite_conditional_publication_rejects_foreign_grants_and_reopens_the_same
         .unwrap());
     for other in reference.definitions.iter().skip(1) {
         assert!(owner
-            .with_authored_branch(other.branch(), |view| view.conditional_definitions().all(
-                |lowering| matches!(
+            .with_authored_branch(other.branch(), |view| view.with_conditional_definitions(
+                |mut items| Iterator::all(&mut items, |lowering| matches!(
                     lowering.contract().condition(),
                     BridgeConditionalCondition::OnDemand
-                )
+                ))
             ))
             .unwrap());
     }
@@ -185,7 +185,7 @@ fn refused_composite_conditional_callback_releases_projection_and_preserves_the_
         .unwrap();
     let predecessor = owner
         .with_authored_branch(branch, |view| {
-            view.conditional_definitions().next().unwrap()
+            view.with_conditional_definitions(|items| items.next().unwrap())
         })
         .unwrap();
     let issuer = InstalledCompositeSignalPublicationOwner::fresh();
@@ -204,6 +204,7 @@ fn refused_composite_conditional_callback_releases_projection_and_preserves_the_
         &execution,
         binding,
         grant,
+        &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token(),
         &predecessor,
         successor(&predecessor),
         |_| {
@@ -223,7 +224,7 @@ fn refused_composite_conditional_callback_releases_projection_and_preserves_the_
     );
     assert!(owner
         .with_authored_branch(branch, |view| Arc::ptr_eq(
-            &view.conditional_definitions().next().unwrap(),
+            &view.with_conditional_definitions(|items| items.next().unwrap()),
             &predecessor
         ))
         .unwrap());
@@ -237,6 +238,7 @@ fn refused_composite_conditional_callback_releases_projection_and_preserves_the_
             &execution,
             binding,
             grant,
+            &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token(),
             &predecessor,
             successor(&predecessor),
             |_| {

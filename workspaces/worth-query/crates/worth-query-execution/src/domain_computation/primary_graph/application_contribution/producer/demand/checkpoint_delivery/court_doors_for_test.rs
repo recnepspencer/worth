@@ -45,7 +45,7 @@ impl<'a> PreparedSelectedDelivery<'a> {
         preserved: bool,
     ) -> Self {
         Self {
-            lowering,
+            lowering: SelectedDeliveryBinding::Memory(lowering),
             ordinal,
             preserved,
         }

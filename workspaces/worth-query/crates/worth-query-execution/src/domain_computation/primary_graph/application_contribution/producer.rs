@@ -288,3 +288,5 @@ pub use source_qualification::OutputSourceAddress;
 #[cfg(test)]
 #[path = "producer_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
+
+pub(in crate::domain_computation::primary_graph) use registry::RefusedProducerSeal;

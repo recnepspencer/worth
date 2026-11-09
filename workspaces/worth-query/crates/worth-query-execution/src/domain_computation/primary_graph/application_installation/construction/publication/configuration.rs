@@ -67,7 +67,7 @@ pub(super) fn prepare<Schema: ApplicationSchemaComposition>(
         publication.install_output_producers(producers.clone());
         let installed_conditionals = conditionals
             .install_all(&producers, &mut publication)
-            .map_err(Denial::ConditionalPublication)?;
+            .map_err(|refused| Denial::ConditionalPublication(refused.into_cause()))?;
         (
             MemoryServiceRoute::Conditional(route.fill(publication)),
             installed_conditionals,

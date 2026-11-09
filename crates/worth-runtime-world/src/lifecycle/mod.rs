@@ -40,8 +40,7 @@ pub use execution::{RuntimeWorldBuildDenial, RuntimeWorldExecutionPlacement};
 mod public_owner;
 mod service_ports;
 pub use builder::{
-    MissingRuntimeWorldInput, RuntimeWorldHomeBuilder, RuntimeWorldOwnerBuilder,
-    RuntimeWorldUnboundHomeBuilder,
+    MissingRuntimeWorldInput, RuntimeWorldOwnerBuilder, RuntimeWorldUnboundHomeBuilder,
 };
 pub use public_owner::RuntimeWorldOwner;
 pub use service_ports::*;

@@ -4,6 +4,20 @@ use worth_execution::ExecutionRequest;
 use worth_runtime_world::facade::*;
 
 impl WorldHomeFixture {
+    /// This fixture installs only the initial programme; transition steps keep A
+    /// until activation. Admission still comes from this actual Home owner.
+    pub fn admit_initial_program_source(
+        &self,
+        expected: &ProductBranchObservation,
+    ) -> worth_proof::AdmittedBranchProgramSource {
+        let revision = *self.home.binding().selected().revision().bytes();
+        let commitment = world_branch_program_source_commitment(expected, revision)
+            .expect("the actual fixture World head admits its programme source");
+        self.home
+            .branch_program_source_owner()
+            .admit_source(revision, commitment)
+    }
+
     pub fn prepare_publication(
         &self,
         execution: &ExecutionRequest<'_, '_>,
@@ -17,6 +31,7 @@ impl WorldHomeFixture {
         let mut outcome = port.open_publication_without_signal(
             execution,
             expected.clone(),
+            self.admit_initial_program_source(&expected),
             change.clone(),
             cancellation,
             None,

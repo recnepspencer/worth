@@ -36,6 +36,15 @@ where
         self.require_live_posture().map_err(map)?;
         inspect(&state)
     }
+    pub(in crate::branch::owner_services) fn inspect_durable_topology(
+        &self,
+        admission: &SignalOwnerOperationAdmission<'_>,
+    ) -> Result<(usize, crate::data::graph::SignalGraphLifecycleProbe), D> {
+        self.inspect_durable_source(admission, |state| {
+            let graph = state.state().graph();
+            Ok((graph.active_node_count(), graph.lifecycle_probe()))
+        })
+    }
     pub(in crate::branch::owner_services) fn observe_durable_source(
         &self,
         admission: &SignalOwnerOperationAdmission<'_>,

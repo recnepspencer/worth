@@ -83,7 +83,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         &self,
     ) -> Result<
         worth_signal::facade::branch::SignalOwnerOperationControlForTest,
-        worth_signal::facade::branch::SignalOwnerUnavailable,
+        worth_runtime_bridge::facade::BridgeConditionalDenial,
     > {
         self.runtime
             .bridge

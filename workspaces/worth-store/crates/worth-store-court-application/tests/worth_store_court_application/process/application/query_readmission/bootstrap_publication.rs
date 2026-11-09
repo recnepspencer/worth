@@ -134,7 +134,7 @@ pub(super) fn prepared(
                 .finish_fresh_home_native_readmission(phase, native, admission)
                 .unwrap_or_else(|refused| panic!("fresh finalization: {:?}", refused.reason()));
             let bridge = query.home_bridge_definition().unwrap();
-            let (budgets, clock, policy, execution, conditionals) = query.home_world_resources();
+            let (budgets, clock, policy, execution, _conditionals) = query.home_world_resources();
             let definition = ApplicationHomeWorldDefinition::new(
                 bridge,
                 "primary-application-source",
@@ -142,14 +142,21 @@ pub(super) fn prepared(
                 clock,
                 policy,
                 execution,
-                conditionals,
             );
-            let home = readmit_query_world(home.share(), definition, &request)
+            let source = prepare_query_home_source(home.share(), definition, &request)
+                .unwrap_or_else(|refused| panic!("actual source: {:?}", refused.reason()));
+            let (registered, ordinary) = source.query_source_parts();
+            let (query, builder, mut bindings) = query
+                .prepare_home_signal_program(phase, registered, ordinary)
+                .unwrap_or_else(|refused| panic!("actual programme: {:?}", refused.reason()));
+            let signal = readmit_query_signal(source, builder, &mut bindings, &request)
+                .unwrap_or_else(|refused| panic!("actual Signal: {:?}", refused.reason()));
+            let home = readmit_query_world(signal, &request)
                 .unwrap_or_else(|refused| panic!("actual World: {:?}", refused.reason()))
                 .consume(|home| home);
-            let (source, bridge, conditional) = home.query_composition_parts().unwrap();
+            let (_, _, conditional) = home.query_composition_parts().unwrap();
             let mut query = query
-                .attach_home_registered_source(phase, source, bridge, conditional)
+                .attach_home_authored_signal(conditional)
                 .unwrap_or_else(|refused| panic!("actual source: {:?}", refused.reason()));
             query
                 .initialize_home_query_state(phase, |phase, graph, schema| {

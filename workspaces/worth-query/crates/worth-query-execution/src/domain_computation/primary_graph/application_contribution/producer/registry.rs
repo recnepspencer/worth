@@ -10,6 +10,8 @@ use worth_query_installation::facade::ApplicationSchema;
 pub(crate) mod checkpoint;
 mod codec_transition;
 mod declaration;
+mod seal_refusal;
+pub(in crate::domain_computation::primary_graph) use seal_refusal::RefusedProducerSeal;
 
 use super::scheduling;
 use super::InstalledProducerExecutor;

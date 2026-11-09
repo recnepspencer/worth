@@ -47,7 +47,9 @@ impl SignalNoEffectOriginal {
         let posture = registry.posture()?;
         let observed = match *posture {
             AdmissionPosture::Claimed(holder) => Some(holder),
-            AdmissionPosture::Available | AdmissionPosture::Retired => None,
+            AdmissionPosture::Available
+            | AdmissionPosture::RetiredClaimed(_)
+            | AdmissionPosture::Retired => None,
         };
         if !Arc::ptr_eq(&self.state, &registry.state) || observed != Some(self.holder) {
             return Err(D::PublicationRetryOwnerMismatch {

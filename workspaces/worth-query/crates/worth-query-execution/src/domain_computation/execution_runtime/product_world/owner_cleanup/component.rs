@@ -33,11 +33,16 @@ impl WorthQueryProductRuntime {
                 }
             }
             OwnerRetirementWork::SignalBranchRetirement { reference, .. } => {
+                let lifecycle=match &self.signal_lifecycle {
+                    super::super::signal_lifecycle::SignalLifecycleServices::Memory(port)=>port,
+                    super::super::signal_lifecycle::SignalLifecycleServices::AuthoredHome=>return Err(WorthQueryProductBranchOwnerCleanupDenial::DurableSignalRetirementRequired),
+                };
+
                 let basis = self
                     .signal_basis
                     .observe_current(reference)
                     .map_err(|_| WorthQueryProductBranchOwnerCleanupDenial::SignalOwnerDenied)?;
-                let plan = match self.signal_lifecycle.plan_retirement_exact(
+                let plan = match lifecycle.plan_retirement_exact(
                     basis,
                     SignalBranchRetirementReason::DependencyCancellation,
                 ) {
@@ -47,10 +52,7 @@ impl WorthQueryProductRuntime {
                     }
                 };
                 let cancellation = SignalOwnerCancellationSource::new();
-                match self
-                    .signal_lifecycle
-                    .retire_exact(plan, &cancellation.token())
-                {
+                match lifecycle.retire_exact(plan, &cancellation.token()) {
                     TransitionOutcome::Success(_) => Ok(()),
                     TransitionOutcome::Denied(_) => {
                         Err(WorthQueryProductBranchOwnerCleanupDenial::SignalOwnerDenied)

@@ -1,3 +1,4 @@
+pub(in crate::domain_computation::primary_graph) mod route_binding;
 use super::operation_invocation::{
     WorthQueryTemporalOperationExecution, WorthQueryTemporalOperationInvoker,
 };
@@ -24,8 +25,11 @@ pub use denial::{
     WorthQueryConditionalRuntimeInstallationDenial,
     WorthQueryConditionalRuntimeInstallationDenialKind,
 };
+pub(in crate::domain_computation::primary_graph) mod home_program;
 mod pending_operation;
+mod publication_admission;
 pub(in crate::domain_computation::primary_graph) use pending_operation::WorthQueryPendingConditionalOperation;
+pub(in crate::domain_computation::primary_graph) use publication_admission::RefusedConditionalRuntimeInstallation;
 mod application_binding_scope;
 mod output_producer_installation;
 mod output_readiness;
@@ -61,17 +65,20 @@ where
     pub(in crate::domain_computation::primary_graph) fn new(
         _phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
         publication: ApplicationRuntimePublication<Schema>,
-    ) -> Result<Self, WorthQueryConditionalRuntimeInstallationDenial> {
-        publication
+    ) -> Result<Self, RefusedConditionalRuntimeInstallation<Schema>> {
+        if let Err(denial) = publication
             .runtime
             .installed_packages()
             .validate_application_schema(&publication.installed_schema)
-            .map_err(|denial| {
-                WorthQueryConditionalRuntimeInstallationDenial::new(
+        {
+            return Err(RefusedConditionalRuntimeInstallation {
+                publication,
+                cause: WorthQueryConditionalRuntimeInstallationDenial::new(
                     WorthQueryConditionalRuntimeInstallationDenialKind::PrimaryGraphPublication,
                     denial.subject(),
-                )
-            })?;
+                ),
+            });
+        }
         Ok(Self {
             publication,
             output_producers: Default::default(),

@@ -17,7 +17,7 @@ fn bridge_durable_fork_rebuilds_conditional_projection_before_ack_and_reopens_it
     let source = port.readmit_descriptor(parent).unwrap();
     let inherited = owner
         .with_authored_branch(parent.branch(), |view| {
-            view.conditional_definitions().collect::<Vec<_>>()
+            view.with_conditional_definitions(|items| items.collect::<Vec<_>>())
         })
         .unwrap();
     let reservation = owner
@@ -67,7 +67,7 @@ fn bridge_durable_fork_rebuilds_conditional_projection_before_ack_and_reopens_it
             );
             assert_eq!(view.conditional_retention().managed_clocks(), 0);
             assert_eq!(view.conditional_retention().reserved_temporal_intents(), 0);
-            let actual = view.conditional_definitions().collect::<Vec<_>>();
+            let actual = view.with_conditional_definitions(|items| items.collect::<Vec<_>>());
             assert_eq!(actual.len(), inherited.len());
             for (actual, expected) in actual.iter().zip(&inherited) {
                 assert_eq!(actual.contract(), expected.contract());
@@ -87,10 +87,9 @@ fn bridge_durable_fork_rebuilds_conditional_projection_before_ack_and_reopens_it
         .unwrap();
     owner
         .with_authored_branch(parent.branch(), |view| {
-            assert!(view
-                .conditional_definitions()
+            assert!(view.with_conditional_definitions(|items| items
                 .zip(&inherited)
-                .all(|(actual, expected)| Arc::ptr_eq(&actual, expected)));
+                .all(|(actual, expected)| Arc::ptr_eq(&actual, expected))));
         })
         .unwrap();
     let definition = owner
@@ -140,7 +139,7 @@ fn bridge_durable_fork_rebuilds_conditional_projection_before_ack_and_reopens_it
                 view.authored_section().as_signal_section().as_bytes(),
                 section
             );
-            assert_eq!(view.conditional_definitions().count(), 2);
+            assert_eq!(view.with_conditional_definitions(|items| items.count()), 2);
         })
         .unwrap();
     let calls = AtomicUsize::new(0);

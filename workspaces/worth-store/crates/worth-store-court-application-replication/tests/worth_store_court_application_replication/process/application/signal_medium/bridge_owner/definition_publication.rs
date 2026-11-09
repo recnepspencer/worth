@@ -35,7 +35,7 @@ fn conditional_definition_publication_resumes_its_original_and_reopens_only_the_
     let descriptor = port.observe(branch).unwrap();
     let basis = port.readmit_descriptor(&descriptor).unwrap();
     let original = owner.with_authored_branch(branch, |view| {
-        let original = view.conditional_definitions().next().unwrap();
+        let original = view.with_conditional_definitions(|items| items.next().unwrap());
         assert!(matches!(owner.begin_conditional_definition_publication(&execution, &basis, &original, successor(&original)),
             Err(BridgeDurableDefinitionPublicationDenial::Branch(BridgeAuthoredBranchDenial::ProjectionContactHeld { branch: held })) if held == branch));
         original
@@ -71,7 +71,7 @@ fn conditional_definition_publication_resumes_its_original_and_reopens_only_the_
     let new_reference = output.artifact().descriptor().definition();
     let actual = owner
         .with_authored_branch(branch, |view| {
-            view.conditional_definitions().next().unwrap()
+            view.with_conditional_definitions(|items| items.next().unwrap())
         })
         .unwrap();
     assert!(matches!(
@@ -127,7 +127,9 @@ fn conditional_definition_publication_resumes_its_original_and_reopens_only_the_
             .observe(identity)
             .unwrap();
         let definitions: Vec<_> = owner
-            .with_authored_branch(identity, |view| view.conditional_definitions().collect())
+            .with_authored_branch(identity, |view| {
+                view.with_conditional_definitions(|items| items.collect::<Vec<_>>())
+            })
             .unwrap();
         if identity == branch {
             assert_eq!(descriptor.definition(), new_reference);

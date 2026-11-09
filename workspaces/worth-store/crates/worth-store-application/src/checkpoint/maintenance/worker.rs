@@ -31,22 +31,7 @@ pub(super) struct MaintenanceWorker {
 }
 
 impl MaintenanceWorker {
-    pub(super) fn install(limits: ApplicationHomeCheckpointLimits) -> Result<Self, Denial> {
-        let cancellation = CancellationSource::new();
-        let root = ExecutionResourceLease::serial(LeaseRequest {
-            policy: ExecutionRequestPolicy::new(
-                ExecutionPosture::Serial,
-                DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(
-                    std::num::NonZeroUsize::MIN,
-                    Some(limits.maintenance_memory_bytes().get()),
-                    Some(limits.maintenance_work().get()),
-                ),
-            ),
-            deadline: None,
-            cancellation: cancellation.token(),
-        })
-        .map_err(|cause| Denial::Execution(WorkCeilingDenial::Admission(cause)))?;
+    pub(super) fn control_memory_bytes() -> Result<std::num::NonZeroU64, Denial> {
         let task = std::alloc::Layout::new::<(
             &Self,
             &ApplicationHomeCheckpointOperation,
@@ -67,9 +52,30 @@ impl MaintenanceWorker {
             .and_then(|bytes| bytes.checked_add(handle.size()))
             .and_then(|bytes| bytes.checked_add(owner.size()))
             .ok_or(Denial::SizeLimit)?;
+        std::num::NonZeroU64::new(u64::try_from(backing).map_err(|_| Denial::SizeLimit)?)
+            .ok_or(Denial::SizeLimit)
+    }
+
+    pub(super) fn install(limits: ApplicationHomeCheckpointLimits) -> Result<Self, Denial> {
+        let cancellation = CancellationSource::new();
+        let root = ExecutionResourceLease::serial(LeaseRequest {
+            policy: ExecutionRequestPolicy::new(
+                ExecutionPosture::Serial,
+                DeterminismContract::CanonicalBitwise,
+                ExecutionBudget::new(
+                    std::num::NonZeroUsize::MIN,
+                    Some(limits.maintenance_memory_bytes().get()),
+                    Some(limits.maintenance_work().get()),
+                ),
+            ),
+            deadline: None,
+            cancellation: cancellation.token(),
+        })
+        .map_err(|cause| Denial::Execution(WorkCeilingDenial::Admission(cause)))?;
+        let backing = Self::control_memory_bytes()?.get();
         // Host installation admits this Home ledger before service; bare
         // Store close admits it on demand. No caller request funds it.
-        let memory = root.reserve_memory(backing as u64).map_err(|cause| {
+        let memory = root.reserve_memory(backing).map_err(|cause| {
             Denial::Execution(WorkCeilingDenial::Admission(LeaseDenial::MemoryExhausted(
                 cause,
             )))

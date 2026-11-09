@@ -58,7 +58,10 @@ fn real_home_target_refuses_old_receiver_epoch_and_executes_fresh_inventory() {
         let cancellation = RuntimeWorldCancellationSource::new();
         let reservation = grant.take_reservation().unwrap();
         let pending = home.world().publication_port().prepare_home_transition_step(&execution,
-            source.clone(), change, grant.plan(), grant.original(), reservation,
+            source.clone(), home.branch_program_source_owner().admit_source(
+                *home.binding().selected().revision().bytes(),
+                worth_runtime_world::facade::world_branch_program_source_commitment(
+                    &source, *home.binding().selected().revision().bytes()).unwrap()), change, grant.plan(), grant.original(), reservation,
             grant.admission(), &cancellation.token(), None).unwrap();
         let mut outcome = pending.advance(&execution);
         let opened = loop {

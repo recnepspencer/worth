@@ -63,7 +63,8 @@ where
 Err(PublicationDenial::Stopped(stop)) => return Err(WorthQueryProductConditionalPublicationDenial::ExecutionRequest(crate::domain_computation::primary_graph::application_contribution::advancement_denial(stop))),
                 Err(PublicationDenial::Refused(denial)) => return Err(WorthQueryProductConditionalPublicationDenial::WorldPreparation(denial)),
             };
-            let bridge = self.runtime.bridge.conditional();
+            let bridge_owner = self.runtime.bridge.conditional();
+            let bridge = bridge_owner.memory().map_err(WorthQueryProductConditionalPublicationDenial::BridgePreparation)?;
             let predecessor = bridge
                 .admit_exact_conditional_signal_basis(
                     predecessor,

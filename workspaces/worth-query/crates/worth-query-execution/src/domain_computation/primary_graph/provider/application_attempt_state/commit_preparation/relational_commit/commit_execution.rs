@@ -255,6 +255,7 @@ fn prepare_query_open(
         .prepare_query_publication_without_signal(
             execution,
             product.observation().clone(),
+            product.admitted_program_source()?,
             worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
             control.cancellation(),
             control.deadline(),

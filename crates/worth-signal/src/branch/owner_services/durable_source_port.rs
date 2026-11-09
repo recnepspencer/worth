@@ -2,6 +2,7 @@
 mod associated_effects;
 mod cell_control;
 mod recorded_point;
+mod topology;
 use super::{SignalDurableBranchHandle, SignalOwner, SignalOwnerUnavailable};
 use crate::branch::{
     SignalBranchBasisObservationDenial, SignalBranchBasisReadmissionDenial,

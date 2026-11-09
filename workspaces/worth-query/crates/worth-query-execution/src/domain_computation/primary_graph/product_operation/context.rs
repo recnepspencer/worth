@@ -124,7 +124,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     fn on_product_with_basis_admission<Stop: From<WorthQueryProductBranchAdmissionDenial>>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        product: WorthQueryProductBranchLease,
+        mut product: WorthQueryProductBranchLease,
         before_basis: impl FnOnce(
             &worth_runtime_world::facade::ProductBranchObservation,
         ) -> Result<(), Stop>,
@@ -145,6 +145,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             product.relational_basis(),
             &mut application_basis,
         )?;
+        if let Ok(selected) = &selected_program {
+            product
+                .retain_selected_program_source(selected)
+                .map_err(|_| {
+                    WorthQueryProductBranchAdmissionDenial::Refused(
+                        AdmissionRefusal::ObservationRejected,
+                    )
+                })?;
+        }
         Ok(WorthQuerySelectedProductOperation {
             application: self,
             selection_origin: SelectedQueryOrigin::default(),
@@ -158,7 +167,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     pub(in crate::domain_computation::primary_graph) fn on_product_for_owner_recovery(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        product: WorthQueryProductBranchLease,
+        mut product: WorthQueryProductBranchLease,
     ) -> Result<
         WorthQuerySelectedProductOperation<'_, Schema>,
         WorthQueryProductBranchAdmissionDenial,
@@ -177,6 +186,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             self,
             product.relational_basis(),
         );
+        if let Ok(selected) = &selected_program {
+            product
+                .retain_selected_program_source(selected)
+                .map_err(|_| {
+                    WorthQueryProductBranchAdmissionDenial::Refused(
+                        AdmissionRefusal::ObservationRejected,
+                    )
+                })?;
+        }
         Ok(WorthQuerySelectedProductOperation {
             application: self,
             selection_origin: SelectedQueryOrigin::default(),

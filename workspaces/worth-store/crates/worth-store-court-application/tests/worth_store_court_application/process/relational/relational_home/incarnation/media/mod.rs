@@ -77,7 +77,16 @@ fn incarnation_advance_media_sweep_preserves_identity_and_selects_one_complete_a
                                 | worth_store_application::ApplicationHomeOpenRefusal::World(_)
                                 | worth_store_application::ApplicationHomeOpenRefusal::BridgeSource(_)
                                 | worth_store_application::ApplicationHomeOpenRefusal::Bridge(_)
-                                | worth_store_application::ApplicationHomeOpenRefusal::ConditionalBridge(_),
+                                | worth_store_application::ApplicationHomeOpenRefusal::ConditionalBridge(_)
+                                | worth_store_application::ApplicationHomeOpenRefusal::SignalSourceRequired
+                                | worth_store_application::ApplicationHomeOpenRefusal::SignalMedium(_)
+                                | worth_store_application::ApplicationHomeOpenRefusal::SignalImage(_)
+                                | worth_store_application::ApplicationHomeOpenRefusal::SignalInitial(_)
+                                | worth_store_application::ApplicationHomeOpenRefusal::SignalInitialProgress(_)
+                                | worth_store_application::ApplicationHomeOpenRefusal::SignalReadmission(_)
+                                | worth_store_application::ApplicationHomeOpenRefusal::SignalAttachment(_)
+                                | worth_store_application::ApplicationHomeOpenRefusal::BridgeInitial(_)
+                                | worth_store_application::ApplicationHomeOpenRefusal::AuthoredBridge(_),
                             )
                             | OpenRefusal::Readmission(_)
                             | OpenRefusal::Admitted { .. }

@@ -20,6 +20,8 @@ pub(crate) struct WorthQueryProductRootIdentity {
 /// default branch is a caller convenience; World alone resolves its current head.
 #[derive(Clone)]
 pub struct WorthQueryProductRuntime {
+    pub(super) branch_program_source_owner:
+        Option<Arc<worth_proof::InstalledBranchProgramSourceOwner>>,
     pub(in crate::domain_computation) home_maintenance:
         Option<Arc<dyn super::WorthQueryHomeMaintenance>>,
     pub(super) named_read_probe: Arc<super::read_consult::NamedReadProbe>,
@@ -32,8 +34,7 @@ pub struct WorthQueryProductRuntime {
     pub(crate) clock: WorthQueryProductWorldClock,
     pub(crate) relational_lifecycle: RelationalBranchLifecyclePort,
     pub(crate) signal_basis: worth_signal::facade::branch::SignalBranchBasisPort<(), (), ()>,
-    pub(crate) signal_lifecycle:
-        worth_signal::facade::branch::SignalBranchLifecyclePort<(), (), ()>,
+    pub(crate) signal_lifecycle: super::signal_lifecycle::SignalLifecycleServices,
     pub(crate) owner_cleanup: WorthQueryProductBranchOwnerCleanupRegistry,
     pub(crate) default_branch: ProductBranchIdentity,
     pub(crate) default_occurrence: ProductBranchIncarnation,
@@ -65,7 +66,7 @@ impl WorthQueryProductRuntime {
         clock: WorthQueryProductWorldClock,
         relational_lifecycle: RelationalBranchLifecyclePort,
         signal_basis: worth_signal::facade::branch::SignalBranchBasisPort<(), (), ()>,
-        signal_lifecycle: worth_signal::facade::branch::SignalBranchLifecyclePort<(), (), ()>,
+        signal_lifecycle: super::signal_lifecycle::SignalLifecycleServices,
         owner_cleanup: WorthQueryProductBranchOwnerCleanupRegistry,
         default_branch: ProductBranchIdentity,
         default_occurrence: ProductBranchIncarnation,
@@ -77,6 +78,7 @@ impl WorthQueryProductRuntime {
         let _ = default_branch;
         Self {
             home_maintenance: None,
+            branch_program_source_owner: None,
             owner,
             directory_support: None,
             adoption_preparation: Arc::default(),

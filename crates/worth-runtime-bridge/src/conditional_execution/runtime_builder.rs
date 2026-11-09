@@ -13,10 +13,12 @@ mod fresh_bindings;
 pub use fresh_bindings::BridgeFreshAuthoredBindings;
 pub(super) mod authored_readmission;
 mod initial_source;
+mod relational_programme_handoff;
 pub use initial_source::{
     BridgeInitialSourceDenial, BridgeInitialSourcePreparationRefusal,
     BridgeInitialSourcePublication, BridgePublishedInitialSource,
 };
+pub use relational_programme_handoff::BridgeAuthoredProgrammeHandoffDenial;
 
 /// The only public construction posture for a Bridge-owned conditional runtime.
 /// Sealing consumes the builder, so installation authority cannot accompany the

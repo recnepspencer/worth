@@ -1,5 +1,6 @@
 pub(crate) mod authored_section;
 mod authoritative_delivery;
+mod authoritative_delivery_view;
 pub use authored_section::{
     BridgeAuthoredBranchDenial, BridgeAuthoredBranchView, BridgeAuthoredDependencyDescription,
     BridgeAuthoredInstallationBindings, BridgeAuthoredReadmissionDenial, BridgeAuthoredSection,
@@ -10,6 +11,7 @@ pub use authored_section::{
 mod authored_declaration;
 mod authored_execution;
 mod authored_home_retirement;
+mod authored_inspection;
 pub use authored_home_retirement::RetiringBridgeAuthoredAssembly;
 mod causal_observation;
 mod compatibility;
@@ -148,6 +150,7 @@ pub use retained_decision::{
     BridgeConditionalDecisionReentryRequest, BridgeRetainedConditionalDecisionSeed,
 };
 pub use retention::BridgeConditionalRetentionObservation;
+pub use runtime_builder::BridgeAuthoredProgrammeHandoffDenial;
 pub use runtime_builder::{BridgeConditionalRuntimeBuilder, BridgeFreshAuthoredBindings};
 pub use runtime_builder::{
     BridgeInitialSourceDenial, BridgeInitialSourcePreparationRefusal,

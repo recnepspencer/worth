@@ -6,6 +6,7 @@ pub(super) enum OpeningClosePlan<Schema: ApplicationSchemaComposition, Program> 
     RelationalAttachment(RelationalAttachmentRefused),
     Unrecovered(UnrecoveredApplicationHome),
     Unshared(UnsharedReadmittedApplicationHome),
+    NativeReadmitted(ReadmittedApplicationHome),
     WorldReadmission(WorldHomeReadmissionRefused),
     World {
         query: WorldQueryPreparation<Schema, Program>,
@@ -20,6 +21,42 @@ pub(super) fn prepare<Schema: ApplicationSchemaComposition, Program: 'static>(
     use WorthQueryApplicationHomeOpenRefused::*;
     match source {
         Preparation(_) => OpeningClosePlan::NoHome,
+        SignalProgramPreparation { home, query } => {
+            drop(query);
+            OpeningClosePlan::NativeReadmitted(home.into_home())
+        }
+        TransitionComposition { query, home, cause } => world(
+            WorldQueryPreparation::TransitionComposition {
+                _query: query,
+                _cause: cause,
+            },
+            home,
+        ),
+        TransitionSignalProgramPreparation { query, home } => world(
+            WorldQueryPreparation::TransitionSignal { _query: query },
+            home,
+        ),
+        TransitionProgrammeHandoff {
+            query,
+            home,
+            handoff,
+            _bindings,
+        } => world(
+            WorldQueryPreparation::TransitionProgramme {
+                _query: query,
+                _handoff: handoff,
+                _bindings,
+            },
+            home,
+        ),
+        WorldSourcePreparation { query, home } => {
+            drop(query);
+            OpeningClosePlan::WorldReadmission(home)
+        }
+        ExistingWorldSourcePreparation { query, home } => {
+            drop(query);
+            OpeningClosePlan::WorldReadmission(home)
+        }
         Binding { query, cause: _ } | Physical { query, cause: _ } => {
             drop(query);
             OpeningClosePlan::NoHome
@@ -70,7 +107,12 @@ pub(super) fn prepare<Schema: ApplicationSchemaComposition, Program: 'static>(
             drop(query);
             OpeningClosePlan::Unshared(home)
         }
-        ExistingWorldReadmission { query, home } => {
+        ExistingWorldReadmission {
+            query,
+            home,
+            _bindings,
+        } => {
+            drop(_bindings);
             drop(query);
             OpeningClosePlan::WorldReadmission(home)
         }
@@ -113,7 +155,12 @@ pub(super) fn prepare<Schema: ApplicationSchemaComposition, Program: 'static>(
             drop(query);
             OpeningClosePlan::Unshared(home)
         }
-        WorldReadmission { query, home } => {
+        WorldReadmission {
+            query,
+            home,
+            _bindings,
+        } => {
+            drop(_bindings);
             drop(query);
             // Store's owner method releases its failed, unshared World
             // composition before returning the actual Native Home.
@@ -208,6 +255,7 @@ impl<Schema: ApplicationSchemaComposition, Program: 'static> OpeningClosePlan<Sc
             }
             Self::Unrecovered(home) => close_unrecovered(home, request),
             Self::Unshared(home) => close_unshared(home, request),
+            Self::NativeReadmitted(home) => classify_released(home.close(request)),
             Self::WorldReadmission(home) => classify_released(home.into_home().close(request)),
             Self::World { query, home } => close_world_preparation(query, home, request),
         }

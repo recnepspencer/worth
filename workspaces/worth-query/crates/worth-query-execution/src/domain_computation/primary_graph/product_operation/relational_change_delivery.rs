@@ -81,9 +81,21 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         let bridge = bridge_root
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let memory = match bridge.memory() {
+            Ok(memory) => memory,
+            Err(cause) => {
+                return Err(
+                    WorthQueryPerformedRelationalProductChangeDeliveryDenial::new(
+                        Kind::Bridge(cause.kind()),
+                        cause.detail(),
+                        change,
+                    ),
+                )
+            }
+        };
         let mut installed = operation.lock_operation();
         if let Err(denial) =
-            installed.select_product_binding(execution, &bridge, self.application(), &truth)
+            installed.select_product_binding(execution, memory, self.application(), &truth)
         {
             return Err(
                 WorthQueryPerformedRelationalProductChangeDeliveryDenial::new(
@@ -97,12 +109,25 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             );
         }
         let lowering = installed.selected_lowering();
+        let binding = match memory.admit_conditional_signal_basis(&lowering, change.signal_basis())
+        {
+            Ok(binding) => binding,
+            Err(cause) => {
+                return Err(
+                    WorthQueryPerformedRelationalProductChangeDeliveryDenial::new(
+                        Kind::Bridge(cause.kind()),
+                        cause.detail(),
+                        change,
+                    ),
+                )
+            }
+        };
         drop(bridge);
         let outcome = self
             .application()
             .granular_invalidation_installation()
             .retain_product_shared_root()
-            .deliver_performed_relational_change(phase, &lowering, dependency_ordinal, change)?;
+            .deliver_performed_relational_change(phase, &binding, dependency_ordinal, change)?;
         if let WorthQueryPerformedRelationalProductChangeDeliveryOutcome::Success(receipt) =
             &outcome
         {

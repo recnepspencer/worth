@@ -51,7 +51,7 @@ pub(super) fn install<S: ApplicationSchema + 'static>(
         )?;
     let output_readiness_routes =
         crate::domain_computation::primary_graph::application_contribution::install_output_readiness_routes(
-            output_readiness,
+            &output_readiness,
             graph.bridge.conditional_builder(),
             &graph.primary_graph_authority,
         )?;

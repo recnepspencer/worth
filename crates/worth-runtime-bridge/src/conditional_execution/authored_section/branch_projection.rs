@@ -12,6 +12,11 @@ use worth_foundational::facade::{DurableSignalBranchIdentity, SignalBranchAdvanc
 use worth_signal::facade::NodeId;
 
 pub struct BridgeReadmittedAuthoredAssembly {
+    pub(in crate::conditional_execution) home_retirement: Mutex<
+        Option<
+            crate::conditional_execution::authored_home_retirement::PreparedAuthoredHomeRetirement,
+        >,
+    >,
     pub(in crate::conditional_execution) program: Arc<Program>,
     pub(in crate::conditional_execution) signal:
         worth_signal::facade::durability::SignalDurableOwner<(), (), (), (), ()>,
@@ -39,6 +44,10 @@ pub(in crate::conditional_execution) enum BranchPosture {
     },
 }
 pub(in crate::conditional_execution) struct ReadmittedBranch {
+    pub(in crate::conditional_execution) programme_memory:
+        Option<worth_execution::ExecutionMemoryReservation>,
+    pub(in crate::conditional_execution) graph_lifecycle:
+        worth_signal::facade::SignalGraphLifecycleProbe,
     pub(in crate::conditional_execution) posture: BranchPosture,
     pub(in crate::conditional_execution) _dependencies:
         crate::correspondence::AdmittedSemanticDependencyRegistry,

@@ -52,7 +52,9 @@ pub use owner_installation::{
     SignalAuthoredOwnerInstallation, SignalOnlyOwnerInstallation,
 };
 mod owner_admission;
-pub(crate) use owner_admission::SignalDurableOwnerAdmission;
+pub(crate) use owner_admission::{
+    SignalDurableAdmissionRetirementDenial, SignalDurableOwnerAdmission,
+};
 pub use owner_admission::{
     SignalDurableOwnerAdmissionRegistry, SignalLiveOwnerIdentity, SignalNoEffectOriginal,
 };

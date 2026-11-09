@@ -2,7 +2,6 @@
 mod definition;
 mod publication;
 use worth_execution::{ExecutionRequest, WorkCeilingDenial};
-use worth_signal::facade::SignalRuntime;
 use worth_store_application::{
     admit_home, readmit_relational, readmit_world, recover_home, ApplicationHomeOpenRefusal,
     ApplicationHomeRequest, WorldReadmittedApplicationHome,
@@ -10,7 +9,6 @@ use worth_store_application::{
 
 pub struct WorldHomeFixture {
     pub home: WorldReadmittedApplicationHome<(), (), (), (), ()>,
-    _signal: Box<SignalRuntime<(), (), (), (), ()>>,
 }
 
 pub enum WorldHomeFixtureRefusal {
@@ -47,10 +45,24 @@ impl WorldHomeFixture {
         let (_, native_basis) = native
             .observe_branch(&native.main_branch_identity())
             .expect("actual Home Native owner observes its current root");
-        let signal_basis = self
-            ._signal
-            .observe_signal_branch_basis(self._signal.current_branch())
-            .expect("actual retained Signal owner observes its current root");
+        let source = self
+            .home
+            .standalone_signal_source()
+            .expect("the Home retains its actual standalone Signal owner");
+        let (identity, _) = source
+            .branches()
+            .expect("actual authored branches")
+            .into_iter()
+            .next()
+            .expect("installed original branch");
+        let descriptor = source
+            .observe(identity)
+            .expect("actual authored branch descriptor");
+        let signal_basis = source
+            .readmit_descriptor(&descriptor)
+            .expect("same actual Signal owner")
+            .basis()
+            .clone();
         self.home
             .world()
             .publication_port()
@@ -93,8 +105,8 @@ pub fn open(
     request: ApplicationHomeRequest,
     execution: &ExecutionRequest<'_, '_>,
 ) -> Result<WorldHomeFixture, WorldHomeFixtureRefusal> {
-    let (definition, signal) = definition::authored();
-    open_definition(request, execution, definition, signal)
+    let definition = definition::authored();
+    open_definition(request, execution, definition)
 }
 
 pub fn open_with_retained_history_limit(
@@ -102,28 +114,25 @@ pub fn open_with_retained_history_limit(
     execution: &ExecutionRequest<'_, '_>,
     limit: u64,
 ) -> Result<WorldHomeFixture, WorldHomeFixtureRefusal> {
-    let (definition, signal) = definition::authored_with_history_limit(limit);
-    open_definition(request, execution, definition, signal)
+    let definition = definition::authored_with_history_limit(limit);
+    open_definition(request, execution, definition)
 }
 
 struct HomeCompositionInputs {
     request: ApplicationHomeRequest,
     definition: worth_store_application::ApplicationWorldDefinition<(), (), (), (), ()>,
-    signal: Box<SignalRuntime<(), (), (), (), ()>>,
 }
 
 fn open_definition(
     request: ApplicationHomeRequest,
     execution: &ExecutionRequest<'_, '_>,
     definition: worth_store_application::ApplicationWorldDefinition<(), (), (), (), ()>,
-    signal: SignalRuntime<(), (), (), (), ()>,
 ) -> Result<WorldHomeFixture, WorldHomeFixtureRefusal> {
     // Scope callbacks carry pointers to the original owning inputs, rather
     // than copying a large source owner through every execution wrapper.
     let inputs = Box::new(HomeCompositionInputs {
         request,
         definition,
-        signal: Box::new(signal),
     });
     let mut opened = None;
     let scope = execution.in_scope(|_| {
@@ -151,7 +160,6 @@ fn compose(
     let HomeCompositionInputs {
         request,
         definition,
-        signal,
     } = *inputs;
     let recovered = recover_home(request, execution)
         .map_err(|cause| WorldHomeFixtureRefusal::Home(Box::new(cause)))?;
@@ -162,8 +170,5 @@ fn compose(
     let world = readmit_world(native, definition, execution)
         .map_err(|cause| WorldHomeFixtureRefusal::World(Box::new(cause)))?
         .consume(|home| home);
-    Ok(WorldHomeFixture {
-        home: world,
-        _signal: signal,
-    })
+    Ok(WorldHomeFixture { home: world })
 }

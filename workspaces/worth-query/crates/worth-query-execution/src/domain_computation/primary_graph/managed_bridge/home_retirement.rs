@@ -1,14 +1,13 @@
 //! Retire Query's ordinary Bridge and its local alias to Store's assembly.
+use super::conditional_owner::ConditionalOwner;
 use super::{InstalledBridgeCustody, WorthQueryInstalledApplicationBridge};
 use crate::domain_computation::primary_graph::{
     WorthQueryHomeRetirementDenial as Denial, WorthQueryOperationHomeRetirementProgress as Progress,
 };
-use std::sync::{Arc, RwLock};
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::runtime::RelationalRuntime;
 use worth_runtime_bridge::facade::{
     BridgeHomeRetirementDenial as BridgeDenial, BridgeHomeRetirementProgress as BridgeProgress,
-    BridgeSealedRuntimeAssembly,
 };
 
 impl WorthQueryInstalledApplicationBridge {
@@ -20,25 +19,30 @@ impl WorthQueryInstalledApplicationBridge {
         self.ordinary()
             .preflight_home_retirement(native, request)
             .map_err(Denial::Bridge)?;
-        self.conditional_owner()
-            .expect("same original assembly")
-            .try_write()
-            .map_err(|_| Denial::Bridge(BridgeDenial::Busy))?
-            .preflight_home_retirement(request, native)
-            .map_err(Denial::Bridge)
+        match self.conditional_owner() {
+            Some(ConditionalOwner::Memory(owner)) => owner
+                .try_write()
+                .map_err(|_| Denial::Bridge(BridgeDenial::Busy))?
+                .preflight_home_retirement(request, native)
+                .map_err(Denial::Bridge),
+            Some(ConditionalOwner::Authored(owner)) => owner
+                .preflight_home_retirement(request, native)
+                .map_err(Denial::Bridge),
+            Some(ConditionalOwner::Stopped) | None => Ok(()),
+        }
     }
 
     pub(in crate::domain_computation::primary_graph) fn advance_home_retirement(
         &mut self,
         request: &ExecutionRequest<'_, '_>,
         native: &RelationalRuntime,
-        owner: &Arc<RwLock<BridgeSealedRuntimeAssembly>>,
+        owner: &ConditionalOwner,
     ) -> Result<Progress, Denial> {
         let Some(conditional) = self.conditional_owner() else {
             return Ok(Progress::Complete);
         };
         request.consult().map_err(Denial::Execution)?;
-        if !Arc::ptr_eq(conditional, owner) {
+        if !conditional.shares_original(owner) {
             return Err(Denial::Bridge(BridgeDenial::ForeignOwner));
         }
         // Advancing can unwind through the request's owned observer. Keep the

@@ -1,5 +1,7 @@
 //! The real Store adapter observes only the installed composing issuer's original.
 use super::{medium_fixture as media, owner_fixture as fixture};
+mod home_retirement;
+mod publication_membership;
 use std::cell::Cell;
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::{
@@ -57,15 +59,22 @@ fn composite_grant_publishes_original_association_for_retained_and_changed_defin
         let calls = Cell::new(0);
         let task = composite
             .mutation_port()
-            .begin_composite_advance(execution, binding, grant, &mut (), |tx| {
-                calls.set(calls.get() + 1);
-                if change_definition {
-                    recipe
-                        .keyed("composite-authored-node")
-                        .node_in_transaction(tx);
-                }
-                Ok(())
-            })
+            .begin_composite_advance(
+                execution,
+                binding,
+                grant,
+                &mut (),
+                &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token(),
+                |tx| {
+                    calls.set(calls.get() + 1);
+                    if change_definition {
+                        recipe
+                            .keyed("composite-authored-node")
+                            .node_in_transaction(tx);
+                    }
+                    Ok(())
+                },
+            )
             .unwrap();
         let output = fixture::finish(task, &execution);
         assert_eq!(calls.get(), 1);
@@ -118,11 +127,15 @@ fn foreign_issuer_and_changed_commitment_refuse_before_the_signal_body() {
         } else {
             CompositeSignalPublicationAdmissionDenial::BindingMismatch
         };
-        let Err(SignalDurableAdvanceDenial::CompositeAdmission(actual)) = composite
-            .mutation_port()
-            .begin_composite_advance(execution, binding, grant, &mut (), |_| {
-                panic!("a foreign or changed binding cannot execute its body")
-            })
+        let Err(SignalDurableAdvanceDenial::CompositeAdmission(actual)) =
+            composite.mutation_port().begin_composite_advance(
+                execution,
+                binding,
+                grant,
+                &mut (),
+                &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token(),
+                |_| panic!("a foreign or changed binding cannot execute its body"),
+            )
         else {
             panic!("the actual installed affinity and binding must refuse");
         };
@@ -215,6 +228,7 @@ fn disposed_composite_handles_resume_the_exact_original_before_drive_and_during_
                 binding,
                 issuer.admit_original(commitment),
                 &mut (),
+                &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token(),
                 |_| {
                     calls.set(calls.get() + 1);
                     Ok(())
@@ -269,7 +283,14 @@ fn disposed_composite_handles_resume_the_exact_original_before_drive_and_during_
             .unwrap();
         let other_grant = issuer.admit_original(other_binding.commitment());
         let other = writer
-            .begin_composite_advance(execution, other_binding, other_grant, &mut (), |_| Ok(()))
+            .begin_composite_advance(
+                execution,
+                other_binding,
+                other_grant,
+                &mut (),
+                &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token(),
+                |_| Ok(()),
+            )
             .unwrap();
         let other = if after_pending {
             let SignalDurableAdvanceProgress::Pending(task) = other
@@ -315,7 +336,14 @@ fn disposed_composite_handles_resume_the_exact_original_before_drive_and_during_
         let next_grant = issuer.admit_original(next_binding.commitment());
         drop(fixture::finish(
             writer
-                .begin_composite_advance(execution, next_binding, next_grant, &mut (), |_| Ok(()))
+                .begin_composite_advance(
+                    execution,
+                    next_binding,
+                    next_grant,
+                    &mut (),
+                    &worth_signal::facade::branch::SignalOwnerCancellationSource::new().token(),
+                    |_| Ok(()),
+                )
                 .unwrap(),
             &execution,
         ));

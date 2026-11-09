@@ -24,6 +24,7 @@ pub(crate) mod resources;
 mod retirement;
 mod runtime;
 mod shared_root;
+mod signal_lifecycle;
 mod source_head;
 mod source_installation;
 mod source_owner;

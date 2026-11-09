@@ -41,8 +41,11 @@ where
         let bridge = bridge_root
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let memory = bridge.memory().map_err(|cause| WorthQueryConditionalClockObservationDenial::new(
+            WorthQueryConditionalClockObservationDenialKind::ProductAdmission(
+                super::super::installation::WorthQueryConditionalRuntimeInstallationDenialKind::BridgeConditional(Box::new(cause.kind()))), cause.detail()))?;
         operation
-            .admit_product_binding(execution, &bridge, runtime, &truth)
+            .admit_product_binding(execution, memory, runtime, &truth)
             .map_err(|denial| {
                 WorthQueryConditionalClockObservationDenial::new(
                     WorthQueryConditionalClockObservationDenialKind::ProductAdmission(

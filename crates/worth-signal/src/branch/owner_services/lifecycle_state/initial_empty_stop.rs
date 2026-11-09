@@ -50,14 +50,17 @@ impl SignalOwnerLifecycleState {
     }
     pub(in crate::branch::owner_services) fn try_prepared_initial_empty_stop_guard(
         &self,
-    ) -> Result<impl Drop + '_, Denial> {
+    ) -> Result<SignalStoppedOwnerGuard<'_>, Denial> {
         let gate = self.transition_gate.try_lock().map_err(|_| Denial::Busy)?;
         if self.phase_and_count.load(Ordering::Acquire) != OWNER_CLOSING
             || self.cleanup_claimed.load(Ordering::Acquire)
         {
             return Err(Denial::OwnerUnavailable);
         }
-        Ok(gate)
+        Ok(SignalStoppedOwnerGuard {
+            lifecycle: self,
+            _gate: gate,
+        })
     }
 }
 impl InitialEmptyStopAdmission<'_> {
@@ -114,5 +117,16 @@ impl Drop for SignalPreparedOwnerStopGate<'_> {
                 .phase_and_count
                 .store(OWNER_OPEN, Ordering::Release);
         }
+    }
+}
+
+/// The actual committed closing phase remains locked through its admission fence.
+pub(crate) struct SignalStoppedOwnerGuard<'a> {
+    lifecycle: &'a SignalOwnerLifecycleState,
+    _gate: MutexGuard<'a, ()>,
+}
+impl SignalStoppedOwnerGuard<'_> {
+    pub(crate) fn owner_runtime_instance(&self) -> u64 {
+        self.lifecycle.owner_runtime_instance_id
     }
 }

@@ -1,12 +1,12 @@
-//! Readmit the initial program on the actual Home root before Query service.
+//! Readmit the rostered programme on each actual Home branch before Query service.
 use super::*;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphBootstrap<Schema> {
-    pub(in crate::domain_computation::primary_graph) fn readmit_home_initial_program(
+    pub(in crate::domain_computation::primary_graph) fn readmit_home_branch_program(
         &self,
         phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
         root: &worth_runtime_world::facade::ProductBranchObservation,
-        expected: &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
+        roster: &worth_query_installation::facade::WorthQueryProgramSupportRoster<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         let published = self
             .program_activation
@@ -30,15 +30,18 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphBootstrap<Schema> {
                     &branch,
                     self.graph.layout.program_activation(),
                     usize::MAX,
-                    "Home root does not activate its admitted initial program",
+                    "Home branch does not activate a rostered programme",
                     |rendering| {
-                        super::super::program_occurrence::program_revision_rendering(expected)
-                            == *rendering
+                        roster.entries().iter().any(|entry| {
+                            super::super::program_occurrence::program_revision_rendering(
+                                entry.revision(),
+                            ) == *rendering
+                        })
                     },
                 )?;
                 if actual != published {
                     return Err(home_activation_denial(
-                        "Home root names another activation record",
+                        "Home branch names another activation record",
                     ));
                 }
                 Ok(())

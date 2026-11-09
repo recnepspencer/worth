@@ -42,7 +42,7 @@ impl ApplicationHomeRecoveryCustody {
                     native: NativeCloseCustody::Prepared(native),
                     ..self
                 },
-                ApplicationHomeCloseDenial::PhysicalCustodyRetained,
+                ApplicationHomeCloseDenial::PhysicalCustodyPhaseMismatch,
             ));
         };
         loop {

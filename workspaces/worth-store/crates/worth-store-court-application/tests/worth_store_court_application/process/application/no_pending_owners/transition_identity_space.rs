@@ -132,7 +132,8 @@ fn prepared_identity_bounds_include_later_schema_roles_beyond_the_initial_instal
             .publication_port()
             .prepare_home_transition_step(
                 &execution,
-                source,
+                source.clone(),
+                fixture.admit_initial_program_source(&source),
                 intent,
                 grant.plan(),
                 grant.original(),

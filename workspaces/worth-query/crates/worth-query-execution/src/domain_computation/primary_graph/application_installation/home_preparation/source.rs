@@ -5,10 +5,20 @@ use super::super::super::{
 };
 use super::*;
 pub(super) mod assembly;
+mod authored_bindings;
+mod program_installation;
+mod program_preparation_custody;
+mod program_preparation_denial;
+pub use program_preparation_denial::QueryHomeSignalProgramPreparationDenial;
+pub(super) mod program_state;
+pub use program_preparation_custody::QueryHomeSignalProgramPreparationRefused;
+mod program_handoff;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryRelationalSourceOwner;
-use std::sync::{Arc, RwLock};
+pub use authored_bindings::QueryHomeAuthoredBindings;
+pub use program_handoff::{PreparedExistingHomeSignalProgram, PreparedHomeSignalProgram};
+use std::sync::Arc;
 use worth_runtime_bridge::facade::{
-    BridgeSealedRuntimeAssembly, RuntimeBridge, RuntimeBridgeRelationalSource,
+    BridgeReadmittedAuthoredAssembly, RuntimeBridge, RuntimeBridgeRelationalSource,
 };
 
 pub struct PreparedHomeQueryRuntime<Schema: ApplicationSchemaComposition, Program> {
@@ -17,10 +27,8 @@ pub struct PreparedHomeQueryRuntime<Schema: ApplicationSchemaComposition, Progra
 }
 
 pub struct QueryHomeSourceAttachmentRefused<Schema: ApplicationSchemaComposition, Program> {
-    _prepared: ReadmittedHomeNativeMeaning<Schema, Program>,
-    _source: RuntimeBridgeRelationalSource,
-    _bridge: RuntimeBridge,
-    _conditional: Arc<RwLock<BridgeSealedRuntimeAssembly>>,
+    _prepared: Box<program_installation::HomeServingProgramPreparation<Schema, Program>>,
+    _assembly: Arc<BridgeReadmittedAuthoredAssembly>,
     cause: WorthQueryPrimaryGraphInstallationDenial,
 }
 impl<Schema: ApplicationSchemaComposition, Program>
@@ -28,47 +36,6 @@ impl<Schema: ApplicationSchemaComposition, Program>
 {
     pub fn reason(&self) -> &WorthQueryPrimaryGraphInstallationDenial {
         &self.cause
-    }
-}
-
-impl<Schema: ApplicationSchemaComposition, Program> ReadmittedHomeNativeMeaning<Schema, Program> {
-    pub fn attach_home_registered_source(
-        self,
-        _phase: &WorthQueryBootstrapAdvancementPhase<'_>,
-        source: RuntimeBridgeRelationalSource,
-        bridge: RuntimeBridge,
-        conditional: Arc<RwLock<BridgeSealedRuntimeAssembly>>,
-    ) -> Result<
-        PreparedHomeQueryRuntime<Schema, Program>,
-        QueryHomeSourceAttachmentRefused<Schema, Program>,
-    > {
-        let result =
-            admit_registered_source(&self.state, &self.schema, &source, &bridge, &conditional);
-        let owner = match result {
-            Ok(owner) => owner,
-            Err(cause) => {
-                return Err(QueryHomeSourceAttachmentRefused {
-                    _prepared: self,
-                    _source: source,
-                    _bridge: bridge,
-                    _conditional: conditional,
-                    cause,
-                })
-            }
-        };
-        let Self {
-            state,
-            schema,
-            restore_work,
-            activation_seed,
-        } = self;
-        let mut prepared =
-            assembly::assemble(state, schema, restore_work, owner, bridge, conditional);
-        prepared.bootstrap.program_activation_seed = Some(activation_seed);
-        Ok(PreparedHomeQueryRuntime {
-            prepared,
-            publication: None,
-        })
     }
 }
 
@@ -130,15 +97,9 @@ pub(in crate::domain_computation::primary_graph::application_installation::home_
     schema: &InstalledNativeSchemaMeaning,
     source: &RuntimeBridgeRelationalSource,
     bridge: &RuntimeBridge,
-    conditional: &Arc<RwLock<BridgeSealedRuntimeAssembly>>,
 ) -> Result<WorthQueryRelationalSourceOwner, WorthQueryPrimaryGraphInstallationDenial> {
     let profile = source.authoritative_source_profile();
-    if bridge.authoritative_source_profile() != Some(&profile)
-        || !conditional
-            .read()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .readmits_authoritative_source_profile(&profile)
-    {
+    if bridge.authoritative_source_profile() != Some(&profile) {
         return Err(home_source_denial(
             "Home Bridge does not admit its registered Native source",
         ));

@@ -5,7 +5,7 @@ use worth_runtime_world::facade::*;
 impl WorthQueryProductRuntime {
     pub(in crate::domain_computation) fn attach_home_world_ports(
         relational: WorthQueryProductRelationalInstallation,
-        bridge: &mut worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
+        bridge: &worth_runtime_bridge::facade::BridgeReadmittedAuthoredAssembly,
         resources: WorthQueryProductWorldResources,
         publication: RuntimeWorldPublicationPort<(), (), (), (), ()>,
         branch: RuntimeWorldBranchPort,
@@ -15,6 +15,8 @@ impl WorthQueryProductRuntime {
         root: ProductBranchObservation,
         directory_support: fn(worth_foundational::facade::DurableStateFamily, u8) -> Option<u8>,
         maintenance: std::sync::Arc<dyn super::WorthQueryHomeMaintenance>,
+        branch_program_source_owner: std::sync::Arc<worth_proof::InstalledBranchProgramSourceOwner>,
+        branches: &ObservedProductBranches,
     ) -> Result<Self, WorthQueryProductRuntimeInstallationDenial> {
         let WorthQueryProductRelationalInstallation {
             services,
@@ -60,11 +62,18 @@ impl WorthQueryProductRuntime {
             budgets.live_product_branches(),
         )
         .map_err(|cause| home_denial(format!("Home activation capacity denied: {cause:?}")))?;
-        let activation = activations
-            .reserve()
-            .map_err(|cause| home_denial(format!("Home root activation denied: {cause:?}")))?;
-        activation.commit(&root);
-        let signal = bridge.signal_owner_services();
+        if !branches.branches().iter().any(|branch| branch == &root) {
+            return Err(home_denial(
+                "selected Home root is absent from its actual World inventory",
+            ));
+        }
+        for branch in branches.branches() {
+            activations
+                .reserve()
+                .map_err(|cause| home_denial(format!("Home branch activation denied: {cause:?}")))?
+                .commit(branch);
+        }
+        let signal = bridge.signal_owner();
         let mut product = Self::from_parts(
             ports,
             source,
@@ -72,12 +81,13 @@ impl WorthQueryProductRuntime {
             clock,
             services.lifecycle_port(),
             signal.basis_port(),
-            signal.lifecycle_port(),
+            super::signal_lifecycle::SignalLifecycleServices::AuthoredHome,
             owner_cleanup,
             root.branch_identity().clone(),
             root.lifecycle_incarnation(),
             None,
         );
+        product.branch_program_source_owner = Some(branch_program_source_owner);
         product.directory_support = Some(directory_support);
         product.home_maintenance = Some(maintenance);
         Ok(product)

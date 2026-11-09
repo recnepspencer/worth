@@ -23,6 +23,11 @@ where
     pub(crate) fn downgrade_owner(&self) -> Weak<SignalOwner<D, I, T>> {
         Arc::downgrade(&self.owner)
     }
+    pub(crate) fn operation_control_for_test(
+        &self,
+    ) -> crate::branch::owner_services::SignalOwnerOperationControlForTest {
+        self.owner.operation_control_for_test()
+    }
     pub(crate) fn basis_port(&self) -> SignalBranchBasisPort<D, I, T> {
         SignalBranchBasisPort::new(self.downgrade_owner(), self.owner.runtime_instance_id)
     }

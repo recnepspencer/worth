@@ -76,7 +76,10 @@ fn world_source(cause: worth_runtime_world::facade::WorldReadmissionDenial) -> D
         Source::NativeRecorded(cause) => component(cause),
         Source::NativeDiscovery(cause) => native(cause),
         Source::NativeCustody { cause, custody: _ } => world_source(*cause),
-        Source::SignalInitialRoot(cause) => signal(cause),
+        Source::SignalSource(_)
+        | Source::SignalDiscovery(_)
+        | Source::UncleanRecoveryUnsupported(_)
+        | Source::AuthoredSignalRequired => Denial::Unavailable,
         Source::BridgeBaseline(cause) => bridge(cause),
         Source::NativeFreshSource(RelationalRecoveryStop::Request(cause)) => {
             idempotency_read_stop(cause)
@@ -85,6 +88,7 @@ fn world_source(cause: worth_runtime_world::facade::WorldReadmissionDenial) -> D
         Source::NativeFreshSource(RelationalRecoveryStop::Allocation(cause)) => allocation(cause),
         Source::NativeFreshSource(RelationalRecoveryStop::Durability(_))
         | Source::NativeFreshSource(RelationalRecoveryStop::AdmissionImage(_))
+        | Source::AuthoredAttachment(_)
         | Source::JournalSourceMismatch
         | Source::OccurrenceEvidenceMismatch
         | Source::HistoryAdmission(_)
@@ -181,9 +185,9 @@ fn bridge(cause: worth_runtime_bridge::facade::RuntimeWorldBaselineRefusal) -> D
         Bridge::Description
         | Bridge::UnsupportedVersion { .. }
         | Bridge::RegisteredSourceRequired
-        | Bridge::UninstalledBaselineRequired
+        | Bridge::BaselineCorrespondenceRequired
         | Bridge::RecordedMeaningMismatch
-        | Bridge::SignalInitialRootRequired
+        | Bridge::SignalGraphBasisRequired
         | Bridge::CurrentBasisRequired => Denial::Unavailable,
     }
 }

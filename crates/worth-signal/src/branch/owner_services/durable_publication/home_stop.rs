@@ -17,6 +17,12 @@ where
     I: Copy + Ord + 'static,
     T: Copy + Ord + 'static,
 {
+    pub(crate) fn retire_medium_for_home(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), crate::durability::SignalDurableMediumDenial> {
+        self.medium.retire(request)
+    }
     pub(crate) fn prepare_home_stop(
         &self,
         execution: &ExecutionRequest<'_, '_>,

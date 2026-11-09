@@ -266,6 +266,9 @@ fn recovery_denial(stop: RecoveryDenial) -> WorthQueryOutputDemandDenial {
             WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
         }
         RecoveryDenial::ProviderBusy => WorthQueryOutputDemandDenialKind::SchedulingDeferred,
+        RecoveryDenial::Bridge(cause) => {
+            WorthQueryOutputDemandDenialKind::BridgeConditional(Box::new(cause.kind()))
+        }
         RecoveryDenial::ProductUnavailable => WorthQueryOutputDemandDenialKind::ProducerUnavailable,
     };
     readmission_denial(denial(kind, "producer publication recovery"))

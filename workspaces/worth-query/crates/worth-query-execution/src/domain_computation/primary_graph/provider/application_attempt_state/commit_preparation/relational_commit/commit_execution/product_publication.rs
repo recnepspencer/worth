@@ -149,17 +149,18 @@ pub(super) fn publish(
             .bridge
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let memory = bridge.memory().map_err(|_| denied("authored conditional publication requires its durable owner preparation"))?;
         let prepared = product
             .prepare_combined_candidate(candidate, &request, successor_observation_requested, history.as_ref().map(|history| history.current()))
             .map_err(|denial| match denial {PublicationDenial::ClockMismatch => publication_clock_mismatch(),
 PublicationDenial::Stopped(stop)=>publication_request_stop(stop), PublicationDenial::Refused(no_effect)=>world_no_effect(no_effect)})?;
-        let predecessor = bridge
+        let predecessor = memory
             .admit_exact_conditional_signal_basis(
                 &parts.predecessor,
                 product.observation().basis().signal_basis(),
             )
             .map_err(|_| denied("Bridge rejected the exact combined Signal basis"))?;
-        let bridge_prepared = bridge
+        let bridge_prepared = memory
             .prepare_owned_conditional_definition_successor(&predecessor, parts.request)
             .map_err(|_| denied("Bridge rejected combined conditional preparation"))?;
         let lineage_slot = prepare_lineage_slot(provider, attempt, prepared.planned_successor(), required_prerequisites)?;
@@ -180,9 +181,9 @@ PublicationDenial::Stopped(stop)=>publication_request_stop(stop), PublicationDen
             )
             .map_err(|()| capacity_exhausted())?;
         let outcome = match history {
-            Some(history) => prepared.execute_with_memory_cutover(execution, bridge_prepared, &bridge, |cutover|
+            Some(history) => prepared.execute_with_memory_cutover(execution, bridge_prepared, memory, |cutover|
                 history.perform(cutover, product.observation())).1,
-            None => prepared.execute(execution, bridge_prepared, &bridge),
+            None => prepared.execute(execution, bridge_prepared, memory),
         };
         match outcome {
             Ok(PublicationOutcome::Performed((publication, lowering))) => {

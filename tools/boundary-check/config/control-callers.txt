@@ -1799,3 +1799,8 @@ workspaces/worth-store/crates/worth-store/ workspaces/worth-store/crates/worth-s
 
 # Authored cancellation parks only the real receiver cell after the original World admission.
 crates/worth-signal/ crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/retention/owner_evidence/durable_cancellation.rs
+
+crates/worth-signal/ crates/worth-runtime-bridge/src/conditional_execution/authored_inspection.rs
+crates/worth-runtime-bridge/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/managed_bridge/conditional_execution.rs
+
+crates/worth-signal/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/managed_bridge/conditional_execution.rs

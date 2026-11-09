@@ -53,9 +53,15 @@ impl<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaComposition, BP>
         let source = &owners.source;
         let prepared = (|| {
             let native = home.relational().runtime();
-            let (_, bridge, _) = home
+            let (_, bridge, signal) = home
                 .query_composition_parts()
                 .map_err(Denial::Composition)?;
+            target
+                .require_relational_programme_transition()
+                .map_err(Denial::Author)?;
+            signal
+                .preflight_relational_programme_transition()
+                .map_err(|cause| Denial::BridgeProgramme(Box::new(cause)))?;
             let bridge = target
                 .prepare_home_program_bridge(&bridge)
                 .map_err(Denial::Author)?;

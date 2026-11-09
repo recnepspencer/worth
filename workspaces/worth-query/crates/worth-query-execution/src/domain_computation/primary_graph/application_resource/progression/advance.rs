@@ -141,7 +141,12 @@ where
         .runtime
         .product_runtime
         .advance_owned_async_source_clock(
-            &runtime.runtime.bridge.conditional(),
+            runtime
+                .runtime
+                .bridge
+                .conditional()
+                .memory()
+                .map_err(ResourceCause::Bridge)?,
             &installed.storage.nodes[index].declaration,
             selected,
             reading.nanoseconds,
@@ -186,6 +191,8 @@ where
             .runtime
             .bridge
             .conditional()
+            .memory()
+            .map_err(ResourceCause::Bridge)?
             .finish_managed_owned_async_wake_cleanup(owner)
             .map_err(ResourceCause::Managed)?;
     }
@@ -194,6 +201,8 @@ where
             .runtime
             .bridge
             .conditional()
+            .memory()
+            .map_err(ResourceCause::Bridge)?
             .advance_managed_owned_async_request_to_timeout(owner, reading.nanoseconds)
             .map_err(ResourceCause::Managed)?;
         occurrence.timeout = Some(timeout);
@@ -216,6 +225,8 @@ where
             .runtime
             .bridge
             .conditional()
+            .memory()
+            .map_err(ResourceCause::Bridge)?
             .schedule_managed_owned_async_retry(owner, timeout)
             .map_err(ResourceCause::Managed)?;
         occurrence.retry = Some(scheduled);
@@ -225,6 +236,8 @@ where
         .runtime
         .bridge
         .conditional()
+        .memory()
+        .map_err(ResourceCause::Bridge)?
         .advance_managed_owned_async_retry(
             owner,
             occurrence.retry.as_ref().expect("actual issued schedule"),
@@ -269,7 +282,12 @@ where
         .runtime
         .product_runtime
         .revalidate_custodied_owned_async_request(
-            &runtime.runtime.bridge.conditional(),
+            runtime
+                .runtime
+                .bridge
+                .conditional()
+                .memory()
+                .map_err(ResourceCause::Bridge)?,
             owner,
             selected,
         );

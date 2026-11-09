@@ -5,7 +5,7 @@ Relational truth and derived Signal computation.
 
 Use it when one runtime must translate committed semantic changes, snapshots,
 branches, history, or writeback across that boundary without giving either
-side the other side’s authority.
+side the other sideÃ¢â‚¬â„¢s authority.
 
 For Query-installed conditional operations, application and domain code starts
 at `worth_query_decl::facade` and `worth_query_host::facade`. Query runtime construction supplies the
@@ -136,9 +136,9 @@ temporal wakes, on-demand triggers, dependency comparison, output comparison,
 and artifact reuse. Missing or extra providers deny installation.
 
 At execution, the Bridge obtains semantic observations from the exact snapshot,
-invokes Signal’s installed conditional contract, and returns
+invokes SignalÃ¢â‚¬â„¢s installed conditional contract, and returns
 `BridgeConditionalDecisionEvidence`. The Bridge does not reinterpret or
-restamp Signal’s decision.
+restamp SignalÃ¢â‚¬â„¢s decision.
 
 ### Read-Only Native Observation Custody
 
@@ -298,15 +298,15 @@ assembler reports no Native binding, evaluation or invalidation for a source-onl
 reference. The performed-source reporting case and three affected Bridge controls
 pass. This does not qualify connected producer assembly or rich Native materialization.
 
-### Initial baseline for an attached World
+### Correspondence baseline for an attached World
 
-`RecordedRuntimeWorldBaseline` records the versioned, uninstalled correspondence
-baseline and its registered source's stable adapter and graph-role meaning.
-`RuntimeWorldCorrespondencePort` exports only an actual admitted baseline with
-no installed semantic dependency. Readmission compares that recipe with the
-current registered source and consumes the Signal owner's fresh admitted
-InitialEmpty seed to mint a new local Bridge basis. Unsupported sources,
-installed dependencies and altered meaning refuse. Source profile and role
+`RecordedRuntimeWorldBaseline` version 2 records the correspondence baseline
+and its registered source's stable adapter and graph-role meaning. The port
+exports an actual admitted baseline; a selected installed correspondence is a
+different basis and refuses this export. Conditional declarations may be installed.
+Readmission compares the recipe with the current registered source and consumes
+the Signal owner's actual admitted branch basis to mint a fresh Bridge basis.
+Version 1, unsupported sources and altered meaning refuse. Source profile and role
 descriptions remain correlation data. Store's private Home composition supplies
 the same actual Native owner and registered source; a matching caller-supplied
 profile cannot construct the concrete Home stage.
@@ -317,8 +317,8 @@ For platform composition, `BridgeConditionalRuntimeBuilder::capture_authored_def
 captures the actual program's Signal images and Bridge's versioned, checksummed
 section. That section retains conditional identities and locations, full
 portable dependency meaning, declared slots and exact performed lowering claims.
-Source runtime identities, providers, values and scheduling state stay outside
-these bytes. The landed `RecordedRuntimeWorldBaseline` format is unchanged.
+Providers, values, scheduling and runtime identities stay outside these bytes.
+The baseline identifies the source; definitions and claims recover from its Signal section.
 
 `Box<BridgeConditionalRuntimeBuilder>::readmit_authored_owner` consumes the fresh
 program and `BridgeAuthoredInstallationBindings`. Signal supplies each actual

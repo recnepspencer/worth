@@ -24,6 +24,7 @@ where
             self.home.context.serving.clone(),
             self.home.context.checkpoint.clone(),
             world,
+            self.signal_checkpoint.clone(),
             self.relational().complete_checkpoint_preparation(),
             limits,
         ))

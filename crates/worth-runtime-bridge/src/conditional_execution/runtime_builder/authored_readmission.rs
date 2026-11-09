@@ -147,6 +147,7 @@ impl BridgeConditionalRuntimeBuilder {
             .diagnostics
             .readmit_writeback_diagnostics(&signal);
         Ok(Box::new(BridgeReadmittedAuthoredAssembly {
+            home_retirement: std::sync::Mutex::new(None),
             program: Arc::clone(&installation.program),
             signal,
             branches:
@@ -291,6 +292,8 @@ pub(in crate::conditional_execution) fn finish(
     }
     Ok(Arc::new(BranchProjection {
         state: std::sync::Mutex::new(Box::new(ReadmittedBranch {
+            programme_memory: None,
+            graph_lifecycle: prepared.graph_lifecycle,
             posture: BranchPosture::Serving,
             _dependencies: prepared.dependencies,
             _allocations: prepared.allocations,

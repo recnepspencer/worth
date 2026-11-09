@@ -135,6 +135,7 @@ fn a_completed_transition_occurrence_restores_target_contracts_and_continues_onl
             .prepare_readmitted_home_transition_step(
                 &execution,
                 source.clone(),
+                fixture.admit_initial_program_source(&source),
                 RelationalTransactionIntent::ordinary(),
                 assigned.plan(),
                 1,

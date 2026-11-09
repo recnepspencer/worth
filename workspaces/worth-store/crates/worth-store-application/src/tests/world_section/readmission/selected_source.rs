@@ -10,7 +10,7 @@ fn invalid_home2_with_real_ordinary_native(
     home: &crate::ReadmittedApplicationHome,
     request: &ExecutionRequest<'_, '_>,
 ) -> (Vec<AnchoredRecordMemberLocator>, Vec<u8>) {
-    let (builder, bridge, signal) = super::recipe(home);
+    let (builder, bridge, signal, _attachment) = super::recipe(home, request);
     let world = super::super::readmit_attached_world(home, builder, bridge, request).unwrap();
     let world_image = world
         .checkpoint_port()
@@ -21,15 +21,24 @@ fn invalid_home2_with_real_ordinary_native(
     let (members, member_funding) = ordinary_native.prepare_members(&[], request).unwrap();
     // Independent Home2 transport framing. The Native section is ACTUAL ordinary
     // producer output, not a fabricated Complete capture or a format-marker claim.
+    let signal_image = signal.capture_authored_home_image(request).unwrap();
     let mut bytes = b"WAPHCKP1".to_vec();
-    bytes.extend_from_slice(&2u32.to_le_bytes());
-    bytes.extend_from_slice(&2u16.to_le_bytes());
-    for (tag, body) in [(1u16, ordinary_native.bytes()), (4u16, world_image.bytes())] {
+    bytes.extend_from_slice(&3u32.to_le_bytes());
+    bytes.extend_from_slice(&3u16.to_le_bytes());
+    for (tag, body) in [
+        (1u16, ordinary_native.bytes()),
+        (4u16, world_image.bytes()),
+        (
+            worth_foundational::facade::DurableOwnerFamily::Signal.tag(),
+            signal_image.as_bytes(),
+        ),
+    ] {
         bytes.extend_from_slice(&tag.to_le_bytes());
         bytes.extend_from_slice(&(body.len() as u64).to_le_bytes());
     }
     bytes.extend_from_slice(ordinary_native.bytes());
     bytes.extend_from_slice(world_image.bytes());
+    bytes.extend_from_slice(signal_image.as_bytes());
     let published = home
         .context
         .serving
@@ -48,6 +57,7 @@ fn invalid_home2_with_real_ordinary_native(
         .unwrap();
     let members = published.members().to_vec();
     drop((ordinary_native, world_image, member_funding));
+    signal.prepare_home_stop(request).unwrap().commit();
     let report = world.lifecycle_port().close(request, &world).unwrap();
     assert!(report.retained_records().is_empty());
     drop((report, world, signal));
@@ -57,7 +67,7 @@ fn home2_with_real_complete_native(
     home: &crate::ReadmittedApplicationHome,
     request: &ExecutionRequest<'_, '_>,
 ) -> (Vec<AnchoredRecordMemberLocator>, Vec<u8>) {
-    let (builder, bridge, signal) = super::recipe(home);
+    let (builder, bridge, signal, _attachment) = super::recipe(home, request);
     let world = super::super::readmit_attached_world(home, builder, bridge, request).unwrap();
     let world_image = world
         .checkpoint_port()
@@ -81,15 +91,24 @@ fn home2_with_real_complete_native(
     let (members, member_funding) = ordinary_native.prepare_members(&[], request).unwrap();
     // Both sections come from their real strong producers; framing alone
     // neither constructs Native Complete authority nor certifies selection.
+    let signal_image = signal.capture_authored_home_image(request).unwrap();
     let mut bytes = b"WAPHCKP1".to_vec();
-    bytes.extend_from_slice(&2u32.to_le_bytes());
-    bytes.extend_from_slice(&2u16.to_le_bytes());
-    for (tag, body) in [(1u16, ordinary_native.bytes()), (4u16, world_image.bytes())] {
+    bytes.extend_from_slice(&3u32.to_le_bytes());
+    bytes.extend_from_slice(&3u16.to_le_bytes());
+    for (tag, body) in [
+        (1u16, ordinary_native.bytes()),
+        (4u16, world_image.bytes()),
+        (
+            worth_foundational::facade::DurableOwnerFamily::Signal.tag(),
+            signal_image.as_bytes(),
+        ),
+    ] {
         bytes.extend_from_slice(&tag.to_le_bytes());
         bytes.extend_from_slice(&(body.len() as u64).to_le_bytes());
     }
     bytes.extend_from_slice(ordinary_native.bytes());
     bytes.extend_from_slice(world_image.bytes());
+    bytes.extend_from_slice(signal_image.as_bytes());
     let published = home
         .context
         .serving
@@ -108,6 +127,7 @@ fn home2_with_real_complete_native(
         .unwrap();
     let members = published.members().to_vec();
     drop((ordinary_native, world_image, member_funding));
+    signal.prepare_home_stop(request).unwrap().commit();
     let report = world.lifecycle_port().close(request, &world).unwrap();
     assert!(report.retained_records().is_empty());
     drop((report, world, signal));

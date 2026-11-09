@@ -14,6 +14,13 @@ use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 use worth_relational::facade::runtime::RelationalRuntime;
 
 pub struct RetiringBridgeAuthoredAssembly {
+    prepared: PreparedAuthoredHomeRetirement,
+}
+pub(in crate::conditional_execution) struct PreparedAuthoredHomeRetirement {
+    state: Box<Option<RetiringAuthoredState>>,
+    _funding: Option<ExecutionMemoryReservation>,
+}
+struct RetiringAuthoredState {
     _stopped_signal: worth_signal::facade::durability::SignalRetainedAuthoredHomeAllocation,
     bridge: Option<RuntimeBridge>,
     task: Option<RetiringRuntimeBridge>,
@@ -21,7 +28,6 @@ pub struct RetiringBridgeAuthoredAssembly {
     _branches: Arc<super::authored_section::branch_registry::BranchRegistry>,
     _programme_memory: Option<ExecutionMemoryReservation>,
     _assembly_memory: Option<ExecutionMemoryReservation>,
-    _funding: Option<ExecutionMemoryReservation>,
     stage: Stage,
 }
 enum Stage {
@@ -71,6 +77,22 @@ impl BridgeReadmittedAuthoredAssembly {
         if Arc::strong_count(&self.program) != 1 {
             return Err(Denial::Busy);
         }
+        self.signal
+            .preflight_home_retirement(request)
+            .map_err(|cause| Denial::AuthoredSignal(Box::new(cause)))?;
+        let mut prepared = self.home_retirement.try_lock().map_err(|_| Denial::Busy)?;
+        if prepared.is_none() {
+            let funding =
+                request
+                    .reserve_retained_memory(
+                        std::mem::size_of::<Option<RetiringAuthoredState>>() as u64
+                    )
+                    .map_err(Denial::Execution)?;
+            *prepared = Some(PreparedAuthoredHomeRetirement {
+                state: Box::new(None),
+                _funding: funding,
+            });
+        }
         Ok(())
     }
     /// Only the consumed actual assembly can enter this retirement; no graph or programme is rebuilt.
@@ -78,27 +100,27 @@ impl BridgeReadmittedAuthoredAssembly {
         self,
         request: &ExecutionRequest<'_, '_>,
         native: &RelationalRuntime,
-    ) -> Result<Box<RetiringBridgeAuthoredAssembly>, (Self, Denial)> {
+    ) -> Result<RetiringBridgeAuthoredAssembly, (Self, Denial)> {
         if let Err(cause) = self.preflight_home_retirement(request, native) {
             return Err((self, cause));
         }
-        let funding = match request
-            .reserve_retained_memory(std::mem::size_of::<RetiringBridgeAuthoredAssembly>() as u64)
-        {
-            Ok(funding) => funding,
-            Err(cause) => return Err((self, Denial::Execution(cause))),
-        };
         let Self {
+            home_retirement,
             program,
             signal,
             branches,
             _memory,
         } = self;
+        let mut prepared = home_retirement
+            .into_inner()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .expect("the same authored retirement backing was prepared before seal");
         let stopped_signal = match signal.retain_stopped_home_allocation(request) {
             Ok(stopped) => stopped,
             Err((signal, cause)) => {
                 return Err((
                     Self {
+                        home_retirement: std::sync::Mutex::new(Some(prepared)),
                         program,
                         signal,
                         branches,
@@ -143,21 +165,35 @@ impl BridgeReadmittedAuthoredAssembly {
             installation: _,
         } = Arc::try_unwrap(program)
             .unwrap_or_else(|_| unreachable!("checked holders leave the original programme"));
-        Ok(Box::new(RetiringBridgeAuthoredAssembly {
+        *prepared.state = Some(RetiringAuthoredState {
             _stopped_signal: stopped_signal,
             bridge: Some(bridge),
             task: None,
             _retired: None,
             _programme_memory: programme_memory,
             _assembly_memory: _memory,
-            _funding: funding,
             _branches: branches,
             stage: Stage::Bridge,
-        }))
+        });
+        Ok(RetiringBridgeAuthoredAssembly { prepared })
     }
 }
 impl RetiringBridgeAuthoredAssembly {
     pub fn advance(
+        &mut self,
+        request: &ExecutionRequest<'_, '_>,
+        native: &RelationalRuntime,
+    ) -> Result<Progress, Denial> {
+        self.prepared
+            .state
+            .as_mut()
+            .as_mut()
+            .expect("only a consumed actual assembly issues this retirement")
+            .advance(request, native)
+    }
+}
+impl RetiringAuthoredState {
+    fn advance(
         &mut self,
         request: &ExecutionRequest<'_, '_>,
         native: &RelationalRuntime,

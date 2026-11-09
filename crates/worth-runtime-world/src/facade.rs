@@ -2,6 +2,7 @@
 //!
 //! This module contains exports only. Runtime behavior remains in the private
 //! owner modules so callers cannot reach around the composition boundary.
+pub use crate::branch::{ObservedProductBranches, ProductBranchInventoryDenial};
 pub use crate::lifecycle::{
     CapturedWorldInterimAdmission, CapturedWorldInterimOrigin, WorldInterimCheckpointPort,
     WorldInterimCheckpointRefusal,
@@ -107,8 +108,8 @@ pub use crate::lifecycle::{
     MissingRuntimeWorldInput, PreparedWorldHomeProgramBinding, PreparedWorldRelationalCutover,
     RuntimeWorldBranchCreationOutcome, RuntimeWorldBranchPort, RuntimeWorldBuildDenial,
     RuntimeWorldClock, RuntimeWorldClockSource, RuntimeWorldCloseDenial, RuntimeWorldCloseReport,
-    RuntimeWorldExecutionPlacement, RuntimeWorldHomeBuilder, RuntimeWorldInspectionPort,
-    RuntimeWorldInstant, RuntimeWorldLifecyclePort, RuntimeWorldObservationPort,
+    RuntimeWorldExecutionPlacement, RuntimeWorldInspectionPort, RuntimeWorldInstant,
+    RuntimeWorldLifecyclePort, RuntimeWorldObservationPort,
     RuntimeWorldOwnedAsyncManagedRevalidationDenial, RuntimeWorldOwnedAsyncRequestAdmissionDenial,
     RuntimeWorldOwnedAsyncRevalidationDenial, RuntimeWorldOwner, RuntimeWorldOwnerBuilder,
     RuntimeWorldOwnerLifecycleObservation, RuntimeWorldOwnerUnavailable,

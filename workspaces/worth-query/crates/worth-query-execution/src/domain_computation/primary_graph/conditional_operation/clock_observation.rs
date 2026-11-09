@@ -293,10 +293,16 @@ where
                 let bridge = bridge_root
                     .read()
                     .unwrap_or_else(std::sync::PoisonError::into_inner);
+                let memory = match bridge.memory() {
+                    Ok(memory) => memory,
+                    Err(cause) => return WorthQueryConditionalClockObservationOutcome::Failed(WorthQueryConditionalClockObservationFailure {
+                        kind: WorthQueryConditionalClockObservationFailureKind::ReconstructionDenied(super::installation::WorthQueryConditionalRuntimeInstallationDenialKind::BridgeConditional(Box::new(cause.kind()))), detail: cause.detail().to_owned(),
+                    }),
+                };
                 let outcome = self.operation.observe_clock(
                     execution,
                     phase,
-                    &bridge,
+                    memory,
                     self.runtime,
                     &self.truth,
                 );
