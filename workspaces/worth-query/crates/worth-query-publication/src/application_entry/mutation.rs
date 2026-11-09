@@ -1,4 +1,6 @@
 mod attempt;
+mod producer_round_limits;
+pub use producer_round_limits::ApplicationProducerRoundLimits;
 pub(in crate::application_entry) mod authorization;
 mod authorization_assessment;
 pub(in crate::application_entry) mod captured_input;

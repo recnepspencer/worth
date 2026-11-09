@@ -98,6 +98,7 @@ mod failure;
 mod initial;
 mod publication_count;
 pub(super) mod reconciliation;
+mod round_budget;
 
 pub(super) mod new_source;
 

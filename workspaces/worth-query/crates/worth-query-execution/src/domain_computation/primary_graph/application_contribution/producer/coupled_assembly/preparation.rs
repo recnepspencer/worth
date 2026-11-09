@@ -89,6 +89,13 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
         };
         let lifecycle = source.lifecycle;
         let producer = registry.declared_coupled_producer(demand, source.profile, lifecycle)?;
+        self.rounds.borrow_mut().start(
+            execution,
+            source.scope,
+            demand.family,
+            source.partition,
+            &producer.declaration.identity,
+        )?;
         let pin = candidate.pin_source(execution)?;
         let prepared = producer.executor.prepare_coupled_writer(
             self.phase,
@@ -126,7 +133,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
             .application_attempt_operation_control
             .take_coupled_participant_corruption()
         {
-            fault @ (1..=3) => candidate.append_corrupt_participant_for_test(
+            fault @ (1..=4) => candidate.append_corrupt_participant_for_test(
                 execution,
                 publication,
                 &content,

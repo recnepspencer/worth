@@ -12,6 +12,12 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         mut batches: Vec<crate::transactions::data::WorkerIntentBatch>,
         fault: u8,
     ) -> Result<(), RelationalCoupledAssemblyFailure> {
+        if fault == 4 {
+            self.append_publication(execution, posture, content, batches)?;
+            return self
+                .replay_continuation_probe(execution)
+                .map_err(Into::into);
+        }
         let RelationalCoupledProducerPosture::Publication(mut publication) = posture else {
             return self.append_publication(execution, posture, content, batches);
         };

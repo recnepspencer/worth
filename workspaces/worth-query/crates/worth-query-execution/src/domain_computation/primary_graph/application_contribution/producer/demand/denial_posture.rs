@@ -82,6 +82,8 @@ impl WorthQueryOutputDemandDenialKind {
             | Self::Superseded
             | Self::Cancelled
             | Self::TimedOut
+            | Self::ProducerRouteRoundBudgetExceeded { .. }
+            | Self::ProducerAttemptRoundBudgetExceeded { .. }
             | Self::WorkBudgetExceeded
             | Self::RetentionBudgetExceeded
             | Self::PublicationCapacityExceeded

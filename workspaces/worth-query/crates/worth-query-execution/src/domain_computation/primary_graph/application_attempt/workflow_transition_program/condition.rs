@@ -132,6 +132,7 @@ where
         .map_err(|cause| cause.into_attempt_denial(&node_path))?;
         let program = WorthQueryApplicationEffectProgram {
             synchronous_outputs: None,
+            producer_round_limits: crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::default_producer_round_bounds(),
             content_attachments: Default::default(),
             read_set,
             effects,

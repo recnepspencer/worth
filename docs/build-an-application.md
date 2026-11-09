@@ -4346,6 +4346,16 @@ each writer keeps its own custody. A producer refusal refuses the entire edit; t
 denial's `coupled_producer_denial()` retains that producer's typed cause and
 domain reason. A foreign prepared publication also refuses before any effect.
 
+Synchronous edits have finite producer-start limits, separate from demand
+settlement attempts. Use `producer_round_limits(ApplicationProducerRoundLimits::new(per_route, per_attempt))`
+on the mutation or owning operation builder, with positive `NonZeroUsize`
+bounds. Defaults are 64 starts per exact source/family/partition route and
+4,096 across the edit attempt. Real verification executions and Native symbol
+retries consume starts; read-only certification does not. The next start over
+either limit refuses typed before contacting a handler and rolls back the whole
+edit. A retry of an already committed key resolves the original receipt before
+producer starts. The limits carry no permission and do not change intent identity.
+
 The edit's receipt describes the source and producer changes in one Native
 commit. Repeating its idempotency key returns the original receipt. Subsequent
 demands reuse the coupled outputs without another producer contact or readiness

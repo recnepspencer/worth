@@ -151,6 +151,8 @@ where
             &source.value,
         );
     Ok(CoupledSourceRead::Source(ErasedAppliedProducerSource {
+        scope: source.root(),
+        partition: source.partition(),
         lifecycle: super::super::super::WorthQueryProducerLifecyclePosture::Initial,
         predecessor: None,
         profile,

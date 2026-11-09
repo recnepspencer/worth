@@ -29,8 +29,10 @@ mod root;
 pub use discovered::SynchronousDiscoveredOutputRoot;
 mod discovery;
 mod edges;
+pub(super) mod rounds;
 mod source;
 mod wave;
+pub use rounds::default_producer_round_bounds;
 pub use wave::SynchronousOutputWave;
 
 /// The actual authored prefix read by root discovery, without producer settlement.

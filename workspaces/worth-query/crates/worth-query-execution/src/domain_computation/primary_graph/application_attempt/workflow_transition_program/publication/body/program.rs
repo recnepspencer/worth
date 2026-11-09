@@ -44,6 +44,7 @@ where
         })?;
     let WorthQueryApplicationEffectProgram {
         synchronous_outputs,
+        producer_round_limits: _,
         mut read_set,
         effects,
         conditional_definition,

@@ -38,6 +38,7 @@ where
     } = entry;
     let WorthQueryApplicationEffectProgram {
         synchronous_outputs,
+        producer_round_limits,
         read_set,
         mut effects,
         mut content_attachments,
@@ -69,6 +70,7 @@ where
                 .unwrap_or_default()
         });
     coupled_outputs.synchronous = synchronous_outputs;
+    coupled_outputs.round_limits = producer_round_limits;
     let workflow_approval_authority = workflow_settlement
         .as_ref()
         .and_then(|binding| binding.approval_authority.clone());

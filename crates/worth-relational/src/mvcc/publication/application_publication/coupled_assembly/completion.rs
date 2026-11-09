@@ -111,6 +111,7 @@ pub(crate) fn prepare_coupled_candidate(
         identity,
         binding: &binding,
         parts: Vec::new(),
+        continuation: continuation::ContinuationState::default(),
     };
     if assembly
         .assemble(execution, &mut candidate)

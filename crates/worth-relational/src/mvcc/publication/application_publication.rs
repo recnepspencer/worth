@@ -26,7 +26,8 @@ pub use coupled_assembly::{
     RelationalAuthoredCoupledCandidate, RelationalAuthoredCoupledProducerAssembly,
     RelationalAuthoredCoupledTransaction, RelationalCoupledAssemblyFailure,
     RelationalCoupledAuthoredPublication, RelationalCoupledAuthoredSourceEffects,
-    RelationalCoupledContribution, RelationalCoupledProducerPosture,
+    RelationalCoupledContribution, RelationalCoupledProducerContinuation,
+    RelationalCoupledProducerPosture,
 };
 pub(crate) use coupled_owners::CoupledSource;
 pub use coupled_owners::{RelationalAuthoredCoupledOwners, RelationalDeclaredCoupledOwner};

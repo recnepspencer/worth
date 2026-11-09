@@ -17,6 +17,13 @@ pub enum AuthoredRetirementRefusal {
     ExtraCoupledOwner,
     ForeignCoupledOwner,
     RepeatedCoupledOwner,
+    ForeignCoupledContinuation,
+    StaleCoupledContinuation,
+    CoupledContinuationRequiresOwnedRoute,
+    /// Only the new atomic continuation entry refuses; existing successor delivery stays available.
+    CoupledContinuationProvenancePostponed {
+        issue: u16,
+    },
     MissingMember,
     MissingOwnedMember,
     ExtraOwnedMember,

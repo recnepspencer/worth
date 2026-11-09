@@ -246,6 +246,11 @@ where
                 }
             };
         let (mut program, result) = completed.into_parts();
+        program = program.with_producer_round_limits(
+            &worth_query_execution::publication_boundary::program_publication_access(),
+            self.request.producer_round_limits.per_route(),
+            self.request.producer_round_limits.per_attempt(),
+        );
         let publication_access =
             worth_query_execution::publication_boundary::program_publication_access();
         if program.requires_original_source_capture(&publication_access) {

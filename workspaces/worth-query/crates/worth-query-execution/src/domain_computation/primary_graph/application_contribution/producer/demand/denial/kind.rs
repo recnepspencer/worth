@@ -91,6 +91,10 @@ pub enum WorthQueryOutputDemandDenialKind {
     TimedOut,
     /// The producer needs more work than the demand allows.
     WorkBudgetExceeded,
+    /// The next handler start exceeds this exact route's edit policy.
+    ProducerRouteRoundBudgetExceeded { source: worth_relational::facade::identity::EntityId, started: usize, limit: usize },
+    /// The next handler start exceeds the complete edit attempt's policy.
+    ProducerAttemptRoundBudgetExceeded { source: worth_relational::facade::identity::EntityId, started: usize, limit: usize },
     /// The producer's retained output is larger than the demand allows.
     RetentionBudgetExceeded,
     /// The branch had no capacity to publish the output.

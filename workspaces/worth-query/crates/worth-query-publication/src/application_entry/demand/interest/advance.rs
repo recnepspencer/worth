@@ -138,6 +138,8 @@ where
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::NoEffect
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::Cancelled
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::TimedOut
+                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProducerRouteRoundBudgetExceeded { .. }
+                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProducerAttemptRoundBudgetExceeded { .. }
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::PublicationCapacityExceeded

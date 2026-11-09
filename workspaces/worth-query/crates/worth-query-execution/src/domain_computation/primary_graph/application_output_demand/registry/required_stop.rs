@@ -93,6 +93,8 @@ pub(super) fn intrinsic_to_row(kind: WorthQueryOutputDemandDenialKind) -> bool {
         Kind::Cancelled
         | Kind::ManagedIndexSourceDenied
         | Kind::TimedOut
+        | Kind::ProducerRouteRoundBudgetExceeded { .. }
+        | Kind::ProducerAttemptRoundBudgetExceeded { .. }
         | Kind::WorkBudgetExceeded
         | Kind::RetentionBudgetExceeded
         | Kind::SourcePrincipal(_)

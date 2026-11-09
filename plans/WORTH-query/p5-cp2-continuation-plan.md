@@ -1,7 +1,7 @@
 # P5 CP2b: candidate rounds with one effectful publication per route
 
-Status: proposed revision for D1472 re-review, 2026-11-09. No implementation
-is authorized by this document. CP2a is ececd430a1; prior plan a79812e1a6.
+Status: approved with D1474 conditions A–D, 2026-11-09. Implementation follows
+the conditions below and the independent re-review. CP2a is ececd430a1; prior plan a79812e1a6.
 D1472 supersedes its multi-round origin, demand-control ceiling and scheduler
 proposals. S6 still needs a separate plan review.
 
@@ -50,8 +50,10 @@ If a new in-candidate path has already applied one effectful round and a second
 would require a false single-input origin, Native refuses before publication,
 with the route/source/family and #119 as the postponement cause. Nothing escapes
 C. This guard is installed BEFORE repeats/netting can reach publication. It is
-not applied to the retained legacy post-commit path. No fallback silently turns
-an expressly atomic candidate request into several commits.
+not applied to the retained legacy post-commit path. Existing owned routes retain CP2a post-commit successor delivery if their real
+second run would be effectful. The new atomic-only candidate entry refuses; it
+never publishes a false single-input origin. A speculative run must not leave
+receipt, settlement or authority effects when the retained successor path wins.
 
 If implementation identifies an existing productive, non-artifact producer
 needing two effectful rounds, stop with its file:line and actual journey for
@@ -161,8 +163,10 @@ roster membership or bypass installed connection order.
 ## Limits and the oscillator consequence
 
 Choose the mutation builder, not WorthQueryOutputDemandControls. Add a typed
-ApplicationProducerRoundLimits value in worth-foundational (portable resource
-policy, no grant), re-exported by Host. Live route/attempt counters belong to
+ApplicationProducerRoundLimits beside entry controls in worth-query-publication,
+re-exported by Host. This is Query-specific policy, not cross-runtime meaning.
+Pass its finite numeric bounds into execution-owned attempt counters; execution
+must not depend upwards on publication or add a second policy authority. Live route/attempt counters belong to
 Query's synchronous attempt. Carry the policy through request, staged request,
 capture, retry and fixed/performed paths. Existing calls use default per-route 64
 and total 4096; callers may choose other positive finite bounds. Replay of an
@@ -221,23 +225,19 @@ another route's or the authored prefix's fresh record refuses typed naming both
 writers and the record. Existing current-publication destruction/retarget fences,
 required-owner coverage and ordinary-part admission all still run.
 
-N1-N5 cover genuine C deletion, temporary local cancellation, fresh update,
-old/new identity replacement and exact revert. The physical net-plan tests may
-inspect the real prepared Native net result before its B3 publication guard;
-they do not forge a published origin. Two-effect cases MUST still refuse before
-World in the public candidate entry. There is no end-to-end claim of committed
-fresh-ID elision while #119 blocks that journey.
+N1 and N4 cover genuine C deletion and old/new same-key replacement. X1/X2
+refuse destruction of another route's or the authored prefix's fresh record.
+N2 (same-route create/delete), N3 (later fresh update), N5 (exact revert), and
+M-E2's elision proof are postponed to #119/#100: they require two effectful
+rounds and cannot publish under B3. Do not build prepared-only cancellation
+machinery to manufacture coverage of an unreachable entry. The B3 guard reserves
+the boundary; no ID elision or partial release is implemented here.
 
-Netted fresh IDs stay CONSUMED; no partial release, frontier rewind or reuse is
-added. Keep the original Native reservation owner and whole-candidate abort
-rules (append-frontier gaps versus reclaimed slots), not a new slot lifecycle.
-For supported one-effect/no-effect publication, cold reopen must exactly match
-the legacy identity/generation frontier and surviving IDs. For cabinet-like
-create/delete churn, compare cold frontiers on the RETAINED post-commit legacy
-path against master: both really allocate then retire those IDs. A committing
-candidate containing netted fresh IDs remains unavailable under #119; its cold
-publication claim and any required allocation-replay cutover belong to that
-unblocked slice, not an unverified claim of partial release in CP2b.
+Fresh IDs remain consumed by Native's existing reservation owner. Cold reopen
+pins supported one-effect/no-effect identity/generation frontiers against the
+legacy journey. Retained post-commit cabinet churn still allocates and retires
+its IDs as on master. A committing candidate with netted fresh IDs remains
+postponed, including its cold allocation-replay cutover.
 
 B3's effect counter is Native-issued from actual application outcomes, including
 observable output meaning, not a count of submitted commands or receipts. It
@@ -262,16 +262,11 @@ in commit conflict support even if their writes net away. Recorded currentness
 support retains final-qualified observations plus proofs of how intra-candidate
 reads were discharged; it is not a claim that the final producer read C.
 
-For any netted ID, exclude its direct observations only with a Native-issued
-same-route elision proof paired with the original reads, creation and deletion.
-Stable selector/negative reads are retained as actual final absence observations
-by their existing owner. Never manufacture a RetiredOutputEntity for an entity
-which never published, or keep a dangling ID in SourceEntity/field/adjacency/
-aggregate/walk/DerivedSource facts, consumed-output witnesses or checkpoints.
-A seal-time traversal rejects any undischarged netted reference before effects.
-With B3 this is primarily a Native prepared-plan boundary test; it is not a
-claim that unsupported multi-effect rows can be committed. No new durable proof
-journal or JSON is introduced.
+CP2b never elides a fresh ID, so it must not record a dangling reference or
+manufacture a retirement observation for a record that never published. The
+cross-round elision proof and its M-E2 court move to #119 with cancellation.
+Retain every reachable external and produced-record observation through the
+existing rebase owner. No new durable proof journal is introduced.
 
 Only the final route publication receives an idempotency binding and real
 producer receipt. Intermediate rounds are private completed executions with
@@ -341,11 +336,10 @@ not a kill. No source fingerprint/JSON certification system is added.
 | B1 route map | M-B1 uses NRU as candidate-repeat; unchanged multi-writer contact 2 total and lone-root 1 then 0 go red. |
 | C2 oscillator / limits | M-C2 removes the B3 second-effect stop: the candidate no-effect/provenance assertion fails; M-L1/M-L2 omit route/attempt quota and the actual bounded refusal goes red. Legacy64-round reference must first prove the intended oscillator, not a producer master accepts once. |
 | N1 genuine deletion | M-N1 drops the genuine C retirement; exact live rows/origin fail. |
-| N2/X1/X2 creator custody | M-X drops same-route creator check; M-ID nets by ID only. Foreign-route and authored-prefix destruction must be wrongly accepted at the real Native net-plan boundary. Final public B3 refusal remains independently tested. |
-| N3/N4 identities | M-N3 allocates a new ID for a later update; M-N4 conflates old/new same-key generations. Native final plan and supported cold frontier/identity assertions fail. |
-| N5 revert | M-N5 keeps an identical-value patch on an exact revert; Native net-plan patch/trigger absence fails before the independent B3 guard. This is not represented as a successful two-effect edit. |
+| X1/X2 creator custody | M-X drops same-route creator check; M-ID nets by ID only. Foreign-route and authored-prefix destruction must be wrongly accepted at the real Native net-plan boundary. Final public B3 refusal remains independently tested. |
+| N4 identities | M-N4 conflates old/new same-key generations. Native final plan and supported cold frontier/identity assertions fail. |
 | K1 all-round reads | M-K1 drops round 1 external support; a concurrent write to that input is wrongly admitted even when later output is equal. Keep round coordinates distinct. |
-| B2 recorded support | M-E1 records round1 only; the middle-input/final-support/follow-on oracle fails. M-E2 retains a netted ID in recorded facts; the seal/absence assertion fails. |
+| B2 recorded support | M-E1 records round1 only; the middle-input/final-support/follow-on oracle fails. M-E2 is postponed with unreachable cancellation under #119. |
 | B2 receipts/retry | M-R1 gives an intermediate run a receipt; its key wrongly resolves Equivalent or extra receipt/commit appears. Hot/worker retries require the actual final receipt. |
 | O1 effect provenance | M-O1 marks no-effect verification effectful; the supported one-effect edit wrongly refuses #119. |
 | O2 actual input | M-O2a/M-O2b choose first/last input; the predecessor read must return 1, not0/3. |
@@ -354,7 +348,7 @@ not a kill. No source fingerprint/JSON certification system is added.
 | Commit/orphan/atomicity | M-G1 publishes a side-branch/readiness commit; all-branch observer fails. M-A1 publishes a prefix on later failure; C/head/complete rows fail. |
 
 No additional ignores. The two comparison.rs seeded courts keep their semantic
-oracles and cite #119/#100. After those owners land, their independent legacy
+oracles and exact #119/#100 ignore reasons. Slice 1's full gate records both as ignored. After those owners land, their independent legacy
 named-row oracle remains the acceptance target for one-commit cabinet cleanup.
 
 ## Implementation slices after approval (B4)
@@ -366,8 +360,8 @@ with generic shells only where schema/provider dispatch actually needs them.
 | Slice | Deliverable, dependency and size estimate | Release evidence and named mutants | Stop/qualification |
 |---|---|---|---|
 | 1 | Merge 39ad; route map, linear custody, B3 guard, builder limits and docs. About 200–350 production + 180–280 court lines, split at 400 lines/file or less; 1–1.5 lane-days including release builds; estimated native text delta 30–80KiB. | C1/B1, multi-writer/lone-root/D1470 unchanged; M-C1, M-B1, M-C2, M-L2. Existing one-effect owned journey stays green; repeat dispatch remains disabled. | Commit/report. Complete affected Native/Query owners and root/Query comparison green, or each residual filed as identical-on-master. Stop for changed authority/provenance or a real non-artifact multi-effect journey. |
-| 2 | Delta net-plan, same-route creator ledger, incremental aggregate/pin support, consumed-ID policy. About 300–500 production + 250–400 court lines; 1–2 lane-days; estimated native text 40–100KiB. | N1-N5/X1/X2, custody/first-entry after master merge; M-N1, M-X, M-ID, M-N3/N4/N5. Cold supported frontiers and unchanged legacy churn frontiers. Release cabinet-scale 27-retirement workload plus touched-record growth. | Commit/report, same green-or-filed-baseline rule. Stop if allocation replay would require a format change or forbidden owner edits; do not claim publishing netted IDs while B3 blocks it. |
-| 3 | Fetch K6/K6b status again; distinct round spans, applied rebase disposition, one final receipt/lineage handoff and owned-only final verification. About 250–450 production + 220–350 court lines; 1–1.5 lane-days; estimated text 30–90KiB. | Middle-input fixture, K1, final support/no netted fact, hot/worker crash/retry/follow-on; M-K1, M-E1/E2, M-R1, M-Q1, M-O1, M-O2a/b, M-L1. | Commit/report, same green-or-filed-baseline rule. Stop rather than duplicate K6 policy, fabricate Current/Ready, or require #121/#94. |
+| 2 | Delta net-plan, same-route creator ledger, incremental aggregate/pin support, consumed-ID policy. About 160–280 production + 160–260 court lines; 0.75–1.25 lane-days; estimated native text 20–60KiB. | N1/N4/X1/X2, custody/first-entry after master merge; M-N1, M-X, M-ID, M-N4. Cold supported frontiers and unchanged legacy churn frontiers. Release cabinet-scale 27-retirement workload plus touched-record growth. | Commit/report, same green-or-filed-baseline rule. Stop if allocation replay would require a format change or forbidden owner edits; do not claim publishing netted IDs while B3 blocks it. |
+| 3 | Fetch K6/K6b status again; distinct round spans, applied rebase disposition, one final receipt/lineage handoff and owned-only final verification. About 250–450 production + 220–350 court lines; 1–1.5 lane-days; estimated text 30–90KiB. | Middle-input fixture, K1, final support/no netted fact, hot/worker crash/retry/follow-on; M-K1, M-E1, M-R1, M-Q1, M-O1, M-O2a/b, M-L1. | Commit/report, same green-or-filed-baseline rule. Stop with BLOCKED: owned two-effect route if the retained CP2a successor path cannot survive without a contract change. Also stop rather than duplicate K6 policy, fabricate Current/Ready, or require #121/#94. |
 | 4 | Exact-kind predecessor courts, residual lifecycle/atomicity, final docs/ledger and release qualification. About 120–220 court/doc lines; 0.5–1 lane-day; no stored/public enum growth expected. | M-P1/M-G1/M-A1; rerun affected CP2a appendix/currentness/receipt mutants, exact bytes/allocation, private 7/7 and complete root/Query baseline comparison. | Commit/report, green or each residual filed identical-on-master; no changed assertion without reason. Then stop for the separate S6 plan review. |
 
 Slices 1–2 install and court the real Native preparation/qualification owners
@@ -392,3 +386,25 @@ separately. Never present 64 successful effectful candidate rounds as CP2b proof
 A slope in accumulated prior work blocks the slice: fix net/pin/aggregate
 structure, not capacity or deadline. Do not claim the postponed cabinet final
 single commit from the preserved 7/7 scratch probe.
+
+## D1474 condition A: existing delivery parity
+
+A convergent owned producer with two effectful runs must first be measured on
+master, then complete through the retained CP2a successor path. New in-candidate
+verification may adopt only a genuine no-effect result for an owned route.
+The changed-assertion ledger must name each existing owned court that actually
+moves from delivery 1/1 to 0/0, using its typed in-edit own-effect evidence and
+D1459's one Native commit/real producer receipt/value-before-delivery pairing.
+Do not presume all own-superseded rows have a no-effect successor. The existing
+NRU shrink, explicit multi-writer, lone-root and D1470 ordinary scalar courts
+keep their current expectations. Before slice 3 enables repeats, inventory the
+owned born-stale cases and record any changed cases individually. An empty
+migration list is valid only if the new owned verification court supplies the
+actual newly reachable path; it is not evidence from the ordinary scalar.
+
+The default total limit also needs a release-profile edit with 4,096 actual
+handler starts, not a loop over counters. The final allowed start completes;
+the 4,097th is refused before contacting a producer. Measure the edit's bound,
+retained support/memory and elapsed time independently of the 64-effect legacy
+oscillator. If the full bounded edit cannot satisfy the interactive target,
+report the measured slope and repair its owner rather than changing the bound.

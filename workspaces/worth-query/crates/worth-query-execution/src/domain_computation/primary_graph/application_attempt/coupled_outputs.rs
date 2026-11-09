@@ -29,13 +29,23 @@ pub(in crate::domain_computation::primary_graph) struct DeclaredCoupledOutputDem
     pub(in crate::domain_computation::primary_graph) lower_source:
         fn(&dyn Any, &dyn Any) -> Result<CoupledSourceArguments, Denial>,
 }
-#[derive(Default)]
 pub struct DeclaredCoupledOutputDemands {
+    pub(in crate::domain_computation::primary_graph) round_limits: (std::num::NonZeroUsize, std::num::NonZeroUsize),
     pub(in crate::domain_computation::primary_graph) values: Vec<DeclaredCoupledOutputDemand>,
     _memory: Vec<worth_execution::ExecutionMemoryReservation>,
     failure: std::cell::RefCell<Option<Denial>>,
     declared: bool,
     pub(in crate::domain_computation::primary_graph) synchronous: Option<crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::CapturedSynchronousOutputs>,
+}
+
+impl Default for DeclaredCoupledOutputDemands {
+    fn default() -> Self {
+        Self {
+            round_limits: crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::default_producer_round_bounds(),
+            values: Vec::new(), _memory: Vec::new(), failure: std::cell::RefCell::new(None),
+            declared: false, synchronous: None,
+        }
+    }
 }
 
 impl DeclaredCoupledOutputDemands {

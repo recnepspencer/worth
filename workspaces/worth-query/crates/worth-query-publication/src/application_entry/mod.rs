@@ -163,8 +163,9 @@ pub use mandatory_review::{
     WorthQueryApplicationMandatoryReviewDenial, WorthQueryApplicationMandatoryReviewFailure,
 };
 pub use mutation::{
-    WorthQueryApplicationDiscoveredMutationOutcome, WorthQueryApplicationMutationAttemptReport,
-    WorthQueryApplicationMutationOutcome, WorthQueryApplicationPerformedMutationOutcome,
+    ApplicationProducerRoundLimits, WorthQueryApplicationDiscoveredMutationOutcome,
+    WorthQueryApplicationMutationAttemptReport, WorthQueryApplicationMutationOutcome,
+    WorthQueryApplicationPerformedMutationOutcome,
     WorthQueryApplicationProgramMigrationPreparationDenial,
     WorthQueryApplicationProgramMigrationPreparationOutcome,
     WorthQueryApplicationProgramMutationPreparation, WorthQueryApplicationProgramOutputHandle,

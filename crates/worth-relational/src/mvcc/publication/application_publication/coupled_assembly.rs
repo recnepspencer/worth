@@ -15,6 +15,8 @@ use worth_execution::ExecutionRequest;
 mod adoption;
 mod aggregate_read;
 mod completion;
+mod continuation;
+pub use continuation::RelationalCoupledProducerContinuation;
 mod contribution;
 mod source_effects;
 pub use contribution::RelationalCoupledContribution;
@@ -95,6 +97,7 @@ pub struct RelationalAuthoredCoupledCandidate<'a> {
     pub(crate) identity: &'a RelationalMutationProposalIdentity,
     pub(crate) binding: &'a BoundAuthoredCoupling,
     pub(crate) parts: Vec<CoupledPublicationPart>,
+    continuation: continuation::ContinuationState,
 }
 
 pub(crate) struct CoupledPublicationPart {

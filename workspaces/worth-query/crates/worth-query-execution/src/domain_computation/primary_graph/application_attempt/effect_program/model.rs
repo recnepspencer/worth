@@ -90,6 +90,7 @@ pub enum WorthQueryApplicationRealizedEffect {
 /// application runtime's `compare_and_commit_application` with an idempotency
 /// binding. Building it changed nothing.
 pub struct WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
+    pub(in crate::domain_computation::primary_graph) producer_round_limits: (std::num::NonZeroUsize, std::num::NonZeroUsize),
     pub(in crate::domain_computation::primary_graph) synchronous_outputs: Option<crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::CapturedSynchronousOutputs>,
     pub(in crate::domain_computation::primary_graph::application_attempt) read_set:
         WorthQueryCompleteApplicationReadSet<

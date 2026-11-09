@@ -116,6 +116,7 @@ where
         read_set.local_action_settlement = local_origin;
         let program = WorthQueryApplicationEffectProgram {
             synchronous_outputs: None,
+            producer_round_limits: crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::default_producer_round_bounds(),
             read_set,
             effects,
             conditional_definition: None,

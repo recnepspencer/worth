@@ -43,6 +43,25 @@ impl<S> WorthQueryPrimaryGraphApplicationRuntime<S> {
         );
         WorthQueryCoupledParticipantCorruptionForTest { arm }
     }
+    /// Replays a token issued from the actual Native-applied owned part.
+    #[doc(hidden)]
+    pub fn replay_next_coupled_continuation_for_test(
+        &self,
+    ) -> WorthQueryCoupledParticipantCorruptionForTest {
+        let arm = Arc::clone(
+            &self
+                .runtime
+                .primary_provider
+                .application_attempt_operation_control
+                .coupled_participant_fault,
+        );
+        assert_eq!(
+            arm.swap(4, Ordering::AcqRel),
+            0,
+            "coupled corruption is already armed"
+        );
+        WorthQueryCoupledParticipantCorruptionForTest { arm }
+    }
     /// Arms this installed receiver; the dispatcher still derives and prepares
     /// the real source, producer, predecessor, effects and read set.
     #[doc(hidden)]
