@@ -103,6 +103,13 @@ pub(crate) fn prepare_coupled_candidate(
         writer_custody::Writer::AuthoredPrefix,
         &authored_commands,
     )?;
+    let mut fresh_records = net_plan::CreatorCustody::default();
+    fresh_records.retain(
+        execution,
+        None,
+        binding.owners.source.subject(),
+        &mutation.outcome,
+    )?;
     let mut candidate = RelationalAuthoredCoupledCandidate {
         runtime: &runtime,
         transaction,
@@ -112,6 +119,7 @@ pub(crate) fn prepare_coupled_candidate(
         binding: &binding,
         parts: Vec::new(),
         continuation: continuation::ContinuationState::default(),
+        fresh_records,
     };
     if assembly
         .assemble(execution, &mut candidate)

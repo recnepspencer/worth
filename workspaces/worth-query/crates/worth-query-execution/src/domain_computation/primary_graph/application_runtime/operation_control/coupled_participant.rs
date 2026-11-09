@@ -20,7 +20,11 @@ impl Drop for WorthQueryCoupledParticipantCorruptionForTest {
 impl WorthQueryApplicationAttemptOperationControl {
     pub(in crate::domain_computation::primary_graph) fn take_coupled_participant_corruption(
         &self,
+        prepared_writers: usize,
     ) -> u8 {
+        if self.coupled_participant_fault.load(Ordering::Acquire) == 5 && prepared_writers < 2 {
+            return 0;
+        }
         self.coupled_participant_fault.swap(0, Ordering::AcqRel)
     }
 }
@@ -57,6 +61,38 @@ impl<S> WorthQueryPrimaryGraphApplicationRuntime<S> {
         );
         assert_eq!(
             arm.swap(4, Ordering::AcqRel),
+            0,
+            "coupled corruption is already armed"
+        );
+        WorthQueryCoupledParticipantCorruptionForTest { arm }
+    }
+    /// The second actual writer destructively targets the first writer's real allocation.
+    #[doc(hidden)]
+    pub fn destroy_another_writers_fresh_record_for_test(
+        &self,
+    ) -> WorthQueryCoupledParticipantCorruptionForTest {
+        self.arm_fresh_record_corruption(5)
+    }
+    /// The actual producer destructively targets its authored prefix's new source.
+    #[doc(hidden)]
+    pub fn destroy_the_authored_prefixs_fresh_record_for_test(
+        &self,
+    ) -> WorthQueryCoupledParticipantCorruptionForTest {
+        self.arm_fresh_record_corruption(6)
+    }
+    fn arm_fresh_record_corruption(
+        &self,
+        fault: u8,
+    ) -> WorthQueryCoupledParticipantCorruptionForTest {
+        let arm = Arc::clone(
+            &self
+                .runtime
+                .primary_provider
+                .application_attempt_operation_control
+                .coupled_participant_fault,
+        );
+        assert_eq!(
+            arm.swap(fault, Ordering::AcqRel),
             0,
             "coupled corruption is already armed"
         );

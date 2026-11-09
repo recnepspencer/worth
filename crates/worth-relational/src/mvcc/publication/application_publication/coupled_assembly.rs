@@ -25,6 +25,7 @@ mod disjoint_aspect_patches;
 mod disjoint_field_patches;
 mod fresh_references;
 mod local_keys;
+mod net_plan;
 mod ordinary_roles;
 mod part;
 mod part_corruption;
@@ -98,6 +99,7 @@ pub struct RelationalAuthoredCoupledCandidate<'a> {
     pub(crate) binding: &'a BoundAuthoredCoupling,
     pub(crate) parts: Vec<CoupledPublicationPart>,
     continuation: continuation::ContinuationState,
+    fresh_records: net_plan::CreatorCustody,
 }
 
 pub(crate) struct CoupledPublicationPart {

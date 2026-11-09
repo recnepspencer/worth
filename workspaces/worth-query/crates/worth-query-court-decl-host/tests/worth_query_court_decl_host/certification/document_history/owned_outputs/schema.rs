@@ -1,6 +1,8 @@
 //! Its own installed schema: model, owned member and two derived output entities.
 use super::*;
 use worth_query_decl::facade::application_schema::fragment::*;
+mod calibration;
+pub use calibration::*;
 mod cap;
 pub use cap::*;
 mod records;
@@ -104,6 +106,7 @@ impl Registration<Schema> for Actor {
 fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
+    let schema = family::convergent::declare(schema);
     let schema = synchronous_edit::reconciliation::declare(schema);
     let schema = family::ordinary_input::declare(family::decision_write::declare(
         family::decision_input::declare(schema),

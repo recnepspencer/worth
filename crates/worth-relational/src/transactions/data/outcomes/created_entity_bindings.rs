@@ -85,6 +85,11 @@ impl CommitCreatedEntityBindings {
         }
     }
 
+    /// Borrow only identities minted by this apply's allocation owner.
+    pub(crate) fn allocated_identities(&self) -> impl ExactSizeIterator<Item = EntityId> + '_ {
+        self.by_entity_identity.iter().copied()
+    }
+
     /// Exact identities allocated by this apply, including private consequences.
     /// The derived set carries the same authority as the creation correspondence.
     pub(crate) fn created_here(

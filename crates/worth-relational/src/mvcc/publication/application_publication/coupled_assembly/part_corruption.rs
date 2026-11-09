@@ -18,6 +18,49 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 .replay_continuation_probe(execution)
                 .map_err(Into::into);
         }
+        if matches!(fault, 5 | 6) {
+            let target = if fault == 6 {
+                posture
+                    .producing_meaning()
+                    .expect("actual writer route")
+                    .source_scope
+            } else {
+                let prior = self
+                    .parts
+                    .first()
+                    .and_then(|part| part.publication.owned())
+                    .ok_or_else(|| {
+                        part::reject(
+                            crate::publication::data::AuthoredRetirementRefusal::CorruptPublication,
+                            self.authored_source(),
+                        )
+                    })?;
+                let roles = match prior {
+                    RequiredOutputPublication::Birth { roles, .. }
+                    | RequiredOutputPublication::Preserve { roles, .. } => roles,
+                    _ => unreachable!("a real producer part"),
+                };
+                let role = roles
+                    .first()
+                    .expect("the actual producer has its output role");
+                match &role.target {
+                    crate::transactions::data::EntityReference::Existing(id) => *id,
+                    crate::transactions::data::EntityReference::Created(reference) => {
+                        self.mutation.outcome.created_entities.resolve(reference).ok_or_else(||
+                            part::reject(crate::publication::data::AuthoredRetirementRefusal::CorruptPublication, self.authored_source()))?
+                    }
+                }
+            };
+            let batch = batches.first_mut().expect("actual writer batch");
+            batch
+                .intents
+                .push(crate::transactions::data::MutationIntent::Entity(
+                    crate::transactions::data::EntityMutationIntent::Delete(
+                        crate::transactions::data::DeleteEntityIntent { entity_id: target },
+                    ),
+                ));
+            return self.append_publication(execution, posture, content, batches);
+        }
         let RelationalCoupledProducerPosture::Publication(mut publication) = posture else {
             return self.append_publication(execution, posture, content, batches);
         };

@@ -1,5 +1,11 @@
 //! Shared optional predecessor fixture program is declared at its real owner.
 macro_rules! producer_operation {
+    (ConvergentPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => {
+        worth_query_operation!(pub ConvergentPreserve for Schema, input InputBinding; access {
+            read_entities: [SourceEntity, $entity, Member]; read_fields: [source_key(), source_value(), $key::at(stringify!($key)), $value::at(stringify!($value)), MemberKey::at("MemberKey"), CalibrationReady::at("Ready")];
+            read_relations: [$of]; writes: [$key::at(stringify!($key)), $value::at(stringify!($value)), CalibrationReady::at("Ready")]; creates: [$entity]; links: [$of];
+        });
+    };
     (OrdinaryInputInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read OrdinaryInputInitial, $entity, $key, $value, $of); };
     (OrdinaryInputPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read OrdinaryInputPreserve, $entity, $key, $value, $of); };
     (DecisionInputInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read DecisionInputInitial, $entity, $key, $value, $of); };
@@ -26,6 +32,10 @@ macro_rules! producer_operation {
     };
 }
 macro_rules! producer_decision_dependency {
+    (ConvergentPreserve, $reader:ident) => {{
+        let member = $reader.resolve_entity(MemberKey::at("MemberKey"), "m".to_owned())?;
+        $reader.field(&member, CalibrationReady::at("Ready"))?.unwrap_or(0)
+    }};
     (OrdinaryInputInitial, $reader:ident) => { producer_decision_dependency!(@member_read $reader) };
     (OrdinaryInputPreserve, $reader:ident) => { producer_decision_dependency!(@member_read $reader) };
     (DecisionInputInitial, $reader:ident) => { producer_decision_dependency!(@member_read $reader) };
@@ -37,6 +47,10 @@ macro_rules! producer_decision_dependency {
     ($operation:ident, $reader:ident) => { 0 };
 }
 macro_rules! producer_member_target {
+    (ConvergentPreserve, $reader:ident) => {{
+        let member = $reader.resolve_entity(MemberKey::at("MemberKey"), "m".to_owned())?;
+        Some($reader.mutation_target(&member)?)
+    }};
     (DecisionWriteInitial, $reader:ident) => { producer_member_target!(@write $reader) };
     (DecisionWritePreserve, $reader:ident) => { producer_member_target!(@write $reader) };
     (@write $reader:ident) => {{
@@ -47,6 +61,10 @@ macro_rules! producer_member_target {
     ($operation:ident, $reader:ident) => { None };
 }
 macro_rules! producer_member_effect {
+    (ConvergentPreserve, $writer:ident, $decision:ident, $input:ident) => {{
+        let member = $writer.projected_entity($decision.member_target.as_ref().expect("completed calibration decision"))?;
+        $writer.write_field(&member, CalibrationReady::at("Ready"), 1)?;
+    }};
     (DecisionWriteInitial, $writer:ident, $decision:ident, $input:ident) => { producer_member_effect!(@write $writer, $decision, $input) };
     (DecisionWritePreserve, $writer:ident, $decision:ident, $input:ident) => { producer_member_effect!(@write $writer, $decision, $input) };
     (@write $writer:ident, $decision:ident, $input:ident) => {{

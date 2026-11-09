@@ -60,30 +60,24 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             &mut batches,
             roles,
         )?;
-        let before = self
-            .transaction
-            .batches()
-            .iter()
-            .map(|batch| batch.intents.len())
-            .sum::<usize>();
         self.transaction
             .attach_content(execution, content)
             .map_err(crate::content::commit_denial)?;
-        for mut batch in batches {
+        for batch in &mut batches {
             super::fresh_references::retain(
                 execution,
                 &self.mutation.outcome.created_entities,
                 &mut batch.intents,
             )?;
-            self.transaction
-                .push_batch(batch, execution.allocation_policy())
-                .map_err(|failure| TransactionCommitError::conflict(failure.into_conflict()))?;
         }
-        // Symbols discovered by a part retain the enclosing ordinary symbol
-        // round's abandon-and-retry behavior. No Native effect has published.
+        // Reserve and normalize only this incoming suffix, before it enters the
+        // overlay's index and footprint. The final C validator still sees all
+        // commands once; no prefix conflict or intent validation is relaxed.
         self.transaction
-            .reserve_preparation_client_keys(
+            .reserve_coupled_batch_keys(
+                execution,
                 &mut self.mutation.identities.symbols,
+                &batches,
                 self.runtime.config.identity.client_key_symbol_policy,
                 execution.allocation_policy(),
             )
@@ -93,11 +87,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             .with_candidate_symbols(self.mutation.candidate_symbols());
         let mut intents = self
             .transaction
-            .normalized_intents_for_merge(&runtime, execution.allocation_policy())
-            .map_err(TransactionCommitError::conflict)?
-            .into_iter()
-            .skip(before)
-            .collect::<Vec<_>>();
+            .push_normalized_coupled_batches(execution, &runtime, batches)?;
         super::fresh_references::resolve(
             execution,
             &self.mutation.outcome.created_entities,
@@ -109,6 +99,12 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             .transaction
             .build_merged_plan_for_state(&runtime, root.as_ref(), intents)
             .map_err(TransactionCommitError::conflict)?;
+        let source = publication
+            .producing_meaning()
+            .expect("admitted writer")
+            .source_scope;
+        self.fresh_records
+            .require(execution, self.parts.len(), source, &plan)?;
         let deferred_edges = super::writer_custody::require(
             execution,
             &self.binding.owners,
@@ -178,6 +174,15 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             &outcome.effect.adjacency.deltas,
             self.identity.proposed_version_id(),
         );
+        self.fresh_records.retain(
+            execution,
+            Some(self.parts.len()),
+            publication
+                .producing_meaning()
+                .expect("admitted writer")
+                .source_scope,
+            &outcome,
+        )?;
         let records = outcome.effect.publication.changed_records.clone();
         self.mutation
             .outcome

@@ -13,6 +13,12 @@ pub enum AuthoredRetirementRefusal {
         publication: crate::history::data::CommitId,
         owner: crate::identity::data::EntityId,
     },
+    ForeignFreshCoupledRecord {
+        creator: Option<usize>,
+        writer: usize,
+        owner: crate::identity::data::EntityId,
+        source: crate::identity::data::EntityId,
+    },
     MissingCoupledOwner,
     ExtraCoupledOwner,
     ForeignCoupledOwner,

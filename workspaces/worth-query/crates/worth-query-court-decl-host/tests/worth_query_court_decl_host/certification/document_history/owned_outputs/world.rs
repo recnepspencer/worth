@@ -28,6 +28,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         synchronous_edit::reconciliation::contracts(contracts)?;
         family::decision_write::contracts(contracts)?;
+        family::convergent::contracts(contracts)?;
         family::decision_input::contracts(contracts)?;
         family::ordinary_input::contracts(contracts)?;
         family::diamond::contracts(contracts)?;
@@ -66,6 +67,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         setup.handler::<member_edit::Binding, _>(member_edit::Handler)?;
         setup.handler::<member_delete::Binding, _>(member_delete::Handler)?;
         family::decision_write::install(setup)?;
+        family::convergent::install(setup)?;
         family::decision_input::install(setup)?;
         family::ordinary_input::install(setup)?;
         family::diamond::install(setup)?;

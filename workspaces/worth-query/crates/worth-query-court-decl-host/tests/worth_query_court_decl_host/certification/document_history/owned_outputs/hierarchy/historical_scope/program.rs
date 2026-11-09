@@ -93,6 +93,7 @@ impl ApplicationProgramDefinition<Schema> for Program {
             super::super::super::predecessor::program::feature(),
             family::diamond::feature(),
             family::decision_input::feature(),
+            family::convergent::feature(),
             family::ordinary_input::feature(),
             family::decision_write::feature(),
             synchronous_edit::reconciliation::feature(),

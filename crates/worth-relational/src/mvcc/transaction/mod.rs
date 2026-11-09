@@ -6,6 +6,7 @@ mod admission;
 mod bound;
 mod commit;
 pub(crate) mod commit_plan;
+mod coupled_batch;
 mod footprint;
 mod footprint_client_keys;
 mod footprint_staging;
