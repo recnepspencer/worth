@@ -408,3 +408,39 @@ the 4,097th is refused before contacting a producer. Measure the edit's bound,
 retained support/memory and elapsed time independently of the 64-effect legacy
 oscillator. If the full bounded edit cannot satisfy the interactive target,
 report the measured slope and repair its owner rather than changing the bound.
+
+## D1474 implementation checkpoint: Native read locality
+
+The preparation foundation now retains each immutable applied pin and captures
+its successor from only the incoming sparse writer image. Allocation bindings
+and mutation journals insert incoming entries instead of rebuilding their union.
+The original C-to-final validator and publication owners remain authoritative.
+
+Applied field lookup now derives data entries from the actual selected C
+index generation through intervening applied deltas. Each image retains only
+its own entity IDs and physical root. The nearest cached entry root is shared;
+key differences and posting updates use the same Native maintenance functions
+as committed indexes. Persistent cache snapshots permit funding and request
+checks before traversal, without holding a cache lock. Retained entries keep
+their original generation's funding alive. This issues no generation, Current
+observation, publication, or Ready settlement, and changes no stored format.
+
+The new-source hot/worker courts kill omission of the actual field delta at
+runtime; the source edit cannot resolve its new ModelKey. SHA-256 restoration
+is recorded externally. The restored synchronous owner suite remains 137 green
+with the two authorized ignored comparison courts; no oracle was changed.
+
+This is a foundation checkpoint, not completion of slice 2. Aggregate read
+preparation still copies the cumulative business plan and recomputes unrelated
+changed cohorts. Its next cutover must stay at the existing cohort/transition
+owners, compute only the requested complete C/D overlap granule, preserve the
+per-delta derived-law checks, and leave final private consequences to the one
+complete C-to-final admission. Repeat dispatch remains disabled until the
+all-round support and final-only receipt handoff are complete together.
+
+The index/pin foundation is larger than the initial line estimate. Including
+aggregate locality, revise slice 2's estimate to 900–1,300 production and
+220–380 court lines, split by the existing owners at 400 lines/file or less;
+2–3 lane-days and an unmeasured 80–180KiB optimized-text estimate. This is not
+a size exemption or a measured release result. Cancellation/elision remains
+postponed under #119/#100; this increase does not reopen that scope.

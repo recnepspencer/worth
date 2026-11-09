@@ -1,4 +1,4 @@
-//! Finite predecessor postings plus the actual Native applied delta.
+//! Native data entries derived from a selected C generation through applied deltas.
 //! No proposed index generation or Current entity identity is fabricated.
 use super::PreparedEntityFieldLookup;
 use crate::execution::request_stage::checkpoint;
@@ -30,6 +30,7 @@ pub struct AppliedEntityFieldLookupOutcome {
     entities: Vec<EntityId>,
     overflowed: bool,
     _memory: Option<ExecutionMemoryReservation>,
+    _key_memory: ExecutionMemoryReservation,
     examined: usize,
 }
 impl AppliedEntityFieldLookupOutcome {
@@ -79,120 +80,174 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
         if candidate_limit == 0 || candidate_limit == usize::MAX {
             return Err(Denial::InvalidCandidateLimit);
         }
-        let (before_root, changed) = self.changed_entities();
+        let before_root = self.applied_before_root();
         if predecessor.source_root() != (self.runtime_instance_id(), before_root) {
             return Err(Denial::ForeignPredecessor);
         }
-        let limit = changed
-            .len()
-            .checked_add(candidate_limit)
-            .filter(|n| *n < usize::MAX)
-            .ok_or(Denial::Execution(Cause::ChargedBytesOverflow))?;
+        crate::execution::check_request(execution).map_err(Denial::Execution)?;
+        let seed = predecessor.applied_generation();
+        let entries = self
+            .applied_field_image()
+            .expect("Native applied pin carries its field image")
+            .entries(
+                execution,
+                (predecessor.index_id(), seed.generation_id),
+                predecessor.field_locator(),
+                seed,
+            )
+            .map_err(|cause| maintenance_denial(predecessor.index_id(), cause))?;
         let key_bytes =
             crate::storage::data::AuthoritativeFieldComparisonKey::required_encoded_capacity_bytes(
                 expected,
             )
             .ok_or(Denial::Execution(Cause::ChargedBytesOverflow))?;
-        let slots = limit
-            .checked_mul(3)
-            .and_then(|n| {
-                n.checked_add(
-                    limit
-                        .checked_add(changed.len())?
-                        .checked_add(candidate_limit)?,
-                )
-            })
-            .ok_or(Denial::Execution(Cause::ChargedBytesOverflow))?;
-        let bytes = slots
-            .checked_mul(std::mem::size_of::<EntityId>())
-            .map(|n| n as u64)
-            .and_then(|n| n.checked_add(key_bytes.checked_mul(2)?))
-            .ok_or(Denial::Execution(Cause::ChargedBytesOverflow))?;
-        let memory = ExecutionMemoryReservation::reserve_in_scope(
+        let key_memory = ExecutionMemoryReservation::reserve_in_scope(
             crate::authority::commit::pipeline::request_lease(execution),
-            bytes,
+            key_bytes,
         )
         .map_err(|cause| Denial::Execution(crate::execution::denial::lease_denial(cause)))?;
-        let old = predecessor
-            .execute_prepared_entity_field_lookup(expected, limit, parity, execution, || {
-                Ok::<_, std::convert::Infallible>(())
-            })
-            .map_err(|stop| match stop {
-                Stop::Lookup(cause) => Denial::PredecessorIndex(cause),
-                Stop::Admission(never) => match never {},
-                Stop::ExactBasisRequired => Denial::ExactBasisRequired,
-                Stop::AccountingOverflow => Denial::Execution(Cause::ChargedBytesOverflow),
-            })?;
-        // At most D entities changed. More than D+L predecessor matches
-        // leave more than L matches even when every changed row stopped matching.
-        if old.overflowed() {
-            return Ok(AppliedEntityFieldLookupOutcome {
-                qualification: self.candidate_identity().qualification(),
-                entities: Vec::new(),
-                overflowed: true,
-                _memory: Some(memory),
-                examined: old.examined_entry_count(),
-            });
-        }
-        let result = execution
+        execution
             .run_native_with_checkpoint(|context| {
                 checkpoint(
                     context,
-                    (old.candidate_entity_ids().len() + changed.len()) as u64,
+                    key_bytes.saturating_add(
+                        (usize::BITS - entries.entries.len().max(1).leading_zeros()) as u64,
+                    ),
                 )
-                .map_err(|cause| Denial::Execution(cause.into()))?;
-                let mut frontier = Vec::new();
-                frontier
-                    .try_reserve_exact(old.candidate_entity_ids().len() + changed.len())
-                    .map_err(|_| Denial::Execution(Cause::AllocationFailed))?;
-                frontier.extend_from_slice(old.candidate_entity_ids());
-                frontier.extend_from_slice(changed);
-                let comparisons = frontier
-                    .len()
-                    .saturating_mul((usize::BITS - frontier.len().max(1).leading_zeros()) as usize);
-                checkpoint(context, comparisons as u64)
-                    .map_err(|cause| Denial::Execution(cause.into()))?;
-                frontier.sort_unstable();
-                frontier.dedup();
-                let view = self.project_candidate();
-                let mut entities = Vec::new();
-                entities
-                    .try_reserve_exact(candidate_limit.min(frontier.len()))
-                    .map_err(|_| Denial::Execution(Cause::AllocationFailed))?;
-                let mut overflowed = false;
-                let mut examined = old.examined_entry_count();
-                for entity in frontier {
-                    checkpoint(context, key_bytes.saturating_mul(2).saturating_add(1))
-                        .map_err(|cause| Denial::Execution(cause.into()))?;
-                    examined += 1;
-                    let matched = super::field_candidate_comparison::borrowed_matches(
-                        execution,
-                        predecessor.index_id(),
-                        &view,
-                        entity,
-                        predecessor.field_locator(),
-                        expected,
-                    )
-                    .map_err(Denial::PredecessorIndex)?;
-                    if matched.is_some_and(|(_, kind, matches)| {
-                        kind == predecessor.entity_kind() && matches
-                    }) {
-                        if entities.len() == candidate_limit {
-                            overflowed = true;
-                            break;
-                        }
-                        entities.push(entity);
-                    }
-                }
-                Ok(AppliedEntityFieldLookupOutcome {
-                    qualification: self.candidate_identity().qualification(),
-                    entities,
-                    overflowed,
-                    _memory: Some(memory),
-                    examined,
-                })
             })
+            .map_err(|cause| Denial::Execution(cause.into()))?
+            .0
             .map_err(|cause| Denial::Execution(cause.into()))?;
-        result.0
+        let key =
+            crate::storage::data::AuthoritativeFieldComparisonKey::from_aspect_value(expected);
+        let mut read = AppliedCollectionRead {
+            pin: self,
+            predecessor,
+            expected,
+            memory: None,
+            execution,
+        };
+        let (entities, examined, overflowed) = super::entity_field_collection::collect(
+            execution,
+            entries.entries.get(&key),
+            predecessor.index_id(),
+            predecessor.entity_kind(),
+            candidate_limit,
+            &mut read,
+        )
+        .map_err(map_stop)?;
+        // Applied reads have never minted a committed-generation parity claim.
+        let _ = parity;
+        Ok(AppliedEntityFieldLookupOutcome {
+            qualification: self.candidate_identity().qualification(),
+            entities,
+            examined,
+            overflowed,
+            _memory: read.memory,
+            _key_memory: key_memory,
+        })
     }
+}
+
+struct AppliedCollectionRead<'a, 'scope, 'request> {
+    execution: &'a worth_execution::ExecutionRequest<'scope, 'request>,
+    pin: &'a RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+    predecessor: &'a PreparedEntityFieldLookup,
+    expected: &'a AspectValue,
+    memory: Option<ExecutionMemoryReservation>,
+}
+impl super::entity_field_collection::EntityFieldCollectionRead<std::convert::Infallible>
+    for AppliedCollectionRead<'_, '_, '_>
+{
+    fn prepare_results(&mut self, examined: usize) -> Result<(), Stop<std::convert::Infallible>> {
+        // Reservation is made at compare entry before collect allocates either Vec.
+        let bytes = examined
+            .checked_mul(2 * std::mem::size_of::<EntityId>())
+            .ok_or(Stop::AccountingOverflow)?;
+        self.memory = Some(
+            ExecutionMemoryReservation::reserve_in_scope(
+                crate::authority::commit::pipeline::request_lease(self.execution),
+                bytes as u64,
+            )
+            .map_err(|cause| {
+                lookup_execution(
+                    self.predecessor.index_id(),
+                    crate::execution::denial::lease_denial(cause),
+                )
+            })?,
+        );
+        Ok(())
+    }
+    fn compare(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        entity: EntityId,
+        previous: usize,
+    ) -> Result<Option<(crate::identity::data::KindId, bool)>, Stop<std::convert::Infallible>> {
+        let index = self.predecessor.index_id();
+        execution
+            .run_native_with_checkpoint(|context| checkpoint(context, previous as u64 + 1))
+            .map_err(|cause| lookup_execution(index, cause.into()))?
+            .0
+            .map_err(|cause| lookup_execution(index, cause.into()))?;
+        super::field_candidate_comparison::borrowed_matches(
+            execution,
+            index,
+            &self.pin.project_candidate(),
+            entity,
+            self.predecessor.field_locator(),
+            self.expected,
+        )
+        .map(|answer| answer.map(|(_, kind, matches)| (kind, matches)))
+        .map_err(Stop::Lookup)
+    }
+}
+
+fn lookup_execution(
+    index: crate::indexes::data::DerivedIndexId,
+    cause: Cause,
+) -> Stop<std::convert::Infallible> {
+    Stop::Lookup(BoundedEntityFieldLookupDenial::new(
+        crate::indexes::data::BoundedEntityFieldLookupDenialKind::Execution(cause),
+        index,
+    ))
+}
+fn map_stop(stop: Stop<std::convert::Infallible>) -> AppliedEntityFieldLookupDenial {
+    match stop {
+        Stop::Lookup(cause) => AppliedEntityFieldLookupDenial::PredecessorIndex(cause),
+        Stop::Admission(never) => match never {},
+        Stop::ExactBasisRequired => AppliedEntityFieldLookupDenial::ExactBasisRequired,
+        Stop::AccountingOverflow => {
+            AppliedEntityFieldLookupDenial::Execution(Cause::ChargedBytesOverflow)
+        }
+    }
+}
+
+// Data-entry preparation preserves request failures; index incoherence remains
+// the existing precise, index-naming lookup refusal, not a Current fallback.
+fn maintenance_denial(
+    index: crate::indexes::data::DerivedIndexId,
+    cause: crate::indexes::data::DerivedIndexMaintenanceDenial,
+) -> AppliedEntityFieldLookupDenial {
+    use crate::indexes::data::{
+        BoundedEntityFieldLookupDenialKind as K, DerivedIndexMaintenanceDenialKind as M,
+    };
+    use AppliedEntityFieldLookupDenial as D;
+    let kind = match cause.kind {
+        M::Execution(cause) => return D::Execution(cause),
+        M::WorkBudgetExceeded => return D::Execution(Cause::WorkExhausted),
+        M::ForeignCandidate | M::BeforeRootMismatch => return D::ForeignPredecessor,
+        M::Basis(_)
+        | M::SnapshotUnavailable
+        | M::CommitMismatch
+        | M::CandidateUnavailable
+        | M::CandidateLifetimeExpired { .. } => return D::ExactBasisRequired,
+        M::IndexUnavailable(_) => K::IndexNotInstalled,
+        M::GenerationKindMismatch(_) => K::WrongIndexKind,
+        M::ColdReconstructionRequired => K::ExactGenerationUnavailable,
+        M::PriorEntryMismatch
+        | M::CandidateIndexesAlreadyPrepared
+        | M::GenerationIdentityExhausted => K::CorruptIndexEntries,
+    };
+    D::PredecessorIndex(BoundedEntityFieldLookupDenial::new(kind, index))
 }

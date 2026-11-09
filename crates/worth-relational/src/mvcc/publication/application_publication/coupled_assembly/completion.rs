@@ -120,6 +120,7 @@ pub(crate) fn prepare_coupled_candidate(
         parts: Vec::new(),
         continuation: continuation::ContinuationState::default(),
         fresh_records,
+        read: std::cell::RefCell::new(None),
     };
     if assembly
         .assemble(execution, &mut candidate)
@@ -167,7 +168,8 @@ pub(crate) fn prepare_coupled_candidate(
         &prepared.schema_authority,
         selected.selected(),
         identity,
-        mutation.outcome.effect.clone(),
+        &mutation.outcome.effect.publication.changed_records,
+        &mutation.outcome.effect.adjacency.deltas,
         None,
     );
     mutation.coupled_publication = Some(RequiredOutputPublicationAdmission {

@@ -58,12 +58,11 @@ impl RelationalAppliedCandidateReadIdentity {
 }
 
 impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
-    pub(crate) fn changed_entities(&self) -> (u64, &[crate::identity::data::EntityId]) {
-        let changes = self
-            .applied_changes
+    pub(crate) fn applied_before_root(&self) -> u64 {
+        self.applied_changes
             .as_ref()
-            .expect("Native issued an applied read");
-        (changes.before_root, &changes.entities)
+            .expect("Native issued an applied read")
+            .before_root
     }
 
     pub const fn candidate_identity(&self) -> &RelationalAppliedCandidateReadIdentity {
@@ -86,23 +85,55 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
         symbols: &PendingSymbolMeanings,
         changed_records: &[crate::transactions::data::RecordRef],
         aggregate: Option<crate::aggregate_identity::AggregateCandidateRead>,
+        previous: Option<&Self>,
     ) -> Result<Self, TransactionCommitError> {
+        let previous_root = if let Some(previous) = previous {
+            let CandidateReadPhase::AssemblyRevision(prior_revision) = previous.snapshot.phase
+            else {
+                return Err(crate::mvcc::origin_denial(
+                    "prepared read is not an assembly predecessor",
+                ));
+            };
+            if !identity.same_proposal_sequence(&previous.snapshot.proposal)
+                || prior_revision.checked_add(1) != Some(revision)
+            {
+                return Err(crate::mvcc::origin_denial(
+                    "applied revision has a foreign or stale predecessor",
+                ));
+            }
+            previous.resident_basis().root()
+        } else {
+            &basis.inner.root
+        };
         let answer = execution
             .run_native_with_checkpoint(|context| {
                 // The ordinary region owner hashes and captures the touched image.
                 // Charge its slot traversal before entering that bounded operation.
                 for id in state.partition_ids_iter() {
-                    let slots = state.get_current_partition(id).map_or(0, |p| {
-                        p.entity_arena()
-                            .slot_count()
-                            .saturating_add(p.relation_arena().slot_count())
-                    });
+                    let slots = if state.clone_mode()
+                        == crate::storage::overlay::PartitionCloneMode::GraphSparseEntities
+                    {
+                        state.mutation_journal().get(&id).map_or(0, |journal| {
+                            journal
+                                .entity_slots
+                                .len()
+                                .saturating_add(journal.relation_slots.len())
+                                .saturating_add(journal.adjacency_slots.len())
+                                .saturating_add(journal.reverse_adjacency_slots.len())
+                        })
+                    } else {
+                        state.get_current_partition(id).map_or(0, |p| {
+                            p.entity_arena()
+                                .slot_count()
+                                .saturating_add(p.relation_arena().slot_count())
+                        })
+                    };
                     checkpoint(context, slots.saturating_add(1) as u64).map_err(request_stop)?;
                 }
                 let binding = symbols.binding();
                 let root = runtime
                     .history
-                    .capture_applied_candidate_root(execution, &basis.inner.root, state, &binding)
+                    .capture_applied_candidate_root(execution, previous_root, state, &binding)
                     .map_err(|failure| {
                         crate::mvcc::origin_denial(format!(
                             "applied candidate root capture failed: {failure:?}"
@@ -119,6 +150,7 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
                     root,
                     changed_records,
                     aggregate,
+                    previous.and_then(|read| read.applied_changes.as_deref()),
                 )
             })
             .map_err(request_stop)?;
@@ -144,6 +176,7 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
             root,
             changed_records,
             None,
+            None,
         )
     }
 
@@ -155,6 +188,7 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
         root: Arc<crate::branch::RelationalBranchRoot>,
         changed_records: &[crate::transactions::data::RecordRef],
         aggregate: Option<crate::aggregate_identity::AggregateCandidateRead>,
+        previous_changes: Option<&AppliedReadChanges>,
     ) -> Result<Self, TransactionCommitError> {
         let schema = root.schema_authority();
         let evidence_basis = match identity.phase {
@@ -179,6 +213,15 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
             descriptor_semantics_version: schema.descriptor_semantics_version(),
             evidence_basis,
         };
+        let fields = crate::indexes::AppliedFieldImage::capture(
+            execution,
+            Arc::clone(&basis.inner.root),
+            Arc::clone(&root),
+            identity.proposal.proposed_version_id(),
+            changed_records,
+            previous_changes.map(|changes| Arc::clone(&changes.fields)),
+        )
+        .map_err(request_stop)?;
         let source = crate::visibility::snapshot_states::VisibilitySnapshotBasis::from_applied_root(
             basis.identity().branch_id().clone(),
             identity.proposal.proposed_version_id(),
@@ -186,8 +229,13 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
         );
         let resident = ResidentVisibilitySnapshotBasis::admit(source, execution, &services.symbols)
             .map_err(request_stop)?;
-        let applied_changes =
-            changes::capture(execution, basis.inner.root.id(), changed_records, aggregate)?;
+        let applied_changes = changes::capture(
+            execution,
+            basis.inner.root.id(),
+            aggregate,
+            previous_changes,
+            fields,
+        )?;
         Ok(Self {
             applied_changes: Some(applied_changes),
             current_version: identity.proposal.proposed_version_id(),

@@ -3,7 +3,7 @@ mod symbol_admission;
 use super::changes::AggregateChanges;
 use super::preparation::{PreparedAggregateArtifact, PreparedConsequences};
 use super::projection::AggregateProjection;
-use crate::authority::mutation::MutationEffect;
+use crate::authority::mutation::AdjacencyDelta;
 use crate::branch::{
     RelationalBranchRootSchemaAuthority, SelectedRelationalBranchRead,
     SelectedRelationalBranchState,
@@ -11,6 +11,7 @@ use crate::branch::{
 use crate::mvcc::{RelationalMaterializationTransactionMode, RelationalMutationProposalIdentity};
 use crate::schema::data::AggregateIdentityContractDeclaration;
 use crate::storage::overlay::WorkingState;
+use crate::transactions::data::RecordRef;
 use crate::transactions::data::{
     CommitConflict, ConflictClass, MergedCommitPlan, TransactionCommitError,
 };
@@ -50,7 +51,8 @@ impl AggregateProposal {
         authority: &RelationalBranchRootSchemaAuthority,
         selected: &SelectedRelationalBranchState,
         identity: &RelationalMutationProposalIdentity,
-        effect: MutationEffect,
+        records: &[RecordRef],
+        adjacency: &[AdjacencyDelta],
         materialization: Option<RelationalMaterializationTransactionMode>,
     ) -> Option<Self> {
         let registry = authority.registry();
@@ -68,7 +70,7 @@ impl AggregateProposal {
             selected: selected.clone(),
             changes: materialization
                 .is_none()
-                .then(|| AggregateChanges::from_applied(effect)),
+                .then(|| AggregateChanges::from_applied(records, adjacency)),
             state: Mutex::new(ArtifactState::Uninitialized),
         })
     }

@@ -10,6 +10,7 @@ pub use access::{
 mod authority;
 #[cfg(test)]
 pub(crate) use authority::at_next_charges;
+pub(crate) use authority::AppliedFieldImage;
 pub(crate) use authority::{PreparedCandidateIndexPublication, PreparedForkIndexSelection};
 pub mod data;
 mod projected_field_values;

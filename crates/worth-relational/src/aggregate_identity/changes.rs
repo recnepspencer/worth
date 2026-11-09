@@ -1,5 +1,5 @@
-//! The actual business interpreter's cohort-relevant output, moved without copying.
-use crate::authority::mutation::{AdjacencyDelta, MutationEffect};
+//! Retain only the actual business interpreter's cohort-relevant output.
+use crate::authority::mutation::AdjacencyDelta;
 use crate::transactions::data::RecordRef;
 
 pub(super) struct AggregateChanges {
@@ -8,10 +8,10 @@ pub(super) struct AggregateChanges {
 }
 
 impl AggregateChanges {
-    pub(super) fn from_applied(effect: MutationEffect) -> Self {
+    pub(super) fn from_applied(records: &[RecordRef], adjacency: &[AdjacencyDelta]) -> Self {
         Self {
-            adjacency: effect.adjacency.deltas,
-            records: effect.publication.changed_records,
+            adjacency: adjacency.to_vec(),
+            records: records.to_vec(),
         }
     }
 

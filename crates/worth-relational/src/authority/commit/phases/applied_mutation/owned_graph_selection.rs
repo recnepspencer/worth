@@ -75,7 +75,8 @@ pub(crate) fn apply(
         schema,
         selected_state.selected(),
         identity,
-        outcome.effect.clone(),
+        &outcome.effect.publication.changed_records,
+        &outcome.effect.adjacency.deltas,
         None,
     );
     Ok(AppliedMutationDraft {

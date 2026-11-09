@@ -74,6 +74,32 @@ pub(super) fn refresh(
         .map(|change| super::field_changes::FieldChanges::prepare(change, routing, work))
         .transpose()?
         .flatten();
+    collect_changes(
+        execution,
+        pending,
+        routing,
+        patch_changes,
+        cold_changes,
+        before,
+        after,
+        exact.as_ref(),
+        work,
+    )?;
+    apply_changes(pending, work)
+}
+
+/// Applied and committed images share the same routing and key difference owner.
+pub(super) fn collect_changes(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    pending: &mut [PendingField],
+    routing: &crate::indexes::data::InstalledIndexRouting,
+    patch_changes: Option<&ChangedRecords>,
+    cold_changes: Option<&ChangedRecords>,
+    before: Option<&IndexRootView>,
+    after: &IndexRootView,
+    exact: Option<&super::field_changes::FieldChanges>,
+    work: &mut MaintenanceWork,
+) -> Result<(), Denial> {
     let mut positions = BTreeMap::new();
     for (position, field) in pending.iter().enumerate() {
         let index = match field {
@@ -91,7 +117,7 @@ pub(super) fn refresh(
             pending,
             routing,
             &positions,
-            if patch { exact.as_ref() } else { None },
+            if patch { exact } else { None },
             patch,
             &changes.entities,
             old,
@@ -103,7 +129,7 @@ pub(super) fn refresh(
             pending,
             routing,
             &positions,
-            if patch { exact.as_ref() } else { None },
+            if patch { exact } else { None },
             patch,
             &changes.relations,
             old,
@@ -111,6 +137,13 @@ pub(super) fn refresh(
             work,
         )?;
     }
+    Ok(())
+}
+
+pub(super) fn apply_changes(
+    pending: &mut [PendingField],
+    work: &mut MaintenanceWork,
+) -> Result<(), Denial> {
     for field in pending {
         work.prepare(1, 0)?;
         match field {
@@ -193,24 +226,7 @@ fn refresh_entities(
                 continue;
             }
             work.prepare(1, 0)?;
-            let (old_key, new_key) = (
-                super::field_keys::entity(execution, before, *id, locator, work)?,
-                super::field_keys::entity(execution, Some(after), *id, locator, work)?,
-            );
-            prepare_key_comparison(
-                old_key.as_ref().map(|(key, _)| key),
-                new_key.as_ref().map(|(key, _)| key),
-                work,
-            )?;
-            if old_key == new_key {
-                continue;
-            }
-            if let Some((key, record_id)) = old_key {
-                queue(edits, key, record_id, false, work)?;
-            }
-            if let Some((key, record_id)) = new_key {
-                queue(edits, key, record_id, true, work)?;
-            }
+            super::field_delta::entity_keys(execution, *id, locator, before, after, edits, work)?;
         }
     }
     Ok(())
@@ -271,36 +287,17 @@ fn refresh_relations(
                 continue;
             }
             if let Some((key, record_id)) = old_key {
-                queue(edits, key, record_id, false, work)?;
+                super::field_delta::queue(edits, key, record_id, false, work)?;
             }
             if let Some((key, record_id)) = new_key {
-                queue(edits, key, record_id, true, work)?;
+                super::field_delta::queue(edits, key, record_id, true, work)?;
             }
         }
     }
     Ok(())
 }
 
-fn queue<R>(
-    edits: &mut BTreeMap<AuthoritativeFieldComparisonKey, Vec<PendingEdit<R>>>,
-    key: AuthoritativeFieldComparisonKey,
-    row: R,
-    insert: bool,
-    work: &mut MaintenanceWork,
-) -> Result<(), Denial> {
-    work.charge(1)?;
-    work.ordered::<AuthoritativeFieldComparisonKey, Vec<PendingEdit<R>>>(
-        edits.len(),
-        key.canonical_value_bytes().len() + 1,
-        0,
-    )?;
-    let operations = edits.entry(key).or_default();
-    work.grow_vec(operations)?;
-    operations.push(PendingEdit { row, insert });
-    Ok(())
-}
-
-fn prepare_key_comparison(
+pub(super) fn prepare_key_comparison(
     old: Option<&AuthoritativeFieldComparisonKey>,
     new: Option<&AuthoritativeFieldComparisonKey>,
     work: &mut MaintenanceWork,

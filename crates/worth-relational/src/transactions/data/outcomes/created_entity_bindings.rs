@@ -28,7 +28,7 @@ impl CommitCreatedEntityBindings {
     /// Adopt correspondence minted by the same commit's private consequence apply.
     pub(crate) fn append_owned(
         &mut self,
-        mut generated: Self,
+        generated: Self,
     ) -> Result<(), crate::transactions::data::CommitConflict> {
         if generated
             .by_exact_reference
@@ -47,12 +47,17 @@ impl CommitCreatedEntityBindings {
                 },
             ));
         }
-        self.by_entity_identity
-            .append(&mut generated.by_entity_identity);
-        self.by_exact_reference
-            .append(&mut generated.by_exact_reference);
-        self.by_stable_reference
-            .append(&mut generated.by_stable_reference);
+        for entity in generated.by_entity_identity {
+            self.by_entity_identity.insert(entity);
+        }
+        // Each incoming binding pays only for its own tree path. BTreeMap::append
+        // rebuilds a sorted union and revisits the complete accumulated prefix.
+        for (reference, id) in generated.by_exact_reference {
+            self.by_exact_reference.insert(reference, id);
+        }
+        for (reference, id) in generated.by_stable_reference {
+            self.by_stable_reference.insert(reference, id);
+        }
         Ok(())
     }
 

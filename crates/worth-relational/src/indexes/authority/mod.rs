@@ -15,6 +15,7 @@ mod commit_build;
 mod diagnostics;
 mod discard;
 mod maintenance;
+pub(crate) use maintenance::AppliedFieldImage;
 mod recovery_build;
 #[cfg(test)]
 pub(crate) use maintenance::charge_rendezvous::at_next_charges;

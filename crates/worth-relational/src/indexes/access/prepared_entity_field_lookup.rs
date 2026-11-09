@@ -28,6 +28,9 @@ pub struct PreparedEntityFieldLookup {
 }
 
 impl PreparedEntityFieldLookup {
+    pub(super) fn applied_generation(&self) -> &Arc<DerivedIndexGeneration> {
+        &self.generation
+    }
     pub(super) fn source_root(&self) -> (u64, u64) {
         (self.runtime_identity, self.basis.root().id())
     }

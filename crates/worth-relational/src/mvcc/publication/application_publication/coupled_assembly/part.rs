@@ -199,12 +199,16 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             .preparation_telemetry
             .accumulate(outcome.preparation_telemetry);
         self.mutation.outcome.effect.accumulate(outcome.effect);
+        // Retain only this part's actual sparse state for the next physical pin.
+        // Applying it over the previous D reuses the ordinary root-region owner.
+        let delta_state = state.clone();
         self.mutation.state.adopt_sequential_apply(state);
         self.mutation.aggregate = crate::aggregate_identity::AggregateProposal::capture(
             &self.prepared.schema_authority,
             &self.prepared.selected_branch_state,
             self.identity,
-            self.mutation.outcome.effect.clone(),
+            &self.mutation.outcome.effect.publication.changed_records,
+            &self.mutation.outcome.effect.adjacency.deltas,
             None,
         );
         let ordinary_ids = publication
@@ -216,6 +220,20 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             commands: plan,
             records,
         });
+        let latest = self.parts.last().expect("the actual part just appended");
+        let successor = RelationalPinnedRead::capture_applied(
+            execution,
+            self.runtime,
+            &self.binding.owners.before,
+            self.identity,
+            self.parts.len() as u64,
+            &delta_state,
+            self.mutation.candidate_symbols(),
+            &latest.records,
+            self.aggregate_read(execution)?,
+            Some(&latest.input),
+        )?;
+        self.read.replace(Some(successor));
         Ok(())
     }
 }

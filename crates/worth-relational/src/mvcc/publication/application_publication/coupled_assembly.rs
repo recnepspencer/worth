@@ -100,6 +100,7 @@ pub struct RelationalAuthoredCoupledCandidate<'a> {
     pub(crate) parts: Vec<CoupledPublicationPart>,
     continuation: continuation::ContinuationState,
     fresh_records: net_plan::CreatorCustody,
+    read: std::cell::RefCell<Option<RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>>>,
 }
 
 pub(crate) struct CoupledPublicationPart {
@@ -169,7 +170,16 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>, TransactionCommitError>
     {
-        RelationalPinnedRead::capture_applied(
+        execution
+            .run_native_with_checkpoint(|context| {
+                checkpoint(context, 1).map_err(custody::execution_stop)
+            })
+            .map_err(custody::execution_stop)?
+            .0?;
+        if let Some(read) = self.read.borrow().as_ref() {
+            return Ok(read.clone());
+        }
+        let read = RelationalPinnedRead::capture_applied(
             execution,
             self.runtime,
             &self.binding.owners.before,
@@ -179,7 +189,10 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             self.mutation.candidate_symbols(),
             &self.mutation.outcome.effect.publication.changed_records,
             self.aggregate_read(execution)?,
-        )
+            None,
+        )?;
+        self.read.replace(Some(read.clone()));
+        Ok(read)
     }
 }
 
