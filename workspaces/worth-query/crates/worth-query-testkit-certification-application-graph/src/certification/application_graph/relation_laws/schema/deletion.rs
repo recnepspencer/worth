@@ -14,6 +14,7 @@ impl LawPolicy for DeletionProtected {
     const INTEGRITY: ApplicationRelationIntegrity =
         ApplicationRelationIntegrity::same_context_unbounded_retain_dangling();
     const FEEDS_INTEGRITY: ApplicationRelationIntegrity = ApplicationRelationIntegrity {
+        cardinality: ApplicationRelationCardinality::new(Some(1), Some(1), None, None, None, None),
         deletion: ApplicationRelationDeletionPolicy::RejectDeleteWithLiveRelations,
         ..ApplicationRelationIntegrity::same_context_unbounded_retain_dangling()
     };
