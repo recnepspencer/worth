@@ -35,10 +35,14 @@ pub fn declare(
 }
 pub fn configure(
     setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
-    extra_member: bool,
+    fault: world::Fault,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
     setup.handler::<links::Binding, _>(links::Handler)?;
     setup.handler::<CreateBinding, _>(creation::Handler)?;
-    setup.handler::<RestoreBinding, _>(creation::Handler)?;
-    setup.handler::<RetireBinding, _>(retirement::Handler { extra_member })
+    setup.handler::<RestoreBinding, _>(creation::RestorationHandler {
+        omit_anchor: fault == world::Fault::OmitRestoredAnchor,
+    })?;
+    setup.handler::<RetireBinding, _>(retirement::Handler {
+        retain_anchor: fault == world::Fault::RetainAuthoredAnchor,
+    })
 }

@@ -1,7 +1,7 @@
 //! Native independently compares these submitted roles to live owner adjacency.
 use super::*;
 pub struct Handler {
-    pub extra_member: bool,
+    pub retain_anchor: bool,
 }
 pub fn observe<B: ApplicationMutationBinding<Schema>>(
     reader: &mut DecisionReader<'_, '_, '_, Schema, B>,
@@ -62,6 +62,7 @@ where
 pub fn graph<B, Root, Members>(
     writer: &mut CandidateWriter<'_, Schema, B>,
     decision: Retirement,
+    retire_anchor: bool,
 ) -> Result<AnchorTarget, WorthQueryApplicationAttemptDenial>
 where
     B: ApplicationMutationBinding<Schema>,
@@ -101,8 +102,10 @@ where
             writer.retire_member::<Members>(&format!("repeated-{index}:{key}"), &member)?;
         }
     }
-    writer.delete_entity(Source::reference(), &root)?;
-    writer.retire_output::<Root>(&root)?;
+    if retire_anchor {
+        writer.delete_entity(Source::reference(), &root)?;
+        writer.retire_output::<Root>(&root)?;
+    }
     Ok(decision.scope)
 }
 impl OperationHandler<Schema, RetireBinding> for Handler {
@@ -130,24 +133,7 @@ impl OperationHandler<Schema, RetireBinding> for Handler {
         writer: &mut CandidateWriter<'_, Schema, RetireBinding>,
     ) -> HandlerResult<edit::Edited, edit::Denial> {
         let result = (|| {
-            let scope = graph::<_, Retired, RetiredMembers>(writer, target)?;
-            if self.extra_member {
-                let parent = writer.projected_entity(&scope)?;
-                let extra = writer.create_entity_in_context(
-                    &parent,
-                    Member::reference(),
-                    WorthQueryApplicationEntityKey::new("extra-member").unwrap(),
-                )?;
-                writer.initialize_field(
-                    &extra,
-                    MemberKey::at("MemberKey"),
-                    "extra-member".to_owned(),
-                )?;
-                writer.initialize_field(&extra, Value::at("MemberValue"), 0)?;
-                writer.delete_entity(Member::reference(), &extra)?;
-                writer.retire_member::<RetiredMembers>("extra-member", &extra)?;
-            }
-
+            let scope = graph::<_, Retired, RetiredMembers>(writer, target, !self.retain_anchor)?;
             if let Some(image) = &input.replacement {
                 creation::graph::<_, ReplacementCreated, ReplacementMembers>(
                     writer, &scope, image,

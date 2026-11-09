@@ -1,6 +1,7 @@
 //! Round trips compare literal graph meaning by keys; ids prove only fresh allocation.
 use super::super::roster::*;
 use super::*;
+use worth_relational::facade::transactions::RecordRef;
 pub(super) fn image(count: usize) -> Image {
     Image {
         key: "roster".into(),
@@ -93,10 +94,7 @@ fn retirement_restores_a_variable_keyed_chain_and_an_empty_roster() {
         let WorthQueryApplicationMutationOutcome::Committed { receipt, .. } = result else {
             panic!("{result:?}");
         };
-        assert!(request
-            .query(query::Read("roster".into()))
-            .execute()
-            .is_err());
+        assert_absent(&request);
         reverse(&request, &receipt, "roster-restore");
         let after = request
             .query(query::Read("roster".into()))
@@ -124,6 +122,16 @@ fn native_owner_adjacency_refuses_a_missing_member_before_any_effect() {
     let request = host.runtime().request(&principal, &scope);
     created(&host, &request, image(3));
     let before = request.retain_current_read().unwrap();
+    let missing = request
+        .query(query::Read("roster".into()))
+        .execute()
+        .unwrap()
+        .rows()[0]
+        .members
+        .iter()
+        .find(|(_, row)| row.key == "part-2")
+        .unwrap()
+        .0;
     let result = request
         .advanced()
         .mutate(Retire {
@@ -151,7 +159,10 @@ fn native_owner_adjacency_refuses_a_missing_member_before_any_effect() {
         error.authored_retirement_refusal(),
         Some(AuthoredRetirementRefusal::MissingOwnedMember)
     );
-    assert_eq!(error.context.affected_records.len(), 1);
+    assert_eq!(
+        error.context.affected_records,
+        vec![RecordRef::Entity(missing)]
+    );
     assert_eq!(
         before.selected_commit(),
         request.retain_current_read().unwrap().selected_commit()
@@ -245,8 +256,20 @@ fn the_create_inverse_retires_every_owned_member_with_its_anchor() {
         3
     );
     reverse(&request, &receipt, "undo-create-roster");
-    assert!(request
-        .query(query::Read("roster".into()))
-        .execute()
-        .is_err());
+    assert_absent(&request);
+}
+
+pub(super) fn assert_absent(request: &world::Request<'_, '_, '_>) {
+    let Err(denial) = request.query(query::Read("roster".into())).execute() else {
+        panic!("retired roster remains visible");
+    };
+    let WorthQueryApplicationRequestQueryDenial::ScopeResolution(denial) = denial else {
+        panic!("{denial:?}");
+    };
+    assert_eq!(
+        denial.kind(),
+        WorthQueryEntityResolutionDenialKind::Refused(
+            WorthQueryEntityResolutionRefusalKind::UnknownEntity
+        )
+    );
 }

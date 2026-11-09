@@ -87,38 +87,6 @@ fn a_foreign_member_and_a_repeated_member_have_distinct_native_refusals() {
     }
 }
 #[test]
-fn a_dangling_intra_roster_endpoint_is_a_typed_domain_refusal_before_effects() {
-    let host = world::install(world::Fault::None, Hashes::default());
-    let scope = request_scope();
-    let principal = authenticate_operator(host.installed_schema(), &scope);
-    let request = host.runtime().request(&principal, &scope);
-    let before = request.retain_current_read().unwrap();
-    let mut graph = image(3);
-    graph.members[1].next = Some("missing-part".into());
-    let outcome = request
-        .advanced()
-        .mutate(Create(graph))
-        .without_source()
-        .idempotency(&"dangling-link".to_owned())
-        .execute_in_program(&host, ExecutionAllocationPolicy::SystemAllocation)
-        .unwrap();
-    assert!(
-        matches!(
-            outcome,
-            WorthQueryApplicationMutationOutcome::DomainDenied(edit::Denial::InvalidSourceGraph)
-        ),
-        "{outcome:?}"
-    );
-    assert_eq!(
-        before.selected_commit(),
-        request.retain_current_read().unwrap().selected_commit()
-    );
-    assert!(request
-        .query(query::Read("roster".into()))
-        .execute()
-        .is_err());
-}
-#[test]
 fn an_outside_incoming_relation_keeps_the_original_endpoint_deletion_denial() {
     let host = world::install(world::Fault::None, Hashes::default());
     let scope = request_scope();
@@ -194,39 +162,6 @@ fn a_roster_preimage_over_the_shared_byte_bound_refuses_before_effects() {
 }
 
 #[test]
-fn a_created_extra_member_cannot_enter_an_authored_retirement_roster() {
-    let host = world::install(world::Fault::ExtraAuthoredRetireMember, Hashes::default());
-    let scope = request_scope();
-    let principal = authenticate_operator(host.installed_schema(), &scope);
-    let request = host.runtime().request(&principal, &scope);
-    created(&host, &request, image(3));
-    let before = request.retain_current_read().unwrap();
-    let error = request
-        .advanced()
-        .mutate(command(3))
-        .without_source()
-        .idempotency(&"extra-created-member".to_owned())
-        .execute_in_program(&host, ExecutionAllocationPolicy::SystemAllocation)
-        .unwrap_err();
-    let WorthQueryApplicationRequestMutationDenial::Handler(
-        MutationHandlerExecutionDenial::Handler(error),
-    ) = error
-    else {
-        panic!("{error:?}");
-    };
-    let cause = error
-        .downcast::<WorthQueryApplicationAttemptDenial>()
-        .unwrap();
-    assert_eq!(
-        cause.kind(),
-        WorthQueryApplicationAttemptDenialKind::ForeignEffectTarget
-    );
-    assert_eq!(
-        before.selected_commit(),
-        request.retain_current_read().unwrap().selected_commit()
-    );
-}
-#[test]
 fn member_fields_alone_can_exceed_the_roster_preimage_bound_before_effects() {
     let host = world::install(world::Fault::None, Hashes::default());
     let scope = request_scope();
@@ -256,4 +191,83 @@ fn member_fields_alone_can_exceed_the_roster_preimage_bound_before_effects() {
         before.selected_commit(),
         request.retain_current_read().unwrap().selected_commit()
     );
+}
+
+#[test]
+fn a_member_cannot_retire_through_its_family_while_the_anchor_stays() {
+    let host = world::install(world::Fault::RetainAuthoredAnchor, Hashes::default());
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.runtime().request(&principal, &scope);
+    created(&host, &request, image(1));
+    let before = request.retain_current_read().unwrap();
+    let result = request
+        .advanced()
+        .mutate(command(1))
+        .without_source()
+        .idempotency(&"member-alone".to_owned())
+        .execute_in_program(&host, ExecutionAllocationPolicy::SystemAllocation);
+    let Err(WorthQueryApplicationRequestMutationDenial::Handler(
+        MutationHandlerExecutionDenial::Attempt(cause),
+    )) = result
+    else {
+        panic!("{result:?}");
+    };
+    assert_eq!(
+        cause.kind(),
+        WorthQueryApplicationAttemptDenialKind::MissingOutputRole
+    );
+    assert_eq!(
+        before.selected_commit(),
+        request.retain_current_read().unwrap().selected_commit()
+    );
+    assert_eq!(
+        request
+            .query(query::Read("roster".into()))
+            .execute()
+            .unwrap()
+            .rows()[0]
+            .members
+            .len(),
+        1
+    );
+}
+#[test]
+fn a_member_cannot_restore_without_its_anchor_output() {
+    let host = world::install(world::Fault::OmitRestoredAnchor, Hashes::default());
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.runtime().request(&principal, &scope);
+    created(&host, &request, image(1));
+    let WorthQueryApplicationMutationOutcome::Committed { receipt, .. } =
+        retire(&host, &request, command(1))
+    else {
+        panic!("retirement failed");
+    };
+    let before = request.retain_current_read().unwrap();
+    let limits = WorthQueryCorrectionHistoryLimits::new(None, std::num::NonZeroUsize::MIN);
+    let selected = request.corrections().select(&receipt, limits).unwrap();
+    let preparation = request
+        .corrections()
+        .reverse(&selected)
+        .idempotency("member-without-anchor")
+        .limits(limits)
+        .prepare();
+    let Err(WorthQueryApplicationCorrectionDenial::Mutation(
+        WorthQueryApplicationRequestMutationDenial::Handler(
+            MutationHandlerExecutionDenial::Attempt(cause),
+        ),
+    )) = preparation
+    else {
+        panic!("unexpected preparation");
+    };
+    assert_eq!(
+        cause.kind(),
+        WorthQueryApplicationAttemptDenialKind::MissingOutputRole
+    );
+    assert_eq!(
+        before.selected_commit(),
+        request.retain_current_read().unwrap().selected_commit()
+    );
+    super::owned_members::assert_absent(&request);
 }

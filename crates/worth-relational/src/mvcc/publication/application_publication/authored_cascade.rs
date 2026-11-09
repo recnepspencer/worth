@@ -9,6 +9,7 @@ use worth_execution::ExecutionRequest;
 pub struct RelationalAuthoredRetirement {
     pub(crate) roles: Vec<RequiredOutputRoleTarget>,
     pub(crate) anchor: EntityId,
+    pub(crate) owned_members: bool,
     pub(crate) birth: crate::history::data::CommitId,
     pub(crate) co_anchors: Vec<(EntityId, crate::history::data::CommitId)>,
     pub(crate) before: AdmittedRelationalBranchBasis,
@@ -56,8 +57,47 @@ impl RelationalRuntime {
         co_anchors: &[EntityId],
         roles: &[RequiredOutputRoleTarget],
     ) -> Result<Option<RelationalAuthoredRetirement>, TransactionCommitError> {
+        self.readmit_authored_retirement(
+            execution,
+            installed,
+            basis,
+            (anchor, co_anchors),
+            roles,
+            &[],
+        )
+    }
+
+    /// The declared member kinds opt only this anchor into roster-only history.
+    /// Native certifies the exact owner adjacency before minting that event.
+    pub fn readmit_authored_owned_member_retirement(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        installed: &RelationalInstalledApplicationPublicationAuthority,
+        basis: &AdmittedRelationalBranchBasis,
+        anchors: (EntityId, &[EntityId]),
+        roles: &[RequiredOutputRoleTarget],
+        kinds: &[super::AuthoredOwnedMemberKind],
+    ) -> Result<Option<RelationalAuthoredRetirement>, TransactionCommitError> {
+        self.validate_authored_owned_members(execution, basis, anchors.0, kinds, roles)?;
+        self.readmit_authored_retirement(execution, installed, basis, anchors, roles, kinds)
+    }
+
+    fn readmit_authored_retirement(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        installed: &RelationalInstalledApplicationPublicationAuthority,
+        basis: &AdmittedRelationalBranchBasis,
+        anchors: (EntityId, &[EntityId]),
+        roles: &[RequiredOutputRoleTarget],
+        kinds: &[super::AuthoredOwnedMemberKind],
+    ) -> Result<Option<RelationalAuthoredRetirement>, TransactionCommitError> {
+        let (anchor, co_anchors) = anchors;
+        let owned_members = !kinds.is_empty();
         if installed.runtime_instance_id != self.runtime_instance_id() {
             return Err(origin_denial("foreign installed source-retirement owner"));
+        }
+        if installed.source_scope_ownership.is_empty() && !owned_members {
+            return Ok(None);
         }
         if !installed.source_scope_ownership.is_empty() {
             installed.require_current_ownership_storage(basis, anchor)?;
@@ -80,6 +120,9 @@ impl RelationalRuntime {
                     roles,
                     crate::history::data::AuthoredRetirementSelection::SourceScopeClosure,
                 )?;
+                if selected.is_empty() && !owned_members {
+                    return Ok(None);
+                }
                 let publications = selected
                     .iter()
                     .map(|envelope| {
@@ -94,6 +137,7 @@ impl RelationalRuntime {
                 Ok(Some(RelationalAuthoredRetirement {
                     roles: roles.to_vec(),
                     anchor,
+                    owned_members,
                     birth,
                     co_anchors,
                     before: basis.clone(),

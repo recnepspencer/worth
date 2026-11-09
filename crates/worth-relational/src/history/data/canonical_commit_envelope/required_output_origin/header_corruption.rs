@@ -33,6 +33,7 @@ fn corrupt(
             .expect("lawful cascade");
         let mut event = CanonicalAuthoredRetirement {
             anchor: event.anchor,
+            owned_members: event.owned_members,
             birth: event.birth,
             co_anchors: event.co_anchors.clone(),
             publications: event.publications.clone(),
@@ -74,6 +75,7 @@ fn corrupt(
         .as_ref()
         .expect("lawful restoration");
     let mut event = CanonicalAuthoredRestoration {
+        owned_members: event.owned_members,
         retirement: event.retirement,
         original_anchor: event.original_anchor,
         anchor: event.anchor,

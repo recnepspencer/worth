@@ -17,15 +17,7 @@ pub(super) fn is_empty(
     mutation: &ValidatedMutationFootprint,
     context: &mut worth_execution::MapKernelContext<'_, '_>,
 ) -> Result<bool, WorthQueryProviderSessionFailure> {
-    let identity = if let Some(pending) = attempt.aftermath_causality() {
-        pending.prepared_correction().authored_declaration()
-    } else {
-        attempt
-            .original_authority()
-            .retained_governed_input_carrier()
-            .and_then(|input| input.correction())
-            .and_then(|original| original.association().declaration().authored_identity())
-    };
+    let identity = attempt.authored_correction_identity();
     let Some(identity) = identity else {
         return Ok(false);
     };

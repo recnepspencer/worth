@@ -1,6 +1,9 @@
 //! Ordinary creation and recorded restoration use the same native graph effects.
 use super::*;
 pub struct Handler;
+pub struct RestorationHandler {
+    pub omit_anchor: bool,
+}
 pub fn valid(image: &Image) -> bool {
     image.members.iter().all(|row| {
         row.next
@@ -99,7 +102,7 @@ impl OperationHandler<Schema, CreateBinding> for Handler {
         }
     }
 }
-impl OperationHandler<Schema, RestoreBinding> for Handler {
+impl OperationHandler<Schema, RestoreBinding> for RestorationHandler {
     fn decide(
         &self,
         input: &Restore,
@@ -131,9 +134,28 @@ impl OperationHandler<Schema, RestoreBinding> for Handler {
     ) -> HandlerResult<edit::Edited, edit::Denial> {
         let result = (|| {
             if let Some(remove) = target.remove {
-                retirement::graph::<_, ReplacementRetired, RemovedMembers>(writer, remove)?;
+                retirement::graph::<_, ReplacementRetired, RemovedMembers>(writer, remove, true)?;
             }
-            graph::<_, Restored, RestoredMembers>(writer, &target.scope, &input.image)
+            if self.omit_anchor {
+                let scope = writer.projected_entity(&target.scope)?;
+                for row in &input.image.members {
+                    let member = writer.create_entity_in_context(
+                        &scope,
+                        Member::reference(),
+                        WorthQueryApplicationEntityKey::new(&row.key).unwrap(),
+                    )?;
+                    writer.initialize_field(
+                        &member,
+                        MemberKey::at("MemberKey"),
+                        row.key.clone(),
+                    )?;
+                    writer.initialize_field(&member, Value::at("MemberValue"), row.value)?;
+                    writer.create_member::<RestoredMembers>(&row.key, &member)?;
+                }
+                Ok(())
+            } else {
+                graph::<_, Restored, RestoredMembers>(writer, &target.scope, &input.image)
+            }
         })();
         match result {
             Ok(()) => HandlerResult::Completed(edit::Edited),

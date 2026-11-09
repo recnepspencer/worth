@@ -32,8 +32,10 @@ impl PreparedAuthoredIdentity {
         poll(request)?;
         for declaration in self.declaration.co_anchors() {
             if declaration.member_owner().is_some() {
-                if roles.clone().any(|(name, _, _, _)| {
-                    name.starts_with(&declaration.parts().inverse_role)
+                if roles.clone().any(|(name, posture, entity, _)| {
+                    declaration
+                        .member_role_suffix(name, posture, entity, true)
+                        .is_some()
                         && !self
                             .co_anchors
                             .iter()

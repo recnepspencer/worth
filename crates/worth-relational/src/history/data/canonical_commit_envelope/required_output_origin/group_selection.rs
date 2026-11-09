@@ -47,12 +47,13 @@ impl CanonicalCommitEnvelope {
         let Some(event) = &self.authored_cascade_retirement else {
             return Ok(());
         };
-        self.validate_authored_retirement_components(event, context)
+        self.validate_authored_retirement_components(event, false, context)
     }
 
     pub(super) fn validate_authored_retirement_components(
         &self,
         event: &CanonicalAuthoredRetirement,
+        allow_empty: bool,
         context: &mut MapKernelContext<'_, '_>,
     ) -> Result<(), Stop> {
         use crate::{
@@ -62,7 +63,8 @@ impl CanonicalCommitEnvelope {
         };
         let charge = super::super::super::codec_retirement_closure::charge;
         charge(context, self.patch.authoritative_record_patches.len() + 1)?;
-        if self.producer_cascade_retirement.is_some()
+        if (!allow_empty && !event.owned_members && event.publications.is_empty())
+            || self.producer_cascade_retirement.is_some()
             || self.required_output_origin.is_some()
             || !self.patch.authoritative_record_patches.iter().any(|patch| {
                 patch.target == RecordRef::Entity(event.anchor)

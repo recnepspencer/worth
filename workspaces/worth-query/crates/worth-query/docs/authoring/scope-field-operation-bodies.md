@@ -488,8 +488,10 @@ Creation initializers, required assignments and present optional replacements
 use that same owner; optional clears consume no value. These intrinsic write
 dependencies are retained before signing/sealing, without requiring a supplier
 lookup or granting access to the other holders. Previously observed predicates
-are reused, and the ordinary native lowering law still refuses taken values or
-two writes of the same unique value within one candidate. A concurrent claimant
+are reused. Retiring the exact observed holder in the same atomic batch frees
+its value for one successor, regardless of effect order. Deleting another record
+does not free it. The ordinary native lowering law still refuses surviving
+holders or two writes of the same unique value within one candidate. A concurrent claimant
 cannot turn an observed absence into permission: publication rechecks the
 retained predicate and uniqueness. No losing creation or membership link commits.
 Unavailable indexes fail closed; uniqueness is never downgraded to a host precheck.

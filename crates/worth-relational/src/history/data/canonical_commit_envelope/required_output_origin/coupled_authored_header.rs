@@ -22,10 +22,10 @@ impl CanonicalCommitEnvelope {
         }
         match &event.sources {
             CanonicalCoupledAuthoredSources::Retirement(source) => {
-                self.validate_authored_retirement_components(source, context)?;
+                self.validate_authored_retirement_components(source, true, context)?;
             }
             CanonicalCoupledAuthoredSources::Restoration(source) => {
-                self.validate_authored_restoration_components(source, context)?;
+                self.validate_authored_restoration_components(source, true, context)?;
             }
         }
         for part in &event.participants {

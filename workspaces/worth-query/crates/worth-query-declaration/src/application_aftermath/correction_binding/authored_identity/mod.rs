@@ -59,6 +59,45 @@ impl DeclaredAuthoredCorrection {
     ) -> Option<&crate::application_aftermath::PortablePreImageRelationLocus> {
         self.owner.as_ref()
     }
+    /// Match a member output against its complete declared family descriptor.
+    pub fn member_role_suffix<'a>(
+        &self,
+        name: &'a str,
+        posture: ApplicationMutationOutputPosture,
+        entity: &str,
+        inverse: bool,
+    ) -> Option<&'a str> {
+        self.member_owner()?;
+        let ApplicationSchemaMember::Field {
+            entity: declared_entity,
+            ..
+        } = self.parts.logical_key.as_ref()
+        else {
+            return None;
+        };
+        let expected = if inverse {
+            match self.parts.source_posture {
+                ApplicationMutationOutputPosture::Create => {
+                    ApplicationMutationOutputPosture::Retire
+                }
+                ApplicationMutationOutputPosture::Retire => {
+                    ApplicationMutationOutputPosture::Create
+                }
+                ApplicationMutationOutputPosture::Preserve => return None,
+            }
+        } else {
+            self.parts.source_posture
+        };
+        if declared_entity != entity || posture != expected {
+            return None;
+        }
+        name.strip_prefix(if inverse {
+            &self.parts.inverse_role
+        } else {
+            &self.parts.source_role
+        })
+        .filter(|suffix| !suffix.is_empty())
+    }
     pub fn with_member_owner(
         mut self,
         owner: crate::application_aftermath::PortablePreImageRelationLocus,

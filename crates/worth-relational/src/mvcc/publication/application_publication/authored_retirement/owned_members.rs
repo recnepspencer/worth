@@ -5,10 +5,12 @@ use crate::{
     mvcc::{RequiredOutputRolePosture, RequiredOutputRoleTarget},
     publication::data::{AuthoredRetirementRefusal as Cause, PublicationError},
     runtime::RelationalRuntime,
-    transactions::data::{EntityReference, RecordRef, TransactionCommitError},
+    transactions::data::{RecordRef, TransactionCommitError},
     validation::engine::state_view::InvariantStateView,
 };
 use worth_execution::ExecutionRequest;
+mod roster;
+use roster::OwnedMemberRoster;
 
 /// Installed structural meaning, never a stored member roster or mutation permit.
 #[derive(Clone, Copy, Debug)]
@@ -58,8 +60,7 @@ impl RelationalRuntime {
         );
         execution
             .run_native_with_checkpoint(|context| {
-                let mut expected = std::collections::BTreeSet::new();
-                let mut supplied = std::collections::BTreeSet::new();
+                let mut roster = OwnedMemberRoster::new(anchor);
                 let edges = state.relation_candidates(anchor, false);
                 for &id in edges.iter() {
                     context
@@ -70,9 +71,7 @@ impl RelationalRuntime {
                         .root
                         .demand_head_partition(execution, id.partition_id)
                         .map_err(super::super::custody::execution_stop)?;
-                    let Some(edge) = state.relation_metadata(id) else {
-                        continue;
-                    };
+                    let edge = roster::owner_metadata(id, state.relation_metadata(id))?;
                     if edge.target != anchor {
                         continue;
                     }
@@ -87,21 +86,13 @@ impl RelationalRuntime {
                         .root
                         .demand_head_partition(execution, edge.source.partition_id)
                         .map_err(super::super::custody::execution_stop)?;
-                    if !state
-                        .entity_metadata(edge.source)
-                        .is_some_and(|member| member.kind_id == kind.member_kind)
-                    {
-                        return Err(reject(
-                            Cause::DanglingOwnedMember,
-                            RecordRef::Entity(edge.source),
-                        ));
-                    }
-                    if !expected.insert(edge.source) {
-                        return Err(reject(
-                            Cause::RepeatedOwnedMember,
-                            RecordRef::Entity(edge.source),
-                        ));
-                    }
+                    roster.observe_member(
+                        edge.source,
+                        state
+                            .entity_metadata(edge.source)
+                            .map(|member| member.kind_id),
+                        kind.member_kind,
+                    )?;
                 }
                 for role in roles.iter().filter(|role| {
                     role.posture == RequiredOutputRolePosture::Retire
@@ -110,20 +101,9 @@ impl RelationalRuntime {
                     context
                         .checkpoint(1)
                         .map_err(super::super::custody::execution_stop)?;
-                    let EntityReference::Existing(id) = role.target else {
-                        return Err(reject(Cause::ExtraOwnedMember, RecordRef::Entity(anchor)));
-                    };
-                    if !supplied.insert(id) {
-                        return Err(reject(Cause::RepeatedOwnedMember, RecordRef::Entity(id)));
-                    }
-                    if !expected.contains(&id) {
-                        return Err(reject(Cause::ForeignOwnedMember, RecordRef::Entity(id)));
-                    }
+                    roster.supply(role)?;
                 }
-                if let Some(id) = expected.difference(&supplied).next() {
-                    return Err(reject(Cause::MissingOwnedMember, RecordRef::Entity(*id)));
-                }
-                Ok(())
+                roster.finish()
             })
             .map_err(super::super::custody::execution_stop)?
             .0

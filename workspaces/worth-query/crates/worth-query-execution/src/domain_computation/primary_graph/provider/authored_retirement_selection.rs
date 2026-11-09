@@ -14,21 +14,13 @@ pub(super) fn authored_anchor(
     )>,
     CompanionPreflightStop,
 > {
-    if let Some(anchor) = attempt
-        .aftermath_causality()
-        .and_then(|causality| causality.prepared_correction().authored_retirement_anchor())
-    {
-        let prepared = attempt
-            .aftermath_causality()
-            .expect("selected correction anchor")
-            .prepared_correction();
-        return Ok(Some((anchor, prepared.authored_retirement_co_anchors())));
+    if let Some(causality) = attempt.aftermath_causality() {
+        let prepared = causality.prepared_correction();
+        return Ok(prepared
+            .authored_retirement_anchor()
+            .map(|anchor| (anchor, prepared.authored_retirement_co_anchors())));
     }
-    let identity = attempt
-        .original_authority()
-        .retained_governed_input_carrier()
-        .and_then(|input| input.correction())
-        .and_then(|original| original.association().declaration().authored_identity());
+    let identity = attempt.authored_correction_identity();
     let Some(identity) = identity else {
         return Ok(None);
     };
@@ -50,14 +42,18 @@ pub(super) fn authored_anchor(
     for declaration in identity.co_anchors() {
         if declaration.member_owner().is_some() {
             co_anchors.extend(attempt.native_publication_roles().filter_map(
-                |(role, posture, _, target)| match target {
-                    EntityReference::Existing(id)
-                        if role.starts_with(&declaration.parts().source_role)
-                            && posture == Posture::Retire =>
-                    {
-                        Some(*id)
+                |(role, posture, entity, target)| {
+                    match target {
+                        EntityReference::Existing(id)
+                            if declaration
+                                .member_role_suffix(role, posture, entity, false)
+                                .is_some()
+                                && posture == Posture::Retire =>
+                        {
+                            Some(*id)
+                        }
+                        _ => None,
                     }
-                    _ => None,
                 },
             ));
             continue;
@@ -79,4 +75,20 @@ pub(super) fn authored_anchor(
         }
     }
     Ok(target.map(|anchor| (anchor, co_anchors)))
+}
+
+impl WorthQueryPrimaryGraphApplicationAttempt {
+    pub(in crate::domain_computation::primary_graph) fn authored_correction_identity(
+        &self,
+    ) -> Option<&worth_query_declaration::facade::application_aftermath::DeclaredAuthoredCorrection>
+    {
+        if let Some(pending) = self.aftermath_causality() {
+            pending.prepared_correction().authored_declaration()
+        } else {
+            self.original_authority()
+                .retained_governed_input_carrier()
+                .and_then(|input| input.correction())
+                .and_then(|original| original.association().declaration().authored_identity())
+        }
+    }
 }

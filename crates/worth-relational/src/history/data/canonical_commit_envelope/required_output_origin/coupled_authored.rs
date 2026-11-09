@@ -96,6 +96,7 @@ pub(super) fn install(
                 RelationalAuthoredRetirement {
                     roles: custody.roles.clone(),
                     anchor: custody.anchor,
+                    owned_members: false,
                     birth: custody.birth,
                     co_anchors: custody.co_anchors.clone(),
                     before: custody.before.clone(),
@@ -156,6 +157,7 @@ pub(super) fn install(
                     RelationalAuthoredRetirement {
                         roles: custody.roles.clone(),
                         anchor: custody.anchor,
+                        owned_members: false,
                         birth: custody.birth,
                         co_anchors: custody.co_anchors.clone(),
                         before: custody.before.clone(),
@@ -170,6 +172,7 @@ pub(super) fn install(
                 envelope.authored_cascade_retirement =
                     Some(Arc::new(CanonicalAuthoredRetirement {
                         anchor: custody.anchor,
+                        owned_members: false,
                         birth: custody.birth,
                         co_anchors: custody.co_anchors.clone(),
                         publications: Vec::new(),

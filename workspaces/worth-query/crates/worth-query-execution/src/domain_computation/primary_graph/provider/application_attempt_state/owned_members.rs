@@ -24,38 +24,12 @@ impl WorthQueryStagedApplicationAttempt<'_> {
         Failure,
     > {
         let inverse = self.attempt.aftermath_causality().is_some();
-        let identity = if let Some(pending) = self.attempt.aftermath_causality() {
-            pending.prepared_correction().authored_declaration()
-        } else {
-            self.attempt
-                .original_authority()
-                .retained_governed_input_carrier()
-                .and_then(|input| input.correction())
-                .and_then(|original| original.association().declaration().authored_identity())
-        };
+        let identity = self.attempt.authored_correction_identity();
         let Some(identity) = identity else {
             return Ok(Vec::new());
         };
         let failure = super::super::invariant_execution::touch_failure;
-        let mut kinds = Vec::new();
-        for member in identity.co_anchors() {
-            let Some(owner) = member.member_owner() else {
-                continue;
-            };
-            let ApplicationSchemaMember::Field { entity, .. } = member.parts().logical_key.as_ref()
-            else {
-                return Err(failure());
-            };
-            let kind = AuthoredOwnedMemberKind {
-                member_kind: layout.entity_kind(entity).ok_or_else(failure)?,
-                owner_relation: layout.relation(owner.relation()).ok_or_else(failure)?.kind,
-            };
-            if !kinds.iter().any(|prior: &AuthoredOwnedMemberKind| {
-                prior.member_kind == kind.member_kind && prior.owner_relation == kind.owner_relation
-            }) {
-                kinds.push(kind);
-            }
-        }
+        let kinds = self.attempt.authored_member_kinds(layout)?;
         if kinds.is_empty() {
             return Ok(Vec::new());
         }
@@ -109,5 +83,37 @@ impl WorthQueryStagedApplicationAttempt<'_> {
             }
         }
         Ok(rosters)
+    }
+}
+
+impl super::super::WorthQueryPrimaryGraphApplicationAttempt {
+    pub(in crate::domain_computation::primary_graph::provider) fn authored_member_kinds(
+        &self,
+        layout: &WorthQueryPrimaryGraphLayout,
+    ) -> Result<Vec<AuthoredOwnedMemberKind>, Failure> {
+        let Some(identity) = self.authored_correction_identity() else {
+            return Ok(Vec::new());
+        };
+        let failure = super::super::invariant_execution::touch_failure;
+        let mut kinds = Vec::new();
+        for member in identity.co_anchors() {
+            let Some(owner) = member.member_owner() else {
+                continue;
+            };
+            let ApplicationSchemaMember::Field { entity, .. } = member.parts().logical_key.as_ref()
+            else {
+                return Err(failure());
+            };
+            let kind = AuthoredOwnedMemberKind {
+                member_kind: layout.entity_kind(entity).ok_or_else(failure)?,
+                owner_relation: layout.relation(owner.relation()).ok_or_else(failure)?.kind,
+            };
+            if !kinds.iter().any(|prior: &AuthoredOwnedMemberKind| {
+                prior.member_kind == kind.member_kind && prior.owner_relation == kind.owner_relation
+            }) {
+                kinds.push(kind);
+            }
+        }
+        Ok(kinds)
     }
 }

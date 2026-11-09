@@ -174,15 +174,19 @@ impl PreparedAuthoredIdentity {
         let mut co_anchors = Vec::with_capacity(declaration.co_anchors().len());
         for declared in declaration.co_anchors() {
             if declared.member_owner().is_some() {
-                for (name, posture, _, _) in outputs
-                    .native_witness_roles()
-                    .filter(|(name, _, _, _)| name.starts_with(&declared.parts().source_role))
+                for (name, _, _, _) in
+                    outputs
+                        .native_witness_roles()
+                        .filter(|(name, posture, entity, _)| {
+                            declared
+                                .member_role_suffix(name, *posture, entity, false)
+                                .is_some()
+                        })
                 {
                     let mut parts = declared.parts().clone();
                     let suffix = &name[parts.source_role.len()..];
                     parts.inverse_role = format!("{}{suffix}", parts.inverse_role);
                     parts.source_role = name.to_owned();
-                    parts.source_posture = posture;
                     let member = DeclaredAuthoredCorrection::from_untrusted_parts(parts);
                     if let Some(member) = Self::prepare_identity::<S, C>(source, request, member)? {
                         co_anchors.push(member);

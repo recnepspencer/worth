@@ -33,11 +33,10 @@ pub(super) fn select(
             return Ok(Some(anchors));
         }
     }
-    let identity = attempt
-        .original_authority()
-        .retained_governed_input_carrier()
-        .and_then(|input| input.correction())
-        .and_then(|original| original.association().declaration().authored_identity());
+    if attempt.aftermath_causality().is_some() {
+        return Ok(None);
+    }
+    let identity = attempt.authored_correction_identity();
     let Some(identity) = identity.filter(|identity| {
         !identity.co_anchors().is_empty() && identity.parts().source_posture == Posture::Retire
     }) else {
@@ -47,14 +46,18 @@ pub(super) fn select(
     for declaration in std::iter::once(identity).chain(identity.co_anchors()) {
         if declaration.member_owner().is_some() {
             anchors.extend(attempt.native_publication_roles().filter_map(
-                |(role, posture, entity, target)| match target {
-                    EntityReference::Existing(id)
-                        if role.starts_with(&declaration.parts().source_role)
-                            && posture == Posture::Retire =>
-                    {
-                        Some((RecordRef::Entity(*id), entity))
+                |(role, posture, entity, target)| {
+                    match target {
+                        EntityReference::Existing(id)
+                            if declaration
+                                .member_role_suffix(role, posture, entity, false)
+                                .is_some()
+                                && posture == Posture::Retire =>
+                        {
+                            Some((RecordRef::Entity(*id), entity))
+                        }
+                        _ => None,
                     }
-                    _ => None,
                 },
             ));
             continue;

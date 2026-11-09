@@ -15,6 +15,7 @@ use worth_foundational::facade::{
 use worth_relational::facade::identity::{EntityId, KindId};
 
 use super::ObservedFactIndex;
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationRealizedEffect as Effect;
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
 };
@@ -37,12 +38,18 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_b
 impl<'layout> UniqueValueWrites<'layout> {
     pub(in crate::domain_computation::primary_graph::application_attempt::provider_binding) fn new(
         fields: WorthQueryUniqueFields<'layout>,
-        effects: &[crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationRealizedEffect],
+        effects: &[Effect],
     ) -> Self {
         Self {
             fields,
             written: BTreeSet::new(),
-            retiring: effects.iter().filter_map(|effect| match effect { crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationRealizedEffect::DeleteEntity { entity_id } => Some(*entity_id), _ => None }).collect(),
+            retiring: effects
+                .iter()
+                .filter_map(|effect| match effect {
+                    Effect::DeleteEntity { entity_id } => Some(*entity_id),
+                    _ => None,
+                })
+                .collect(),
         }
     }
 

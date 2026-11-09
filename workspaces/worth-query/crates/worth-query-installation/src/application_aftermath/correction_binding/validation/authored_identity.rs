@@ -38,9 +38,22 @@ pub(super) fn validate(
     if identity.member_owner().is_some() {
         return Err(());
     }
-    validate_identity(members, source, inverse, identity, recorded, false)?;
+    let owned_members = identity
+        .co_anchors()
+        .iter()
+        .any(|member| member.member_owner().is_some());
+    validate_identity(
+        members,
+        source,
+        inverse,
+        identity,
+        recorded,
+        false,
+        owned_members,
+    )?;
     for (index, anchor) in identity.co_anchors().iter().enumerate() {
-        if !anchor.co_anchors().is_empty()
+        if (!owned_members && anchor.parts().source_posture != identity.parts().source_posture)
+            || !anchor.co_anchors().is_empty()
             || anchor.parts().source_role == identity.parts().source_role
             || anchor.parts().inverse_role == identity.parts().inverse_role
             || identity.co_anchors()[..index].iter().any(|prior| {
@@ -50,7 +63,15 @@ pub(super) fn validate(
         {
             return Err(());
         }
-        validate_identity(members, source, inverse, anchor, recorded, true)?;
+        validate_identity(
+            members,
+            source,
+            inverse,
+            anchor,
+            recorded,
+            true,
+            owned_members,
+        )?;
         if let Some(owner) = anchor.member_owner() {
             if anchor.is_optional() {
                 return Err(());
@@ -79,6 +100,7 @@ fn validate_identity(
     identity: &worth_query_declaration::facade::application_aftermath::DeclaredAuthoredCorrection,
     recorded: &worth_query_declaration::facade::application_aftermath::PortableRecordedInverse,
     co_anchor: bool,
+    owned_members: bool,
 ) -> Result<(), ()> {
     let parts = identity.parts();
     let Member::Field {
@@ -159,7 +181,7 @@ fn validate_identity(
         return Err(());
     }
     if parts.source_posture == Posture::Create
-        && !co_anchor
+        && !(co_anchor && owned_members)
         && !recorded.preimage_demand().loci().is_empty()
     {
         return Err(());

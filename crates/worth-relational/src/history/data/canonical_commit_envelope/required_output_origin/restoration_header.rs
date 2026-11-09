@@ -15,7 +15,7 @@ impl CanonicalCommitEnvelope {
         let Some(event) = self.authored_source_restoration() else {
             return Ok(());
         };
-        self.validate_authored_restoration_components(event, context)
+        self.validate_authored_restoration_components(event, false, context)
     }
 
     /// Expected linear work and scratch in patches, generations, publication
@@ -23,10 +23,11 @@ impl CanonicalCommitEnvelope {
     pub(super) fn validate_authored_restoration_components(
         &self,
         event: &CanonicalAuthoredRestoration,
+        allow_empty: bool,
         context: &mut MapKernelContext<'_, '_>,
     ) -> Result<(), Stop> {
         let before = super::header_work::begin(self, context);
-        let result = self.validate_indexed_restoration(event, context);
+        let result = self.validate_indexed_restoration(event, allow_empty, context);
         super::header_work::finish(self, context, before);
         result
     }
@@ -34,10 +35,12 @@ impl CanonicalCommitEnvelope {
     fn validate_indexed_restoration(
         &self,
         event: &CanonicalAuthoredRestoration,
+        allow_empty: bool,
         context: &mut MapKernelContext<'_, '_>,
     ) -> Result<(), Stop> {
         let charge = super::super::super::codec_retirement_closure::charge;
-        if self.producer_cascade_retirement.is_some()
+        if (!allow_empty && !event.owned_members && event.publications.is_empty())
+            || self.producer_cascade_retirement.is_some()
             || self.required_output_origin.is_some()
             || self.authored_cascade_retirement.is_some()
             || event.original_anchor == event.anchor

@@ -49,6 +49,7 @@ impl CanonicalCommitEnvelope {
         let mut envelope = self.clone();
         envelope.authored_cascade_restoration =
             Some(std::sync::Arc::new(CanonicalAuthoredRestoration {
+                owned_members: event.owned_members,
                 retirement: event.retirement,
                 original_anchor: event.original_anchor,
                 anchor: event.anchor,
