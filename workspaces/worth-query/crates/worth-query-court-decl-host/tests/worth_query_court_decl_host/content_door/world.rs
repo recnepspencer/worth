@@ -18,13 +18,25 @@ impl ApplicationProgramDefinition<Schema> for Program {
                 ApplicationLocalRuleRef<Schema, Feature, readers::invariant::CheckContent>,
                 ApplicationCommitBoundary,
             >,
-            ApplicationRuleLeaf,
+            ApplicationRuleList<
+                ApplicationRuleAt<
+                    ApplicationLocalRuleRef<
+                        Schema,
+                        Feature,
+                        source::optional_aspect::CheckOptionalContent,
+                    >,
+                    ApplicationCommitBoundary,
+                >,
+                ApplicationRuleLeaf,
+            >,
         >,
     >;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("content-door.program.v1");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![ApplicationFeatureSpec::root::<Schema, Feature>()
+            .native_action::<source::optional_aspect::operation::Binding>()
+            .finish_action()
             .native_action::<source::expectation::Binding>()
             .finish_action()
             .native_action::<created_content::Binding>()
@@ -47,6 +59,19 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         (cancellation, calls): Self::Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        setup
+            .managed_index_provider::<source::optional_aspect::Index, _>(
+                source::optional_aspect::Provider(calls.clone()),
+            )
+            .install()?;
+        setup.invariant(
+            source::optional_aspect::CheckOptionalContent::reference(),
+            ApplicationInvariantExecutionPoint::CommitBoundary,
+            source::optional_aspect::resolve,
+        )?;
+        setup.handler::<source::optional_aspect::operation::Binding, _>(
+            source::optional_aspect::operation::Handler,
+        )?;
         setup
             .managed_index_provider::<source::Index, _>(source::Provider(calls.clone()))
             .with_refinement()
