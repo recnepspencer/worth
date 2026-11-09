@@ -12,12 +12,10 @@ pub(super) struct Selection<'a> {
 pub(super) fn select(
     attempt: &WorthQueryPrimaryGraphApplicationAttempt,
 ) -> Result<Option<Selection<'_>>, WorthQueryProviderSessionFailure> {
-    if let Some(prepared) = attempt
-        .aftermath_causality()
-        .map(|causality| causality.prepared_correction())
-    {
-        // An inverse retains by the anchors its preparation recorded. Its own
-        // binding's declaration never selects for it.
+    if let Some(prepared) = attempt.recorded_reverse() {
+        // A recorded reverse retains by the anchors its preparation recorded.
+        // Its own binding's declaration never selects for it. A reapplied
+        // source is the forward attempt below.
         let declaration = prepared.authored_declaration();
         let own_changes =
             declaration.is_some_and(|identity| identity.live_member_owner().is_some());

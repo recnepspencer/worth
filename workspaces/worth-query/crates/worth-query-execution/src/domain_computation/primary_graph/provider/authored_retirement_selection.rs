@@ -1,5 +1,6 @@
 //! Installed correction declarations select authored anchors once for admission.
 use super::WorthQueryPrimaryGraphApplicationAttempt;
+use crate::domain_computation::application_aftermath::WorthQueryAftermathCausalRole;
 use crate::domain_computation::primary_graph::WorthQueryApplicationOutputPosture as Posture;
 use worth_relational::facade::{mvcc::CompanionPreflightStop, transactions::EntityReference};
 
@@ -14,8 +15,7 @@ pub(super) fn authored_anchor(
     )>,
     CompanionPreflightStop,
 > {
-    if let Some(causality) = attempt.aftermath_causality() {
-        let prepared = causality.prepared_correction();
+    if let Some(prepared) = attempt.recorded_reverse() {
         return Ok(prepared
             .authored_retirement_anchor()
             .map(|anchor| (anchor, prepared.authored_retirement_co_anchors())));
@@ -104,17 +104,30 @@ pub(super) fn authored_anchor(
 }
 
 impl WorthQueryPrimaryGraphApplicationAttempt {
+    /// The prepared inverse this attempt publishes. Only a recorded reverse has
+    /// one: a reapplied source runs its own binding again, so it selects and
+    /// retains authored anchors as the forward attempt it is.
+    pub(in crate::domain_computation::primary_graph) fn recorded_reverse(
+        &self,
+    ) -> Option<&crate::domain_computation::primary_graph::WorthQueryPreparedCorrectionSource> {
+        self.aftermath_causality()
+            .filter(|pending| pending.role() == WorthQueryAftermathCausalRole::RecordedReverse)
+            .map(|pending| pending.prepared_correction())
+    }
+
+    /// A recorded reverse answers with its prepared declaration and is never
+    /// read as the forward source of its own binding.
     pub(in crate::domain_computation::primary_graph) fn authored_correction_identity(
         &self,
     ) -> Option<&worth_query_declaration::facade::application_aftermath::DeclaredAuthoredCorrection>
     {
-        if let Some(pending) = self.aftermath_causality() {
-            pending.prepared_correction().authored_declaration()
-        } else {
-            self.original_authority()
+        match self.recorded_reverse() {
+            Some(prepared) => prepared.authored_declaration(),
+            None => self
+                .original_authority()
                 .retained_governed_input_carrier()
                 .and_then(|input| input.correction())
-                .and_then(|original| original.association().declaration().authored_identity())
+                .and_then(|original| original.association().declaration().authored_identity()),
         }
     }
 }

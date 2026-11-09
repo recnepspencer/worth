@@ -10,13 +10,17 @@ use worth_query_testkit_document_retention::facade::document_retention_model::op
 type S = Model<44, Present<true>>;
 #[test]
 fn heterogeneous_co_anchors_restore_both_logical_keys_and_fresh_generations() {
-    run(false);
+    run(false, false);
 }
 #[test]
 fn heterogeneous_co_anchor_key_corruption_refuses_without_effect() {
-    run(true);
+    run(true, false);
 }
-fn run(corrupt: bool) {
+#[test]
+fn a_reapplied_heterogeneous_retirement_keeps_both_authored_anchors() {
+    run(false, true);
+}
+fn run(corrupt: bool, reapply: bool) {
     let host = install_program::<S>();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
@@ -139,6 +143,69 @@ fn run(corrupt: bool) {
         .query(super::super::query::Input { id: 10 })
         .execute()
         .is_ok());
+    if reapply {
+        let limits = WorthQueryCorrectionHistoryLimits::new(None, std::num::NonZeroUsize::MIN);
+        let selected = request.corrections().select(&retired, limits).unwrap();
+        let alternatives = request
+            .corrections()
+            .alternatives(&selected, limits, std::num::NonZeroUsize::new(8).unwrap())
+            .unwrap();
+        let entry = alternatives
+            .entries()
+            .iter()
+            .find(|entry| entry.performed_commit() == restored.commit_reference())
+            .unwrap();
+        let alternative = alternatives.select(entry, limits).unwrap();
+        let prepared = request
+            .corrections()
+            .reapply(&alternative)
+            .idempotency("hetero-redo-retire")
+            .limits(limits)
+            .prepare()
+            .unwrap();
+        let WorthQueryApplicationCorrectionPreparation::Prepared(prepared) = prepared else {
+            panic!("redo must prepare")
+        };
+        let outcome = prepared.publish().unwrap();
+        let WorthQueryApplicationMutationOutcome::Committed {
+            receipt: reapplied, ..
+        } = outcome
+        else {
+            panic!("{outcome:?}")
+        };
+        // The reapplied retirement is an authored source of both kinds: it
+        // retires the restored pair and retains each key for its own inverse.
+        let retired_again = reapplied.outputs_of::<RetiredOutputs>().unwrap();
+        assert_eq!(
+            retired_again
+                .entity::<BodyRetired<S>>()
+                .unwrap()
+                .entity_id(),
+            fresh
+        );
+        assert!(request.query(query::Input { id: 10010 }).execute().is_err());
+        let again = reverse(&request, &reapplied, "hetero-undo-redo");
+        let again = again.outputs_of::<CreatedOutputs>().unwrap();
+        assert_ne!(
+            again.entity::<Created<S>>().unwrap().entity_id(),
+            fresh_source
+        );
+        assert_ne!(again.entity::<BodyCreated<S>>().unwrap().entity_id(), fresh);
+        assert_eq!(
+            request
+                .query(query::Input { id: 10010 })
+                .execute()
+                .unwrap()
+                .rows()[0]
+                .id,
+            10010
+        );
+        assert!(request
+            .query(super::super::query::Input { id: 10 })
+            .execute()
+            .is_ok());
+        return;
+    }
     // The ordinary typed reader must resolve the exact retained BodyKey again.
     let again = retire("hetero-retire-again");
     assert_eq!(
