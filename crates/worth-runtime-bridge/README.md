@@ -317,7 +317,10 @@ For platform composition, `BridgeConditionalRuntimeBuilder::capture_authored_def
 captures the actual program's Signal images and Bridge's versioned, checksummed
 section. That section retains conditional identities and locations, full
 portable dependency meaning, declared slots and exact performed lowering claims.
-Providers, values, scheduling and runtime identities stay outside these bytes.
+Version 2 also records each provider role's protocol, version and complete
+authored parameters. Executable callbacks, values, scheduling and runtime
+identities stay outside these bytes. The retired providerless version refuses
+with `UnsupportedVersion`.
 The baseline identifies the source; definitions and claims recover from its Signal section.
 
 `Box<BridgeConditionalRuntimeBuilder>::readmit_authored_owner` consumes the fresh
@@ -327,6 +330,18 @@ recorded slots, and rebuilds branch-local dependency indexes, lowering registry
 and retention ledger. Branches share the consumed program rather than cloning
 its runtime. Definition bytes retain their charges; publication candidate slots
 start empty. Fresh source and provider objects come from installation.
+
+Provider owners implement `BridgeAuthoredConditionalProvider` and use the
+explicit `authored_condition`, `authored_wake`, `authored_compute` and other
+authored role builders. A memory-only role refuses durable capture. Retain
+`BridgeFreshAuthoredBindings` from the genuine fresh program and pass the
+recorded descriptions to its `providers` entry during readmission. Its installed
+decoders reconstruct the recorded parameters; returning the initial program's
+provider unchanged is insufficient. Additional decoder families must be
+installed explicitly with `with_authored_provider_decoders`. A successor keeps
+that original decoder set and obtains its executable provider from it before
+publication; candidate callback objects cannot replace installation services.
+Unknown families and unsupported versions return typed provider refusals.
 
 For an empty Signal source, the same boxed builder offers
 `prepare_initial_authored_source`. It captures its actual installed conditional

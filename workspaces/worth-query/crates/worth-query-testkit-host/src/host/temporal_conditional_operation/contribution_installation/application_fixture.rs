@@ -16,6 +16,7 @@ pub fn installed_application() -> application_installation::WorthQueryProgramApp
         clock_control,
         contacts: contacts.clone(),
         install_route: true,
+        definition_only: false,
     };
     application_installation::in_memory_program(
         validated_program(),

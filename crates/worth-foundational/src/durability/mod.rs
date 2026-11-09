@@ -1,5 +1,10 @@
 //! Immutable vocabulary exchanged by durable owner ports.
 mod bridge_claim;
+mod conditional_provider;
+pub use conditional_provider::{
+    AuthoredProviderReconstructionDenial, BridgeAuthoredProviderDescription,
+    BridgeAuthoredProviderDescriptions, BridgeConditionalProviderRole,
+};
 mod diagnostic_record;
 mod signal_branch_effect;
 mod signal_definition_projection;

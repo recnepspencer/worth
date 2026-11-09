@@ -38,12 +38,22 @@ impl BridgeAuthoredInstallationBindings for InheritedBindings<'_> {
         _: DurableSignalBranchIdentity,
         contract: &BridgeConditionalContract,
         location: &BridgeConditionalLocation,
+        descriptions: &crate::conditional_execution::BridgeAuthoredProviderDescriptions,
         _: &ExecutionRequest<'_, '_>,
     ) -> Result<BridgeConditionalProviderSet, BridgeAuthoredReadmissionDenial> {
-        self.inherited
+        let providers = self
+            .inherited
             .iter()
             .find(|lowering| lowering.contract() == contract && lowering.location() == location)
             .map(|lowering| lowering.providers.clone())
-            .ok_or(BridgeAuthoredReadmissionDenial::FreshBindingUnavailable)
+            .ok_or(BridgeAuthoredReadmissionDenial::FreshBindingUnavailable)?;
+        if &providers
+            .authored_descriptions()
+            .map_err(BridgeAuthoredReadmissionDenial::Provider)?
+            != descriptions
+        {
+            return Err(BridgeAuthoredReadmissionDenial::ConditionalDefinitionMismatch);
+        }
+        Ok(providers)
     }
 }

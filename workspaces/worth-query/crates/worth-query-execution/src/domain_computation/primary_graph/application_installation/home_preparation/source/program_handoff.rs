@@ -157,8 +157,9 @@ fn attach<Schema: ApplicationSchemaComposition, Program>(
         conditionals,
         producer_routes,
         readiness_routes,
+        definition_routes,
     } = *prepared;
-    Ok(assembly::HomeQueryPreparation {state,bootstrap,services,producers,conditionals,producer_routes,readiness_routes,bridge:crate::domain_computation::primary_graph::managed_bridge::WorthQueryInstalledApplicationBridge::attach_authored_home_bridge(ordinary,assembly)})
+    Ok(assembly::HomeQueryPreparation {state,bootstrap,services,producers,conditionals,producer_routes,readiness_routes,definition_routes,bridge:crate::domain_computation::primary_graph::managed_bridge::WorthQueryInstalledApplicationBridge::attach_authored_home_bridge(ordinary,assembly)})
 }
 
 impl<Schema: ApplicationSchemaComposition, Program>

@@ -11,7 +11,7 @@ impl BridgeReadmittedAuthoredAssembly {
         execution: &ExecutionRequest<'_, '_>,
         branch: DurableSignalBranchIdentity,
         predecessor: &Arc<BridgeInstalledConditionalLowering>,
-        request: BridgeOwnedConditionalInstallationRequest,
+        mut request: BridgeOwnedConditionalInstallationRequest,
     ) -> Result<PreparedDefinition, D> {
         let projection = self.branches.projection(branch).map_err(D::Branch)?;
         let mut serving = projection.serving(branch).map_err(D::Branch)?;
@@ -40,6 +40,22 @@ impl BridgeReadmittedAuthoredAssembly {
         {
             return Err(D::IdentityOrCorrespondenceChanged);
         }
+        let program = Arc::clone(&self.program);
+        let retention = Arc::clone(&serving.retention);
+        serving.posture = BranchPosture::Preparing {
+            node: predecessor.signal_node(),
+        };
+        let reservation = Reservation {
+            projection: Arc::clone(&projection),
+            phase: ReservationPhase::Preparing,
+            predecessor_lease: Arc::clone(&predecessor.lease),
+            slot: None,
+        };
+        drop(serving);
+        request.providers = predecessor
+            .providers
+            .reconstruct_authored_successor(&request.providers, execution)
+            .map_err(|cause| D::Section(Box::new(BridgeAuthoredSectionDenial::Provider(cause))))?;
         let bytes = conditional::retention::definition_candidate_retained_bytes(
             predecessor.registry_key.branch(),
             &request.contract,
@@ -62,18 +78,6 @@ impl BridgeReadmittedAuthoredAssembly {
                     .ok_or(D::Section(Box::new(BridgeAuthoredSectionDenial::SizeLimit)))?,
             )
             .map_err(|cause| D::Section(Box::new(BridgeAuthoredSectionDenial::Request(cause))))?;
-        let program = Arc::clone(&self.program);
-        let retention = Arc::clone(&serving.retention);
-        serving.posture = BranchPosture::Preparing {
-            node: predecessor.signal_node(),
-        };
-        let reservation = Reservation {
-            projection: Arc::clone(&projection),
-            phase: ReservationPhase::Preparing,
-            predecessor_lease: Arc::clone(&predecessor.lease),
-            slot: None,
-        };
-        drop(serving);
         let backing = Backing::new(execution).map_err(|cause| D::Readmission(Box::new(cause)))?;
         backing
             .grow(execution, bytes)

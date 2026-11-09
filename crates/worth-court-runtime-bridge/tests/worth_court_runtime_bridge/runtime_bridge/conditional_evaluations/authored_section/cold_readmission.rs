@@ -24,14 +24,15 @@ impl BridgeAuthoredInstallationBindings for Bindings {
         _branch: DurableSignalBranchIdentity,
         contract: &BridgeConditionalContract,
         location: &BridgeConditionalLocation,
+        _providers: &BridgeAuthoredProviderDescriptions,
         _execution: &ExecutionRequest<'_, '_>,
     ) -> Result<BridgeConditionalProviderSet, BridgeAuthoredReadmissionDenial> {
         assert_eq!(location.stage_identity(), Some("authored-stage"));
         assert_eq!(location.node_identity(), contract.identity());
         self.providers += 1;
         Ok(BridgeConditionalProviderSet::new()
-            .trigger(Requested)
-            .compute(VersionCompute))
+            .authored_trigger(Requested)
+            .authored_compute(VersionCompute))
     }
 }
 fn source(

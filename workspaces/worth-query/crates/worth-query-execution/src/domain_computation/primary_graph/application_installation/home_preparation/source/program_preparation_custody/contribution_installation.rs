@@ -83,6 +83,7 @@ impl<S: ApplicationSchemaComposition, P> HomeProgramInstallationCustody<S, P> {
             .take()
             .expect("same supported installation parts");
         self.readiness = parts.output_readiness;
+        self.definition_pending = parts.definitions;
         let ApplicationRuntimePublication {
             bootstrap,
             runtime,

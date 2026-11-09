@@ -22,6 +22,7 @@ pub(super) fn seal<S: ApplicationSchema>(
         output_producer_routes,
         output_readiness_routes,
         conditional_operations,
+        definition_routes,
     } = configured.consume();
     let graph = seal_application_graph(phase, graph).map_err(publication_denial)?;
     Ok(storage.fill(PreparedConditionalAssembly {
@@ -36,5 +37,6 @@ pub(super) fn seal<S: ApplicationSchema>(
         output_producer_routes,
         output_readiness_routes,
         conditional_operations,
+        definition_routes,
     }))
 }

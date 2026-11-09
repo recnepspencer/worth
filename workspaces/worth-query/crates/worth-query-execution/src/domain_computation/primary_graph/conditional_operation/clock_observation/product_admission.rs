@@ -21,6 +21,21 @@ where
         WorthQueryConditionalClockObservationDenial,
     > {
         let runtime = self.application();
+        if runtime
+            .conditional_cleanup
+            .definitions
+            .route(handle.binding_identity(), handle.lease())
+            .is_some()
+        {
+            return Err(WorthQueryConditionalClockObservationDenial::new(
+                WorthQueryConditionalClockObservationDenialKind::NotReadmitted {
+                    family:
+                        worth_foundational::facade::DurableStateFamily::BridgeManagedTemporalIntents,
+                    phase: 7,
+                },
+                handle.binding_identity(),
+            ));
+        }
         let operation = runtime
             .conditional_cleanup
             .operations

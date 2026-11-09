@@ -198,6 +198,7 @@ where
             conditionals,
             producer_routes,
             readiness_routes,
+            definition_routes,
         } = self;
         let home_attachment::HomeApplicationServices {
             provider,
@@ -227,6 +228,7 @@ where
             conditionals,
             producer_routes,
             readiness_routes,
+            definition_routes,
         );
         application.program_support = Some(
             super::super::super::program_occurrence::WorthQueryInstalledProgramSupport::installed(

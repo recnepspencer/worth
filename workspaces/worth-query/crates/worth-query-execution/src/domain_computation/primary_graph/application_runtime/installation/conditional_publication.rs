@@ -49,6 +49,7 @@ struct ConfiguredConditionalGraph<S: ApplicationSchema> {
     output_producer_routes: WorthQueryInstalledOutputProducerRoutes,
     output_readiness_routes: WorthQueryInstalledOutputReadinessRoutes,
     conditional_operations: WorthQueryConditionalOperationRegistry<S>,
+    definition_routes: crate::domain_computation::primary_graph::conditional_operation::definition_declarations::ConditionalDefinitionDeclarations,
 }
 struct PreparedConditionalAssembly<S: ApplicationSchema> {
     graph: BootstrapPublicationStorage<
@@ -64,6 +65,7 @@ struct PreparedConditionalAssembly<S: ApplicationSchema> {
     output_producer_routes: WorthQueryInstalledOutputProducerRoutes,
     output_readiness_routes: WorthQueryInstalledOutputReadinessRoutes,
     conditional_operations: WorthQueryConditionalOperationRegistry<S>,
+    definition_routes: crate::domain_computation::primary_graph::conditional_operation::definition_declarations::ConditionalDefinitionDeclarations,
 }
 struct UnreconciledConditionalRuntime<S: ApplicationSchema> {
     application: WorthQueryPrimaryGraphApplicationRuntime<S>,
@@ -83,6 +85,7 @@ pub(super) fn publish<Schema>(
             >,
         >,
     >,
+    definitions: Vec<Box<dyn crate::domain_computation::primary_graph::conditional_operation::PendingDefinitionDeclaration>>,
     output_readiness: Vec<
         Box<dyn super::super::super::application_contribution::PendingOutputReadiness<Schema>>,
     >,
@@ -95,8 +98,14 @@ where
     Schema: ApplicationSchema + 'static,
 {
     let graph = graph_publication::publish(phase, authorized)?;
-    let configured =
-        route_installation::install(phase, graph, bindings, output_readiness, producers)?;
+    let configured = route_installation::install(
+        phase,
+        graph,
+        bindings,
+        definitions,
+        output_readiness,
+        producers,
+    )?;
     let assembly = graph_sealing::seal(phase, configured)?;
     let runtime = runtime_assembly::assemble(phase, assembly)?;
     reconciliation::complete(runtime)

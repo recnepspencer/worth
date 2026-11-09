@@ -94,8 +94,17 @@ pub(super) fn prepare(
             correspondences.push(correspondence);
         }
         claims.finish()?;
-        let providers =
-            bindings.providers(layout.branch, &source.contract, &source.location, execution)?;
+        let recorded = super::super::provider_source::decode(row.providers, execution)?;
+        let providers = bindings.providers(
+            layout.branch,
+            &source.contract,
+            &source.location,
+            &recorded.descriptions,
+            execution,
+        )?;
+        if providers.authored_descriptions().map_err(D::Provider)? != recorded.descriptions {
+            return Err(D::ConditionalDefinitionMismatch);
+        }
         let admission = crate::conditional_execution::provider_admission::admit_provider_set(
             Arc::clone(&source.contract),
             &providers,

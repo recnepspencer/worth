@@ -52,6 +52,7 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) enum Wor
     OperationProductUnpublished(
         BridgeConditionalDecisionEvidence,
         crate::domain_computation::WorthQueryProductUnpublishedRecovery,
+        worth_runtime_world::facade::ProductUnpublishedCause,
     ),
     OperationIndeterminate(
         BridgeConditionalDecisionEvidence,

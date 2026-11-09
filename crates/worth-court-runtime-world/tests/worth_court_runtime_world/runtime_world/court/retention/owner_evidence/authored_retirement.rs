@@ -20,6 +20,7 @@ impl BridgeAuthoredInstallationBindings for EmptyBindings {
         _: DurableSignalBranchIdentity,
         _: &BridgeConditionalContract,
         _: &BridgeConditionalLocation,
+        _: &BridgeAuthoredProviderDescriptions,
         _: &ExecutionRequest<'_, '_>,
     ) -> Result<BridgeConditionalProviderSet, BridgeAuthoredReadmissionDenial> {
         panic!("empty programme has no providers")

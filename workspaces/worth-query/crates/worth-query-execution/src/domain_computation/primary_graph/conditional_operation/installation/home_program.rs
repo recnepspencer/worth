@@ -5,6 +5,8 @@ pub(in crate::domain_computation::primary_graph) struct HomeConditionalProgramPa
         ApplicationRuntimePublication<Schema>,
     pub(in crate::domain_computation::primary_graph) bindings:
         Vec<Box<dyn WorthQueryPendingConditionalOperation<Schema>>>,
+    pub(in crate::domain_computation::primary_graph) definitions:
+        Vec<Box<dyn super::super::PendingDefinitionDeclaration>>,
     pub(in crate::domain_computation::primary_graph) output_readiness:
         Vec<Box<dyn super::super::super::application_contribution::PendingOutputReadiness<Schema>>>,
 }
@@ -15,6 +17,7 @@ impl<Schema> WorthQueryConditionalApplicationRuntimeInstallation<Schema> {
         HomeConditionalProgramParts {
             publication: self.publication,
             bindings: self.bindings,
+            definitions: self.definitions,
             output_readiness: self.output_readiness,
         }
     }

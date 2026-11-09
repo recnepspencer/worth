@@ -104,6 +104,10 @@ pub(super) fn write(
         occurrence,
         lowering.contract(),
         lowering.location(),
+        &lowering
+            .providers
+            .authored_descriptions()
+            .map_err(D::Provider)?,
         claims,
     )
 }
@@ -112,6 +116,7 @@ pub(super) fn write_parts(
     occurrence: DurableSignalConditionalDefinitionOccurrence,
     contract: &BridgeConditionalContract,
     location: &BridgeConditionalLocation,
+    providers: &crate::conditional_execution::BridgeAuthoredProviderDescriptions,
     claims: &[u8],
 ) -> Result<(), D> {
     out.occurrence(occurrence)?;
@@ -127,6 +132,7 @@ pub(super) fn write_parts(
         out.number(*ordinal as u64)?;
     }
     out.byte(Kind::bridge(contract.condition()).code())?;
+    out.record(&mut |out| super::provider_source::write(out, providers))?;
     out.blob(claims)
 }
 pub(super) struct DefinitionView<'a> {
@@ -136,6 +142,7 @@ pub(super) struct DefinitionView<'a> {
     dependencies: usize,
     ordinals: &'a [u8],
     kind: Kind,
+    pub(super) providers: &'a [u8],
     pub(super) claims: &'a [u8],
 }
 impl<'a> DefinitionView<'a> {
@@ -154,6 +161,7 @@ impl<'a> DefinitionView<'a> {
         out.number(self.dependencies as u64)?;
         out.blob(self.ordinals)?;
         out.byte(self.kind.code())?;
+        out.blob(self.providers)?;
         out.record(claims)
     }
     pub(super) fn has_identity(
@@ -193,6 +201,8 @@ impl<'a> DefinitionView<'a> {
             previous = Some(ordinal);
         }
         let kind = Kind::read(input.byte()?)?;
+        let providers = input.blob()?;
+        super::provider_source::inspect(providers)?;
         let claims = input.blob()?;
         Ok(Self {
             occurrence,
@@ -201,6 +211,7 @@ impl<'a> DefinitionView<'a> {
             dependencies,
             ordinals,
             kind,
+            providers,
             claims,
         })
     }

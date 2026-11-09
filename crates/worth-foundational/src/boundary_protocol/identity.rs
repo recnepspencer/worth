@@ -40,10 +40,25 @@ impl BoundaryProtocolIdentity {
 
     pub fn parse(value: impl Into<String>) -> Result<Self, BoundaryProtocolIdentityDenial> {
         let value = value.into();
-        if !is_canonical_protocol_identity(&value) {
-            return Err(BoundaryProtocolIdentityDenial::NonCanonical);
-        }
+        Self::validate(&value)?;
         Ok(Self(Cow::Owned(value)))
+    }
+
+    /// Validate a borrowed family without allocating a descriptive owner.
+    pub fn validate(value: &str) -> Result<(), BoundaryProtocolIdentityDenial> {
+        if is_canonical_protocol_identity(value) {
+            Ok(())
+        } else {
+            Err(BoundaryProtocolIdentityDenial::NonCanonical)
+        }
+    }
+
+    /// Heap capacity retained by an owned parsed family; static declarations allocate nothing.
+    pub fn owned_allocation_capacity_bytes(&self) -> usize {
+        match &self.0 {
+            Cow::Borrowed(_) => 0,
+            Cow::Owned(value) => value.capacity(),
+        }
     }
 
     pub fn as_str(&self) -> &str {

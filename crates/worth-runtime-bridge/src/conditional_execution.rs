@@ -9,6 +9,13 @@ pub use authored_section::{
     BRIDGE_AUTHORED_SECTION_PROTOCOL, BRIDGE_AUTHORED_SECTION_VERSION,
 };
 mod authored_declaration;
+mod authored_provider;
+mod authored_provider_builders;
+mod authored_provider_retention;
+pub use authored_provider::{
+    BridgeAuthoredConditionalProvider, BridgeAuthoredProviderDenial,
+    BridgeAuthoredProviderDescription, BridgeAuthoredProviderDescriptions,
+};
 mod authored_execution;
 mod authored_home_retirement;
 mod authored_inspection;

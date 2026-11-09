@@ -58,6 +58,8 @@ pub(super) struct HomeProgramInstallationCustody<S:ApplicationSchemaComposition,
     pub(super) services:Option<HomeApplicationServices<S>>,
     pub(super) builder:Option<Box<BridgeConditionalRuntimeBuilder>>,
     pub(super) readiness:Vec<Box<dyn PendingOutputReadiness<S>>>,
+    pub(super) definition_pending: Vec<Box<dyn crate::domain_computation::primary_graph::conditional_operation::PendingDefinitionDeclaration>>,
+    pub(super) definition_routes: Option<crate::domain_computation::primary_graph::conditional_operation::definition_declarations::ConditionalDefinitionDeclarations>,
     pub(super) producer_routes:Option<WorthQueryInstalledOutputProducerRoutes>,
     pub(super) readiness_routes:Option<WorthQueryInstalledOutputReadinessRoutes>,
     pub(super) bindings:Option<QueryHomeAuthoredBindings>,
@@ -157,6 +159,8 @@ impl<S: ApplicationSchemaComposition, P> HomeProgramInstallationCustody<S, P> {
             services: None,
             builder: None,
             readiness: Vec::new(),
+            definition_pending: Vec::new(),
+            definition_routes: None,
             producer_routes: None,
             readiness_routes: None,
             bindings: None,
@@ -229,6 +233,10 @@ impl<S: ApplicationSchemaComposition, P> HomeProgramInstallationCustody<S, P> {
                 .producer_routes
                 .take()
                 .expect("original producer routes"),
+            definition_routes: self
+                .definition_routes
+                .take()
+                .expect("original installed definition declarations"),
             readiness_routes: self
                 .readiness_routes
                 .take()

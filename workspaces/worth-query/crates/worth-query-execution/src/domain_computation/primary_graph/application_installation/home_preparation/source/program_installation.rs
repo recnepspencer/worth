@@ -28,6 +28,7 @@ pub(in crate::domain_computation::primary_graph::application_installation::home_
         WorthQueryInstalledApplicationConditionalRegistry<Schema>,
     pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) producer_routes:
         WorthQueryInstalledOutputProducerRoutes,
+    pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) definition_routes: crate::domain_computation::primary_graph::conditional_operation::definition_declarations::ConditionalDefinitionDeclarations,
     pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) readiness_routes:
         WorthQueryInstalledOutputReadinessRoutes,
 }
@@ -115,6 +116,9 @@ pub(in crate::domain_computation::primary_graph::application_installation::home_
                 .install_signal_routes(builder)
                 .map_err(D::PrimaryGraph)?,
         );
+        ctx.definition_routes = Some(crate::domain_computation::primary_graph::conditional_operation::install_pending_definitions(
+            std::mem::take(&mut ctx.definition_pending), builder, &services.participation)
+            .map_err(|cause| D::Conditional(Box::new(cause)))?);
         ctx.readiness_routes = Some(
             install_output_readiness_routes(&ctx.readiness, builder, &services.participation)
                 .map_err(|cause| D::Conditional(Box::new(cause)))?,
@@ -147,6 +151,9 @@ pub(in crate::domain_computation::primary_graph::application_installation::home_
                 ctx.readiness_routes
                     .as_mut()
                     .expect("actual readiness routes"),
+                ctx.definition_routes
+                    .as_mut()
+                    .expect("actual authored definition declarations"),
             )
             .map_err(|cause| D::Authored(Box::new(cause)))?;
         Ok(())

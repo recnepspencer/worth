@@ -34,11 +34,14 @@ impl BridgeAuthoredInstallationBindings for Bindings {
         _branch: DurableSignalBranchIdentity,
         contract: &BridgeConditionalContract,
         location: &BridgeConditionalLocation,
+        _providers: &BridgeAuthoredProviderDescriptions,
         _execution: &ExecutionRequest<'_, '_>,
     ) -> Result<BridgeConditionalProviderSet, BridgeAuthoredReadmissionDenial> {
         assert_eq!(contract.identity(), "query:one");
         assert_eq!(location.node_identity(), "query:one");
-        Ok(native_absence::providers(Arc::clone(&self.contacts)))
+        Ok(native_absence::authored_providers(Arc::clone(
+            &self.contacts,
+        )))
     }
 }
 #[test]
@@ -50,7 +53,7 @@ fn cold_correspondence_rebinds_full_semantics_and_preserves_the_selected_slot_wi
         let contacts = Arc::new(native_absence::Contacts::default());
         let readers = Arc::new(AtomicUsize::new(0));
         let (program, original) =
-            native_absence::installed_builder(Arc::clone(&contacts), Arc::clone(&readers));
+            native_absence::installed_authored_builder(Arc::clone(&contacts), Arc::clone(&readers));
         let branch = branch();
         let node = original.signal_node();
         let occurrence = DurableSignalConditionalDefinitionOccurrence::from_recorded(
@@ -79,6 +82,7 @@ fn cold_correspondence_rebinds_full_semantics_and_preserves_the_selected_slot_wi
                 next,
                 original.contract(),
                 original.location(),
+                &native_absence::authored_providers(contacts.clone()),
             )
             .unwrap();
             SignalDefinitionTransitionArtifact::capture(
@@ -128,7 +132,7 @@ fn cold_correspondence_rebinds_full_semantics_and_preserves_the_selected_slot_wi
             "22222222-2222-4222-8222-222222222222",
         );
         let (fresh, fresh_lowering) =
-            native_absence::installed_builder(Arc::clone(&contacts), Arc::clone(&readers));
+            native_absence::installed_authored_builder(Arc::clone(&contacts), Arc::clone(&readers));
         let candidate = fresh_lowering
             .semantic_dependencies()
             .next()

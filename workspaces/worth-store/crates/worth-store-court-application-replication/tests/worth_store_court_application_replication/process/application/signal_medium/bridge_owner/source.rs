@@ -9,7 +9,12 @@ pub(super) struct Reference {
     pub(super) advances: Vec<SignalBranchAdvanceArtifact>,
 }
 pub(super) fn reference(execution: &ExecutionRequest<'_, '_>) -> Box<Reference> {
-    let program = program::program();
+    reference_from_program(program::program(), execution)
+}
+pub(super) fn reference_from_program(
+    program: Box<program::Program>,
+    execution: &ExecutionRequest<'_, '_>,
+) -> Box<Reference> {
     let mut definitions = Vec::new();
     let mut advances = Vec::new();
     let mut parent = None;

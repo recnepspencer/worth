@@ -52,9 +52,11 @@ pub(super) fn apply_reentry_outcome<Clock, Input>(
             counts.failed += 1;
         }
         WorthQueryTemporalReentryOutcome::ProductUnpublished(unpublished) => {
+            let cause = unpublished.cause();
             wake.decision = WorthQueryRetainedConditionalDecision::OperationProductUnpublished(
                 evidence,
                 unpublished.into_recovery(),
+                cause,
             );
             counts.failed += 1;
         }

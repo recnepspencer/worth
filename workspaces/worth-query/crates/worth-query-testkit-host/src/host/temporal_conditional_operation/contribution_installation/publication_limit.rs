@@ -122,6 +122,7 @@ pub fn configuration() -> TemporalContributionConfiguration {
         clock_control,
         contacts,
         install_route: true,
+        definition_only: false,
     }
 }
 

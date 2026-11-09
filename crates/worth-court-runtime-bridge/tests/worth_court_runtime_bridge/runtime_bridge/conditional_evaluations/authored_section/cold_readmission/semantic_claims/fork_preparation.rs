@@ -9,7 +9,7 @@ fn authored_fork_preparation_rebases_performed_semantic_claims_without_source_co
     let contacts = Arc::new(native_absence::Contacts::default());
     let readers = Arc::new(AtomicUsize::new(0));
     let (program, original) =
-        native_absence::installed_builder(Arc::clone(&contacts), Arc::clone(&readers));
+        native_absence::installed_authored_builder(Arc::clone(&contacts), Arc::clone(&readers));
     let branch = branch();
     let node = original.signal_node();
     let occurrence = DurableSignalConditionalDefinitionOccurrence::from_recorded(
@@ -53,7 +53,7 @@ fn authored_fork_preparation_rebases_performed_semantic_claims_without_source_co
         "22222222-2222-4222-8222-222222222222",
     );
     let (fresh, fresh_lowering) =
-        native_absence::installed_builder(Arc::clone(&contacts), Arc::clone(&readers));
+        native_absence::installed_authored_builder(Arc::clone(&contacts), Arc::clone(&readers));
     let mut bindings = Bindings {
         candidate: fresh_lowering
             .semantic_dependencies()

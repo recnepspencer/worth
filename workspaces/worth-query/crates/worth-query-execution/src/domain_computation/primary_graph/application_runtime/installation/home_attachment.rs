@@ -109,6 +109,7 @@ pub(in crate::domain_computation::primary_graph) fn finish_home_application<
     conditionals: super::super::super::application_contribution::WorthQueryInstalledApplicationConditionalRegistry<Schema>,
     producer_routes: super::super::super::application_contribution::WorthQueryInstalledOutputProducerRoutes,
     readiness_routes: super::super::super::application_contribution::WorthQueryInstalledOutputReadinessRoutes,
+    definition_routes: crate::domain_computation::primary_graph::conditional_operation::definition_declarations::ConditionalDefinitionDeclarations,
 ) -> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     let projection = bootstrap.retain_invariant_projection_authority();
     let checkpoint_restore_work = bootstrap.recovered_checkpoint_restore_work();
@@ -146,6 +147,7 @@ pub(in crate::domain_computation::primary_graph) fn finish_home_application<
     );
     application.installed_producers = producers;
     application.installed_conditionals = conditionals;
+    application.conditional_cleanup.definitions = definition_routes;
     super::owned_contributions::transfer(&mut application, resources, managed_indexes);
     application
 }

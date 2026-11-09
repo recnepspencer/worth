@@ -98,6 +98,8 @@ impl BridgeFreshAuthoredBindings {
         &self,
         contract: &BridgeConditionalContract,
         location: &BridgeConditionalLocation,
+        descriptions: &crate::conditional_execution::BridgeAuthoredProviderDescriptions,
+        execution: &ExecutionRequest<'_, '_>,
     ) -> Result<BridgeConditionalProviderSet, D> {
         let mut matches = self.lowerings.iter().filter(|lowering| {
             lowering.contract().identity() == contract.identity()
@@ -108,13 +110,14 @@ impl BridgeFreshAuthoredBindings {
         if matches.next().is_some() {
             return Err(D::FreshBindingUnavailable);
         }
-        // The recovered definition owns condition/threshold meaning. Fresh
-        // installation supplies the same declaration's live provider roles.
+        let providers = selected
+            .providers
+            .reconstruct_authored(descriptions, execution)
+            .map_err(D::Provider)?;
         crate::conditional_execution::provider_admission::admit_provider_roles(
-            contract,
-            &selected.providers,
+            contract, &providers,
         )
         .map_err(|cause| D::Conditional(Box::new(cause)))?;
-        Ok(selected.providers.clone())
+        Ok(providers)
     }
 }

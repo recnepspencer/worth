@@ -22,6 +22,7 @@ pub enum WorthQueryConditionalRuntimeInstallationDenialKind {
     PrimaryGraphPublication,
     /// A binding does not belong to this installation.
     ForeignBinding,
+    AuthoredProviderSourceRequired,
     /// A failed native terminal must be released through fresh progression before reconstitution.
     ManagedCleanupRetained(crate::domain_computation::WorthQueryMutationCleanupFailureKind),
     /// An allocated application resource still owns Native/provider/recovery custody.

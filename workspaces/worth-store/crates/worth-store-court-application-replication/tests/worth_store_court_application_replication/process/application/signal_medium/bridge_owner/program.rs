@@ -4,6 +4,8 @@ use worth_execution::ExecutionRequest;
 use worth_foundational::facade::*;
 use worth_runtime_bridge::facade::*;
 use worth_signal::facade::*;
+mod authored_sources;
+pub(super) mod parameters;
 mod ports;
 
 pub(super) struct Program {
@@ -52,9 +54,11 @@ pub(super) fn program() -> Box<Program> {
 pub(super) fn providers(condition: &BridgeConditionalCondition) -> BridgeConditionalProviderSet {
     match condition {
         BridgeConditionalCondition::OnDemand => BridgeConditionalProviderSet::new()
-            .trigger(Requested)
-            .compute(Compute),
-        BridgeConditionalCondition::Always => BridgeConditionalProviderSet::new().compute(Compute),
+            .authored_trigger(Requested)
+            .authored_compute(Compute),
+        BridgeConditionalCondition::Always => {
+            BridgeConditionalProviderSet::new().authored_compute(Compute)
+        }
         BridgeConditionalCondition::AspectFiltered
         | BridgeConditionalCondition::DeltaThreshold(_)
         | BridgeConditionalCondition::RuntimePredicate
@@ -119,6 +123,7 @@ impl BridgeAuthoredInstallationBindings for Bindings {
         _: DurableSignalBranchIdentity,
         contract: &BridgeConditionalContract,
         location: &BridgeConditionalLocation,
+        _recorded: &BridgeAuthoredProviderDescriptions,
         _: &ExecutionRequest<'_, '_>,
     ) -> Result<BridgeConditionalProviderSet, BridgeAuthoredReadmissionDenial> {
         assert_eq!(location.stage_identity(), Some("durable-stage"));

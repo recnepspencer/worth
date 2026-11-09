@@ -36,6 +36,7 @@ pub trait BridgeAuthoredInstallationBindings {
         branch: DurableSignalBranchIdentity,
         contract: &BridgeConditionalContract,
         location: &BridgeConditionalLocation,
+        providers: &crate::conditional_execution::BridgeAuthoredProviderDescriptions,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<BridgeConditionalProviderSet, BridgeAuthoredReadmissionDenial>;
 }
@@ -57,6 +58,7 @@ pub enum BridgeAuthoredReadmissionDenial {
     ConditionalDefinitionMismatch,
     UnsupportedProgramFamily,
     FreshBindingUnavailable,
+    Provider(crate::conditional_execution::BridgeAuthoredProviderDenial),
     Memory(worth_execution::MemoryLimitDenial),
     SignalNode(Box<worth_signal::facade::SignalError>),
 }

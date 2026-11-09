@@ -85,6 +85,7 @@ impl Pending {
             context.occurrence(),
             admission.contract(),
             &location,
+            &providers,
         )
         .map_err(|cause| D::Section(Box::new(cause)))?;
         let key = conditional::lowering_registry::BridgeConditionalLoweringKey::new(

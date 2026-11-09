@@ -17,7 +17,9 @@ impl BridgeAuthoredSection {
         occurrence: worth_foundational::facade::DurableSignalConditionalDefinitionOccurrence,
         contract: &BridgeConditionalContract,
         location: &BridgeConditionalLocation,
+        providers: &crate::conditional_execution::BridgeConditionalProviderSet,
     ) -> Result<BridgeAuthoredSection, D> {
+        let providers = providers.authored_descriptions().map_err(D::Provider)?;
         let bytes = predecessor.bridge_bytes();
         framing::work(execution, bytes.len())?;
         let layout = Layout::read(bytes)?;
@@ -59,7 +61,9 @@ impl BridgeAuthoredSection {
                     input.finish()?;
                     if row.occurrence.node() == occurrence.node() {
                         out.record(&mut |out| {
-                            definition::write_parts(out, occurrence, contract, location, row.claims)
+                            definition::write_parts(
+                                out, occurrence, contract, location, &providers, row.claims,
+                            )
                         })?;
                     } else {
                         out.blob(bytes)?;

@@ -150,6 +150,7 @@ fn refused_home_world_attachment_retains_nonempty_provider_instances() {
                 conditionals: Default::default(),
                 producer_routes: Default::default(),
                 readiness_routes: Default::default(),
+                definition_routes: Default::default(),
             },
             publication: Some(publication),
         };

@@ -1,4 +1,5 @@
 //! Producer-owned exact comparison of supplied, already observed Native u64 values.
+mod authored_source;
 use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
 };
@@ -72,8 +73,8 @@ pub(in super::super) fn install(
             location: BridgeConditionalLocation::operation(identity),
             dependencies: Vec::new(),
             providers: BridgeConditionalProviderSet::new()
-                .trigger(compute.clone())
-                .compute(compute),
+                .authored_trigger(compute.clone())
+                .authored_compute(compute),
         })
         .map_err(|cause| {
             WorthQueryPrimaryGraphInstallationDenial::new(

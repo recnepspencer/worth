@@ -4,6 +4,27 @@ use super::super::contract::TemporalReadyNode;
 
 pub struct Predicate;
 
+impl domain::WorthQueryAuthoredHostConditionalPredicateProvider<TemporalReadyNode> for Predicate {
+    fn authored_provider_description(&self) -> domain::BridgeAuthoredProviderDescription {
+        domain::BridgeAuthoredProviderDescription::new(
+            domain::BoundaryProtocolIdentity::new("worth.query.example.product.predicate"),
+            domain::BoundaryProtocolVersion::new(1),
+            Vec::<u8>::new(),
+        )
+    }
+    fn readmit_authored_provider(
+        &self,
+        source: &domain::BridgeAuthoredProviderDescription,
+    ) -> Result<Self, domain::AuthoredProviderReconstructionDenial> {
+        self.authored_provider_description()
+            .admit_source_version(source)?;
+        if !source.payload().is_empty() {
+            return Err(domain::AuthoredProviderReconstructionDenial::MalformedPayload);
+        }
+        Ok(Self)
+    }
+}
+
 impl domain::WorthQueryHostConditionalPredicateProvider<TemporalReadyNode> for Predicate {
     const SEMANTIC_IDENTITY: &'static str = "worth.query.example.product.predicate";
 

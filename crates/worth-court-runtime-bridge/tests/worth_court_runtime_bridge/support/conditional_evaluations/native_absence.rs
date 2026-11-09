@@ -1,5 +1,7 @@
 //! A declared Bridge adapter supplies authoritative absence for one selected packet.
+mod authored_sources;
 use super::*;
+pub(crate) use authored_sources::authored_providers;
 use std::sync::{
     atomic::{AtomicU64, AtomicUsize, Ordering},
     Arc,
@@ -31,6 +33,27 @@ pub(crate) fn owner(
 pub(crate) fn installed_builder(
     contacts: Arc<Contacts>,
     readers: Arc<AtomicUsize>,
+) -> (
+    Box<BridgeConditionalRuntimeBuilder>,
+    Arc<BridgeInstalledConditionalLowering>,
+) {
+    let roles = providers(contacts.clone());
+    installed_builder_with_providers(contacts, readers, roles)
+}
+pub(crate) fn installed_authored_builder(
+    contacts: Arc<Contacts>,
+    readers: Arc<AtomicUsize>,
+) -> (
+    Box<BridgeConditionalRuntimeBuilder>,
+    Arc<BridgeInstalledConditionalLowering>,
+) {
+    let roles = authored_providers(contacts.clone());
+    installed_builder_with_providers(contacts, readers, roles)
+}
+fn installed_builder_with_providers(
+    contacts: Arc<Contacts>,
+    readers: Arc<AtomicUsize>,
+    roles: BridgeConditionalProviderSet,
 ) -> (
     Box<BridgeConditionalRuntimeBuilder>,
     Arc<BridgeInstalledConditionalLowering>,
@@ -118,7 +141,6 @@ pub(crate) fn installed_builder(
             relevant_changes: vec![AuthoritativeAspectChangeKind::FieldSet],
         })
         .unwrap();
-    let providers = Providers(contacts);
     let lowering = builder
         .install_owned_conditional(BridgeOwnedConditionalInstallationRequest {
             contract: BridgeConditionalContract::new(BridgeConditionalContractParts {
@@ -132,9 +154,7 @@ pub(crate) fn installed_builder(
             }),
             location: BridgeConditionalLocation::operation("query:one"),
             dependencies: vec![dependency],
-            providers: BridgeConditionalProviderSet::new()
-                .condition(providers.clone())
-                .compute(providers),
+            providers: roles,
         })
         .unwrap();
     (builder, lowering)

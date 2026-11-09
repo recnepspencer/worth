@@ -14,6 +14,7 @@ mod derived_reference;
 mod fork_publication;
 mod initial_source;
 mod program;
+mod provider_parameters;
 mod quiescent_kill;
 mod source;
 

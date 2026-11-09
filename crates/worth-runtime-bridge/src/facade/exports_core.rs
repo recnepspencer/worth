@@ -13,8 +13,10 @@ pub use crate::conditional_execution::BridgeAuthoredProgrammeHandoffDenial;
 pub use crate::conditional_execution::{
     BridgeAppliedConditionalInstallationExtension, BridgeAsyncEffectsIndeterminateObservation,
     BridgeAuthoredBranchDenial, BridgeAuthoredBranchView, BridgeAuthoredConditionalDeclaration,
-    BridgeAuthoredConditionalExecution, BridgeAuthoredDependencyDescription,
-    BridgeAuthoredInstallationBindings, BridgeAuthoredReadmissionDenial, BridgeAuthoredSection,
+    BridgeAuthoredConditionalExecution, BridgeAuthoredConditionalProvider,
+    BridgeAuthoredDependencyDescription, BridgeAuthoredInstallationBindings,
+    BridgeAuthoredProviderDenial, BridgeAuthoredProviderDescription,
+    BridgeAuthoredProviderDescriptions, BridgeAuthoredReadmissionDenial, BridgeAuthoredSection,
     BridgeAuthoredSectionDenial, BridgeConditionalCausalObservation,
     BridgeConditionalComparatorProvider, BridgeConditionalComparisonWork,
     BridgeConditionalComputeProvider, BridgeConditionalCondition,

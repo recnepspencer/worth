@@ -396,10 +396,13 @@ pub use crate::diagnostics::{
     FoundationalSupportReportArtifactKind,
 };
 pub use crate::durability::{
-    ApplicationHomeBinding, ApplicationHomeBindingDescriptionDenial, BridgeSemanticClaimReference,
-    CheckpointAdmissionCut, CheckpointAdmissionScope, CheckpointProductBindingIdentity,
-    CompositeAttemptAssociation, CompositeAttemptAssociationOwnerMismatch, DiagnosticRecordAbsence,
-    DiagnosticRecordReadDenial, DurableArtifactRetention, DurableCompositeCommitIdentity,
+    ApplicationHomeBinding, ApplicationHomeBindingDescriptionDenial,
+    AuthoredProviderReconstructionDenial, BridgeAuthoredProviderDescription,
+    BridgeAuthoredProviderDescriptions, BridgeConditionalProviderRole,
+    BridgeSemanticClaimReference, CheckpointAdmissionCut, CheckpointAdmissionScope,
+    CheckpointProductBindingIdentity, CompositeAttemptAssociation,
+    CompositeAttemptAssociationOwnerMismatch, DiagnosticRecordAbsence, DiagnosticRecordReadDenial,
+    DurableArtifactRetention, DurableCompositeCommitIdentity,
     DurableCompositePublicationAttemptIdentity, DurableIdentity, DurableOwnerFamily,
     DurableProductBranchIdentity, DurableProductBranchIncarnation, DurableProductBranchNameDenial,
     DurableProductBranchReference, DurableProductReferenceGeneration,

@@ -112,6 +112,7 @@ pub struct TemporalContributionConfiguration {
     pub clock_control: ClockController,
     pub contacts: ContactCounters,
     pub install_route: bool,
+    pub definition_only: bool,
 }
 
 pub struct InstalledTemporalConditional {
@@ -174,16 +175,33 @@ impl WorthQueryApplicationConditionalBinding<TemporalHostSchema> for TemporalCon
         let query = schema
             .installed_query_binding::<TemporalIntentCurrentReadBinding>()
             .unwrap();
-        let conditional = installation
+        let node = installation
             .installed_packages()
             .bind_conditional_application_operation(operation, &contract::conditional_binding())
             .unwrap()
             .bind_node(TemporalReadyNode::reference())
-            .unwrap()
-            .bind_host_predicate_provider(configuration.installation_predicate)
-            .unwrap()
+            .unwrap();
+        let provider = if configuration.definition_only {
+            node.bind_authored_host_predicate_provider(configuration.installation_predicate)
+        } else {
+            node.bind_host_predicate_provider(configuration.installation_predicate)
+        }
+        .unwrap();
+        let clocked = provider
             .bind_named_clock::<CourtroomClock, _>(configuration.clock_source)
-            .unwrap()
+            .unwrap();
+        if configuration.definition_only {
+            let invariant = Arc::new(installation.retain_invariant_projection_authority());
+            let clock = installation.bind_conditional_definition(clocked)?;
+            return Ok(Some(InstalledTemporalConditional {
+                clock,
+                definition_predicate: configuration.definition_predicate,
+                clock_control: configuration.clock_control,
+                contacts: configuration.contacts,
+                invariant,
+            }));
+        }
+        let conditional = clocked
             .bind_temporal_intent_projection(
                 query.into_query(),
                 ApplicationQueryParameterSet::new(),
@@ -260,6 +278,7 @@ pub fn zero_route_installation_is_denied() {
             clock_control,
             contacts,
             install_route: false,
+            definition_only: false,
         },),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         WorthQueryApplicationLimits::new(
@@ -299,5 +318,7 @@ pub use checkpoint::{
 
 #[path = "contribution_installation/application_fixture.rs"]
 pub mod application_fixture;
+#[path = "contribution_installation/definition_only.rs"]
+pub mod definition_only;
 #[path = "contribution_installation/request_cancellation.rs"]
 pub mod request_cancellation;

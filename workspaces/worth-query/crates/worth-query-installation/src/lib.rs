@@ -94,6 +94,10 @@ pub mod facade {
     pub use crate::application_operation::{
         InstalledOperationCatalog, InstalledOperationSource, InstalledOperationView,
     };
+    pub use crate::application_operation::{
+        WorthQueryAuthoredHostPredicateBinding, WorthQueryBoundHostOutputComparator,
+        WorthQueryBoundHostOutputVersion,
+    };
     #[doc(hidden)]
     pub use crate::application_query::InstalledQueryView;
     pub use crate::application_resource::{
@@ -111,6 +115,7 @@ pub mod facade {
         FieldDeclaration, FieldKey, FieldRequirement, InternedString, ProjectionMask,
         ScalarAspectType, StructAspectShape,
     };
+    pub use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
     pub use worth_query_declaration::facade::application_capability::{
         ApplicationCapabilityRef, ErasedApplicationCapabilityContract,
     };

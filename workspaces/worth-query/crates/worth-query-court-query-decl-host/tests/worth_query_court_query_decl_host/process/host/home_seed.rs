@@ -81,6 +81,7 @@ fn directory_conditional_seed_refuses_before_initialization_or_owner_effect() {
         clock_control,
         contacts: contacts.clone(),
         install_route: true,
+        definition_only: false,
     };
     let request = WorthQueryApplicationHomeRequest::new(
         WorthQueryApplicationHomeLocation::Directory(directory.clone()),

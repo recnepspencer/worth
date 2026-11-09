@@ -43,7 +43,7 @@ fn conditional_operation_keeps_index_stops_at_every_consult() {
                 "injected at {at}, answered at {emitted_at}"
             );
         },
-        |_, stop| assert_eq!(*stop, provider_work_stop()),
+        |_, stop| assert_work_stop_preserves_its_owning_phase(stop),
     );
 }
 
@@ -95,6 +95,9 @@ fn conditional_operation_work_stop_terminal_matches_its_typed_cause() {
         // typed cause, and use the dedicated read-ceiling proofs for exact
         // stage and cause values. This cannot prove per-charge attribution.
         let expected_terminal = match cause.expect("a denied charge has its cause") {
+            Cause::ProductUnpublished(graph::ProductUnpublishedCause::OriginalObservationStopped(
+                worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted,
+            )) => Terminal::ProductUnpublished,
             Cause::BridgeConditional(worth_runtime_bridge::facade::BridgeConditionalDenialKind::ExecutionDenied(
                 worth_runtime_bridge::facade::BridgeExecutionDenial::WorkCeiling,
             )) | Cause::ApplicationExecutionDenied {

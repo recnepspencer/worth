@@ -14,6 +14,7 @@ impl QueryHomeAuthoredBindings {
         &self,
         producers: &mut crate::domain_computation::primary_graph::application_contribution::WorthQueryInstalledOutputProducerRoutes,
         readiness: &mut crate::domain_computation::primary_graph::application_contribution::WorthQueryInstalledOutputReadinessRoutes,
+        definitions: &mut crate::domain_computation::primary_graph::conditional_operation::definition_declarations::ConditionalDefinitionDeclarations,
     ) -> Result<(), BridgeAuthoredReadmissionDenial> {
         for route in producers.values_mut() {
             route.scheduling.admit_authored_declaration(&self.fresh)?;
@@ -21,6 +22,7 @@ impl QueryHomeAuthoredBindings {
                 comparison.admit_authored_declaration(&self.fresh)?;
             }
         }
+        definitions.admit_authored_declarations(&self.fresh)?;
         for route in readiness.values_mut() {
             route.lowering.admit_authored_declaration(&self.fresh)?;
         }
@@ -51,6 +53,7 @@ impl BridgeAuthoredInstallationBindings for QueryHomeAuthoredBindings {
         _branch: DurableSignalBranchIdentity,
         contract: &BridgeConditionalContract,
         location: &BridgeConditionalLocation,
+        descriptions: &BridgeAuthoredProviderDescriptions,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<BridgeConditionalProviderSet, BridgeAuthoredReadmissionDenial> {
         execution.consult().map_err(|cause| {
@@ -58,6 +61,7 @@ impl BridgeAuthoredInstallationBindings for QueryHomeAuthoredBindings {
                 BridgeAuthoredSectionDenial::Request(cause),
             ))
         })?;
-        self.fresh.providers(contract, location)
+        self.fresh
+            .providers(contract, location, descriptions, execution)
     }
 }

@@ -43,8 +43,8 @@ fn capture_for(
                 location: BridgeConditionalLocation::workflow_stage("authored-stage", identity),
                 dependencies: Vec::new(),
                 providers: BridgeConditionalProviderSet::new()
-                    .trigger(Requested)
-                    .compute(VersionCompute),
+                    .authored_trigger(Requested)
+                    .authored_compute(VersionCompute),
             })
             .unwrap();
         let node = lowering.signal_node();
@@ -97,6 +97,51 @@ fn authored_bridge_codec_refuses_unknown_version_with_a_typed_protocol_reason() 
     assert!(matches!(
         BridgeAuthoredSection::readmit_bytes(&execution, &bytes, branch()),
         Err(BridgeAuthoredSectionDenial::UnsupportedVersion(_))
+    ));
+}
+#[test]
+fn authored_bridge_codec_refuses_the_retired_providerless_version() {
+    let funding = request();
+    let execution = ExecutionRequest::serial(&funding);
+    let artifact = capture(&execution);
+    let mut bytes = artifact.bridge_bytes().to_vec();
+    bytes[8..12].copy_from_slice(&1u32.to_le_bytes());
+    assert!(matches!(
+        BridgeAuthoredSection::readmit_bytes(&execution, &bytes, branch()),
+        Err(BridgeAuthoredSectionDenial::UnsupportedVersion(_))
+    ));
+}
+#[test]
+fn conditional_successor_capture_refuses_a_callback_without_portable_parameters() {
+    let funding = request();
+    let execution = ExecutionRequest::serial(&funding);
+    let predecessor = capture(&execution);
+    let occurrence = predecessor.conditional_occurrences().next().unwrap();
+    let contract = BridgeConditionalContract::new(BridgeConditionalContractParts {
+        identity: Arc::from("first-definition"),
+        dependency_count: 0,
+        condition_dependency_ordinals: Vec::new(),
+        condition: BridgeConditionalCondition::OnDemand,
+        dependency_comparator: SignalConditionalVersionComparator::Exact,
+        output_comparator: SignalConditionalVersionComparator::Exact,
+        artifact_reuse: SignalConditionalArtifactReuse::NotReusable,
+    });
+    let location = BridgeConditionalLocation::workflow_stage("authored-stage", "first-definition");
+    let callbacks = BridgeConditionalProviderSet::new()
+        .authored_trigger(Requested)
+        .compute(VersionCompute);
+    assert!(matches!(
+        BridgeAuthoredSection::capture_definition_successor(
+            &execution,
+            &predecessor,
+            occurrence,
+            &contract,
+            &location,
+            &callbacks,
+        ),
+        Err(BridgeAuthoredSectionDenial::Provider(
+            BridgeAuthoredProviderDenial::MemoryOnlyRole(BridgeConditionalProviderRole::Compute)
+        ))
     ));
 }
 #[test]

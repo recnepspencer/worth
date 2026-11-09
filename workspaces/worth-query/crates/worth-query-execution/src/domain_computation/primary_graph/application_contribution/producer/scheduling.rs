@@ -1,3 +1,4 @@
+mod authored_source;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use crate::domain_computation::primary_graph::{
     conditional_operation::installation::route_binding::InstalledConditionalRoute,
@@ -134,10 +135,10 @@ pub(super) fn install_output_producer_routes<'a>(
                     location: BridgeConditionalLocation::operation(scheduling_identity),
                     dependencies: Vec::new(),
                     providers: BridgeConditionalProviderSet::new()
-                        .trigger(ProducerDemandTrigger {
+                        .authored_trigger(ProducerDemandTrigger {
                             semantics: semantics.clone(),
                         })
-                        .compute(ProducerSignalCompute { semantics }),
+                        .authored_compute(ProducerSignalCompute { semantics }),
                 })
                 .map_err(|denial| installation_denial(identity, denial))?;
             let output_comparison = output_meaning

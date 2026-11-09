@@ -5,7 +5,7 @@ mod application_change;
 pub use application_change::WorthQueryAdmittedApplicationConditionalDefinition;
 
 use worth_query_installation::facade::{
-    ApplicationSchema, WorthQueryHostConditionalPredicateProvider,
+    ApplicationSchema, WorthQueryAuthoredHostConditionalPredicateProvider,
 };
 use worth_runtime_world::facade::{
     NoEffectCompositePublication, ProductBranchIdentity, RuntimeWorldCancellationToken,
@@ -115,7 +115,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
     >
     where
         Node: 'static,
-        Provider: WorthQueryHostConditionalPredicateProvider<Node>,
+        Provider: WorthQueryAuthoredHostConditionalPredicateProvider<Node>,
     {
         self.application()
             .admit_conditional_definition_on_product(self.product(), handle, provider)
@@ -132,7 +132,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
     >
     where
         Node: 'static,
-        Provider: WorthQueryHostConditionalPredicateProvider<Node>,
+        Provider: WorthQueryAuthoredHostConditionalPredicateProvider<Node>,
     {
         self.application().with_host_advancement(|active_phase| {
             let phase = &active_phase;

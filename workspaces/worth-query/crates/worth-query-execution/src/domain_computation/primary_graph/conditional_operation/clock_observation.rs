@@ -17,6 +17,10 @@ pub(in crate::domain_computation::primary_graph) use erased::{
 pub enum WorthQueryConditionalClockObservationDenialKind {
     /// The clock handle is not installed in this runtime.
     ForeignRuntime,
+    NotReadmitted {
+        family: worth_foundational::facade::DurableStateFamily,
+        phase: u8,
+    },
     /// The conditional binding could not be admitted on the selected product.
     ProductAdmission(super::installation::WorthQueryConditionalRuntimeInstallationDenialKind),
 }
