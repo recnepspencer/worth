@@ -135,7 +135,9 @@ fn checked_record_node(
     Ok(node.node().clone())
 }
 
-fn missing_required_node(id: LineageId) -> crate::execution::RelationalExecutionDenialCause {
+pub(super) fn missing_required_node(
+    id: LineageId,
+) -> crate::execution::RelationalExecutionDenialCause {
     crate::execution::RelationalExecutionDenialCause::StorageUnavailable(
         crate::storage::data::RelationalStorageUnavailable {
             subject: crate::storage::data::RelationalStorageSubject::Lineage {

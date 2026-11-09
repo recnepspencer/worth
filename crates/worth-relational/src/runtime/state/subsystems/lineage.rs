@@ -23,6 +23,7 @@ pub(crate) use state::{LineageState, ValidatedLineageEventBatch};
 /// installation during settlement never demands exclusive access to the runtime.
 #[derive(Debug, Default)]
 pub(crate) struct LineageSubsystem {
+    discovery_metadata: std::sync::Mutex<()>,
     state: RuntimeOwnedState<LineageState>,
     event_admissions:
         RuntimeOwnedState<BTreeSet<crate::durability::medium::RelationalDurableMemberLocator>>,
@@ -33,6 +34,16 @@ pub(crate) struct LineageSubsystem {
 }
 
 impl LineageSubsystem {
+    /// Serialize only the short read-side canonical snapshot/validation calls.
+    /// No provider callback or lineage traversal belongs inside this scope.
+    pub(crate) fn with_discovery_metadata<T>(&self, observe: impl FnOnce() -> T) -> T {
+        let _snapshot = self
+            .discovery_metadata
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        observe()
+    }
+
     /// Replace the whole subsystem, for checkpoint restore.
     pub(crate) fn install(&self, state: LineageState) {
         *self.state.write() = state;
@@ -261,6 +272,7 @@ impl RuntimeSubsystem for LineageSubsystem {
 
     fn new(_: &Self::Config) -> Self {
         Self {
+            discovery_metadata: Default::default(),
             state: RuntimeOwnedState::new(LineageState::empty()),
             node_residency: Default::default(),
             event_residency: Default::default(),
@@ -272,6 +284,7 @@ impl RuntimeSubsystem for LineageSubsystem {
         // Admission membership and the copied resolution index form one basis.
         let admissions = self.event_admissions.read();
         Self {
+            discovery_metadata: Default::default(),
             state: RuntimeOwnedState::new(self.snapshot()),
             node_residency: self.node_residency.detached(),
             event_residency: self.event_residency.detached(),

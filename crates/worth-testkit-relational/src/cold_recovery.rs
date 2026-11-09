@@ -93,6 +93,17 @@ pub fn source_with_profile(
             &format!("member-update-{update}"),
         );
     }
+    capture_source(request, producer, medium, entity, with_tail)
+}
+
+/// Capture the real runtime and its caller-owned medium as one source recipe.
+pub fn capture_source(
+    request: &ExecutionRequest<'_, '_>,
+    producer: RelationalRuntime,
+    medium: Arc<TestDurableMedium>,
+    entity: EntityId,
+    with_tail: bool,
+) -> ColdRecoverySourceFixture {
     let native = producer
         .durability_authority()
         .native_checkpoint_with_policy(
@@ -108,7 +119,12 @@ pub fn source_with_profile(
     if with_tail {
         update_entity(request, &producer, entity, "member-after");
     }
-    let artifacts = medium.offered();
+    let artifacts = medium.committed_artifacts().unwrap();
+    assert_eq!(
+        artifacts.last().map(|artifact| artifact.position()),
+        producer.history().latest_patch_stream_position(),
+        "source recipe uses the actual producer's committed medium"
+    );
     let source = Arc::new(ImmutableCheckpointMemberSource {
         members: native
             .members()

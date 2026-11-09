@@ -1,7 +1,6 @@
 //! Relation-bearing cold roots must preserve the demanded region's isolation.
 use super::*;
 use crate::identity::data::{EntityId, PartitionId};
-use std::collections::BTreeMap;
 
 struct ColdRoot {
     runtime: crate::runtime::RelationalRuntime,

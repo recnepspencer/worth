@@ -1731,3 +1731,15 @@ The JavaScript `worth-signals-wasm` facade declares browser endpoint resources.
 includes explicit `PATCH` transport for update semantics, with canonical request
 identity and mutation-response reconciliation proofs. This is the browser signal
 package surface, separate from the native query facades indexed above.
+
+## Platform diagnostic lineage readers
+
+Platform owners use Native's `immutable_lineage_node` for semantic immutable
+node DATA with its actual page lease, or `lineage_node_at_observation` for an
+entity association in an admitted observation. Neither grants mutation authority.
+`discover_authored_lineage_history` and `discover_authored_record_history`
+return branch-authored replacement history at an unchanged publication cut; they
+are distinct from selected-observation ancestry. Ordinary discovery retains the
+existing collection policy. `DurabilityAccess::external_canonical_source_availability`
+reports actual port presence, without validating artifacts. These are platform
+facade observations; applications continue through Query's two audience facades.

@@ -57,50 +57,6 @@ fn settled_live_nonhead_envelopes_release_only_when_a_durable_copy_exists() {
 }
 
 #[test]
-fn cold_source_is_bound_before_a_durable_runtime_publishes_its_first_commit() {
-    let host = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host);
-    let runtime = durable_runtime_with_test_schema();
-    let source = runtime
-        .durability
-        .cold_source()
-        .expect("medium attachment supplies its journal read port");
-    let entity = create_entity(execution, &runtime, "attached-source-seed");
-    let position = runtime.history().latest_patch_stream_position().unwrap();
-    let bytes = source.read_commit(position, 64 << 20).unwrap();
-    let artifact = crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes).unwrap();
-    assert_eq!(artifact.position(), position);
-    let envelope =
-        crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::readmit(
-            artifact.as_bytes(),
-            execution,
-        )
-        .unwrap()
-        .into_positioned();
-    assert_eq!(
-        envelope.commit.commit_id,
-        runtime
-            .history()
-            .branch_head(&BranchId("main".into()))
-            .unwrap()
-            .commit_id
-    );
-    assert!(envelope
-        .patch
-        .authoritative_record_patches
-        .iter()
-        .any(|patch| patch.target == crate::transactions::data::RecordRef::Entity(entity)));
-    assert_eq!(
-        runtime.history().latest_patch_stream_position(),
-        Some(position)
-    );
-    assert!(runtime_with_test_schema()
-        .durability
-        .cold_source()
-        .is_none());
-}
-
-#[test]
 fn released_live_history_remains_in_external_capture_and_retained_recovery() {
     let host = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);

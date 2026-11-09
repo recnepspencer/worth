@@ -12,7 +12,6 @@ pub(super) struct EventFixture {
     pub(super) runtime: crate::runtime::RelationalRuntime,
     pub(super) source: Arc<MemberSource>,
     pub(super) seed: crate::identity::data::LineageId,
-    pub(super) original: crate::identity::data::EntityId,
     pub(super) expected: HistoricalLineageResolution,
 }
 
@@ -134,7 +133,6 @@ pub(super) fn reopened_with_source(
         runtime,
         source,
         seed,
-        original,
         expected,
     }
 }

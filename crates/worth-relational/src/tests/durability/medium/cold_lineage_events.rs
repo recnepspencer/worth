@@ -64,65 +64,6 @@ fn a_shared_event_page_is_admitted_once_into_each_forked_lineage_authority() {
 }
 
 #[test]
-fn concurrent_lineage_history_reads_share_one_actual_event_member_load() {
-    let host = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host);
-    let fixture = reopened(execution);
-    let directory = fixture
-        .runtime
-        .durability
-        .checkpoint_selection()
-        .snapshot()
-        .unwrap();
-    let member = directory
-        .manifest
-        .lineage_events
-        .iter()
-        .find(|page| {
-            page.event_ids
-                .iter()
-                .any(|id| fixture.expected.traversed_event_ids.contains(id))
-        })
-        .unwrap()
-        .member;
-    let start = std::sync::Barrier::new(8);
-    std::thread::scope(|scope| {
-        let handles = (0..8)
-            .map(|_| {
-                scope.spawn(|| {
-                    let host = crate::test_execution_policy::serial_request();
-                    let execution = &worth_execution::ExecutionRequest::serial(&host);
-                    start.wait();
-                    let result = fixture
-                        .runtime
-                        .lineage_access()
-                        .resolve_historical_lineage(execution, request(fixture.seed))
-                        .unwrap();
-                    assert_eq!(result.digest_basis(), fixture.expected.digest_basis());
-                })
-            })
-            .collect::<Vec<_>>();
-        for handle in handles {
-            handle.join().unwrap();
-        }
-    });
-    let reads = fixture.source.member_reads.lock().unwrap();
-    assert_eq!(
-        reads.iter().filter(|read| **read == member).count(),
-        1,
-        "one serialized cold load serves the simultaneous demands"
-    );
-    assert!(
-        reads.iter().all(|read| directory
-            .manifest
-            .lineage_events
-            .iter()
-            .any(|page| page.member == *read)),
-        "lineage traversal reads no region, symbol or node payload"
-    );
-}
-
-#[test]
 fn node_range_boundaries_keep_neighboring_event_members_cold() {
     let host = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);

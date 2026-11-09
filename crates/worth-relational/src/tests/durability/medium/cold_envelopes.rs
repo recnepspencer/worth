@@ -1,5 +1,4 @@
 //! A bounded history operation demands its selected journal envelope only.
-use super::*;
 use crate::execution::RelationalExecutionDenialCause;
 
 #[derive(Clone, Copy, Debug)]

@@ -361,3 +361,39 @@ testkit or product runtime inputs changed after6/0/0. Complete/ACK clarification
 stillpending. Node/event observation design review found feasible typed owners;
 return existing event semantic DATA with current ordinary collection policy,
 not a new quota/result wrapper; actual counted node lease stays inNodeRead.
+
+Lineage-owner slice is coherent: counted semantic node reads, branch-authored
+discovery at a validated original publication cut, real port presence, and public
+event/source courts. Two reviewer-found type/doc issues and provider-protection
+payload mismatch fixed before compile. Metadata lock brackets only short
+canonical selection/validation; traversal and provider I/O stay outside it.
+Sixteen affected names selected together; two eight-reader controls reserve
+their actual eleven slots. First owned build for this slice follows formatting.
+
+First lineage build diagnosed one caller family (three mistaken facade imports
+and one private conversion where the actual read-only envelope accessor exists).
+All four fixed together. Source reviewer also found selected-read retirement
+payload distinct from placement registration; delegate that original producer
+payload's validator/retirement back to its actual owner. No policy or assertion
+change. Second coherent build/run follows; no extra workspace check.
+
+Lineage public16/0/0. First full scopedClippy found the two original harness
+thread sites now outside the old broad cfg(test) allow; performance law41's exact
+local expects declare court contention,count8 each,footprint11,without new allow
+attributes/global config/pool wrappers. Also removed two stale imports and the
+now-uncalled cfg(test) resident_replay_pins hook,with exact C2 restore reference.
+Same32production warnings stay queued; this is final fourth blocking round for
+this coherent slice. Test bodies unchanged; reuse16/0/0 rather than rerunning.
+
+Final lineageClippy exits0: same32library/23lib-test diagnostics, no newwarning.
+All16selectedpublicproofs pass, exact8-readercontention preserved. Fresh independent
+review APPROVE including provider protection/retirement corrections and two
+performance-law41 thread-site expects. Caps/mandatoryboundary/context follow this
+planned slice completion. Remaining adapterclosure/dead32/CompleteACK still active.
+Currentturn counts1check,2Clippy,3focusedbuilds,2selectedtestruns.
+
+Lineage slice phasegates complete:32Rustfilescapsgreen,contextgreen,fmtgreen.
+Mandatoryboundary remains exact14(3unmigratedownedproviders,11assignedelsewhere),
+noneonnewAPI/courts. ScopedfreshreviewAPPROVE,nofindingsopen. Committhissafe
+point,thencontinueadapterdecomposition. No newtestexecutionafter16/0/0:later
+sourcehunksareexpectannotations,unusedimports,uncalledcfgtesthook,andformatting.

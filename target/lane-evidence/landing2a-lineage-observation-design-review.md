@@ -65,6 +65,12 @@ Suggested signatures on the existing runtime composition, with implementation
 in the actual lineage owner and exports through the normal facade:
 
 ```rust
+pub fn immutable_lineage_node(
+    &self,
+    request: &ExecutionRequest<'_, '_>,
+    lineage: LineageId,
+) -> Result<Option<RelationalLineageNodeRead>, RelationalExecutionDenialCause>;
+
 pub fn lineage_node_at_observation(
     &self,
     request: &ExecutionRequest<'_, '_>,
@@ -92,6 +98,10 @@ The final names are a DX choice. The important contracts are:
 - `RelationalLineageNodeRead` is an owned immutable semantic node read. Privately
   retain the actual `ResidentLineageNode`; expose `node() -> &LineageNode` only.
   Do not expose a page cell, counter, node arena, mutation door, or constructor.
+- The immutable lookup's `LineageId` selects metadata in this runtime's lineage
+  owner; it confers no membership, currentness, selected-root or mutation
+  authority. It is independent of live/retired entity visibility. A missing
+  catalog entry is not a repeatable absence promise across later publications.
 - Return the existing facade `HistoricalLineageResolution` DATA directly. It
   already carries the exact branch, seed, resolved IDs, traversed event IDs,
   canonical digest basis, and metrics/trace meaning. A second event Read wrapper
@@ -114,6 +124,37 @@ meaning rather than designing a second lineage algorithm or result vocabulary.
 
 ## Node operation and exact custody
 
+The smaller direct immutable-node operation is lawful. It consults the original
+request and delegates to the actual `lineage.demand_node(request, lineage)`;
+it returns the resulting counted guard as the private backing of the public
+semantic read. No branch admission is required for this diagnostic immutable
+metadata contract. In particular, it neither turns an ID into read-root
+selection nor issues a grant that a caller can use to open a stronger operation.
+
+This has a concrete existing public analogue:
+`history/access/commit_surfaces.rs:25-46` documents and implements an ID-only
+`immutable_commit_identity` diagnostic lookup, explicitly unable to select a
+branch head or visible root. `immutable_commit_receipt` at lines 48-63 returns
+immutable canonical artifact evidence without mutable history authority.
+`iteration-cutover.md:178-182` prohibits a descriptive-ID method used as a
+replacement for a private constructor and publication of private runtime state;
+it does not prohibit an immutable metadata query. The same specification's
+history destination at line 103 owns canonical lineage custody and queries.
+Architectural Law 10 distinguishes data from authority, and Law 16 demands
+owner-issued witnesses for binary authority preconditions; neither says all
+immutable metadata lookup requires selected-root authority. Architectural Law 1
+requires phase-scoped immutable read handles at governed read boundaries; the
+node read guard is such an immutable owner-produced handle, not a mutable field
+or forgeable observation. I found no explicit source/spec rule imposing branch
+binding on every immutable lineage metadata lookup.
+
+For node-at-observation, use that observation's actual root association and
+delegate the node demand to the same immutable owner lookup. The selected
+operation still validates the exact entity binding; a mismatch must use the
+actual backing's existing `reject_binding` path internally. The generic
+immutable-node lookup alone asserts no entity/root association, so it must not
+perform a fabricated binding check or pretend the ID establishes membership.
+
 Admit `observation` using the existing runtime-affinity check, consult the
 original request, and use that held root's `demand_region_head` to select the
 entity slot's lineage association. `branch/root_region_access.rs:189` is the
@@ -126,9 +167,13 @@ plausible `LineageNode` from IDs.
 The original point operation is `lineage/access/records.rs:14-39`; its selected
 association is read from partition Head metadata, followed by node demand and
 binding validation. The selected-root implementation must preserve full entity
-identity/generation checks. It must also allow a retained retired slot's lineage
-association: the custody fixture selects `fixture.original`, which was replaced.
-Filtering through a visible-only record read would lose this claim.
+identity/generation checks. That operation may return a retained retired slot's
+association if the held Head actually contains it; it must not reconstruct a
+missing association from the requested IDs. The direct custody court should
+use immutable-node lookup because it originally selects `fixture.seed`
+independently of any Head association after `fixture.original` was replaced.
+Filtering that court through a visible record or requiring a retired Head
+association would change its actual selector and can lose the claim.
 
 `ResidentLineageNode` already owns the real node-page lease
 (`runtime/state/subsystems/lineage/node_residency.rs:210-219`). Keeping that
@@ -266,10 +311,11 @@ lease is part of the asserted observation lifecycle, not a quota mechanism.
   dormant Graph/Divergence evidence into C2, retaining explicit restore pointers.
 - Index 43: use node-at-observation, compare the actual `LineageNode` and count
   the original node member once across simultaneous demands.
-- Index 32: use node-at-observation for the original retained slot, keep the
-  real node lease alive during provider custody assertion, and preserve final
-  owner release. Identify the real member from authentic emitted artifacts or
-  public inspection; do not export the checkpoint manifest.
+- Index 32: use immutable-node lookup for the actual original lineage seed,
+  keep the real node lease alive during provider custody assertion, and preserve
+  final owner release. No Head/region/symbol read is needed. Identify the real
+  member from authentic emitted artifacts or public inspection; do not export
+  the checkpoint manifest.
 
 Architectural Laws 1, 5, 10, 15, 16, and 19 support owner-issued immutable reads,
 typed denials, explicit traversal, and actual lifecycle carriage. Performance

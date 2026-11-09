@@ -138,6 +138,7 @@ pub mod inspection;
 pub mod indexes;
 
 pub mod lineage {
+    pub use crate::lineage::access::{RelationalLineageDiscoveryDenial, RelationalLineageNodeRead};
     pub use crate::lineage::data::{
         HistoricalLineageResolution, HistoricalLineageResolutionDigestBasis,
         HistoricalLineageResolutionMetrics, HistoricalResolutionBoundednessBasis,

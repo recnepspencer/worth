@@ -1,20 +1,37 @@
-use super::*;
+use super::{lineage_event_doors::EventDoor, lineage_sources::reopened};
+use worth_relational::facade::{
+    identity::LineageId,
+    storage::{
+        RelationalStorageSubject, RelationalStorageUnavailable,
+        RelationalStorageUnavailableCause as Cause,
+    },
+    transactions::RelationalExecutionDenialCause as Execution,
+};
+use worth_testkit_relational::durable_medium::immutable_members::ColdRead;
+const FAILURES: [(Cause, bool); 6] = [
+    (Cause::MissingMember, true),
+    (Cause::SourceUnavailable, false),
+    (Cause::Damaged, true),
+    (Cause::IntegrityMismatch, true),
+    (
+        Cause::LimitExceeded {
+            length: 2,
+            limit: 1,
+        },
+        false,
+    ),
+    (Cause::MemoryExhausted, false),
+];
 
 #[test]
 fn residency_failure_matrix_lineage_event_doors_preserve_every_failure_class() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     for door in EventDoor::ALL {
         for (cause, sticky) in FAILURES {
             let fixture = reopened(execution);
-            let directory = fixture
-                .runtime
-                .durability
-                .checkpoint_selection()
-                .snapshot()
-                .unwrap();
-            let page = directory
-                .manifest
+            let page = fixture
+                .directory
                 .lineage_events
                 .iter()
                 .find(|page| {
@@ -24,7 +41,7 @@ fn residency_failure_matrix_lineage_event_doors_preserve_every_failure_class() {
                 })
                 .unwrap();
             let frontier = fixture.runtime.history().latest_patch_stream_position();
-            let offered = attached_test_medium(&fixture.runtime).offered().len();
+            let offered = fixture.medium.offered().len();
             fixture
                 .source
                 .failures
@@ -33,8 +50,8 @@ fn residency_failure_matrix_lineage_event_doors_preserve_every_failure_class() {
                 .insert(ColdRead::Member(page.member), cause);
             let expected = Execution::StorageUnavailable(RelationalStorageUnavailable {
                 subject: RelationalStorageSubject::Lineage {
-                    first: crate::identity::data::LineageId(page.first_node),
-                    last: crate::identity::data::LineageId(page.last_node),
+                    first: LineageId(page.first_node),
+                    last: LineageId(page.last_node),
                 },
                 cause,
             });
@@ -74,10 +91,7 @@ fn residency_failure_matrix_lineage_event_doors_preserve_every_failure_class() {
                 fixture.runtime.history().latest_patch_stream_position(),
                 frontier
             );
-            assert_eq!(
-                attached_test_medium(&fixture.runtime).offered().len(),
-                offered
-            );
+            assert_eq!(fixture.medium.offered().len(), offered);
         }
     }
 }

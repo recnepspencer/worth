@@ -38,6 +38,27 @@ each invariant is enforced and where each new type lives.
   claims in C2 through its honest allocation/residency observation; they are not
   retired. Public semantic read/failure courts remain in the happy tree.
 
+- C2: the Graph and Divergence subcases of
+  `residency_failure_matrix_lineage_event_doors_preserve_every_failure_class`:
+  restore from `ea2ffee250:crates/worth-relational/src/tests/durability/medium/cold_lineage_event_matrix.rs`
+  and `ea2ffee250:crates/worth-relational/src/tests/durability/medium/cold_lineage_event_matrix/exhaustive.rs`.
+  These collectors exist only under cfg(test), with no shipping public door.
+  Seven distinct shipping owner paths, plus the two original aspect-access
+  forwarding aliases mapped to their identical public delegates, retain their full
+  typed-refusal, repair/stickiness, no-publication and frontier assertions in
+  the external cold-residency court.
+- C2: private zero-resident-node/event preconditions from the lineage fixture
+  helpers used by the migrated concurrent and integrity courts: restore from
+  `ea2ffee250:crates/worth-relational/src/tests/durability/medium/cold_lineage_fixture.rs`
+  and `ea2ffee250:crates/worth-relational/src/tests/durability/medium/cold_lineage_event_fixture.rs`.
+  The external courts preserve zero physical reads at reopen and all original
+  public result, byte-integrity, concurrency and source-custody assertions.
+
+- C2: the removed `resident_replay_pins` resident-only fixture hook:
+  `restore from ea2ffee250:crates/worth-relational/src/visibility/pins/pin_authority/replay_pins.rs`.
+  Its only callers were the already-moved private pin courts; the shipping
+  funded `demand_replay_pins` and its resident implementation remain unchanged.
+
 ## Phase map
 
 | Phase | Name | Depends on | Lands |
