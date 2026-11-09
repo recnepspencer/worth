@@ -8,7 +8,7 @@ use worth_relational::facade::{
     transactions::RelationalExecutionDenialCause as Execution,
 };
 use worth_testkit_relational::durable_medium::immutable_members::ColdRead;
-const FAILURES: [(Cause, bool); 6] = [
+pub(super) const FAILURES: [(Cause, bool); 6] = [
     (Cause::MissingMember, true),
     (Cause::SourceUnavailable, false),
     (Cause::Damaged, true),

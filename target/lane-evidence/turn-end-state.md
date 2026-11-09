@@ -1,32 +1,38 @@
-# Working state (Landing2a still in progress)
+# Working state: Landing2a remains in progress
 
-Completed this turn: allocation refusal moved C2 (b736be6f47); first public
-cold reads (ea2ffee250); lineage/source observations and six ports (427700edd0);
-current-read public family is the next reviewed commit. No push or merge.
+Committed prior slices: b736be6f47 allocation refusal C2 move; ea2ffee250 first
+cold public reads;427700edd0 lineage DATA/source owners;81d41f5575 current reads.
+This reviewed slice ports16lineage/retention/region public courts, keeps3pure
+codec units, moves exact private subclaimsC2 with81d41f5575restore refs, removes
+10old sourcefiles/3isolationfunctions, baseline minus9rows. No parked work.
 
-Current family:15/0/0 plus2/0/0 relocated matrices; Root/courtClippy exit0,
-queued32production/23testwarnings; fmt,caps,contextpass; boundary14findings,
-three owned adapters remain. Evidence paths and full commands are in
-landing2a-current-*.log; initial failed build and first boundary's16findings kept.
-Review: landing2a-current-final-review.md, fresh finalAPPROVE.
+Green evidence: landing2a-retention-public-root.log15/1/0, then
+landing2a-retention-public-corrected.log2/0/0 fixes the one failed capture fixture
+and strengthens actual-root History nonread. All16publiccases nowpass.
+landing2a-retention-native-coverage.log3/0/0. FinalClippy,fmt,context,caps22pass;
+functions13advisories/0errors,reviewedcohesive. Fresh finalreviewAPPROVE in
+landing2a-retention-review.md. FinalClippystill32lib/23testwarnings:queued gate.
+Boundarylanding2a-retention-boundary.log stays14findings:3ownedunmigrated
+adapters+11routedothers. No newfinding in changedfiles. Not an overallgreenclaim.
 
-Open items:
-- HAPPY gate: finish remaining Native cold/public/private decomposition and the
-  runtime_attachment consumers; remove all three local adapters/hooks. Exact
-  remaining cold inventory: landing2a-remaining-cold-tests.json.
-- HAPPY gate: delete the32dead Native production members at actual owners;
-  landing2a-dead-code-boundary-review.md contains full caller disposition.
-- HAPPY gate: Complete/ACK contract: governing landing note names it without
-  identifying a defect. Clarification requested; original contracts and two
-  existing ACK tests located. Continue independent queue work while pending.
-- CLEANUP: exact private dictionary, residency, pin and allocation claims moved
-  with restore refs in milestone3 Moved courts/C2. No claim retired or weakened.
+Open HAPPY gates, in order:
+- remaining41originalcoldtests (landing2a-remaining-cold-tests.json) and actual
+  runtime_attachment consumers; removeall3localadapters/hooks,baseline onlyshrinks.
+-32deadNativeproductionmembers; fullowner/callerdisposition in
+  landing2a-dead-code-boundary-review.md. Deleteorwire,nosuppression.
+-Complete/ACK: independentread-onlyauditfoundnoconcretedefect; actualsameattempt,
+ cursor,backing,cells andpendinghandoffmatchcontract. PublicStore/Host and
+ narrowNativepercellcourtsstillneedqualification/preservation; exactnames in
+ landing2a-complete-ack-boundary-review.md. No newcontractinvented.
 
-Merge seams this turn: new field/short metadata serializer in runtime lineage;
-change_source observation affinity helper visibility; facade exports;
-branch/materialization source_records getter; local Moved courts/C2 entries
-must reconcile with integration's Delivery tracks placement. Boundary baseline
-only shrinks. None of the standing-rule29skipped sites was edited.
+CLEANUP: exact resident/dictionary/pin/cache/allocation/counter subclaims are
+moved,notretired,under milestone-3.md Movedcourts/C2 withrestore references.
 
-Counts so far this turn:1cargo check,5Clippy,6focusedbuilds,4selectedtest runs.
-No ignored,query-scale,oracle,Store scenario or Query/Store workspace build ran.
+Merge seams: earlierlineagefacet/shortserialization/affinityhelpervisibility,
+branch/materialization::source_records getter; thisslice removesonlynowuncalled
+cfgtestLineageSubsystem::node,withC2restore. LocalMovedcourts/C2 list must
+reconcile with integration's Deliverytracks placement. No otherworktreeedited.
+
+Cumulativeturncounts:1cargo check,7Clippy,9focusedbuilds,7selectedtestruns.
+Noignoredtestexecuted,queryscale,oracle,scenario,Query/Storeworkspacebuild,
+merge,push,stackoverride,budgetraiseorartifactcleanup.

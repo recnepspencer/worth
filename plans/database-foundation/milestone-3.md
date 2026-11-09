@@ -75,6 +75,55 @@ each invariant is enforced and where each new type lives.
   These private claims are moved, not retired; a public I/O count is not their
   physical residency/dictionary observation.
 
+
+- C2: resident node/event cardinalities, exact per-runtime event-index population,
+  and query-index nonmutation from the mixed lineage courts:
+  `restore from 81d41f5575:crates/worth-relational/src/tests/durability/medium/cold_lineage_events.rs`
+  and `restore from 81d41f5575:crates/worth-relational/src/tests/durability/medium/cold_lineage_nodes.rs`.
+  Keep all zero/unchanged/admitted count, absent-node and shared-page warmup
+  assertions; the external lineage semantics, point guards and capture-row
+  courts retain original resolution/digest, member noninterference, sticky
+  typed failures, public frontier/offer invariance and serialized row coverage.
+  Original zero-node/zero-event preparation also belongs to C2:
+  `restore from 81d41f5575:crates/worth-relational/src/tests/durability/medium/cold_lineage_event_fixture.rs`.
+  The capture's exact no-load/shared-index preparation and no member-read suffix
+  are resident-state/cost claims; C2 restores them, not a public semantic proxy.
+- C2: Graph/Divergence subcases and the exact retry-resident-node predicate in
+  `residency_failure_matrix_lineage_doors_preserve_every_failure_class`:
+  `restore from 81d41f5575:crates/worth-relational/src/tests/durability/medium/cold_lineage_matrix/exhaustive.rs`
+  with node-door setup in `cold_lineage_nodes.rs` above. Seven shipping doors
+  keep all six failure classes and original successful/sticky/retry/publication
+  consequences in the external node matrix. The fixture's resident-zero setup:
+  `restore from 81d41f5575:crates/worth-relational/src/tests/durability/medium/cold_lineage_fixture.rs`.
+- C2: exact zero-node observation after cold mirror refusal in
+  `lineage_point_guard_preserves_a_cold_mirror_head_failure`:
+  `restore from 81d41f5575:crates/worth-relational/src/tests/durability/medium/cold_observation_reads.rs`.
+  Public historical inspection preserves the live mirror-lineage helper's exact
+  typed/sticky refusal; the paired retained-observation court preserves all four
+  original exact-root guards and no publication effects.
+- C2: physical replay pin counts, direct historical-root Full/cold-mirror probes,
+  replay-retention census, private cache diagnostics and exact cache-clear window:
+  `restore from 81d41f5575:crates/worth-relational/src/tests/durability/medium/cold_pins.rs`.
+  Public paired courts are `replay_pinning_preserves_sticky_mirror_refusal_without_publication`
+  and `replay_retention_releases_original_references_without_cold_reads`.
+  Keep C2's exact source-state/pinned-record setup and failed-installation census.
+- C2: one-pin/zero-pin census in `concurrent_replay_references_share_one_physical_pin_set`:
+  `restore from 81d41f5575:crates/worth-relational/src/tests/durability/medium/replay_pin_concurrency.rs`.
+  Its public two eight-worker retain/release phases, all return values and final
+  false release remain in `concurrent_replay_references_release_each_original_reference_once`.
+- C2: exact discarded-round materialization and adjacency-lease counters, including
+  resets and accepted-round equality, in
+  `discarded_visibility_rounds_settle_only_accepted_materialization_and_leases`:
+  `restore from 81d41f5575:crates/worth-relational/src/tests/durability/medium/cold_visibility_round_counters.rs`.
+  Public cold/warm nonempty result equality and actual additional carrier reads
+  remain in `partially_cold_visibility_reads_preserve_nonempty_warm_results`.
+  All these private assertions move to C2; none is retired or weakened.
+
+- C2: now-uncalled resident-node fixture probe used by the moved node matrix:
+  `restore from 81d41f5575:crates/worth-relational/src/runtime/state/subsystems/lineage.rs`.
+  Restore its cfg(test) `LineageSubsystem::node` only with the actual resident
+  assertions above; the shipping counted semantic node read remains unchanged.
+
 ## Phase map
 
 | Phase | Name | Depends on | Lands |

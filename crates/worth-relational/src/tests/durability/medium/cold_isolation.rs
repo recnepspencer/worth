@@ -10,13 +10,6 @@ struct ColdRoot {
     remote_symbol: Option<crate::symbols::data::Symbol>,
 }
 
-fn recover_relations(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    missing_history: Option<PartitionId>,
-) -> ColdRoot {
-    recover_shape(execution, missing_history, 16, false)
-}
-
 fn recover_shape(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     missing_history: Option<PartitionId>,
@@ -184,98 +177,11 @@ fn recover_shape_inner(
     }
 }
 
-#[test]
-fn a_relation_bearing_cold_commit_loads_only_its_partition() {
-    let host = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host);
-    let cold = recover_relations(execution, None);
-    create_entity_in_partition(execution, &cold.runtime, "new", PartitionId(1));
-    let reads = cold.source.reads.load(Ordering::Relaxed);
-    assert!(reads < 12, "one-partition commit loaded {reads} members");
-}
-
-#[test]
-fn missing_history_damages_only_its_own_region() {
-    let host = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host);
-    let cold = recover_relations(execution, Some(PartitionId(5)));
-    // Exercise the damaged cell first, then prove unrelated cells remain usable.
-    let root = cold
-        .runtime
-        .history
-        .branch_cell(&crate::history::data::BranchId("main".into()))
-        .unwrap()
-        .root()
-        .unwrap();
-    let first = root
-        .demand_regions_full(execution, &cold.runtime.services.symbols, [PartitionId(5)])
-        .unwrap_err();
-    assert!(
-        matches!(&first, crate::storage::residency::RelationalResidencyDemandFailure::StorageUnavailable(f)
-        if f.subject == crate::storage::data::RelationalStorageSubject::Region(PartitionId(5)))
-    );
-    let reads = cold.source.reads.load(Ordering::Relaxed);
-    assert_eq!(
-        root.demand_regions_full(execution, &cold.runtime.services.symbols, [PartitionId(5)])
-            .unwrap_err(),
-        first
-    );
-    assert_eq!(cold.source.reads.load(Ordering::Relaxed), reads);
-    for entity in cold
-        .entities
-        .iter()
-        .filter(|entity| entity.partition_id != PartitionId(5))
-    {
-        let mut reader = test_owner_begin_transaction_for_main(&cold.runtime);
-        assert!(reader
-            .read_entity(execution, *entity)
-            .unwrap()
-            .effective()
-            .is_some());
-        create_entity_in_partition(execution, &cold.runtime, "healthy", entity.partition_id);
-    }
-}
-
-#[test]
-fn fork_of_a_cold_runtime_shares_cells_and_both_copies_can_read_and_write() {
-    let host = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host);
-    let cold = recover_relations(execution, None);
-    let fork = cold.runtime.fork().unwrap();
-    assert_eq!(
-        cold.source.reads.load(Ordering::Relaxed),
-        0,
-        "fork must perform no I/O"
-    );
-    for (runtime, id, name) in [(&cold.runtime, 1, "origin"), (&fork, 2, "fork")] {
-        let mut reader = test_owner_begin_transaction_for_main(runtime);
-        assert!(reader
-            .read_entity(execution, cold.entities[id - 1])
-            .unwrap()
-            .effective()
-            .is_some());
-        create_entity_in_partition(execution, runtime, name, PartitionId(id as u32));
-        update_entity_and_release_snapshot(execution, runtime, cold.entities[id - 1], name);
-    }
-    for runtime in [&cold.runtime, &fork] {
-        for entity in &cold.entities {
-            let mut reader = test_owner_begin_transaction_for_main(runtime);
-            assert!(reader
-                .read_entity(execution, *entity)
-                .unwrap()
-                .effective()
-                .is_some());
-        }
-    }
-}
-
 #[path = "cold_fork_edits.rs"]
 mod fork_edits;
 
 #[path = "cold_projection_adjacency_matrix.rs"]
 mod projection_adjacency_matrix;
-#[path = "cold_visibility_round_counters.rs"]
-mod visibility_round_counters;
 
 #[path = "cold_ring_dictionary.rs"]
 mod ring_dictionary;

@@ -18,6 +18,7 @@ use worth_testkit_relational::{
 pub(super) struct NodeFixture {
     pub runtime: RelationalRuntime,
     pub source: Arc<ImmutableCheckpointMemberSource>,
+    pub medium: Arc<TestDurableMedium>,
     pub expected: LineageNode,
     pub page: Page,
     pub directory: Directory,
@@ -100,6 +101,7 @@ pub(super) fn reopened(request: &ExecutionRequest<'_, '_>) -> NodeFixture {
     assert_eq!(source.reads.load(Ordering::Relaxed), 0);
     NodeFixture {
         runtime,
+        medium: receiver_medium,
         source,
         expected,
         page,

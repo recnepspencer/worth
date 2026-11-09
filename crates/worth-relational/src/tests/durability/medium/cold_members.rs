@@ -28,24 +28,10 @@ mod cold_index_frontier;
 mod cold_index_matrix;
 #[path = "cold_invariants.rs"]
 mod cold_invariants;
-#[path = "cold_lineage_event_fixture.rs"]
-mod cold_lineage_event_fixture;
-#[path = "cold_lineage_events.rs"]
-mod cold_lineage_events;
-#[path = "cold_lineage_fixture.rs"]
-mod cold_lineage_fixture;
-#[path = "cold_lineage_matrix.rs"]
-mod cold_lineage_matrix;
-#[path = "cold_lineage_nodes.rs"]
-mod cold_lineage_nodes;
 #[path = "cold_merge_history_matrix.rs"]
 mod cold_merge_history_matrix;
 #[path = "cold_merges.rs"]
 mod cold_merges;
-#[path = "cold_observation_reads.rs"]
-mod cold_observation_reads;
-#[path = "cold_pins.rs"]
-mod cold_pins;
 #[path = "cold_projection_scan_door.rs"]
 mod cold_projection_scan_door;
 #[path = "cold_read_door.rs"]
@@ -60,8 +46,6 @@ mod cold_symbols;
 mod cold_tail_matrix;
 #[path = "cold_visibility.rs"]
 mod cold_visibility;
-#[path = "replay_pin_concurrency.rs"]
-mod replay_pin_concurrency;
 use crate::durability::data::{
     RecoveryFailureClass, RecoveryVerificationMode, RelationalCheckpointArtifactPolicy,
     RelationalCheckpointMember, RelationalRecoveryStop,

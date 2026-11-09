@@ -22,6 +22,7 @@ pub(super) struct EventFixture {
     pub seed: LineageId,
     pub original: EntityId,
     pub expected: HistoricalLineageResolution,
+    pub original_basis: LineageCheckpointDigestBasis,
     pub directory: Directory,
 }
 pub(super) fn reopened(request: &ExecutionRequest<'_, '_>) -> EventFixture {
@@ -120,6 +121,13 @@ pub(super) fn reopened_with_source(
             RecoveryVerificationMode::NormalRecoveryVerification,
         )
         .unwrap();
+    let original_basis = plan
+        .checkpoint
+        .as_ref()
+        .unwrap()
+        .lineage
+        .digest_basis()
+        .clone();
     runtime
         .durability_recovery()
         .recover(request, plan)
@@ -136,6 +144,7 @@ pub(super) fn reopened_with_source(
         seed,
         original,
         expected,
+        original_basis,
         directory,
     }
 }

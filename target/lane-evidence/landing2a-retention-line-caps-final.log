@@ -1,0 +1,17 @@
+command: "C:/Program Files/Git/bin/bash.exe" scripts/ci/check_workspace_rust_line_caps.sh dirty
+HEAD: 81d41f55751571a5631ec842a6ac4b7c82e13422
+git_status_short_empty: false
+start_utc: 2026-11-09T20:37:53.499490+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+[workspace-rust-line-caps] enforcing 400-line cap for dirty Rust files
+warning: in the working copy of 'crates/worth-court-relational-cold-residency/tests/worth_court_relational_cold_residency/relational/relational_certification/cold_residency/lineage_sources.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-court-relational-cold-residency/tests/worth_court_relational_cold_residency/relational/relational_certification/cold_residency/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-relational/src/durability/log/native_checkpoint_codec/lineage_event_directory.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/worth-testkit-relational/src/durable_medium/immutable_members/mod.rs', LF will be replaced by CRLF the next time Git touches it
+[workspace-rust-line-caps] PASS: checked 22 Rust files
+
+end_utc: 2026-11-09T20:38:17.056420+00:00
+exit_code: 0
+tests_passed: 0
+tests_failed: 0
+tests_ignored: 0

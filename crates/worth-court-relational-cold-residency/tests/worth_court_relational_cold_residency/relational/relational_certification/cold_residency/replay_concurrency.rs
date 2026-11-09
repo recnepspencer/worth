@@ -1,38 +1,49 @@
-//! Concurrent replay references have one physical pin owner.
-use super::*;
-
+//! Public replay references retain and release through their actual owner.
+use worth_relational::facade::{identity::*, transactions::*};
+use worth_testkit_relational::{
+    aspect_storage::publications::{begin_main_transaction, release_test_commit_snapshot},
+    durable_publication::{field_patch, memory_runtime},
+};
+fn name_field_patch(value: &str) -> AspectFieldPatch {
+    field_patch("name", "name", value)
+}
 #[test]
-fn concurrent_replay_references_share_one_physical_pin_set() {
-    let backing = crate::test_execution_policy::serial_request();
+#[expect(
+    clippy::disallowed_methods,
+    reason = "Court harness contention: eight acquisition workers then eight release workers; peak eight plus caller and two registry threads"
+)]
+fn concurrent_replay_references_release_each_original_reference_once() {
+    let backing = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&backing);
-    let runtime = runtime_with_test_schema();
+    let runtime = memory_runtime();
     let keys = (0..500)
-        .map(|id| crate::symbols::data::ClientKey::raw(format!("concurrent-pin-{id}")))
+        .map(|id| worth_relational::facade::symbols::ClientKey::raw(format!("concurrent-pin-{id}")))
         .collect::<Vec<_>>();
-    let mut transaction = test_owner_begin_transaction_for_main(&runtime);
+    let mut transaction = begin_main_transaction(&runtime);
     transaction
         .push_batch(
             WorkerIntentBatch::new("concurrent-pin-population").push(MutationIntent::Create(
-                CreateIntent::BulkEntities(crate::transactions::data::BulkEntityCreateIntent {
-                    partition_id: PartitionId::main(),
-                    kind_id: KindId(1),
-                    field_patches: keys.iter().map(|_| name_field_patch("pin-data")).collect(),
-                    client_keys: keys,
-                }),
+                CreateIntent::BulkEntities(
+                    worth_relational::facade::transactions::BulkEntityCreateIntent {
+                        partition_id: PartitionId::main(),
+                        kind_id: KindId(1),
+                        field_patches: keys.iter().map(|_| name_field_patch("pin-data")).collect(),
+                        client_keys: keys,
+                    },
+                ),
             )),
             execution.allocation_policy(),
         )
         .unwrap();
     let committed = transaction.commit(execution, &runtime).unwrap();
-    let entity = changed_entities(&committed)[0];
     release_test_commit_snapshot(&runtime, &committed);
-    let version = runtime.current_version_id();
+    let version = committed.version_id;
     let start = std::sync::Barrier::new(8);
     std::thread::scope(|scope| {
         let workers = (0..8)
             .map(|_| {
                 scope.spawn(|| {
-                    let backing = crate::test_execution_policy::serial_request();
+                    let backing = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
                     let execution = &worth_execution::ExecutionRequest::serial(&backing);
                     start.wait();
                     assert_eq!(
@@ -48,20 +59,6 @@ fn concurrent_replay_references_share_one_physical_pin_set() {
             worker.join().unwrap();
         }
     });
-    let count = || {
-        runtime
-            .partitions
-            .partition(entity.partition_id)
-            .unwrap()
-            .entity_arena
-            .replay_pin_count(entity.slot_index())
-            .unwrap()
-    };
-    assert_eq!(
-        count(),
-        1,
-        "concurrent references share exactly one physical pin set"
-    );
     std::thread::scope(|scope| {
         let workers = (0..8)
             .map(|_| {
@@ -77,7 +74,6 @@ fn concurrent_replay_references_share_one_physical_pin_set() {
             worker.join().unwrap();
         }
     });
-    assert_eq!(count(), 0);
     assert!(!runtime
         .history_authority()
         .release_version_replay_retention(version));

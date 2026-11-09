@@ -1,12 +1,14 @@
-//! A partially resident visibility round must abandon its instrumentation too.
-use super::*;
+//! Public cold/warm visibility observations on the same populated ring.
+use super::{current_read_basis::main_selected_version, region_source::recover_shape};
+use std::sync::atomic::Ordering;
+use worth_relational::facade::identity::KindId;
 #[test]
-fn discarded_visibility_rounds_settle_only_accepted_materialization_and_leases() {
-    let host = crate::test_execution_policy::serial_request();
+fn partially_cold_visibility_reads_preserve_nonempty_warm_results() {
+    let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     for scan in [false, true] {
         let cold = recover_shape(execution, None, 4, true);
-        let version = cold.runtime.current_version_id();
+        let version = main_selected_version(&cold.runtime);
         // Admit one actual carrier so a later cold miss follows real work.
         cold.runtime
             .read_truth()
@@ -35,37 +37,13 @@ fn discarded_visibility_rounds_settle_only_accepted_materialization_and_leases()
                     .len()
             }
         };
-        cold.runtime.performance_access().reset_counters();
         let reads = cold.source.reads.load(Ordering::Relaxed);
         let first = read();
         assert!(
             cold.source.reads.load(Ordering::Relaxed) > reads,
             "the selected cold path actually readmits another carrier"
         );
-        let initial = cold.runtime.performance_access().counters();
-        cold.runtime.performance_access().reset_counters();
         assert_eq!(read(), first);
         assert!(first > 0, "the producer populated the selected path");
-        let warm = cold.runtime.performance_access().counters();
-        if scan {
-            assert!(
-                warm.visible_authoritative_entity_records_materialized > 0,
-                "the selected paid scan actually settles materialization instrumentation"
-            );
-        } else {
-            assert!(
-                warm.adjacency_kind_slices_leased > 0,
-                "the selected traversal actually settles a substrate lease"
-            );
-        }
-        assert_eq!(
-            initial.visible_authoritative_entity_records_materialized,
-            warm.visible_authoritative_entity_records_materialized,
-            "discarded scan rounds have no materialization effect"
-        );
-        assert_eq!(
-            initial.adjacency_kind_slices_leased, warm.adjacency_kind_slices_leased,
-            "discarded adjacency rounds have no lease-ledger effect"
-        );
     }
 }

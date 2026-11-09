@@ -1,8 +1,18 @@
 //! Retained-read orchestrators return a region failure before absence or data.
-use super::cold_lineage_fixture::{reopened, NodeFixture};
-use super::*;
-use crate::change_source::RelationalObservationReadDenial;
-use crate::execution::RelationalExecutionDenialCause;
+use super::lineage_node_source::{reopened, NodeFixture};
+use std::sync::atomic::Ordering;
+use worth_relational::facade::{
+    change_source::RelationalObservationReadDenial,
+    history::BranchId,
+    identity::{RelationId, VersionId},
+    inspection::{HistoricalInspectionMode, InspectionAvailability},
+    storage::{
+        RelationalStorageSubject, RelationalStorageUnavailable,
+        RelationalStorageUnavailableCause as Cause,
+    },
+    transactions::RecordRef,
+    transactions::RelationalExecutionDenialCause,
+};
 
 #[derive(Clone, Copy, Debug)]
 enum Door {
@@ -34,7 +44,7 @@ impl Door {
                 .relation_record_at_observation(
                     execution,
                     &observation,
-                    crate::identity::data::RelationId::new(entity.partition_id, 0, 1),
+                    RelationId::new(entity.partition_id, 0, 1),
                 )
                 .map(|_| ()),
             Self::History => fixture
@@ -54,19 +64,15 @@ impl Door {
 }
 
 fn expected(fixture: &NodeFixture) -> RelationalExecutionDenialCause {
-    RelationalExecutionDenialCause::StorageUnavailable(
-        crate::storage::data::RelationalStorageUnavailable {
-            subject: crate::storage::data::RelationalStorageSubject::Region(
-                fixture.expected.entity_id().partition_id,
-            ),
-            cause: Cause::Damaged,
-        },
-    )
+    RelationalExecutionDenialCause::StorageUnavailable(RelationalStorageUnavailable {
+        subject: RelationalStorageSubject::Region(fixture.expected.entity_id().partition_id),
+        cause: Cause::Damaged,
+    })
 }
 
 #[test]
 fn retained_observation_region_guards_preserve_sticky_storage_failure() {
-    let backing = crate::test_execution_policy::serial_request();
+    let backing = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&backing);
     for door in [
         Door::Entity,
@@ -79,13 +85,34 @@ fn retained_observation_region_guards_preserve_sticky_storage_failure() {
         // failure must occur at the exact root read, after that dependency.
         fixture
             .runtime
-            .lineage
-            .demand_node(execution, fixture.expected.lineage_id())
+            .immutable_lineage_node(execution, fixture.expected.lineage_id())
             .unwrap()
             .unwrap();
         let position = fixture.runtime.history().latest_patch_stream_position();
-        let offered = attached_test_medium(&fixture.runtime).offered().len();
-        *fixture.source.failed_member.lock().unwrap() = Some(fixture.root_history);
+        let offered = fixture.medium.offered().len();
+        *fixture.source.failed_member.lock().unwrap() = Some({
+            let (_, basis) = fixture
+                .runtime
+                .observe_branch(&fixture.runtime.main_branch_identity())
+                .unwrap();
+            let selected = fixture
+                .runtime
+                .history()
+                .branch_head_for_observation(&basis.observation())
+                .unwrap()
+                .unwrap();
+            fixture
+                .directory
+                .roots
+                .iter()
+                .find(|root| root.commit_id == selected.commit_id)
+                .unwrap()
+                .regions
+                .iter()
+                .find(|region| region.partition_id == fixture.expected.entity_id().partition_id)
+                .unwrap()
+                .history
+        });
         let denial = RelationalObservationReadDenial::Execution(expected(&fixture));
         assert_eq!(door.read(&fixture, execution), Err(denial), "{door:?}");
         let reads = fixture.source.reads.load(Ordering::Relaxed);
@@ -96,29 +123,56 @@ fn retained_observation_region_guards_preserve_sticky_storage_failure() {
             fixture.runtime.history().latest_patch_stream_position(),
             position
         );
-        assert_eq!(
-            attached_test_medium(&fixture.runtime).offered().len(),
-            offered
-        );
+        assert_eq!(fixture.medium.offered().len(), offered);
     }
 }
 
 #[test]
 fn lineage_point_guard_preserves_a_cold_mirror_head_failure() {
-    let backing = crate::test_execution_policy::serial_request();
+    let backing = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&backing);
     let fixture = reopened(execution);
-    *fixture.source.failed_member.lock().unwrap() = Some(fixture.mirror_head);
+    *fixture.source.failed_member.lock().unwrap() = Some(
+        fixture
+            .directory
+            .mirror
+            .iter()
+            .find(|r| r.partition_id == fixture.expected.entity_id().partition_id)
+            .unwrap()
+            .head,
+    );
+    let missing_version = VersionId(u64::MAX);
+    let reads_before = fixture.source.reads.load(Ordering::Relaxed);
+    let open = fixture
+        .runtime
+        .inspect_what_happened()
+        .open_historical_view(
+            execution,
+            missing_version,
+            HistoricalInspectionMode::RetainedOnly,
+        )
+        .unwrap();
+    assert!(open.view.is_none());
+    assert_eq!(
+        open.availability,
+        InspectionAvailability::UnavailableByRetention
+    );
+    assert_eq!(fixture.source.reads.load(Ordering::Relaxed), reads_before);
     let read = || {
         fixture
             .runtime
-            .lineage_access()
-            .for_record(execution, fixture.expected.entity_id())
+            .inspect_what_happened()
+            .inspect_historical_record(
+                execution,
+                &BranchId("main".into()),
+                missing_version,
+                RecordRef::Entity(fixture.expected.entity_id()),
+                HistoricalInspectionMode::RetainedOnly,
+            )
     };
     assert_eq!(read(), Err(expected(&fixture)));
     let reads = fixture.source.reads.load(Ordering::Relaxed);
     *fixture.source.failed_member.lock().unwrap() = None;
     assert_eq!(read(), Err(expected(&fixture)));
     assert_eq!(fixture.source.reads.load(Ordering::Relaxed), reads);
-    assert_eq!(fixture.runtime.lineage.node_count(), 0);
 }
