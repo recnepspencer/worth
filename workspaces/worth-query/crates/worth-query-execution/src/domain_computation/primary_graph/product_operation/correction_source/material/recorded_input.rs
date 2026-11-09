@@ -19,14 +19,27 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
     )
         -> Result<ApplicationEncodedInput<Binding>, ApplicationRetainedInputDenial>,
 ) -> Result<ApplicationEncodedInput<Binding>, Denial> {
-    let bytes = retained.recorded_bytes();
+    recover_bytes(retained.recorded_bytes(), *retained.identity(), factory)
+}
+pub(in crate::domain_computation::primary_graph::product_operation::correction_source) fn recover_bytes<
+    Binding: ApplicationStructuredValueBinding,
+>(
+    bytes: &[u8],
+    identity: [u8; 32],
+    factory: impl FnOnce(
+        &[u8],
+        CanonicalDigestId,
+        ValueDecodeBounds,
+    )
+        -> Result<ApplicationEncodedInput<Binding>, ApplicationRetainedInputDenial>,
+) -> Result<ApplicationEncodedInput<Binding>, Denial> {
     let input = factory(
         bytes,
-        CanonicalDigestId::new(*retained.identity()),
+        CanonicalDigestId::new(identity),
         ValueDecodeBounds::wire_bytes(bytes.len()),
     )
     .map_err(Denial::OriginalInputDecode)?;
-    if input.identity() != retained.identity() {
+    if input.identity() != &identity {
         return Err(Denial::OriginalInputDecode(
             ApplicationRetainedInputDenial::IdentityMismatch,
         ));

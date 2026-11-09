@@ -1,4 +1,5 @@
 //! Primary Graph application contracts.
+pub use crate::domain_computation::application_aftermath::correction_material::QueryCorrectionMaterialDenial;
 pub use worth_foundational::facade::{
     DurableCompositeCommitIdentity, DurableProductBranchReference, DurableQueryOutputSettlement,
     MemoryProductBranchReference, RecordedCompositePublicationAttemptIdentity,

@@ -41,6 +41,14 @@ impl ApplicationQueryCorrections {
             admitted: OnceLock::new(),
         }
     }
+    pub(crate) fn require_admitted(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), QueryCorrectionMaterialDenial> {
+        self.journal
+            .require_admitted(self.admitted.get().is_some(), request)
+            .map_err(denial)
+    }
     pub(crate) fn admit(
         &self,
         proof: AdmittedHomeQueryCorrections,

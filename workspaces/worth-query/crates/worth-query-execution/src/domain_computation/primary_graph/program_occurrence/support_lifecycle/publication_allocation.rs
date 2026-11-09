@@ -4,6 +4,8 @@ pub(super) struct SupportJournalState {
     pub(super) ledger: QueryProgramSupportLedger,
     generations: QueryProgramSupportPublicationGenerations,
     pub(super) pending: Option<QueryProgramSupportFrame>,
+    pub(super) interpretation_transfer:
+        Option<super::original_transfer::PendingInterpretationTransfer>,
 }
 impl SupportJournalState {
     pub(super) fn from_ledger(ledger: QueryProgramSupportLedger) -> Self {
@@ -12,6 +14,7 @@ impl SupportJournalState {
             ledger,
             generations,
             pending: None,
+            interpretation_transfer: None,
         }
     }
     pub(super) fn prepare_pending(

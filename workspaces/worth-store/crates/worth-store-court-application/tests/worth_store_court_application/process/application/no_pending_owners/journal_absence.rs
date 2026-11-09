@@ -43,7 +43,7 @@ fn empty_unsupported_journals_admit_the_same_home_with_real_native_and_world_his
 }
 
 #[test]
-fn each_unsupported_journal_entry_refuses_admission_and_returns_the_same_home() {
+fn each_unadmitted_journal_entry_refuses_admission_and_returns_the_same_home() {
     for name in [
         "home.transitions",
         "signal.definitions",
@@ -79,6 +79,9 @@ fn each_unsupported_journal_entry_refuses_admission_and_returns_the_same_home() 
             .expect("a genuine reserved journal entry must refuse admission");
         if name == "query.obligations" {
             assert!(matches!(refused.reason(), Denial::QueryObligations(worth_query_execution::facade::program_support::QueryProgramSupportDenial::SupportUnavailable)));
+        } else if name == "query.corrections" {
+            assert!(matches!(refused.reason(), Denial::QueryCorrections(
+                worth_query_execution::facade::correction_material::QueryCorrectionMaterialDenial::AdmissionRequired)));
         } else {
             assert!(
                 matches!(refused.reason(), Denial::JournalNotEmpty { journal, head } if *journal == name && *head == entry)

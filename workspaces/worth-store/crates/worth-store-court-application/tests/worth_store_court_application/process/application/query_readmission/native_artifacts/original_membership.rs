@@ -127,6 +127,8 @@ fn home_custody_disposes_released_original_membership_before_service_after_grace
                 panic!("one actual no-effect original");
             };
             assert_eq!(original.fate(), WorldOriginalFate::Open);
+            assert_eq!(opened.program_revision(), original.program_revision());
+            assert_eq!(opened.association(), original.association());
             let (attempt, revision) = (original.attempt(), original.program_revision());
             let mut journal = MembershipJournal::read_home(&home, &execution);
             let identity = journal.acquire(attempt, revision, &execution);

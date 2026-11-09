@@ -40,6 +40,9 @@ impl HomeQueryCorrectionsOwner {
         self.authority.admit(&proof.authority)
     }
 }
+// The nominal endpoint may mint owner-sealed linear material custody only after
+// its Query receiver has admitted the actual semantic prefix/publication.
+impl crate::AuthorityMarker for HomeQueryCorrectionsAuthority {}
 impl HomeQueryCorrectionsAuthority {
     pub fn admit(&self, presented: &Self) -> Result<(), HomeIncarnationDenial> {
         if self.home != presented.home {

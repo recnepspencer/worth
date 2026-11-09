@@ -28,6 +28,7 @@ pub enum WorthQueryHomeRetirementOwner {
 
 #[derive(Debug)]
 pub enum WorthQueryHomeRetirementDenial {
+    CorrectionMaterial(crate::facade::correction_material::QueryCorrectionMaterialDenial),
     Busy(WorthQueryHomeRetirementOwner),
     Unsupported(WorthQueryHomeRetirementOwner),
     Handler {

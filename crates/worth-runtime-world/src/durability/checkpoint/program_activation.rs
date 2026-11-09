@@ -1,8 +1,7 @@
 //! Read-only program facts from the same protected owner image and tails.
 use super::{WorldCheckpointImage, WorldCheckpointReadSource};
 use crate::durability::{
-    DecodedWorldRecord, WorldDurableHomeBinding, WorldDurableMediumBinding, WorldReadmissionDenial,
-    WorldRecord,
+    WorldDurableHomeBinding, WorldDurableMediumBinding, WorldReadmissionDenial, WorldRecord,
 };
 use std::sync::Arc;
 use worth_foundational::facade::DurableCompositeCommitIdentity;
@@ -15,7 +14,7 @@ pub struct WorldProgramActivationHistory {
 }
 /// Borrows the original admitted record; it grants neither a writer nor a receipt.
 pub struct WorldProgramActivationHistoryEntry<'a> {
-    record: &'a DecodedWorldRecord,
+    head: &'a super::image::WorldImageHead,
     binding: &'a WorldDurableHomeBinding,
 }
 impl WorldProgramActivationHistory {
@@ -37,6 +36,22 @@ impl WorldProgramActivationHistory {
             _source: source,
             binding,
         })
+    }
+    /// Descriptive history only: this neither mints a live commit nor admits use.
+    pub fn recorded_entry(
+        &self,
+        commit: DurableCompositeCommitIdentity,
+    ) -> Option<WorldProgramActivationHistoryEntry<'_>> {
+        if commit.owner() != self.binding.binding().owner() {
+            return None;
+        }
+        self.image
+            .history
+            .get(&commit)
+            .map(|head| WorldProgramActivationHistoryEntry {
+                head,
+                binding: self.binding.binding(),
+            })
     }
     pub fn entry(
         &self,
@@ -61,15 +76,25 @@ impl WorldProgramActivationHistory {
             .history
             .get(&key)
             .map(|head| WorldProgramActivationHistoryEntry {
-                record: head.program_record(),
+                head,
                 binding: self.binding.binding(),
             }))
     }
 }
 impl WorldProgramActivationHistoryEntry<'_> {
+    pub fn branch(&self) -> &worth_foundational::facade::DurableProductBranchIdentity {
+        self.head.fields().0
+    }
+    pub fn incarnation(&self) -> worth_foundational::facade::DurableProductBranchIncarnation {
+        self.head.fields().1
+    }
+    pub fn generation(&self) -> worth_foundational::facade::DurableProductReferenceGeneration {
+        self.head.fields().3
+    }
+
     /// The original's actual execution attribution, unchanged by D16's target.
     pub fn recorded_revision(&self) -> [u8; 32] {
-        match &self.record.record {
+        match &self.head.program_record().record {
             WorldRecord::Branch {
                 program_revision, ..
             } => *program_revision,
@@ -89,7 +114,7 @@ impl WorldProgramActivationHistoryEntry<'_> {
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<[u8; 32], WorldReadmissionDenial> {
-        match &self.record.record {
+        match &self.head.program_record().record {
             WorldRecord::Branch {
                 program_revision, ..
             } => Ok(*program_revision),
@@ -110,7 +135,7 @@ impl WorldProgramActivationHistoryEntry<'_> {
         }
     }
     pub fn predecessor(&self) -> Option<DurableCompositeCommitIdentity> {
-        match &self.record.record {
+        match &self.head.program_record().record {
             WorldRecord::Branch { .. } => None,
             WorldRecord::OpenAttempt(open) => Some(open.expected.commit),
             WorldRecord::Owner { .. }

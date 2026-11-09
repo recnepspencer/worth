@@ -24,6 +24,8 @@ pub use ledger::QueryProgramSupportLedger;
 pub use medium::*;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod transfer_status_tests;
 
 pub const QUERY_PROGRAM_SUPPORT_FRAME_MAX_BYTES: u64 = 214;
 

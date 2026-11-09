@@ -14,6 +14,15 @@ pub struct WorldOriginalStateObservation<'a> {
     open: &'a AdmittedWorldOpenAttempt,
 }
 impl WorldOriginalStateObservation<'_> {
+    /// Compare through the sole World association codec; this lends no receipt.
+    pub fn matches_native_association(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        association: &worth_relational::facade::mvcc::RelationalCallerAssociation,
+    ) -> Result<bool, super::super::WorldDurableMediumDenial> {
+        super::super::encode_association(request, &self.open.association)
+            .map(|expected| expected.elements() == association.as_bytes())
+    }
     pub fn association(&self) -> &CompositeAttemptAssociation {
         &self.open.association
     }

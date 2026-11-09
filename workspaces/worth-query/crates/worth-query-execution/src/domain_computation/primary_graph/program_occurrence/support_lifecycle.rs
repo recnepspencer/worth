@@ -10,6 +10,10 @@ use worth_query_installation::facade::{
 
 use worth_foundational::facade::ProgramSupportStatus;
 mod durable_retirement;
+mod interpretation_membership;
+mod original_readmission;
+mod original_transfer;
+use interpretation_membership::InterpretationMembership;
 mod journal_publication;
 mod journal_readmission;
 mod publication_allocation;
@@ -107,6 +111,7 @@ impl WorthQueryProgramSupportLifecycle {
         Some(WorthQueryProgramSupportInterpretation {
             state: Arc::clone(&self.state),
             revision: *revision,
+            membership: Arc::new(Mutex::new(InterpretationMembership::Local)),
         })
     }
 
@@ -226,11 +231,17 @@ enum SupportUse {
 }
 
 pub struct WorthQueryProgramSupportInterpretation {
+    membership: Arc<Mutex<InterpretationMembership>>,
     state: Arc<Mutex<SupportLifecycleState>>,
     revision: ApplicationProgramRevision,
 }
 
 impl WorthQueryProgramSupportInterpretation {
+    pub(in crate::domain_computation::primary_graph) const fn revision(
+        &self,
+    ) -> &ApplicationProgramRevision {
+        &self.revision
+    }
     pub fn same_support_as(&self, other: &Self) -> bool {
         self.revision == other.revision && Arc::ptr_eq(&self.state, &other.state)
     }
@@ -238,11 +249,18 @@ impl WorthQueryProgramSupportInterpretation {
 
 impl Drop for WorthQueryProgramSupportInterpretation {
     fn drop(&mut self) {
-        WorthQueryProgramSupportLifecycle::release(
-            &self.state,
-            &self.revision,
-            SupportUse::Interpretation,
-        );
+        let mut state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let entry = state
+            .entries
+            .get_mut(&self.revision)
+            .expect("issued interpretation entry");
+        self.membership
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .abandon(&mut entry.retained_interpretations);
     }
 }
 

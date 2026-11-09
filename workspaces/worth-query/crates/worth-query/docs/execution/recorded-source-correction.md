@@ -75,6 +75,32 @@ original identity pass. Otherwise retention explicitly encodes the held value
 again and verifies its original identity. Request identity and its derivation
 work evidence remain unchanged.
 
+## Directory Homes and graceful reopen
+
+A directory Home records the original canonical input, disclosure parameters,
+pre-image and output correspondence in `query.corrections`. Readmission joins
+that material to the protected World original and its Native idempotency row
+before service. It does not execute a handler or derive an inverse at open.
+Use `select_coordinates` with the recorded source coordinates after reopening;
+a receipt retained from the previous open refuses with `StaleIncarnation`.
+Selection still requires the original program to be rostered, current disclosure
+and retained ancestry. Recorded bytes grant no mutation authority.
+
+The acknowledged World open transfers its existing `OriginalProgramMeaning`
+interpretation into `query.obligations`. It replaces the local count; reopening
+retains the durable count. The original Native key and complete intent remain the
+source of correction retry. A repeated successful command answers
+`RecoveredCommitted`, using its recorded inverse input instead of deriving a
+second inverse.
+
+A prepared correction pins its material as a mandatory obligation. Its pin moves
+to the exact publishing original before Native preparation, then releases only
+after that publication's material is recorded. Owning Home close durably
+discharges an unperformed preparation. After reopen its key answers
+`PreparationDischarged`; the platform does not derive or run that command again.
+The terminal command disposition remains authoritative when its material becomes
+optional. Dropping a live pin never publishes a durable release.
+
 ## Select, prepare and publish
 
 Import the runtime API from `worth_query_host::facade::application_entry`:

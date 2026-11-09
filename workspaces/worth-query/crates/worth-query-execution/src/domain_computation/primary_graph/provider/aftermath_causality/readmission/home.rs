@@ -12,12 +12,13 @@ pub(in crate::domain_computation::primary_graph) fn verify<Schema: ApplicationSc
     let owner = &application.runtime.product_runtime.owner;
     let graph = &application.runtime.primary_provider.graph;
     graph.with_runtime(execution, |native| {
-        verify_source(
+        verify_with_material(
             execution,
             native,
             &graph.layout,
             &owner.inspection_port(),
             &owner.observation_port(),
+            Some(&application.runtime.primary_provider),
         )
     })
 }
@@ -27,6 +28,18 @@ pub(in crate::domain_computation::primary_graph) fn verify_source(
     layout: &WorthQueryPrimaryGraphLayout,
     inspection: &RuntimeWorldInspectionPort,
     observation: &RuntimeWorldObservationPort,
+) -> Result<(), Denial> {
+    verify_with_material(execution, native, layout, inspection, observation, None)
+}
+fn verify_with_material(
+    execution: &ExecutionRequest<'_, '_>,
+    native: &RelationalRuntime,
+    layout: &WorthQueryPrimaryGraphLayout,
+    inspection: &RuntimeWorldInspectionPort,
+    observation: &RuntimeWorldObservationPort,
+    material_owner: Option<
+        &crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
+    >,
 ) -> Result<(), Denial> {
     let inventory = observation
         .observe_installed_product_branches(execution)
@@ -52,13 +65,24 @@ pub(in crate::domain_computation::primary_graph) fn verify_source(
         layout,
         &originals,
         selected.selected_commit(),
+        material_owner,
     )?;
     for branch in inventory.branches() {
-        let first = readmit_branch(execution, native, layout, &originals, branch)?;
+        let first = readmit_branch(
+            execution,
+            native,
+            layout,
+            &originals,
+            branch,
+            material_owner,
+        )?;
         material = material.or(first);
     }
     match material {
-        Some(record) => Err(Denial::RetainedMaterialRequired { record }),
+        Some(record) if material_owner.is_none() => {
+            Err(Denial::RetainedMaterialRequired { record })
+        }
+        Some(_) => Ok(()),
         None => Ok(()),
     }
 }

@@ -117,7 +117,7 @@ pub(in crate::http::server) fn commit_denial(
             BankHttpDenialKind::Unavailable,
             BankHttpNextAction::ContactOperator,
         ),
-        Denial::ProgramNotActiveOnOccurrence { .. } => {
+        Denial::StaleIncarnation | Denial::ProgramNotActiveOnOccurrence { .. } => {
             BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh)
         }
     }

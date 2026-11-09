@@ -32,6 +32,10 @@ impl<Binding: ApplicationStructuredValueBinding> ApplicationRetainedInput<Bindin
     pub const fn identity(&self) -> &[u8; 32] {
         self.encoded.identity()
     }
+    /// Share the exact captured stream with its owning durable material publisher.
+    pub const fn canonical_snapshot(&self) -> &ApplicationCanonicalInput {
+        &self.canonical
+    }
     pub fn recorded_bytes(&self) -> &[u8] {
         self.canonical.recorded_bytes()
     }

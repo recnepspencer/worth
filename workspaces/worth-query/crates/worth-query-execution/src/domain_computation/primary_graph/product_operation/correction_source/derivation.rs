@@ -56,17 +56,37 @@ where
         ancestry,
         required_root,
     )?;
-    let retained = source
-        .occurrence()
-        .commit_evidence()
-        .original_authority()
-        .retained_governed_input_carrier()
-        .ok_or(Denial::UnsupportedSourceMeaning)?;
+    if let Some(material) = source.occurrence().home_material() {
+        if target
+            .application()
+            .runtime
+            .primary_provider
+            .recover_correction_command(material.capture.original, key.identity())
+            .map_err(Denial::Material)?
+            .is_some()
+        {
+            return super::WorthQueryPreparedCorrectionSource::recover::<
+                Schema,
+                C,
+                ApplicationInverseBinding<Schema, C>,
+            >(
+                checked,
+                phase,
+                principal,
+                request,
+                lineage,
+                key,
+                C::recover_inverse_input,
+            );
+        }
+    }
     let workflow = super::preparation::prepare_workflow::<Schema, C>(target, phase, source)?;
-    let input = retained
-        .retained_input::<<C::Source as ApplicationMutationBinding<Schema>>::InputBinding>()
+    let (bytes, identity) = source
+        .occurrence()
+        .input()
         .ok_or(Denial::UnsupportedSourceMeaning)?;
-    let input = super::material::recorded_input::recover(input, C::recover_source_input)?;
+    let input =
+        super::material::recorded_input::recover_bytes(bytes, identity, C::recover_source_input)?;
     let execution = phase
         .execution_request_for(&target.application().runtime.product_runtime)
         .map_err(|_| Denial::ForeignPhase)?;

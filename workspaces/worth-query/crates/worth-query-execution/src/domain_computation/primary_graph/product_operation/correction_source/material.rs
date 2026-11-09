@@ -3,7 +3,7 @@ pub(super) mod recorded_input;
 use super::{
     disclosure::WorthQueryCorrectionDerivationDenial as Denial, WorthQuerySelectedCorrectionSource,
 };
-use crate::domain_computation::application_aftermath::retained_preimage::WorthQueryRetainedPreImage;
+
 use worth_query_declaration::facade::{
     application_aftermath::{
         ApplicationCorrectionBinding, ApplicationCorrectionPreImage,
@@ -23,9 +23,7 @@ pub(super) fn mechanism<'a, S: ApplicationSchema>(
 ) -> Result<&'a InstalledCorrectionMechanism, Denial> {
     let contract = source
         .occurrence()
-        .commit_evidence()
-        .original_authority()
-        .installed_aftermath()
+        .aftermath()
         .ok_or(Denial::UnsupportedSourceMeaning)?;
     match contract.authority() {
         InstalledCorrectionAuthority::RuntimeAlone => {}
@@ -44,11 +42,11 @@ pub(super) fn mechanism<'a, S: ApplicationSchema>(
                 )
                 && source
                     .occurrence()
-                    .commit_evidence()
-                    .workflow_origin()
+                    .memory()
+                    .and_then(|value| value.commit_evidence().workflow_origin())
                     .is_some() =>
         {
-            match source.application.resolve_correction_external_settlement(source.occurrence()) {
+            match source.application.resolve_correction_external_settlement(source.occurrence().memory().expect("workflow origin belongs to real Memory evidence")) {
                 Ok(true) => {},
                 Ok(false) => return Err(Denial::Workflow(
                     crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(
@@ -59,7 +57,10 @@ pub(super) fn mechanism<'a, S: ApplicationSchema>(
                 Err(_) => return Err(Denial::UnsupportedSourceMeaning),
             }
         }
-        _ => return Err(Denial::UnsupportedSourceMeaning),
+        InstalledCorrectionAuthority::RuntimeWithExternalOwner
+        | InstalledCorrectionAuthority::NotCorrectable => {
+            return Err(Denial::UnsupportedSourceMeaning)
+        }
     }
     contract.mechanism().ok_or(Denial::UnsupportedSourceMeaning)
 }
@@ -81,14 +82,14 @@ pub(super) fn derive<S: ApplicationSchema, C: ApplicationCorrectionBinding<S>>(
             finish_derivation(result, outputs.take_failure())
         }
         InstalledCorrectionMechanism::RecordedInverse(_) => {
-            let preimage = source
-                .occurrence()
-                .commit_evidence()
-                .retained_preimage()
-                .ok_or(Denial::MissingPreImage)?;
+            if !source.occurrence().has_preimage() {
+                return Err(Denial::MissingPreImage);
+            }
             C::derive_correction(
                 input,
-                ApplicationCorrectionSourceMaterial::RecordedInverse(&DisclosedPreImage(preimage)),
+                ApplicationCorrectionSourceMaterial::RecordedInverse(&DisclosedPreImage(
+                    source.occurrence(),
+                )),
             )
             .map_err(Denial::Domain)
         }
@@ -113,20 +114,13 @@ pub fn finish_derivation<T>(
     result.map_err(Denial::Domain)
 }
 
-struct DisclosedPreImage<'a>(&'a WorthQueryRetainedPreImage);
+struct DisclosedPreImage<'a>(&'a super::occurrence::CorrectionOccurrence);
 impl<S> ApplicationCorrectionPreImage<S> for DisclosedPreImage<'_> {
     fn field(
         &self,
         locus: &DeclaredPreImageLocus<S>,
     ) -> Option<&worth_foundational::facade::AspectValue> {
         self.0
-            .fields()
-            .iter()
-            .find(|field| {
-                field.locus().entity() == locus.entity()
-                    && field.locus().aspect() == locus.aspect()
-                    && field.locus().field() == locus.field()
-            })
-            .map(|field| field.value())
+            .preimage_value(locus.entity(), locus.aspect(), locus.field())
     }
 }

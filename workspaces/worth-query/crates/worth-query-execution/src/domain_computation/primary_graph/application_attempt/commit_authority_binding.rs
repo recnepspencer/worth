@@ -21,6 +21,11 @@ use worth_query_declaration::facade::application_operation::ApplicationSharedInp
 /// Correction preparation accesses the original binding's encoded carrier.
 #[derive(Clone)]
 pub struct WorthQueryRetainedGovernedInput {
+    material: Option<(
+        worth_query_declaration::facade::application_operation::ApplicationCanonicalInput,
+        &'static str,
+        [u8; 32],
+    )>,
     captured: Option<Arc<dyn Any + Send + Sync>>,
     _value: Arc<dyn Any + Send + Sync>,
     type_id: TypeId,
@@ -44,11 +49,18 @@ impl WorthQueryRetainedGovernedInput {
             &Arc<crate::domain_computation::application_aftermath::OriginalCorrectionDisclosure>,
         >,
         captured: Option<&Arc<dyn Any + Send + Sync>>,
+        material: Option<(
+            &worth_query_declaration::facade::application_operation::ApplicationCanonicalInput,
+            &'static str,
+            [u8; 32],
+        )>,
     ) -> Self
     where
         Input: Send + Sync + 'static,
     {
         Self {
+            material: material
+                .map(|(snapshot, binding, identity)| (snapshot.clone(), binding, identity)),
             captured: captured.cloned(),
             _value: Arc::new(input.clone()),
             type_id: TypeId::of::<Input>(),
@@ -69,6 +81,17 @@ impl WorthQueryRetainedGovernedInput {
             .flatten()
     }
 
+    pub(in crate::domain_computation::primary_graph) fn material_input(
+        &self,
+    ) -> Option<(
+        &worth_query_declaration::facade::application_operation::ApplicationCanonicalInput,
+        &'static str,
+        [u8; 32],
+    )> {
+        self.material
+            .as_ref()
+            .map(|(snapshot, binding, identity)| (snapshot, *binding, *identity))
+    }
     pub(in crate::domain_computation::primary_graph) fn retained_input<Binding>(
         &self,
     ) -> Option<
@@ -103,6 +126,7 @@ impl WorthQueryRetainedGovernedInput {
     )]
     pub(crate) fn axis_probe(governed_identity: [u8; 32]) -> Self {
         Self {
+            material: None,
             captured: None,
             _value: Arc::new(()),
             type_id: TypeId::of::<()>(),
@@ -175,6 +199,7 @@ impl WorthQueryApplicationCommitAuthorityBinding {
                 admission.original_scope(),
                 admission.original_correction_disclosure(),
                 admission.original_retained_input(),
+                admission.original_material_input(),
             )),
             None => admission.shared_capability_input().map(|input| {
                 WorthQueryRetainedGovernedInput::from_admission(
@@ -183,6 +208,7 @@ impl WorthQueryApplicationCommitAuthorityBinding {
                     admission.original_scope(),
                     admission.original_correction_disclosure(),
                     admission.original_retained_input(),
+                    admission.original_material_input(),
                 )
             }),
         };

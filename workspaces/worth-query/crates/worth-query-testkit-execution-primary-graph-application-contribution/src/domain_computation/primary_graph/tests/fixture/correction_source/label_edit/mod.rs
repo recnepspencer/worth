@@ -62,6 +62,13 @@ impl ApplicationDeclaredOperation<IdentityExecutionSchema> for EditLabel {
 
 pub struct LabelHandler;
 impl OperationHandler<IdentityExecutionSchema, LabelBinding> for LabelHandler {
+    fn declared_durable_capabilities() -> Option<&'static [worth_query_execution::facade::primary_graph::WorthQueryOperationDurableCapability]>{
+        use worth_query_execution::facade::primary_graph::WorthQueryOperationDurableCapability as Capability;
+        Some(&[
+            Capability::RelationalMutation,
+            Capability::RetainedCorrectionMaterial,
+        ])
+    }
     fn decide(
         &self,
         input: &LabelEdit,

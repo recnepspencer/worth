@@ -72,6 +72,7 @@ impl ApplicationCorrectionBinding<IdentityExecutionSchema> for RecordedLabelEdit
         original: &LabelEdit,
         material: ApplicationCorrectionSourceMaterial<'_, IdentityExecutionSchema>,
     ) -> Result<LabelEdit, ApplicationCorrectionDerivationDenial> {
+        super::inverse_observation::record();
         use ApplicationCorrectionDerivationDenial::InvalidPreImage;
         use ApplicationCorrectionDerivationDenial::MissingPreImage;
         use ApplicationCorrectionDerivationDenial::UnsupportedSourceMeaning;

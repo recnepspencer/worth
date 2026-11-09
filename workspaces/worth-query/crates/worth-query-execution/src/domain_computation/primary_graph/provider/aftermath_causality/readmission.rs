@@ -84,6 +84,7 @@ fn readmit_latest(
     layout: &WorthQueryAftermathCausalityLayout,
     originals: &WorldProgramActivationHistory,
     selected: &CompositeCommitIdentity,
+    material: Option<&super::super::WorthQueryPrimaryGraphProvider>,
 ) -> Result<Option<RecordRef>, Denial> {
     let (_, basis) = native
         .observe_branch(&native.main_branch_identity())
@@ -95,6 +96,7 @@ fn readmit_latest(
         originals,
         JoinScope::CurrentNativeHead(selected),
         &basis,
+        material,
     )
 }
 fn readmit_branch(
@@ -103,6 +105,7 @@ fn readmit_branch(
     layout: &WorthQueryAftermathCausalityLayout,
     originals: &WorldProgramActivationHistory,
     branch: &ProductBranchObservation,
+    material: Option<&super::super::WorthQueryPrimaryGraphProvider>,
 ) -> Result<Option<RecordRef>, Denial> {
     readmit(
         execution,
@@ -111,6 +114,7 @@ fn readmit_branch(
         originals,
         JoinScope::SelectedWorldBranch(branch),
         branch.basis().relational_basis(),
+        material,
     )
 }
 fn readmit(
@@ -120,6 +124,7 @@ fn readmit(
     originals: &WorldProgramActivationHistory,
     scope: JoinScope<'_>,
     basis: &AdmittedRelationalBranchBasis,
+    material: Option<&super::super::WorthQueryPrimaryGraphProvider>,
 ) -> Result<Option<RecordRef>, Denial> {
     let owner = scope
         .selected()
@@ -135,6 +140,15 @@ fn readmit(
     )?;
     let facts = original_join::readmit(execution, originals, facts, &scope)?;
     relationships::readmit(&facts)?;
+    if let Some(provider) = material {
+        for fact in facts.values() {
+            provider
+                .admit_correction_lineage_material(&fact.child)
+                .map_err(|_| Denial::RetainedMaterialRequired {
+                    record: fact.record.clone(),
+                })?;
+        }
+    }
     Ok(facts.values().next().map(|fact| fact.record.clone()))
 }
 fn source_denial(subject: impl Into<String>) -> Denial {

@@ -225,36 +225,77 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             &WorthQueryProductBranchReadIdentity::from_observation(self.product().observation()),
         )?;
         let provider = &self.application().runtime.primary_provider;
-        let selected = provider
-            .performed_correction_source(&selected.fact)
-            .ok_or(Denial::SemanticMaterialUnavailable)?;
-        let occurrence = provider
-            .observe_completed_application(selected.relational())
-            .ok_or(Denial::SemanticMaterialUnavailable)?;
-        let fact = occurrence
-            .aftermath_causality()
-            .ok_or(Denial::ForeignAlternative)?;
-        let lineage = fact.correction_lineage();
-        if lineage.role() != crate::domain_computation::application_aftermath::WorthQueryAftermathCausalRole::RecordedReverse
-            || lineage.root() != &resolution.root { return Err(Denial::ForeignAlternative); }
-        let operated = fact.recorded_source();
+        let expected_fact = &selected.fact;
         let execution = phase
             .execution_request_for(&self.application().runtime.product_runtime)
             .map_err(|_| Denial::ForeignPhase)?;
+        let home = self
+            .product()
+            .observation()
+            .owner_identity()
+            .durable()
+            .is_some();
+        let selected = if home {
+            super::exact_original::performed(self, execution, &selected.fact, maximum_history)
+                .map_err(|cause| Denial::Selection(Box::new(cause)))?
+        } else {
+            provider
+                .performed_correction_source(&selected.fact)
+                .ok_or(Denial::SemanticMaterialUnavailable)?
+        };
+        let operated = if home {
+            super::exact_original::resolve(
+                execution,
+                &self
+                    .application()
+                    .runtime
+                    .product_runtime
+                    .owner
+                    .observation_port(),
+                self.product().observation(),
+                &expected_fact.source,
+                maximum_history,
+            )
+            .map(|world| {
+                WorthQueryRecordedCorrectionSource::from_untrusted_parts(
+                    world,
+                    expected_fact.source.relational().clone(),
+                )
+            })
+            .map_err(|cause| Denial::Selection(Box::new(cause)))?
+        } else {
+            let occurrence = provider
+                .observe_completed_application(selected.relational())
+                .ok_or(Denial::SemanticMaterialUnavailable)?;
+            let fact = occurrence
+                .aftermath_causality()
+                .ok_or(Denial::ForeignAlternative)?;
+            if fact.correction_lineage().role() != crate::domain_computation::application_aftermath::WorthQueryAftermathCausalRole::RecordedReverse
+                || fact.correction_lineage().root() != &resolution.root { return Err(Denial::ForeignAlternative); }
+            fact.recorded_source().clone()
+        };
         let canonical = provider
-            .reversal_of_source_at_basis(&execution, self.product().relational_basis(), operated)
+            .reversal_of_source_at_basis(&execution, self.product().relational_basis(), &operated)
             .map_err(Denial::History)?
             .ok_or(Denial::ForeignAlternative)?;
-        if canonical.child != *selected.relational() || canonical.record != *fact.fact_record() {
+        if canonical != *expected_fact
+            || canonical.child != *selected.relational()
+            || canonical.root != resolution.root.coordinates()
+        {
             return Err(Denial::ForeignAlternative);
         }
         let active = resolution
             .active
             .as_ref()
             .map(|fact| {
-                provider
-                    .performed_correction_source(fact)
-                    .ok_or(Denial::SemanticMaterialUnavailable)
+                if home {
+                    super::exact_original::performed(self, execution, fact, maximum_history)
+                        .map_err(|cause| Denial::Selection(Box::new(cause)))
+                } else {
+                    provider
+                        .performed_correction_source(fact)
+                        .ok_or(Denial::SemanticMaterialUnavailable)
+                }
             })
             .transpose()?;
         let selected_ancestry =
@@ -268,7 +309,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                 phase,
                 principal,
                 request,
-                operated,
+                &operated,
                 maximum_history,
                 maximum_results,
             )

@@ -226,6 +226,7 @@ pub fn classify_kind(kind: Kind) -> Outcome {
         | Kind::ProgramNotActiveOnOccurrence { .. }
         | Kind::ProgramSupportRetired
         | Kind::ProgramActivationUnresolved
+        | Kind::StaleIncarnation
         | Kind::CorrectionContextMismatch
         | Kind::CorrectionIdentityMismatch => {
             Outcome::TerminalFailure(Terminal::ApplicationCommit(kind))

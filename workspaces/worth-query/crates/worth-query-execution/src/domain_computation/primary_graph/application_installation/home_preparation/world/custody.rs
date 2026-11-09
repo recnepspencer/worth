@@ -5,6 +5,7 @@ use worth_proof::CustodyReadmitted;
 
 #[derive(Debug)]
 pub enum QueryHomeCustodyReadmissionDenial {
+    CorrectionMaterial(crate::facade::correction_material::QueryCorrectionMaterialDenial),
     ProgramSupport(crate::facade::program_support::QueryProgramSupportDenial),
     Activation(super::QueryHomeProgramActivationDenial),
     ProgramHistorySource(
@@ -41,6 +42,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         obligations: std::sync::Arc<dyn crate::facade::program_support::QueryObligationsMedium>,
+        material: std::sync::Arc<dyn crate::facade::correction_material::QueryCorrectionsMedium>,
     ) -> Result<CustodyReadmitted<Self>, QueryHomeCustodyReadmissionRefused<Schema, Program>> {
         let owner = self
             .runtime
@@ -99,6 +101,35 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                 })
             }
         };
+        if material.home() != obligations.home()
+            || material.incarnation() != obligations.incarnation()
+        {
+            let cause = if material.home() != obligations.home() {
+                crate::facade::correction_material::QueryCorrectionMaterialDenial::ForeignHome
+            } else {
+                crate::facade::correction_material::QueryCorrectionMaterialDenial::StaleIncarnation
+            };
+            return Err(QueryHomeCustodyReadmissionRefused {
+                query: self,
+                cause: QueryHomeCustodyReadmissionDenial::CorrectionMaterial(cause),
+            });
+        }
+        let material_admission = match self
+            .runtime
+            .runtime()
+            .runtime
+            .primary_provider
+            .readmit_correction_material(material, &originals, execution)
+        {
+            Ok(admission) => admission,
+            Err(cause) => {
+                return Err(QueryHomeCustodyReadmissionRefused {
+                    query: self,
+                    cause: QueryHomeCustodyReadmissionDenial::CorrectionMaterial(cause),
+                })
+            }
+        };
+        self.correction_material_admission = std::sync::OnceLock::from(material_admission);
         let admission =
             match support
                 .lifecycle()
@@ -112,6 +143,14 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                     })
                 }
             };
+        if let Err(cause) =
+            support.bind_original_meaning_receiver(&self.runtime.runtime().runtime.primary_provider)
+        {
+            return Err(QueryHomeCustodyReadmissionRefused {
+                query: self,
+                cause: QueryHomeCustodyReadmissionDenial::ProgramSupport(cause),
+            });
+        }
         if let Some(existing) = self.program_support_admission.get() {
             if admission.position() < existing.position()
                 || (admission.position() == existing.position()

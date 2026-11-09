@@ -82,16 +82,12 @@ where
         required_root,
     )?;
     let workflow = super::preparation::prepare_workflow::<S, C>(target, phase, source)?;
-    let retained = source
+    let (bytes, identity) = source
         .occurrence()
-        .commit_evidence()
-        .original_authority()
-        .retained_governed_input_carrier()
-        .ok_or(Denial::SemanticMaterialUnavailable)?;
-    let input = retained
-        .retained_input::<<C::Source as ApplicationMutationBinding<S>>::InputBinding>()
+        .input()
         .ok_or(Denial::UnsupportedSourceMeaning)?;
-    let input = super::material::recorded_input::recover(input, C::recover_source_input)?;
+    let input =
+        super::material::recorded_input::recover_bytes(bytes, identity, C::recover_source_input)?;
     let scope =
         <<C::Source as ApplicationMutationBinding<S>>::Input as ApplicationMutationInputScope<
             S,

@@ -154,6 +154,8 @@ impl<Schema, Operation, Input, Scope>
     {
         // The caller has checked the sealed handler's binding and input identity.
         self.core.data.original_input = Some(ErasedOriginalInput {
+            canonical: input.canonical_snapshot().clone(),
+            mutation_identity: Binding::IDENTITY,
             retained: std::sync::Arc::new(input.clone()),
             program: None,
             identity: *input.identity(),

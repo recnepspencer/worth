@@ -34,6 +34,30 @@ pub(super) fn certify(
     require_contract(request, &frame, recipe).map_err(Denial::Content)?;
     Ok(Some(frame))
 }
+pub(super) fn certify_retained(
+    request: &ExecutionRequest<'_, '_>,
+    basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
+    retained: &RelationalContentAttachments,
+    value: &AspectValue,
+    recipe: Option<&ApplicationContentBindingRecipe>,
+) -> Result<Option<RelationalContentFrame>, Denial> {
+    let AspectValue::ContentRef(identity) = value else {
+        return Ok(None);
+    };
+    let recipe = recipe.ok_or(Denial::FieldMeaningMismatch)?;
+    let mut source = basis
+        .prepare_content_reads(request, retained)
+        .map_err(Denial::Content)?;
+    let frame = source
+        .read(
+            request,
+            *identity,
+            worth_foundational::facade::CanonicalDigestId::new(recipe.declaration().identity),
+        )
+        .map_err(Denial::Content)?;
+    require_contract(request, &frame, recipe).map_err(Denial::Content)?;
+    Ok(Some(frame))
+}
 pub(super) fn retain(
     request: &ExecutionRequest<'_, '_>,
     count: usize,

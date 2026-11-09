@@ -14,6 +14,11 @@ use crate::domain_computation::primary_graph::{
 };
 
 mod alternatives;
+mod cold_selection;
+mod exact_original;
+mod occurrence;
+mod selection;
+use occurrence::CorrectionOccurrence;
 mod authored_identity;
 pub use alternatives::{
     WorthQueryCorrectionAlternativeRef, WorthQueryCorrectionAlternativeResolution,
@@ -56,12 +61,17 @@ use worth_query_declaration::facade::application_operation::{
 pub struct WorthQuerySelectedCorrectionSource<'runtime, Schema> {
     application: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     ancestry: ProductBranchAncestorSelection,
-    occurrence: WorthQueryPrimaryGraphCommittedApplication,
+    occurrence: CorrectionOccurrence,
 }
 
 #[derive(Debug)]
 /// Why an exact performed occurrence could not be selected as a correction source.
 pub enum WorthQueryCorrectionSelectionDenial {
+    StaleIncarnation,
+    Material(crate::facade::correction_material::QueryCorrectionMaterialDenial),
+    ExactHistory(RuntimeWorldServiceDenial<worth_runtime_world::facade::ProductExactHistoryDenial>),
+    HistoryLimit,
+    HistorySource(RuntimeWorldServiceDenial<worth_runtime_world::facade::WorldReadmissionDenial>),
     ForeignPhase,
     ForeignRuntime,
     SourceUnavailable,
@@ -153,168 +163,6 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             None,
         )
     }
-
-    pub fn select_correction_source(
-        &self,
-        phase: &WorthQueryAdvancementPhase<'_>,
-        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
-        request: &WorthQueryRequestScope,
-        receipt: &WorthQueryApplicationCommitReceipt,
-        maximum: Option<NonZeroUsize>,
-        maximum_results: NonZeroUsize,
-    ) -> Result<
-        WorthQuerySelectedCorrectionSource<'runtime, Schema>,
-        WorthQueryCorrectionSelectionDenial,
-    > {
-        let application = self.application();
-        if receipt.runtime_authority() != application.runtime.authority_identity() {
-            return Err(WorthQueryCorrectionSelectionDenial::ForeignRuntime);
-        }
-        let occurrence = application
-            .runtime
-            .primary_provider
-            .observe_completed_application(receipt.commit_reference())
-            .ok_or(WorthQueryCorrectionSelectionDenial::SourceUnavailable)?;
-        let performed = occurrence.committed_product_publication();
-        let claimed = receipt.committed_product_publication();
-        if performed.composite_commit() != claimed.composite_commit()
-            || performed.publication_attempt() != claimed.publication_attempt()
-            || performed.product_incarnation() != claimed.product_incarnation()
-            || occurrence.commit_reference() != receipt.commit_reference()
-        {
-            return Err(WorthQueryCorrectionSelectionDenial::SourcePublicationMismatch);
-        }
-        self.select_retained_occurrence(
-            phase,
-            principal,
-            request,
-            occurrence,
-            maximum,
-            maximum_results,
-        )
-    }
-
-    /// Resolves descriptive coordinates through the completed-evidence owner.
-    pub fn select_recorded_correction_source(
-        &self,
-        phase: &WorthQueryAdvancementPhase<'_>,
-        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
-        request: &WorthQueryRequestScope,
-        locator: &crate::domain_computation::application_aftermath::WorthQueryRecordedCorrectionSource,
-        maximum: Option<NonZeroUsize>,
-        maximum_results: NonZeroUsize,
-    ) -> Result<
-        WorthQuerySelectedCorrectionSource<'runtime, Schema>,
-        WorthQueryCorrectionSelectionDenial,
-    > {
-        self.select_correction_source_coordinates(
-            phase,
-            principal,
-            request,
-            &locator.coordinates(),
-            maximum,
-            maximum_results,
-        )
-    }
-
-    /// Resolves untrusted wire coordinates without constructing an owner-issued World identity.
-    pub fn select_correction_source_coordinates(
-        &self,
-        phase: &WorthQueryAdvancementPhase<'_>,
-        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
-        request: &WorthQueryRequestScope,
-        locator: &crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceCoordinates,
-        maximum: Option<NonZeroUsize>,
-        maximum_results: NonZeroUsize,
-    ) -> Result<
-        WorthQuerySelectedCorrectionSource<'runtime, Schema>,
-        WorthQueryCorrectionSelectionDenial,
-    > {
-        let occurrence = self
-            .application()
-            .runtime
-            .primary_provider
-            .observe_completed_application(locator.relational())
-            .ok_or(WorthQueryCorrectionSelectionDenial::SourceUnavailable)?;
-        let actual = occurrence
-            .committed_product_publication()
-            .composite_commit();
-        let owner = match actual.owner_identity().durable() {
-            Some(owner) => worth_foundational::facade::WorldOwnerCoordinate::Home { owner },
-            None => worth_foundational::facade::WorldOwnerCoordinate::MemoryOnly {
-                observation: actual.owner_identity().get(),
-            },
-        };
-        if owner != locator.world_owner() || actual.ordinal() != locator.world_commit() {
-            return Err(WorthQueryCorrectionSelectionDenial::SourcePublicationMismatch);
-        }
-        self.select_retained_occurrence(
-            phase,
-            principal,
-            request,
-            occurrence,
-            maximum,
-            maximum_results,
-        )
-    }
-
-    fn select_retained_occurrence(
-        &self,
-        phase: &WorthQueryAdvancementPhase<'_>,
-        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
-        request: &WorthQueryRequestScope,
-        occurrence: WorthQueryPrimaryGraphCommittedApplication,
-        maximum: Option<NonZeroUsize>,
-        maximum_results: NonZeroUsize,
-    ) -> Result<
-        WorthQuerySelectedCorrectionSource<'runtime, Schema>,
-        WorthQueryCorrectionSelectionDenial,
-    > {
-        let application = self.application();
-        let execution = phase
-            .execution_request_for(&application.runtime.product_runtime)
-            .map_err(|_| WorthQueryCorrectionSelectionDenial::ForeignPhase)?;
-        let performed = occurrence.committed_product_publication();
-        let original = occurrence.commit_evidence().original_authority();
-        let retained = original
-            .retained_governed_input_carrier()
-            .ok_or(WorthQueryCorrectionSelectionDenial::SourceNotCorrectable)?;
-        if retained.correction().is_none() || retained.original_scope().is_none() {
-            return Err(WorthQueryCorrectionSelectionDenial::SourceNotCorrectable);
-        }
-        let ancestry = application
-            .runtime
-            .product_runtime
-            .owner
-            .observation_port()
-            .select_retained_product_branch_ancestor(
-                &execution,
-                self.product().observation(),
-                performed.composite_commit(),
-                maximum,
-            )
-            .map_err(WorthQueryCorrectionSelectionDenial::Ancestry)?;
-        let source_type = original
-            .original_mutation_binding()
-            .ok_or(WorthQueryCorrectionSelectionDenial::SourceNotCorrectable)?;
-        let source = WorthQuerySelectedCorrectionSource {
-            application,
-            ancestry,
-            occurrence,
-        };
-        Schema::visit_correction(
-            source_type,
-            DiscloseSelection {
-                target: self,
-                phase,
-                principal,
-                request,
-                source,
-                maximum,
-                maximum_results,
-            },
-        )
-    }
 }
 
 struct DiscloseSelection<'a, 'runtime, 'phase, Schema> {
@@ -364,9 +212,7 @@ impl<Schema> WorthQuerySelectedCorrectionSource<'_, Schema> {
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
     ) -> std::any::TypeId {
         self.occurrence
-            .commit_evidence()
-            .original_authority()
-            .original_mutation_binding()
+            .original_binding()
             .expect("selected correction retained its native binding")
     }
 
@@ -382,9 +228,7 @@ impl<Schema> WorthQuerySelectedCorrectionSource<'_, Schema> {
         &self.ancestry
     }
 
-    pub(in crate::domain_computation::primary_graph) fn occurrence(
-        &self,
-    ) -> &WorthQueryPrimaryGraphCommittedApplication {
+    pub(in crate::domain_computation::primary_graph) fn occurrence(&self) -> &CorrectionOccurrence {
         &self.occurrence
     }
 }

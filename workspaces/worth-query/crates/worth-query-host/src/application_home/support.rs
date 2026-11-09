@@ -3,7 +3,7 @@ use worth_foundational::facade::DurableStateFamily;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum DirectoryFamilySupport {
-    Supported,
+    Supported(u8),
     RefusedUntil(u8),
 }
 
@@ -11,7 +11,7 @@ pub enum DirectoryFamilySupport {
 pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFamilySupport {
     use DurableStateFamily::*;
     match family {
-        ProgramActivation | PortablePackageMeaning => DirectoryFamilySupport::Supported,
+        ProgramActivation | PortablePackageMeaning => DirectoryFamilySupport::Supported(4),
         AggregateIdentity
         | AggregateMembership
         | AggregateLineage
@@ -32,7 +32,7 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
         | DispatchOutbox
         | AftermathCausality
         | CorrectionIntent
-        | PublicationDiagnosticMaterial => DirectoryFamilySupport::Supported,
+        | PublicationDiagnosticMaterial => DirectoryFamilySupport::Supported(4),
         WorldConditionalDefinitionCustody
         | SignalNodeDefinitions
         | SignalTopology
@@ -106,10 +106,10 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
         | RecoveryClaimDispositions
         | RecoveryHandleCustody
         | BankRecoveryClaim => DirectoryFamilySupport::RefusedUntil(8),
-        CorrectionPreImages
-        | CorrectionGovernedInput
-        | CorrectionOriginalMeaning
-        | OriginalOperationDescription
+        CorrectionPreImages | CorrectionGovernedInput | CorrectionOriginalMeaning => {
+            DirectoryFamilySupport::Supported(9)
+        }
+        OriginalOperationDescription
         | FixedDeliveryCustody
         | ServerSourceCustody
         | HttpOriginalOwners
@@ -122,14 +122,14 @@ pub(crate) fn directory_requirement_refusal(
     family: DurableStateFamily,
     required_phase: u8,
 ) -> Option<u8> {
-    let family_phase = match directory_family_support(family) {
-        DirectoryFamilySupport::Supported => 0,
-        DirectoryFamilySupport::RefusedUntil(phase) => phase,
-    };
-    let phase = family_phase.max(required_phase);
-    if phase <= 4 {
-        None
-    } else {
-        Some(phase)
+    match directory_family_support(family) {
+        DirectoryFamilySupport::Supported(phase) => {
+            if required_phase <= phase {
+                None
+            } else {
+                Some(required_phase)
+            }
+        }
+        DirectoryFamilySupport::RefusedUntil(phase) => Some(phase.max(required_phase)),
     }
 }

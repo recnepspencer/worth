@@ -13,6 +13,7 @@
 //! binding cannot confirm that operation, so it is unverifiable, never drift.
 
 use super::WorthQueryApplicationIdempotencyBinding;
+mod observation;
 mod shape;
 pub(in crate::domain_computation::primary_graph) use shape::validate;
 
@@ -38,6 +39,11 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryRecordedIntentMa
 }
 
 impl WorthQueryApplicationIdempotencyBinding {
+    pub(in crate::domain_computation::primary_graph) fn observe_recorded_intent(
+        recorded: &str,
+    ) -> Result<observation::RecordedIntentObservation, &'static str> {
+        observation::read(recorded)
+    }
     /// Select only the derived lookup namespace from the validated original grammar.
     pub(in crate::domain_computation::primary_graph) fn recorded_correction_scope(
         recorded: &str,

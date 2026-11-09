@@ -37,6 +37,8 @@ impl WorthQueryPrimaryGraphProvider {
                 ),
             )),
             fault_port,
+            original_meaning_support: Default::default(),
+            correction_material: Default::default(),
             world_history: std::sync::OnceLock::new(),
             teardown_sentinel: Default::default(),
         });

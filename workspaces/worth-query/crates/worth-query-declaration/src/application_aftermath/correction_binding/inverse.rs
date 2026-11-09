@@ -30,8 +30,15 @@ pub enum ApplicationCorrectionDerivationDenial {
 /// One installed source operation's deterministic corrective action association.
 pub trait ApplicationCorrectionBinding<Schema: ApplicationSchema>: Sized + 'static {
     const IDENTITY: &'static str;
-    type Source: ApplicationMutationBinding<Schema, Operation: ApplicationDeclaredOperation<Schema>>;
-    type InverseIntent: ApplicationMutationIntent<Schema>;
+    type Source: ApplicationMutationBinding<
+        Schema,
+        Input: serde::Serialize,
+        Operation: ApplicationDeclaredOperation<Schema>,
+    >;
+    type InverseIntent: ApplicationMutationIntent<
+        Schema,
+        Binding: ApplicationMutationBinding<Schema, Input: serde::Serialize>,
+    >;
     /// Current read authority for this binding's retained input and pre-images.
     type Disclosure: crate::application_query::ApplicationQueryBinding<Schema>;
 

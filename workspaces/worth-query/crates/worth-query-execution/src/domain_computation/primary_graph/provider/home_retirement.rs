@@ -16,6 +16,7 @@ pub(crate) struct PrimaryProviderCustody {
 enum ProviderRetirementStage {
     ReceiptBases,
     Publications,
+    CorrectionMaterial,
     Source,
     Complete,
 }
@@ -87,8 +88,17 @@ impl PrimaryProviderCustody {
                     .map_err(|_| Denial::Busy(Owner::PublicationReceipts))?
                     .advance_home_retirement(request, native)?;
                 if progress == Progress::Complete {
-                    self.stage = ProviderRetirementStage::Source;
+                    self.stage = ProviderRetirementStage::CorrectionMaterial;
                 }
+                Ok(Progress::Advanced)
+            }
+            ProviderRetirementStage::CorrectionMaterial => {
+                if let Some(owner) = provider.correction_material.get_mut() {
+                    owner
+                        .finish_retirement(request)
+                        .map_err(Denial::CorrectionMaterial)?;
+                }
+                self.stage = ProviderRetirementStage::Source;
                 Ok(Progress::Advanced)
             }
             ProviderRetirementStage::Source => {

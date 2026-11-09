@@ -15,6 +15,9 @@ pub struct WorthQueryCorrectionIntent {
 }
 
 impl WorthQueryCorrectionIntent {
+    pub(super) const fn identity(&self) -> [u8; 32] {
+        self.identity
+    }
     pub(crate) fn causal_key(&self) -> String {
         use std::fmt::Write;
         let mut key = String::from("recorded-correction:");
@@ -36,7 +39,7 @@ impl WorthQueryCorrectionIntent {
         use canonical_identity::{Coordinate, CorrectionIntentFields};
         let occurrence = source.ancestry().source().identity();
         let branch = target.product().observation();
-        let original = source.occurrence().commit_evidence().original_authority();
+        let original_intent = source.occurrence().original_intent();
         let action = match lineage.role() {
             Role::RecordedReverse => ApplicationInverseBinding::<Schema, C>::IDENTITY,
             Role::RecordedReapply => C::Source::IDENTITY,
@@ -52,7 +55,7 @@ impl WorthQueryCorrectionIntent {
             target_owner: canonical_identity::scope(target_owner.durable(), target_owner.get()),
             target_branch: branch.branch_identity().name().as_str(),
             target_lifecycle: lifecycle.ordinal(),
-            original_intent: original.idempotency_binding().intent_identity(),
+            original_intent: &original_intent,
             lineage: [
                 Some(lineage.root()),
                 lineage.selected_alternative(),
@@ -66,6 +69,11 @@ impl WorthQueryCorrectionIntent {
             command_key: *command_key,
             replay_definition_identity: None,
         }
+    }
+
+    pub(super) fn with_recorded_definition_data(mut self, definition: Option<[u8; 32]>) -> Self {
+        self.replay_definition_identity = definition;
+        self
     }
 
     pub(super) fn with_recorded_definition(
