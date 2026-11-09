@@ -1,6 +1,7 @@
 //! Family-declared logical identity for authored lifecycle inverses.
 mod authoring;
 mod key;
+mod owned_members;
 pub use authoring::ApplicationAuthoredCorrection;
 pub use key::ApplicationAuthoredLogicalKey;
 
@@ -23,6 +24,7 @@ pub struct DeclaredAuthoredCorrection {
     parts: DeclaredAuthoredCorrectionParts,
     co_anchors: Vec<DeclaredAuthoredCorrection>,
     optional: bool,
+    owner: Option<crate::application_aftermath::PortablePreImageRelationLocus>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -41,6 +43,7 @@ impl DeclaredAuthoredCorrection {
             parts,
             co_anchors: Vec::new(),
             optional: false,
+            owner: None,
         }
     }
     pub fn co_anchors(&self) -> &[Self] {
@@ -48,6 +51,20 @@ impl DeclaredAuthoredCorrection {
     }
     pub fn is_optional(&self) -> bool {
         self.optional
+    }
+    /// A member family uses role prefixes; its live roster is the sources of
+    /// this exactly-one relation into the enclosing authored anchor.
+    pub fn member_owner(
+        &self,
+    ) -> Option<&crate::application_aftermath::PortablePreImageRelationLocus> {
+        self.owner.as_ref()
+    }
+    pub fn with_member_owner(
+        mut self,
+        owner: crate::application_aftermath::PortablePreImageRelationLocus,
+    ) -> Self {
+        self.owner = Some(owner);
+        self
     }
     pub fn with_co_anchor(mut self, mut anchor: Self, optional: bool) -> Self {
         anchor.optional = optional;

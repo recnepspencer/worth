@@ -24,6 +24,9 @@ pub(super) struct PreparedAuthoredIdentity {
 }
 
 impl PreparedAuthoredIdentity {
+    pub(super) fn declaration(&self) -> &DeclaredAuthoredCorrection {
+        &self.declaration
+    }
     pub(super) fn retirement_anchor(&self) -> Option<EntityId> {
         (self.declaration.parts().source_posture == Posture::Create).then_some(self.original)
     }
@@ -170,6 +173,23 @@ impl PreparedAuthoredIdentity {
         };
         let mut co_anchors = Vec::with_capacity(declaration.co_anchors().len());
         for declared in declaration.co_anchors() {
+            if declared.member_owner().is_some() {
+                for (name, posture, _, _) in outputs
+                    .native_witness_roles()
+                    .filter(|(name, _, _, _)| name.starts_with(&declared.parts().source_role))
+                {
+                    let mut parts = declared.parts().clone();
+                    let suffix = &name[parts.source_role.len()..];
+                    parts.inverse_role = format!("{}{suffix}", parts.inverse_role);
+                    parts.source_role = name.to_owned();
+                    parts.source_posture = posture;
+                    let member = DeclaredAuthoredCorrection::from_untrusted_parts(parts);
+                    if let Some(member) = Self::prepare_identity::<S, C>(source, request, member)? {
+                        co_anchors.push(member);
+                    }
+                }
+                continue;
+            }
             if let Some(anchor) = Self::prepare_identity::<S, C>(source, request, declared.clone())?
             {
                 co_anchors.push(anchor);

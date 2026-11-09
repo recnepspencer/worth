@@ -38,6 +38,20 @@ pub(super) fn select(
     };
     let mut anchors = Vec::with_capacity(identity.co_anchors().len() + 1);
     for declaration in std::iter::once(identity).chain(identity.co_anchors()) {
+        if declaration.member_owner().is_some() {
+            anchors.extend(attempt.native_publication_roles().filter_map(
+                |(role, posture, entity, target)| match target {
+                    EntityReference::Existing(id)
+                        if role.starts_with(&declaration.parts().source_role)
+                            && posture == Posture::Retire =>
+                    {
+                        Some((RecordRef::Entity(*id), entity))
+                    }
+                    _ => None,
+                },
+            ));
+            continue;
+        }
         let role = attempt
             .native_publication_roles()
             .find(|(name, posture, _, _)| {

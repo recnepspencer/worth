@@ -56,9 +56,6 @@ impl RelationalRuntime {
         co_anchors: &[EntityId],
         roles: &[RequiredOutputRoleTarget],
     ) -> Result<Option<RelationalAuthoredRetirement>, TransactionCommitError> {
-        if installed.source_scope_ownership.is_empty() {
-            return Ok(None);
-        }
         if installed.runtime_instance_id != self.runtime_instance_id() {
             return Err(origin_denial("foreign installed source-retirement owner"));
         }
@@ -83,9 +80,6 @@ impl RelationalRuntime {
                     roles,
                     crate::history::data::AuthoredRetirementSelection::SourceScopeClosure,
                 )?;
-                if selected.is_empty() {
-                    return Ok(None);
-                }
                 let publications = selected
                     .iter()
                     .map(|envelope| {

@@ -1,8 +1,10 @@
 //! Derivation material belongs to the original occurrence's installed mechanism.
+mod preimage;
 use super::{
     disclosure::WorthQueryCorrectionDerivationDenial as Denial, WorthQuerySelectedCorrectionSource,
 };
 use crate::domain_computation::application_aftermath::retained_preimage::WorthQueryRetainedPreImage;
+use preimage::DisclosedPreImage;
 use worth_query_declaration::facade::{
     application_aftermath::{
         ApplicationCorrectionBinding, ApplicationCorrectionPreImage,
@@ -116,114 +118,6 @@ pub fn finish_derivation<T>(
         return Err(Denial::SourceOutput(cause));
     }
     result.map_err(Denial::Domain)
-}
-
-struct DisclosedPreImage<'a> {
-    retained: Option<&'a WorthQueryRetainedPreImage>,
-    outputs:
-        &'a crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
-}
-impl<S> ApplicationCorrectionPreImage<S> for DisclosedPreImage<'_> {
-    fn output_entity(
-        &self,
-        role: &worth_query_declaration::facade::application_operation::ApplicationMutationOutputRoleDescriptor,
-    ) -> Option<worth_foundational::facade::EntityId> {
-        let mut roles = self
-            .outputs
-            .native_witness_roles()
-            .filter(|(name, posture, entity, _)| {
-                *name == role.name() && *posture == role.posture() && *entity == role.entity()
-            });
-        let (_, _, _, id) = roles.next()?;
-        if roles.next().is_some() {
-            return None;
-        }
-        Some(historical_entity(id))
-    }
-
-    fn relation_count(
-        &self,
-        locus: &worth_query_declaration::facade::application_aftermath::DeclaredPreImageRelationLocus<S>,
-    ) -> Option<usize> {
-        let retained = self.retained?;
-        if !retained.relation_loci().iter().any(|value| {
-            value.relation() == locus.relation()
-                && value.from() == locus.from()
-                && value.to() == locus.to()
-        }) {
-            return None;
-        }
-        Some(
-            retained
-                .relations()
-                .iter()
-                .filter(|row| {
-                    row.locus().relation() == locus.relation()
-                        && row.locus().from() == locus.from()
-                        && row.locus().to() == locus.to()
-                })
-                .count(),
-        )
-    }
-    fn relation_at(&self, locus: &worth_query_declaration::facade::application_aftermath::DeclaredPreImageRelationLocus<S>, index: usize) -> Option<worth_query_declaration::facade::application_aftermath::ApplicationCorrectionRelationMaterial>{
-        let row = self
-            .retained?
-            .relations()
-            .iter()
-            .filter(|row| {
-                row.locus().relation() == locus.relation()
-                    && row.locus().from() == locus.from()
-                    && row.locus().to() == locus.to()
-            })
-            .nth(index)?;
-        let describe = |(from, to)| (historical_entity(from), historical_entity(to));
-        Some(worth_query_declaration::facade::application_aftermath::ApplicationCorrectionRelationMaterial::from_historical_endpoints(row.mutation().before().map(describe), row.mutation().after().map(describe)))
-    }
-
-    fn field(
-        &self,
-        locus: &DeclaredPreImageLocus<S>,
-    ) -> Option<&worth_foundational::facade::AspectValue> {
-        self.retained?
-            .fields()
-            .iter()
-            .find(|field| {
-                field.locus().entity() == locus.entity()
-                    && field.locus().aspect() == locus.aspect()
-                    && field.locus().field() == locus.field()
-            })
-            .map(|field| field.value())
-    }
-    fn field_for_output(
-        &self,
-        role: &worth_query_declaration::facade::application_operation::ApplicationMutationOutputRoleDescriptor,
-        locus: &DeclaredPreImageLocus<S>,
-    ) -> Option<&worth_foundational::facade::AspectValue> {
-        if role.entity() != locus.entity() {
-            return None;
-        }
-        let mut roles = self
-            .outputs
-            .native_witness_roles()
-            .filter(|(name, posture, entity, _)| {
-                *name == role.name() && *posture == role.posture() && *entity == role.entity()
-            });
-        let (_, _, _, original) = roles.next()?;
-        if roles.next().is_some() {
-            return None;
-        }
-        self.retained?
-            .fields()
-            .iter()
-            .find(|field| {
-                field.target_record()
-                    == &worth_relational::facade::transactions::RecordRef::Entity(original)
-                    && field.locus().entity() == locus.entity()
-                    && field.locus().aspect() == locus.aspect()
-                    && field.locus().field() == locus.field()
-            })
-            .map(|field| field.value())
-    }
 }
 
 /// The installed correction derives finite demands from its original input and pre-image.

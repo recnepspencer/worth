@@ -199,3 +199,5 @@ pub(crate) fn fingerprint(left: u64) -> (String, [u8; 32]) {
         .unwrap_or_else(|error| panic!("close: {:?}", error.denial()));
     (content, identity)
 }
+
+mod owned_members;

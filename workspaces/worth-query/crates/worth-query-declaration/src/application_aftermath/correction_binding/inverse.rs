@@ -1,4 +1,4 @@
-use super::super::{DeclaredCorrectionMechanism, DeclaredPreImageLocus};
+use super::super::DeclaredCorrectionMechanism;
 use crate::application_operation::{
     ApplicationMutationBinding, ApplicationMutationDescription, ApplicationMutationIntent,
 };
@@ -10,48 +10,6 @@ use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
 pub type ApplicationInverseBinding<Schema, Correction> =
     <<Correction as ApplicationCorrectionBinding<Schema>>::InverseIntent as ApplicationMutationIntent<Schema>>::Binding;
-
-/// Read-only original values; this view grants no current read or write authority.
-pub trait ApplicationCorrectionPreImage<Schema> {
-    fn output_entity(
-        &self,
-        _role: &crate::application_operation::ApplicationMutationOutputRoleDescriptor,
-    ) -> Option<worth_foundational::facade::EntityId> {
-        None
-    }
-
-    /// Complete original lifecycle material for a declared relation kind.
-    /// None means the locus was not retained; Some(0) is authenticated empty material.
-    fn relation_count(
-        &self,
-        _locus: &super::super::DeclaredPreImageRelationLocus<Schema>,
-    ) -> Option<usize> {
-        None
-    }
-    fn relation_at(
-        &self,
-        _locus: &super::super::DeclaredPreImageRelationLocus<Schema>,
-        _index: usize,
-    ) -> Option<super::super::ApplicationCorrectionRelationMaterial> {
-        None
-    }
-
-    fn field(
-        &self,
-        locus: &DeclaredPreImageLocus<Schema>,
-    ) -> Option<&worth_foundational::facade::AspectValue>;
-
-    /// Read one declared locus on the exact original record bound to this output
-    /// role. An absent optional role yields None; equal loci on co-anchors never
-    /// substitute for one another. This grants historical values only.
-    fn field_for_output(
-        &self,
-        _role: &crate::application_operation::ApplicationMutationOutputRoleDescriptor,
-        _locus: &DeclaredPreImageLocus<Schema>,
-    ) -> Option<&worth_foundational::facade::AspectValue> {
-        None
-    }
-}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ApplicationCorrectionDerivationDenial {

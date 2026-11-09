@@ -49,6 +49,12 @@ impl ApplicationProgramDefinition<Schema> for Program {
         vec![
             ApplicationFeatureSpec::root::<Schema, Entry>()
                 .provides::<EntryOutput>()
+                .native_action::<roster::CreateBinding>()
+                .finish_action()
+                .native_action::<roster::RetireBinding>()
+                .finish_action()
+                .native_action::<roster::RestoreBinding>()
+                .finish_action()
                 .native_action::<edit::source::Binding>()
                 .finish_action()
                 .native_action::<edit::generated::Binding>()

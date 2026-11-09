@@ -4219,6 +4219,50 @@ Read a particular co-anchor with
 `preimage.field_for_output(&CoRole::DESCRIPTOR, &locus)`; equal field loci on
 different anchors retain their own original values.
 
+An authored anchor may also own a variable number of independently keyed
+members. Extend its existing authored correction declaration:
+
+```rust
+ApplicationAuthoredCorrection::restore_retired::<C, AnchorFamily, Retired, Created>()
+    .owned_members::<C, MemberFamily, RetiredMembers, CreatedMembers, _, _>(
+        MemberOf::reference(),
+    )
+```
+
+`RetiredMembers` and `CreatedMembers` are ordinary output-role families with
+minimum zero and the respective single lifecycle posture. `MemberFamily`
+declares the member's native logical-key field. Installation requires the named
+owner relation to run from that member kind to the anchor kind, with exactly
+one target per live member (`source_min = source_max = 1`). The roster is
+exactly the live sources of that relation into the anchor; there is no stored
+roster list and no implied ownership from another relation.
+
+The ordinary candidate binds every retiring member, unlinks its owner and
+intra-roster relations, and deletes the anchor and members in the same commit.
+Native compares the actual owner adjacency with those roles before relation-law
+validation. `MissingOwnedMember`, `ForeignOwnedMember`, `RepeatedOwnedMember`,
+`ExtraOwnedMember` and `DanglingOwnedMember` retain their affected records through
+`authored_retirement_error()`. A member cannot substitute for its typed anchor.
+Restoration creates that anchor and all original members with their logical keys
+and fresh Native IDs. Declare and observe the member key and every field to
+restore in the existing `DeclaredPreImageDemand`, and add the owner and changed
+intra-roster relation loci with `with_relations`. The recorded inverse compares
+relations after remapping the original anchor and member endpoints to those
+fresh IDs. Exactly-one owner cardinality still refuses a restored member without
+its anchor. An outside relation into a member remains outside the closure;
+`RejectDeleteWithLiveRelations` still produces the typed `EndpointDeletion` denial.
+
+The demand's `maximum_encoded_bytes` bounds the total logical retained payload,
+across the anchor and every member. Fields charge their native scalar semantic
+width, including the scalar tag. Each relation transition charges 86 bytes for
+its complete record/kind and before/after endpoint coordinates; retained content
+also spends the same bound. A field total over the bound refuses as
+`WorthQueryPreImageRetentionDenial::ExceedsByteBound`; a relation total over it
+refuses as `WorthQueryRelationPreImageDenial::ExceedsByteBound`, before any effect.
+Historical member fields are read using `family_member_suffix`,
+`family_member_entity` and `field_for_family_member` on the recorded pre-image.
+These descriptive values grant no current read or mutation authority.
+
 If a retired authored source is still linked by a surviving source-owned
 publication, declare that owner's root through the program's existing output
 connection. The mutation binding implements

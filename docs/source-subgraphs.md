@@ -134,3 +134,15 @@ Every live/retired member must participate in the declared output contract.
 An optional output family with minimum zero is not proof that an omitted member
 does not exist. The fixed fixture does not qualify arbitrary reachability,
 mutable relation currentness or graph-wide recorded undo.
+
+## Variable authored membership
+
+The same source-subgraph host also declares a variable authored member kind with
+`ApplicationAuthoredCorrection::owned_members`. Its exactly-one member-to-anchor
+relation is the sole live membership authority. The existing authored identity,
+recorded field/relation pre-image, Native retirement event and restoration owners
+carry the complete inverse. No producer publication is required for an authored
+roster, including an empty one. See the [authored retirement
+walkthrough](build-an-application.md#source-owned-producer-publications) for output
+families, total byte bounds and the typed exact-roster refusals. The recorded
+pre-image is historical inverse material, never a second live graph.

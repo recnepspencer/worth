@@ -48,6 +48,20 @@ pub(super) fn authored_anchor(
     }
     let mut co_anchors = Vec::with_capacity(identity.co_anchors().len());
     for declaration in identity.co_anchors() {
+        if declaration.member_owner().is_some() {
+            co_anchors.extend(attempt.native_publication_roles().filter_map(
+                |(role, posture, _, target)| match target {
+                    EntityReference::Existing(id)
+                        if role.starts_with(&declaration.parts().source_role)
+                            && posture == Posture::Retire =>
+                    {
+                        Some(*id)
+                    }
+                    _ => None,
+                },
+            ));
+            continue;
+        }
         let mut matched = attempt
             .native_publication_roles()
             .filter(|(role, posture, _, _)| {

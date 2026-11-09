@@ -31,6 +31,18 @@ impl PreparedAuthoredIdentity {
     ) -> Result<(), AuthoredCorrectionCandidateDenial> {
         poll(request)?;
         for declaration in self.declaration.co_anchors() {
+            if declaration.member_owner().is_some() {
+                if roles.clone().any(|(name, _, _, _)| {
+                    name.starts_with(&declaration.parts().inverse_role)
+                        && !self
+                            .co_anchors
+                            .iter()
+                            .any(|member| member.declaration.parts().inverse_role == name)
+                }) {
+                    return Err(Identity("authored inverse supplied an extra owned member"));
+                }
+                continue;
+            }
             let present = self.co_anchors.iter().any(|anchor| {
                 anchor.declaration.parts().source_role == declaration.parts().source_role
             });
