@@ -4,6 +4,7 @@ mod buffered_values;
 mod canonical_refusals;
 mod retention_capture;
 mod value_corpus;
+mod value_seed;
 use crate::facade::application_operation::{
     ApplicationEncodedInput, ApplicationRetainedInputDenial as Denial,
 };

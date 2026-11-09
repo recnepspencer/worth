@@ -146,6 +146,22 @@ impl ApplicationCorrectionBinding<NumericSchema> for CorrectDefinition {
     type Source = Binding;
     type InverseIntent = Change;
     type Disclosure = query::ReadBinding;
+
+    fn recover_source_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<NumericSchema>>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    >{
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained_with_seed(
+            bytes, expected, bounds,
+            worth_query_decl::facade::application_schema::CanonicalValueSeed::<<Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<NumericSchema>>::Input>::new(bounds),
+        )
+    }
     fn disclosure_parameters(
         _: &Change,
     ) -> Result<ApplicationQueryParameterSet<query::ReadQuery>, ApplicationCorrectionDerivationDenial>

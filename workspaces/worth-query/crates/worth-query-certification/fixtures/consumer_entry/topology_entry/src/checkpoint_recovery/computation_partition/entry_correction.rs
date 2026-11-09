@@ -19,7 +19,7 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryInvariantMutationTarget,
 };
 
-#[derive(Clone, Debug, serde::Serialize)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub(super) struct EntryCorrection {
     pub(super) scope_key: String,
     pub(super) entry: u64,

@@ -7,7 +7,7 @@ use super::super::{
 use super::*;
 use worth_query_decl::facade::{application_operation::*, *};
 
-#[derive(Clone, Debug, serde::Serialize)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub enum Parent {
     Prefix,
     AuthorizedSource,
@@ -15,7 +15,7 @@ pub enum Parent {
     Boxes { probe: Coordinates },
     Contact { probe: Coordinates },
 }
-#[derive(Clone, Debug, serde::Serialize)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Input {
     pub parent: Parent,
     pub directory: String,

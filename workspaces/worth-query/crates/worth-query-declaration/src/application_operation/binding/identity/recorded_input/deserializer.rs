@@ -218,8 +218,17 @@ impl<'de> de::Deserializer<'de> for &mut Reader<'de> {
         sequence_body(self, visitor)
     }
     fn deserialize_map<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value> {
-        self.require(tag::MAP)?;
-        mapping_body(self, MapKeys::EncodedValues, visitor)
+        let keys = match self.byte()? {
+            tag::MAP => MapKeys::EncodedValues,
+            // CanonicalValue's tagged-enum seed reads its serialized struct
+            // through MapAccess. Final re-encoding still checks the exact name.
+            tag::STRUCT => {
+                self.text()?;
+                MapKeys::StructFields
+            }
+            _ => return Err(Error(ValueCodecDenial::Malformed)),
+        };
+        mapping_body(self, keys, visitor)
     }
     fn deserialize_struct<V: Visitor<'de>>(
         self,

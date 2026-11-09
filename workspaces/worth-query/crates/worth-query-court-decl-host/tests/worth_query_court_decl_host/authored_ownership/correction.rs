@@ -15,6 +15,22 @@ impl<S: Scenario> ApplicationCorrectionBinding<S> for UndoCreate<S> {
     type Source = CreateBinding<S>;
     type InverseIntent = Retire;
     type Disclosure = query::Binding<S>;
+
+    fn recover_source_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<S>>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    >{
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained_with_seed(
+            bytes, expected, bounds,
+            worth_query_decl::facade::application_schema::CanonicalValueSeed::<<Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<S>>::Input>::new(bounds),
+        )
+    }
     fn source_definition() -> ApplicationOperationDefinitionBuilder<S, CreateOp, Create, true, false>
     {
         CreateOp::reference().definition().no_external_effect()
@@ -83,6 +99,22 @@ impl<S: Scenario> ApplicationCorrectionBinding<S> for UndoRetire<S> {
     type Source = RetireBinding<S>;
     type InverseIntent = Restore;
     type Disclosure = query::Binding<S>;
+
+    fn recover_source_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<S>>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    >{
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained_with_seed(
+            bytes, expected, bounds,
+            worth_query_decl::facade::application_schema::CanonicalValueSeed::<<Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<S>>::Input>::new(bounds),
+        )
+    }
     fn source_definition() -> ApplicationOperationDefinitionBuilder<S, RetireOp, Retire, true, false>
     {
         RetireOp::reference().definition().no_external_effect()

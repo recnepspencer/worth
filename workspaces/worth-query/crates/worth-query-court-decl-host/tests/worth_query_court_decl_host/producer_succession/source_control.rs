@@ -1,5 +1,5 @@
 use super::*;
-#[derive(Clone, serde::Serialize)]
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub struct Control {
     pub key: String,
     pub width: u64,

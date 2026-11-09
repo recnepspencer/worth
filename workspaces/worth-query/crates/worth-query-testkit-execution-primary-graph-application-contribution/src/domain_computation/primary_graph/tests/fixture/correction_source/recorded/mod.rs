@@ -11,6 +11,19 @@ impl ApplicationCorrectionBinding<IdentityExecutionSchema> for RecordedLabelEdit
     type Source = LabelBinding;
     type InverseIntent = LabelEdit;
     type Disclosure = TestAccountSourceBinding;
+
+    fn recover_source_input(
+        bytes: &[u8],
+        expected: worth_query_declaration::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_declaration::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_declaration::facade::application_operation::ApplicationEncodedInput<
+            <Self::Source as worth_query_declaration::facade::application_operation::ApplicationMutationBinding<IdentityExecutionSchema>>::InputBinding,
+        >,
+        worth_query_declaration::facade::application_operation::ApplicationRetainedInputDenial,
+    >{
+        worth_query_declaration::facade::application_operation::ApplicationEncodedInput::decode_retained(bytes, expected, bounds)
+    }
     fn disclosure_parameters(
         original: &LabelEdit,
     ) -> Result<

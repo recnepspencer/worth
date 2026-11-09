@@ -106,7 +106,7 @@ worth_query_principal_binding!(
 );
 
 /// The exact retention one request asks a named document to carry.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize)]
 pub struct SetRetentionInput {
     pub identity: String,
     pub retention_days: u64,

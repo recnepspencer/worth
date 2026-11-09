@@ -11,7 +11,7 @@ use super::{
 };
 use crate::application_schema::{ApplicationStructuredValueBinding, ApplicationValueEncodeDenial};
 use reader::{CanonicalInputDecodeError, Reader};
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Serialize};
 use sha2::{Digest, Sha256};
 use worth_foundational::facade::{CanonicalDigestId, ValueCodecDenial, ValueDecodeBounds};
 
@@ -73,9 +73,34 @@ where
         expected: CanonicalDigestId,
         bounds: ValueDecodeBounds,
     ) -> Result<Self, ApplicationRetainedInputDenial> {
+        Self::decode_retained_with_seed(
+            bytes,
+            expected,
+            bounds,
+            std::marker::PhantomData::<Binding::Value>,
+        )
+    }
+}
+impl<Binding> ApplicationEncodedInput<Binding>
+where
+    Binding: ApplicationStructuredValueBinding,
+    Binding::Value: Serialize,
+{
+    /// Read the same recorded grammar through the declaration's required value
+    /// seed. The seed constructs DATA only; exact binding validation and canonical
+    /// identity are checked again after full consumption. No reader escapes.
+    pub fn decode_retained_with_seed<'de, Seed>(
+        bytes: &'de [u8],
+        expected: CanonicalDigestId,
+        bounds: ValueDecodeBounds,
+        seed: Seed,
+    ) -> Result<Self, ApplicationRetainedInputDenial>
+    where
+        Seed: serde::de::DeserializeSeed<'de, Value = Binding::Value>,
+    {
         let payload = admit_frame(bytes, Binding::IDENTITY.as_str(), expected, bounds)?;
         let mut reader = Reader::new(payload, bounds);
-        let value = Binding::Value::deserialize(&mut reader)?;
+        let value = seed.deserialize(&mut reader)?;
         reader.finished()?;
         let encoded = Self::encode(value).map_err(ApplicationRetainedInputDenial::Encoding)?;
         if encoded.identity() != expected.bytes() {

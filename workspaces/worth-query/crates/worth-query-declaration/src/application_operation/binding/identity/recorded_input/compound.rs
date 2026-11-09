@@ -141,10 +141,14 @@ impl<'de> de::VariantAccess<'de> for Enumeration<'_, 'de> {
         }
     }
     fn newtype_variant_seed<T: DeserializeSeed<'de>>(self, seed: T) -> Result<T::Value> {
-        if self.kind != tag::NEWTYPE_VARIANT {
-            return Err(Error(ValueCodecDenial::Malformed));
+        match self.kind {
+            tag::NEWTYPE_VARIANT => seed.deserialize(self.reader),
+            // WorthValue's named variant seed asks for its payload as a map.
+            // The wire still has the original STRUCT_VARIANT body and tags;
+            // use the same complete-body adapter as buffered Serde enums.
+            tag::STRUCT_VARIANT => mapping_seed(self.reader, seed),
+            _ => Err(Error(ValueCodecDenial::Malformed)),
         }
-        seed.deserialize(self.reader)
     }
     fn tuple_variant<V: Visitor<'de>>(self, _: usize, visitor: V) -> Result<V::Value> {
         if self.kind != tag::TUPLE_VARIANT {

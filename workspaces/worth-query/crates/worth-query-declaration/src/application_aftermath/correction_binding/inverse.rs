@@ -35,6 +35,19 @@ pub trait ApplicationCorrectionBinding<Schema: ApplicationSchema>: Sized + 'stat
     /// Current read authority for this binding's retained input and pre-images.
     type Disclosure: crate::application_query::ApplicationQueryBinding<Schema>;
 
+    /// Reconstruct the exact retained source input as fresh DATA. This required
+    /// factory grants no historical authority, disclosure, or operation admission.
+    fn recover_source_input(
+        bytes: &[u8],
+        expected: worth_foundational::facade::CanonicalDigestId,
+        bounds: worth_foundational::facade::ValueDecodeBounds,
+    ) -> Result<
+        crate::application_operation::ApplicationEncodedInput<
+            <Self::Source as ApplicationMutationBinding<Schema>>::InputBinding,
+        >,
+        crate::application_operation::ApplicationRetainedInputDenial,
+    >;
+
     /// Captured while the original operation is admitted, before history becomes protected.
     fn disclosure_parameters(
         original: &<Self::Source as ApplicationMutationBinding<Schema>>::Input,

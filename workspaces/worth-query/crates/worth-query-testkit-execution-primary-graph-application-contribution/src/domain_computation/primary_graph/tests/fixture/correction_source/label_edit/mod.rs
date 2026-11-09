@@ -8,7 +8,7 @@ use worth_query_execution::facade::domain_computation::HandlerExecutionDenial;
 use worth_query_execution::facade::domain_computation::HandlerResult;
 use worth_query_execution::facade::domain_computation::OperationHandler;
 
-#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct LabelEdit {
     pub status: String,
     pub label: String,
