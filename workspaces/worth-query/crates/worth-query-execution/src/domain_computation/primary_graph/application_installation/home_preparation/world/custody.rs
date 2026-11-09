@@ -7,6 +7,9 @@ use worth_proof::CustodyReadmitted;
 pub enum QueryHomeCustodyReadmissionDenial {
     ProgramSupport(crate::facade::program_support::QueryProgramSupportDenial),
     Activation(super::QueryHomeProgramActivationDenial),
+    ProgramHistorySource(
+        RuntimeWorldServiceDenial<worth_runtime_world::facade::WorldReadmissionDenial>,
+    ),
     Correction(corrections::QueryHomeCorrectionLineageDenial),
     Execution(worth_execution::WorkCeilingDenial),
     World(RuntimeWorldServiceDenial<RuntimeWorldRecoveryDenial>),
@@ -35,7 +38,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
     ReadmittedHomeQueryService<Schema, Program>
 {
     pub fn readmit_custody(
-        self,
+        mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         obligations: std::sync::Arc<dyn crate::facade::program_support::QueryObligationsMedium>,
     ) -> Result<CustodyReadmitted<Self>, QueryHomeCustodyReadmissionRefused<Schema, Program>> {
@@ -79,19 +82,41 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                 ),
             });
         };
-        let admission = match support.lifecycle().readmit_journal(obligations, execution) {
-            Ok(admission) => admission,
+        let originals = match self
+            .runtime
+            .runtime()
+            .runtime
+            .product_runtime
+            .owner
+            .inspection_port()
+            .observe_program_activation_history(execution)
+        {
+            Ok(originals) => originals,
             Err(cause) => {
                 return Err(QueryHomeCustodyReadmissionRefused {
                     query: self,
-                    cause: QueryHomeCustodyReadmissionDenial::ProgramSupport(cause),
+                    cause: QueryHomeCustodyReadmissionDenial::ProgramHistorySource(cause),
                 })
             }
         };
+        let admission =
+            match support
+                .lifecycle()
+                .readmit_journal(obligations, &originals, execution)
+            {
+                Ok(admission) => admission,
+                Err(cause) => {
+                    return Err(QueryHomeCustodyReadmissionRefused {
+                        query: self,
+                        cause: QueryHomeCustodyReadmissionDenial::ProgramSupport(cause),
+                    })
+                }
+            };
         if let Some(existing) = self.program_support_admission.get() {
-            if existing.position() != admission.position()
-                || existing.digest() != admission.digest()
-                || existing.payload_digest() != admission.payload_digest()
+            if admission.position() < existing.position()
+                || (admission.position() == existing.position()
+                    && (existing.digest() != admission.digest()
+                        || existing.payload_digest() != admission.payload_digest()))
             {
                 return Err(QueryHomeCustodyReadmissionRefused {
                     query: self,
@@ -100,14 +125,11 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                     ),
                 });
             }
-        } else if self.program_support_admission.set(admission).is_err() {
-            return Err(QueryHomeCustodyReadmissionRefused {
-                query: self,
-                cause: QueryHomeCustodyReadmissionDenial::ProgramSupport(
-                    crate::facade::program_support::QueryProgramSupportDenial::SupportUnavailable,
-                ),
-            });
         }
+        // The lifecycle has folded this same issuer's prefix and acknowledged
+        // every release before returning. A repeated opening may advance it
+        // after a terminal original disposition, never roll it back.
+        self.program_support_admission = std::sync::OnceLock::from(admission);
         if let Err(cause) =
             crate::domain_computation::primary_graph::bootstrap::branch_activation_history::verify(
                 self.runtime.runtime(),

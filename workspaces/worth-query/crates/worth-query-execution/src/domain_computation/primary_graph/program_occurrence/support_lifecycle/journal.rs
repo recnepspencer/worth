@@ -18,6 +18,7 @@ mod codec;
 mod generation;
 mod ledger;
 mod medium;
+mod originals;
 pub use generation::QueryProgramSupportPublicationGenerations;
 pub use ledger::QueryProgramSupportLedger;
 pub use medium::*;
@@ -108,7 +109,12 @@ pub enum QueryProgramSupportDenial {
     UnknownObligation,
     DuplicateObligation,
     AdoptionReadmissionRequired,
-    OriginalInterpretationReadmissionRequired,
+    MissingOriginalInterpretationSource {
+        identity: ProgramSupportObligationIdentity,
+    },
+    OriginalInterpretationProgramMismatch {
+        identity: ProgramSupportObligationIdentity,
+    },
     OwnerUnavailable,
     StaleIncarnation,
     PublicationPending,

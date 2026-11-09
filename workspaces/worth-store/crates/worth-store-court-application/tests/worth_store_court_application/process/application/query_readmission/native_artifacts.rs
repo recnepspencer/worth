@@ -31,6 +31,7 @@ mod observation_policy;
 mod operations;
 use observation_policy::{no_operation_admission, ObservationMaintenanceMustRemainUnentered};
 mod original_image;
+mod original_membership;
 mod selected;
 mod stops;
 use operations::{balance, fresh_closed, set};

@@ -662,6 +662,13 @@ the application's parameter projector. Fresh disclosure admission remains requir
 | Produce from authentic sources and declare artifact lifecycle | `WorthQueryApplicationProducerProvider` supplies semantic identity, operation input and idempotency from the original source, and declares its typed domain denial value. `ApplicationDerivedArtifact` declares output/locality, retention, succession, required posture, producer, dependencies, reuse and stopped outcome. The installed mutation path enforces source/currentness and publication contracts. | [Producer source and publication](build-an-application.md#producer-source-and-publication) |
 | Reverse a business change | Declare a domain action with its required source, authorization and effects, then execute it through the ordinary owning request path. | [Owning actions](build-an-application.md#53-execute-through-the-program) |
 
+Platform support-obligation readmission joins each original-interpretation row
+to its protected World open and exact program revision. The count remains
+retained for Open, Published and Continued originals. A recorded Released
+original supplies a terminal candidate; the funded journal owner acknowledges
+its release before changing the count. Missing originals and mismatched revisions
+refuse with typed outcomes. Correction material admission remains a separate gate.
+
 Use the committed construction and explicit cold-refusal contract above.
 Structural candidate Source loans do not grant scalar or managed-index reads.
 Declare an invariant's managed Source requirement separately: supported scalar

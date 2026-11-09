@@ -2,12 +2,16 @@
 use super::*;
 use journal::*;
 use worth_execution::ExecutionRequest;
-use worth_foundational::facade::CanonicalDigestId;
+use worth_foundational::facade::{
+    CanonicalDigestId, ProgramSupportObligationIdentity, ProgramSupportObligationKind,
+};
+use worth_runtime_world::facade::WorldProgramActivationHistory;
 
 impl WorthQueryProgramSupportLifecycle {
     pub(in crate::domain_computation::primary_graph) fn readmit_journal(
         &self,
         medium: Arc<dyn QueryObligationsMedium>,
+        originals: &WorldProgramActivationHistory,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<worth_proof::AdmittedHomeQueryObligations, QueryProgramSupportDenial> {
         use QueryProgramSupportDenial as Denial;
@@ -35,14 +39,9 @@ impl WorthQueryProgramSupportLifecycle {
                 request.consult().map_err(Denial::Execution)?;
                 ledger.readmit(QueryProgramSupportFrame::readmit(&bytes)?)?;
             }
-            // Historical revisions remain DATA through D16 roster cutover.
-            // Outstanding recovery rows still require their owning consumers.
-            if let Some(row) = ledger.obligations().next() {
-                return Err(match row.kind {
-                    worth_foundational::facade::ProgramSupportObligationKind::OriginalInterpretation => Denial::OriginalInterpretationReadmissionRequired,
-                    worth_foundational::facade::ProgramSupportObligationKind::BranchAdoption => Denial::AdoptionReadmissionRequired,
-                });
-            }
+            // Joined originals retain their durable counts. Adoption's owning
+            // consumer remains a separate admission requirement.
+            self.join_original_interpretations(&ledger, originals)?;
             let mut state = self.state();
             if state.entries.values().any(|entry| {
                 entry.retained_interpretations != 0
@@ -58,6 +57,18 @@ impl WorthQueryProgramSupportLifecycle {
             medium
         };
         driver.finish_pending(medium.as_ref(), request)?;
+        let released = {
+            let state = self.state();
+            let ledger = &state.journal.as_ref().expect("admitted journal").ledger;
+            Self::join_original_interpretations_with_roster(ledger, &state.entries, originals)?
+        };
+        for identity in released {
+            driver.publish(
+                medium.as_ref(),
+                QueryProgramSupportRecord::Release { identity },
+                request,
+            )?;
+        }
         let missing = {
             let state = self.state();
             let ledger = &state.journal.as_ref().expect("decoded journal").ledger;
@@ -112,5 +123,34 @@ impl WorthQueryProgramSupportLifecycle {
             ledger.digest(),
             ledger.payload_digest(),
         ))
+    }
+    fn join_original_interpretations(
+        &self,
+        ledger: &QueryProgramSupportLedger,
+        originals: &WorldProgramActivationHistory,
+    ) -> Result<Vec<ProgramSupportObligationIdentity>, QueryProgramSupportDenial> {
+        Self::join_original_interpretations_with_roster(ledger, &self.state().entries, originals)
+    }
+    fn join_original_interpretations_with_roster(
+        ledger: &QueryProgramSupportLedger,
+        entries: &BTreeMap<ApplicationProgramRevision, SupportEntryState>,
+        originals: &WorldProgramActivationHistory,
+    ) -> Result<Vec<ProgramSupportObligationIdentity>, QueryProgramSupportDenial> {
+        for row in ledger.obligations() {
+            match row.kind {
+                ProgramSupportObligationKind::BranchAdoption => {
+                    return Err(QueryProgramSupportDenial::AdoptionReadmissionRequired)
+                }
+                ProgramSupportObligationKind::OriginalInterpretation => {
+                    if !entries
+                        .keys()
+                        .any(|revision| revision.as_bytes() == row.source.bytes())
+                    {
+                        return Err(QueryProgramSupportDenial::UnrosteredProgram(row.source));
+                    }
+                }
+            }
+        }
+        ledger.released_original_interpretations(originals)
     }
 }
