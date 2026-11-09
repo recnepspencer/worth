@@ -18,6 +18,7 @@ pub(super) fn progress_invariant_candidate<'run>(
     assembly: Option<
         &dyn crate::domain_computation::primary_graph::provider::CoupledProducerAssembly,
     >,
+    history: Option<super::HistoryProducerInvocation<'_>>,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<
     crate::domain_computation::WorthQueryInvariantApprovedProposedState<'run>,
@@ -43,6 +44,7 @@ pub(super) fn progress_invariant_candidate<'run>(
                 execution,
                 inspection.provider_session_view(),
                 allocation_policy,
+                history.is_none(),
             ),
         });
     match candidate {

@@ -267,6 +267,16 @@ pub(in crate::domain_computation::primary_graph) fn approved_outcome(
     binding: WorthQueryElevationApprovalBinding,
 ) -> WorthQueryElevationApprovalOutcome {
     match outcome {
+        WorthQueryApplicationCommitOutcome::OutputAdopted(_) => {
+            WorthQueryElevationApprovalOutcome::Denied(
+                WorthQueryApplicationCommitDenial::provider_rejected_with_detail(
+                    super::WorthQueryApplicationCommitDenialStage::ProviderCommit,
+                    "producer output adoption cannot fulfill this authored transition",
+                ),
+                binding.into_requested(),
+            )
+        }
+
         WorthQueryApplicationCommitOutcome::Committed(commit) => {
             WorthQueryElevationApprovalOutcome::Approved(approved(binding, commit))
         }

@@ -70,7 +70,7 @@ impl WorthQueryPreparedCorrectionSource {
         let memory = execution
             .allocation_policy()
             .reserve_memory(actual.len() as u64)
-            .map_err(Denial::allocation_denied)?;
+            .map_err(|cause| Denial::allocation_denied(cause, "relation inverse preparation"))?;
         let mut used = Vec::new();
         used.try_reserve_exact(actual.len())
             .map_err(|_| base("inverse relation comparison allocation failed"))?;

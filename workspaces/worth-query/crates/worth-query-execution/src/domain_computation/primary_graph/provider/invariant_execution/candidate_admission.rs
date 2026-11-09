@@ -1,9 +1,22 @@
 //! Each writer admits its own contract under one genuine Native invariant judgment.
 use super::*;
+pub(super) enum CandidateInvariantJudgment<'borrow, 'candidate> {
+    Standalone(&'candidate worth_relational::facade::mvcc::ValidatedRelationalProposal),
+    GroupOwner(&'borrow ClosedCoupledInvariantReceipts<'candidate>),
+    GroupMember(&'borrow ClosedCoupledInvariantReceipts<'candidate>),
+}
+impl<'candidate> CandidateInvariantJudgment<'_, 'candidate> {
+    fn candidate(&self) -> &'candidate worth_relational::facade::mvcc::ValidatedRelationalProposal {
+        match self {
+            Self::Standalone(candidate) => candidate,
+            Self::GroupOwner(receipts) | Self::GroupMember(receipts) => receipts.candidate(),
+        }
+    }
+}
 impl WorthQueryPrimaryGraphProvider {
     pub(super) fn admit_candidate_material(
         &self,
-        candidate: &worth_relational::facade::mvcc::ValidatedRelationalProposal,
+        judgment: CandidateInvariantJudgment<'_, '_>,
         material: &ApplicationInvariantCandidateMaterial,
         touches: impl FnOnce() -> Result<
             super::super::application_touch_admission::WorthQueryInstalledTouchAdmissionEvidence,
@@ -16,11 +29,18 @@ impl WorthQueryPrimaryGraphProvider {
         let semantic_work = u64::try_from(material.semantic.expected.len()).map_err(|_| {
             closure_failure("candidate semantic cardinality exceeds work representation")
         })?;
-        let owner_work = receipt_closure::validate_receipt_closure(
-            candidate.invariant_evidence(),
-            &material.requirements,
-            semantic_work,
-        )?;
+        let candidate = judgment.candidate();
+        let owner_work = match &judgment {
+            CandidateInvariantJudgment::Standalone(_) => receipt_closure::validate_receipt_closure(
+                candidate.invariant_evidence(),
+                &material.requirements,
+                semantic_work,
+            )?,
+            CandidateInvariantJudgment::GroupOwner(receipts) => semantic_work
+                .checked_add(receipts.native_work())
+                .ok_or_else(owner_failure)?,
+            CandidateInvariantJudgment::GroupMember(_) => semantic_work,
+        };
         super::super::super::product_operation::admit_required_invariants(
             candidate
                 .invariant_evidence()
@@ -35,6 +55,7 @@ impl WorthQueryPrimaryGraphProvider {
         })?;
         let touch_admission = touches()?;
         let summary = candidate.invariant_evidence().summary();
+        let owns_native_judgment = !matches!(judgment, CandidateInvariantJudgment::GroupMember(_));
         Ok(
             super::super::mutation_work::WorthQueryPrimaryMutationWorkCounters::new(
                 WorthQueryInvariantWorkMint { _private: () },
@@ -42,23 +63,50 @@ impl WorthQueryPrimaryGraphProvider {
                 material.semantic.expected.len(),
                 material.semantic.expected.len(),
                 owner_work,
-                summary.execution_count,
-                summary.result_count,
+                if owns_native_judgment {
+                    summary.execution_count
+                } else {
+                    0
+                },
+                if owns_native_judgment {
+                    summary.result_count
+                } else {
+                    0
+                },
                 material.expected_step_preparation_work,
                 touch_admission,
             ),
         )
     }
 
+    pub(in crate::domain_computation::primary_graph) fn coupled_invariant_requirements(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        session: WorthQueryProviderSessionView<'_>,
+    ) -> Result<
+        Vec<worth_query_installation::facade::WorthQueryInstalledInvariantExecutionRequirement>,
+        WorthQueryInvariantExecutionFailure,
+    > {
+        execution.consult().map_err(|cause| {
+            super::relational_validation::context_execution_failure(cause.into())
+        })?;
+        let attempts = self.attempts.lock().unwrap_or_else(|p| p.into_inner());
+        let staged = attempts
+            .staged_attempt(session)
+            .ok_or_else(missing_candidate_failure)?;
+        Ok(staged.invariant_requirements().to_vec())
+    }
+
     pub(in crate::domain_computation::primary_graph) fn admit_coupled_candidate(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         session: WorthQueryProviderSessionView<'_>,
-        candidate: &worth_relational::facade::mvcc::ValidatedRelationalProposal,
+        receipts: &ClosedCoupledInvariantReceipts<'_>,
         meaning: &worth_relational::facade::mvcc::RequiredOutputPublicationMeaning,
     ) -> Result<(), WorthQueryInvariantExecutionFailure> {
-        let material = self.invariant_candidate_material(session)?;
-        let work = self.admit_candidate_material(candidate, &material, || {
+        let material = self.invariant_candidate_material(session, None)?;
+        let candidate = receipts.candidate();
+        let work = self.admit_candidate_material(CandidateInvariantJudgment::GroupMember(receipts), &material, || {
             let mut selected = None;
             for (_, actual, touches) in candidate.coupled_producer_mutation_touches(execution) {
                 if actual == meaning { selected = Some(touches); }

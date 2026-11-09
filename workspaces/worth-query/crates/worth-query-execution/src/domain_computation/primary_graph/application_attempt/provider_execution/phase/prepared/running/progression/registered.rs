@@ -222,6 +222,7 @@ impl<'run> WorthQueryRegisteredProviderAttempt<'run> {
             self.steps,
             authority.provider(),
             authority.coupled_outputs.is_declared().then_some(&assembly as &dyn crate::domain_computation::primary_graph::provider::CoupledProducerAssembly),
+            authority.history,
             allocation_policy,
         ) {
             Ok(candidate) => candidate,

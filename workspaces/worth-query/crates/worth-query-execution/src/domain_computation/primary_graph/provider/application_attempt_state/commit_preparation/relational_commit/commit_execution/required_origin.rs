@@ -2,14 +2,10 @@
 use super::*;
 mod authored_retirement;
 use crate::domain_computation::primary_graph::PreparedPrerequisiteClaims;
-use crate::domain_computation::primary_graph::WorthQueryApplicationOutputPosture as Posture;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_relational::facade::mvcc::RequiredOutputPublication;
 use worth_relational::facade::mvcc::RequiredOutputPublicationMeaning;
-use worth_relational::facade::mvcc::RequiredOutputRolePosture;
-use worth_relational::facade::mvcc::RequiredOutputRoleTarget;
 use worth_relational::facade::mvcc::ValidatedRelationalProposal;
-use worth_relational::facade::transactions::EntityReference;
 
 pub(super) fn bind(
     proposal: ValidatedRelationalProposal,
@@ -115,7 +111,19 @@ pub(super) fn bind(
     // A cold Query memo may predate a later Native-owned publication. Native's
     // current roster owns succession; old checkpoint correspondence does not.
     let warm = match warm {
-        Some(publication) => Some(publication),
+        Some(publication) => Some(
+            provider
+                .graph
+                .with_runtime(execution, |runtime| {
+                    runtime.readmit_carried_required_output_publication(
+                        execution,
+                        &publisher.native,
+                        native_basis,
+                        &publication,
+                    )
+                })
+                .map_err(transaction_commit_stop)?,
+        ),
         None => provider
             .graph
             .with_runtime(execution, |runtime| {
@@ -148,15 +156,17 @@ pub(super) fn bind(
             .map_err(transaction_commit_stop)?
     };
     let warm = if absence.is_some() { None } else { warm };
-    if absence.is_some() && !all_created {
-        // An ordinary producer may preserve an authored carrier without ever
-        // owning its birth. Native has established that this route has no
-        // publication to succeed. Keep the whole operation ordinary: neither
-        // existing roles nor any created companions acquire ownership here.
+    use crate::domain_computation::primary_graph::provider::publication_posture::{
+        self, ProducerPublicationPosture as Posture,
+    };
+    let posture = publication_posture::select(absence, all_created);
+    if matches!(posture, Posture::Ordinary(_)) {
+        // A producer can preserve an authored carrier without owning its birth.
+        // No existing role or created companion acquires lifetime ownership.
         return Ok(proposal);
     }
     let running = publisher.owner.admit_required_output(producer, dependency);
-    let publication = if let Some(absence) = absence {
+    let publication = if let Posture::Birth(absence) = posture {
         RequiredOutputPublication::Birth {
             admission: running,
             absence: Some(absence),
@@ -167,53 +177,15 @@ pub(super) fn bind(
         let predecessor = if let Some(native) = warm {
             native
         } else {
-            let prior = head
-                .ok_or_else(mismatch)?
-                .cold_predecessor()
-                .map_err(native_output_witness_stop)?;
-            let views = prior.correspondence.native_witness_roles();
-
-            let mut prior_roles = Vec::with_capacity(views.len());
-            for (role, posture, name, id) in views {
-                prior_roles.push(RequiredOutputRoleTarget {
-                    role: role.to_owned(),
-                    entity_name: name.to_owned(),
-                    kind: provider
-                        .graph
-                        .layout
-                        .entity_kind(name)
-                        .ok_or_else(overflow)?,
-                    posture: match posture {
-                        Posture::Create => RequiredOutputRolePosture::Create,
-                        Posture::Preserve => RequiredOutputRolePosture::Preserve,
-                        Posture::Retire => RequiredOutputRolePosture::Retire,
-                    },
-                    target: EntityReference::Existing(id),
-                });
-            }
-
-            // This is the performed epoch, not the new demand's source epoch.
-            let prior_meaning = RequiredOutputPublicationMeaning {
-                implementation: prior.implementation,
-                family: meaning.family.clone(),
-                source_epoch: prior.source_epoch,
-                source_scope: meaning.source_scope,
-                source_partition: meaning.source_partition,
-            };
-            provider
-                .graph
-                .with_runtime(execution, |runtime| {
-                    runtime.readmit_required_output_publication(
-                        execution,
-                        &publisher.native,
-                        native_basis,
-                        &prior.producer,
-                        &prior.dependency,
-                        &prior_meaning,
-                        &prior_roles,
-                    )
-                })
-                .map_err(transaction_commit_stop)?
+            let head = head.ok_or_else(mismatch)?;
+            provider.graph.with_runtime(execution, |runtime| {
+                head.readmit(runtime, execution, &publisher.native, native_basis,
+                    &meaning.family, scope.scope(), partition, &provider.graph.layout)
+            }).map_err(|stop| match stop {
+                crate::domain_computation::primary_graph::output_lineage::required_publication::head::RequiredPublicationReadmissionStop::Selection(stop) => native_output_witness_stop(stop),
+                crate::domain_computation::primary_graph::output_lineage::required_publication::head::RequiredPublicationReadmissionStop::Native(stop) => transaction_commit_stop(stop),
+                crate::domain_computation::primary_graph::output_lineage::required_publication::head::RequiredPublicationReadmissionStop::Allocation(stop) => readmission_allocation(stop),
+            })?.publication().clone()
         };
         let succession = publisher
             .owner

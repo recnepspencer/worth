@@ -4,9 +4,16 @@ use std::collections::BTreeMap;
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 use worth_relational::facade::inspection::observe_maintenance_work;
 
-fn settle(
+pub(super) fn settle(
     host: &WorthQueryProgramApplicationRuntime<Schema, program::Lazy>,
     request: &family::Request<'_, '_, '_>,
+) -> WorthQueryApplicationProgramOutputHandle<Schema, program::Lazy, program::LazyTree> {
+    settle_with_result(host, request, |_| {})
+}
+pub(super) fn settle_with_result(
+    host: &WorthQueryProgramApplicationRuntime<Schema, program::Lazy>,
+    request: &family::Request<'_, '_, '_>,
+    verify: impl FnOnce(&WorthQueryApplicationProgramOutputSettlement<query::producer_model::Query>),
 ) -> WorthQueryApplicationProgramOutputHandle<Schema, program::Lazy, program::LazyTree> {
     let mut demand = request
         .advanced()
@@ -17,9 +24,10 @@ fn settle(
         )
         .unwrap_or_else(|cause| panic!("{cause:?}"));
     for _ in 0..128 {
-        if let WorthQueryApplicationProgramOutputProgress::Settled(_) =
+        if let WorthQueryApplicationProgramOutputProgress::Settled(settled) =
             demand.advance(host, request).unwrap()
         {
+            verify(&settled);
             return demand;
         }
     }
@@ -28,6 +36,29 @@ fn settle(
 
 pub(super) fn with_legacy_rows(
     worker: bool,
+    verify: impl FnOnce(
+        &WorthQueryProgramApplicationRuntime<Schema, program::Lazy>,
+        &family::Request<'_, '_, '_>,
+        snapshot::Snapshot,
+    ),
+) {
+    with_middle_count(worker, None, verify);
+}
+
+pub(super) fn with_repeated_shrink(
+    worker: bool,
+    verify: impl FnOnce(
+        &WorthQueryProgramApplicationRuntime<Schema, program::Lazy>,
+        &family::Request<'_, '_, '_>,
+        snapshot::Snapshot,
+    ),
+) {
+    with_middle_count(worker, Some(3), verify);
+}
+
+fn with_middle_count(
+    worker: bool,
+    middle: Option<u64>,
     verify: impl FnOnce(
         &WorthQueryProgramApplicationRuntime<Schema, program::Lazy>,
         &family::Request<'_, '_, '_>,
@@ -63,6 +94,26 @@ pub(super) fn with_legacy_rows(
         .flat_map(|row| row.sources.iter().chain(&row.children))
         .map(|row| (row.key.clone(), row.native_id))
         .collect::<BTreeMap<_, _>>();
+    if let Some(value) = middle {
+        let edited = request
+            .advanced()
+            .mutate(edit::Intent {
+                key: "a".into(),
+                value,
+            })
+            .without_source()
+            .idempotency(&"first-reconciliation-shrink".to_owned())
+            .execute_in_program(&host, ExecutionAllocationPolicy::SystemAllocation)
+            .unwrap();
+        assert!(
+            matches!(
+                edited,
+                WorthQueryApplicationMutationOutcome::Committed { .. }
+            ),
+            "{edited:?}"
+        );
+        settle(&host, &request);
+    }
     let contacts = host.producer_contacts_on_this_thread_for_test();
     let (_revised, publications) = observe_maintenance_work(64, || {
         let edited = request
@@ -82,7 +133,32 @@ pub(super) fn with_legacy_rows(
             ),
             "{edited:?}"
         );
-        settle(&host, &request)
+        settle_with_result(&host, &request, |settled| {
+            let roles = settled
+                .root_settlement()
+                .outputs_of::<preserve::Outputs>()
+                .unwrap();
+            let facts = roles
+                .family_entries::<Rows<preserve::Outputs, ChildOutput>>()
+                .unwrap();
+            let actual = facts
+                .iter()
+                .filter(|row| row.role().contains("reconciled:retired:a:"))
+                .map(|row| (row.role().to_owned(), row.posture()))
+                .collect::<Vec<_>>();
+            let expected = (2..middle.unwrap_or(5))
+                .map(|i| {
+                    (
+                        format!("retired.reconciled:retired:a:{i}"),
+                        WorthQueryApplicationOutputPosture::Create,
+                    )
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(
+                actual, expected,
+                "original root delivery must not become a retirement continuation"
+            );
+        })
     });
     let snapshot = request
         .query(snapshot::Read("a".into()))
@@ -197,28 +273,33 @@ pub(super) fn with_legacy_rows(
 
 fn legacy(worker: bool) {
     with_legacy_rows(worker, |host, request, snapshot| {
-        let contacts = host.producer_contacts_on_this_thread_for_test();
-        let (_, ready) = observe_maintenance_work(8, || {
-            settle(&host, &request);
+        // The last effectful edit publication has NRU on the required-wave
+        // path. Its first reader executes verification; Native adopts it.
+        // The resulting Ready support, rather than that edit receipt, proves G1.
+        for expected_contacts in [1, 0] {
+            let contacts = host.producer_contacts_on_this_thread_for_test();
+            let (_, ready) = observe_maintenance_work(8, || {
+                settle(&host, &request);
+                assert_eq!(
+                    request
+                        .query(snapshot::Read("a".into()))
+                        .execute()
+                        .unwrap()
+                        .rows()[0],
+                    snapshot
+                );
+            });
             assert_eq!(
-                request
-                    .query(snapshot::Read("a".into()))
-                    .execute()
-                    .unwrap()
-                    .rows()[0],
-                snapshot
+                host.producer_contacts_on_this_thread_for_test() - contacts,
+                expected_contacts,
+                "the edit's verification adopts, then adopted Ready needs no producer"
             );
-        });
-        assert_eq!(
-            host.producer_contacts_on_this_thread_for_test(),
-            contacts,
-            "a current demand needs no producer"
-        );
-        assert_eq!(
-            ready.published_rows.len() + ready.omitted_publications,
-            0,
-            "current demand certification and measure reads publish on no branch"
-        );
+            assert_eq!(
+                ready.published_rows.len() + ready.omitted_publications,
+                0,
+                "verification adoption, current certification and measure reads publish on no branch"
+            );
+        }
     });
 }
 #[test]

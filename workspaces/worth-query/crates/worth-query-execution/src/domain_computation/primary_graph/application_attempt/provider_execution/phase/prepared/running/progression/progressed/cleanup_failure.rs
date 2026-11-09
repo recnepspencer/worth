@@ -108,7 +108,8 @@ pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
         Progression::TimedOut => cleanup_execution_indeterminate(Err(
             crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
         )),
-        Progression::Committed(_)
+        Progression::OutputAdopted(_)
+        | Progression::Committed(_)
         | Progression::AlreadyCommitted(_)
         | Progression::Stale(_)
         | Progression::Aborted

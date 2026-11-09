@@ -56,6 +56,8 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
     pub(in crate::domain_computation::primary_graph::application_contribution::producer) profile:
         &'static str,
+    pub(in crate::domain_computation::primary_graph::application_contribution::producer) lifecycle:
+        super::super::WorthQueryProducerLifecyclePosture,
     pub(in crate::domain_computation::primary_graph::application_contribution::producer) source:
         Box<dyn std::any::Any>,
 }
@@ -239,18 +241,35 @@ where
         })?
     };
     if demand.reuse_prepared && assembly.permits_unchanged_output_selection() {
-        if let Some(prior) = predecessor.as_ref() {
-            if let Some(parent) = runtime.verify_applied_output_parent::<Binding::OutputFamily>(
-                execution, request, before, &candidate, &source, prior,
-            )? {
-                return Ok(CoupledSourceRead::Verified(parent));
-            }
+        if let Some(parent) = runtime.verify_applied_output_parent::<Binding::OutputFamily>(
+            execution,
+            request,
+            before,
+            &candidate,
+            &source,
+            predecessor.as_ref(),
+        )? {
+            return Ok(CoupledSourceRead::Verified(parent));
         }
     }
     let profile = <Binding::OutputFamily as super::super::WorthQueryProducerOutputFamily<Schema>>::profile_kind(&source.value);
+    let lifecycle = super::super::demand::selection::retained_liveness::applied_lifecycle::<
+        Schema,
+        Binding::OutputFamily,
+    >(
+        runtime,
+        execution,
+        before.observation(),
+        source.root(),
+        source.partition(),
+        source.checkpoint_identity(),
+        &candidate,
+        predecessor.as_ref(),
+    )?;
     Ok(CoupledSourceRead::Source(ErasedAppliedProducerSource {
         predecessor,
         profile,
+        lifecycle,
         source: Box::new(source),
     }))
 }

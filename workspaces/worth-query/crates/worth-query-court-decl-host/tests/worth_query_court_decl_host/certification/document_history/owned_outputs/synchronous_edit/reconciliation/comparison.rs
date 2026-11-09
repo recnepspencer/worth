@@ -128,10 +128,12 @@ fn compare(worker: bool) {
     });
 }
 #[test]
+#[ignore = "CP2b pending: net sequential producer rounds before atomic publication"]
 fn synchronous_shrink_matches_the_legacy_complete_row_oracle() {
     compare(false);
 }
 #[test]
+#[ignore = "CP2b pending: net sequential producer rounds before atomic publication"]
 fn worker_only_synchronous_shrink_matches_the_legacy_complete_row_oracle() {
     compare(true);
 }

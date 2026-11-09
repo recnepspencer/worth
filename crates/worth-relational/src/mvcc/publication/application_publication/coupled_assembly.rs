@@ -16,12 +16,20 @@ mod adoption;
 mod aggregate_read;
 mod completion;
 mod contribution;
+mod source_effects;
+pub use contribution::RelationalCoupledContribution;
+pub use source_effects::RelationalCoupledAuthoredSourceEffects;
+mod disjoint_aspect_patches;
+mod disjoint_field_patches;
 mod fresh_references;
 mod local_keys;
+mod ordinary_roles;
 mod part;
 mod part_corruption;
 mod participant_admission;
 mod prepared_route;
+mod producer_posture;
+pub use producer_posture::RelationalCoupledProducerPosture;
 mod scoped_preparation;
 mod writer_custody;
 pub(crate) use completion::CoupledAppliedCandidate;
@@ -90,8 +98,10 @@ pub struct RelationalAuthoredCoupledCandidate<'a> {
 }
 
 pub(crate) struct CoupledPublicationPart {
+    pub(crate) ordinary_ids:
+        Option<worth_execution::ExecutionArray<crate::identity::data::EntityId>>,
     pub(crate) input: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
-    pub(crate) publication: RequiredOutputPublication,
+    pub(crate) publication: RelationalCoupledProducerPosture,
     pub(crate) commands: crate::transactions::data::MergedCommitPlan,
     pub(crate) records: Vec<crate::transactions::data::RecordRef>,
 }

@@ -146,6 +146,7 @@ impl ApplicationProgramDefinition<NumericSchema> for OutputProgram {
             super::authored_identity_reference::feature(),
             super::adjacency_link::feature(),
             ApplicationFeatureSpec::root::<NumericSchema, program::NumericFeature>()
+                .conditional_operation::<super::deferred_completion::reciprocal::CalculateReciprocal>()
                 .provides::<SourcePort>()
                 .action::<edit::EditBinding, Delivery>()
                 .finish_action()

@@ -5,6 +5,12 @@ use std::sync::Arc;
 use worth_runtime_world::facade::ProductBranchObservation;
 
 impl PublishedStableLineage {
+    pub(in crate::domain_computation::primary_graph) fn has_executed_adoption_support(
+        &self,
+    ) -> bool {
+        self.recorded().computation_source.is_executed_adoption()
+    }
+
     /// The filled row a reader at `observation` selected.
     pub(in crate::domain_computation::primary_graph::output_lineage) fn selected_at(
         cell: &Arc<std::sync::OnceLock<RecordedOutput>>,

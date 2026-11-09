@@ -170,6 +170,8 @@ fn entry<D: ApplicationActionDelivery<Schema, edit::Binding>>() -> ApplicationFe
         .action::<edit::Binding, D>()
         .locality_and_change::<RootLocality, Change>()
         .finish_action()
+        .action::<cap_edit::Binding, Completion>()
+        .finish_action()
         .action::<member_edit::Binding, Completion>()
         .finish_action()
         .action::<authored_member::retire::Binding, Completion>()

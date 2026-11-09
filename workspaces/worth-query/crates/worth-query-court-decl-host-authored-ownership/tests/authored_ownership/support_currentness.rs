@@ -9,6 +9,7 @@ pub(super) fn revise<S: Scenario>(
     request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     value: u64,
 ) -> usize {
+    let before = coupled::producer::handler::contacts();
     let outcome = request
         .advanced()
         .mutate(parameter_inverse::Edit { id: 10, value })
@@ -19,8 +20,18 @@ pub(super) fn revise<S: Scenario>(
             ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
-        panic!("source edit must commit")
+    let performed = match outcome {
+        WorthQueryApplicationPerformedMutationOutcome::Performed(performed) => performed,
+        WorthQueryApplicationPerformedMutationOutcome::NotPerformed(outcome) => {
+            panic!("source edit must commit; actual Native outcome: {outcome:?}")
+        }
+        WorthQueryApplicationPerformedMutationOutcome::RequiredOutputDenied(failure) => {
+            panic!(
+                "source edit must commit; actual required-output refusal: {:?}",
+                failure.denial()
+            )
+        }
+        _ => panic!("source edit must commit; preparation is incomplete"),
     };
     let mut started = performed
         .start_required_outputs(host, request, WorthQueryOutputDemandControls::default())
@@ -37,7 +48,7 @@ pub(super) fn revise<S: Scenario>(
                     .at(&current)
                     .require_current_program_output(&output)
                     .unwrap();
-                return output.root_producer_contacts_in_this_demand();
+                return coupled::producer::handler::contacts() - before;
             }
             WorthQueryApplicationProgramOutputProgress::Pending
             | WorthQueryApplicationProgramOutputProgress::Progressed => {}

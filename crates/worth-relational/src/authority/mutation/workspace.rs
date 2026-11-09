@@ -146,6 +146,34 @@ impl<'a> MutationWorkspace<'a> {
             .contains(&relation_id)
     }
 
+    pub(crate) fn prepare_entity_field_update(
+        &self,
+        intent: &crate::transactions::data::UpdateEntityFieldsIntent,
+    ) -> Result<
+        super::intents::entity_aspect_preparation::PreparedEntityAspectMutation,
+        crate::transactions::data::CommitConflict,
+    > {
+        super::intents::entity_aspect_preparation::prepare_fields(
+            intent,
+            self.state,
+            self.aspect_plans,
+        )
+    }
+
+    pub(crate) fn prepare_entity_aspect_patch(
+        &self,
+        intent: &crate::transactions::data::ApplyEntityAspectPatchIntent,
+    ) -> Result<
+        super::intents::entity_aspect_preparation::PreparedEntityAspectMutation,
+        crate::transactions::data::CommitConflict,
+    > {
+        super::intents::entity_aspect_preparation::prepare_portable(
+            intent,
+            self.state,
+            self.aspect_plans,
+        )
+    }
+
     pub(crate) fn entity_aspect_plan(
         &self,
         kind_id: crate::identity::data::KindId,

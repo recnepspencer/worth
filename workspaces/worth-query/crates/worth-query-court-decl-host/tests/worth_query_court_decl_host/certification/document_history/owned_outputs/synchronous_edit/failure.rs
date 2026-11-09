@@ -34,6 +34,9 @@ fn refuses_without_effect(worker: bool) {
         1,
         None,
         world::Configuration {
+            reconciliation_indices: false,
+            reconciliation_peer_caps: false,
+            reconciliation_emission: false,
             second_derivation: Some(second_refuses),
         },
     );

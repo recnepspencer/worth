@@ -35,7 +35,7 @@ pub(in crate::domain_computation::primary_graph) fn inspect_coupled_application<
 ) -> Result<
     (
         InspectedCoupledWriter<'run>,
-        worth_relational::facade::mvcc::RequiredOutputPublication,
+        worth_relational::facade::mvcc::RelationalCoupledProducerPosture,
         worth_relational::facade::transactions::WorkerIntentBatch,
         worth_relational::facade::content::RelationalContentAttachments,
     ),

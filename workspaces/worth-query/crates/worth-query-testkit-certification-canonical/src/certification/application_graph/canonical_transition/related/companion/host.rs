@@ -109,6 +109,8 @@ where
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.runtime().request(&principal, &scope);
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    let before = host.runtime().producer_contacts_on_this_thread_for_test();
     let outcome = request
         .advanced()
         .mutate(super::super::edit::Input {
@@ -141,7 +143,11 @@ where
     else {
         panic!("the source edit's real required-output producer must settle");
     };
-    assert_eq!(settled.root_producer_contacts_in_this_demand(), 1);
+    assert_eq!(
+        host.runtime().producer_contacts_on_this_thread_for_test() - before,
+        1,
+        "the source edit and its delivery execute one real producer in total"
+    );
     settled
         .root_receipt()
         .expect("the real regeneration has a producer receipt")

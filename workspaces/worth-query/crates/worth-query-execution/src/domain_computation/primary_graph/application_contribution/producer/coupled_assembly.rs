@@ -261,11 +261,41 @@ impl<S: ApplicationSchema>
             })
             .collect()
     }
-    fn admit_validated(
+    fn invariant_requirements(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         provider: &crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
         candidate: &worth_relational::facade::mvcc::ValidatedRelationalProposal,
+    ) -> Result<
+        Vec<worth_query_installation::facade::WorthQueryInstalledInvariantExecutionRequirement>,
+        crate::domain_computation::WorthQueryInvariantExecutionFailure,
+    > {
+        let writers = self.writers.borrow();
+        let mut actual = candidate.coupled_participants();
+        let mut requirements = Vec::new();
+        for writer in writers.iter() {
+            let matches = actual.next().is_some_and(|(producer, meaning)| {
+                producer == writer.producer.declaration.identity && meaning == &writer.meaning
+            });
+            if !matches {
+                return Err(crate::domain_computation::WorthQueryInvariantExecutionFailure::missing_coupled_settlement(writer.meaning.source_scope));
+            }
+            let Some(CoupledWriterStage::Inspected(inspected)) = writer.stage.as_ref() else {
+                unreachable!("Native completed each writer before group judgment")
+            };
+            requirements
+                .extend(provider.coupled_invariant_requirements(execution, inspected.session())?);
+        }
+        if let Some((_, meaning)) = actual.next() {
+            return Err(crate::domain_computation::WorthQueryInvariantExecutionFailure::missing_coupled_settlement(meaning.source_scope));
+        }
+        Ok(requirements)
+    }
+    fn admit_validated(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        provider: &crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
+        receipts: &crate::domain_computation::primary_graph::provider::ClosedCoupledInvariantReceipts<'_>,
     ) -> Result<(), crate::domain_computation::WorthQueryInvariantExecutionFailure> {
         for writer in self.writers.borrow_mut().iter_mut() {
             let Some(CoupledWriterStage::Inspected(inspected)) = writer.stage.as_ref() else {
@@ -274,7 +304,7 @@ impl<S: ApplicationSchema>
             provider.admit_coupled_candidate(
                 execution,
                 inspected.session(),
-                candidate,
+                receipts,
                 &writer.meaning,
             )?;
             let Some(CoupledWriterStage::Inspected(inspected)) = writer.stage.take() else {

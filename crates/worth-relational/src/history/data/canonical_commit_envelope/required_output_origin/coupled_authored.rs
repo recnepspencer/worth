@@ -84,9 +84,15 @@ pub(super) fn install(
     validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<RequiredOutputPublicationPositions, TransactionCommitError> {
-    if group.parts.is_empty() {
-        // All declared roots were already members of the admitted retirement
-        // closure. Use its existing canonical event, with unchanged bytes.
+    crate::execution::request_stage::checkpoint(context, group.parts.len() as u64)
+        .map_err(origin_request)?;
+    if group
+        .parts
+        .iter()
+        .all(|part| part.publication.owned().is_none())
+    {
+        // With no owned participants, retain the existing authored source event.
+        // An ordinary Edit emits no coupled event or publication origin.
         return super::coupled_source::install_empty(
             envelope,
             execution,
@@ -129,6 +135,11 @@ pub(super) fn install(
         let mut participants = Vec::with_capacity(group.parts.len());
         let mut live_inputs = crate::history::data::LivePublicationInputs::default();
         for part in group.parts {
+            let crate::mvcc::RelationalCoupledProducerPosture::Publication(publication) =
+                part.publication
+            else {
+                continue;
+            };
             restrict(
                 envelope,
                 &full,
@@ -146,7 +157,7 @@ pub(super) fn install(
                 state,
                 crate::mvcc::RequiredOutputPublicationAdmission {
                     installed: installed.clone(),
-                    publication: part.publication,
+                    publication,
                 },
                 Some(&part.records),
                 Some(&part.input),

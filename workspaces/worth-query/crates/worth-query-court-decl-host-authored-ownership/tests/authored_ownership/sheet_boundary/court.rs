@@ -16,6 +16,7 @@ fn trim() -> usize {
     create(&host, &request, 10, vec![20]);
     settle(&host, &request, 10);
     coupled::producer::handler::reset_contacts();
+    let before = coupled::producer::handler::contacts();
     let outcome = request
         .advanced()
         .mutate(parameter_inverse::Edit { id: 10, value: 1 })
@@ -26,8 +27,15 @@ fn trim() -> usize {
             ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
-        panic!("trim source must commit")
+    let performed = match outcome {
+        WorthQueryApplicationPerformedMutationOutcome::Performed(performed) => performed,
+        WorthQueryApplicationPerformedMutationOutcome::NotPerformed(outcome) => {
+            panic!("source must perform: {outcome:?}")
+        }
+        WorthQueryApplicationPerformedMutationOutcome::RequiredOutputDenied(failure) => {
+            panic!("required output denial: {:?}", failure.denial())
+        }
+        _ => panic!("source has not reached its performed owner"),
     };
     let mut started = performed
         .start_required_outputs(&host, &request, WorthQueryOutputDemandControls::default())
@@ -44,7 +52,7 @@ fn trim() -> usize {
                     .at(&current)
                     .require_current_program_output(&output)
                     .unwrap();
-                return output.root_producer_contacts_in_this_demand();
+                return coupled::producer::handler::contacts() - before;
             }
             WorthQueryApplicationProgramOutputProgress::Pending
             | WorthQueryApplicationProgramOutputProgress::Progressed => {}

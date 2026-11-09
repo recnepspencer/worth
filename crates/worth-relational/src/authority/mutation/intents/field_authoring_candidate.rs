@@ -143,3 +143,49 @@ fn denied(
         reason,
     }
 }
+
+/// Lower only the submitted fields, using kind metadata from the actual applied
+/// candidate. This does not read or reconstruct the entity's aspect state.
+pub(crate) fn lower_entity(
+    intent: &crate::transactions::data::UpdateEntityFieldsIntent,
+    state: &impl crate::storage::overlay::CurrentPartitionAccess,
+    plans: &crate::schema::data::AspectContractPlanCatalog,
+) -> Result<PortableRecordAspectPatch, crate::transactions::data::CommitConflict> {
+    use crate::transactions::data::{
+        CommitConflict, ConflictClass, EntityFieldUpdateMissingState, RecordAspectPatchTarget,
+    };
+    let entity = intent.entity_id;
+    super::super::stale_targets::ensure_entity_target_is_current(state, entity)?;
+    let missing = |missing| {
+        CommitConflict::new(ConflictClass::EntityFieldUpdateStateInconsistency {
+            entity_id: entity,
+            missing,
+        })
+    };
+    let partition = state
+        .get_current_partition(entity.partition_id)
+        .ok_or_else(|| missing(EntityFieldUpdateMissingState::Partition))?;
+    let slot = partition
+        .entity_arena()
+        .get_slot(entity.slot_index())
+        .ok_or_else(|| missing(EntityFieldUpdateMissingState::Slot))?;
+    let kind = slot
+        .kind_id()
+        .ok_or_else(|| missing(EntityFieldUpdateMissingState::KindId))?;
+    lower(
+        &intent.fields,
+        PortablePatchReadmissionPurpose::RecordMutation,
+        plans.entity_plans.get(&kind),
+        kind,
+        FieldAuthoringDomain::Entity,
+    )
+    .map_err(|denial| {
+        super::record_aspect_patch::conflict(
+            RecordAspectPatchTarget::Entity {
+                entity_id: entity,
+                kind_id: kind,
+            },
+            denial,
+        )
+    })
+}

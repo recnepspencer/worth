@@ -109,6 +109,20 @@ impl RecordedOutputMutable {
 }
 
 impl RecordedOutput {
+    /// Actual completed computation support is separate from canonical Native
+    /// publication provenance. An adopting execution owns fresh support; an
+    /// ordinary cutoff alias still borrows its original completed computation.
+    pub(super) fn completed_computation_record(&self) -> Option<&Self> {
+        if self.computation_source.is_executed_adoption() || self.performed_origin.is_none() {
+            Some(self)
+        } else {
+            self.performed_origin
+                .as_ref()?
+                .get()
+                .filter(|origin| origin.performed_origin.is_none())
+        }
+    }
+
     pub(super) fn native_output_witness(&self) -> Option<&super::SealedNativeOutputWitness> {
         self.native_output_witness_cell()?.get()
     }

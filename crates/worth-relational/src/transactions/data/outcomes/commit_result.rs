@@ -63,6 +63,7 @@ pub struct CommitPhaseTiming {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CommitPublication {
+    pub(crate) source_effects: Option<crate::mvcc::RelationalCoupledAuthoredSourceEffects>,
     pub diagnostics: Vec<RelationalDiagnosticArtifact>,
     pub envelope: Arc<CanonicalCommitEnvelope>,
     pub patch_position: crate::publication::patch::data::PatchStreamPosition,
@@ -392,3 +393,5 @@ impl CommitResult {
         self.outcome.commit.parents.len().saturating_sub(1)
     }
 }
+
+mod authored_source;

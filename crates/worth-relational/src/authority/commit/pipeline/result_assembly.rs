@@ -27,6 +27,7 @@ struct CommitResultMaterial {
     patch_position: crate::publication::patch::data::PatchStreamPosition,
     changed_records: Vec<crate::transactions::data::RecordRef>,
     publication_snapshot: crate::snapshots::data::SnapshotHandle,
+    source_effects: Option<crate::mvcc::RelationalCoupledAuthoredSourceEffects>,
     aspect_evaluation_traces: Vec<crate::transactions::data::AspectEvaluationTrace>,
     aspect_emission_traces: Vec<crate::transactions::data::AspectEmissionTrace>,
 }
@@ -99,6 +100,7 @@ impl CommitResultMaterial {
             patch_position,
             changed_records,
             publication_snapshot,
+            source_effects,
             aspect_evaluation_traces,
             aspect_emission_traces,
         ) = published.into_parts();
@@ -129,6 +131,7 @@ impl CommitResultMaterial {
             patch_position,
             changed_records,
             publication_snapshot,
+            source_effects,
             aspect_evaluation_traces,
             aspect_emission_traces,
         }
@@ -158,6 +161,7 @@ impl CommitResultMaterial {
             schema_summary,
             publication: CommitPublication {
                 diagnostics,
+                source_effects: self.source_effects,
                 envelope: self.canonical_commit_envelope,
                 patch_position: self.patch_position,
                 aspect_evaluation_traces: self.aspect_evaluation_traces,

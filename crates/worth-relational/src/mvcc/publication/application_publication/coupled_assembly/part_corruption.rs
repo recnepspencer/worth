@@ -7,14 +7,22 @@ impl RelationalAuthoredCoupledCandidate<'_> {
     pub fn append_corrupt_participant_for_test(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
-        mut publication: RequiredOutputPublication,
+        posture: RelationalCoupledProducerPosture,
         content: &crate::content::RelationalContentAttachments,
         mut batches: Vec<crate::transactions::data::WorkerIntentBatch>,
         fault: u8,
     ) -> Result<(), RelationalCoupledAssemblyFailure> {
+        let RelationalCoupledProducerPosture::Publication(mut publication) = posture else {
+            return self.append_publication(execution, posture, content, batches);
+        };
         if fault == 3 {
             let RequiredOutputPublication::Preserve { predecessor, .. } = &publication else {
-                return self.append_publication(execution, publication, content, batches);
+                return self.append_publication(
+                    execution,
+                    RelationalCoupledProducerPosture::Publication(publication),
+                    content,
+                    batches,
+                );
             };
             let registry = self
                 .binding
@@ -61,7 +69,12 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 ..
             } = publication
             else {
-                return self.append_publication(execution, publication, content, batches);
+                return self.append_publication(
+                    execution,
+                    RelationalCoupledProducerPosture::Publication(publication),
+                    content,
+                    batches,
+                );
             };
             let foreign = worth_proof::InstalledApplicationPublicationOwner::fresh();
             let admission = foreign.admit_required_output(
@@ -113,6 +126,11 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             predecessor.evidence =
                 crate::publication::ownership::PublicationEvidence::Canonical(envelope);
         }
-        self.append_publication(execution, publication, content, batches)
+        self.append_publication(
+            execution,
+            RelationalCoupledProducerPosture::Publication(publication),
+            content,
+            batches,
+        )
     }
 }

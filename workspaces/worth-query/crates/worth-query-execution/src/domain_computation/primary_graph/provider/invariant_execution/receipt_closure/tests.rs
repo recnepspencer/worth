@@ -129,3 +129,19 @@ fn platform_custody_receipt_uses_no_intrinsic_work_ceiling() {
     )
     .is_err());
 }
+
+#[test]
+fn shared_group_invocation_counts_once_and_satisfies_every_actor_bound() {
+    let passed = ReceiptFact {
+        work: 2,
+        ..receipt(REQUIRED, InvariantDecisionKind::Passed)
+    };
+    assert_eq!(close(&[passed], &[required(), required()], 3).unwrap(), 5);
+    let tighter = RequirementFact {
+        maximum_work: Some(1),
+        ..required()
+    };
+    for requirements in [[required(), tighter], [tighter, required()]] {
+        assert!(close(&[passed], &requirements, 0).is_err());
+    }
+}

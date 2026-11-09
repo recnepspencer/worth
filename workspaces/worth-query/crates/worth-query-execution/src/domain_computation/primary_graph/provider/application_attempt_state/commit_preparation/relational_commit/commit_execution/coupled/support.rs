@@ -13,6 +13,9 @@ pub(super) fn require(
         worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
     >,
     source: worth_relational::facade::identity::EntityId,
+    rebase: Option<
+        &super::super::super::evidence_seal::postcommit_currentness::PreparedSourceFactRebase,
+    >,
 ) -> Result<(), Stop> {
     let after_own = attempt
         .coupled_preparation()
@@ -29,7 +32,13 @@ pub(super) fn require(
             Fact::Principal(_) | Fact::Authorization { .. } => continue,
         };
         let answer = provider.graph.with_runtime(execution, |runtime| {
-            fact.support_equal_after_own_effect(execution, runtime, before, after_own, complete)
+            if let Some(rebase) = rebase {
+                rebase.support_equal_after_own_effect(
+                    execution, runtime, before, &fact, after_own, complete,
+                )
+            } else {
+                fact.support_equal_after_own_effect(execution, runtime, before, after_own, complete)
+            }
         });
         require_answer(answer, source, || {
             format!(
@@ -86,7 +95,10 @@ fn require_answer(
             }
             if let Some(cause) = cause.allocation_denial() {
                 return Err(Stop::PreEffectDenied(
-                    WorthQueryProviderSessionFailure::allocation_denied(cause.clone()),
+                    WorthQueryProviderSessionFailure::allocation_denied(
+                        cause.clone(),
+                        "coupled source support",
+                    ),
                 ));
             }
             Failure::coupled_read_support(source, Some(cause.kind()), cause.to_string())

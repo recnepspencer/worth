@@ -74,6 +74,12 @@ pub enum ConsumedOutputCurrentness {
     FullVerificationRequired,
 }
 
+enum RegistrationOutputBasis<'a, 'selected> {
+    Ordinary,
+    VerifiedCutoff(&'a StableEqualityConsequence<'selected>),
+    ExecutedAdoption(&'a StableEqualityConsequence<'selected>),
+}
+
 enum RegistrationReadBasis {
     CurrentOnly,
     RetainedReadAllowed,
@@ -198,7 +204,7 @@ impl SourceInvalidationOwner {
         self.prepare_settlement_at_basis(
             registration,
             RegistrationReadBasis::RetainedReadAllowed,
-            None,
+            RegistrationOutputBasis::Ordinary,
             None,
         )
     }
@@ -207,7 +213,7 @@ impl SourceInvalidationOwner {
         &self,
         registration: SettlementRegistration,
         basis: RegistrationReadBasis,
-        equality: Option<&StableEqualityConsequence<'_>>,
+        output_basis: RegistrationOutputBasis<'_, '_>,
         publication_partition: Option<[u8; 32]>,
     ) -> Result<PreparedSettlementRegistration, SettlementRegistrationStop> {
         let selected = &registration.read_basis;
@@ -256,7 +262,7 @@ impl SourceInvalidationOwner {
 
         let registered_identity = Arc::clone(&registration.identity);
 
-        let output_coverage = if equality.is_some() {
+        let output_coverage = if !matches!(output_basis, RegistrationOutputBasis::Ordinary) {
             super::mark_state::OutputFactCoverage::Stable
         } else if registration.output_facts.is_some() {
             super::mark_state::OutputFactCoverage::Performed
@@ -264,8 +270,18 @@ impl SourceInvalidationOwner {
             super::mark_state::OutputFactCoverage::Absent
         };
         settlement::insert(&mut state, registration, &image, alignment, output_coverage)?;
-        if let Some(equality) = equality {
-            equality::register_verified(&mut state, equality)?;
+        match output_basis {
+            RegistrationOutputBasis::Ordinary => {}
+            RegistrationOutputBasis::VerifiedCutoff(equality) => {
+                equality::register_verified(&mut state, equality)?;
+            }
+            RegistrationOutputBasis::ExecutedAdoption(equality) => {
+                // Fresh actual computation can establish its own current row.
+                // No predecessor mark means no downstream equality consequence.
+                if state.settlements.contains_key(equality.predecessor()) {
+                    equality::register_verified(&mut state, equality)?;
+                }
+            }
         }
         let completion_cues = if let Some(partition) = publication_partition {
             let affected = super::output_availability::record_completion(

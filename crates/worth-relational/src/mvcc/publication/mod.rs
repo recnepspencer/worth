@@ -10,13 +10,17 @@ pub use application_publication::{
     RelationalAuthoredCoupledOwners, RelationalAuthoredCoupledProducerAssembly,
     RelationalAuthoredCoupledTransaction, RelationalAuthoredRestoration,
     RelationalAuthoredRetirement, RelationalCoupledAssemblyFailure,
-    RelationalCoupledAuthoredPublication, RelationalDeclaredCoupledOwner,
-    RelationalHistoricalOutputSelection, RelationalPerformedOutputPublications,
-    RelationalPredecessorBasisDenial, RelationalPredecessorBasisOrigin, RelationalPredecessorInput,
-    RelationalPreparedOutputPublications, RelationalRequiredOutputPublication,
-    RelationalRequiredOutputRouteAbsence, RelationalRestoredProducerPrior,
-    RequiredOutputProducingImplementation, RequiredOutputPublication,
-    RequiredOutputPublicationMeaning, RequiredOutputRolePosture, RequiredOutputRoleTarget,
+    RelationalCoupledAuthoredPublication, RelationalCoupledAuthoredSourceEffects,
+    RelationalCoupledContribution, RelationalCoupledProducerPosture,
+    RelationalDeclaredCoupledOwner, RelationalHistoricalOutputSelection,
+    RelationalPerformedOutputPublications, RelationalPredecessorBasisDenial,
+    RelationalPredecessorBasisOrigin, RelationalPredecessorInput,
+    RelationalPreparedOutputPublications, RelationalPublicationAdoptionRequest,
+    RelationalPublicationAppendix, RelationalPublicationBodySelection,
+    RelationalRequiredOutputPublication, RelationalRequiredOutputRouteAbsence,
+    RelationalRestoredProducerPrior, RequiredOutputProducingImplementation,
+    RequiredOutputPublication, RequiredOutputPublicationMeaning, RequiredOutputRolePosture,
+    RequiredOutputRoleTarget,
 };
 pub(crate) use preparation_denial::PublicationPreparationDenial;
 mod candidate;
@@ -34,7 +38,10 @@ pub(crate) use authority::{
     PreparedRelationalPublicationAccelerators,
 };
 pub(crate) use candidate::{CandidatePayload, PreparedRelationalCandidateAdmissionStop};
-pub use candidate::{DiscardedRelationalCommitCandidate, PreparedRelationalCommitCandidate};
+pub use candidate::{
+    DiscardedRelationalCommitCandidate, PreparedRelationalCommitCandidate,
+    RelationalCurrentOutputAdoption,
+};
 pub(crate) use companion::{
     CandidateCompanionBinding, CompanionRegistrationEpoch, CompanionRegistry,
     ManagedSourceHistoryOwner, ManagedSourceRootImage, PreparedManagedIndexSourceFork,

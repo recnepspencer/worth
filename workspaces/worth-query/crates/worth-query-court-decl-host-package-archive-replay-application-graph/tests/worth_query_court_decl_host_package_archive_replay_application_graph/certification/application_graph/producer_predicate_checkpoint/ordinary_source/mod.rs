@@ -15,6 +15,8 @@ fn performed_mutation_attempt_report_preserves_source_custody() {
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     let request = runtime.request(&principal, &scope);
+    let _observation = worth_query_host::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
+    let before = runtime.producer_contacts_on_this_thread_for_test();
     let report = request
         .advanced()
         .mutate(SetRetentionIntent {
@@ -37,8 +39,15 @@ fn performed_mutation_attempt_report_preserves_source_custody() {
     let outcome = report
         .into_outcome()
         .expect("the actual source reaches publication");
-    let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
-        panic!("the ordinary source must land with required-output custody")
+    let performed = match outcome {
+        WorthQueryApplicationPerformedMutationOutcome::Performed(performed) => performed,
+        WorthQueryApplicationPerformedMutationOutcome::NotPerformed(outcome) => {
+            panic!("source must perform: {outcome:?}")
+        }
+        WorthQueryApplicationPerformedMutationOutcome::RequiredOutputDenied(failure) => {
+            panic!("required output denial: {:?}", failure.denial())
+        }
+        _ => panic!("source has not reached its performed owner"),
     };
     assert_eq!(
         request
@@ -103,7 +112,11 @@ fn performed_mutation_attempt_report_preserves_source_custody() {
             .retention_days,
         6
     );
-    assert_eq!(settled.root_producer_contacts_in_this_demand(), 1);
+    assert_eq!(
+        runtime.producer_contacts_on_this_thread_for_test() - before,
+        1,
+        "the source edit and its recovered delivery execute one real producer in total"
+    );
     assert!(matches!(
         recovered.finish_unavailable(&host, &request),
         Err(worth_query_host::facade::application_entry::WorthQueryRequiredOutputPreparationDenial::Closed)

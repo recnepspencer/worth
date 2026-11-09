@@ -11,7 +11,7 @@ macro_rules! reconciliation_child_phase {
                 read_fields: [FirstKey::at("FirstKey"), FirstValue::at("FirstValue"), ChildKey::at("ChildKey"), ChildValue::at("ChildValue"), ModelKey::at("ModelKey"), ModelValue::at("ModelValue"), SecondKey::at("SecondKey"), SecondValue::at("SecondValue")];
                 read_relations: [ChildOfFirst, SecondOf, ReconciledSourceOf];
                 writes: [ChildKey::at("ChildKey"), ChildValue::at("ChildValue")];
-                creates: [ChildOutput]; links: [ChildOfFirst];
+                creates: [ChildOutput]; deletes: [ChildOutput]; links: [ChildOfFirst]; unlinks: [ChildOfFirst];
             });
             pub type Operation = $operation;
             pub struct Outputs;
@@ -22,9 +22,9 @@ macro_rules! reconciliation_child_phase {
             }
             impl ApplicationMutationOutputContract<Schema> for Outputs {
                 const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = &[<Output as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR];
-                const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] = &[];
+                const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] = &[<Indices<Outputs> as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR];
             }
-            pub struct Decision { source: WorthQueryInvariantMutationTarget<Schema, SourceEntity>, output: Option<WorthQueryInvariantMutationTarget<Schema, $entity>>, position: WorthQueryInvariantMutationTarget<Schema, FirstOutput>, value: u64 }
+            pub struct Decision { source: WorthQueryInvariantMutationTarget<Schema, SourceEntity>, output: Option<WorthQueryInvariantMutationTarget<Schema, $entity>>, position: WorthQueryInvariantMutationTarget<Schema, FirstOutput>, value: u64, index: Option<(String, u64, WorthQueryInvariantMutationTarget<Schema, ChildOutput>)> }
             pub struct Binding;
             impl ApplicationMutationBinding<Schema> for Binding {
                 type Input = Input; type InputBinding = InputBinding; type Result = (); type ResultBinding = ResultBinding;
@@ -99,7 +99,7 @@ macro_rules! reconciliation_child_phase {
                     installation.bind_output_readiness::<Producer, _, _, _, _, _, _>(node, ordinal)
                 }
             }
-            pub struct Handler { pub derive: fn(u64) -> u64 }
+            pub struct Handler { pub derive: fn(u64) -> u64, pub indices: bool }
             impl OperationHandler<Schema, Binding> for Handler {
                 fn decide(&self, input: &Input, reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>) -> HandlerResult<Decision, Denial> {
                     let result = (|| {
@@ -117,11 +117,25 @@ macro_rules! reconciliation_child_phase {
                             else { reader.resolve_optional_entity($key::at(stringify!($key)), output_key(&input.0))? };
                         if !$preserve && prior.is_some() { return Ok(Err(Denial::InitialHasPriorOutput)); }
                         if $preserve && prior.is_none() { return Ok(Err(Denial::PreserveMissingOutput)); }
+                        let mut index = None;
                         let output = match prior {
-                            Some(prior) => { reader.field(&prior, $value::at(stringify!($value)))?; Some(reader.mutation_target(&prior)?) }
+                            Some(prior) => {
+                                let old_value = reader.field(&prior, $value::at(stringify!($value)))?.expect("required child value");
+                                if self.indices {
+                                    let key = index_key(&input.0.key, old_value);
+                                    let row = reader.resolve_entity($key::at(stringify!($key)), key.clone())?;
+                                    reader.entity(&row, ChildOutput::reference())?;
+                                    if reader.field(&row, $value::at(stringify!($value)))? != Some(old_value) { return Ok(Err(Denial::MalformedSourceGraph)); }
+                                    let links = reader.relations_to(ChildOfFirst::reference(), &row).map_err(HandlerExecutionDenial::new)?;
+                                    let [link] = links.as_slice() else { return Ok(Err(Denial::MalformedSourceGraph)); };
+                                    if link.from().entity_id() != positions[0].from().entity_id() { return Ok(Err(Denial::MalformedSourceGraph)); }
+                                    index = Some((key, old_value, reader.mutation_target(&row)?));
+                                }
+                                Some(reader.mutation_target(&prior)?)
+                            }
                             None => None,
                         };
-                        Ok(Ok(Decision { source: reader.mutation_target(&source)?, output, position, value }))
+                        Ok(Ok(Decision { source: reader.mutation_target(&source)?, output, position, value, index }))
                     })();
                     match result { Ok(Ok(decision)) => HandlerResult::Completed(decision), Ok(Err(denial)) => HandlerResult::DomainDenied(denial), Err(error) => HandlerResult::ExecutionDenied(error) }
                 }
@@ -144,6 +158,30 @@ macro_rules! reconciliation_child_phase {
                             }
                         };
                         writer.$writer::<Output>(&output)?;
+                        if self.indices {
+                            let mut preserved = false;
+                            if let Some((key, old_value, target)) = &decision.index {
+                                let old = writer.projected_entity(target)?;
+                                if *old_value == value {
+                                    writer.preserve_member::<Indices<Outputs>>(key, &old)?;
+                                    preserved = true;
+                                } else {
+                                    let position = writer.projected_entity(&decision.position)?;
+                                    writer.unlink(ChildOfFirst::reference(), &position, &old)?;
+                                    writer.delete_entity(ChildOutput::reference(), &old)?;
+                                    writer.retire_member::<Indices<Outputs>>(key, &old)?;
+                                }
+                            }
+                            if !preserved {
+                                let key = index_key(&input.0.key, value);
+                                let index = writer.create_entity_in_context(&source, ChildOutput::reference(), WorthQueryApplicationEntityKey::new(&key).unwrap())?;
+                                writer.initialize_field(&index, ChildKey::at("ChildKey"), key.clone())?;
+                                writer.initialize_field(&index, ChildValue::at("ChildValue"), value)?;
+                                let position = writer.projected_entity(&decision.position)?;
+                                writer.link(ChildOfFirst::reference(), format!("of:{key}"), &position, &index)?;
+                                writer.create_member::<Indices<Outputs>>(&key, &index)?;
+                            }
+                        }
                         Ok::<_, WorthQueryApplicationAttemptDenial>(())
                     })();
                     match result { Ok(()) => HandlerResult::Completed(()), Err(error) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error)) }

@@ -61,6 +61,7 @@ impl<'run> WorthQueryFreshProviderAttempt<'run> {
         assembly: Option<
             &dyn crate::domain_computation::primary_graph::provider::CoupledProducerAssembly,
         >,
+        history: Option<super::HistoryProducerInvocation<'_>>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         crate::domain_computation::WorthQueryInvariantApprovedProposedState<'run>,
@@ -74,6 +75,7 @@ impl<'run> WorthQueryFreshProviderAttempt<'run> {
             steps,
             provider,
             assembly,
+            history,
             allocation_policy,
         )
     }

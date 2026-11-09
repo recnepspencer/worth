@@ -1,3 +1,4 @@
+mod application_effect;
 mod current_ownership;
 mod owned_record_custody;
 mod ownership_completion;
@@ -79,6 +80,18 @@ pub(super) fn prepare_publication_phase(
         deferred_diagnostic_artifacts,
         target_schema_registry,
     ) = publication.into_finalize().into_parts();
+    // Capture application effect before the two current-ownership writers add
+    // their own rows. Those rows cannot turn an unchanged application into a
+    // new publication, nor can they hide any application command's effect.
+    let application_unchanged = application_effect::unchanged(
+        execution,
+        &changed_records,
+        &adjacency_deltas,
+        &canonical_commit_envelope,
+        &mutation_identities.symbols,
+        &merge_base_commits,
+        &merge_parent_branches,
+    )?;
     let current_ownership = current_ownership::select(
         execution,
         runtime,
@@ -293,6 +306,7 @@ pub(super) fn prepare_publication_phase(
             .with_commit_log(commit_log.clone())
         })?;
     Ok(PreparedPublicationPhase {
+        application_unchanged,
         record_allocations: mutation_identities.records,
         symbol_meanings,
         mirror_publication,

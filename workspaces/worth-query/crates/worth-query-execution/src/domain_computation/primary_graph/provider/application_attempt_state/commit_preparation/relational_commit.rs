@@ -32,11 +32,11 @@ pub(super) fn commit_owner_validated(
     history: Option<crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerCutover<'_>>,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<
-    crate::domain_computation::WorthQueryProviderTerminalDescription,
+    crate::domain_computation::WorthQueryProviderCommitCompletion,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
 > {
     let request = prepared.attempt.affinity().publication_request().clone();
-    let mut committed = commit_execution::commit(
+    let completed = commit_execution::commit(
         execution,
         provider,
         prepared,
@@ -64,6 +64,12 @@ pub(super) fn commit_owner_validated(
             (stop, _) => stop,
         }
     })?;
+    let mut committed = match completed {
+        commit_execution::ApplicationCommitExecution::Committed(committed) => committed,
+        commit_execution::ApplicationCommitExecution::AdoptionPrepared(adoption) => {
+            return Ok(crate::domain_computation::WorthQueryProviderCommitCompletion::OutputAdoptionPrepared(adoption));
+        }
+    };
     let evidence = evidence_seal::seal(&execution, provider, &mut committed);
     let mut predicate = committed.take_predicate_preparation();
     let mut retired = crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationRetirement::default();
@@ -79,6 +85,7 @@ pub(super) fn commit_owner_validated(
                     &mut predicate,
                     &mut retired,
                 )
+                .map(crate::domain_computation::WorthQueryProviderCommitCompletion::Committed)
                 .map_err(crate::domain_computation::WorthQueryProviderSessionCommitStop::Denied)
         })
 }

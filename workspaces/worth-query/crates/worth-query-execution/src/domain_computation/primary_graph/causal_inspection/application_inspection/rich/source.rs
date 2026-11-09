@@ -153,7 +153,7 @@ pub(in super::super) fn capture(
                 ))?;
             let original = source
                 .changes
-                .materialize_field(context, source.disclosure.scope().subject(), coordinate)
+                .materialize_source_field(context, source.disclosure.scope().subject(), coordinate)
                 .map_err(MapKernelFailure::Stop)?;
             if original.effect() == WorthQueryMaterializedSourceFieldEffect::Present
                 && original.value().is_none()

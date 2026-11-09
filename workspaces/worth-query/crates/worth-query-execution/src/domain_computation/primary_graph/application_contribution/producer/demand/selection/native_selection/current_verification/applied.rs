@@ -62,7 +62,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
         before: &crate::basis::WorthQueryProductBranchLease,
         pin: &Pin,
         source: &AppliedQuerySource<FamilySourceQuery<S, F>, FamilySourceValue<S, F>>,
-        prior: &worth_relational::facade::mvcc::RelationalRequiredOutputPublication,
+        prior: Option<&worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
     ) -> Result<Option<VerifiedAppliedParent>, WorthQueryOutputDemandDenial> {
         if source.candidate.qualification() != pin.candidate_identity().qualification()
             || pin.candidate_identity().proposal().branch_observation()
@@ -107,12 +107,28 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
             .map_err(|stop| selected_basis::selection_lookup_denial(stop, F::IDENTITY))?;
         drop(lineage);
         for candidate in candidates {
+            let (_, installed) = self
+                .installed_producers
+                .select_exact::<F>(candidate.binding)?;
+            let origin_matches = match prior {
+                Some(prior) => {
+                    custody::matches(&graph.layout, execution, &candidate, prior, F::IDENTITY)?
+                }
+                // Native's current route reader found no publication at C.
+                // Independent ordinary rows retain Query's original execution
+                // or authenticated checkpoint, not fabricated Native custody.
+                None => {
+                    installed.declaration.ownership
+                        == worth_foundational::facade::ProducerPublicationOwnership::Independent
+                        && candidate.required_publication.is_none()
+                }
+            };
             if candidate.historical_selection.is_some()
-                || !custody::matches(&graph.layout, execution, &candidate, prior, F::IDENTITY)?
+                || !origin_matches
                 || !source_identity_matches(
                     &candidate,
                     source.runtime_source_identity(),
-                    source.checkpoint_source_identity(),
+                    crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity::new(source.checkpoint_identity()),
                 )
                 || !implementation_matches::<S, F>(self, &candidate)?
             {
@@ -124,12 +140,13 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
             let original_ready = candidate.original_ready_key.as_ref().is_some_and(|key| {
                 key.family_identity() == F::IDENTITY
                     && key.producer_identity() == installed.declaration.identity
-                    && self.runtime.output_demands.has_committed_ready(
+                    && self.runtime.output_demands.has_executed_ready(
                         key,
                         scope,
                         observation.lifecycle_incarnation(),
                         candidate.correspondence.as_ref(),
                         &candidate.idempotency_key_identity,
+                        &candidate.settlement_identity,
                     )
             });
             if !original_ready
@@ -137,7 +154,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
                 && candidate
                     .completed_coupled_receipt(
                         source.runtime_source_identity(),
-                        source.checkpoint_source_identity(),
+                        crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity::new(source.checkpoint_identity()),
                     )
                     .is_none()
             {

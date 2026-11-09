@@ -9,6 +9,7 @@ use crate::publication::data::AuthoredRetirementRefusal as Cause;
 /// Its constructor is private; declarations and submitted rosters cannot mint it.
 pub struct RelationalCoupledAuthoredPublication {
     pub(crate) binding: Arc<BoundAuthoredCoupling>,
+    pub(crate) source_effects: RelationalCoupledAuthoredSourceEffects,
     pub(crate) authored_records: Vec<crate::transactions::data::RecordRef>,
     pub(crate) authored_commands: crate::transactions::data::MergedCommitPlan,
     pub(crate) parts: Vec<CoupledPublicationPart>,
@@ -92,6 +93,10 @@ pub(crate) fn prepare_coupled_candidate(
             &transaction.content,
         )?;
     let authored_records = mutation.outcome.effect.publication.changed_records.clone();
+    let source_effects = RelationalCoupledAuthoredSourceEffects::capture(
+        execution,
+        &mutation.outcome.effect.publication.patch_fragments,
+    )?;
     writer_custody::require(
         execution,
         &binding.owners,
@@ -122,13 +127,22 @@ pub(crate) fn prepare_coupled_candidate(
                 checkpoint(context, (meaning.family.len() + expected.origin.meaning.family.len() + 65) as u64)
                     .map_err(custody::execution_stop)?;
             }
-            if !parts.iter().any(|part| matches!(&part.publication,
-                RequiredOutputPublication::Preserve { meaning, .. } if expected.origin.meaning.same_route(meaning))) {
+            if !parts.iter().any(|part| matches!(part.publication.owned(),
+                Some(RequiredOutputPublication::Preserve { meaning, .. }) if expected.origin.meaning.same_route(meaning))) {
                 return Err(part::reject(Cause::MissingCoupledOwner, expected.origin.meaning.source_scope));
             }
         }
         Ok(())
     }).map_err(custody::execution_stop)?.0?;
+    if !parts.is_empty() {
+        super::disjoint_field_patches::compose(
+            execution,
+            transaction,
+            &mut mutation.outcome.effect,
+            &mutation.state,
+            prepared.schema_authority.aspect_plans(),
+        )?;
+    }
     let final_runtime = round.with_candidate_symbols(mutation.candidate_symbols());
     let intents = transaction
         .normalized_intents_for_merge(&final_runtime, execution.allocation_policy())
@@ -152,6 +166,7 @@ pub(crate) fn prepare_coupled_candidate(
         publication: RequiredOutputPublication::CoupledAuthored {
             group: RelationalCoupledAuthoredPublication {
                 binding: Arc::clone(&binding),
+                source_effects,
                 authored_records,
                 authored_commands,
                 parts,

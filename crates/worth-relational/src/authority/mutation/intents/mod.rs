@@ -9,6 +9,7 @@ mod create_relation_aspects;
 mod delete_entity;
 mod delete_relation;
 mod dispatch;
+pub(crate) mod entity_aspect_preparation;
 pub(super) mod entity_authoritative_deletion_patch;
 pub(crate) mod field_authoring_candidate;
 mod materialization;

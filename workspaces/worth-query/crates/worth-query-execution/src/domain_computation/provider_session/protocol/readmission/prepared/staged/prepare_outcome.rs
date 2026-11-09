@@ -95,7 +95,7 @@ impl WorthQuerySessionPrepareOutcome<'_> {
             &super::super::super::super::WorthQueryGraphProviderAnchor,
             super::super::super::super::WorthQueryProviderSessionView<'_>,
         ) -> Result<
-            super::super::super::super::WorthQueryProviderTerminalDescription,
+            super::super::super::super::WorthQueryProviderCommitCompletion,
             super::super::super::super::WorthQueryProviderSessionCommitStop,
         >,
     ) -> WorthQuerySessionCommitOutcome {
@@ -121,7 +121,8 @@ impl WorthQuerySessionPrepareOutcome<'_> {
             Ok(Err(super::super::super::super::WorthQueryProviderSessionCommitStop::NoEffect(
                 no_effect,
             ))) => WorthQuerySessionCommitOutcome::NoEffect(no_effect),
-            Ok(Ok(provider_receipt)) => WorthQuerySessionCommitOutcome::Committed(
+            Ok(Ok(super::super::super::super::WorthQueryProviderCommitCompletion::OutputAdoptionPrepared(adoption))) => WorthQuerySessionCommitOutcome::OutputAdoptionPrepared(adoption),
+            Ok(Ok(super::super::super::super::WorthQueryProviderCommitCompletion::Committed(provider_receipt))) => WorthQuerySessionCommitOutcome::Committed(
                 WorthQueryClosedProviderSessionDisposition::close(
                     provider_receipt,
                     self.counters,

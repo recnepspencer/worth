@@ -7,13 +7,14 @@ macro_rules! reconciliation_phase {
             #[derive(Clone, serde::Serialize)] pub struct Input(pub query::Row);
             worth_query_structured_value_binding!(pub InputBinding for Input { identity: $identity });
             worth_query_operation!(pub $operation for Schema, input InputBinding; access {
-                read_entities: [Model, FirstOutput, SecondOutput, ChildOutput];
-                read_fields: [ModelKey::at("ModelKey"), ModelValue::at("ModelValue"), FirstKey::at("FirstKey"), FirstValue::at("FirstValue"), ChildKey::at("ChildKey"), ChildValue::at("ChildValue"), SecondKey::at("SecondKey"), SecondValue::at("SecondValue")];
-                read_relations: [FirstOf, ChildOfFirst, SecondOf, ReconciledSourceOf];
+                read_entities: [Cap, Model, Member, FirstOutput, SecondOutput, ChildOutput];
+                read_fields: [CapKey::at("CapKey"), CapValue::at("CapValue"), MemberValue::at("MemberValue"), ModelKey::at("ModelKey"), ModelValue::at("ModelValue"), FirstKey::at("FirstKey"), FirstValue::at("FirstValue"), ChildKey::at("ChildKey"), ChildValue::at("ChildValue"), SecondKey::at("SecondKey"), SecondValue::at("SecondValue")];
+                read_relations: [CapNext, ModelMember, FirstOf, ChildOfFirst, SecondOf, ReconciledSourceOf];
                 writes: [FirstKey::at("FirstKey"), FirstValue::at("FirstValue"), ChildKey::at("ChildKey"), ChildValue::at("ChildValue"), SecondKey::at("SecondKey"), SecondValue::at("SecondValue")];
                 creates: [FirstOutput, SecondOutput, ChildOutput]; links: [FirstOf, ChildOfFirst, SecondOf, ReconciledSourceOf];
                 deletes: [FirstOutput, SecondOutput, ChildOutput]; unlinks: [FirstOf, ChildOfFirst, SecondOf, ReconciledSourceOf];
             });
+            worth_query_operation_emits!($operation => [emission::Changed]);
             pub type Operation = $operation;
             pub struct Outputs;
             pub struct Output;
@@ -29,7 +30,7 @@ macro_rules! reconciliation_phase {
                     <Rows<Outputs, SecondOutput> as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR,
                 ];
             }
-            pub struct Decision { source: WorthQueryInvariantMutationTarget<Schema, SourceEntity>, output: Option<WorthQueryInvariantMutationTarget<Schema, $entity>>, prepared: observation::Prepared }
+            pub struct Decision { source: WorthQueryInvariantMutationTarget<Schema, SourceEntity>, output: Option<(WorthQueryInvariantMutationTarget<Schema, $entity>, u64)>, prepared: observation::Prepared }
             pub struct Binding;
             impl ApplicationMutationBinding<Schema> for Binding {
                 type Input = Input; type InputBinding = InputBinding; type Result = (); type ResultBinding = ResultBinding;
@@ -104,19 +105,19 @@ macro_rules! reconciliation_phase {
                     installation.bind_output_readiness::<Producer, _, _, _, _, _, _>(node, ordinal)
                 }
             }
-            pub struct Handler { pub derive: fn(u64) -> u64 }
+            pub struct Handler { pub derive: fn(u64) -> u64, pub peer_caps: bool, pub emission: bool }
             impl OperationHandler<Schema, Binding> for Handler {
                 fn decide(&self, input: &Input, reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>) -> HandlerResult<Decision, Denial> {
                     let result = (|| {
                         let source = reader.resolve_entity(source_key(), input.0.key.clone())?;
                         reader.field(&source, source_value())?;
-                        let prepared = observation::capture(reader, &source, input.0.value)?;
+                        let prepared = observation::capture(reader, &source, input.0.value, self.peer_caps)?;
                         let prior = if $preserve { Some(reader.prior_output_preserved_or_created::<preserve::Binding, preserve::Output, initial::Binding, initial::Output>()?) }
                             else { reader.resolve_optional_entity($key::at(stringify!($key)), output_key(&input.0))? };
                         if !$preserve && prior.is_some() { return Ok(Err(Denial::InitialHasPriorOutput)); }
                         if $preserve && prior.is_none() { return Ok(Err(Denial::PreserveMissingOutput)); }
                         let output = match prior {
-                            Some(prior) => { reader.field(&prior, $value::at(stringify!($value)))?; Some(reader.mutation_target(&prior)?) }
+                            Some(prior) => { let old = reader.field(&prior, $value::at(stringify!($value)))?.expect("required root value"); Some((reader.mutation_target(&prior)?, old)) }
                             None => None,
                         };
                         Ok(Ok(Decision { source: reader.mutation_target(&source)?, output, prepared }))
@@ -124,13 +125,13 @@ macro_rules! reconciliation_phase {
                     match result { Ok(Ok(decision)) => HandlerResult::Completed(decision), Ok(Err(denial)) => HandlerResult::DomainDenied(denial), Err(error) => HandlerResult::ExecutionDenied(error) }
                 }
                 fn build_candidate(&self, input: &Input, decision: Decision, writer: &mut CandidateWriter<'_, Schema, Binding>) -> HandlerResult<(), Denial> {
-                    let value = (self.derive)(input.0.value);
+                    let value = (self.derive)(decision.prepared.count);
                     if value == u64::MAX { return HandlerResult::DomainDenied(Denial::DerivedValueOutOfRange); }
                     let result = (|| {
                         let source = writer.projected_entity(&decision.source)?;
 
                         let output = match &decision.output {
-                            Some(prior) => { let output = writer.projected_entity(prior)?; writer.write_field(&output, $value::at(stringify!($value)), value)?; output }
+                            Some((prior, old)) => { let output = writer.projected_entity(prior)?; if *old != value { writer.write_field(&output, $value::at(stringify!($value)), value)?; } output }
                             None => {
                                 let key = output_key(&input.0);
                                 let output = writer.create_entity_in_context(&source, $entity::reference(), WorthQueryApplicationEntityKey::new(key.clone()).unwrap())?;
@@ -141,14 +142,15 @@ macro_rules! reconciliation_phase {
                             }
                         };
                         writer.$writer::<Output>(&output)?;
-                        publication::publish(writer, &source, &output, decision.prepared, input.0.value)?;
+                        publication::publish(writer, &source, &output, decision.prepared)?;
+                        if self.emission { writer.emit(emission::Changed::reference(), input.0.clone())?; }
                         Ok::<_, WorthQueryApplicationAttemptDenial>(())
                     })();
                     match result { Ok(()) => HandlerResult::Completed(()), Err(error) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error)) }
                 }
             }
             pub fn declare(schema: ApplicationSchemaDeclarationBuilder<Schema>) -> ApplicationSchemaDeclarationBuilder<Schema> {
-                schema.declared_operation::<Operation>(Operation::reference().definition().no_external_effect().no_aftermath().finish()).application_mutation_binding::<Binding>()
+                schema.declared_operation::<Operation>(Operation::reference().definition().no_external_effect().no_aftermath().finish()).application_mutation_binding::<Binding>().operation_emit(Operation::reference(), emission::Changed::reference())
             }
         }
     };

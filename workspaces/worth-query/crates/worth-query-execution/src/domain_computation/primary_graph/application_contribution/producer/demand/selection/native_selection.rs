@@ -297,12 +297,13 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                         let key = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey::new(
                             Family::IDENTITY, delivery.identity.clone(), delivery.applicability, epoch,
                         );
-                        if self.runtime.output_demands.has_committed_ready(
+                        if self.runtime.output_demands.has_executed_ready(
                             &key,
                             scope,
                             observation.lifecycle_incarnation(),
                             candidate.correspondence.as_ref(),
                             &candidate.idempotency_key_identity,
+                            &candidate.settlement_identity,
                         ) {
                             return Ok((delivery, delivery_entry));
                         }

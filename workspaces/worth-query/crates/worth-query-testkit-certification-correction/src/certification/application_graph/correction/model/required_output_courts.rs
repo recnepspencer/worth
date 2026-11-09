@@ -20,49 +20,46 @@ use worth_query_host::facade::{
     primary_graph::WorthQueryApplicationRequiredOutputSource,
     runtime::ExecutionAllocationPolicy,
 };
+pub(super) mod co_committed;
+
 pub fn run() {
     let application = host::install_with_outputs();
     let scope = request_scope();
     let principal = authenticate_operator(application.installed_schema(), &scope);
     let request = application.runtime().request(&principal, &scope);
     let key = "source-with-required-output".to_owned();
-    let source = request
-        .advanced()
-        .mutate(Edit {
-            key: "numeric".to_owned(),
-            value: Value::Primary(11),
-        })
-        .without_source()
-        .idempotency(&key)
-        .execute_performed::<OutputProgram, Root>(
-            &application,
-            ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    let WorthQueryApplicationPerformedMutationOutcome::Performed(source) = source else {
-        panic!("ordinary source must retain its required output");
-    };
-    let original = source.receipt().clone();
-    settle(&application, source);
+    let original = co_committed::publish_and_deliver(&application, 23, || {
+        request
+            .advanced()
+            .mutate(Edit {
+                key: "numeric".to_owned(),
+                value: Value::Primary(11),
+            })
+            .without_source()
+            .idempotency(&key)
+            .execute_performed::<OutputProgram, Root>(
+                &application,
+                ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap()
+    });
     assert_eq!(read_calculation(&application), 23);
     let key = "disjoint-with-required-output".to_owned();
-    let disjoint = request
-        .advanced()
-        .mutate(OtherEdit {
-            key: "numeric".to_owned(),
-            value: Value::Secondary(19),
-        })
-        .without_source()
-        .idempotency(&key)
-        .execute_performed::<OutputProgram, Root>(
-            &application,
-            ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    let WorthQueryApplicationPerformedMutationOutcome::Performed(disjoint) = disjoint else {
-        panic!("the disjoint edit must retain its output");
-    };
-    settle(&application, disjoint);
+    co_committed::publish_and_deliver(&application, 23, || {
+        request
+            .advanced()
+            .mutate(OtherEdit {
+                key: "numeric".to_owned(),
+                value: Value::Secondary(19),
+            })
+            .without_source()
+            .idempotency(&key)
+            .execute_performed::<OutputProgram, Root>(
+                &application,
+                ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap()
+    });
     let selected = request.corrections().select(&original, limits()).unwrap();
     let cancellation = WorthQueryCancellationSource::new();
     let stopped_scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
@@ -270,27 +267,68 @@ pub fn settle<B>(
     B: ApplicationMutationBinding<NumericSchema>
         + WorthQueryApplicationRequiredOutputSource<NumericSchema, super::output_program::Connection>,
 {
+    // The installed aftermath owner supplies the entry kind, never a caller flag.
+    let entry = performed
+        .receipt()
+        .aftermath_causality()
+        .map(|fact| fact.role());
+    let expected_contacts = match entry {
+        None => 0,
+        Some(
+            worth_query_host::facade::primary_graph::WorthQueryAftermathCausalRole::RecordedReverse
+            | worth_query_host::facade::primary_graph::WorthQueryAftermathCausalRole::RecordedReapply,
+        ) => 1,
+    };
+    let source_commit = performed.receipt().commit_reference().clone();
+    eprintln!(
+        "required delivery entry={entry:?} expected_contacts={expected_contacts} calculation={}",
+        read_calculation(application)
+    );
+    let before_head = head(application);
+    let before_rows = host::read(application);
+    let before_value = read_calculation(application);
     let scope = request_scope();
     let principal = authenticate_operator(application.installed_schema(), &scope);
     let request = application.runtime().request(&principal, &scope);
-    let mut started = performed
-        .start_required_outputs(
-            application,
-            &request,
-            WorthQueryOutputDemandControls::host_policy(),
-        )
-        .unwrap_or_else(|_| {
-            panic!("lawful current request must start the original required output")
-        });
-    let WorthQueryApplicationProgramOutputProgress::Settled(settled) = started
-        .required_output_mut()
-        .settle(application, &request)
-        .unwrap()
-    else {
-        panic!("the real arithmetic producer must settle");
-    };
-    assert_eq!(settled.root_producer_contacts_in_this_demand(), 1);
-    assert!(settled.root_receipt().is_some());
+    let ((), delivery) = worth_relational::facade::inspection::observe_maintenance_work(8, || {
+        let mut started = performed
+            .start_required_outputs(
+                application,
+                &request,
+                WorthQueryOutputDemandControls::host_policy(),
+            )
+            .unwrap_or_else(|_| {
+                panic!("lawful current request must start the original required output")
+            });
+        let WorthQueryApplicationProgramOutputProgress::Settled(settled) = started
+            .required_output_mut()
+            .settle(application, &request)
+            .unwrap()
+        else {
+            panic!("the real arithmetic producer must settle");
+        };
+        assert_eq!(
+            settled.root_producer_contacts_in_this_demand(),
+            expected_contacts
+        );
+        assert!(settled.root_receipt().is_some());
+        if entry.is_none() {
+            assert_eq!(
+                settled.root_receipt().unwrap().commit_reference(),
+                &source_commit,
+                "the real producer receipt belongs to this one source commit"
+            );
+        }
+    });
+    if entry.is_none() {
+        assert_eq!(
+            delivery.published_rows.len() + delivery.omitted_publications,
+            0
+        );
+        assert_eq!(head(application), before_head);
+        assert_eq!(host::read(application), before_rows);
+        assert_eq!(read_calculation(application), before_value);
+    }
 }
 pub fn read_calculation(application: &host::OutputHost) -> u64 {
     let scope = request_scope();

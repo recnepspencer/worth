@@ -232,7 +232,8 @@ pub fn commit_receipt(
         .with_uncommitted(graph::WorthQueryApplicationUncommitted::Indeterminate(
             outcome,
         ))),
-        outcome @ (WorthQueryApplicationCommitOutcome::NoEffect(_)
+        outcome @ (WorthQueryApplicationCommitOutcome::OutputAdopted(_)
+        | WorthQueryApplicationCommitOutcome::NoEffect(_)
         | WorthQueryApplicationCommitOutcome::Aborted) => Err(failed(identity, outcome)),
     }
 }
@@ -263,6 +264,7 @@ fn refused_preflight(
             _ => return None,
         },
         WorthQueryApplicationCommitOutcome::CleanupRequired(_)
+        | WorthQueryApplicationCommitOutcome::OutputAdopted(_)
         | WorthQueryApplicationCommitOutcome::Committed(_)
         | WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
         | WorthQueryApplicationCommitOutcome::ProductStale(_)

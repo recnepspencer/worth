@@ -13,6 +13,7 @@ impl Fragment for Storage {
         FirstOutput,
         SecondOutput,
         ChildOutput,
+        Cap,
     );
 }
 mod bindings;

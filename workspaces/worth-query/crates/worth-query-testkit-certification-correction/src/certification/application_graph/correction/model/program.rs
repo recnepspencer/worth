@@ -123,17 +123,11 @@ pub fn features<
     S: ApplicationActionDelivery<NumericSchema, EditBinding>,
     D: ApplicationActionDelivery<NumericSchema, OtherBinding>,
 >() -> Vec<ApplicationFeatureSpec> {
-    vec![
-        super::causal_inspection::distinct_subjects::grant_status::feature(),
-        super::compensation_movement::feature(),
-        super::source_output_model::feature(),
-        super::composite_definition_model::feature(),
-        super::write_admission::feature(),
-        super::authored_identity_model::feature(),
-        super::authored_identity_reference::feature(),
-        super::adjacency_link::feature(),
+    let mut specs = model_features();
+    specs.push(
         ApplicationFeatureSpec::root::<NumericSchema, NumericFeature>()
             .conditional_operation::<super::calculation::CalculateNumber>()
+            .conditional_operation::<super::deferred_completion::reciprocal::CalculateReciprocal>()
             .conditional_operation::<super::causal_inspection::retired_outputs::calculation::CalculateRetainedNumber>()
             .conditional_operation::<super::causal_inspection::output_equivalence::calculation::CalculateParity>()
             .conditional_operation::<super::aspect_input::calculation::CalculateAspectNumber>()
@@ -144,6 +138,20 @@ pub fn features<
             .finish_action()
             .action::<super::principal_status::Binding, PrincipalCompletion>()
             .finish_action()
-            .finish(),
+            .finish()
+    );
+    specs
+}
+
+pub(super) fn model_features() -> Vec<ApplicationFeatureSpec> {
+    vec![
+        super::causal_inspection::distinct_subjects::grant_status::feature(),
+        super::compensation_movement::feature(),
+        super::source_output_model::feature(),
+        super::composite_definition_model::feature(),
+        super::write_admission::feature(),
+        super::authored_identity_model::feature(),
+        super::authored_identity_reference::feature(),
+        super::adjacency_link::feature(),
     ]
 }

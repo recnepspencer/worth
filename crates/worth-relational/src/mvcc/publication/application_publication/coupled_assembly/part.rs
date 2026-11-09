@@ -45,17 +45,13 @@ impl RelationalAuthoredCoupledCandidate<'_> {
     pub fn append_publication(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
-        mut publication: RequiredOutputPublication,
+        mut publication: RelationalCoupledProducerPosture,
         content: &crate::content::RelationalContentAttachments,
         mut batches: Vec<WorkerIntentBatch>,
     ) -> Result<(), RelationalCoupledAssemblyFailure> {
         let predecessor_origin =
             super::participant_admission::admit(self, execution, &publication)?;
-        let roles = match &mut publication {
-            RequiredOutputPublication::Birth { roles, .. }
-            | RequiredOutputPublication::Preserve { roles, .. } => roles,
-            _ => unreachable!("admitted producer"),
-        };
+        let roles = publication.roles_mut();
         super::local_keys::scope(
             execution,
             self.parts.len(),
@@ -182,12 +178,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             &outcome.effect.adjacency.deltas,
             self.identity.proposed_version_id(),
         );
-        let part = CoupledPublicationPart {
-            input: read,
-            publication,
-            commands: plan.clone(),
-            records: outcome.effect.publication.changed_records.clone(),
-        };
+        let records = outcome.effect.publication.changed_records.clone();
         self.mutation
             .outcome
             .created_entities
@@ -211,7 +202,15 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             self.mutation.outcome.effect.clone(),
             None,
         );
-        self.parts.push(part);
+        let ordinary_ids = publication
+            .resolve_ordinary_roles(execution, &self.mutation.outcome.created_entities)?;
+        self.parts.push(CoupledPublicationPart {
+            ordinary_ids,
+            input: read,
+            publication,
+            commands: plan,
+            records,
+        });
         Ok(())
     }
 }

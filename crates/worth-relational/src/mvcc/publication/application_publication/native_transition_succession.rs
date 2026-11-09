@@ -10,6 +10,33 @@ use worth_execution::ExecutionRequest;
 mod independent;
 mod selection;
 impl RelationalRuntime {
+    /// Renew a basis-bound holder through the existing Native custody owner.
+    /// Canonical carried origins retain their ordinary predecessor validation.
+    pub fn readmit_carried_required_output_publication(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        installed: &RelationalInstalledApplicationPublicationAuthority,
+        basis: &AdmittedRelationalBranchBasis,
+        carried: &RelationalRequiredOutputPublication,
+    ) -> Result<RelationalRequiredOutputPublication, TransactionCommitError> {
+        if carried.runtime_instance_id != self.runtime_instance_id()
+            || installed.runtime_instance_id != self.runtime_instance_id()
+            || basis.descriptor().runtime_instance_id() != self.runtime_instance_id()
+        {
+            return Err(origin_denial("foreign carried publication custody"));
+        }
+        if carried
+            .readmitted_at
+            .as_ref()
+            .is_none_or(|at| at.descriptor() == basis.descriptor())
+        {
+            // Canonical carried custody still goes through the ordinary exact
+            // predecessor validation. A cold/current proof additionally binds C.
+            return Ok(carried.clone());
+        }
+        self.readmit_canonical_publication(execution, installed, basis, &carried.origin)
+    }
+
     /// Reissue succeeds the actual Native route transition, never a fresh Birth.
     /// Active owned membership is authenticated by the current-custody owner.
     pub fn readmit_native_output_transition_successor(

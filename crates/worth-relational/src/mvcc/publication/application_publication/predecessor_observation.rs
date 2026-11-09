@@ -38,7 +38,9 @@ impl crate::mvcc::ValidatedRelationalProposal {
             }
             if let RequiredOutputPublication::CoupledAuthored { group } = publication {
                 for part in &group.parts {
-                    if let Some(prior) = select(&part.publication, producer, dependency, context)? {
+                    if let Some(publication) = part.publication.owned()
+                        && let Some(prior) = select(publication, producer, dependency, context)?
+                    {
                         return Ok(Some(prior));
                     }
                 }

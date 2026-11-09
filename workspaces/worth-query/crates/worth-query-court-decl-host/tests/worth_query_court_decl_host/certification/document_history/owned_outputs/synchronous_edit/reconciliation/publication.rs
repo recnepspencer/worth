@@ -8,7 +8,6 @@ pub(super) fn publish<B: ApplicationMutationBinding<Schema>>(
     source: &WorthQueryApplicationEffectEntity<Schema, Model>,
     root: &WorthQueryApplicationEffectEntity<Schema, FirstOutput>,
     mut prior: observation::Prepared,
-    count: u64,
 ) -> Result<(), WorthQueryApplicationAttemptDenial>
 where
     FirstOf: OperationLinks<B::Operation>
@@ -27,6 +26,7 @@ where
     ChildOutput: OperationCreates<B::Operation> + OperationDeletes<B::Operation>,
     SecondOutput: OperationCreates<B::Operation> + OperationDeletes<B::Operation>,
 {
+    let count = prior.count;
     let model = &prior.model;
     for retired in prior.retired {
         let row = writer.projected_entity(&retired.row)?;
@@ -43,7 +43,9 @@ where
         };
         if let Some(prior) = prior.members.remove(&ordinal) {
             let row = writer.projected_entity(&prior.row)?;
-            writer.write_field(&row, FirstValue::at("FirstValue"), value)?;
+            if prior.value != value {
+                writer.write_field(&row, FirstValue::at("FirstValue"), value)?;
+            }
             writer.preserve_member::<Rows<B::Output, FirstOutput>>(&key, &row)?;
             let stable_source = writer.projected_entity(&prior.source)?;
             writer.preserve_member::<Rows<B::Output, SecondOutput>>(

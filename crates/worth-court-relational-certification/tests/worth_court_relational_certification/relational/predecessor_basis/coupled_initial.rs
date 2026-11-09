@@ -46,27 +46,29 @@ impl RelationalAuthoredCoupledProducerAssembly for Initial<'_> {
         };
         candidate.append_publication(
             execution,
-            RequiredOutputPublication::Birth {
-                admission: world.owner.admit_required_output("source-owned", [1; 32]),
-                absence: None,
-                meaning: RequiredOutputPublicationMeaning {
-                    implementation: RequiredOutputProducingImplementation::from_checkpoint(
-                        [0x11; 16], [0x22; 32],
-                    )
-                    .unwrap(),
-                    family: "source-owned".into(),
-                    source_scope: world.source,
-                    source_partition: [0; 32],
-                    source_epoch: [1; 32],
+            worth_relational::facade::mvcc::RelationalCoupledProducerPosture::Publication(
+                RequiredOutputPublication::Birth {
+                    admission: world.owner.admit_required_output("source-owned", [1; 32]),
+                    absence: None,
+                    meaning: RequiredOutputPublicationMeaning {
+                        implementation: RequiredOutputProducingImplementation::from_checkpoint(
+                            [0x11; 16], [0x22; 32],
+                        )
+                        .unwrap(),
+                        family: "source-owned".into(),
+                        source_scope: world.source,
+                        source_partition: [0; 32],
+                        source_epoch: [1; 32],
+                    },
+                    roles: vec![RequiredOutputRoleTarget {
+                        role: "output".into(),
+                        entity_name: "node".into(),
+                        kind: KindId(1),
+                        posture: RequiredOutputRolePosture::Create,
+                        target: EntityReference::Created(target),
+                    }],
                 },
-                roles: vec![RequiredOutputRoleTarget {
-                    role: "output".into(),
-                    entity_name: "node".into(),
-                    kind: KindId(1),
-                    posture: RequiredOutputRolePosture::Create,
-                    target: EntityReference::Created(target),
-                }],
-            },
+            ),
             &RelationalContentAttachments::default(),
             vec![
                 WorkerIntentBatch::new("initial-derived-output").push(MutationIntent::Create(

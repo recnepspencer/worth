@@ -71,23 +71,31 @@ pub fn restored_output_has_no_original_in_memory_evaluation() {
     drop(current);
     // A fresh actual no-op source receipt belongs to this restored runtime.
     // Equal Native facts allow restoration; the foreign pre-restart receipt is never substituted.
-    let performed = request
-        .advanced()
-        .mutate(Edit {
-            key: "numeric".to_owned(),
-            value: Value::Primary(4),
-        })
-        .without_source()
-        .idempotency(&"restored-evaluation-fresh-noop-source".to_owned())
-        .execute_performed::<OutputProgram, Root>(
-            &application,
-            ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = performed else {
-        panic!("the restored runtime must issue its own genuine performed source")
-    };
-    let (source, _, read) = source_journey::settle_source(&application, &request, performed, 0);
+    let (source, _, read) = source_journey::perform_and_settle_source(
+        &application,
+        &request,
+        || {
+            let performed = request
+                .advanced()
+                .mutate(Edit {
+                    key: "numeric".to_owned(),
+                    value: Value::Primary(4),
+                })
+                .without_source()
+                .idempotency(&"restored-evaluation-fresh-noop-source".to_owned())
+                .execute_performed::<OutputProgram, Root>(
+                    &application,
+                    ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap();
+            let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = performed
+            else {
+                panic!("the restored runtime must issue its own genuine performed source")
+            };
+            performed
+        },
+        0,
+    );
     drop(read);
     let (receipt, read, contacts, posture) = demand::settle_observation(&application);
     assert_eq!(

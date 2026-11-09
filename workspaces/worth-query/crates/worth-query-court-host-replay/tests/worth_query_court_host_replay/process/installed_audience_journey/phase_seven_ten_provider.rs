@@ -102,10 +102,12 @@ impl provider::WorthQueryProviderSessionLifecycle for ConsumerCombinedProvider {
         _session: &provider::WorthQueryProviderSessionView<'_>,
         _allocation_policy: worth_query_host::facade::runtime::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
-        provider::WorthQueryProviderTerminalDescription,
+        provider::WorthQueryProviderCommitCompletion,
         provider::WorthQueryProviderSessionCommitStop,
     > {
-        Ok(provider::WorthQueryProviderTerminalDescription::new("consumer-commit").unwrap())
+        Ok(provider::WorthQueryProviderCommitCompletion::Committed(
+            provider::WorthQueryProviderTerminalDescription::new("consumer-commit").unwrap(),
+        ))
     }
 
     fn abort_provider_session(

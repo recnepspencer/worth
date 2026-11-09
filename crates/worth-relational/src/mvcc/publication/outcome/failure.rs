@@ -4,6 +4,13 @@
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RelationalPublicationFailureKind {
+    /// Native admitted this body only for adopting its current output. No
+    /// publication receipt was staged, so physical publication is forbidden.
+    OutputAdoptionRequired {
+        source: crate::identity::data::EntityId,
+        producer: String,
+        family: String,
+    },
     SnapshotIdentityExhausted,
     SnapshotCountOverflow,
     CandidateIdentityExhausted,

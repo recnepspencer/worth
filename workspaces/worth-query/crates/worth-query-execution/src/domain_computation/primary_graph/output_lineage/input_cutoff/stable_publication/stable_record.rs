@@ -40,11 +40,17 @@ impl<'lane, 'selected> PreparedStableLineageAddress<'lane, 'selected> {
         );
         control.check_live().map_err(super::storage_denial)?;
         let fresh_key = self
-            .verified
+            .input_cutoff
+            .as_mut()
+            .expect("cutoff publication retains its proof")
             .fresh_key
             .take()
             .ok_or_else(|| denial(Kind::IncompleteDependencyCoverage))?;
-        let candidate = &self.verified.candidate;
+        let mut verified = self
+            .input_cutoff
+            .take()
+            .expect("cutoff record preparation retains its own verified proof");
+        let candidate = &verified.candidate;
         let origin = candidate
             .originating_recorded()
             .ok_or_else(|| denial(Kind::IncompleteDependencyCoverage))?;
@@ -52,8 +58,7 @@ impl<'lane, 'selected> PreparedStableLineageAddress<'lane, 'selected> {
         let prefix_count = candidate
             .completed_handler_fact_count()
             .ok_or_else(|| denial(Kind::IncompleteDependencyCoverage))?;
-        let prefix = self
-            .verified
+        let prefix = verified
             .verified_facts
             .checked_slice(0..prefix_count)
             .ok_or_else(|| denial(Kind::IncompleteDependencyCoverage))?;
@@ -106,15 +111,38 @@ impl<'lane, 'selected> PreparedStableLineageAddress<'lane, 'selected> {
             computation_source: selected_row.computation_source,
             performed_origin: Some(performed_origin),
             historical_selection: None,
-            consumed_outputs: self
-                .verified
+            consumed_outputs: verified
                 .verified_consumed
                 .take()
                 .unwrap_or_else(|| Arc::clone(&selected_row.consumed_outputs)),
-            completed_handler_facts: None,
-            completed_decision_reuse: None,
+            completed_handler_facts: selected_row
+                .computation_source
+                .is_executed_adoption()
+                .then(|| {
+                    selected_row
+                        .completed_handler_facts
+                        .as_ref()
+                        .map(|facts| facts.continued_by_republication())
+                })
+                .flatten(),
+            completed_decision_reuse: selected_row
+                .computation_source
+                .is_executed_adoption()
+                .then(|| {
+                    selected_row
+                        .completed_decision_reuse
+                        .as_ref()
+                        .map(|proof| proof.continued_by_republication())
+                })
+                .flatten(),
             prepared_input_reuse_key: Some(fresh_key),
-            native_output_witness: std::sync::OnceLock::new(),
+            native_output_witness: selected_row
+                .computation_source
+                .is_executed_adoption()
+                .then(|| selected_row.native_output_witness_cell().map(Arc::clone))
+                .flatten()
+                .map(std::sync::OnceLock::from)
+                .unwrap_or_default(),
             settlement_identity: Arc::clone(&self.identity),
             correspondence: Arc::clone(&origin.correspondence),
             source_identity: Some(RecordedSourceIdentity::Runtime(

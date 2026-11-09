@@ -13,6 +13,7 @@ pub struct WorthQueryProductPublicationBinding {
     pub(super) adoption_preparation: Arc<super::adoption_preparation::AdoptionPreparationControl>,
     observation: ProductBranchObservation,
     publication: RuntimeWorldPublicationPort<(), (), (), (), ()>,
+    observation_port: worth_runtime_world::facade::RuntimeWorldObservationPort,
     recovery: RuntimeWorldRecoveryPort,
     clock: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldClock,
     root_identity: Arc<WorthQueryProductRootIdentity>,
@@ -23,6 +24,7 @@ impl WorthQueryProductPublicationBinding {
         adoption_preparation: Arc<super::adoption_preparation::AdoptionPreparationControl>,
         observation: ProductBranchObservation,
         publication: RuntimeWorldPublicationPort<(), (), (), (), ()>,
+        observation_port: worth_runtime_world::facade::RuntimeWorldObservationPort,
         recovery: RuntimeWorldRecoveryPort,
         clock: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldClock,
         root_identity: Arc<WorthQueryProductRootIdentity>,
@@ -31,10 +33,17 @@ impl WorthQueryProductPublicationBinding {
             adoption_preparation,
             observation,
             publication,
+            observation_port,
             recovery,
             clock,
             root_identity,
         }
+    }
+
+    pub(in crate::domain_computation) fn observation_port(
+        &self,
+    ) -> &worth_runtime_world::facade::RuntimeWorldObservationPort {
+        &self.observation_port
     }
 
     pub(crate) fn observation(&self) -> &ProductBranchObservation {
@@ -77,6 +86,7 @@ impl super::WorthQueryProductRuntime {
             Arc::clone(&self.adoption_preparation),
             observation,
             self.owner.publication_port(),
+            self.owner.observation_port(),
             self.owner.recovery_port(),
             self.clock.clone(),
             self.root_identity(),

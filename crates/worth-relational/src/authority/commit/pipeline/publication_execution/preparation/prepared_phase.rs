@@ -2,6 +2,7 @@
 use super::*;
 
 pub(in crate::authority::commit::pipeline::publication_execution) struct PreparedPublicationPhase {
+    pub(in crate::authority::commit::pipeline::publication_execution) application_unchanged: bool,
     pub(in crate::authority::commit::pipeline::publication_execution) record_allocations:
         crate::runtime::PendingRecordAllocations,
     pub(in crate::authority::commit::pipeline::publication_execution) symbol_meanings:

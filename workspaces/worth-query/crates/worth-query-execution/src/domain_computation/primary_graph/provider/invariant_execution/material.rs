@@ -6,6 +6,7 @@ use crate::domain_computation::{
 use super::super::application_attempt_state::WorthQueryStagedApplicationAttempt;
 
 pub(super) struct ApplicationInvariantCandidateMaterial {
+    pub(super) publication_appendix: Option<super::publication_appendix::PublicationAppendixPreparation>,
     pub(super) request: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     pub(super) semantic: ApplicationInvariantSemanticMaterial,
     pub(super) requirements: Vec<worth_query_installation::facade::WorthQueryInstalledInvariantExecutionRequirement>,
@@ -40,8 +41,26 @@ pub(super) struct ApplicationInvariantSemanticMaterial {
 impl ApplicationInvariantCandidateMaterial {
     pub(super) fn from_staged(
         staged: &WorthQueryStagedApplicationAttempt<'_>,
+        layout: &crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout,
+        appendix_policy: Option<(
+            &worth_execution::ExecutionRequest<'_, '_>,
+            worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        )>,
     ) -> Result<Self, WorthQueryInvariantExecutionFailure> {
+        let publication_appendix = match appendix_policy {
+            Some((execution, policy)) => {
+                let control = crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl::new(staged.validation_request(), policy);
+                super::publication_appendix::PublicationAppendixPreparation::from_attempt(
+                    staged.appendix_attempt(),
+                    execution,
+                    layout,
+                    control.policy(),
+                )?
+            }
+            None => None,
+        };
         Ok(Self {
+            publication_appendix,
             request: staged.validation_request().clone(),
             semantic: ApplicationInvariantSemanticMaterial::from_staged(staged)?,
             requirements: staged.invariant_requirements().to_vec(),

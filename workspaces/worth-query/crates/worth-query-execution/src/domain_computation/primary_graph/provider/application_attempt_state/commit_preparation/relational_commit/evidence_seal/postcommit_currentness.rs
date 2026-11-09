@@ -9,7 +9,9 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
 use crate::domain_computation::primary_graph::fact_verification_observation;
 
+mod applied_support;
 mod diagnostic;
+mod executed_adoption;
 pub use diagnostic::RebaseVerificationReason;
 pub(crate) mod adjacency;
 mod predecessor_output;

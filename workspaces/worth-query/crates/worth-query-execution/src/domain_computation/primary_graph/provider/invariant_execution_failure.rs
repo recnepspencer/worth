@@ -1,6 +1,8 @@
+mod companion;
 use crate::domain_computation::{
     WorthQueryInvariantExecutionDenialKind, WorthQueryInvariantExecutionFailure,
 };
+pub(super) use companion::{companion_failure, head_cell_failure, readmission_failure};
 
 pub(super) fn map_transaction_admission_failure(
     denial: worth_relational::facade::mvcc::RelationalBranchTransactionAdmissionDenial,

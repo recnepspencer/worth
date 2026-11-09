@@ -7,11 +7,14 @@ use worth_foundational::facade::ProducerPublicationOwnership;
 mod phase;
 #[macro_use]
 mod child_phase;
+mod cap_edit;
 mod child;
 mod comparison;
 mod courts;
 mod discovery;
+mod emission;
 mod observation;
+pub(crate) mod peer_caps;
 mod program;
 pub use program::{child_feature, feature};
 mod publication;
@@ -111,8 +114,10 @@ reconciliation_phase!(
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    discovery::declare(snapshot::declare(child::declare(preserve::declare(
-        initial::declare(schema),
+    cap_edit::declare(discovery::declare(snapshot::declare(child::declare(
+        preserve::declare(initial::declare(
+            schema.effect(emission::Changed::reference()),
+        )),
     ))))
 }
 pub fn contracts(
@@ -132,12 +137,42 @@ pub type Roles = WorthQueryRequiredFeaturePair<
 >;
 pub fn install(
     setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
+    indices: bool,
+    peer_caps: bool,
+    emission: bool,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-    child::install(setup)?;
-    setup.handler::<initial::Binding, _>(initial::Handler { derive: |v| v })?;
-    setup.handler::<preserve::Binding, _>(preserve::Handler { derive: |v| v })?;
+    child::install(setup, indices)?;
+    setup.handler::<cap_edit::Binding, _>(cap_edit::Handler)?;
+    setup.handler::<initial::Binding, _>(initial::Handler {
+        derive: |v| v,
+        peer_caps,
+        emission,
+    })?;
+    setup.handler::<preserve::Binding, _>(preserve::Handler {
+        derive: |v| v,
+        peer_caps,
+        emission,
+    })?;
     setup.producer::<initial::Producer>(initial::Provider)?;
     setup.producer::<preserve::Producer>(preserve::Provider)?;
     setup.conditional::<initial::Readiness>(())?;
     setup.conditional::<preserve::Readiness>(())
 }
+
+mod adoption;
+
+mod cold;
+
+mod native_unchanged;
+
+mod appendix_effect;
+
+mod commit_count;
+
+mod upgrade;
+
+mod changed_source;
+
+mod unkeyed;
+
+mod original_root;

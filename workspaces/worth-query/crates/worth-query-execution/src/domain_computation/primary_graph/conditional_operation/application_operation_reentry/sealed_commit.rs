@@ -92,6 +92,11 @@ fn classify_commit(
     outcome: WorthQueryApplicationCommitOutcome,
 ) -> WorthQueryTemporalReentryOutcome {
     match outcome {
+        WorthQueryApplicationCommitOutcome::OutputAdopted(_) => {
+            WorthQueryTemporalReentryOutcome::TerminalFailure(
+                super::WorthQueryTemporalTerminalFailure::ApplicationCommit(
+                    crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind::RequiredOutputPreparationMissing))
+        }
         WorthQueryApplicationCommitOutcome::CleanupRequired(cleanup) => {
             WorthQueryTemporalReentryOutcome::CleanupRequired(cleanup)
         }

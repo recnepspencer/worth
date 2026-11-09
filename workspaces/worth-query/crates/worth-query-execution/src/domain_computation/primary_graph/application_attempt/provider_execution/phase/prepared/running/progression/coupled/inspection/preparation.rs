@@ -97,13 +97,9 @@ impl CommitPreparedCoupledWriter<'_> {
         let product = custody.lease.product().publication_binding();
         let compared = prepared.commit_with(|prepared| {
             prepared.commit_using(|_, session| {
-                provider.complete_coupled_session(
-                    execution,
-                    &terminal,
-                    session,
-                    &product,
-                    unpublished,
-                )
+                provider
+                    .complete_coupled_session(execution, &terminal, session, &product, unpublished)
+                    .map(crate::domain_computation::WorthQueryProviderCommitCompletion::Committed)
             })
         });
         let typed = custody

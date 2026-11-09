@@ -236,6 +236,9 @@ fn refusal(worker: bool) {
         1,
         None,
         world::Configuration {
+            reconciliation_indices: false,
+            reconciliation_peer_caps: false,
+            reconciliation_emission: false,
             second_derivation: Some(refused_new_source),
         },
     );

@@ -38,6 +38,7 @@ impl WorthQueryOutputDemandSettlement {
                 )
             })?;
         Ok(Arc::new(Self {
+            _original_delivery_memory: None,
             posture: restored.settlement_posture(),
             runtime_authority: runtime.runtime.authority_identity().as_u64(),
             schema_binding: runtime.installed_schema.binding_identity(),
@@ -82,6 +83,7 @@ impl WorthQueryOutputDemandSettlement {
         Schema: worth_query_installation::facade::ApplicationSchema,
     {
         Ok(Arc::new(Self {
+            _original_delivery_memory: None,
             posture: WorthQueryOutputSettlementPosture::StableReused,
             runtime_authority: runtime.runtime.authority_identity().as_u64(),
             schema_binding: runtime.installed_schema.binding_identity(),

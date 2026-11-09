@@ -34,6 +34,7 @@ pub(super) struct WorthQueryAuthorizedCompareContext<'a> {
     authority_binding: super::super::super::WorthQueryApplicationCommitAuthorityBinding,
     provider_session:
         crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
+    coordination: Option<&'a crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'a>>,
 }
 
 /// One-shot permission for the receipt owner to join a fresh provider commit
@@ -74,7 +75,7 @@ impl<'a> WorthQueryAuthorizedCompareContext<'a> {
     where
         Input: Clone + Send + Sync + 'static,
     {
-        Self::from_admission(
+        let mut context = Self::from_admission(
             authority.provider(),
             authority.admission(),
             authority.idempotency(),
@@ -82,7 +83,9 @@ impl<'a> WorthQueryAuthorizedCompareContext<'a> {
             dispatch_outbox,
             authority.aftermath_causality().cloned(),
             provider_session,
-        )
+        );
+        context.coordination = Some(authority.coordination());
+        context
     }
     pub(super) fn from_admission<Schema, Operation, Input, Scope>(
         provider: &'a crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
@@ -121,6 +124,7 @@ impl<'a> WorthQueryAuthorizedCompareContext<'a> {
                     idempotency,
                 ),
             provider_session,
+            coordination: None,
         }
     }
 }
@@ -131,6 +135,24 @@ pub(super) fn finish_authorized_compare(
     context: WorthQueryAuthorizedCompareContext<'_>,
 ) -> WorthQueryProviderProgressionOutcome {
     match compared {
+        WorthQueryProviderCompareAndCommitOutcome::OutputAdoptionPrepared(adoption) => {
+            if !context.provider_session.same_session(adoption.session()) {
+                return WorthQueryProviderProgressionOutcome::Indeterminate(
+                    recovery_evidence::unknown_commit_recovery_evidence(
+                        "output adoption belongs to another provider session"));
+            }
+            let Some(coordination) = context.coordination else {
+                return crate::domain_computation::primary_graph::application_attempt::provider_execution::outcome::progression_denied(
+                    crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::ProviderCommit);
+            };
+            match adoption.publish(execution, context.provider, coordination) {
+                Ok(adoption) => WorthQueryProviderProgressionOutcome::OutputAdopted(adoption),
+                Err(stop) => WorthQueryProviderProgressionOutcome::Deferred(
+                    crate::domain_computation::primary_graph::WorthQueryApplicationCommitDeferred::from_provider_session(
+                        crate::domain_computation::WorthQueryProviderSessionCommitDeferred::required_prerequisite(
+                            stop, "executed adoption currentness qualification stopped"))),
+            }
+        }
         WorthQueryProviderCompareAndCommitOutcome::Committed(committed_session) => {
             if !context
                 .provider_session

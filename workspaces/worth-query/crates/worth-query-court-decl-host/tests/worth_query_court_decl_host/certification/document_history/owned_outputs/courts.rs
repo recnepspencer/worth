@@ -139,9 +139,9 @@ pub(super) fn checkout<O: WorthQueryHistoryOutputsMode<Schema, History>>(
                 return Ok(done.selection().clone())
             }
             WorthQueryHistoryNavigationAdvance::Refused { cause, owner } => {
-                owner
-                    .discard(request)
-                    .unwrap_or_else(|(_, cause)| panic!("{cause:?}"));
+                owner.discard(request).unwrap_or_else(|(_, cleanup)| {
+                    panic!("navigation refused: {cause:?}; discard failed: {cleanup:?}")
+                });
                 return Err(("advance", cause));
             }
         };

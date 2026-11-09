@@ -87,14 +87,11 @@ impl WorthQueryApplicationOutputLineage {
                         )
                     });
                 if let Some(recorded) = recorded {
+                    let completed = recorded
+                        .completed_computation_record()
+                        .ok_or(CompanionPreflightStop::SelectedSourceMismatch)?;
                     candidates.push(WorthQueryRetainedOutputCandidate {
-                        original_ready_key: recorded
-                            .performed_origin
-                            .as_ref()
-                            .and_then(|origin| origin.get())
-                            .unwrap_or(recorded)
-                            .original_ready_key
-                            .clone(),
+                        original_ready_key: completed.original_ready_key.clone(),
                         coupled_completion: recorded.coupled_completion.clone(),
                         producing_implementation: recorded.producing_implementation,
                         required_publication: recorded.required_publication.clone(),
@@ -108,13 +105,9 @@ impl WorthQueryApplicationOutputLineage {
                         observed_source_facts: recorded
                             .observed_source_facts()
                             .and_then(|facts| facts.for_comparison()),
-                        // A stable alias seals no witness: its output is
-                        // its origin's, compared by the origin's witness.
-                        native_output_witness: recorded
-                            .performed_origin
-                            .as_ref()
-                            .and_then(|origin| origin.get())
-                            .unwrap_or(recorded)
+                        // Ordinary aliases keep the performed witness. An
+                        // actual adopting execution owns its fresh live witness.
+                        native_output_witness: completed
                             .native_output_witness_cell()
                             .map(Arc::clone),
                         verification_requirement: recorded.verification_requirement(),

@@ -1,6 +1,7 @@
 pub(crate) mod aftermath_causality;
 mod authored_retirement_selection;
-mod native_publication_roles;
+pub(in crate::domain_computation::primary_graph) mod native_publication_roles;
+pub(in crate::domain_computation::primary_graph) mod publication_posture;
 pub(crate) mod relational_execution_denial;
 pub use aftermath_causality::WorthQueryAftermathCausalityReadDenial;
 pub(in crate::domain_computation::primary_graph) use aftermath_causality::{
@@ -39,6 +40,7 @@ pub(crate) mod fault_port;
 mod graph_participation;
 mod history_retirement;
 pub(crate) mod idempotency;
+pub(in crate::domain_computation::primary_graph) use idempotency::ReceiptAppendix;
 pub(crate) mod inbound_completion;
 mod inbound_cost;
 pub(in crate::domain_computation::primary_graph) mod managed_cleanup_control;
@@ -52,6 +54,7 @@ pub(in crate::domain_computation) use inbound_terminal_index::WorthQueryInboundT
 mod coupled_members;
 mod installation;
 mod invariant_execution;
+pub(in crate::domain_computation::primary_graph) use invariant_execution::ClosedCoupledInvariantReceipts;
 pub(in crate::domain_computation::primary_graph) use invariant_execution::CoupledProducerAssembly;
 pub(crate) mod invariant_execution_failure;
 mod managed_application_recovery;
@@ -190,14 +193,18 @@ impl WorthQueryPrimaryGraphProvider {
         outcome_identity: super::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
         emitted_effect_count: u64,
         mutation_partition: worth_relational::facade::identity::PartitionId,
-    ) -> worth_relational::facade::transactions::WorkerIntentBatch {
-        batch.push(idempotency::idempotency_create_intent(
+    ) -> (
+        worth_relational::facade::transactions::WorkerIntentBatch,
+        idempotency::ReceiptAppendix,
+    ) {
+        idempotency::bind_receipt(
+            batch,
             self.graph.layout.provider_idempotency(),
             idempotency,
             outcome_identity,
             emitted_effect_count,
             mutation_partition,
-        ))
+        )
     }
 
     pub(in crate::domain_computation::primary_graph) fn bind_application_aftermath_causality_intent(

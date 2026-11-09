@@ -44,6 +44,7 @@ use crate::schema::data::{ProposedSchemaTransition, SchemaReconciliationPolicy};
 
 #[derive(Debug)]
 pub(crate) struct RelationalTransactionValidationInput {
+    appendix_adoption: Option<std::sync::Arc<crate::history::data::CanonicalRequiredOutputOrigin>>,
     coupled_proposal: Option<RelationalMutationProposalIdentity>,
     content: crate::content::RelationalContentAttachments,
     basis: AdmittedRelationalBranchBasis,
@@ -61,7 +62,11 @@ pub(crate) struct RelationalTransactionValidationInput {
 
 impl PartialEq for RelationalTransactionValidationInput {
     fn eq(&self, other: &Self) -> bool {
-        self.coupled_proposal == other.coupled_proposal
+        (match (&self.appendix_adoption, &other.appendix_adoption) {
+            (None, None) => true,
+            (Some(left), Some(right)) => std::sync::Arc::ptr_eq(left, right),
+            _ => false,
+        }) && self.coupled_proposal == other.coupled_proposal
             && self.content.same_staging(&other.content)
             && self.basis == other.basis
             && self.intent == other.intent
@@ -80,6 +85,7 @@ impl RelationalTransactionValidationInput {
         transaction: &crate::mvcc::BranchBoundRelationalTransaction,
     ) -> Self {
         Self {
+            appendix_adoption: transaction.appendix_adoption.clone(),
             coupled_proposal: transaction.authored_coupling.as_ref().and_then(|binding| {
                 binding
                     .applied
@@ -105,6 +111,7 @@ impl RelationalTransactionValidationInput {
 
     pub(crate) fn for_owner_basis(basis: &AdmittedRelationalBranchBasis) -> Self {
         Self {
+            appendix_adoption: None,
             coupled_proposal: None,
             content: Default::default(),
             basis: basis.clone(),
@@ -117,6 +124,12 @@ impl RelationalTransactionValidationInput {
             retention: None,
             control: crate::mvcc::RelationalOperationControl::uninterrupted(),
         }
+    }
+
+    pub(crate) fn appendix_adoption(
+        &self,
+    ) -> Option<&crate::history::data::CanonicalRequiredOutputOrigin> {
+        self.appendix_adoption.as_deref()
     }
 
     pub(crate) fn coupled_proposal(&self) -> Option<&RelationalMutationProposalIdentity> {
@@ -234,6 +247,7 @@ impl RelationalTransactionValidationInput {
             transaction.intent,
             self.intent
         );
+        transaction.appendix_adoption = self.appendix_adoption;
         transaction.content = self.content;
         transaction.merge_parent_bases = self.merge_parent_bases;
         transaction.schema_authority_input = self.schema_authority_input;

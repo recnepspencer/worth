@@ -4,6 +4,7 @@ mod availability;
 mod committed_session;
 mod correspondence;
 mod coupled;
+pub(crate) mod executed_adoption;
 
 mod consumed_output;
 mod managed_source;
@@ -12,12 +13,15 @@ mod managed_views;
 pub(in crate::domain_computation::primary_graph::provider) use managed_unpublished::ManagedUnpublishedAttempt;
 pub(crate) mod precommit_snapshot;
 mod product_publication;
+mod world_stop;
+use world_stop::{publication_request_stop, world_no_effect};
 mod required_origin;
 pub(crate) mod stops;
 pub(crate) mod touched_records;
 use stops::failure;
 use stops::index_preparation_stop;
 use stops::native_output_witness_stop;
+use stops::readmission_allocation;
 use stops::transaction_commit_stop;
 pub(in crate::domain_computation::primary_graph::provider) use touched_records::PreparedTouchedRecords;
 pub(crate) mod publication;
@@ -69,6 +73,11 @@ enum PublishedSnapshotCustody {
     SettledReleased,
 }
 
+pub(super) enum ApplicationCommitExecution {
+    Committed(WorthQueryCommittedApplicationSession),
+    AdoptionPrepared(Box<executed_adoption::PreparedExecutedOutputAdoption>),
+}
+
 pub(super) fn commit(
     execution: worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
@@ -77,7 +86,7 @@ pub(super) fn commit(
     history: Option<crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerCutover<'_>>,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<
-    WorthQueryCommittedApplicationSession,
+    ApplicationCommitExecution,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
 > {
     let WorthQueryPreparedApplicationCommit {
@@ -223,6 +232,39 @@ pub(super) fn commit(
         &candidate,
     );
     provider.after_application_candidate_preparation_for_test();
+    let adoption = executed_adoption::prepare(
+        &execution,
+        provider,
+        &attempt,
+        &candidate,
+        members.is_empty() && history.is_none() && prepared_output_witness.is_some(),
+        source_fact_rebase,
+        required_prerequisites,
+    )?;
+    let (source_fact_rebase, mut required_prerequisites) = match adoption {
+        executed_adoption::AdoptionPreparation::Declined { rebase, required } => (rebase, required),
+        executed_adoption::AdoptionPreparation::Selected {
+            selected,
+            adoption,
+            association,
+            rebase,
+            required,
+        } => {
+            return Ok(ApplicationCommitExecution::AdoptionPrepared(Box::new(
+                executed_adoption::PreparedExecutedOutputAdoption::new(
+                    attempt,
+                    candidate,
+                    selected,
+                    adoption,
+                    association,
+                    before,
+                    rebase,
+                    required,
+                    prepared_output_witness.expect("adoption retained its real prepared witness"),
+                ),
+            )));
+        }
+    };
     let performed = product_publication::publish(
         execution,
         provider,
@@ -290,82 +332,34 @@ pub(super) fn commit(
         .component_results()
         .retain_relational_commit_result()
         .expect("World performed a prepared Relational application candidate");
-    Ok(WorthQueryCommittedApplicationSession {
-        attempt,
-        members,
-        prepared_group_publications,
-        group_evidence,
-        group_emissions,
-        own_publication: None,
-        own_records: None,
-        work,
-        index_maintenance_work,
-        retained_preimage,
-        preimage_retention_work,
-        before: before.into_publication(),
-        next_basis,
-        committed,
-        published_snapshot_custody: PublishedSnapshotCustody::LiveOwned,
-        prepared_touched_records: Some(prepared_touched_records),
-        product_publication: performed,
-        managed_views,
-        predicate,
-        source_fact_rebase: Some(source_fact_rebase),
+    Ok(ApplicationCommitExecution::Committed(
+        WorthQueryCommittedApplicationSession {
+            attempt,
+            members,
+            prepared_group_publications,
+            group_evidence,
+            group_emissions,
+            own_publication: None,
+            own_records: None,
+            work,
+            index_maintenance_work,
+            retained_preimage,
+            preimage_retention_work,
+            before: before.into_publication(),
+            next_basis,
+            committed,
+            published_snapshot_custody: PublishedSnapshotCustody::LiveOwned,
+            prepared_touched_records: Some(prepared_touched_records),
+            product_publication: performed,
+            managed_views,
+            predicate,
+            source_fact_rebase: Some(source_fact_rebase),
 
-        required_prerequisites,
-        prepared_lineage_slot,
-        prepared_output_witness,
-    })
-}
-
-fn publication_request_stop(
-    cause: worth_execution::WorkCeilingDenial,
-) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
-    use crate::domain_computation::WorthQueryProviderSessionCommitControlStopped;
-    use crate::domain_computation::WorthQueryProviderSessionCommitStop as Stop;
-    use crate::domain_computation::WorthQueryProviderSessionFailure;
-    use crate::domain_computation::WorthQueryProviderSessionProtocolStage;
-    match crate::domain_computation::primary_graph::application_contribution::publication_execution_kind(cause) {
-        Ok(kind) => Stop::PreEffectDenied(WorthQueryProviderSessionFailure::checked_read_stopped(Ok(kind), WorthQueryProviderSessionProtocolStage::Commit, "World publication request stopped before effect")),
-        Err(control) => Stop::ControlStopped(WorthQueryProviderSessionCommitControlStopped::new(control, "World publication request stopped before effect")),
-    }
-}
-
-fn world_no_effect(
-    no_effect: worth_runtime_world::facade::NoEffectCompositePublication,
-) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
-    use crate::domain_computation::WorthQueryProviderSessionCommitControlStopped;
-    use crate::domain_computation::WorthQueryProviderSessionCommitStop as Stop;
-    use crate::domain_computation::WorthQueryProviderSessionControlStopKind;
-    use worth_runtime_world::facade::NoEffectCause;
-    match no_effect.cause() {
-        NoEffectCause::StaleExpectedProductHead => Stop::ProductStale(
-            crate::domain_computation::WorthQueryProductStaleApplication::new(no_effect),
-        ),
-        NoEffectCause::CancelledBeforeEffect
-        | NoEffectCause::ExecutionRequest(worth_execution::WorkCeilingDenial::Stopped(
-            worth_execution::MapKernelStop::Cancelled,
-        )) => Stop::ControlStopped(WorthQueryProviderSessionCommitControlStopped::new(
-            WorthQueryProviderSessionControlStopKind::Cancelled,
-            "World publication cancelled before effect",
-        )),
-        NoEffectCause::DeadlineBeforeEffect
-        | NoEffectCause::ExecutionRequest(worth_execution::WorkCeilingDenial::Stopped(
-            worth_execution::MapKernelStop::DeadlineElapsed,
-        )) => Stop::ControlStopped(WorthQueryProviderSessionCommitControlStopped::new(
-            WorthQueryProviderSessionControlStopKind::TimedOut,
-            "World publication deadline elapsed before effect",
-        )),
-        NoEffectCause::ExecutionRequest(_)
-        | NoEffectCause::OwnerDeniedBeforeEffect
-        | NoEffectCause::CurrentReadDependency(_)
-        | NoEffectCause::CorrespondenceRebindRequired
-        | NoEffectCause::ReferenceGenerationExhausted
-        | NoEffectCause::CapacityExhausted
-        | NoEffectCause::OwnerUnavailable
-        | NoEffectCause::RelationalDeferred(_)
-        | NoEffectCause::PreEffectFailure => Stop::NoEffect(no_effect),
-    }
+            required_prerequisites,
+            prepared_lineage_slot,
+            prepared_output_witness,
+        },
+    ))
 }
 
 #[cfg(test)]

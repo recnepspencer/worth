@@ -67,7 +67,9 @@ impl RequiredOutputPublication {
             Self::CoupledAuthored { group } => {
                 into.push(RecordRef::Entity(group.binding.owners.source.subject()));
                 for part in &group.parts {
-                    part.publication.ownership_seeds(into);
+                    if let Some(publication) = part.publication.owned() {
+                        publication.ownership_seeds(into);
+                    }
                 }
             }
         }

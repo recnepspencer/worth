@@ -10,6 +10,7 @@ use super::{
     program::Root,
 };
 use worth_query_host::facade::application_entry::WorthQueryApplicationReadObservation;
+pub(super) mod commit_evidence;
 use worth_query_host::facade::{
     application_entry::*, causal_inspection::*, primary_graph::*,
     runtime::ExecutionAllocationPolicy,
@@ -120,6 +121,13 @@ pub fn scalar_storage_connects_only_the_actual_performed_occurrence() {
             report.producer_connection().output_role(),
             "scalar-calculated-number"
         );
+        if source.aftermath_causality().is_none() {
+            assert_eq!(
+                report.producer_connection().output_publication_commit(),
+                source.commit_reference(),
+                "Calculated's real Native revision belongs to the co-committed original producer"
+            );
+        }
         assert_eq!(
             readers.observe().active(),
             baseline,
@@ -207,19 +215,26 @@ pub(super) fn perform(
     let principal = authenticate_operator(application.installed_schema(), &scope);
     let request = application.runtime().request(&principal, &scope);
     let key = key.to_owned();
-    let source = request
-        .advanced()
-        .mutate(Edit {
-            key: "numeric".to_owned(),
-            value,
-        })
-        .without_source()
-        .idempotency(&key)
-        .execute_performed::<OutputProgram, Root>(
-            application,
-            ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
+    let contacts_before = application
+        .runtime()
+        .producer_contacts_on_this_thread_for_test();
+    let (source, source_writes) =
+        worth_relational::facade::inspection::observe_maintenance_work(8, || {
+            request
+                .advanced()
+                .mutate(Edit {
+                    key: "numeric".to_owned(),
+                    value,
+                })
+                .without_source()
+                .idempotency(&key)
+                .execute_performed::<OutputProgram, Root>(
+                    application,
+                    ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+        });
     let source = match source {
         WorthQueryApplicationPerformedMutationOutcome::Performed(source) => source,
         WorthQueryApplicationPerformedMutationOutcome::NotPerformed(outcome) => {
@@ -248,6 +263,19 @@ pub(super) fn perform(
         }
     };
     let receipt = source.receipt().clone();
+    let own_effect = commit_evidence::paired_edit(
+        application,
+        &receipt,
+        value,
+        source_writes.published_rows.len() + source_writes.omitted_publications,
+        application
+            .runtime()
+            .producer_contacts_on_this_thread_for_test()
+            - contacts_before,
+    );
+    let delivery_contacts_before = application
+        .runtime()
+        .producer_contacts_on_this_thread_for_test();
     let mut started = source
         .start_required_outputs(
             application,
@@ -260,17 +288,37 @@ pub(super) fn perform(
                 failure.denial()
             )
         });
-    let WorthQueryApplicationProgramOutputProgress::Settled(settled) = started
-        .required_output_mut()
-        .settle(application, &request)
-        .unwrap()
-    else {
+    let (progress, delivery_writes) =
+        worth_relational::facade::inspection::observe_maintenance_work(8, || {
+            started
+                .required_output_mut()
+                .settle(application, &request)
+                .unwrap()
+        });
+    let WorthQueryApplicationProgramOutputProgress::Settled(settled) = progress else {
         panic!("actual scalar producer settles");
     };
+    commit_evidence::paired_delivery(
+        &receipt,
+        settled.root_receipt(),
+        own_effect,
+        delivery_writes.published_rows.len() + delivery_writes.omitted_publications,
+        application
+            .runtime()
+            .producer_contacts_on_this_thread_for_test()
+            - delivery_contacts_before,
+        settled.root_producer_contacts_in_this_demand(),
+    );
     // Initial output absence can require reobservation before current settlement.
     // Its causal assertions consume the actual settled receipt and observation.
     if let Some(contacts) = contacts {
-        assert_eq!(settled.root_producer_contacts_in_this_demand(), contacts);
+        assert_eq!(
+            application
+                .runtime()
+                .producer_contacts_on_this_thread_for_test()
+                - contacts_before,
+            u64::try_from(contacts).expect("fixture contact bound")
+        );
     }
     (
         receipt,

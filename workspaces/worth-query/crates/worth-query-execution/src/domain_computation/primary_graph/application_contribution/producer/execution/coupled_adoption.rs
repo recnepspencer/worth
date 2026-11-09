@@ -1,4 +1,4 @@
-//! A fresh demand may adopt a completed coupled publication without executing it again.
+//! Readmit an actual coupled completion through ordinary publication progression.
 use super::*;
 use crate::domain_computation::primary_graph::{
     application_query::WorthQueryObservedSource, output_lineage::RetainedInputCutoffCandidate,
@@ -8,6 +8,12 @@ use crate::domain_computation::primary_graph::{
 pub(super) struct CoupledAdoption {
     candidate: RetainedInputCutoffCandidate,
     receipt: WorthQueryApplicationCommitReceipt,
+    posture: CompletionPosture,
+}
+enum CompletionPosture {
+    Current,
+    /// Completed historical evidence only; ordinary Ready must reobserve it.
+    OwnEffectContinuation,
 }
 impl CoupledAdoption {
     pub(super) fn select<Schema, Binding, Op, Input, Scope>(
@@ -19,6 +25,7 @@ impl CoupledAdoption {
         source: &WorthQueryObservedSource<SourceQuery<Schema, Binding>>,
         input: &[u8; 32],
         edition: super::super::InstalledProducerEdition,
+        successor_of: Option<[u8; 32]>,
     ) -> Result<Option<Self>, ProducerExecutionStop>
     where
         Schema: ApplicationSchema + 'static,
@@ -41,6 +48,12 @@ impl CoupledAdoption {
         let Some(candidate) = candidate else {
             return Ok(None);
         };
+        // Only a born-stale completion requires a genuine own-effect
+        // successor. Healthy completions retain master's current readmission,
+        // including a required-wave verification's successor request.
+        if successor_of.is_some() && candidate.requires_own_effect_continuation() {
+            return Ok(None);
+        }
         let Some(receipt) = candidate
             .completed_coupled_receipt(source.idempotency_identity(), source.checkpoint_identity())
         else {
@@ -58,8 +71,23 @@ impl CoupledAdoption {
         {
             return Ok(None);
         }
+        if candidate.requires_own_effect_continuation()
+            && receipt
+                .committed_product_publication()
+                .is_selected_at(selected.product().observation())
+        {
+            return Ok(Some(Self {
+                candidate,
+                receipt,
+                posture: CompletionPosture::OwnEffectContinuation,
+            }));
+        }
         match selected.require_current_output_receipts(phase, [&receipt]) {
-            Ok(()) => Ok(Some(Self { candidate, receipt })),
+            Ok(()) => Ok(Some(Self {
+                candidate,
+                receipt,
+                posture: CompletionPosture::Current,
+            })),
             Err(denial) if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded => {
                 Ok(None)
             }
@@ -88,7 +116,26 @@ impl CoupledAdoption {
                 denial(WorthQueryOutputDemandDenialKind::PublicationStale, producer).into(),
             );
         }
-        current.require_current_output_receipts(phase, [&self.receipt])?;
+        match self.posture {
+            CompletionPosture::Current => {
+                current.require_current_output_receipts(phase, [&self.receipt])?
+            }
+            CompletionPosture::OwnEffectContinuation => {
+                // No Current authority is issued. The normal committed Ready
+                // path must observe this receipt's own-effect supersession.
+                if !self
+                    .receipt
+                    .committed_product_publication()
+                    .is_selected_at(current.product().observation())
+                {
+                    return Err(denial(
+                        WorthQueryOutputDemandDenialKind::PublicationStale,
+                        producer,
+                    )
+                    .into());
+                }
+            }
+        }
         let owner = &runtime
             .runtime
             .primary_provider

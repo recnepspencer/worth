@@ -93,6 +93,7 @@ impl Registration<NumericSchema> for Contracts {
     > {
         Ok({
             let schema = super::causal_inspection::declare(schema);
+            let schema = super::deferred_completion::reciprocal::declare(schema);
             let schema = super::operand_edit::declare(schema);
             let schema = super::write_admission::declare(schema);
             let schema = super::aspect_input::declare(schema);

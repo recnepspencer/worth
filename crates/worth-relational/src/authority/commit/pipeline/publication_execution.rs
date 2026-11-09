@@ -22,46 +22,12 @@ pub(crate) struct PublishedCommitExecution {
     patch_position: crate::publication::patch::data::PatchStreamPosition,
     changed_records: Vec<crate::transactions::data::RecordRef>,
     publication_snapshot: crate::snapshots::data::SnapshotHandle,
+    source_effects: Option<crate::mvcc::RelationalCoupledAuthoredSourceEffects>,
     aspect_evaluation_traces: Vec<crate::transactions::data::AspectEvaluationTrace>,
     aspect_emission_traces: Vec<crate::transactions::data::AspectEmissionTrace>,
 }
 
-impl PublishedCommitExecution {
-    #[allow(clippy::type_complexity)]
-    pub(super) fn into_parts(
-        self,
-    ) -> (
-        super::execution_admission::AdmittedCommitState,
-        crate::transactions::data::CommitStructuralSummary,
-        Vec<crate::validation::engine::InvariantExecutionResult>,
-        crate::identity::data::VersionId,
-        crate::transactions::data::CommitCreatedEntityBindings,
-        crate::transactions::data::CommitCreatedRelationBindings,
-        crate::authority::commit::phases::history::ResolvedCommitHistory,
-        std::sync::Arc<crate::history::data::CanonicalCommitEnvelope>,
-        crate::publication::patch::data::PatchStreamPosition,
-        Vec<crate::transactions::data::RecordRef>,
-        crate::snapshots::data::SnapshotHandle,
-        Vec<crate::transactions::data::AspectEvaluationTrace>,
-        Vec<crate::transactions::data::AspectEmissionTrace>,
-    ) {
-        (
-            self.admitted,
-            self.public_structural_summary,
-            self.invariant_executions,
-            self.version_id,
-            self.created_entities,
-            self.created_relations,
-            self.history,
-            self.canonical_commit_envelope,
-            self.patch_position,
-            self.changed_records,
-            self.publication_snapshot,
-            self.aspect_evaluation_traces,
-            self.aspect_emission_traces,
-        )
-    }
-}
+mod published;
 
 /// Required request borrow proves this work belongs to the caller, without retaining it.
 pub(super) fn prepare_commit_publication_execution(
@@ -93,6 +59,15 @@ pub(super) fn prepare_commit_publication_execution(
         source_interpretation,
         lineage_deferred,
     ) = assembled.into_parts();
+    let source_effects =
+        required_output_publication
+            .as_ref()
+            .and_then(|admission| match &admission.publication {
+                crate::mvcc::RequiredOutputPublication::CoupledAuthored { group } => {
+                    Some(group.source_effects.clone())
+                }
+                _ => None,
+            });
     let predecessor_root = std::sync::Arc::clone(selected_branch_state.state().root());
     let publication = {
         let recovered_codec_publication_custody = admitted
@@ -149,6 +124,7 @@ pub(super) fn prepare_commit_publication_execution(
         history,
         publication,
         publication_snapshot,
+        source_effects,
         aspect_evaluation_traces,
         aspect_emission_traces,
         prepared_indexes,
@@ -173,6 +149,7 @@ pub(crate) fn publish_commit_execution(
         history,
         publication,
         publication_snapshot,
+        source_effects,
         aspect_evaluation_traces,
         aspect_emission_traces,
         published_snapshot_slot,
@@ -223,6 +200,7 @@ pub(crate) fn publish_commit_execution(
         patch_position,
         changed_records,
         publication_snapshot,
+        source_effects,
         aspect_evaluation_traces,
         aspect_emission_traces,
     }
@@ -256,6 +234,7 @@ pub(crate) struct PreparedCommitPublicationExecution {
     history: crate::authority::commit::phases::history::ResolvedCommitHistory,
     publication: PreparedPublicationPhase,
     publication_snapshot: crate::snapshots::data::SnapshotHandle,
+    source_effects: Option<crate::mvcc::RelationalCoupledAuthoredSourceEffects>,
     aspect_evaluation_traces: Vec<crate::transactions::data::AspectEvaluationTrace>,
     aspect_emission_traces:
         Vec<super::artifact_execution::preparation::PreparedAspectEmissionTrace>,
@@ -274,6 +253,7 @@ pub(crate) struct PreparedCommitPublicationCompletion {
     history: crate::authority::commit::phases::history::ResolvedCommitHistory,
     publication: PreparedPublicationCompletion,
     publication_snapshot: crate::snapshots::data::SnapshotHandle,
+    source_effects: Option<crate::mvcc::RelationalCoupledAuthoredSourceEffects>,
     aspect_evaluation_traces: Vec<crate::transactions::data::AspectEvaluationTrace>,
     aspect_emission_traces:
         Vec<super::artifact_execution::preparation::PreparedAspectEmissionTrace>,
@@ -292,26 +272,21 @@ impl PreparedCommitPublicationExecution {
     ) -> &crate::history::data::RelationalDescriptiveTouchGraph {
         self.publication.descriptive_touches()
     }
+    pub(crate) fn appendix_adoption(
+        &self,
+    ) -> Option<&crate::history::data::CanonicalRequiredOutputOrigin> {
+        self.admitted.validation_input().appendix_adoption()
+    }
+
+    pub(crate) fn application_unchanged(&self) -> bool {
+        self.publication.application_unchanged
+    }
+
     pub(crate) fn changed_record_count(&self) -> usize {
         self.publication.changed_record_count()
     }
     pub(crate) fn changed_records(&self) -> &[crate::transactions::data::RecordRef] {
         &self.publication.changed_records
-    }
-    pub(crate) fn attach_prepared_indexes(
-        &mut self,
-        prepared: crate::indexes::PreparedCandidateIndexPublication,
-    ) -> Result<(), crate::indexes::data::DerivedIndexMaintenanceDenialKind> {
-        if self.prepared_indexes.is_some() {
-            return Err(
-                crate::indexes::data::DerivedIndexMaintenanceDenialKind::CandidateIndexesAlreadyPrepared,
-            );
-        }
-        if !prepared.matches_root(self.prepared_root()) {
-            return Err(crate::indexes::data::DerivedIndexMaintenanceDenialKind::CommitMismatch);
-        }
-        self.prepared_indexes = Some(prepared);
-        Ok(())
     }
     pub(crate) fn recovered_codec_publication_custody(
         &self,
@@ -319,10 +294,6 @@ impl PreparedCommitPublicationExecution {
         self.admitted
             .validation_input()
             .recovered_codec_publication_custody()
-    }
-
-    pub(crate) fn has_prepared_indexes(&self) -> bool {
-        self.prepared_indexes.is_some()
     }
 
     pub(crate) fn reservation_count(&self) -> usize {
@@ -374,6 +345,7 @@ impl PreparedCommitPublicationExecution {
             history: self.history,
             publication,
             publication_snapshot: self.publication_snapshot,
+            source_effects: self.source_effects,
             aspect_evaluation_traces: self.aspect_evaluation_traces,
             aspect_emission_traces: self.aspect_emission_traces,
             published_snapshot_slot,

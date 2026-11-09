@@ -147,6 +147,54 @@ pub struct WorthQueryInvariantExecutionFailure {
 }
 
 impl WorthQueryInvariantExecutionFailure {
+    pub(crate) fn publication_readmission(
+        cause: worth_relational::facade::mvcc::TransactionCommitError,
+    ) -> Self {
+        Self::native_denied(
+            NativeDenial::PublicationReadmission(Box::new(cause)),
+            "Native publication custody readmission refused",
+        )
+    }
+    pub fn publication_readmission_stop(
+        &self,
+    ) -> Option<&worth_relational::facade::mvcc::TransactionCommitError> {
+        match self.native.as_ref()? {
+            NativeDenial::PublicationReadmission(cause) => Some(cause),
+            _ => None,
+        }
+    }
+    pub(crate) fn publication_cell_registration(
+        cause: worth_relational::facade::mvcc::PublicationCompanionRegistrationStop,
+    ) -> Self {
+        Self::native_denied(
+            NativeDenial::PublicationCellRegistration(cause),
+            "Native source mark-cell registration refused",
+        )
+    }
+    pub fn publication_cell_registration_stop(
+        &self,
+    ) -> Option<&worth_relational::facade::mvcc::PublicationCompanionRegistrationStop> {
+        match self.native.as_ref()? {
+            NativeDenial::PublicationCellRegistration(cause) => Some(cause),
+            _ => None,
+        }
+    }
+    pub(crate) fn publication_companion(
+        cause: worth_relational::facade::mvcc::CompanionPreflightStop,
+    ) -> Self {
+        Self::native_denied(
+            NativeDenial::PublicationCompanion(cause),
+            "Native publication support could not be selected",
+        )
+    }
+    pub fn publication_companion_stop(
+        &self,
+    ) -> Option<worth_relational::facade::mvcc::CompanionPreflightStop> {
+        match self.native.as_ref()? {
+            NativeDenial::PublicationCompanion(cause) => Some(*cause),
+            _ => None,
+        }
+    }
     pub(crate) fn coupled_read_support(
         source: worth_relational::facade::identity::EntityId,
         cause: Option<

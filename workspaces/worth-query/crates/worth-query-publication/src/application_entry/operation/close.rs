@@ -5,6 +5,8 @@ use super::*;
 /// Explains why lawful close could not discharge the retained native cleanup obligations.
 pub enum WorthQueryOperationCloseDenial {
     FreshRequestMismatch,
+    /// Deferred correction custody cannot enter the fixed facade until this issue lands.
+    DeferredFixedCompletionUnsupported { issue: &'static str },
     ManagedCleanup(worth_query_execution::facade::primary_graph::WorthQueryMutationCleanupFailureKind),
     CleanupCapacity,
     NativeObligationRetained,

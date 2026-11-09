@@ -3,7 +3,7 @@ use super::*;
 
 impl SelectedRequiredPublicationHead {
     #[doc(hidden)]
-    pub fn cold_predecessor_for_test(&self) -> Result<RequiredPublicationPredecessor, Stop> {
+    pub fn cold_predecessor_for_test(&self) -> Result<RequiredPublicationPredecessor<'_>, Stop> {
         Self::cold_predecessor(self)
     }
 }

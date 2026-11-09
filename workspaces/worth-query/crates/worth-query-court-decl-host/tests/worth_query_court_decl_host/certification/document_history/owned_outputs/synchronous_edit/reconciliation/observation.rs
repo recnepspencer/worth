@@ -5,6 +5,7 @@ use worth_query_host::facade::domain::OperationReads;
 type Target<E> = WorthQueryInvariantMutationTarget<Schema, E>;
 pub(super) struct Member {
     pub key: String,
+    pub value: u64,
     pub row: Target<FirstOutput>,
     pub source: Target<SecondOutput>,
     pub source_key: String,
@@ -16,6 +17,7 @@ pub(super) struct Retired {
 }
 pub(super) struct Prepared {
     pub model: String,
+    pub count: u64,
     pub members: BTreeMap<u64, Member>,
     pub retired: Vec<Retired>,
 }
@@ -28,9 +30,14 @@ pub(super) fn source_key(model: &str, ordinal: u64) -> String {
 pub(super) fn capture<B: ApplicationMutationBinding<Schema>>(
     reader: &mut DecisionReader<'_, '_, '_, Schema, B>,
     source: &WorthQueryInvariantEntityIdentity<Schema, Model>,
-    next_count: u64,
+    mut next_count: u64,
+    peer_caps: bool,
 ) -> Result<Prepared, HandlerExecutionDenial>
 where
+    ModelMember: OperationReads<B::Operation>,
+    CapNext: OperationReads<B::Operation>,
+    Cap: OperationReads<B::Operation>,
+    super::Member: OperationReads<B::Operation>,
     FirstOf: OperationReads<B::Operation>,
     FirstOutput: OperationReads<B::Operation>,
     ChildOfFirst: OperationReads<B::Operation>,
@@ -40,6 +47,23 @@ where
     SecondOutput: OperationReads<B::Operation>,
 {
     let model = reader.field(source, ModelKey::at("ModelKey"))?.unwrap();
+    // Owned parameters constrain the actual generated count. Raising a cap
+    // above the requested count changes consumed input without changing output.
+    if peer_caps {
+        next_count = next_count.min(peer_caps::minimum(reader)?);
+    }
+    for edge in reader
+        .relations_from(ModelMember::reference(), source)
+        .map_err(HandlerExecutionDenial::new)?
+    {
+        reader
+            .entity(edge.to(), super::Member::reference())
+            .map_err(HandlerExecutionDenial::new)?;
+        let cap = reader
+            .field(edge.to(), MemberValue::at("MemberValue"))?
+            .unwrap();
+        next_count = next_count.min(cap);
+    }
     let prefix = format!("reconciled:member:{model}:");
     let mut members = BTreeMap::new();
     let mut retired = Vec::new();
@@ -53,7 +77,9 @@ where
         let key = reader
             .field(edge.from(), FirstKey::at("FirstKey"))?
             .unwrap();
-        reader.field(edge.from(), FirstValue::at("FirstValue"))?;
+        let value = reader
+            .field(edge.from(), FirstValue::at("FirstValue"))?
+            .unwrap();
         if let Some(ordinal) = key.strip_prefix(&prefix) {
             let ordinal = ordinal
                 .parse::<u64>()
@@ -89,6 +115,7 @@ where
                     ordinal,
                     Member {
                         key,
+                        value,
                         row: reader.mutation_target(edge.from())?,
                         source,
                         source_key,
@@ -107,6 +134,7 @@ where
         }
     }
     Ok(Prepared {
+        count: next_count,
         model,
         members,
         retired,

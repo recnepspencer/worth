@@ -44,6 +44,7 @@ pub(in crate::domain_computation::primary_graph) use selection::VerifiedAppliedP
 mod denial;
 pub(in crate::domain_computation::primary_graph) use denial::ProducerPublicationStale;
 mod managed_cleanup;
+mod publication_observation;
 mod read_close;
 pub use denial::WorthQueryOutputDemandDenial;
 pub use denial::WorthQueryOutputDemandDenialKind;

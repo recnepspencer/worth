@@ -151,6 +151,7 @@ where
             &source.value,
         );
     Ok(CoupledSourceRead::Source(ErasedAppliedProducerSource {
+        lifecycle: super::super::super::WorthQueryProducerLifecyclePosture::Initial,
         predecessor: None,
         profile,
         source: Box::new(source),

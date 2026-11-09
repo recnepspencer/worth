@@ -1,5 +1,9 @@
 //! Pin the selected Query head; native route admission decides whether cold custody is required.
 use super::*;
+pub(crate) mod readmission;
+pub(in crate::domain_computation::primary_graph) use readmission::{
+    ReadmittedRequiredPublication, RequiredPublicationReadmissionStop,
+};
 use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
 use worth_relational::facade::mvcc::RelationalRequiredOutputPublication;
 
@@ -7,18 +11,20 @@ pub struct SelectedRequiredPublicationHead {
     selected: Arc<OnceLock<RecordedOutput>>,
 }
 
-pub struct RequiredPublicationPredecessor {
+pub struct RequiredPublicationPredecessor<'head> {
     pub(in crate::domain_computation::primary_graph) implementation:
         worth_relational::facade::mvcc::RequiredOutputProducingImplementation,
     pub(in crate::domain_computation::primary_graph) correspondence:
         Arc<WorthQueryApplicationOutputCorrespondence>,
-    pub(in crate::domain_computation::primary_graph) producer: String,
+    pub(in crate::domain_computation::primary_graph) producer: &'head str,
     pub(in crate::domain_computation::primary_graph) dependency: [u8; 32],
     pub(in crate::domain_computation::primary_graph) source_epoch: [u8; 32],
 }
 
 impl SelectedRequiredPublicationHead {
-    pub(super) fn retain(selected: &Arc<OnceLock<RecordedOutput>>) -> Result<Self, Stop> {
+    pub(in crate::domain_computation::primary_graph::output_lineage) fn retain(
+        selected: &Arc<OnceLock<RecordedOutput>>,
+    ) -> Result<Self, Stop> {
         let row = selected.get().ok_or(Stop::SelectedSourceMismatch)?;
         let origin = match &row.performed_origin {
             Some(alias) => {
@@ -52,12 +58,16 @@ impl SelectedRequiredPublicationHead {
     pub(in crate::domain_computation::primary_graph) fn warm_publication(
         &self,
     ) -> Option<RelationalRequiredOutputPublication> {
-        self.origin().required_publication.clone()
+        self.selected
+            .get()?
+            .required_publication
+            .clone()
+            .or_else(|| self.origin().required_publication.clone())
     }
 
     pub(in crate::domain_computation::primary_graph) fn cold_predecessor(
         &self,
-    ) -> Result<RequiredPublicationPredecessor, Stop> {
+    ) -> Result<RequiredPublicationPredecessor<'_>, Stop> {
         let origin = self.origin();
         let locator = origin
             .native_prior_checkpoint
@@ -72,7 +82,7 @@ impl SelectedRequiredPublicationHead {
                 .producing_implementation
                 .ok_or(Stop::SelectedSourceMismatch)?,
             correspondence: Arc::clone(&origin.correspondence),
-            producer: locator.producer().to_owned(),
+            producer: locator.producer(),
             dependency,
             source_epoch: locator.source(),
         })

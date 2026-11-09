@@ -134,7 +134,7 @@ impl AcceptedCurrentCandidate {
             _snapshot: snapshot,
             _selected: selected,
             facts,
-            _actor: cleanup,
+            _currentness: cleanup.into(),
         }))
     }
 }

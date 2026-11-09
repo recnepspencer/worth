@@ -32,7 +32,7 @@ impl WorthQueryPrimaryGraphProvider {
         history: crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerCutover<'_>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
-        crate::domain_computation::WorthQueryProviderTerminalDescription,
+        crate::domain_computation::WorthQueryProviderCommitCompletion,
         crate::domain_computation::WorthQueryProviderSessionCommitStop,
     > {
         self.application_attempt_work.observe_prepared_commit();
@@ -50,7 +50,7 @@ pub(super) fn commit_prepared_session(
     session: crate::domain_computation::WorthQueryProviderSessionView<'_>,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<
-    crate::domain_computation::WorthQueryProviderTerminalDescription,
+    crate::domain_computation::WorthQueryProviderCommitCompletion,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
 > {
     super::application_attempt_state::commit_prepared_application(

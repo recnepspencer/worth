@@ -1,4 +1,4 @@
-//! Ordinary fixed-leaf negative completion retains source truth and cleanup custody.
+//! Atomic fixed refusal preserves its real producer cause and cleanup custody.
 pub use super::*;
 pub use worth_query_testkit_document_retention::facade::document_retention_model::retention_entry::{
     assessment_counts, candidate_count, decision_count,
@@ -12,6 +12,7 @@ pub use worth_query_host::facade::{
     application_entry::*,
     primary_graph::{
         WorthQueryConditionalRuntimeInstallationDenialKind, WorthQueryOutputDemandDenialKind,
+        WorthQueryApplicationUncommitted,
     },
 };
 
@@ -52,29 +53,40 @@ pub fn close_original(host: &Host, terminal: Terminal) -> WorthQueryClosedOperat
         .selected_commit()
         .clone();
     let closed = terminal
-        .close(&request)
-        .unwrap_or_else(|(_, denial)| panic!("ordinary negative completion closes: {denial:?}"));
-    let unavailable = closed
-        .output_unavailable()
-        .expect("ordinary close returns genuine negative completion, never settled output");
+        .close_with_evidence(&request)
+        .unwrap_or_else(|(_, denial)| panic!("atomic refusal cleanup closes: {denial:?}"));
+    let Some(WorthQueryApplicationMutationOutcome::Commit(
+        WorthQueryApplicationUncommitted::Denied(refusal),
+    )) = closed.source_outcome()
+    else {
+        panic!("the closed owner preserves the original Native refusal");
+    };
+    let denial = refusal
+        .coupled_producer_denial()
+        .expect("actual synchronous producer cause");
     assert_eq!(
-        unavailable.denial().kind(),
+        denial.kind(),
         WorthQueryOutputDemandDenialKind::ProducerDomainDenied
     );
     assert_eq!(
-        unavailable
-            .source_receipt()
-            .committed_product_publication()
-            .composite_commit(),
-        &saved,
-        "negative completion carries the actual saved source commit"
+        denial.subject(),
+        "worth.query.certification.retention-assessment.producer.v1"
+    );
+    assert_eq!(
+        denial.domain_reason(),
+        Some("A zero-day source has no assessable retention period.")
+    );
+    assert_declared_domain_value(denial);
+    assert!(closed.source_result().is_none());
+    assert!(
+        closed.close_evidence().output_unavailable().is_none(),
+        "atomic refusal never claims that a source was saved"
     );
     assert_eq!(
         request.retain_current_read().unwrap().selected_commit(),
-        &saved,
-        "negative completion and cleanup publish no assessment result"
+        &saved
     );
-    closed
+    closed.into_close_evidence()
 }
 
 pub fn install() -> Host {
@@ -88,80 +100,47 @@ pub fn install() -> Host {
 }
 
 pub fn terminal_owner(host: &Host) -> Terminal {
-    let original = {
-        let scope = request_scope();
-        let principal = authenticate_operator(host.installed_schema(), &scope);
-        host.runtime()
-            .request(&principal, &scope)
-            .mutate(SetRetentionIntent {
-                input: SetRetentionInput {
-                    identity: DOCUMENT_IDENTITY.into(),
-                    retention_days: 0,
-                },
-            })
-            .without_source()
-            .idempotency_owned(0x9176_6600_u64)
-            .unwrap_or_else(|(_, _, denial)| panic!("owning capture: {denial:?}"))
-            .retain_operation::<OrdinaryAssessmentProgram, Action>(host)
-            .unwrap_or_else(|(_, denial)| panic!("ordinary installed leaf: {denial:?}"))
-    };
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.runtime().request(&principal, &scope);
-    let mut original: Operation = match original.advance(&request) {
-        WorthQueryOperationAdvance::Progress {
+    let original = request
+        .mutate(SetRetentionIntent {
+            input: SetRetentionInput {
+                identity: DOCUMENT_IDENTITY.into(),
+                retention_days: 0,
+            },
+        })
+        .without_source()
+        .idempotency_owned(0x9176_6600_u64)
+        .unwrap_or_else(|(_, _, denial)| panic!("owning capture: {denial:?}"))
+        .retain_operation::<OrdinaryAssessmentProgram, Action>(host)
+        .unwrap_or_else(|(_, denial)| panic!("ordinary installed leaf: {denial:?}"));
+    let before = request
+        .retain_current_read()
+        .unwrap()
+        .selected_commit()
+        .clone();
+    let (outcome, work) = worth_relational::facade::inspection::observe_maintenance_work(8, || {
+        original.advance(&request)
+    });
+    assert_eq!(
+        work.published_rows.len() + work.omitted_publications,
+        0,
+        "no Native publication on any branch, including a partial source"
+    );
+    assert_eq!(
+        request.retain_current_read().unwrap().selected_commit(),
+        &before
+    );
+    assert_eq!(request.query(DocumentRetentionRead { identity: DOCUMENT_IDENTITY.into() })
+        .execute().unwrap().rows()[0].retention_days,
+        worth_query_testkit_document_retention::facade::document_retention_model::host::SEED_RETENTION);
+    match outcome {
+        WorthQueryOperationAdvance::Terminal {
             operation,
-            progress,
-        } => {
-            assert!(matches!(
-                progress,
-                WorthQueryOperationProgress::SourcePerformed
-            ));
-            operation
-        }
-        _ => panic!("real source must enter its performed native owner"),
-    };
-    let (returned, denial) = original
-        .close(&request)
-        .err()
-        .expect("pending preparation/partial is not negative completion");
-    assert!(matches!(
-        denial,
-        WorthQueryOperationCloseDenial::NativeObligationRetained
-    ));
-    original = returned;
-    loop {
-        match original.advance(&request) {
-            WorthQueryOperationAdvance::Progress { operation, .. } => original = operation,
-            WorthQueryOperationAdvance::Terminal {
-                operation,
-                denial:
-                    WorthQueryOperationAdvanceDenial::Outputs(
-                        WorthQueryRequiredOutputPreparationDenial::Demand(
-                            WorthQueryApplicationOutputDemandDenial::Demand(denial),
-                        ),
-                    ),
-            } => {
-                assert_eq!(
-                    denial.kind(),
-                    WorthQueryOutputDemandDenialKind::ProducerDomainDenied
-                );
-                assert_eq!(
-                    denial.domain_reason(),
-                    Some("A zero-day source has no assessable retention period.")
-                );
-                assert_declared_domain_value(&denial);
-                assert_eq!(denial.recovery_posture(), worth_query_host::facade::primary_graph::WorthQueryOutputDemandRecoveryPosture::Terminal);
-                return operation;
-            }
-            WorthQueryOperationAdvance::Refused { denial, .. }
-            | WorthQueryOperationAdvance::Terminal { denial, .. } => {
-                panic!("not the actual producer domain refusal: {denial:?}")
-            }
-            WorthQueryOperationAdvance::Settled(_) => {
-                panic!("zero-day retention cannot publish an assessment result")
-            }
-        }
+            denial: WorthQueryOperationAdvanceDenial::NativeTerminal,
+        } => operation,
+        _ => panic!("the synchronous producer refusal must refuse the whole edit"),
     }
 }
 

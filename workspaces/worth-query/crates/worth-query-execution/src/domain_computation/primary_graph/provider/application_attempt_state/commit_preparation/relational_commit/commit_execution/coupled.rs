@@ -44,6 +44,10 @@ pub(super) fn prepare_members(
             before,
             complete.as_ref().expect("coupled complete image"),
             member.meaning.source_scope,
+            owned
+                .commit
+                .as_ref()
+                .and_then(|prepared| prepared.rebase.as_ref()),
         )?;
         support::require_read_support(
             execution,
@@ -172,7 +176,10 @@ fn slot_denial(
         }
         worth_execution::ExecutionRequestArrayDenial::Allocation(cause) => {
             crate::domain_computation::WorthQueryProviderSessionCommitStop::PreEffectDenied(
-                WorthQueryProviderSessionFailure::allocation_denied(cause),
+                WorthQueryProviderSessionFailure::allocation_denied(
+                    cause,
+                    "coupled completion backing",
+                ),
             )
         }
     }
@@ -205,15 +212,19 @@ impl WorthQueryCommittedApplicationSession {
                 );
             }
         }
-        assert!(self.members.iter().all(|member| member
-            .owned
-            .as_ref()
-            .unwrap()
-            .commit
-            .as_ref()
-            .unwrap()
-            .publication
-            .is_some()));
+        assert!(
+            self.members.iter().all(|member| {
+                let prepared = member
+                    .owned
+                    .as_ref()
+                    .expect("actual participant")
+                    .commit
+                    .as_ref()
+                    .expect("prepared participant");
+                prepared.publication.is_some() == prepared.publication_required
+            }),
+            "Native finishes exactly the owned participants; ordinary writers have no origin"
+        );
     }
     pub(super) fn take_member_session(
         &self,

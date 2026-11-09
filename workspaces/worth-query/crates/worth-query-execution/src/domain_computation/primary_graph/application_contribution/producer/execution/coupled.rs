@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
     inspect_coupled_application, register_coupled_application, InspectedCoupledWriter,
 };
 use worth_relational::facade::{
-    mvcc::{RelationalAuthoredCoupledCandidate, RequiredOutputPublication},
+    mvcc::{RelationalAuthoredCoupledCandidate, RelationalCoupledProducerPosture},
     runtime::{RelationalAppliedCandidateReadIdentity, RelationalPinnedRead},
     transactions::WorkerIntentBatch,
 };
@@ -15,7 +15,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     pub(in crate::domain_computation::primary_graph::application_contribution::producer) writer:
         InspectedCoupledWriter<'run>,
     pub(in crate::domain_computation::primary_graph::application_contribution::producer) publication:
-        RequiredOutputPublication,
+        RelationalCoupledProducerPosture,
     pub(in crate::domain_computation::primary_graph::application_contribution::producer) batch:
         WorkerIntentBatch,
     pub(in crate::domain_computation::primary_graph::application_contribution::producer) content:

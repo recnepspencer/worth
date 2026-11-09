@@ -159,7 +159,7 @@ impl WorthQueryProviderSessionLifecycle for SessionProtocolProvider {
         _session: &WorthQueryProviderSessionView<'_>,
         _allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
-        worth_query_execution::facade::domain_computation::WorthQueryProviderTerminalDescription,
+        worth_query_execution::facade::domain_computation::WorthQueryProviderCommitCompletion,
         worth_query_execution::facade::domain_computation::WorthQueryProviderSessionCommitStop,
     > {
         self.calls.commits.fetch_add(1, Ordering::AcqRel);
@@ -168,12 +168,10 @@ impl WorthQueryProviderSessionLifecycle for SessionProtocolProvider {
                 Err(provider_rejection("commit rejected").into())
             }
             SessionFailurePoint::CommitPanic => panic!("commit panic"),
-            _ => Ok(
-                worth_query_execution::facade::domain_computation::WorthQueryProviderTerminalDescription::new(
+            _ => Ok(worth_query_execution::facade::domain_computation::WorthQueryProviderCommitCompletion::Committed(worth_query_execution::facade::domain_computation::WorthQueryProviderTerminalDescription::new(
                     "provider commit",
                 )
-                .expect("fixture description is valid"),
-            ),
+                .expect("fixture description is valid"))),
         }
     }
 

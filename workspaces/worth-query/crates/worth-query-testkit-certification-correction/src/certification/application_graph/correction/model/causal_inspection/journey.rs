@@ -252,27 +252,34 @@ pub(super) fn perform(
     let principal = authenticate_operator(application.installed_schema(), &scope);
     let request = application.runtime().request(&principal, &scope);
     let key = key.to_owned();
-    let source = request
-        .advanced()
-        .mutate(Edit {
-            key: "numeric".to_owned(),
-            value: Value::Primary(value),
-        })
-        .without_source()
-        .idempotency(&key)
-        .execute_performed::<OutputProgram, Root>(
-            application,
-            ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    let source = match source {
-        WorthQueryApplicationPerformedMutationOutcome::Performed(source) => source,
-        WorthQueryApplicationPerformedMutationOutcome::NotPerformed(outcome) => {
-            panic!("ordinary source must perform; actual native outcome: {outcome:?}")
-        }
-        _ => panic!("ordinary source must perform; required-output custody was not ready"),
-    };
-    let (source, producer, read) = settle_source(application, &request, source, 1);
+    let (source, producer, read) = perform_and_settle_source(
+        application,
+        &request,
+        || {
+            let source = request
+                .advanced()
+                .mutate(Edit {
+                    key: "numeric".to_owned(),
+                    value: Value::Primary(value),
+                })
+                .without_source()
+                .idempotency(&key)
+                .execute_performed::<OutputProgram, Root>(
+                    application,
+                    ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap();
+            let source = match source {
+                WorthQueryApplicationPerformedMutationOutcome::Performed(source) => source,
+                WorthQueryApplicationPerformedMutationOutcome::NotPerformed(outcome) => {
+                    panic!("ordinary source must perform; actual native outcome: {outcome:?}")
+                }
+                _ => panic!("ordinary source must perform; required-output custody was not ready"),
+            };
+            source
+        },
+        1,
+    );
     (
         source,
         producer.expect("one actual performed producer"),
@@ -280,10 +287,15 @@ pub(super) fn perform(
     )
 }
 
-pub(super) fn settle_source<Binding>(
+pub(super) fn perform_and_settle_source<Binding>(
     application: &host::OutputHost,
     request: &WorthQueryApplicationRequest<'_, '_, '_, NumericSchema>,
-    source: WorthQueryPerformedApplicationMutation<NumericSchema, Binding, OutputProgram, Root>,
+    perform: impl FnOnce() -> WorthQueryPerformedApplicationMutation<
+        NumericSchema,
+        Binding,
+        OutputProgram,
+        Root,
+    >,
     expected_contacts: usize,
 ) -> (
     WorthQueryApplicationCommitReceipt,
@@ -297,6 +309,11 @@ where
             super::super::output_program::Connection,
         >,
 {
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
+    let before = application
+        .runtime()
+        .producer_contacts_on_this_thread_for_test();
+    let source = perform();
     let receipt = source.receipt().clone();
     let mut started = source
         .start_required_outputs(
@@ -313,8 +330,12 @@ where
         panic!("the installed arithmetic producer settles");
     };
     assert_eq!(
-        settled.root_producer_contacts_in_this_demand(),
-        expected_contacts
+        application
+            .runtime()
+            .producer_contacts_on_this_thread_for_test()
+            - before,
+        u64::try_from(expected_contacts).unwrap(),
+        "actual producer executions across source edit and delivery"
     );
     (
         receipt,

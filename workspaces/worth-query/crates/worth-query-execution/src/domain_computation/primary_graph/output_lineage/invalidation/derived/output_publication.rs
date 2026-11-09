@@ -12,7 +12,7 @@ impl SourceInvalidationOwner {
         let prepared = self.prepare_settlement_at_basis(
             registration,
             RegistrationReadBasis::RetainedReadAllowed,
-            None,
+            RegistrationOutputBasis::Ordinary,
             partition,
         )?;
         let cleanup = prepared

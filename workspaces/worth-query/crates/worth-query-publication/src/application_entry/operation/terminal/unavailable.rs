@@ -1,4 +1,4 @@
-//! Preserve genuine negative completion independently of later cleanup retry.
+//! Reserve deferred fixed completion without manufacturing its postponed ingress.
 use super::*;
 use crate::application_entry::mutation::program_output_continuation::ProgramOutputUnavailableCompletion;
 
@@ -35,29 +35,35 @@ where
         self
     }
 
-    /// Native unavailable evidence survives a refused cleanup or close attempt.
-    pub fn output_unavailable(&self) -> Option<&WorthQueryApplicationProgramOutputUnavailable> {
+    /// Deferred fixed completion requires the postponed ingress in public #120.
+    /// Ordinary synchronous refusal has no saved-source unavailable evidence.
+    pub fn output_unavailable(
+        &self,
+    ) -> Result<
+        Option<&WorthQueryApplicationProgramOutputUnavailable>,
+        WorthQueryOperationCloseDenial,
+    > {
         match &self.output_completion {
-            Some(TerminalOutputCompletion::Unavailable(evidence)) => Some(evidence),
-            _ => None,
+            Some(TerminalOutputCompletion::Unavailable(evidence)) => Ok(Some(evidence)),
+            _ => Err(deferred_ingress_unsupported()),
         }
     }
 
     pub(super) fn complete_unavailable_in_phase(
         &mut self,
-        phase: &WorthQueryAdvancementPhase<'_>,
-        request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+        _phase: &WorthQueryAdvancementPhase<'_>,
+        _request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
     ) -> Result<bool, WorthQueryOperationCloseDenial> {
-        if let Some(TerminalOutputCompletion::Pending(complete)) = &self.output_completion {
-            let FixedState::Outputs(outputs) = &mut self.operation.state else {
-                return Err(WorthQueryOperationCloseDenial::NativeObligationRetained);
-            };
-            let evidence = complete(outputs, phase, &self.operation.runtime, request)
-                .map_err(|denial| WorthQueryOperationCloseDenial::Outputs(Box::new(denial)))?;
-            // The native transition is not replayed if subsequent cleanup refuses.
-            self.output_completion = Some(TerminalOutputCompletion::Unavailable(evidence));
+        if matches!(
+            self.output_completion,
+            Some(TerminalOutputCompletion::Pending(_))
+        ) {
+            return Err(deferred_ingress_unsupported());
         }
-        Ok(self.output_unavailable().is_some())
+        Ok(matches!(
+            self.output_completion,
+            Some(TerminalOutputCompletion::Unavailable(_))
+        ))
     }
 
     pub(super) fn take_output_unavailable(
@@ -67,5 +73,11 @@ where
             Some(TerminalOutputCompletion::Unavailable(evidence)) => Some(evidence),
             _ => None,
         }
+    }
+}
+
+fn deferred_ingress_unsupported() -> WorthQueryOperationCloseDenial {
+    WorthQueryOperationCloseDenial::DeferredFixedCompletionUnsupported {
+        issue: "https://github.com/recnepspencer/worth/issues/120",
     }
 }

@@ -77,7 +77,10 @@ fn allocation_denied(
     denial: worth_execution::ExecutionAllocationDenial,
 ) -> WorthQueryProviderSessionCommitStop {
     WorthQueryProviderSessionCommitStop::PreEffectDenied(
-        crate::domain_computation::WorthQueryProviderSessionFailure::allocation_denied(denial),
+        crate::domain_computation::WorthQueryProviderSessionFailure::allocation_denied(
+            denial,
+            "completed touched-record backing",
+        ),
     )
 }
 

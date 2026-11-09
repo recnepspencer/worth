@@ -8,11 +8,20 @@ pub(in crate::domain_computation::primary_graph) trait CoupledProducerAssembly:
     RelationalAuthoredCoupledProducerAssembly
 {
     fn prepared_members(&self) -> Vec<super::super::CoupledApplicationMember>;
-    fn admit_validated(
+    fn invariant_requirements(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         provider: &WorthQueryPrimaryGraphProvider,
         candidate: &worth_relational::facade::mvcc::ValidatedRelationalProposal,
+    ) -> Result<
+        Vec<worth_query_installation::facade::WorthQueryInstalledInvariantExecutionRequirement>,
+        WorthQueryInvariantExecutionFailure,
+    >;
+    fn admit_validated(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        provider: &WorthQueryPrimaryGraphProvider,
+        receipts: &ClosedCoupledInvariantReceipts<'_>,
     ) -> Result<(), WorthQueryInvariantExecutionFailure>;
 }
 

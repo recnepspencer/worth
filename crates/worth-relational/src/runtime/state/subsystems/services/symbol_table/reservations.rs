@@ -142,6 +142,12 @@ impl RuntimeSymbolTable {
 }
 
 impl PendingSymbolMeanings {
+    /// A reserved dictionary identity is an actual candidate effect even if
+    /// no application record survives in its authoritative patch.
+    pub(crate) fn has_reserved_meanings(&self) -> bool {
+        !self.reserved.is_empty()
+    }
+
     pub(crate) fn reserve_revision_reference(
         &mut self,
         text: &str,

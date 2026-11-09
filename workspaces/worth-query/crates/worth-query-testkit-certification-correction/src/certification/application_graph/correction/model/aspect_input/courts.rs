@@ -192,6 +192,10 @@ pub(super) fn perform(
     let principal = authenticate_operator(application.installed_schema(), &scope);
     let request = application.runtime().request(&principal, &scope);
     let key = key.to_owned();
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
+    let contacts_before = application
+        .runtime()
+        .producer_contacts_on_this_thread_for_test();
     let source = request
         .advanced()
         .mutate(AspectEdit {
@@ -228,8 +232,11 @@ pub(super) fn perform(
         panic!("actual aspect producer settles")
     };
     assert_eq!(
-        settled.root_producer_contacts_in_this_demand(),
-        expected_contacts
+        application
+            .runtime()
+            .producer_contacts_on_this_thread_for_test()
+            - contacts_before,
+        u64::try_from(expected_contacts).expect("fixture contact bound")
     );
     (
         receipt,

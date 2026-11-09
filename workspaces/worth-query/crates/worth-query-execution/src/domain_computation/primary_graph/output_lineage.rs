@@ -13,6 +13,11 @@ pub(in crate::domain_computation) use handler_preparation::ProducerHandlerPrepar
 mod implementation_build;
 pub(in crate::domain_computation::primary_graph) use computation_source::ComputationSourceEvidence;
 pub(in crate::domain_computation::primary_graph) use computation_source::CurrentComputation;
+pub(crate) mod executed_adoption;
+pub(in crate::domain_computation::primary_graph) use input_cutoff::executed_adoption::{
+    publish as publish_executed_adoption, select as select_executed_adoption,
+    ExecutedAdoptionSelection,
+};
 mod current_candidate;
 pub(crate) mod current_output;
 pub(in crate::domain_computation::primary_graph) use current_output::RetainedOutputCurrentnessRead;

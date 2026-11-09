@@ -132,7 +132,11 @@ impl<'runtime> InvariantExecutionRequest<'runtime> {
     }
 
     pub(crate) fn should_execute_anything(&self) -> bool {
-        self.semantic_plan.is_none() || !self.applicable_groups.is_empty()
+        self.proposal_identity
+            .as_ref()
+            .is_some_and(|identity| identity.omitted_publication_appendix())
+            || self.semantic_plan.is_none()
+            || !self.applicable_groups.is_empty()
     }
 
     fn includes_family_groups(
@@ -177,10 +181,20 @@ impl<'runtime> InvariantExecutionRequest<'runtime> {
         registration: &CustomInvariantRegistration,
     ) -> bool {
         let rule_groups = registration.groups();
+        // Omitting the publication appendix also removes its plan groups. The
+        // real custom owner must still establish execution/non-applicability
+        // for this exact proposal; Query cannot manufacture a missing receipt.
+        let omitted_appendix = self
+            .proposal_identity
+            .as_ref()
+            .is_some_and(|identity| identity.omitted_publication_appendix());
         self.checkpoint.includes(registration.execution_point())
-            && self.includes_family_groups(registration.execution_point(), rule_groups)
+            && (omitted_appendix
+                || self.includes_family_groups(registration.execution_point(), rule_groups))
             && self.runtime_policy.should_run(rule_groups, self.checkpoint)
-            && (self.applicable_groups.is_empty() || self.applicable_groups.intersects(rule_groups))
+            && (omitted_appendix
+                || self.applicable_groups.is_empty()
+                || self.applicable_groups.intersects(rule_groups))
             && admission::for_failure_effect(
                 &self.runtime_policy,
                 registration.execution_point(),

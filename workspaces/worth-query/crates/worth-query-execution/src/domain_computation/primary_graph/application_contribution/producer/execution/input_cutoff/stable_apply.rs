@@ -42,7 +42,7 @@ where
             _ => denial(WorthQueryOutputDemandDenialKind::PublicationStale, "producer input cutoff source changed during preparation"),
         })?;
     let displaced = publication.displaced_settlement();
-    let published = publication.publish::<Operation<Schema, Binding>, _, _, _, _>(operation, observation, &runtime.runtime.product_runtime.owner.observation_port(), registration, execution).map_err(|stop| match stop {
+    let published = publication.publish(&operation.retain_admitted_request(), operation.operation(), observation, &runtime.runtime.product_runtime.owner.observation_port(), registration, execution).map_err(|stop| match stop {
         crate::domain_computation::primary_graph::output_lineage::StablePublicationStop::Demand(stop) => ProducerExecutionStop::ExecutionStopped(stop),
         crate::domain_computation::primary_graph::output_lineage::StablePublicationStop::RequestAuthority(stop) => super::denial::request_authority_denied(Binding::IDENTITY, stop),
     })?;

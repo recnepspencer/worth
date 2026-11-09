@@ -1,6 +1,8 @@
 //! Its own installed schema: model, owned member and two derived output entities.
 use super::*;
 use worth_query_decl::facade::application_schema::fragment::*;
+mod cap;
+pub use cap::*;
 mod records;
 pub use records::*;
 mod joined;
@@ -103,7 +105,9 @@ fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
     let schema = synchronous_edit::reconciliation::declare(schema);
-    let schema = family::decision_write::declare(family::decision_input::declare(schema));
+    let schema = family::ordinary_input::declare(family::decision_write::declare(
+        family::decision_input::declare(schema),
+    ));
     let schema = family::diamond::declare(predecessor::declare(
         family::predecessor_family::declare(schema),
     ));

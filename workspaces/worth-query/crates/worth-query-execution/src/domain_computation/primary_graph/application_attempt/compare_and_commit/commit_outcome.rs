@@ -91,6 +91,9 @@ pub enum WorthQueryApplicationCommitOutcome {
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
     /// Nothing was written. The cause says why.
     NoEffect(WorthQueryApplicationNoEffect),
+    /// Actual producer execution retained its current output with fresh Query support;
+    /// no Native commit or receipt was created.
+    OutputAdopted(crate::domain_computation::primary_graph::output_lineage::executed_adoption::WorthQueryApplicationOutputAdoption),
     /// This attempt committed; the receipt says what landed.
     Committed(super::WorthQueryApplicationCommitReceipt),
     /// The idempotency key had already committed the same intent; the receipt is
@@ -126,6 +129,7 @@ impl WorthQueryApplicationCommitOutcome {
             | Self::ProductStale(_)
             | Self::ProductUnpublished(_)
             | Self::NoEffect(_)
+            | Self::OutputAdopted(_)
             | Self::Stale(_)
             | Self::Cancelled
             | Self::TimedOut
@@ -150,6 +154,7 @@ impl WorthQueryApplicationCommitOutcome {
             Self::CleanupRequired(cleanup) => Uncommitted::CleanupRequired(cleanup),
             Self::ProductStale(stale) => Uncommitted::ProductStale(stale),
             Self::ProductUnpublished(unpublished) => Uncommitted::ProductUnpublished(unpublished),
+            Self::OutputAdopted(adoption) => Uncommitted::OutputAdopted(adoption),
             Self::NoEffect(no_effect) => Uncommitted::NoEffect(no_effect),
             Self::Stale(stale) => Uncommitted::Stale(stale),
             Self::Cancelled => Uncommitted::Cancelled,
@@ -172,6 +177,7 @@ pub enum WorthQueryApplicationUncommitted {
     ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
     NoEffect(WorthQueryApplicationNoEffect),
+    OutputAdopted(crate::domain_computation::primary_graph::output_lineage::executed_adoption::WorthQueryApplicationOutputAdoption),
     Stale(WorthQueryApplicationStaleAttempt),
     Cancelled,
     TimedOut,
@@ -188,6 +194,7 @@ impl From<WorthQueryApplicationUncommitted> for WorthQueryApplicationCommitOutco
             Uncommitted::CleanupRequired(cleanup) => Self::CleanupRequired(cleanup),
             Uncommitted::ProductStale(stale) => Self::ProductStale(stale),
             Uncommitted::ProductUnpublished(unpublished) => Self::ProductUnpublished(unpublished),
+            Uncommitted::OutputAdopted(adoption) => Self::OutputAdopted(adoption),
             Uncommitted::NoEffect(no_effect) => Self::NoEffect(no_effect),
             Uncommitted::Stale(stale) => Self::Stale(stale),
             Uncommitted::Cancelled => Self::Cancelled,

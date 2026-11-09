@@ -22,6 +22,7 @@ use worth_relational::facade::{
 #[derive(Clone, Eq, PartialEq)]
 pub struct WorthQueryApplicationCommittedChanges {
     envelope: Arc<CanonicalCommitEnvelope>,
+    source_effects: Option<worth_relational::facade::mvcc::RelationalCoupledAuthoredSourceEffects>,
 }
 
 impl WorthQueryApplicationCommittedChanges {
@@ -35,6 +36,7 @@ impl WorthQueryApplicationCommittedChanges {
     pub(in crate::domain_computation::primary_graph) fn from_commit(commit: &CommitResult) -> Self {
         Self {
             envelope: Arc::clone(&commit.publication().envelope),
+            source_effects: commit.publication().authored_source_effects().cloned(),
         }
     }
 

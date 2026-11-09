@@ -73,6 +73,20 @@ reconciliation_child_phase!(
     ChildValue,
     ChildOfFirst
 );
+pub(super) fn index_key(source: &str, value: u64) -> String {
+    format!("reconciled-index:{source}:{value}")
+}
+pub struct Indices<C>(std::marker::PhantomData<fn() -> C>);
+impl<C: ApplicationMutationOutputContract<Schema>> WorthQueryApplicationOutputRoleFamily
+    for Indices<C>
+{
+    type Schema = Schema;
+    type Contract = C;
+    type Entity = ChildOutput;
+    const PREFIX: &'static str = "index.";
+    const POSTURES: ApplicationMutationOutputPostureSet = ApplicationMutationOutputPostureSet::ALL;
+    const MINIMUM: usize = 0;
+}
 pub type Roles = WorthQueryRequiredFeaturePair<
     Schema,
     program::Child,
@@ -94,12 +108,15 @@ pub fn contracts(
 }
 pub fn install(
     setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
+    indices: bool,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
     setup.handler::<initial::Binding, _>(initial::Handler {
         derive: |v| v * 100,
+        indices,
     })?;
     setup.handler::<preserve::Binding, _>(preserve::Handler {
         derive: |v| v * 100,
+        indices,
     })?;
     setup.producer::<initial::Producer>(initial::Provider)?;
     setup.producer::<preserve::Producer>(preserve::Provider)?;

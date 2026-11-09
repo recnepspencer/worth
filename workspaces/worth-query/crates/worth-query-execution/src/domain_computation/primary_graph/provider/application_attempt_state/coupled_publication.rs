@@ -6,14 +6,14 @@ use crate::domain_computation::{
 };
 use worth_relational::facade::{
     mvcc::{
-        RelationalRequiredOutputPublication, RequiredOutputPublication,
-        RequiredOutputPublicationMeaning,
+        RelationalCoupledProducerPosture, RelationalRequiredOutputPublication,
+        RequiredOutputPublication, RequiredOutputPublicationMeaning,
     },
     transactions::WorkerIntentBatch,
 };
 
 pub(in crate::domain_computation::primary_graph) struct CoupledWriterCommands {
-    pub(in crate::domain_computation::primary_graph) publication: RequiredOutputPublication,
+    pub(in crate::domain_computation::primary_graph) publication: RelationalCoupledProducerPosture,
     pub(in crate::domain_computation::primary_graph) batch: WorkerIntentBatch,
     pub(in crate::domain_computation::primary_graph) content:
         worth_relational::facade::content::RelationalContentAttachments,
@@ -46,7 +46,7 @@ impl WorthQueryPrimaryGraphProvider {
         let dependency = idempotency
             .producer_dependency_identity()
             .ok_or_else(unavailable)?;
-        let (roles, _) = super::super::native_publication_roles::collect(
+        let (roles, all_created) = super::super::native_publication_roles::collect(
             &self.graph.layout,
             attempt.native_publication_roles(),
         )
@@ -75,22 +75,13 @@ impl WorthQueryPrimaryGraphProvider {
         let batch = staged.batch().clone();
         let content = staged.content_attachments().clone();
         drop(attempts);
-        let running = publisher.owner.admit_required_output(producer, dependency);
-        let publication = match predecessor {
-            Some(predecessor) => RequiredOutputPublication::Preserve {
-                admission: publisher
-                    .owner
-                    .admit_required_output_succession(running, predecessor.authority())
-                    .ok_or_else(unavailable)?,
-                predecessor,
-                meaning,
-                roles,
-            },
-            None => {
-                // Native's own route owner admits the exact installed initial
-                // meaning. No attempts lock is held while borrowing Native.
-                let absence = self
-                    .graph
+        use super::super::publication_posture::{self, ProducerPublicationPosture as Posture};
+        let absence = if predecessor.is_some() {
+            None
+        } else {
+            // No attempts lock is held while the existing Native owner admits absence.
+            Some(
+                self.graph
                     .with_runtime(execution, |native| {
                         native.readmit_required_output_route_absence(
                             execution,
@@ -100,13 +91,36 @@ impl WorthQueryPrimaryGraphProvider {
                         )
                     })
                     .map_err(super::super::invariant_execution_failure::map_validation_failure)?
-                    .ok_or_else(unavailable)?;
-                RequiredOutputPublication::Birth {
+                    .ok_or_else(unavailable)?,
+            )
+        };
+        let running = publisher.owner.admit_required_output(producer, dependency);
+        let publication = match publication_posture::select(absence, all_created) {
+            Posture::Ordinary(absence) => RelationalCoupledProducerPosture::Ordinary {
+                admission: running,
+                absence,
+                meaning,
+                roles,
+            },
+            Posture::Birth(absence) => {
+                RelationalCoupledProducerPosture::Publication(RequiredOutputPublication::Birth {
                     admission: running,
                     absence: Some(absence),
                     meaning,
                     roles,
-                }
+                })
+            }
+            Posture::Preserve => {
+                let predecessor = predecessor.ok_or_else(unavailable)?;
+                RelationalCoupledProducerPosture::Publication(RequiredOutputPublication::Preserve {
+                    admission: publisher
+                        .owner
+                        .admit_required_output_succession(running, predecessor.authority())
+                        .ok_or_else(unavailable)?,
+                    predecessor,
+                    meaning,
+                    roles,
+                })
             }
         };
         Ok(CoupledWriterCommands {

@@ -19,6 +19,9 @@ fn exercise(worker: bool) {
         2,
         None,
         world::Configuration {
+            reconciliation_indices: false,
+            reconciliation_peer_caps: false,
+            reconciliation_emission: false,
             second_derivation: Some(reject_child),
         },
     );

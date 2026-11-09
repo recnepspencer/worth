@@ -256,11 +256,12 @@ impl WorthQueryProviderSessionFailure {
 
     pub(in crate::domain_computation) fn allocation_denied(
         denial: worth_execution::ExecutionAllocationDenial,
+        subject: &'static str,
     ) -> Self {
         let mut failure = Self::new(
             WorthQueryProviderSessionDenialKind::AllocationDenied,
             WorthQueryProviderSessionProtocolStage::Commit,
-            format!("completed touched-record backing allocation denied: {denial:?}"),
+            format!("{subject} allocation denied: {denial:?}"),
             WorthQueryProviderSessionProtocolCounters::default(),
         );
         failure.allocation = Some(denial);

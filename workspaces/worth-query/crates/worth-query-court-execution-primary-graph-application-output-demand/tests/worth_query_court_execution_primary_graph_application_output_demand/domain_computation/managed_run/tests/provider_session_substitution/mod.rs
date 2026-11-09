@@ -99,7 +99,7 @@ impl WorthQueryProviderSessionLifecycle for TokenSubstitutionProvider {
         _session: &WorthQueryProviderSessionView<'_>,
         _allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
-        worth_query_execution::facade::domain_computation::WorthQueryProviderTerminalDescription,
+        worth_query_execution::facade::domain_computation::WorthQueryProviderCommitCompletion,
         worth_query_execution::facade::domain_computation::WorthQueryProviderSessionCommitStop,
     > {
         unreachable!("a substituted token must fail before commit")

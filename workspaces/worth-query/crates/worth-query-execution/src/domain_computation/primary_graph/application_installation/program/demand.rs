@@ -20,6 +20,7 @@ mod handle;
 mod history;
 pub(in crate::domain_computation::primary_graph) use history::HistoryAdmittedChildSource;
 mod history_group;
+mod original_result;
 mod read_close;
 mod root_completion;
 pub(in crate::domain_computation::primary_graph) use root_completion::OriginalProgramRootCompletion;
@@ -64,6 +65,7 @@ where
     Demand: WorthQueryApplicationOutputDemand<Schema>,
 {
     admitted: WorthQueryAdmittedOutputDemand<Schema, Family<Schema, Demand>>,
+    original_result: original_result::OriginalProgramResult<SourceQuery<Schema, Demand>>,
     pub(in crate::domain_computation::primary_graph) original_root_completion:
         Option<std::sync::Arc<OriginalProgramRootCompletion>>,
     target_feature: TypeId,
@@ -145,6 +147,7 @@ where
             >(execution, source, limits)
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
+                original_result: original_result::OriginalProgramResult::Awaiting,
                 original_root_completion: None,
                 target_feature: TypeId::of::<
                     <RootConnectionRef<Schema, Root> as ApplicationConnectionShape<Schema>>::TargetFeature,
@@ -327,6 +330,7 @@ where
             )
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
+                original_result: original_result::OriginalProgramResult::Awaiting,
                 original_root_completion: None,
                 target_feature: TypeId::of::<<RootConnectionRef<Schema, Root> as ApplicationConnectionShape<Schema>>::TargetFeature>(),
                 artifact,
@@ -377,6 +381,7 @@ where
             >(execution, source, limits, prepared)
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
+                original_result: original_result::OriginalProgramResult::Awaiting,
                 original_root_completion: None,
                 target_feature: TypeId::of::<<RootConnectionRef<Schema, Root> as ApplicationConnectionShape<Schema>>::TargetFeature>(),
                 artifact,

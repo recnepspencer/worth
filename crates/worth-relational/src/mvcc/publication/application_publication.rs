@@ -1,4 +1,9 @@
+mod publication_appendix;
 use crate::transactions::data::TransactionCommitError;
+pub use publication_appendix::{
+    RelationalPublicationAdoptionRequest, RelationalPublicationAppendix,
+    RelationalPublicationBodySelection,
+};
 mod historical_selection;
 pub(crate) use historical_selection::require_graph_coverage;
 pub use historical_selection::RelationalHistoricalOutputSelection;
@@ -19,7 +24,8 @@ pub(crate) use coupled_assembly::BoundAuthoredCoupling;
 pub use coupled_assembly::{
     RelationalAuthoredCoupledCandidate, RelationalAuthoredCoupledProducerAssembly,
     RelationalAuthoredCoupledTransaction, RelationalCoupledAssemblyFailure,
-    RelationalCoupledAuthoredPublication,
+    RelationalCoupledAuthoredPublication, RelationalCoupledAuthoredSourceEffects,
+    RelationalCoupledContribution, RelationalCoupledProducerPosture,
 };
 pub(crate) use coupled_owners::CoupledSource;
 pub use coupled_owners::{RelationalAuthoredCoupledOwners, RelationalDeclaredCoupledOwner};

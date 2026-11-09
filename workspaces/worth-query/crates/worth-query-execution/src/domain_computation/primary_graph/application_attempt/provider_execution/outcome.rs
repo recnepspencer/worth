@@ -11,6 +11,7 @@ pub enum WorthQueryProviderProgressionOutcome {
     ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
     NoEffect(WorthQueryApplicationNoEffect),
+    OutputAdopted(crate::domain_computation::primary_graph::output_lineage::executed_adoption::PendingExecutedOutputAdoption),
     Committed(WorthQueryPendingApplicationCommitReceipt),
     AlreadyCommitted(WorthQueryApplicationCommitReceipt),
     Stale(WorthQueryApplicationStaleAttempt),
@@ -28,6 +29,9 @@ impl WorthQueryProviderProgressionOutcome {
         completion: WorthQueryMutationGraphWorkCompletion,
     ) -> Option<WorthQueryApplicationCommitOutcome> {
         match self {
+            Self::OutputAdopted(adoption) => adoption
+                .complete(completion)
+                .map(WorthQueryApplicationCommitOutcome::OutputAdopted),
             Self::Committed(receipt) => Some(WorthQueryApplicationCommitOutcome::Committed(
                 receipt.complete(completion)?,
             )),
@@ -59,7 +63,9 @@ impl WorthQueryProviderProgressionOutcome {
             Self::Aborted => Uncommitted::Aborted,
             Self::Deferred(value) => Uncommitted::Deferred(value),
             Self::Indeterminate(value) => Uncommitted::Indeterminate(value),
-            published @ (Self::Committed(_) | Self::AlreadyCommitted(_)) => return Err(published),
+            published @ (Self::OutputAdopted(_)
+            | Self::Committed(_)
+            | Self::AlreadyCommitted(_)) => return Err(published),
         })
     }
 }

@@ -38,7 +38,11 @@ pub fn optional_presence_and_nested_values_are_original_output_changes() {
         .unwrap();
     assert_eq!(report.reason(), CausalInspectionReason::ChangedResult);
     report.close();
-    let outcome = request
+    drop(journey::perform_and_settle_source(
+        &application,
+        &request,
+        || {
+            let outcome = request
         .advanced()
         .mutate(OtherEdit {
             key: "numeric".into(),
@@ -48,10 +52,14 @@ pub fn optional_presence_and_nested_values_are_original_output_changes() {
         .idempotency(&"matrix-reorder-nested".to_owned())
         .execute_performed::<super::super::super::super::output_program::OutputProgram, super::super::super::super::output_program::Root>(&application, ExecutionAllocationPolicy::SystemAllocation)
         .unwrap();
-    let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
-        panic!("the real reorder source must perform");
-    };
-    drop(journey::settle_source(&application, &request, performed, 1));
+            let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome
+            else {
+                panic!("the real reorder source must perform");
+            };
+            performed
+        },
+        1,
+    ));
     let (nested, rows) = read!(application, &principal, &scope, Read, true, true);
     assert_eq!(rows[0].operand, None);
     assert_eq!(rows[0].references, vec![(17, 0), (33, 67)]);

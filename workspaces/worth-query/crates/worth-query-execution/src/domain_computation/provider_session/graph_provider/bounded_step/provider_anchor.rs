@@ -55,7 +55,7 @@ pub(super) trait WorthQueryErasedProviderSessionLifecycle: Send + Sync {
         session: &WorthQueryProviderSessionView<'_>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
-        crate::domain_computation::WorthQueryProviderTerminalDescription,
+        crate::domain_computation::WorthQueryProviderCommitCompletion,
         crate::domain_computation::WorthQueryProviderSessionCommitStop,
     >;
 
@@ -120,7 +120,7 @@ impl<P: WorthQueryProviderSessionLifecycle> WorthQueryErasedProviderSessionLifec
         session: &WorthQueryProviderSessionView<'_>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
-        crate::domain_computation::WorthQueryProviderTerminalDescription,
+        crate::domain_computation::WorthQueryProviderCommitCompletion,
         crate::domain_computation::WorthQueryProviderSessionCommitStop,
     > {
         self.commit_prepared_session(session, allocation_policy)
@@ -316,7 +316,7 @@ impl WorthQueryGraphProviderAnchor {
         session: &WorthQueryProviderSessionView<'_>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
-        crate::domain_computation::WorthQueryProviderTerminalDescription,
+        crate::domain_computation::WorthQueryProviderCommitCompletion,
         crate::domain_computation::WorthQueryProviderSessionCommitStop,
     > {
         let lifecycle = self

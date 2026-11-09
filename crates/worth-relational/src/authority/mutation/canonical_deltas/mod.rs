@@ -1,3 +1,5 @@
+mod disjoint_publication;
+pub(crate) use disjoint_publication::compose as compose_disjoint_publication;
 mod aspect_trace_projection;
 mod changed_authoritative_patch;
 mod data;

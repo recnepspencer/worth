@@ -58,6 +58,12 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphAp
 }
 
 impl WorthQueryPrimaryGraphApplicationAttempt {
+    pub(in crate::domain_computation::primary_graph) fn receipt_appendix(
+        &self,
+    ) -> Option<crate::domain_computation::primary_graph::provider::ReceiptAppendix> {
+        self.effects.receipt_appendix()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn content_attachments(
         &self,
     ) -> &worth_relational::facade::content::RelationalContentAttachments {

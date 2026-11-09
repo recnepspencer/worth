@@ -1,5 +1,7 @@
 //! Shared optional predecessor fixture program is declared at its real owner.
 macro_rules! producer_operation {
+    (OrdinaryInputInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read OrdinaryInputInitial, $entity, $key, $value, $of); };
+    (OrdinaryInputPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read OrdinaryInputPreserve, $entity, $key, $value, $of); };
     (DecisionInputInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read DecisionInputInitial, $entity, $key, $value, $of); };
     (DecisionInputPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read DecisionInputPreserve, $entity, $key, $value, $of); };
     (DecisionWriteInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_write DecisionWriteInitial, $entity, $key, $value, $of); };
@@ -24,6 +26,8 @@ macro_rules! producer_operation {
     };
 }
 macro_rules! producer_decision_dependency {
+    (OrdinaryInputInitial, $reader:ident) => { producer_decision_dependency!(@member_read $reader) };
+    (OrdinaryInputPreserve, $reader:ident) => { producer_decision_dependency!(@member_read $reader) };
     (DecisionInputInitial, $reader:ident) => { producer_decision_dependency!(@member_read $reader) };
     (DecisionInputPreserve, $reader:ident) => { producer_decision_dependency!(@member_read $reader) };
     (@member_read $reader:ident) => {{
@@ -108,8 +112,9 @@ macro_rules! phase {
                 type Schema = Schema; type Contract = Outputs; type Entity = $entity; type Action = $action;
                 type Cardinality = WorthQueryExactlyOneOutput; const NAME: &'static str = "derived";
             }
+            ordinary_carrier_contract!($operation);
             impl ApplicationMutationOutputContract<Schema> for Outputs {
-                const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = &[<Output as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR];
+                const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = producer_role_descriptors!($operation);
                 const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] = &[];
             }
             pub struct Decision { source: WorthQueryInvariantMutationTarget<Schema, SourceEntity>, output: Option<WorthQueryInvariantMutationTarget<Schema, $entity>>, member_value: u64, member_target: Option<WorthQueryInvariantMutationTarget<Schema, Member>> }
@@ -226,6 +231,7 @@ macro_rules! phase {
                             }
                         };
                         writer.$writer::<Output>(&output)?;
+                        ordinary_carrier_output!($operation,writer,source);
                         Ok::<_, WorthQueryApplicationAttemptDenial>(())
                     })();
                     match result { Ok(()) => HandlerResult::Completed(()), Err(error) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error)) }

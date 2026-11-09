@@ -87,11 +87,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
             }
             super::super::execution::CoupledSourceRead::Source(source) => source,
         };
-        let lifecycle = if source.predecessor.is_some() {
-            WorthQueryProducerLifecyclePosture::Preserve
-        } else {
-            WorthQueryProducerLifecyclePosture::Initial
-        };
+        let lifecycle = source.lifecycle;
         let producer = registry.declared_coupled_producer(demand, source.profile, lifecycle)?;
         let pin = candidate.pin_source(execution)?;
         let prepared = producer.executor.prepare_coupled_writer(
@@ -114,15 +110,9 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
         } = prepared;
         // Keep the session even when Native requests an ordinary symbol retry;
         // the next actual assembly round closes it before rerunning the handler.
-        let meaning = match &publication {
-            worth_relational::facade::mvcc::RequiredOutputPublication::Preserve {
-                meaning, ..
-            }
-            | worth_relational::facade::mvcc::RequiredOutputPublication::Birth {
-                meaning, ..
-            } => meaning,
-            _ => unreachable!("installed coupled preparation issues a producing origin"),
-        };
+        let meaning = publication
+            .producing_meaning()
+            .expect("installed producer participant");
         let source_scope = meaning.source_scope;
         self.writers.borrow_mut().push(CoupledWriter {
             producer: std::sync::Arc::clone(producer),

@@ -1,5 +1,6 @@
 //! A real writer receives only its current predecessor or genuine route absence.
 use super::*;
+mod ordinary;
 use crate::{
     history::data::CanonicalRequiredOutputOrigin,
     publication::data::AuthoredRetirementRefusal as Cause,
@@ -8,7 +9,7 @@ use crate::{
 pub(super) fn admit(
     candidate: &RelationalAuthoredCoupledCandidate<'_>,
     execution: &ExecutionRequest<'_, '_>,
-    publication: &RequiredOutputPublication,
+    publication: &RelationalCoupledProducerPosture,
 ) -> Result<Option<Arc<CanonicalRequiredOutputOrigin>>, TransactionCommitError> {
     let binding = candidate.binding;
     let meaning = publication
@@ -20,6 +21,23 @@ pub(super) fn admit(
         return Err(foreign());
     }
     let ordinary = matches!(binding.owners.source, super::super::CoupledSource::Edit(_));
+    if let RelationalCoupledProducerPosture::Ordinary {
+        admission,
+        absence,
+        meaning,
+        roles,
+    } = publication
+    {
+        ordinary::require(candidate, execution, admission, absence, meaning, roles)?;
+        execution
+            .run_native_with_checkpoint(|context| {
+                part::require_unseen_route(context, &candidate.parts, meaning)
+            })
+            .map_err(custody::execution_stop)?
+            .0?;
+        return Ok(None);
+    }
+    let publication = publication.owned().expect("remaining owned participant");
     let prior = match publication {
         RequiredOutputPublication::Preserve { predecessor, .. } => {
             if !meaning.same_route(&predecessor.origin.meaning)

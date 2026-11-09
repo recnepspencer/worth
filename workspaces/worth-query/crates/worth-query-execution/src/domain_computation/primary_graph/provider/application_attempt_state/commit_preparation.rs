@@ -61,7 +61,7 @@ pub(in crate::domain_computation::primary_graph::provider) fn commit_prepared_ap
     history: Option<crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerCutover<'_>>,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<
-    crate::domain_computation::WorthQueryProviderTerminalDescription,
+    crate::domain_computation::WorthQueryProviderCommitCompletion,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
 > {
     let prepared =

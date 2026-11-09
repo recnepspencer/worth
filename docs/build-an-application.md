@@ -3591,18 +3591,29 @@ runtime close refuses with `RuntimeKeepaliveRetained`. Successful operation
 close releases that operation's keepalive; refusal returns the complete owner.
 Dropping an owner abandons custody and does not perform successful cleanup.
 
-For an eligible Required fixed leaf, a producer's terminal domain refusal can
-close through the same ordinary terminal owner. `terminal.close(&fresh_request)`
-delegates native negative completion before cleanup; a refusal returns the same
-owner. If native finish succeeds but cleanup refuses, inspect
-`terminal.output_unavailable()` and retry close with fresh authority. Successful
-close carries that actual evidence in `closed.output_unavailable()`: the original
-source was saved and no current output was produced. This is neither successful
-required-output settlement nor permission to publish a positive result. Native
-eligibility still refuses unresolved preparation, partial work, already settled
-roots, dependent trees and discovered aggregates. No source or producer is
-reexecuted to close. The executable ordinary fixed-leaf court is
-[`terminal_unavailable.rs`](../workspaces/worth-query/crates/worth-query-testkit-certification-application-graph/src/certification/application_graph/producer_predicate_checkpoint/ordinary_source/terminal_unavailable.rs).
+A synchronous typed fixed edit commits its source and required outputs together.
+A producer's terminal domain refusal refuses that whole edit: the source and
+head remain unchanged, and `close_with_evidence` retains the real typed producer
+cause while discharging cleanup. It creates no saved-source unavailable claim.
+The executable [atomic fixed-leaf court](../workspaces/worth-query/crates/worth-query-testkit-certification-application-graph/src/certification/application_graph/producer_predicate_checkpoint/ordinary_source/terminal_unavailable.rs)
+checks that boundary.
+
+Deferred correction ingress into the fixed owner is postponed in
+[public #120](https://github.com/recnepspencer/worth/issues/120).
+`terminal.output_unavailable()` returns the typed
+`DeferredFixedCompletionUnsupported` refusal naming that issue; a pending fixed
+unavailable close preserves its owner with the same refusal. This reserved
+shape grants no deferred source custody.
+
+A genuine deferred correction's direct required leaf preparation can still use
+`handle.finish_unavailable(&application, &fresh_request)`. Native admits only a
+cleanup-free terminal domain refusal before output publication. Its evidence
+means the original source was saved and no current output was produced; it is
+not positive settlement. Unexecuted, partial, settled, multiply retained,
+dependent and discovered custody remain ineligible. No source or producer is
+reexecuted to complete unavailability. The [direct deferred-correction courts](../workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/deferred_completion/courts.rs)
+exercise the actual recorded inverse, producer value, current authority and
+Native completion.
 
 Capture the original meaning once. Supply a fresh authenticated ordinary request
 for every `advance`, delivery and close. Native admission checks current authority
@@ -4903,8 +4914,8 @@ retained settlement before asking native release again. Neither release nor
 close reruns the producer or publishes a current result.
 Physical release never erases unresolved producer recovery. Dropping an owner is
 abandonment, not a successful close. Performed-source required and
-discovered aggregate completion rules, including fixed-leaf unavailable
-completion, are unchanged.
+discovered aggregate completion rules, including direct deferred-leaf unavailable
+completion (deferred fixed ingress is postponed in [#120](https://github.com/recnepspencer/worth/issues/120)), are unchanged.
 
 #### Observe a member without progressing its producer
 

@@ -1,6 +1,34 @@
 //! Admit canonical-role/closure separation before the native World transition.
 use super::*;
 impl WorthQueryApplicationOutputCorrespondenceCandidate {
+    /// Resolve the local creates of an actually applied ordinary participant.
+    /// This carries no publication ownership and retains every ordinary role.
+    pub(in crate::domain_computation::primary_graph) fn admit_ordinary_part(
+        &mut self,
+        actual: &worth_relational::facade::mvcc::RelationalCoupledContribution<'_>,
+    ) -> Result<
+        (),
+        (
+            super::super::WorthQueryApplicationOutputProjectionDenial,
+            String,
+        ),
+    > {
+        let members = actual
+            .ordinary_output_members()
+            .expect("Native proved an ordinary participant");
+        self.admit_primary_publication(members)?;
+        for (role, _, _, entity) in actual
+            .ordinary_output_members()
+            .expect("same ordinary proof")
+        {
+            self.roles
+                .get_mut(role)
+                .expect("admitted exact role set")
+                .entity = EntityReference::Existing(entity);
+        }
+        Ok(())
+    }
+
     pub(in crate::domain_computation::primary_graph) fn admit_primary_publication<'a>(
         &mut self,
         members: impl ExactSizeIterator<

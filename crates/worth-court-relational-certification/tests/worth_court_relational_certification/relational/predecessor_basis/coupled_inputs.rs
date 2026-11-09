@@ -57,22 +57,24 @@ impl RelationalAuthoredCoupledProducerAssembly for Echo<'_> {
         meaning.source_epoch = [2; 32];
         candidate.append_publication(
             execution,
-            RequiredOutputPublication::Preserve {
-                admission,
-                predecessor: self.prior.clone(),
-                meaning,
-                roles: self
-                    .prior
-                    .members()
-                    .map(|(role, entity, _, id)| RequiredOutputRoleTarget {
-                        role: role.into(),
-                        entity_name: entity.into(),
-                        kind: KindId(1),
-                        posture: RequiredOutputRolePosture::Preserve,
-                        target: EntityReference::Existing(id),
-                    })
-                    .collect(),
-            },
+            worth_relational::facade::mvcc::RelationalCoupledProducerPosture::Publication(
+                RequiredOutputPublication::Preserve {
+                    admission,
+                    predecessor: self.prior.clone(),
+                    meaning,
+                    roles: self
+                        .prior
+                        .members()
+                        .map(|(role, entity, _, id)| RequiredOutputRoleTarget {
+                            role: role.into(),
+                            entity_name: entity.into(),
+                            kind: KindId(1),
+                            posture: RequiredOutputRolePosture::Preserve,
+                            target: EntityReference::Existing(id),
+                        })
+                        .collect(),
+                },
+            ),
             &RelationalContentAttachments::default(),
             vec![
                 WorkerIntentBatch::new("echo-applied-source").push(MutationIntent::Entity(

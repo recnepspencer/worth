@@ -98,6 +98,7 @@ where
             &observed_source,
             identities.input_identity(),
             edition,
+            successor_of,
         )?
     {
         let fresh = runtime
@@ -368,6 +369,9 @@ where
                 return Ok(ProducerExecutionOutcome::Unpublished(
                     recovery_input.unpublished(idempotency, original),
                 ));
+            }
+            if let WorthQueryApplicationCommitOutcome::OutputAdopted(adoption) = outcome {
+                return Ok(ProducerExecutionOutcome::Stable(adoption.into_publication()));
             }
             commit_receipt(Binding::IDENTITY, outcome)
                 .map(ProducerExecutionOutcome::Committed)

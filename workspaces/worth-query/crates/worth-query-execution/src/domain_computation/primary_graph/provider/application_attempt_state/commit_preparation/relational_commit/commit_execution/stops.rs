@@ -188,7 +188,8 @@ fn publication_failure(
         Failure::RetentionIdentityExhausted => {
             crate::domain_computation::WorthQueryProviderSessionDenialKind::RetentionIdentityExhausted
         }
-        Failure::SnapshotCountOverflow
+        Failure::OutputAdoptionRequired { .. }
+        | Failure::SnapshotCountOverflow
         | Failure::PreparedRootMismatch
         | Failure::PreparedBasisDescriptor(_)
         | Failure::NextBasisAdmission(_)
@@ -265,6 +266,7 @@ pub(super) fn source_rebase_preparation_stop(
         }
         return Stop::PreEffectDenied(WorthQueryProviderSessionFailure::allocation_denied(
             allocation,
+            "source fact rebase",
         ));
     }
     Stop::PreEffectDenied(WorthQueryProviderSessionFailure::new(
@@ -273,4 +275,17 @@ pub(super) fn source_rebase_preparation_stop(
         format!("source rebase preparation refused before publication: {cause:?}"),
         crate::domain_computation::WorthQueryProviderSessionProtocolCounters::default(),
     ))
+}
+
+pub(super) fn readmission_allocation(
+    cause: worth_execution::ExecutionAllocationDenial,
+) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
+    match cause.classify() {
+        worth_execution::ExecutionAllocationDenialClass::Request(stop) =>
+            crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_stop(stop.into(), None),
+        worth_execution::ExecutionAllocationDenialClass::Physical(_) =>
+            crate::domain_computation::WorthQueryProviderSessionCommitStop::PreEffectDenied(
+                crate::domain_computation::WorthQueryProviderSessionFailure::allocation_denied(
+                    cause, "current publication role readmission")),
+    }
 }

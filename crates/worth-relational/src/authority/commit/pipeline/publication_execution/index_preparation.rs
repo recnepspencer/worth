@@ -74,3 +74,24 @@ impl super::PreparedCommitPublicationExecution {
         )
     }
 }
+
+impl super::PreparedCommitPublicationExecution {
+    pub(crate) fn attach_prepared_indexes(
+        &mut self,
+        prepared: crate::indexes::PreparedCandidateIndexPublication,
+    ) -> Result<(), crate::indexes::data::DerivedIndexMaintenanceDenialKind> {
+        if self.prepared_indexes.is_some() {
+            return Err(
+                crate::indexes::data::DerivedIndexMaintenanceDenialKind::CandidateIndexesAlreadyPrepared,
+            );
+        }
+        if !prepared.matches_root(self.prepared_root()) {
+            return Err(crate::indexes::data::DerivedIndexMaintenanceDenialKind::CommitMismatch);
+        }
+        self.prepared_indexes = Some(prepared);
+        Ok(())
+    }
+    pub(crate) fn has_prepared_indexes(&self) -> bool {
+        self.prepared_indexes.is_some()
+    }
+}

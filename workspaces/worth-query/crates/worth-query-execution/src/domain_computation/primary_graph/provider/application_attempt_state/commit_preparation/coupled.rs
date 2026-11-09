@@ -6,6 +6,7 @@ use worth_execution::{ExecutionArray, ExecutionArrayBuilder};
 use worth_relational::facade::{mvcc::ValidatedRelationalProposal, transactions::RecordRef};
 
 pub(in crate::domain_computation::primary_graph::provider) struct CoupledCommitPreparation {
+    pub(in crate::domain_computation::primary_graph::provider) publication_required: bool,
     pub(in crate::domain_computation::primary_graph::provider) publication:
         Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
     pub(in crate::domain_computation::primary_graph::provider) records: ExecutionArray<RecordRef>,
@@ -41,12 +42,25 @@ pub(super) fn prepare(
         let exact = candidate
             .coupled_contribution_records(&member.producer, &member.meaning)
             .expect("Query checked the exact Native participant routes");
-        let mut records = ExecutionArrayBuilder::allocate(exact.len(), policy)
-            .map_err(WorthQueryProviderSessionFailure::allocation_denied)?;
+        let publication_required = exact.publication_required();
+        if !publication_required {
+            owned.attempt.admit_ordinary_part(&exact).map_err(|(cause, role)| {
+                WorthQueryProviderSessionFailure::new(
+                    crate::domain_computation::WorthQueryProviderSessionDenialKind::OutputCorrespondenceMismatch { cause },
+                    WorthQueryProviderSessionProtocolStage::Commit,
+                    format!("ordinary applied output correspondence differs at {role}"), Default::default(),
+                )
+            })?;
+        }
+        let exact = exact.records();
+        let mut records =
+            ExecutionArrayBuilder::allocate(exact.len(), policy).map_err(|cause| {
+                WorthQueryProviderSessionFailure::allocation_denied(cause, "coupled member backing")
+            })?;
         for record in exact {
-            records
-                .push(record.clone())
-                .map_err(WorthQueryProviderSessionFailure::allocation_denied)?;
+            records.push(record.clone()).map_err(|cause| {
+                WorthQueryProviderSessionFailure::allocation_denied(cause, "coupled member backing")
+            })?;
         }
         let touched =
             PreparedTouchedRecords::from_records(exact, policy).map_err(|stop| match stop {
@@ -62,8 +76,8 @@ pub(super) fn prepare(
         )?
         .into_parts();
         owned.commit = Some(CoupledCommitPreparation {
-            publication: None,
-            records: records.seal().map_err(WorthQueryProviderSessionFailure::allocation_denied)?,
+            publication: None, publication_required,
+            records: records.seal().map_err(|cause| WorthQueryProviderSessionFailure::allocation_denied(cause, "coupled member backing"))?,
             touched: Some(touched), rebase: Some(owned.attempt.take_source_fact_rebase().with_predecessor(candidate.output_observation_predecessor(execution, &member.producer, &owned.attempt.idempotency().producer_dependency_identity().expect("actual coupled producer dependency")).map_err(|cause| crate::domain_computation::primary_graph::provider::session_commit::provider_failure(WorthQueryProviderSessionProtocolStage::Commit, "producer predecessor classification refused").with_native_preparation_error(cause))?)), retained_preimage, preimage_work,
             required: None, slot: None, witness: None,
         });

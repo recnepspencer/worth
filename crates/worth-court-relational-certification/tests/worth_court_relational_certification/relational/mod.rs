@@ -18,3 +18,5 @@ mod restoration_header;
 mod predecessor_basis;
 
 mod checkpoint_versions;
+
+mod coupled_producers;

@@ -125,7 +125,9 @@ pub(super) fn retain(
     let memory = execution
         .allocation_policy()
         .reserve_memory(rows_bytes as u64)
-        .map_err(WorthQueryProviderSessionFailure::allocation_denied)?;
+        .map_err(|cause| {
+            WorthQueryProviderSessionFailure::allocation_denied(cause, "retained relation preimage")
+        })?;
     let mut rows = Vec::new();
     rows.try_reserve_exact(footprint.relations().len())
         .map_err(|_| {

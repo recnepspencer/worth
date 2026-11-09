@@ -1,3 +1,4 @@
+mod coupled_field_restaging;
 mod effective_records;
 mod staged_mutations;
 pub use staged_mutations::RelationalTransactionStagedMutations;

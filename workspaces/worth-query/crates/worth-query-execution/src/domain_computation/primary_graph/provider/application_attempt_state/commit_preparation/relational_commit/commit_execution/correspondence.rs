@@ -21,6 +21,19 @@ pub(super) fn admit(
     };
     if let Some(prepared) = prepared_group_publications {
         for member in members {
+            if !member
+                .owned
+                .as_ref()
+                .expect("actual participant")
+                .commit
+                .as_ref()
+                .expect("prepared participant")
+                .publication_required
+            {
+                // Native allocation correspondence was admitted from the real
+                // ordinary part before candidate preparation, with no origin.
+                continue;
+            }
             member
                 .owned
                 .as_mut()

@@ -7,11 +7,17 @@ pub type Document<'a> = WorthQueryApplicationHistoryDocument<'a, Schema, History
 #[derive(Clone, Copy)]
 pub struct Configuration {
     pub second_derivation: Option<fn(u64) -> u64>,
+    pub reconciliation_indices: bool,
+    pub reconciliation_peer_caps: bool,
+    pub reconciliation_emission: bool,
 }
 impl Default for Configuration {
     fn default() -> Self {
         Self {
             second_derivation: None,
+            reconciliation_indices: false,
+            reconciliation_peer_caps: false,
+            reconciliation_emission: false,
         }
     }
 }
@@ -23,6 +29,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         synchronous_edit::reconciliation::contracts(contracts)?;
         family::decision_write::contracts(contracts)?;
         family::decision_input::contracts(contracts)?;
+        family::ordinary_input::contracts(contracts)?;
         family::diamond::contracts(contracts)?;
         family::predecessor_family::contracts(contracts)?;
         from_first::contracts(contracts)?;
@@ -39,7 +46,12 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         configuration: Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        synchronous_edit::reconciliation::install(setup)?;
+        synchronous_edit::reconciliation::install(
+            setup,
+            configuration.reconciliation_indices,
+            configuration.reconciliation_peer_caps,
+            configuration.reconciliation_emission,
+        )?;
         setup.handler::<authored_member::retire::Binding, _>(authored_member::retire::Handler)?;
         setup.handler::<authored_member::restore::Binding, _>(authored_member::restore::Handler)?;
         setup.handler::<edit::Binding, _>(edit::Handler)?;
@@ -55,6 +67,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         setup.handler::<member_delete::Binding, _>(member_delete::Handler)?;
         family::decision_write::install(setup)?;
         family::decision_input::install(setup)?;
+        family::ordinary_input::install(setup)?;
         family::diamond::install(setup)?;
         family::predecessor_family::install(setup)?;
         from_first::install(setup)?;
@@ -159,9 +172,31 @@ where
             .unwrap(),
         schema,
         (configuration,),
-        ApplicationBuildIdentity::parse("91830000-0000-0000-0000-000000005356").unwrap(),
+        ApplicationBuildIdentity::parse(
+            match (
+                configuration.reconciliation_indices,
+                configuration.reconciliation_peer_caps,
+                configuration.reconciliation_emission,
+            ) {
+                (false, false, false) => "91830000-0000-0000-0000-000000005356",
+                (true, false, false) => "91830000-0000-0000-0000-000000005358",
+                (false, true, false) => "91830000-0000-0000-0000-000000005359",
+                (false, false, true) => "91830000-0000-0000-0000-00000000535a",
+                (true, true, false) => "91830000-0000-0000-0000-00000000535b",
+                (true, false, true) => "91830000-0000-0000-0000-00000000535c",
+                (false, true, true) => "91830000-0000-0000-0000-00000000535d",
+                (true, true, true) => "91830000-0000-0000-0000-00000000535e",
+            },
+        )
+        .unwrap(),
         limits,
-        |_, graph, installed| seed(graph, installed, initial_value, other_value),
+        |_, graph, installed| {
+            seed(graph, installed, initial_value, other_value)?;
+            if configuration.reconciliation_peer_caps {
+                synchronous_edit::reconciliation::peer_caps::seed(graph)?;
+            }
+            Ok(())
+        },
     )
     .unwrap()
 }
@@ -254,6 +289,9 @@ where
         program,
         schema,
         (Configuration {
+            reconciliation_indices: false,
+            reconciliation_peer_caps: false,
+            reconciliation_emission: false,
             second_derivation: if changed {
                 Some(|value| value + 2000)
             } else {
