@@ -99,6 +99,8 @@ Fresh Cargo artifacts are retained as `reused_artifacts` for compiler-input vali
 
 Input fingerprints follow Cargo's unit scope: trailing `cargo rustc` arguments belong to its selected roots, and incremental mode is carried by each unit's resolved profile. The complete invocation contract is still checked before execution. An incremental override without resolved profile evidence refuses rather than discarding an unknown input.
 
+The snapshot warning court scans every tracked `.stderr`. `snapshot_warning_residuals.json` names the four unchanged UI residuals filed as #117. Unlisted warnings fail; a listed file that disappears or becomes warning-free also fails, requiring its residual entry to be removed. The manifest does not filter discovery or compiler diagnostics.
+
 * `source_scan.py` and `ratchet.source_violations` refuse Cargo, cargo_metadata
   and trybuild calls in tests, courts and testkits. This check belongs here
   pending the coordinator's replacement boundary checker; this task does not
