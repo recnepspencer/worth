@@ -43,6 +43,8 @@
 //! the operation it commits under, and is the only constructor a host names.
 
 mod captured_input;
+mod recorded_input;
+pub use recorded_input::ApplicationRetainedInputDenial;
 mod encoder;
 mod input;
 #[cfg(test)]
