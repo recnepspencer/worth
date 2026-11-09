@@ -1,7 +1,10 @@
 //! Borrowed law evidence from the original native refusal, never a second verdict.
-use worth_relational::facade::identity::KindId;
+use worth_relational::facade::config::CascadeDeletePolicy;
+use worth_relational::facade::identity::{EntityId, KindId};
 use worth_relational::facade::schema::ContractId;
-use worth_relational::facade::schema::{SymmetryMode, UniquenessScope};
+use worth_relational::facade::schema::{
+    EndpointDeletionIntegrityMode, SymmetryMode, UniquenessScope,
+};
 use worth_relational::facade::transactions::{
     ConflictClass, EntityReference, InvariantViolationFields, RelationCardinalityBoundary,
     TransactionCommitError,
@@ -23,6 +26,15 @@ pub enum WorthQueryRelationLawDenial<'a> {
         boundary: RelationCardinalityBoundary,
         count: usize,
         limit: u64,
+    },
+    /// A deleted endpoint still has live incident edges under this deletion policy.
+    EndpointDeletion {
+        contract_id: &'a ContractId,
+        relation_kind_id: KindId,
+        entity_id: &'a EntityId,
+        remaining_relation_endpoint_count: usize,
+        mode: EndpointDeletionIntegrityMode,
+        cascade_delete_policy: Option<CascadeDeletePolicy>,
     },
     /// The relation's endpoint policy forbids this original self edge.
     SelfEdge {
@@ -168,7 +180,33 @@ impl<'a> WorthQueryRelationLawDenial<'a> {
                 source,
                 target,
             }),
-            _ => None,
+            InvariantViolationFields::RelationEndpointDeletionIntegrity {
+                contract_id,
+                relation_kind_id,
+                entity_id,
+                remaining_relation_endpoint_count,
+                mode,
+                cascade_delete_policy,
+            } => Some(Self::EndpointDeletion {
+                contract_id,
+                relation_kind_id: *relation_kind_id,
+                entity_id,
+                remaining_relation_endpoint_count: *remaining_relation_endpoint_count,
+                mode: *mode,
+                cascade_delete_policy: *cascade_delete_policy,
+            }),
+            InvariantViolationFields::None
+            | InvariantViolationFields::MergedIntentLimit { .. }
+            | InvariantViolationFields::SnapshotEntityLimit { .. }
+            | InvariantViolationFields::UniqueEntityField { .. }
+            | InvariantViolationFields::SidecarConsistency { .. }
+            | InvariantViolationFields::RelationEndpointKindMismatch { .. }
+            | InvariantViolationFields::RelationEndpointKindCrossContext { .. }
+            | InvariantViolationFields::RelationCardinalityPair { .. }
+            | InvariantViolationFields::StorageInconsistency { .. }
+            | InvariantViolationFields::CustomInvariantFailure { .. }
+            | InvariantViolationFields::CustomInvariantViolation { .. }
+            | InvariantViolationFields::DerivedRelationGraph { .. } => None,
         }
     }
 

@@ -7212,9 +7212,13 @@ child collections. Native parent-occurrence custody supplies the projected field
 entity coordinates and caller-owned DTOs cannot issue them. Complete projected
 candidate influence includes every declared descendant, even for rejected candidates.
 Original work, memory and cancellation controls apply to acquisition, comparison
-and nested Entry content. Child predicates and OptionalAspect Source fields remain
-unsupported. Existing one-hop Entry content retains its v1 bytes; the compiled
-nested profile uses framed v2 content, including currently empty children.
+and nested Entry content. OptionalAspect Source fields are supported at the root
+and in nested shapes, using ordinary `optional_aspect_field` projection and row
+reading. Native distinguishes absent aspects, absent optional children and present
+fields. Child predicates remain unsupported. Entry content includes the present
+field-slot roster, so aspect addition and removal affect comparison. One-hop
+entries use v1 framing; the compiled nested profile uses v2 framing, including
+currently empty children.
 See the executable [nested shape](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/nested/shape.rs)
 and [ordinary integration courts](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/nested/court.rs).
 This qualifies the finite nested Source profile, not arbitrary payload traversal,
@@ -7372,8 +7376,12 @@ The Source must use `SameAdmittedScope` with `NoParameters`, public disclosure,
 physical scalar fields and supported stored/reverse/composed/union membership
 paths. Direct endpoint result relations may project scalar fields from the
 related entity. Their actual relation occurrences preserve cardinality: two
-physical links to the same endpoint are still two results. Child predicates,
-deeper nested shapes, optional parent-aspect result fields and child-field ordering remain unsupported; ordering may
+physical links to the same endpoint are still two results. Finite nesting of
+these direct relations, including root to child to grandchild, is supported.
+Optional parent-aspect result fields are supported at every level through
+`optional_aspect_field`; optional children use `optional_field`. Aspect addition
+and removal change Source rows even when all surviving values stay equal.
+Child predicates and child-field ordering remain unsupported; ordering may
 refer to root fields. Unsupported shapes return `UnsupportedInvariantSource`
 during installation.
 Source result limits remain enforced; unavailable material is not an empty set.

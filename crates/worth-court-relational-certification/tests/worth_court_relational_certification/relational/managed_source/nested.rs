@@ -17,7 +17,7 @@ fn field(
     read: &PreparedManagedIndexProjectionRead,
     occurrence: &ManagedIndexSourceProjectionOccurrence,
 ) -> Result<Option<String>, DerivedRelationReadDenial> {
-    rows.with_projected_field(read, occurrence, 0, |value| match value {
+    rows.with_projected_field(read, occurrence, 0, |value| match value.value() {
         Some(AspectValue::String(worth_foundational::facade::InternedString::Raw(value))) => {
             Some(value.clone())
         }
