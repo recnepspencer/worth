@@ -79,7 +79,7 @@ impl<S: Scenario> OperationHandler<S, RetireBinding<S>> for Handler {
                 }
                 targets.push(reader.mutation_target(&entity)?);
             }
-            let body = if heterogeneous::active::<S>() {
+            let body = if <S::Heterogeneous as heterogeneous::Profile>::RETIRES_BODY {
                 let body = reader
                     .resolve_entity(heterogeneous::BodyKey::at("BodyKey"), 10000 + input.id)?;
                 reader.entity(&body, heterogeneous::Body::reference())?;

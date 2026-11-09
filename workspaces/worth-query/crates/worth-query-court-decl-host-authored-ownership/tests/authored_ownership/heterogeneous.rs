@@ -1,6 +1,7 @@
 //! Two genuinely different authored kinds share one Native co-anchor inverse.
 use super::{lifecycle::*, *};
 mod courts;
+mod optional;
 pub mod query;
 pub struct BodyCreated<S>(PhantomData<fn() -> S>);
 pub struct BodyRetired<S>(PhantomData<fn() -> S>);
@@ -9,7 +10,7 @@ impl<S: Scenario> WorthQueryApplicationOutputRole for BodyCreated<S> {
     type Contract = CreatedOutputs;
     type Entity = Body;
     type Action = WorthQueryCreateOutput;
-    type Cardinality = WorthQueryExactlyOneOutput;
+    type Cardinality = <S::Heterogeneous as Profile>::Births;
     const NAME: &'static str = "authored-body-created";
 }
 impl<S: Scenario> WorthQueryApplicationOutputRole for BodyRetired<S> {
@@ -17,7 +18,7 @@ impl<S: Scenario> WorthQueryApplicationOutputRole for BodyRetired<S> {
     type Contract = RetiredOutputs;
     type Entity = Body;
     type Action = WorthQueryRetireOutput;
-    type Cardinality = WorthQueryExactlyOneOutput;
+    type Cardinality = <S::Heterogeneous as Profile>::Births;
     const NAME: &'static str = "authored-body-retired";
 }
 pub struct BodyFamily;
@@ -57,8 +58,14 @@ pub fn declare<S: Scenario>(
 }
 pub struct Absent;
 pub struct Present<const DECLARED: bool>;
+/// A creation bears its body only when asked, and a retirement leaves bodies alone.
+pub struct Optional;
 pub trait Profile: Sized + 'static {
     const PRESENT: bool = false;
+    /// A retirement finds and retires the body its creation bore.
+    const RETIRES_BODY: bool = Self::PRESENT;
+    /// How many bodies one creation bears.
+    type Births: WorthQueryApplicationOutputCardinality;
     fn created_identity<S: Scenario>(
         identity: ApplicationAuthoredCorrection<S>,
     ) -> ApplicationAuthoredCorrection<S> {
@@ -95,9 +102,37 @@ pub trait Profile: Sized + 'static {
         Ok(None)
     }
 }
-impl Profile for Absent {}
+impl Profile for Absent {
+    type Births = WorthQueryExactlyOneOutput;
+}
+impl Profile for Optional {
+    const PRESENT: bool = true;
+    const RETIRES_BODY: bool = false;
+    type Births = WorthQueryAtMostOneOutput;
+    fn created_identity<S: Scenario>(
+        identity: ApplicationAuthoredCorrection<S>,
+    ) -> ApplicationAuthoredCorrection<S> {
+        identity.co_retire_created::<correction::UndoCreate<S>, BodyFamily, BodyCreated<S>, BodyRetired<S>>()
+    }
+    fn retired_identity<S: Scenario>(
+        identity: ApplicationAuthoredCorrection<S>,
+    ) -> ApplicationAuthoredCorrection<S> {
+        identity.co_restore_retired::<correction::UndoRetire<S>, BodyFamily, BodyRetired<S>, BodyCreated<S>>()
+    }
+    fn create<S: Scenario>(
+        input: &Create,
+        scope: &WorthQueryApplicationEffectEntity<S, Node<S>>,
+        writer: &mut CandidateWriter<'_, S, CreateBinding<S>>,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        if input.create_co {
+            Present::<true>::create(input, scope, writer)?;
+        }
+        Ok(())
+    }
+}
 impl<const DECLARED: bool> Profile for Present<DECLARED> {
     const PRESENT: bool = true;
+    type Births = WorthQueryExactlyOneOutput;
     fn created_identity<S: Scenario>(
         identity: ApplicationAuthoredCorrection<S>,
     ) -> ApplicationAuthoredCorrection<S> {

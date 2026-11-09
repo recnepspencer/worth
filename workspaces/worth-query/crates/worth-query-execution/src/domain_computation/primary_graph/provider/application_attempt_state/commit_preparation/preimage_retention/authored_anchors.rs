@@ -21,14 +21,12 @@ pub(super) fn select(
             declaration.is_some_and(|identity| identity.live_member_owner().is_some());
         let anchor = prepared.authored_retirement_anchor();
         let co = prepared.authored_retirement_co_anchors();
+        // A declared co-anchor selects by record even when none was prepared:
+        // an optional one that is absent leaves the primary anchor alone, and
+        // the demand's other kinds retain nothing.
         let anchored = anchor.is_some()
             && (!co.is_empty()
-                || declaration.is_some_and(|identity| {
-                    identity
-                        .co_anchors()
-                        .iter()
-                        .any(|member| member.member_owner().is_some())
-                }));
+                || declaration.is_some_and(|identity| !identity.co_anchors().is_empty()));
         if !own_changes && !anchored {
             return Ok(None);
         }
