@@ -15,6 +15,8 @@ enum Shape {
     AfterProducer,
     /// The admitted stage rewrites the record the prefix already wrote.
     Rewrite,
+    /// The admitted stage links the carrier to the source.
+    Link,
 }
 
 struct Stages<'a> {
@@ -34,6 +36,23 @@ impl Stages<'_> {
             &RelationalContentAttachments::default(),
             if self.shape == Shape::Rewrite {
                 vec![update(self.world.source, "stage-source")]
+            } else if self.shape == Shape::Link {
+                vec![
+                    WorkerIntentBatch::new("stage-link").push(MutationIntent::Create(
+                        CreateIntent::Relation(RelationSpec {
+                            partition_id: PartitionId::main(),
+                            kind_id: KindId(2),
+                            client_key: ClientKey::raw("stage-link"),
+                            source: EntityReference::Existing(self.world.carrier),
+                            target: EntityReference::Existing(self.world.source),
+                            fields: string_aspect_field_patch([(
+                                aspect_key("label"),
+                                field_key("label"),
+                                "stage-link",
+                            )]),
+                        }),
+                    )),
+                ]
             } else {
                 vec![update(self.world.carrier, "stage-carrier")
                     .push(create_intent("stage-created"))]
@@ -74,7 +93,7 @@ impl RelationalAuthoredCoupledProducerAssembly for Stages<'_> {
                 }
             }
             Shape::Foreign => self.stage(execution, candidate, self.world.source)?,
-            Shape::Rewrite => self.stage(execution, candidate, self.world.carrier)?,
+            Shape::Rewrite | Shape::Link => self.stage(execution, candidate, self.world.carrier)?,
             Shape::Missing => {}
             Shape::AfterProducer => {
                 self.producer(execution, candidate)?;
@@ -373,4 +392,30 @@ fn a_stage_sources_owned_route_is_an_admitted_writer_of_the_envelope() {
         1
     );
     release_test_commit_snapshot(&world.runtime, &result);
+}
+
+#[test]
+fn a_stage_relation_is_part_of_the_authored_relation_footprint() {
+    // Authored relation preimage capture reads only the authored writer's
+    // relation changes; a stage's link is the authored writer's, not a
+    // producer's, so the proposal's authored footprint must carry it.
+    let host = request();
+    let execution = &ExecutionRequest::serial(&host);
+    let world = World::new(execution, true, true);
+    let parts = Stages {
+        world: &world,
+        shape: Shape::Link,
+    };
+    let proposal = world
+        .prepare_stages(execution, &[world.carrier], &parts)
+        .unwrap();
+    let footprint = proposal
+        .relation_mutation_footprint(execution, &[KindId(2)], &[], &[])
+        .unwrap();
+    let links = footprint
+        .relations()
+        .iter()
+        .map(|relation| (relation.before(), relation.after()))
+        .collect::<Vec<_>>();
+    assert_eq!(links, [(None, Some((world.carrier, world.source)))]);
 }
