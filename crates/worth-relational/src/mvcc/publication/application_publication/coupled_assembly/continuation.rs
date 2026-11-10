@@ -109,8 +109,12 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 meaning.source_scope,
             ));
         }
-        self.continuation
-            .issue(self.identity, index, self.parts.len(), meaning.source_scope)
+        self.continuation.issue(
+            self.identity,
+            index,
+            self.applied_parts(),
+            meaning.source_scope,
+        )
     }
 }
 

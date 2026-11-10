@@ -12,6 +12,7 @@ use crate::{
 use std::{collections::BTreeSet, sync::Arc};
 use worth_execution::ExecutionRequest;
 mod edit;
+mod stages;
 
 /// Canonical predecessor facts, issued only after the shared closure selection.
 /// A submitted connection roster cannot construct or enlarge this owner set.
@@ -23,6 +24,9 @@ pub struct RelationalAuthoredCoupledOwners {
     pub(crate) owners: Vec<RelationalRequiredOutputPublication>,
     pub(crate) current: Vec<crate::history::data::SelectedOutputPublication>,
     pub(crate) deferred_edges: BTreeSet<RelationId>,
+    /// Edit sources of authored stages 2..k, in envelope order. Empty for a
+    /// single authored prefix, a retirement and a restoration.
+    pub(crate) stages: Vec<EntityId>,
 }
 
 /// The authored prefix has an explicit meaning. Ordinary edits cannot supply
@@ -226,6 +230,7 @@ impl RelationalRuntime {
                     owners,
                     current,
                     deferred_edges,
+                    stages: Vec::new(),
                 })
             })
             .map_err(custody::execution_stop)?

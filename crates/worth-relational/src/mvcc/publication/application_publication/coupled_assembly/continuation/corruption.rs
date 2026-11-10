@@ -19,9 +19,9 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             source: token.source,
         };
         self.continuation
-            .consume(token, self.identity, self.parts.len())?;
+            .consume(token, self.identity, self.applied_parts())?;
         self.continuation
-            .consume(replay, self.identity, self.parts.len())?;
+            .consume(replay, self.identity, self.applied_parts())?;
         Ok(())
     }
 

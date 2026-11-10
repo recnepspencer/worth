@@ -2,7 +2,8 @@
 use super::*;
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 use worth_relational::facade::{
-    inspection::observe_maintenance_work, publication::AuthoredRetirementRefusal as Cause,
+    inspection::observe_maintenance_work,
+    publication::{AuthoredRetirementRefusal as Cause, CoupledFreshWriter},
     transactions::RecordRef,
 };
 fn refuses(worker: bool, authored: bool) {
@@ -73,13 +74,13 @@ fn refuses(worker: bool, authored: bool) {
     };
     assert_eq!(actual_owner, owner);
     if authored {
-        assert_eq!(creator, None);
-        assert_eq!(writer, 0);
+        assert_eq!(creator, CoupledFreshWriter::Authored);
+        assert_eq!(writer, CoupledFreshWriter::Producer(0));
         assert_ne!(source, owner);
         assert_eq!(error.context.affected_records[0], RecordRef::Entity(source));
     } else {
-        assert_eq!(creator, Some(0));
-        assert_eq!(writer, 1);
+        assert_eq!(creator, CoupledFreshWriter::Producer(0));
+        assert_eq!(writer, CoupledFreshWriter::Producer(1));
         assert_eq!(source, owner);
         assert_ne!(error.context.affected_records[0], RecordRef::Entity(owner));
     }

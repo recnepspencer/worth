@@ -193,6 +193,33 @@ impl ValidatedRelationalProposal {
         preparation::project_commands(self, execution, true, commands)
     }
 
+    /// Actor-only authoring of one later authored stage (`stage` 0 is the
+    /// first stage after the prefix), from that stage's own applied commands.
+    /// Each stage's invariants are judged on its own contribution, as each
+    /// producer's are; `None` when the group has no such stage.
+    pub fn authored_stage_mutation_touches(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        stage: usize,
+    ) -> Option<Result<ValidatedMutationTouches<'_>, ValidatedMutationTouchProjectionError>> {
+        let part = match self
+            .required_output_publication
+            .as_ref()
+            .map(|p| &p.publication)
+        {
+            Some(crate::mvcc::RequiredOutputPublication::CoupledAuthored { group }) => {
+                group.stages.get(stage)?
+            }
+            _ => return None,
+        };
+        Some(preparation::project_commands(
+            self,
+            execution,
+            true,
+            Some(&part.commands.merged_intents),
+        ))
+    }
+
     /// One concrete producer's touches use its own applied command contribution,
     /// under the final proposal's single invariant judgment and request budgets.
     /// The participant is the part whose producing meaning equals `meaning`

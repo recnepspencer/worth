@@ -6,7 +6,8 @@ use crate::{
     transactions::data::{EntityMutationIntent, MutationIntent, RecordRef, RelationMutationIntent},
 };
 use worth_execution::{ExecutionOrderedMap, ExecutionOrderedMapDenial};
-type Creator = (Option<usize>, EntityId);
+type Writer = crate::publication::data::CoupledFreshWriter;
+type Creator = (Writer, EntityId);
 #[derive(Default)]
 pub(in crate::mvcc::publication::application_publication::coupled_assembly) struct CreatorCustody {
     records: ExecutionOrderedMap<RecordRef, Creator>,
@@ -15,7 +16,7 @@ impl CreatorCustody {
     pub(in crate::mvcc::publication::application_publication::coupled_assembly) fn retain(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
-        part: Option<usize>,
+        part: Writer,
         source: EntityId,
         outcome: &crate::authority::mutation::MutationApplyOutcome,
     ) -> Result<(), TransactionCommitError> {
@@ -53,7 +54,7 @@ impl CreatorCustody {
     pub(in crate::mvcc::publication::application_publication::coupled_assembly) fn require(
         &self,
         execution: &ExecutionRequest<'_, '_>,
-        writer: usize,
+        writer: Writer,
         source: EntityId,
         plan: &crate::transactions::data::MergedCommitPlan,
     ) -> Result<(), TransactionCommitError> {
@@ -82,7 +83,7 @@ impl CreatorCustody {
                         _ => continue,
                     };
                     if let Some((creator, owner)) = self.records.get(&target) {
-                        if *creator != Some(writer) {
+                        if *creator != writer {
                             let mut error = PublicationError::authored_retirement(
                                 Cause::ForeignFreshCoupledRecord {
                                     creator: *creator,

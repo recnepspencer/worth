@@ -22,6 +22,12 @@ impl CanonicalCommitEnvelope {
         }
         match &event.sources {
             CanonicalCoupledAuthoredSources::Edit(_) => {}
+            // An envelope records its prefix and at least one later stage;
+            // fewer is an Edit, so a shorter list is a corrupt header.
+            CanonicalCoupledAuthoredSources::Stages(sources) if sources.len() < 2 => {
+                return Err("coupled authored stage list is shorter than two".into());
+            }
+            CanonicalCoupledAuthoredSources::Stages(_) => {}
             CanonicalCoupledAuthoredSources::Retirement(source) => {
                 self.validate_authored_retirement_components(source, true, context)?;
             }
@@ -31,18 +37,24 @@ impl CanonicalCommitEnvelope {
         }
         for part in &event.participants {
             self.validate_output_origin_header(&part.origin)?;
-            let producing =
-                matches!(
-                    part.origin.publication,
-                    CanonicalOutputPublication::Preserve { .. }
-                ) || (matches!(event.sources, CanonicalCoupledAuthoredSources::Edit(_))
-                    && matches!(
-                        part.origin.publication,
-                        CanonicalOutputPublication::Birth
-                            | CanonicalOutputPublication::BirthAfterCodecRetirement { .. }
-                    ));
+            let producing = matches!(
+                part.origin.publication,
+                CanonicalOutputPublication::Preserve { .. }
+            ) || (matches!(
+                event.sources,
+                CanonicalCoupledAuthoredSources::Edit(_)
+                    | CanonicalCoupledAuthoredSources::Stages(_)
+            ) && matches!(
+                part.origin.publication,
+                CanonicalOutputPublication::Birth
+                    | CanonicalOutputPublication::BirthAfterCodecRetirement { .. }
+            ));
             if (!part.origin.source_scope_owned
-                && !matches!(event.sources, CanonicalCoupledAuthoredSources::Edit(_)))
+                && !matches!(
+                    event.sources,
+                    CanonicalCoupledAuthoredSources::Edit(_)
+                        | CanonicalCoupledAuthoredSources::Stages(_)
+                ))
                 || !producing
             {
                 return Err("coupled participant is not an opted-in producing origin".into());

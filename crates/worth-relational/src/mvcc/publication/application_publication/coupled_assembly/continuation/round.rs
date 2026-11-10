@@ -42,7 +42,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
     ) -> Result<(), RelationalCoupledAssemblyFailure> {
         let index = self
             .continuation
-            .consume(token, self.identity, self.parts.len())?;
+            .consume(token, self.identity, self.applied_parts())?;
         let source = self.parts[index]
             .publication
             .producing_meaning()

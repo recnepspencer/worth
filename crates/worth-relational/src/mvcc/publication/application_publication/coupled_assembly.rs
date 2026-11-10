@@ -32,6 +32,7 @@ mod part_corruption;
 mod participant_admission;
 mod prepared_route;
 mod producer_posture;
+mod stage;
 pub use producer_posture::RelationalCoupledProducerPosture;
 mod scoped_preparation;
 mod writer_custody;
@@ -98,6 +99,9 @@ pub struct RelationalAuthoredCoupledCandidate<'a> {
     pub(crate) identity: &'a RelationalMutationProposalIdentity,
     pub(crate) binding: &'a BoundAuthoredCoupling,
     pub(crate) parts: Vec<CoupledPublicationPart>,
+    pub(crate) stages: Vec<CoupledAuthoredStagePart>,
+    /// Patch fragments written by the authored writer: the prefix and stages.
+    authored_fragments: usize,
     continuation: continuation::ContinuationState,
     fresh_records: net_plan::CreatorCustody,
     read: std::cell::RefCell<Option<RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>>>,
@@ -112,7 +116,22 @@ pub(crate) struct CoupledPublicationPart {
     pub(crate) records: Vec<crate::transactions::data::RecordRef>,
 }
 
+/// One later authored stage applied over the candidate pin under the authored
+/// writer's custody. It is never a producer posture and owns no output route.
+pub(crate) struct CoupledAuthoredStagePart {
+    pub(crate) source: crate::identity::data::EntityId,
+    pub(crate) input: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+    pub(crate) commands: crate::transactions::data::MergedCommitPlan,
+    pub(crate) records: Vec<crate::transactions::data::RecordRef>,
+}
+
 impl RelationalAuthoredCoupledCandidate<'_> {
+    /// Every applied part, authored stage or producer, in apply order. Pins,
+    /// local keys and successor reads are numbered over this one sequence.
+    pub(crate) fn applied_parts(&self) -> usize {
+        self.parts.len() + self.stages.len()
+    }
+
     /// The full-generation source admitted by Native for this authored prefix.
     /// Descriptive identity only; reading D still requires its applied read pin.
     pub fn authored_source(&self) -> crate::identity::data::EntityId {
@@ -184,7 +203,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             self.runtime,
             &self.binding.owners.before,
             self.identity,
-            self.parts.len() as u64,
+            self.applied_parts() as u64,
             self.mutation.state(),
             self.mutation.candidate_symbols(),
             &self.mutation.outcome.effect.publication.changed_records,

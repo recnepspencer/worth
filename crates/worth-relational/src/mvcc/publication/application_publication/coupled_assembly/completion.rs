@@ -13,6 +13,7 @@ pub struct RelationalCoupledAuthoredPublication {
     pub(crate) authored_records: Vec<crate::transactions::data::RecordRef>,
     pub(crate) authored_commands: crate::transactions::data::MergedCommitPlan,
     pub(crate) parts: Vec<CoupledPublicationPart>,
+    pub(crate) stages: Vec<CoupledAuthoredStagePart>,
 }
 impl std::fmt::Debug for RelationalCoupledAuthoredPublication {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -92,11 +93,8 @@ pub(crate) fn prepare_coupled_candidate(
             owned_symbols,
             &transaction.content,
         )?;
-    let authored_records = mutation.outcome.effect.publication.changed_records.clone();
-    let source_effects = RelationalCoupledAuthoredSourceEffects::capture(
-        execution,
-        &mutation.outcome.effect.publication.patch_fragments,
-    )?;
+    let mut authored_records = mutation.outcome.effect.publication.changed_records.clone();
+    let authored_fragments = mutation.outcome.effect.publication.patch_fragments.len();
     writer_custody::require(
         execution,
         &binding.owners,
@@ -106,7 +104,7 @@ pub(crate) fn prepare_coupled_candidate(
     let mut fresh_records = net_plan::CreatorCustody::default();
     fresh_records.retain(
         execution,
-        None,
+        crate::publication::data::CoupledFreshWriter::Authored,
         binding.owners.source.subject(),
         &mutation.outcome,
     )?;
@@ -118,6 +116,8 @@ pub(crate) fn prepare_coupled_candidate(
         identity,
         binding: &binding,
         parts: Vec::new(),
+        stages: Vec::new(),
+        authored_fragments,
         continuation: continuation::ContinuationState::default(),
         fresh_records,
         read: std::cell::RefCell::new(None),
@@ -129,7 +129,24 @@ pub(crate) fn prepare_coupled_candidate(
     {
         return Ok(false);
     }
-    let RelationalAuthoredCoupledCandidate { parts, .. } = candidate;
+    let RelationalAuthoredCoupledCandidate {
+        parts,
+        stages,
+        authored_fragments,
+        ..
+    } = candidate;
+    if let Some(missing) = binding.owners.stages.get(stages.len()) {
+        return Err(part::reject(Cause::MissingAuthoredStage, *missing).into());
+    }
+    // Every authored stage applies before any producer part, so the authored
+    // writer's patches are exactly this applied prefix of the candidate's.
+    let source_effects = RelationalCoupledAuthoredSourceEffects::capture(
+        execution,
+        &mutation.outcome.effect.publication.patch_fragments[..authored_fragments],
+    )?;
+    for stage in &stages {
+        authored_records.extend_from_slice(&stage.records);
+    }
     execution.run_native_with_checkpoint(|context| {
         for expected in binding.owners.required_owners() {
             for part in &parts {
@@ -144,7 +161,7 @@ pub(crate) fn prepare_coupled_candidate(
         }
         Ok(())
     }).map_err(custody::execution_stop)?.0?;
-    if !parts.is_empty() {
+    if !parts.is_empty() || !stages.is_empty() {
         super::disjoint_field_patches::compose(
             execution,
             transaction,
@@ -182,6 +199,7 @@ pub(crate) fn prepare_coupled_candidate(
                 authored_records,
                 authored_commands,
                 parts,
+                stages,
             },
         },
     });

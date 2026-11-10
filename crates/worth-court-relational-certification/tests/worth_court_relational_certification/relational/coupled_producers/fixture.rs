@@ -144,6 +144,34 @@ impl World {
             .expect("completed real assembly")
             .validate(execution, &self.runtime)
     }
+    /// Prepare an edit envelope: the authored prefix edits `source`, and
+    /// Native admits `later` as the sources of the authored stages after it.
+    pub fn prepare_stages(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        later: &[EntityId],
+        assembly: &dyn RelationalAuthoredCoupledProducerAssembly,
+    ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
+        let owners = self.runtime.readmit_edit_coupled_stage_owners(
+            execution,
+            &self.installed,
+            &self.basis(),
+            self.source,
+            later,
+        )?;
+        let mut tx = begin_main_transaction(&self.runtime);
+        tx.push_batch(
+            update(self.source, "edited-source"),
+            execution.allocation_policy(),
+        )
+        .unwrap();
+        let tx = tx.bind_authored_coupled_producers(&self.installed, owners, None)?;
+        self.runtime
+            .preparation_port()
+            .prepare_authored_coupled_transaction(execution, tx, assembly)?
+            .expect("completed real assembly")
+            .validate(execution, &self.runtime)
+    }
     pub fn publish(
         &self,
         execution: &ExecutionRequest<'_, '_>,

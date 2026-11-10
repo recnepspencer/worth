@@ -73,6 +73,7 @@ impl RelationalRuntime {
             owners,
             current,
             deferred_edges,
+            stages: Vec::new(),
         })
     }
 }

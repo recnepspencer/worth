@@ -14,6 +14,9 @@ pub(crate) enum CanonicalCoupledAuthoredSources {
     Retirement(Arc<CanonicalAuthoredRetirement>),
     Restoration(Arc<CanonicalAuthoredRestoration>),
     Edit(crate::identity::data::EntityId),
+    /// An edit envelope: the authored prefix's source, then each later
+    /// authored stage's source, in apply order. Edit semantics otherwise.
+    Stages(Vec<crate::identity::data::EntityId>),
 }
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct CanonicalCoupledParticipant {
@@ -34,7 +37,8 @@ impl CanonicalCoupledAuthoredPublication {
         let sources: &[Arc<CanonicalRequiredOutputOrigin>] = match &self.sources {
             CanonicalCoupledAuthoredSources::Retirement(event) => &event.publications,
             CanonicalCoupledAuthoredSources::Restoration(event) => &event.publications,
-            CanonicalCoupledAuthoredSources::Edit(_) => &[],
+            CanonicalCoupledAuthoredSources::Edit(_)
+            | CanonicalCoupledAuthoredSources::Stages(_) => &[],
         };
         sources
             .iter()
@@ -54,7 +58,8 @@ impl CanonicalCommitEnvelope {
             match &self.coupled_authored_publication.as_ref()?.sources {
                 CanonicalCoupledAuthoredSources::Retirement(event) => Some(event),
                 CanonicalCoupledAuthoredSources::Restoration(_)
-                | CanonicalCoupledAuthoredSources::Edit(_) => None,
+                | CanonicalCoupledAuthoredSources::Edit(_)
+                | CanonicalCoupledAuthoredSources::Stages(_) => None,
             }
         })
     }
@@ -63,7 +68,8 @@ impl CanonicalCommitEnvelope {
             match &self.coupled_authored_publication.as_ref()?.sources {
                 CanonicalCoupledAuthoredSources::Restoration(event) => Some(event),
                 CanonicalCoupledAuthoredSources::Retirement(_)
-                | CanonicalCoupledAuthoredSources::Edit(_) => None,
+                | CanonicalCoupledAuthoredSources::Edit(_)
+                | CanonicalCoupledAuthoredSources::Stages(_) => None,
             }
         })
     }

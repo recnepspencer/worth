@@ -25,19 +25,27 @@ impl RelationalRuntime {
             return Ok(None);
         };
         let CanonicalCoupledAuthoredSources::Retirement(source) = &group.sources else {
+            let recorded = match &group.sources {
+                CanonicalCoupledAuthoredSources::Retirement(source) => source.anchor,
+                CanonicalCoupledAuthoredSources::Edit(source) => *source,
+                // Header validation admits only lists of two or more sources.
+                CanonicalCoupledAuthoredSources::Stages(sources) => match sources.first() {
+                    Some(source) => *source,
+                    None => {
+                        return Err(crate::mvcc::origin_denial(
+                            "coupled authored stage list is empty",
+                        ));
+                    }
+                },
+                CanonicalCoupledAuthoredSources::Restoration(source) => source.original_anchor,
+            };
             return Err(refuse(
                 Cause::InvalidAuthoredAnchor,
                 restoration
                     .entities
                     .first()
                     .map(|(id, _)| *id)
-                    .unwrap_or_else(|| match &group.sources {
-                        CanonicalCoupledAuthoredSources::Retirement(source) => source.anchor,
-                        CanonicalCoupledAuthoredSources::Edit(source) => *source,
-                        CanonicalCoupledAuthoredSources::Restoration(source) => {
-                            source.original_anchor
-                        }
-                    }),
+                    .unwrap_or(recorded),
             ));
         };
         let (owners, current) = execution
@@ -110,6 +118,7 @@ impl RelationalRuntime {
             owners,
             current,
             deferred_edges,
+            stages: Vec::new(),
         }))
     }
 }

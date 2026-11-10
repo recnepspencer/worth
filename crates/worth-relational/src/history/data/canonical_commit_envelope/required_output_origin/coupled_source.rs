@@ -80,7 +80,12 @@ pub(super) fn install(
     use coupled_authored::CanonicalCoupledAuthoredSources as Sources;
     let custody = &group.binding.owners;
     match &custody.source {
-        CoupledSource::Edit(source) => Ok(Sources::Edit(*source)),
+        CoupledSource::Edit(source) if group.stages.is_empty() => Ok(Sources::Edit(*source)),
+        CoupledSource::Edit(source) => Ok(Sources::Stages(
+            std::iter::once(*source)
+                .chain(group.stages.iter().map(|stage| stage.source))
+                .collect(),
+        )),
         CoupledSource::Restoration { plan, .. } => {
             super::authored_restoration::install(
                 envelope,
