@@ -27,14 +27,15 @@ Both tracks finish inside this milestone. The ten numbered phases below still st
 | Landing | Contents | State |
 |---|---|---|
 | 1 | Phases 1–2 | Landed |
-| 2: the happy landing | H3–H10, one landing | Integration branch `codex/m3-host-home` |
-| 3: the cleanup landing | C1–C5; closes the milestone | After landing 2 |
+| 2a: the first happy landing | H3–H5 and the coherent H6–H9 slices already merged; every other partial surface refuses with a typed reason | Integration branch `codex/m3-host-home`; final gate waits for H5 LANDED |
+| 2b: the remaining happy landing | Complete H6–H10 and remove each corresponding temporary refusal | After landing 2a |
+| 3: the cleanup landing | C1–C5; closes the milestone | After landing 2b |
 
-- **Landing 2 reaches master** only when every lane in the Tier-2 set is green and the coordinator certifies it at the final gate.
+- **Landing 2a reaches master** after H5 LANDED, a reviewed batch merge, green affected Tier-2 lanes, one green final Tier-3 run and the coordinator's final certification. Its coherence ledger names a graceful court for every Supported surface and a typed, before-effect refusal court for every Refused surface. No PARTIAL row reaches master. Landing 2b completes the remaining happy requirements under the same coherence rule.
   - A CLEANUP court that is red at that moment leaves the tree, with its restore reference listed under its C item ("Moved courts").
   - It is never `#[ignore]`d, gated or weakened.
-- **Phases 5–9 lift their own D15 refusals** as their H item merges. H10 deletes `UnsupportedDurableFamily`.
-- **Consumers may build on landing 2.** It supports graceful close and reopen, and a kill between operations. After an unclean kill, open refuses with a typed reason (D18).
+- **Phases 5–9 lift their own D15 refusals** only for the families their merged graceful courts prove. The ledger ties each temporary H6–H9 family refusal to the H-phase that removes it in landing 2b; C-track refusals retain their C-phase removal obligation. H10 deletes `UnsupportedDurableFamily`.
+- **Consumers may build on landing 2a's Supported surfaces.** They support graceful close and reopen, and a kill between operations. Its Refused surfaces stop with their named typed reason. After an unclean kill, open refuses with a typed reason (D18).
 
 ### The happy constraint (track H)
 
@@ -104,13 +105,16 @@ Each H item's proof is its phase's graceful journeys, plus the graceful oracle.
   - Inbound custody and dedup; recovery-handle claims; rebuilt indexes.
   - Deleting `StoreCapabilityRequired`; R13.
   - An outstanding dispatch across a graceful close.
-- **H9 (Phase 9): Correction and original-owner advancement.** All of Phase 9, with every kill read as a close or a quiescent kill.
+- **H9 (Phase 9): Correction and original-owner advancement.** Phase 9's graceful paths, with every kill read as a close or a quiescent kill; durable history and branch retirement belong to C2.
   - Durable original-interpretation membership is published at the acknowledged
     World-open seam and jointly readmitted in
     `application_installation/home_preparation/world/custody.rs`. Its funded
     terminal disposal uses the protected World checkpoint source route in
-    `durability/checkpoint/original_observation.rs`, for both released unpublished
-    originals and retired correctable occurrences. H6 keeps original-meaning
+    `durability/checkpoint/original_observation.rs`, for released unpublished
+    originals only. Disposal of retired and inherited occurrences, together
+    with the durable history and branch retirement protocol, belongs to C2.
+    `AuthoritativeDurableHistory` and `DurableBranchPublicationRequired` are
+    Refused rows on track H. H6 keeps original-meaning
     interpretations process-local and counts each retained meaning once; it
     transfers none to durable membership.
 - **H10 (Phase 10): Public cutover.**
@@ -131,6 +135,12 @@ Each H item's proof is its phase's graceful journeys, plus the graceful oracle.
   - Automatic checkpoint triggers; the cross-owner capture cut.
   - Proportional reopen and request-funded cold materialization. The funding already done on P-A's branch lands here.
   - Backing and work budgets; growth courts.
+  - Durable World history and branch retirement, including disposal of retired
+    and inherited occurrences. Track H retains funded disposal of released
+    unpublished originals.
+  - Close maintenance's 60-second wall-clock deadline is a timing trigger.
+    Graceful-close courts must not depend on it; never raise the deadline or
+    retry until green to certify them.
   - **A frame and future size budget lane.** No `worth_*` function frame over a declared debug-profile ceiling, measured from the compiled binaries' unwind metadata. Reduce the large-frame census found on 2026-11-06 to that ceiling.
 - **C3: Owner crash cases for Phases 5–9.**
   - Crashes between owner effects; damaged frames and basis mismatch; mixed kills.
