@@ -68,6 +68,10 @@ fn approved_flags(encoded: &str) -> bool {
     }
     let mut flags = encoded.split('\u{1f}');
     while let Some(flag) = flags.next() {
+        // The committed full-type diagnostic flag changes no layout or media mechanics.
+        if flag == "--verbose" {
+            continue;
+        }
         let option = if flag == "-C" {
             flags.next().map(|value| ("codegen", value))
         } else if flag == "--cfg" {
@@ -197,14 +201,17 @@ mod tests {
             assert!(!is_supported(COMPILER, &inputs, &lock));
             inputs.pop();
         }
-        for profile in ["-C\u{1f}overflow-checks=on\u{1f}--cfg\u{1f}worth_ui_windowing=\"wayland\"\u{1f}--cfg\u{1f}worth_ui_adapter=\"hardware\"", "-Coverflow-checks=on\u{1f}--cfg=worth_ui_windowing=\"wayland\"\u{1f}--cfg=worth_ui_adapter=\"hardware\""] {
+        for profile in ["-C\u{1f}overflow-checks=on\u{1f}--cfg\u{1f}worth_ui_windowing=\"wayland\"\u{1f}--cfg\u{1f}worth_ui_adapter=\"hardware\"", "-Coverflow-checks=on\u{1f}--cfg=worth_ui_windowing=\"wayland\"\u{1f}--cfg=worth_ui_adapter=\"hardware\"", "-C\u{1f}overflow-checks=on\u{1f}--verbose\u{1f}--cfg\u{1f}worth_ui_windowing=\"wayland\"\u{1f}--cfg\u{1f}worth_ui_adapter=\"hardware\""] {
             inputs.push(("CARGO_ENCODED_RUSTFLAGS", profile.into()));
             assert!(is_supported(COMPILER, &inputs, &lock));
+            assert!(is_supported("rustc 1.99.1 (58cf8f9c3 2026-10-13)", &inputs, &lock));
             inputs.pop();
         }
         for profile in [
             "--cfg\u{1f}racy_asserts",
             "--sysroot=other",
+            "--verbose=other",
+            "-v",
             "-Zrandomize-layout",
             "--cfg",
             "-C",

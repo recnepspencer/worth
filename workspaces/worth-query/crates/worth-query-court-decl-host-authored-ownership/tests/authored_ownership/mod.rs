@@ -25,6 +25,7 @@ mod correction;
 mod correction_courts;
 mod correction_declaration;
 mod coupled;
+mod directory_correction_refusal;
 mod lifecycle;
 mod lifecycle_handlers;
 mod locality;

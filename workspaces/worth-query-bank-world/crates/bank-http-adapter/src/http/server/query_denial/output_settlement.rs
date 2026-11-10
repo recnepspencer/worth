@@ -14,6 +14,9 @@ pub(super) fn output_settlement(kind: BankApplicationOutputSettlementDenialKind)
         Settlement::WorldRecovery(cause) => world_denial::recovery(cause),
         Settlement::RecoveryPublication(cause) => world_denial::publication(cause),
         Settlement::PublicationReceipt(cause) => original_receipt(cause),
+        Settlement::DurableStateAdmission(cause) => mutation_application::request_mutation_denial(
+            worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind::DurableStateAdmission(cause),
+        ),
         Settlement::CurrentControlBusy => unavailable(),
         Settlement::PredecessorRead(cause) => predecessor_read::denial(*cause),
         Settlement::CurrentPublication(cause) => publication_read::denial(*cause),

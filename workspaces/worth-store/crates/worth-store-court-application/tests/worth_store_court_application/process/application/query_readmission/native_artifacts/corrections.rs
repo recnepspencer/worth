@@ -47,7 +47,13 @@ impl Source {
                     entity_id: self.account,
                     fields: AspectFieldPatch::from_locator(
                         planned_single_field_locator(
-                            AspectKey::new("AccountIdentity").unwrap(),
+                            AspectKey::new(
+                                FieldSelection::<HomeRecords, Account, AccountIdentity, u64>::at(
+                                    "Balance",
+                                )
+                                .aspect(),
+                            )
+                            .unwrap(),
                             FieldKey::new("Balance").unwrap(),
                         ),
                         AspectValue::UInt64(balance),

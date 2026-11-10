@@ -39,7 +39,7 @@ where
                 DocumentRetentionSchema,
             >,
 {
-    let roster = super::auxiliary_programs::include(roster, initial.identity(), initial.revision());
+    let roster = super::with_lifecycle_programs(roster, initial.identity(), initial.revision());
     WorthQueryInterimCheckpointRestore::rostered_program(
         initial,
         roster,

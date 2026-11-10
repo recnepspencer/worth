@@ -1,6 +1,7 @@
 //! Source material and exact target retained between inverse preparation and publication.
 use super::*;
 mod custody;
+mod directory_admission;
 mod home;
 mod recovery;
 mod relation_inverse;
@@ -132,6 +133,7 @@ impl WorthQueryPreparedCorrectionSource {
     {
         use WorthQueryCorrectionDerivationDenial as Denial;
         let (target, source, ancestry, target_program, required_root) = checked.into_parts();
+        directory_admission::admit(target, source, &ancestry, &lineage, required_root.is_some())?;
         let basis = target.product().relational_basis();
         let target_parent = basis
             .observation()

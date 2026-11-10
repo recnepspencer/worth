@@ -951,6 +951,29 @@ bounded descendant, without opening a foreign request. A performed recovery caps
 settlement or capture refusal. Existing convenience constructors still own their
 explicit bootstrap request and capture policy. See [original-request transitions](build-an-application.md#44-checkpoint-program-transitions).
 
+## Directory Home continuation limits
+
+A Directory Home preserves program support status and scalar recorded corrections
+through graceful close and reopen. Support retirement can return `AlreadyRetired`
+after reopen; retained original interpretation membership is counted once.
+
+Directory adoption and branch-set adoption currently return
+`DurableStateAdmission(Unsupported { family: BranchAdoptionRecovery, .. })` before
+retaining adoption custody. Output demand refuses `OutputDemandRecords`.
+Workflow registration and specialized definition publication refuse
+`WorkflowInstances`; declared managed, resource, conditional and temporal
+operations refuse their corresponding custody family before handler contact.
+Their Memory APIs do not establish durable continuation.
+
+Retaining an original operation owner refuses `OriginalOperationDescription`.
+Durable relation pre-images, compensation, authored/output material, coupled-output
+corrections and reapplication refuse with named
+`UnsupportedCorrectionRelationPreimage`, `UnsupportedCorrectionCompensation`,
+`UnsupportedCorrectionOutputMaterial`, `UnsupportedCorrectionCoupledOutputs` and
+`UnsupportedCorrectionReapplication` causes. Scalar reversal and its original durable idempotency key remain available.
+Required-output and divergent-branch correction continuation wait for their
+qualified H6/H9 owners. These entry refusals leave with that clean cutover.
+
 ## Known gaps
 
 Forwarding a managed-index read/provider error from an invariant hook retains

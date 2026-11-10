@@ -70,7 +70,8 @@ impl WorthQueryOutputDemandDenialKind {
             | Self::SourceQueryInstallation(_)
             | Self::SourceQueryAdmission(_)
             | Self::SourceQueryExecution(_) => Terminal,
-            Self::ForeignSource
+            Self::DurableStateAdmission(_)
+            | Self::ForeignSource
             | Self::ManagedIndexSourceDenied
             | Self::ManagedSourceExpansionUnsupported
             | Self::MissingApplicableProducer

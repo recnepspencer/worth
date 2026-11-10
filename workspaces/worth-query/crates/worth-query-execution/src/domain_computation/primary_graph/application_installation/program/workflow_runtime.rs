@@ -204,6 +204,7 @@ where
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowRuntimeBindingDenial {
+    DurableStateAdmission(crate::domain_computation::execution_runtime::product_world::WorthQueryDurableStateAdmissionDenial),
     SigningOwner(super::WorthQuerySigningOwnerInstallationDenial),
     ForeignSchema,
     ForeignRuntime,

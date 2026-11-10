@@ -5,8 +5,7 @@ use super::{
 };
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::{
-    AspectFieldLocator, AspectValue, ContractValidatedAspectValueView, InternedString,
-    StructAspectValue,
+    AspectFieldLocator, AspectValue, ContractValidatedAspectValueView, StructAspectValue,
 };
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 use worth_query_installation::facade::{
@@ -164,11 +163,9 @@ fn decode_optional_selected_row(
     if numeric_field(fields, &layout.fields[0])? != 2 {
         return Err(denial("Home bootstrap completion format is unsupported"));
     }
-    let AspectValue::String(InternedString::Raw(binding)) =
-        required_field(fields, &layout.fields[1])?
-    else {
-        return Err(denial("Home completion binding has foreign shape"));
-    };
+    let binding = required_field(fields, &layout.fields[1])?
+        .raw_text()
+        .ok_or_else(|| denial("Home completion binding has foreign shape"))?;
     let count = |index| {
         usize::try_from(numeric_field(fields, &layout.fields[index])?)
             .map_err(|_| denial("Home completion count exceeds this host"))
