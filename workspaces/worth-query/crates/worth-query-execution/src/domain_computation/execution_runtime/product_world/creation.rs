@@ -53,8 +53,10 @@ impl WorthQueryProductRuntime {
                 cancellation,
             )
             .map_err(WorthQueryProductBranchCreationDenial::World)?;
+        // Both of World's answers carry an effect: `Performed` and
+        // `ProductUnpublished` (public #132).
+        super::published_effect::record();
         if let RuntimeWorldBranchCreationOutcome::Performed(observation) = &outcome {
-            super::published_effect::record();
             reservation.commit(observation);
         }
         Ok(outcome)

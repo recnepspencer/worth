@@ -47,9 +47,11 @@ impl PublishedEffect {
 
 /// Called only where Query maps World's publication outcome, for `Performed`
 /// and `ProductUnpublished`. Outside an advancement there is no marker and
-/// nothing to record. A publication inside lent work (a member compute or its
-/// descendant workers) would have no marker and reopen #132 silently, so
-/// courts refuse it loudly.
+/// nothing to record. A publication inside a Query member compute (where
+/// Execution's owner context is active, also on that compute's descendant
+/// workers) would have no marker and reopen #132 silently, so debug builds
+/// refuse it loudly. Plain Execution pattern workers do not carry the owner
+/// context, so a publication there is not caught by this check.
 pub(crate) fn record() {
     SLOT.with(|slot| {
         debug_assert!(
