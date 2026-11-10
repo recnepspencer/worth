@@ -209,6 +209,16 @@ root's maintained kind directory. They admit only reached Head regions and
 materialize matching typed generations; empty kinds require no record I/O.
 Retained exact roots keep their own directory across later edits and slot reuse.
 
+Native retained-version reads use `read_truth().try_read_version(request, version)`.
+The existing owner funds Full materialization from that request; an unavailable
+retained basis returns `HistoricalVisibilityDenial` rather than inferred absence.
+Exact owner-issued observations remain readable through `read_observation`.
+
+Native index DATA inspection uses the projection's request-aware
+`bounded_index_relations_for_frontier`. It includes audit-retained edges under
+the same visibility rule as index maintenance; ordinary frontier queries retain
+their Live-only rule. The result preserves typed storage and work-bound refusals.
+
 Native conditional observation owners borrow the genuine computed effect through
 `BridgeConditionalCausalObservation::computed_evaluation()` and its observed
 before/after Signal versions. The original Signal verdict, suppression reason
@@ -1857,3 +1867,42 @@ The JavaScript `worth-signals-wasm` facade declares browser endpoint resources.
 includes explicit `PATCH` transport for update semantics, with canonical request
 identity and mutation-response reconciliation proofs. This is the browser signal
 package surface, separate from the native query facades indexed above.
+
+## Platform diagnostic lineage readers
+
+Platform owners use Native's `immutable_lineage_node` for semantic immutable
+node DATA with its actual page lease, or `lineage_node_at_observation` for an
+entity association in an admitted observation. Neither grants mutation authority.
+`discover_authored_lineage_history` and `discover_authored_record_history`
+return branch-authored replacement history at an unchanged publication cut; they
+are distinct from selected-observation ancestry. Ordinary discovery retains the
+existing collection policy. `DurabilityAccess::external_canonical_source_availability`
+reports actual port presence, without validating artifacts. These are platform
+facade observations; applications continue through Query's two audience facades.
+
+A platform owner preparing materialization suspension may inspect
+`RelationalMaterializationSuspensionCompletion::source_records()` before
+publishing. It borrows the original prepared manifest as DATA; the actual
+publication result is still required to complete suspension custody.
+
+### Native merge history contributions
+
+Platform consumers can call `runtime.merge().inspect_planning_scope_with_contributions(request,
+owner_bound_request)` through `worth_relational::facade::merge`. The immutable
+`RelationalMergePlanningObservation` retains the shipping planner's actual
+originals and exposes per-record target/source contributing `CommitId` iterators
+alongside the existing artifact. Bind the request with
+`runtime.bind_merge_planning_request`; this observation grants no merge-parent
+transaction admission or publication authority.
+
+### Native original input attribution
+
+Platform owners may borrow `CanonicalCommitEnvelope::original_input_observation`
+through `worth_relational::facade::history`. It exposes the actual original
+prestate/result schema carriers, cascade/adjacency/cross-context policies and
+optional introduced-schema observation. Whole-observation equality includes
+the complete introduced schema; digest equality alone is insufficient. The
+view borrows its immutable envelope, performs no loading or schema copying,
+and grants no currentness, schema installation or readmission authority.
+Its schema view exposes stored carrier/root/descriptor metadata without a wire
+constructor. Applications continue through Query's two audience facades.

@@ -46,3 +46,62 @@ use worth_testkit_relational::{
 mod encoded_checkpoint_backing;
 mod partition_frontier;
 mod validation_posture;
+
+mod branch_aspect_history;
+mod branch_checkpoint_journeys;
+mod branch_endpoint_history;
+mod branch_history_publications;
+mod branch_history_recovery;
+mod definition_lookup_snapshot;
+
+mod merge_history_planning;
+mod merge_policy_evidence;
+mod merge_visibility_evidence;
+
+mod merge_basis_journeys;
+mod merge_packet_canonical_journey;
+mod merge_packet_journeys;
+mod merge_proof_journey;
+mod merge_request_journeys;
+mod merge_request_lowering_journey;
+
+mod merge_collaboration_witness_journeys;
+mod merge_correspondence_journeys;
+mod merge_schema_witness_journeys;
+mod merge_strategy_witness_journey;
+mod merge_support_witness_journey;
+mod merge_witness_authoring;
+mod merge_witness_schema;
+
+mod commit_meaning;
+mod original_input_observation;
+
+mod merge_branch_deletion;
+mod merge_counter_recovery;
+mod merge_declared_policy_boundaries;
+mod merge_deleted_recovery;
+mod merge_deletion_block_reasons;
+mod merge_deletion_denials;
+mod merge_descriptive_touches;
+mod merge_envelope_publication;
+mod merge_execution_authoring;
+mod merge_execution_certification;
+mod merge_execution_certification_cases;
+mod merge_execution_diagnostics;
+mod merge_execution_observation;
+mod merge_execution_recovery;
+mod merge_execution_schema;
+mod merge_failure_diagnostics;
+mod merge_feature_execution;
+mod merge_history_shape;
+mod merge_inspection_rows;
+mod merge_last_writer_wins;
+mod merge_local_topology;
+mod merge_planning_recovery;
+mod merge_prepared_verification;
+mod merge_readiness_journeys;
+mod merge_recovery_diagnostics;
+mod merge_region_topology;
+mod merge_source_admission;
+mod merge_stale_execution;
+mod merge_unknown_source_admission;

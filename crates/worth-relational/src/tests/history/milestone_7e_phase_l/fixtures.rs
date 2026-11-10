@@ -14,7 +14,6 @@ use crate::tests::support::{
     aspect_key, create_branch_from_main, create_entity, entity_field_aspect, field_key,
     string_aspect_field_patch,
 };
-use crate::transactions::data::PublishedMergeExecutionAuthority;
 
 pub(super) fn merge_request() -> MergeExecutionRequest {
     MergeExecutionRequest::new(
@@ -24,7 +23,7 @@ pub(super) fn merge_request() -> MergeExecutionRequest {
     )
 }
 
-pub(super) fn runtime_with_schema_declared_entity_policy(persisted: bool) -> RelationalRuntime {
+pub(super) fn runtime_with_schema_declared_entity_policy() -> RelationalRuntime {
     let name_key = aspect_key("name");
     let status_key = aspect_key("status");
     let registry = RelationalSchemaRegistry::new()
@@ -64,13 +63,7 @@ pub(super) fn runtime_with_schema_declared_entity_policy(persisted: bool) -> Rel
         })
         .expect("schema registry");
     let builder = RelationalRuntimeApi::builder().schema_registry(registry);
-    if persisted {
-        builder
-            .build_durable(crate::tests::support::TestDurableMedium::new().attachment())
-            .expect("valid native runtime configuration")
-    } else {
-        builder.build().expect("valid native runtime configuration")
-    }
+    builder.build().expect("valid native runtime configuration")
 }
 
 pub(super) fn prepared_merge(
@@ -126,17 +119,4 @@ fn update_entity_status_on_branch(
     )
     .expect("test staging stays within configured resource budgets");
     txn.commit(execution, runtime).expect("update status");
-}
-
-pub(super) fn published_merge_authority(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
-    commit_id: crate::facade::history::CommitId,
-) -> PublishedMergeExecutionAuthority {
-    runtime
-        .replay()
-        .canonical_commit_envelope(execution, commit_id)
-        .unwrap()
-        .and_then(|envelope| envelope.merge_execution_authority.clone())
-        .expect("published merge authority")
 }

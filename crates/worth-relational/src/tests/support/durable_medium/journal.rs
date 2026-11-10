@@ -71,13 +71,6 @@ impl TestDurableJournal {
         self.artifacts.entries.get(&position.0).map(AsRef::as_ref)
     }
 
-    pub(super) fn bytes_at_mut(&mut self, position: PatchStreamPosition) -> Option<&mut [u8]> {
-        self.artifacts
-            .entries
-            .get_mut(&position.0)
-            .map(AsMut::as_mut)
-    }
-
     pub(super) fn replace(&mut self, position: PatchStreamPosition, bytes: Box<[u8]>) {
         self.artifacts.entries.insert(position.0, bytes);
     }

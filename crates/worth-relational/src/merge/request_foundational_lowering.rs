@@ -24,3 +24,6 @@ pub(crate) fn lower_merge_request_to_foundational(
         foundational_intent,
     ))
 }
+
+#[cfg(test)]
+mod tests;

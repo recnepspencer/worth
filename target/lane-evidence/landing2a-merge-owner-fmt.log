@@ -1,0 +1,11 @@
+command: python scripts/application_build.py cargo fmt -p worth-relational -p worth-court-relational-cold-residency
+HEAD: 9addca717914f10d9d9187f41e46267ada05677b
+git_status_short_empty: false
+start_utc: 2026-11-09T23:15:04.225834+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+
+end_utc: 2026-11-09T23:15:18.144513+00:00
+exit_code: 0
+tests_passed: 0
+tests_failed: 0
+tests_ignored: 0

@@ -13,13 +13,7 @@ use crate::storage::overlay::{
     RelationalPartitionAllocationInventory,
 };
 use crate::storage::substrate::{RecordArena, RecordKind};
-#[cfg(test)]
-use crate::symbols::data::StringInterner;
 use std::sync::Arc;
-
-#[cfg(test)]
-#[path = "region_publication/full/tests.rs"]
-mod full_tests;
 
 pub(crate) struct RegionCaptureBasis<'region> {
     pub(crate) retention: &'region RelationalRegionRetention,
@@ -204,3 +198,7 @@ fn unavailable_delta<K: RecordKind>(
         .map(|&slot| unavailable(current, slot) - unavailable(previous, slot))
         .sum()
 }
+
+#[cfg(test)]
+#[path = "region_publication/full/tests.rs"]
+mod kind_commitment_preimage_tests;

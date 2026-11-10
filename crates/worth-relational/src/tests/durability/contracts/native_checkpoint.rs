@@ -232,64 +232,6 @@ fn native_checkpoint_round_trip_restores_current_relation_adjacency() {
 }
 
 #[test]
-fn repeated_native_captures_do_not_retain_checkpoint_images() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = durable_runtime_with_test_schema();
-    create_entity_outcome(execution, &runtime, "native-checkpoint-first");
-    let retained_before = runtime.durability.checkpoints().len();
-
-    for label in ["second", "third", "fourth"] {
-        runtime
-            .durability_authority()
-            .native_checkpoint(
-                execution,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .expect("each settled world encodes without retaining an internal checkpoint");
-        create_entity_outcome(execution, &runtime, label);
-    }
-    let checkpoint = runtime
-        .durability_authority()
-        .native_checkpoint(
-            execution,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("the latest settled world encodes");
-
-    assert_eq!(runtime.durability.checkpoints().len(), retained_before);
-    let mut recovered = durable_runtime_with_test_schema();
-    bind_durable_medium(&mut recovered, attached_test_medium(&runtime).attachment());
-    recovered
-        .durability_recovery()
-        .restore_native_checkpoint(execution, &checkpoint)
-        .expect("the final non-retained checkpoint restores");
-    create_entity_outcome(execution, &recovered, "post-bounded-retention-edit");
-}
-
-#[test]
-fn corrupt_native_checkpoint_is_denied_without_publishing_recovered_state() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let mut bytes = crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC.to_vec();
-    bytes.extend([0xc1, 0x00, 0xff]);
-    let corrupt = crate::facade::durability::RelationalNativeCheckpoint::from_untrusted_bytes(
-        bytes.into_boxed_slice(),
-    );
-    let mut recovered = durable_runtime_with_test_schema();
-    let error = recovered
-        .durability_recovery()
-        .restore_native_checkpoint(execution, &corrupt)
-        .expect_err("corrupt native bytes cannot become runtime authority");
-    let error = crate::tests::support::expect_durability_failure(error);
-
-    assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
-    assert_eq!(recovered.history().immutable_commit_count(), 0);
-}
-
-#[test]
 fn native_checkpoint_rejects_a_foreign_runtime_name_without_publishing_state() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);

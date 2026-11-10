@@ -112,15 +112,39 @@ impl<'runtime> MergeAccess<'runtime> {
         self.inspect_bound_planning_scope(execution, normalized_request, started_at)
     }
 
+    /// Inspect the shipping plan and its actual original history contributions.
+    pub fn inspect_planning_scope_with_contributions(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        request: OwnerBoundMergePlanningRequest,
+    ) -> Result<super::RelationalMergePlanningObservation, MergePlanningError> {
+        let started_at = Instant::now();
+        let normalized = self.normalize_bound_merge_planning_request(request)?;
+        self.observe_bound_planning_scope(execution, normalized, started_at)
+    }
+
     fn inspect_bound_planning_scope(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         normalized_request: NormalizedRelationalMergeRequest,
         started_at: Instant,
     ) -> Result<MergePlanningArtifactCore, MergePlanningError> {
+        self.observe_bound_planning_scope(execution, normalized_request, started_at)
+            .map(super::RelationalMergePlanningObservation::into_artifact)
+    }
+
+    fn observe_bound_planning_scope(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        normalized_request: NormalizedRelationalMergeRequest,
+        started_at: Instant,
+    ) -> Result<super::RelationalMergePlanningObservation, MergePlanningError> {
         let plan = self.lower_planning_scope(execution, normalized_request)?;
-        let artifact =
-            super::planning_artifact::materialize_planning_artifact(execution, self.runtime, plan)?;
+        let artifact = super::planning_artifact::materialize_planning_observation(
+            execution,
+            self.runtime,
+            plan,
+        )?;
         self.runtime
             .performance_access()
             .count_merge_planning_elapsed(started_at.elapsed().as_nanos());

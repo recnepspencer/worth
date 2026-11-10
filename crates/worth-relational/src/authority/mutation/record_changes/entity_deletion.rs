@@ -1,4 +1,4 @@
-//! Row retirement/cascade is shared; original reconstruction omits publication copies.
+//! Entity retirement publishes its deletion patch and cascades to attached relations.
 use super::super::intents::entity_authoritative_deletion_patch::plan_entity_authoritative_deletion_patch;
 use super::super::outcomes::MutationAspectPatch;
 use super::*;

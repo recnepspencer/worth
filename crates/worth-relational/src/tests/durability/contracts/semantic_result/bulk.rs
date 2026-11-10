@@ -1,9 +1,7 @@
 //! Real bulk preparation and source refusal exercise indexed correspondence checks.
 use super::*;
 use crate::symbols::data::ClientKey;
-use crate::transactions::data::{
-    BulkRelationCreateIntent, RelationalCommitSemanticResultRefusal as SemanticRefusal,
-};
+use crate::transactions::data::BulkRelationCreateIntent;
 
 fn publication(
     execution: &ExecutionRequest<'_, '_>,
@@ -102,41 +100,5 @@ fn semantic_result_bulk_entities_and_relations_seal_and_readmit_original_binding
             .any(|(_, text)| text.as_str() == "bulk-input-00"),
         "the actual symbol dictionary participates in this bulk source"
     );
-    release_test_commit_snapshot(&runtime, &committed);
-}
-
-#[test]
-fn semantic_result_bulk_malformed_correspondence_refuses_after_frame_reseal() {
-    let host = crate::test_execution_policy::serial_request();
-    let execution = &ExecutionRequest::serial(&host);
-    let (runtime, committed) = publication(execution, 8);
-    let artifact = attached_test_medium(&runtime).offered().pop().unwrap();
-    // Change only this original correspondence key in the authentic framed
-    // bytes; preserve every other semantic field without copying its owner.
-    let original_key = &committed.semantic_result().created_relations()[0].key;
-    let original = rmp_serde::to_vec_named(original_key).unwrap();
-    let mut malformed = original_key.clone();
-    malformed.client_key.push_str("-foreign");
-    let replacement = rmp_serde::to_vec_named(&malformed).unwrap();
-    let mut bytes = artifact.as_bytes().to_vec();
-    let offsets = bytes
-        .windows(original.len())
-        .enumerate()
-        .filter_map(|(offset, found)| (found == original).then_some(offset))
-        .collect::<Vec<_>>();
-    assert_eq!(offsets.len(), 1);
-    bytes.splice(offsets[0]..offsets[0] + original.len(), replacement);
-    reseal_canonical_commit_frame(&mut bytes);
-    assert!(Artifact::from_untrusted_bytes(bytes.clone()).is_ok());
-    assert!(matches!(
-        Artifact::readmit(&bytes, execution),
-        Err(
-            crate::facade::durability::RelationalCanonicalCommitArtifactRefusal::PositionAdmission(
-                crate::runtime::RelationalCanonicalPositionAdmissionDenial::SemanticResult(
-                    SemanticRefusal::ConflictingCreateCorrespondence
-                )
-            )
-        )
-    ));
     release_test_commit_snapshot(&runtime, &committed);
 }

@@ -91,15 +91,6 @@ impl DurableBranchRootSchemaImage {
         self.0.descriptor_semantics_version
     }
 
-    #[cfg(test)]
-    pub(crate) fn corrupt_schema_root_for_test(&mut self) {
-        let bytes = rmp_serde::to_vec(self).expect("valid test schema image");
-        *self = rmp_serde::from_slice(&bytes).expect("independent test schema image");
-        std::sync::Arc::get_mut(&mut self.0)
-            .expect("unique test image")
-            .schema_root[0] ^= 0x80;
-    }
-
     pub(crate) fn readmit_registry(
         &self,
     ) -> Result<(RelationalSchemaRegistry, Vec<AspectContract>), String> {

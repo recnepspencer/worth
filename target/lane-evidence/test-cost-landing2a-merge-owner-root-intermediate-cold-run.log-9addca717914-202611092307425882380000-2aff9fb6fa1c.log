@@ -1,0 +1,24 @@
+Command: ["cargo", "nextest", "run", "--cargo-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\landing2a-merge-owner-root-intermediate-cold\\build\\cargo-metadata.json", "--binaries-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\landing2a-merge-owner-root-intermediate-cold\\build\\binaries.json", "--profile", "ci", "--config-file", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\landing2a-merge-owner-root-intermediate-cold\\nextest.toml", "--ignore-default-filter", "--no-fail-fast", "--no-tests=fail", "--message-format", "libtest-json", "-E", "test(=relational::relational_certification::cold_residency::merge_history_contributions::cold_intermediate_source_commit_remains_in_shipping_merge_overlap)"]
+Working directory: C:\programming\worth worktees\worktrees\m3-p3-reopen
+HEAD: 9addca717914f10d9d9187f41e46267ada05677b
+Git status --short empty: False
+Start: 2026-11-09T23:07:42.588238+00:00
+
+{"type": "cargo-invocation", "command": ["cargo", "nextest", "run", "--cargo-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\landing2a-merge-owner-root-intermediate-cold\\build\\cargo-metadata.json", "--binaries-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\landing2a-merge-owner-root-intermediate-cold\\build\\binaries.json", "--profile", "ci", "--config-file", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\landing2a-merge-owner-root-intermediate-cold\\nextest.toml", "--ignore-default-filter", "--no-fail-fast", "--no-tests=fail", "--message-format", "libtest-json", "-E", "test(=relational::relational_certification::cold_residency::merge_history_contributions::cold_intermediate_source_commit_remains_in_shipping_merge_overlap)"], "cwd": "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen", "capture": "ordered", "mode": "build", "target_dir": "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target", "cargo_profile": "test"}
+info: experimental features enabled: wrapper-scripts
+────────────
+ Nextest run ID 9785c1d4-a49c-4882-8ec7-3acf2dbaa6cf with nextest profile: ci
+    Starting 1 test across 1 binary (84 tests skipped)
+        PASS [   7.158s] (1/1) worth-court-relational-cold-residency::worth_court_relational_cold_residency relational::relational_certification::cold_residency::merge_history_contributions::cold_intermediate_source_commit_remains_in_shipping_merge_overlap
+{"type":"suite","event":"started","test_count":1}
+{"type":"test","event":"started","name":"worth-court-relational-cold-residency::worth_court_relational_cold_residency$relational::relational_certification::cold_residency::merge_history_contributions::cold_intermediate_source_commit_remains_in_shipping_merge_overlap"}
+{"type":"test","event":"ok","name":"worth-court-relational-cold-residency::worth_court_relational_cold_residency$relational::relational_certification::cold_residency::merge_history_contributions::cold_intermediate_source_commit_remains_in_shipping_merge_overlap","exec_time":7.1575689}
+{"type":"suite","event":"ok","passed":1,"failed":0,"ignored":0,"measured":0,"filtered_out":84,"exec_time":7.1575689}
+────────────
+     Summary [   7.158s] 1 test run: 1 passed, 84 skipped
+
+
+{"type": "cargo-result", "exit_code": 0}
+
+End: 2026-11-09T23:07:50.023049+00:00
+Exit code: 0

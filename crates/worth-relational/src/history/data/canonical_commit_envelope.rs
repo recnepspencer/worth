@@ -28,6 +28,9 @@ pub(crate) use index_catalog::CanonicalIndexDefinitionDelta;
 mod descriptive_decode;
 mod original_inputs;
 pub(crate) use live_managed_source_history::LiveManagedSourceHistory;
+pub use original_inputs::{
+    RelationalIntroducedSchemaObservation, RelationalOriginalInputObservation,
+};
 mod authoritative_artifact_encoding;
 mod control_allocation;
 #[cfg(test)]
@@ -356,20 +359,6 @@ impl CanonicalCommitEnvelopeBody {
     #[cfg(test)]
     pub(crate) fn published_lineage_mut_for_test(&mut self) -> &mut PublishedLineageArtifact {
         &mut self.lineage
-    }
-
-    #[cfg(test)]
-    pub(crate) fn rebuild_lineage_basis_for_test(&mut self) {
-        self.lineage = crate::lineage::data::LineageFinalizationArtifact::new(
-            self.branch_context.clone(),
-            crate::lineage::data::FinalizedLineageEventBatch::new(
-                self.lineage.lineage_events().to_vec(),
-            ),
-            crate::lineage::data::LineageDecisionLog::new(
-                self.lineage.lineage_decision_log().to_vec(),
-            ),
-        )
-        .publish();
     }
 }
 

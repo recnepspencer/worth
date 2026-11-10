@@ -173,6 +173,88 @@ impl RelationalDurableColdSource for ImmutableCheckpointMemberSource {
 }
 
 impl ImmutableCheckpointMemberSource {
+    /// A new physical placement with one actual addressed member absent.
+    pub fn without_member(&self, member: RelationalDurableMemberLocator) -> std::sync::Arc<Self> {
+        let mut members = self.members.clone();
+        assert!(
+            members.remove(&member).is_some(),
+            "omit an actual producer member"
+        );
+        self.with_physical_members(members)
+    }
+
+    /// Install actual newly emitted members over the original immutable placement.
+    pub fn with_published_members(
+        &self,
+        entries: &[worth_relational::facade::durability::RelationalCheckpointMember],
+    ) -> std::sync::Arc<Self> {
+        use worth_relational::facade::durability::RelationalCheckpointMember as Member;
+        let mut members = self.members.clone();
+        for entry in entries {
+            match entry {
+                Member::New { locator, bytes } => {
+                    members.insert(*locator, bytes.clone());
+                }
+                Member::Carried { locator } => {
+                    assert!(
+                        members.contains_key(locator),
+                        "carried placement has its original bytes"
+                    );
+                }
+            }
+        }
+        self.with_physical_members(members)
+    }
+
+    /// Replace a physical placement with exactly the newly selected membership.
+    /// Carried members retain their actual prior bytes; unselected bytes disappear.
+    pub fn with_selected_members(
+        &self,
+        entries: &[worth_relational::facade::durability::RelationalCheckpointMember],
+    ) -> std::sync::Arc<Self> {
+        use worth_relational::facade::durability::RelationalCheckpointMember as Member;
+        let members = entries
+            .iter()
+            .map(|entry| match entry {
+                Member::New { locator, bytes } => (*locator, bytes.clone()),
+                Member::Carried { locator } => (
+                    *locator,
+                    self.members
+                        .get(locator)
+                        .expect("selected carried member has actual prior bytes")
+                        .clone(),
+                ),
+            })
+            .collect();
+        self.with_physical_members(members)
+    }
+
+    fn with_physical_members(
+        &self,
+        members: BTreeMap<RelationalDurableMemberLocator, worth_execution::ExecutionImmutableBytes>,
+    ) -> std::sync::Arc<Self> {
+        let mut canonical_members = self.canonical_members.clone();
+        for (locator, bytes) in &members {
+            if let Ok(artifact) = worth_relational::facade::durability::RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes.as_ref()) {
+                canonical_members.insert(*locator, artifact.position());
+            }
+        }
+        std::sync::Arc::new(Self {
+            members,
+            commits: self.commits.clone(),
+            canonical_members,
+            canonical_member_reads: Default::default(),
+            journal_reads: Default::default(),
+            damaged: AtomicBool::new(false),
+            reads: AtomicUsize::new(0),
+            member_reads: Default::default(),
+            commit_reads: Default::default(),
+            commits_damaged: AtomicBool::new(false),
+            failed_member: Default::default(),
+            failures: Default::default(),
+        })
+    }
+
     fn commit(&self, position: PatchStreamPosition, limit: u64) -> Result<&Vec<u8>, Cause> {
         self.journal_reads.lock().unwrap().push(position);
         self.observe_canonical_read(position)?;

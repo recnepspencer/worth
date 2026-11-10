@@ -4,9 +4,6 @@
 //! is a compile-time guarantee, proven in `tests/ui/durable_medium`.)
 
 use crate::durability::data::RecoveryVerificationMode;
-use crate::durability::medium::{
-    RelationalDurableMediumBinding, RelationalDurablePublicationRefusal, RelationalDurableStepStop,
-};
 use crate::publication::patch::data::PatchStreamPosition;
 use crate::tests::support::*;
 
@@ -54,34 +51,4 @@ fn recovery_moves_the_medium_into_the_rebuilt_runtime() {
     assert_eq!(next.patch_position(), PatchStreamPosition(2));
     assert_eq!(contents.head(), PatchStreamPosition(2));
     release_test_commit_snapshot(&runtime, &next);
-}
-
-#[test]
-fn an_attachment_the_medium_moved_out_of_publishes_nothing() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-    let source = runtime_with_test_schema();
-    let committed = create_entity_outcome(execution, &source, "positioned");
-    release_test_commit_snapshot(&source, &committed);
-    let positioned = source.history.positioned_canonical_commits_snapshot()[0].clone();
-    let contents = TestDurableMedium::new();
-    let binding = RelationalDurableMediumBinding::new(
-        crate::durability::medium::RelationalDurableMediumTransfer::fresh(contents.attachment()),
-    );
-
-    assert!(binding.detach().is_some(), "the medium moves out once");
-    assert!(binding.detach().is_none(), "and only once");
-    let artifact = source
-        .history
-        .commit_artifact(positioned.commit.commit_id)
-        .unwrap();
-    let refused = binding.publish(positioned, artifact.roots(), execution);
-
-    assert!(matches!(
-        refused,
-        Err(RelationalDurableStepStop::Refused(
-            RelationalDurablePublicationRefusal::MediumMoved
-        ))
-    ));
-    assert!(contents.offered().is_empty());
 }

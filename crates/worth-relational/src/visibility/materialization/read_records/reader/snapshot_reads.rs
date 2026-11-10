@@ -82,7 +82,9 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             .map_err(crate::execution::RelationalExecutionDenialCause::HistoricalVisibility)
     }
 
-    pub(crate) fn try_read_version(
+    /// Read a retained version with request-funded Full materialization.
+    /// Absence of a retained historical basis remains a typed inner refusal.
+    pub fn try_read_version(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         version_id: crate::identity::data::VersionId,

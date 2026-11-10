@@ -10,27 +10,6 @@ use crate::history::data::{CanonicalCommitEnvelopeBody, PositionedCanonicalCommi
 use crate::publication::patch::data::PatchStreamPosition;
 
 impl TestDurableMedium {
-    /// Keep v5's position/commit-bound frame intact while contradicting its body.
-    pub(crate) fn corrupt_artifact_commit_header_with_intact_frame(
-        &self,
-        position: PatchStreamPosition,
-    ) {
-        let mut journal = self.journal();
-        let bytes = journal
-            .bytes_at_mut(position)
-            .expect("medium holds the original frame");
-        bytes[18] ^= 0xff;
-        crate::tests::support::reseal_canonical_commit_frame(bytes);
-    }
-    /// Flip every bit of one byte of the artifact held at `position`.
-    pub(crate) fn flip_artifact_byte(&self, position: PatchStreamPosition, offset: usize) {
-        let mut journal = self.journal();
-        let bytes = journal
-            .bytes_at_mut(position)
-            .unwrap_or_else(|| panic!("medium holds no artifact at {position:?}"));
-        bytes[offset] ^= 0xff;
-    }
-
     /// Flip every bit of one byte of the filed checkpoint, keeping the
     /// position it is filed under.
     pub(crate) fn flip_checkpoint_byte(&self, offset: usize) {
@@ -63,18 +42,6 @@ impl TestDurableMedium {
         self.journal()
             .remove(position)
             .unwrap_or_else(|| panic!("medium holds no artifact at {position:?}"));
-    }
-
-    /// Hold the artifact from `from` again at position `at`, as a medium that
-    /// duplicated an earlier entry would.
-    pub(crate) fn duplicate_artifact(&self, from: PatchStreamPosition, at: PatchStreamPosition) {
-        let mut journal = self.journal();
-        let bytes = Box::from(
-            journal
-                .bytes_at(from)
-                .unwrap_or_else(|| panic!("medium holds no artifact at {from:?}")),
-        );
-        journal.replace(at, bytes);
     }
 
     /// Rewrite the envelope of the durable commit `commit_id`, wherever the

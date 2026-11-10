@@ -15,9 +15,8 @@ use crate::facade::transactions::{
     AspectFieldLocator, CreateIntent, EntityMutationIntent, MutationIntent, TransactionId,
 };
 use crate::tests::support::{
-    create_branch_from_main, create_entity, create_entity_outcome_on_branch,
-    durable_runtime_with_test_schema, entity_field_aspect, runtime_with_test_schema, update_entity,
-    CascadeDeletePolicy, CrossContextPolicy,
+    create_branch_from_main, create_entity, create_entity_outcome_on_branch, entity_field_aspect,
+    runtime_with_test_schema, update_entity, CascadeDeletePolicy, CrossContextPolicy,
 };
 use worth_foundational::facade::{AspectKey, AspectValue, InternedString};
 
@@ -33,7 +32,7 @@ fn derive_merge_commit_mutation_plan_emits_source_authorized_create_intent() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(
@@ -290,37 +289,4 @@ fn derive_merge_commit_mutation_plan_reconciles_target_with_source_authorized_as
         }
         other => panic!("expected entity field update intent, got {other:?}"),
     }
-}
-
-#[test]
-fn derive_merge_commit_mutation_plan_does_not_rely_on_raw_lowered_record_arrays() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = runtime_with_test_schema();
-    create_entity(execution, &runtime, "root");
-    create_branch_from_main(&runtime, "feature");
-    create_entity_outcome_on_branch(
-        execution,
-        &runtime,
-        "feature-only",
-        BranchId("feature".to_string()),
-    );
-
-    let mut prepared = runtime
-        .prepare_merge_execution(
-            execution,
-            MergeExecutionRequest {
-                target_branch: BranchId("main".to_string()),
-                source_branch: BranchId("feature".to_string()),
-                merge_intent: MergeIntent::ReconcileIntoTarget,
-            },
-        )
-        .expect("prepared merge");
-    prepared.execution_ready_plan_mut_for_test().lowered_records = Arc::from([]);
-
-    let plan = prepared.bind_mutation_plan_for_test(TransactionId(123));
-
-    assert_eq!(plan.structural_summary.executed_record_count, 1);
-    assert_eq!(plan.merged_plan.merged_intents.len(), 1);
 }

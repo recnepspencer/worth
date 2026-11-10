@@ -1,0 +1,91 @@
+Command: ["cargo", "nextest", "run", "--cargo-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\landing2a-merge-witness-native-initial\\build\\cargo-metadata.json", "--binaries-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\landing2a-merge-witness-native-initial\\build\\binaries.json", "--profile", "ci", "--config-file", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\landing2a-merge-witness-native-initial\\nextest.toml", "--ignore-default-filter", "--no-fail-fast", "--no-tests=fail", "--message-format", "libtest-json", "-E", "test(=tests::history::milestone_7e_phase_g::retained_merge_correspondence_witness_preserves_authority_basis_distinctions) | test(=tests::history::milestone_7e_phase_g::retained_merge_correspondence_witness_preserves_runtime_declared_key_ambiguity_as_denial) | test(=tests::history::milestone_7e_phase_g::retained_merge_correspondence_witness_rejects_forged_or_incomplete_truth) | test(=tests::history::milestone_7e_phase_h::retained_schema_reconciliation_witness_keeps_runtime_type_denial_typed) | test(=tests::history::milestone_7e_phase_h::retained_schema_reconciliation_witness_preserves_exact_category_and_linkage_truth) | test(=tests::history::milestone_7e_phase_h::retained_schema_reconciliation_witness_preserves_runtime_narrowing_truth) | test(=tests::history::milestone_7e_phase_h::retained_schema_reconciliation_witness_rejects_forged_or_rehashed_truth) | test(=tests::history::milestone_7e_phase_i::retained_merge_strategy_witness_differentiates_policy_topology_and_deletion_subidentity) | test(=tests::history::milestone_7e_phase_i::retained_merge_strategy_witness_preserves_exact_strategy_truth) | test(=tests::history::milestone_7e_phase_i::retained_merge_strategy_witness_rejects_forged_or_rehashed_truth) | test(=tests::history::milestone_7e_phase_l::merge_support_inspection_witness_denies_missing_required_proof_family) | test(=tests::history::milestone_7e_phase_m::merge_collaboration_truth_localizes_single_family_drift)"]
+Working directory: C:\programming\worth worktees\worktrees\m3-p3-reopen
+HEAD: 26cc5a58f28f3dca4ec01874eb55f68050484610
+Git status --short empty: False
+Start: 2026-11-10T00:47:39.961196+00:00
+
+{"type": "cargo-invocation", "command": ["cargo", "nextest", "run", "--cargo-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\landing2a-merge-witness-native-initial\\build\\cargo-metadata.json", "--binaries-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\landing2a-merge-witness-native-initial\\build\\binaries.json", "--profile", "ci", "--config-file", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\landing2a-merge-witness-native-initial\\nextest.toml", "--ignore-default-filter", "--no-fail-fast", "--no-tests=fail", "--message-format", "libtest-json", "-E", "test(=tests::history::milestone_7e_phase_g::retained_merge_correspondence_witness_preserves_authority_basis_distinctions) | test(=tests::history::milestone_7e_phase_g::retained_merge_correspondence_witness_preserves_runtime_declared_key_ambiguity_as_denial) | test(=tests::history::milestone_7e_phase_g::retained_merge_correspondence_witness_rejects_forged_or_incomplete_truth) | test(=tests::history::milestone_7e_phase_h::retained_schema_reconciliation_witness_keeps_runtime_type_denial_typed) | test(=tests::history::milestone_7e_phase_h::retained_schema_reconciliation_witness_preserves_exact_category_and_linkage_truth) | test(=tests::history::milestone_7e_phase_h::retained_schema_reconciliation_witness_preserves_runtime_narrowing_truth) | test(=tests::history::milestone_7e_phase_h::retained_schema_reconciliation_witness_rejects_forged_or_rehashed_truth) | test(=tests::history::milestone_7e_phase_i::retained_merge_strategy_witness_differentiates_policy_topology_and_deletion_subidentity) | test(=tests::history::milestone_7e_phase_i::retained_merge_strategy_witness_preserves_exact_strategy_truth) | test(=tests::history::milestone_7e_phase_i::retained_merge_strategy_witness_rejects_forged_or_rehashed_truth) | test(=tests::history::milestone_7e_phase_l::merge_support_inspection_witness_denies_missing_required_proof_family) | test(=tests::history::milestone_7e_phase_m::merge_collaboration_truth_localizes_single_family_drift)"], "cwd": "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen", "capture": "ordered", "mode": "build", "target_dir": "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target", "cargo_profile": "test"}
+info: experimental features enabled: wrapper-scripts
+────────────
+ Nextest run ID 2b417d6b-aeff-4102-b55a-48c42a1c6035 with nextest profile: ci
+    Starting 12 tests across 1 binary (2373 tests skipped)
+        PASS [   5.434s] ( 1/12) worth-relational tests::history::milestone_7e_phase_h::retained_schema_reconciliation_witness_keeps_runtime_type_denial_typed
+        PASS [   7.314s] ( 2/12) worth-relational tests::history::milestone_7e_phase_g::retained_merge_correspondence_witness_rejects_forged_or_incomplete_truth
+{"type":"suite","event":"started","test_count":31}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$storage::substrate::shared_column::tests::synthetic_dense_column_bootstrap_benchmark"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::durability::contracts::native_checkpoint_restore_benchmark::synthetic_native_restore_and_image_digest_benchmark"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_h::retained_schema_reconciliation_witness_keeps_runtime_type_denial_typed"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_g::retained_merge_correspondence_witness_rejects_forged_or_incomplete_truth"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_h::retained_schema_reconciliation_witness_preserves_runtime_narrowing_truth"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_h::retained_schema_reconciliation_witness_preserves_exact_category_and_linkage_truth"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_g::retained_merge_correspondence_witness_preserves_runtime_declared_key_ambiguity_as_denial"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_i::retained_merge_strategy_witness_differentiates_policy_topology_and_deletion_subidentity"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_g::retained_merge_correspondence_witness_preserves_authority_basis_distinctions"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_i::retained_merge_strategy_witness_preserves_exact_strategy_truth"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_h::retained_schema_reconciliation_witness_rejects_forged_or_rehashed_truth"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_i::retained_merge_strategy_witness_rejects_forged_or_rehashed_truth"}
+{"type":"test","event":"ignored","name":"worth-relational::worth_relational$storage::substrate::shared_column::tests::synthetic_dense_column_bootstrap_benchmark"}
+{"type":"test","event":"ignored","name":"worth-relational::worth_relational$tests::durability::contracts::native_checkpoint_restore_benchmark::synthetic_native_restore_and_image_digest_benchmark"}
+{"type":"test","event":"ok","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_h::retained_schema_reconciliation_witness_keeps_runtime_type_denial_typed","exec_time":5.4343536}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_l::merge_support_inspection_witness_denies_missing_required_proof_family"}
+{"type":"test","event":"ok","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_g::retained_merge_correspondence_witness_rejects_forged_or_incomplete_truth","exec_time":7.3138445}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::lineage::fork_scale::retained_fork_lineage_ancestry_is_flat_at_scale_profile"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::lineage::fork_scale::selected_main_lineage_is_flat_at_65_536_unrelated_commits"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::cad_topology_matrix::perf_cad_topology_matrix"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::downstream_runtime_mock_matrix::perf_downstream_runtime_mock_matrix"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::game_engine_matrix::perf_game_engine_matrix"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::geometry_artifact_decomposition_matrix::perf_geometry_artifact_decomposition_matrix"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::inspection_budget_matrix::perf_inspection_budget_matrix"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::invariant_materialization_matrix::perf_invariant_materialization_matrix"}
+{"type":"suite","event":"ok","passed":2,"failed":0,"ignored":19,"measured":0,"filtered_out":2354,"exec_time":12.7481981}
+        PASS [   8.751s] ( 3/12) worth-relational tests::history::milestone_7e_phase_h::retained_schema_reconciliation_witness_preserves_exact_category_and_linkage_truth
+        PASS [  10.250s] ( 4/12) worth-relational tests::history::milestone_7e_phase_i::retained_merge_strategy_witness_rejects_forged_or_rehashed_truth
+        PASS [  11.615s] ( 5/12) worth-relational tests::history::milestone_7e_phase_g::retained_merge_correspondence_witness_preserves_authority_basis_distinctions
+{"type":"suite","event":"started","test_count":31}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::mixed_load_matrix::perf_mixed_load_matrix"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::performance_harness_matrix::perf_harness_measurement_matrix"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::profile_matrix::capture::perf_profile_matrix"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::query_packet_matrix::perf_query_packet_matrix"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::retention_reclaim_matrix::perf_retention_reclaim_matrix"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::rocketship_scale_matrix::perf_rocketship_scale_matrix"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::snapshot_materialization_matrix::perf_snapshot_materialization_matrix"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::publication::cdc::certification::seeded_resume::cdc_certification_rewrite_storm_preserves_exact_suffix_under_tiny_windows"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::publication::cdc::certification::seeded_resume::cdc_certification_thousand_step_random_resume_matrix_converges"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_m::merge_collaboration_truth_localizes_single_family_drift"}
+{"type":"test","event":"ignored","name":"worth-relational::worth_relational$tests::performance_profiles::mixed_load_matrix::perf_mixed_load_matrix"}
+{"type":"test","event":"ignored","name":"worth-relational::worth_relational$tests::performance_profiles::performance_harness_matrix::perf_harness_measurement_matrix"}
+{"type":"test","event":"ignored","name":"worth-relational::worth_relational$tests::performance_profiles::profile_matrix::capture::perf_profile_matrix"}
+{"type":"test","event":"ignored","name":"worth-relational::worth_relational$tests::performance_profiles::query_packet_matrix::perf_query_packet_matrix"}
+{"type":"test","event":"ignored","name":"worth-relational::worth_relational$tests::performance_profiles::retention_reclaim_matrix::perf_retention_reclaim_matrix"}
+{"type":"test","event":"ignored","name":"worth-relational::worth_relational$tests::performance_profiles::rocketship_scale_matrix::perf_rocketship_scale_matrix"}
+{"type":"test","event":"ignored","name":"worth-relational::worth_relational$tests::performance_profiles::snapshot_materialization_matrix::perf_snapshot_materialization_matrix"}
+{"type":"test","event":"ignored","name":"worth-relational::worth_relational$tests::publication::cdc::certification::seeded_resume::cdc_certification_rewrite_storm_preserves_exact_suffix_under_tiny_windows"}
+{"type":"test","event":"ignored","name":"worth-relational::worth_relational$tests::publication::cdc::certification::seeded_resume::cdc_certification_thousand_step_random_resume_matrix_converges"}
+{"type":"test","event":"ok","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_h::retained_schema_reconciliation_witness_preserves_exact_category_and_linkage_truth","exec_time":8.7511972}
+{"type":"test","event":"ok","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_i::retained_merge_strategy_witness_rejects_forged_or_rehashed_truth","exec_time":10.2501187}
+{"type":"test","event":"ok","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_g::retained_merge_correspondence_witness_preserves_authority_basis_distinctions","exec_time":11.6154414}
+{"type":"suite","event":"ok","passed":3,"failed":0,"ignored":19,"measured":0,"filtered_out":2354,"exec_time":30.6167573}
+        PASS [  13.605s] ( 6/12) worth-relational tests::history::milestone_7e_phase_h::retained_schema_reconciliation_witness_preserves_runtime_narrowing_truth
+        PASS [  15.156s] ( 7/12) worth-relational tests::history::milestone_7e_phase_i::retained_merge_strategy_witness_differentiates_policy_topology_and_deletion_subidentity
+        PASS [  16.789s] ( 8/12) worth-relational tests::history::milestone_7e_phase_i::retained_merge_strategy_witness_preserves_exact_strategy_truth
+        PASS [  17.756s] ( 9/12) worth-relational tests::history::milestone_7e_phase_g::retained_merge_correspondence_witness_preserves_runtime_declared_key_ambiguity_as_denial
+        PASS [  19.009s] (10/12) worth-relational tests::history::milestone_7e_phase_h::retained_schema_reconciliation_witness_rejects_forged_or_rehashed_truth
+        PASS [  14.535s] (11/12) worth-relational tests::history::milestone_7e_phase_l::merge_support_inspection_witness_denies_missing_required_proof_family
+        PASS [  13.569s] (12/12) worth-relational tests::history::milestone_7e_phase_m::merge_collaboration_truth_localizes_single_family_drift
+────────────
+     Summary [  20.901s] 12 tests run: 12 passed, 2373 skipped
+{"type":"suite","event":"started","test_count":31}
+{"type":"test","event":"ok","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_h::retained_schema_reconciliation_witness_preserves_runtime_narrowing_truth","exec_time":13.6051435}
+{"type":"test","event":"ok","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_i::retained_merge_strategy_witness_differentiates_policy_topology_and_deletion_subidentity","exec_time":15.1558448}
+{"type":"test","event":"ok","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_i::retained_merge_strategy_witness_preserves_exact_strategy_truth","exec_time":16.7887083}
+{"type":"test","event":"ok","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_g::retained_merge_correspondence_witness_preserves_runtime_declared_key_ambiguity_as_denial","exec_time":17.7561583}
+{"type":"test","event":"ok","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_h::retained_schema_reconciliation_witness_rejects_forged_or_rehashed_truth","exec_time":19.0093876}
+{"type":"test","event":"ok","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_l::merge_support_inspection_witness_denies_missing_required_proof_family","exec_time":14.5352119}
+{"type":"test","event":"ok","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_m::merge_collaboration_truth_localizes_single_family_drift","exec_time":13.5685755}
+{"type":"suite","event":"ok","passed":7,"failed":0,"ignored":19,"measured":0,"filtered_out":2359,"exec_time":110.4190299}
+
+
+{"type": "cargo-result", "exit_code": 0}
+
+End: 2026-11-10T00:48:01.111251+00:00
+Exit code: 0

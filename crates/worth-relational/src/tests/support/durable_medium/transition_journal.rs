@@ -42,31 +42,6 @@ impl TestTransitionJournal {
         self.artifacts.entries.get(&sequence.0).map(AsRef::as_ref)
     }
 
-    pub(super) fn bytes_at_mut(
-        &mut self,
-        sequence: RelationalBranchTransitionSequence,
-    ) -> Option<&mut [u8]> {
-        self.artifacts
-            .entries
-            .get_mut(&sequence.0)
-            .map(AsMut::as_mut)
-    }
-
-    pub(super) fn replace(
-        &mut self,
-        sequence: RelationalBranchTransitionSequence,
-        bytes: Box<[u8]>,
-    ) {
-        self.artifacts.entries.insert(sequence.0, bytes);
-    }
-
-    pub(super) fn remove(
-        &mut self,
-        sequence: RelationalBranchTransitionSequence,
-    ) -> Option<Box<[u8]>> {
-        self.artifacts.entries.remove(&sequence.0)
-    }
-
     pub(super) fn artifacts_after(
         &self,
         covered: RelationalBranchTransitionSequence,

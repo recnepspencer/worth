@@ -116,46 +116,4 @@ impl<'runtime> MergeAccess<'runtime> {
     ) -> Result<(), MergeExecutionError> {
         authority_verification::verify_prepared_merge_execution(execution, self.runtime, prepared)
     }
-
-    #[cfg(test)]
-    pub(crate) fn compile_execution_ready_merge_plan_for_test(
-        &self,
-        execution_ready: &ExecutionReadyLoweredMergePlan,
-    ) -> Result<
-        crate::merge::data::BoundExecutableMergePlan,
-        crate::merge::data::MergeExecutionCompilationError,
-    > {
-        plan_compilation::compile_bound_executable_plan(
-            self.runtime,
-            &crate::merge::data::NormalizedRelationalMergeRequest::admit_full_branch(
-                execution_ready.basis.target_head.branch_id.clone(),
-                execution_ready.basis.source_head.branch_id.clone(),
-                crate::merge::data::MergeIntent::ReconcileIntoTarget,
-                crate::merge::data::RelationalMergeCorrespondencePosture::Advisory,
-                crate::merge::data::RelationalMergeSchemaReconciliationPosture::Participate,
-                crate::merge::data::RelationalMergeTopologyIntent::PreserveTopologySemantics,
-            )
-            .expect("test compilation request should admit"),
-            execution_ready,
-        )
-    }
-
-    #[cfg(test)]
-    pub(crate) fn replace_bound_merge_plan_for_test(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        prepared: &mut PreparedMergeExecution,
-        bound_executable_plan: crate::merge::data::BoundExecutableMergePlan,
-    ) -> Result<(), crate::merge::data::MergeExecutionMutationPlanError> {
-        let compiled = CompiledMergeExecution::new(
-            prepared.request().clone(),
-            prepared.artifact().clone(),
-            prepared.execution_ready_plan().clone(),
-            bound_executable_plan.clone(),
-        );
-        let mutation_plan = self.derive_merge_commit_mutation_plan(execution, &compiled)?;
-        prepared
-            .replace_bound_plan_and_mutation_plan_for_test(bound_executable_plan, mutation_plan);
-        Ok(())
-    }
 }

@@ -72,7 +72,8 @@ pub mod diagnostics {
     pub use crate::diagnostics::data::{
         DeterminismExpectation, DiagnosticCode, DiagnosticObjectFields, DiagnosticsArtifactKind,
         DiagnosticsDeliveryClass, DiagnosticsScope, RelationalArtifactPolicy,
-        RelationalDiagnosticArtifact, RelationalDiagnosticsEntry, RelationalDiagnosticsProfile,
+        RelationalDiagnosticArtifact, RelationalDiagnosticValue, RelationalDiagnosticsEntry,
+        RelationalDiagnosticsProfile,
     };
 }
 
@@ -97,8 +98,10 @@ pub mod history {
         LineageAspectResolutionDigest, MergeBasisAncestors, MergeConflictRecord, MergeInspection,
         OrderedParentList, RelationalCommitReceipt, RelationalDescriptiveTouch,
         RelationalDescriptiveTouchGraph, RelationalDescriptiveTouchPrecision,
-        RelationalMergeBranchBasisDenial, RelationalReplayRetentionDenial,
-        RelationalTouchAdjacencyDirection, SharedCanonicalCommitEnvelope, VersionGraphPolicy,
+        RelationalIntroducedSchemaObservation, RelationalMergeBranchBasis,
+        RelationalMergeBranchBasisDenial, RelationalOriginalInputObservation,
+        RelationalReplayRetentionDenial, RelationalTouchAdjacencyDirection,
+        SharedCanonicalCommitEnvelope, VersionGraphPolicy,
     };
     pub use crate::history::{
         BoundedCanonicalCommitPatchDenial, HistoryAccess, HistoryAuthority,
@@ -136,11 +139,11 @@ pub mod identity_authority {
 
 #[path = "facade/inspection.rs"]
 pub mod inspection;
-
 #[path = "facade/indexes.rs"]
 pub mod indexes;
 
 pub mod lineage {
+    pub use crate::lineage::access::{RelationalLineageDiscoveryDenial, RelationalLineageNodeRead};
     pub use crate::lineage::data::{
         HistoricalLineageResolution, HistoricalLineageResolutionDigestBasis,
         HistoricalLineageResolutionMetrics, HistoricalResolutionBoundednessBasis,
@@ -207,7 +210,7 @@ pub mod merge {
         SchemaDeclaredCorrespondenceValidationSummary, TopologyExecutionClass,
         TopologyRegionConflictReason, TopologyRewireAdmissionPolicy,
     };
-    pub use crate::merge::MergeAccess;
+    pub use crate::merge::{MergeAccess, RelationalMergePlanningObservation};
     pub use crate::transactions::data::MergeExecutionOutcome;
 }
 

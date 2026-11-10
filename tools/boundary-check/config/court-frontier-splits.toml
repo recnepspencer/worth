@@ -62,7 +62,7 @@ court = "worth-court-relational-certification"
 frontier = ["worth-relational"]
 area = "certification"
 owners = ["relational/leased_preparation", "relational/relational_certification"]
-delegates = ["basis_read_cutover", "basis_readmission", "basis_retention", "comparison_contracts", "delta_contracts", "field_contracts", "invariant_branch_selection", "invariant_global_uniqueness", "invariant_global_uniqueness/semantic_oracle", "invariant_proposed_state", "invariant_structural_selection", "mvcc_archive_retention", "mvcc_cancellation", "mvcc_cancellation_publication_boundaries", "mvcc_model_sequences", "mvcc_preparation_owner", "mvcc_retention", "oracle_ancestry", "oracle_application", "preservation_recovery", "production_failures", "production_failures/correspondence", "production_failures/unbound_observation", "production_snapshot_failures", "production_world", "read_contracts", "reference_compatibility", "reference_cost", "reference_fork", "reference_owner_binding", "reference_retention", "root_authoritative_accounting", "root_branch_copy_on_write", "root_branch_isolation", "root_branch_traversal_isolation", "root_cost_scale_axes", "root_cost_scopes", "root_delta_lowering_contracts", "root_derived_cache_accounting", "root_fork_sharing", "root_inspection_boundaries", "root_named_delta_cow", "root_persistent_path_accounting", "root_region_reuse", "root_sharing_metric_truth_lanes", "schema_contracts", "schema_transition_cancellation", "schema_transition_replay", "schema_transition_target", "standard_graph_composition", "trace_replay"]
+delegates = ["cold_residency", "basis_read_cutover", "basis_readmission", "basis_retention", "comparison_contracts", "delta_contracts", "field_contracts", "invariant_branch_selection", "invariant_global_uniqueness", "invariant_global_uniqueness/semantic_oracle", "invariant_proposed_state", "invariant_structural_selection", "mvcc_archive_retention", "mvcc_cancellation", "mvcc_cancellation_publication_boundaries", "mvcc_model_sequences", "mvcc_preparation_owner", "mvcc_retention", "oracle_ancestry", "oracle_application", "preservation_recovery", "production_failures", "production_failures/correspondence", "production_failures/unbound_observation", "production_snapshot_failures", "production_world", "read_contracts", "reference_compatibility", "reference_cost", "reference_fork", "reference_owner_binding", "reference_retention", "root_authoritative_accounting", "root_branch_copy_on_write", "root_branch_isolation", "root_branch_traversal_isolation", "root_cost_scale_axes", "root_cost_scopes", "root_delta_lowering_contracts", "root_derived_cache_accounting", "root_fork_sharing", "root_inspection_boundaries", "root_named_delta_cow", "root_persistent_path_accounting", "root_region_reuse", "root_sharing_metric_truth_lanes", "schema_contracts", "schema_transition_cancellation", "schema_transition_replay", "schema_transition_target", "standard_graph_composition", "trace_replay"]
 
 [[splits]]
 court = "worth-court-relational-branch-reference-compile-time"
@@ -274,4 +274,11 @@ court = "worth-query-court-decl-host-native-fragments"
 frontier = ["worth-query-decl", "worth-query-host"]
 area = "native-fragments"
 owners = ["native_fragments"]
+delegates = []
+
+[[splits]]
+court = "worth-court-relational-cold-residency"
+frontier = ["worth-relational"]
+area = "cold-residency"
+owners = ["relational/relational_certification/cold_residency"]
 delegates = []

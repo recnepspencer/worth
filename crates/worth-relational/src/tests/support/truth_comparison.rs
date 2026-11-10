@@ -74,15 +74,6 @@ pub(crate) fn assert_durable_commit_meaning_eq(
     );
 }
 
-pub(crate) fn durable_commit_meaning_matches(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    expected: &crate::history::data::CanonicalCommitEnvelope,
-    actual: &crate::history::data::CanonicalCommitEnvelope,
-) -> bool {
-    expected.recorded_original_inputs() == actual.recorded_original_inputs()
-        && durable_commit_data(execution, expected) == durable_commit_data(execution, actual)
-}
-
 fn durable_commit_data(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     source: &crate::history::data::CanonicalCommitEnvelope,

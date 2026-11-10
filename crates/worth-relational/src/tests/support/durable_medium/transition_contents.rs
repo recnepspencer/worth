@@ -34,34 +34,4 @@ impl TestDurableMedium {
     pub(crate) fn script_next_transition(&self, answer: ScriptedPublication) {
         self.transition_journal().scripted.push_back(answer);
     }
-
-    /// Flip every bit of one byte of the transition held at `sequence`.
-    pub(crate) fn flip_transition_byte(
-        &self,
-        sequence: RelationalBranchTransitionSequence,
-        offset: usize,
-    ) {
-        let mut journal = self.transition_journal();
-        let bytes = journal
-            .bytes_at_mut(sequence)
-            .unwrap_or_else(|| panic!("medium holds no transition at {sequence:?}"));
-        bytes[offset] ^= 0xff;
-    }
-
-    /// Hold `bytes` at `sequence`, as storage that returns bytes Relational
-    /// did not write there would.
-    pub(crate) fn replace_transition(
-        &self,
-        sequence: RelationalBranchTransitionSequence,
-        bytes: Box<[u8]>,
-    ) {
-        self.transition_journal().replace(sequence, bytes);
-    }
-
-    /// Drop the transition held at `sequence`, as a medium that lost it would.
-    pub(crate) fn remove_transition(&self, sequence: RelationalBranchTransitionSequence) {
-        self.transition_journal()
-            .remove(sequence)
-            .unwrap_or_else(|| panic!("medium holds no transition at {sequence:?}"));
-    }
 }
