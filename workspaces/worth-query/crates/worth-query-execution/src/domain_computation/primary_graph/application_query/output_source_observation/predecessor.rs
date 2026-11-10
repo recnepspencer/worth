@@ -26,13 +26,17 @@ impl<S: ApplicationSchema> SourceQueryReaderAccess<'_, S> {
     ) {
         // First/cold/restoration unavailability is an explicit data posture.
         // A handler may choose full computation, but cannot swallow admission loss.
-        // Each origin kind is named: a new one must be decided here, not
-        // swallowed (CP2b slice 4; court `predecessor/origin_kind.rs`).
-        use worth_relational::facade::mvcc::RelationalPredecessorBasisOrigin as Origin;
-        if !matches!(cause, Denial::PredecessorBasisUnavailable | Denial::Native(
-            worth_relational::facade::mvcc::RelationalPredecessorBasisDenial::PredecessorBasisUnavailableForOrigin(
-                Origin::HistoricalSelection | Origin::AuthoredRestoration))) {
-            self.predecessor_refused.borrow_mut().get_or_insert_with(|| cause.clone());
+        let data_posture = match cause {
+            Denial::PredecessorBasisUnavailable => true,
+            Denial::Native(
+                worth_relational::facade::mvcc::RelationalPredecessorBasisDenial::PredecessorBasisUnavailableForOrigin(origin),
+            ) => origin_is_data_posture(*origin),
+            _ => false,
+        };
+        if !data_posture {
+            self.predecessor_refused
+                .borrow_mut()
+                .get_or_insert_with(|| cause.clone());
         }
     }
     pub(in crate::domain_computation::primary_graph) fn prepare_predecessor<O, I>(
@@ -107,5 +111,21 @@ impl<S: ApplicationSchema> SourceQueryReaderAccess<'_, S> {
             .expect("selection requires declared predecessor reads")
             .state
             .record(read);
+    }
+}
+
+/// Each origin Native defines is decided here, with no wildcard: a new origin
+/// fails to compile until someone decides it (CP2b slice 4, review condition
+/// 7). HistoricalSelection is courted (`owned_outputs/predecessor/origin_kind.rs`).
+/// AuthoredRestoration as a data posture is not courted in Query: no public
+/// fixture republishes a predecessor-reading producer's output by authored
+/// restoration (the fixture's predecessor family is Model-rooted; Model retire
+/// deletes the document root). Courted where CAD reaches it: public #138.
+fn origin_is_data_posture(
+    origin: worth_relational::facade::mvcc::RelationalPredecessorBasisOrigin,
+) -> bool {
+    use worth_relational::facade::mvcc::RelationalPredecessorBasisOrigin as Origin;
+    match origin {
+        Origin::HistoricalSelection | Origin::AuthoredRestoration => true,
     }
 }

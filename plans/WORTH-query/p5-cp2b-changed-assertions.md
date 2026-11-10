@@ -56,10 +56,10 @@ Commit `b530c059a5`, `synchronous_edit/reconciliation/demand_after_shrink.rs`.
 - **Slice 3a:** `reconciliation/kept_refusals`.
 - **#132:** `reconciliation/late_stop`.
 - **Slice 4:**
-  - `owned_outputs/predecessor/origin_kind` (an exact-kind predecessor court: a historical-selection predecessor is a typed data posture, with mutant M-P1);
+  - `owned_outputs/predecessor/origin_kind` (an exact-kind predecessor court: a historical-selection predecessor is a typed data posture, with mutant M-P1). Query decides each origin in an exhaustive match with no wildcard, so a new origin fails to compile until decided. AuthoredRestoration as a data posture is not courted in Query: no public fixture republishes a predecessor-reading producer's output by authored restoration (the fixture's predecessor family is Model-rooted; Model retire deletes the document root). It is to be courted where CAD reaches it: public #138 (ruling D1579);
   - `reconciliation/genuine_retirement` (N1: a genuine C retirement is Retire in the edit's origin and gone from live state at the edit commit, with mutant M-N1).
 - **Mutants M-G1 and M-A1** ran against the existing `publication_count` and `failure` courts (`d1572-mutants.log` on the Mac).
 
 ## Follow-ups noticed while ledgering
 
-`reconciliation/required_output_courts.rs` `settle` still has an `eprintln!` debug line from CP2a (around `:283`). It is harmless, so it is left for whoever next touches that court.
+`reconciliation/courts.rs:265` still has an `eprintln!` debug line from CP2a. It is harmless, so it is left for whoever next touches that court.
