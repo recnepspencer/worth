@@ -1,38 +1,5 @@
 use super::*;
 
-pub(in crate::authority::mutation::intents) fn apply_original<'a>(
-    intent: &'a BulkRelationCreateIntent,
-    workspace: &mut MutationWorkspace<'a>,
-) -> Result<MutationOutcome, TransactionCommitError> {
-    let version = workspace.version_id();
-    let mut outcome =
-        MutationOutcome::with_capacity(&workspace.execution(), intent.endpoints.len(), 1)?;
-    outcome.record_event(
-        &workspace.execution(),
-        crate::authority::mutation::outcomes::MutationEvent::BulkRelationsCreated {
-            partition_id: intent.partition_id,
-            kind_id: intent.kind_id,
-            count: 0,
-        },
-    )?;
-    let empty = AspectFieldPatch::default();
-    for (row, (source, target)) in intent.endpoints.iter().enumerate() {
-        let fields = intent.field_patches.get(row).unwrap_or(&empty);
-        apply_relation_row(
-            intent,
-            workspace,
-            &mut outcome,
-            version,
-            row,
-            source,
-            target,
-            fields,
-        )?;
-    }
-    outcome.set_last_event_count(intent.endpoints.len());
-    Ok(outcome)
-}
-
 pub(super) fn apply_relation_row<'a>(
     intent: &'a BulkRelationCreateIntent,
     workspace: &mut MutationWorkspace<'a>,
@@ -106,7 +73,7 @@ pub(super) fn apply_relation_row<'a>(
         // Both staging adapters emit canonical ImportReductionKey row order.
         // Binding keys borrow that SAME original row instead of cloned packets.
         let (original_source,original_target)=intent.endpoints.get(row_index)
-            .expect(/* Proof: Only the ordered staging adapter and the original enumerate loop call this private row function, with their identical original endpoint ordinal. */ "row ordinal belongs to its original endpoints");
+            .expect(/* Proof: Only the leased and ordered staging adapters call this private row function, each with the ordinal of the intent endpoint row it staged. */ "row ordinal belongs to its original endpoints");
         workspace.register_created_relation(
             intent.partition_id,
             intent.kind_id,

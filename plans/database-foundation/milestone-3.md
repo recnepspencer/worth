@@ -39,6 +39,14 @@ each invariant is enforced and where each new type lives.
   This is relocation with its original guard assertions, not retirement or
   weakened evidence. Restore with genuine owned inputs, without reviving the
   removed local provider/discovery adapters.
+  The `cfg(test)` plan-mutation hooks only these merge roots called were removed
+  with them. Restore `execution_ready_plan_mut_for_test`,
+  `authority_binding_mut_for_test`, `bound_executable_plan_mut_for_test` and
+  `replace_bound_plan_and_mutation_plan_for_test` from
+  `f9f15bf8c8:crates/worth-relational/src/merge/data/execution/test_support.rs`,
+  and `compile_execution_ready_merge_plan_for_test` and
+  `replace_bound_merge_plan_for_test` from
+  `f9f15bf8c8:crates/worth-relational/src/merge/execution/mod.rs`.
 
 
 - `retained_merge_strategy_witness_live_authority_denies_internal_forged_strategy_truth`: `restore from 26cc5a58f2:crates/worth-relational/src/tests/history/milestone_7e_phase_i/mod.rs`.
@@ -76,6 +84,24 @@ each invariant is enforced and where each new type lives.
   weakened fault assertions.
 
 ### C2 - Cost and bounds: backing and work budgets
+
+- `controlled_resident_cell_keeps_exact_charge_until_last_real_weak` and
+  `controlled_resident_cell_refuses_exact_control_before_any_new_arc`:
+  `restore from f9f15bf8c8:crates/worth-relational/src/storage/residency/cell/resident_full/tests.rs`.
+- `controlled_full_region_matches_prior_projection_preimages_and_legacy_truth` and
+  `controlled_full_commitment_clone_retains_only_its_actual_node_backing`:
+  `restore from f9f15bf8c8:crates/worth-relational/src/storage/residency/region_publication/full/tests.rs`.
+  These four assert the exact request-funded bills of `resident_for_request` and
+  `PreparedResidentRegion::initial_for_request`. The ordinary kind-commitment
+  preimage oracle of the third root is not moved: it stays in the tree on the
+  live producer as `full_region_kind_commitment_matches_independent_projection_preimages`
+  (`storage/residency/region_publication/kind_commitment_preimage_tests.rs`). Both constructors had no
+  production caller and were deleted with the 32 Native dead-code diagnostics
+  (`target/lane-evidence/landing2a-dead-code-deletion-notes.md`); the live Full
+  producer `PreparedResidentRegion::initial` takes no request, so the bills
+  cannot be observed through it. C2 restores the constructors with these roots
+  from the same SHA only if request-funded Full construction gains a production
+  caller; otherwise C2 states the equivalent bound on the live producer.
 
 - Instrumentation half of `execute_prepared_merge_reports_execution_counters_and_structural_summary`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7c_phase_e/execution_counters_diagnostics.rs`.
 - Instrumentation half of `execute_prepared_merge_records_attempt_without_success_on_failure`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7c_phase_e/failure_attempt_diagnostics.rs`.

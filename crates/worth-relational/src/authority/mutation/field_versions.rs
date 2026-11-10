@@ -1,5 +1,3 @@
-mod original;
-pub(super) use original::write_original_field_versions_for_binding;
 use worth_foundational::facade::{
     AspectBinding, AspectShape, ContractValidatedAspectValueView, FieldKey,
 };

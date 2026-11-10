@@ -7,6 +7,35 @@ Counts so far: clippy 4 (batch1..4; batch2 first attempt was a cached no-op),
 focused builds 2 (court, native lib), test runs 3 (public 41/0/0; native 20/1/0;
 control 0/2/0), tool runs: boundary 2, agent-context 1, line caps 1.
 
+## COMMITS
+- 780fe3ecfe test(native): port merge execution courts to public owners
+  (slice A; independent review APPROVE, claude-review-A.md; 2 config/spec
+  minors fixed before commit).
+  Deferred MINOR follow-ups from that review (need a compile round):
+  (a) rename `merge_commit_context_rejects_mismatched_parent_branch_metadata`
+      in merge_unknown_source_admission.rs to its real claim, or retire it if
+      merge_basis_journeys.rs:145 already covers it;
+  (b) expose entity/relation counts from VisibleTruthSummary and delete
+      `visible_named_counts` in merge_execution_certification.rs;
+  (c) move `prepare_feature_merge` from merge_prepared_verification.rs to
+      merge_feature_execution.rs;
+  (d) tidy ledgers; narrow two `pub(super)`; "counters" still in two test names.
+
+## REVIEW OF DC AND B1 (claude-review-DC-B1.md): both REJECT, one MAJOR each
+- DC-1: kind-commitment preimage oracle dropped -> FIXED by new owner test
+  storage/residency/region_publication/kind_commitment_preimage_tests.rs.
+- B1-1: four Memory-only roots wrongly moved (canonical_commit_artifact/refusals.rs
+  x3, descriptor_continuity semantics-version test) -> RESTORED in place; spec
+  entries, baseline row and ledgers corrected (108 roots moved now: 90 C4... see
+  claude-durability-moved-roots.json).
+- B1 minor: empty impl in lifecycle_order_control.rs removed; the remaining
+  cfg(test) lifecycle control is now unarmable (follow-up: remove the whole
+  control or keep it whole).
+- Review-fix round logs: claude-reviewfix-{fmt,clippy,native}.log. After it is
+  green: rerun claude_slice_files.py, resume the reviewer for a re-verdict, then
+  `python target/lane-evidence/claude_stage_slice.py DC` + `git commit -F
+  target/lane-evidence/claude-commit-DC.txt`, same for B1.
+
 ## STATE 2026-11-10 ~08:45 UTC
 - Clippy all-targets clean (claude-batch4-clippy.log): lib 0 warnings; 2
   test-build warnings in tests/support/durable_medium.rs (TestRecoverySourceRefusal

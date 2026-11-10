@@ -1,4 +1,4 @@
-//! Row retirement/cascade is shared; original reconstruction omits publication copies.
+//! Entity retirement publishes its deletion patch and cascades to attached relations.
 use super::super::intents::entity_authoritative_deletion_patch::plan_entity_authoritative_deletion_patch;
 use super::super::outcomes::MutationAspectPatch;
 use super::*;
@@ -66,28 +66,6 @@ pub(in crate::authority::mutation) fn delete_entity_with_cascade(
         outcome,
         input,
         patch,
-    )
-}
-pub(in crate::authority::mutation) fn delete_entity_with_cascade_original(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    state: &mut WorkingState,
-    version_id: crate::identity::data::VersionId,
-    entity_id: EntityId,
-    schema_registry: &RelationalSchemaRegistry,
-    default_cascade_delete_policy: CascadeDeletePolicy,
-    outcome: &mut MutationOutcome,
-) -> Result<(), crate::transactions::data::TransactionCommitError> {
-    let input = input(state, entity_id)?;
-    retire(
-        execution,
-        state,
-        version_id,
-        entity_id,
-        schema_registry,
-        default_cascade_delete_policy,
-        outcome,
-        input,
-        None,
     )
 }
 fn retire(

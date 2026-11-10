@@ -1,6 +1,6 @@
 use crate::authority::mutation::outcomes::MutationOutcome;
 use crate::authority::mutation::record_changes::{
-    allocate_entity_with_extra, delete_entity_with_cascade, delete_entity_with_cascade_original,
+    allocate_entity_with_extra, delete_entity_with_cascade,
 };
 use crate::authority::mutation::stale_targets::ensure_entity_target_is_current;
 use crate::authority::mutation::MutationWorkspace;
@@ -13,19 +13,6 @@ use super::record_aspect_patch;
 pub(super) fn apply(
     intent: &ReplaceEntityIntent,
     workspace: &mut MutationWorkspace<'_>,
-) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
-    apply_using(intent, workspace, delete_entity_with_cascade)
-}
-pub(super) fn apply_original(
-    intent: &ReplaceEntityIntent,
-    workspace: &mut MutationWorkspace<'_>,
-) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
-    apply_using(intent, workspace, delete_entity_with_cascade_original)
-}
-fn apply_using(
-    intent: &ReplaceEntityIntent,
-    workspace: &mut MutationWorkspace<'_>,
-    delete: super::delete_entity::DeleteEntity,
 ) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
     let version_id = workspace.version_id();
     let cascade_delete_policy = workspace.cascade_delete_policy();
@@ -45,7 +32,7 @@ fn apply_using(
     let mut outcome = MutationOutcome::entity_deleted(&workspace.execution(), intent.entity_id)?;
     let replacement_id = workspace.with_context(|context| {
         ensure_entity_target_is_current(context.state, intent.entity_id)?;
-        delete(
+        delete_entity_with_cascade(
             &context.execution,
             context.state,
             version_id,

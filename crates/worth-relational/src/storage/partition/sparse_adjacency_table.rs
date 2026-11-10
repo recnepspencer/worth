@@ -121,12 +121,6 @@ impl SparseAdjacencyTable {
         self.entries.into_iter()
     }
 
-    pub(crate) fn from_entries(entries: impl IntoIterator<Item = (usize, AdjacencySet)>) -> Self {
-        Self {
-            entries: entries.into_iter().collect(),
-        }
-    }
-
     pub(crate) fn allocation_bytes(&self) -> u64 {
         self.entries.allocation_bytes()
     }

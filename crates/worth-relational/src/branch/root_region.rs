@@ -24,22 +24,6 @@ pub(crate) struct RelationalRootRegion {
 }
 
 impl RelationalRootRegion {
-    pub(in crate::branch) fn new_for_request(
-        creation_root_id: u64,
-        id: u64,
-        partition: PartitionState,
-        symbols: &dyn crate::symbols::data::SymbolTextLookup,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<std::sync::Arc<Self>, RelationalBranchRootCaptureDenial> {
-        let partition_id = partition.partition_id;
-        let memory = super::root::reserve_arc_memory::<Self>(Some(execution))?;
-        let prepared = PreparedResidentRegion::initial_for_request(execution, partition, symbols)
-            .map_err(|failure| capture_failure(partition_id, failure))?;
-        let mut region = Self::from_prepared(creation_root_id, id, prepared);
-        region._memory = memory;
-        Ok(std::sync::Arc::new(region))
-    }
-
     pub(super) fn new(
         creation_root_id: u64,
         id: u64,

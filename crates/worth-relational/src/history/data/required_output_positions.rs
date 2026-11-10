@@ -2,7 +2,6 @@
 //! This derived selection image grants no ownership without native/proof custody.
 mod checkpoint;
 mod readmission;
-mod reconstruction;
 use super::CommitId;
 use crate::identity::data::EntityId;
 use crate::mvcc::RequiredOutputPublicationMeaning as Meaning;

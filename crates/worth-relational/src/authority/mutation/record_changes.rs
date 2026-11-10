@@ -92,7 +92,7 @@ pub(super) fn allocate_relation(
 }
 
 mod entity_deletion;
-pub(super) use entity_deletion::{delete_entity_with_cascade, delete_entity_with_cascade_original};
+pub(super) use entity_deletion::delete_entity_with_cascade;
 
 pub(crate) use adjacency::{apply_adjacency_deltas, apply_adjacency_deltas_for_request};
 mod adjacency;

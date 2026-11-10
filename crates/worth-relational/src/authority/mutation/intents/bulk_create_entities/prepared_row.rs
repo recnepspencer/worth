@@ -1,48 +1,6 @@
 use super::*;
 use crate::symbols::data::ClientKey;
 
-pub(in crate::authority::mutation::intents) fn apply_original<'a>(
-    intent: &'a BulkEntityCreateIntent,
-    workspace: &mut MutationWorkspace<'a>,
-) -> Result<MutationOutcome, TransactionCommitError> {
-    let mut outcome =
-        MutationOutcome::with_capacity(&workspace.execution(), intent.field_patches.len(), 1)?;
-    outcome.record_event(
-        &workspace.execution(),
-        crate::authority::mutation::outcomes::MutationEvent::BulkEntitiesCreated {
-            partition_id: intent.partition_id,
-            kind_id: intent.kind_id,
-            count: 0,
-        },
-    )?;
-    let version = workspace.version_id();
-    for (client, fields) in intent.client_keys.iter().zip(&intent.field_patches) {
-        let target = RecordAspectPatchTarget::EntityCreation {
-            kind_id: intent.kind_id,
-        };
-        let patch = record_aspect_patch::readmit_field_authoring(
-            &workspace.execution(),
-            fields,
-            PortablePatchReadmissionPurpose::RecordCreation,
-            workspace.entity_aspect_plan(intent.kind_id),
-            target,
-            FieldAuthoringDomain::Entity,
-        )?;
-        let extra =
-            record_aspect_patch::apply_entity(&workspace.execution(), None, &patch, target)?;
-        apply_prepared_row(
-            intent,
-            workspace,
-            &mut outcome,
-            version,
-            client,
-            (patch, extra),
-        )?;
-    }
-    outcome.set_last_event_count(intent.field_patches.len());
-    Ok(outcome)
-}
-
 pub(super) fn apply_prepared_row<'a>(
     intent: &'a BulkEntityCreateIntent,
     workspace: &mut MutationWorkspace<'a>,

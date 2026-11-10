@@ -108,8 +108,7 @@ fn fixture() -> Fixture {
         .unwrap()
         .carrier_digest();
     let symbols = runtime.services.symbols.interner_snapshot();
-    let prepared =
-        PreparedResidentRegion::initial_for_request(&request, partition, &symbols).unwrap();
+    let prepared = PreparedResidentRegion::initial(partition, &symbols).unwrap();
     drop(root);
     drop(runtime);
     Fixture {

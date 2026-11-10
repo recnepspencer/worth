@@ -3,7 +3,6 @@ mod demand;
 mod member_export;
 #[path = "cell/observation.rs"]
 mod observation;
-mod resident_full;
 mod source_retirement;
 mod state;
 use state::RegionState;

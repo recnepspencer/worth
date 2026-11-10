@@ -33,15 +33,9 @@ fn an_owned_head_promotes_without_a_checkpoint_and_keeps_its_old_observation() {
         .apply_extra_update(fixture.entity.slot_index(), extra.clone(), VersionId(1_000))
         .expect("fixture slot is materialized");
     let symbols = candidate_symbols.interner_snapshot();
-    assert!(matches!(
-        PreparedResidentRegion::initial(partial.clone(), &symbols),
-        Err(RegionContentFailure::Content(
-            crate::storage::overlay::PartitionContentDigestError::InvalidHistoryCoverage
-        ))
-    ));
     let reads = fixture.source.reads.load(Ordering::SeqCst);
     assert!(matches!(
-        PreparedResidentRegion::initial_for_request(execution, partial.clone(), &symbols),
+        PreparedResidentRegion::initial(partial.clone(), &symbols),
         Err(RegionContentFailure::Content(
             crate::storage::overlay::PartitionContentDigestError::InvalidHistoryCoverage
         ))

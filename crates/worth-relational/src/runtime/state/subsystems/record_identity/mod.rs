@@ -1,7 +1,6 @@
 mod allocation_batch;
 mod checkpoint_snapshot;
 mod observation;
-mod original_cursor;
 mod partition_frontier;
 pub(crate) use allocation_batch::MutationRecordAllocations;
 pub use observation::{
