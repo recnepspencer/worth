@@ -165,3 +165,34 @@ refusal: any stage, producer, seal or qualification refusal names its subject an
 - **Stage handlers read the candidate.** A stage after the first runs its handler with C authorization and D data at the current candidate pin, through the provider-session read the producers use (`coupled_source::read`). This is L1's one new Query read mechanism.
 - **API.** An envelope request takes `.stage::<Root>(intent)` per authored stage, then `.idempotency(..)` and `execute_performed::<Program>`. Each stage names its root of the one program. The roots seed one wave (`synchronous_outputs/capture.rs:144-171` becomes a collection).
 - **Durable shape.** The new variant is `CanonicalCoupledAuthoredSources::Stages`, beside `Edit` (`coupled_authored.rs:12-17`), and is courted cold (row 11). An envelope with no producer participant commits through the existing `install_empty` path.
+
+## 11. L1 lands as L1a (Native) and L1b (Query) (2026-11-10, lane decision: land small)
+
+L1 as a single landing would combine a stored-format addition with a new generic Query entry. L1a's Native contract can be reviewed on its own.
+
+### L1a header: Native authored stages
+
+- **Usable result:** one Native coupled commit carries the authored prefix, later authored stages and producer parts.
+  - Native admits each stage source up front (`readmit_edit_coupled_stage_owners`, the union of their current owners) and applies each stage once, in roster order, before any producer, over the candidate pin (`append_authored_stage`).
+  - Each stage's touches project from its own commands (`authored_stage_mutation_touches`).
+  - The canonical event records the stage sources (`CommitPublication::coupled_authored_stage_sources`).
+  - Commits per envelope: 1 (Native court).
+  - Stored format: adds the variant `CanonicalCoupledAuthoredSources::Stages`, appended last, and changes no existing one.
+- **Requires:**
+  - merge `d39fc1fd21`;
+  - plan `b9ae180743` (D1588, D1590);
+  - Native's pin path (`coupled_assembly/part.rs`, now `part/suffix.rs`);
+  - the authored writer custody (`writer_custody::Writer::AuthoredPrefix`).
+- **Establishes:**
+  - L1b may rely on the entries above and on `CoupledFreshWriter`.
+  - L1b may not assume:
+    - a stage after a producer: refused `UnadmittedAuthoredStage` until L2's qualification;
+    - a later stage writing a record an earlier stage wrote: one Native commit carries one intent per record, so it is refused `ConflictingIntent`, and stages write disjoint records;
+    - unscoped local client keys: Native scopes each applied part's local keys, so L1b resolves a stage's created references through the stage's applied outcome;
+    - a courted short-list header check (public #140).
+- **Not in parallel with:** as L1.
+- **Closes when:** the Native stage courts and the Phase 1 regression courts are green, mutants M-a1..M-a6 are killed (`l1a-mutants*.log`), and the review is certified.
+
+### L1b header
+
+L1b is L1's header with the Native items removed. It delivers the envelope entry; stage handlers at the candidate pin with C authorization and D data; each stage's reads in the final support check; several roots; the drift identity with D1590's replay courts; the single refusal slot; the DAG; and the capability-index sentence. Rows 1-10 of section 6 are its courts.
