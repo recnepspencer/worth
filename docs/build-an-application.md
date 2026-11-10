@@ -420,7 +420,7 @@ posture = "domain"
 reason = "Reference-free numerical ratio with a canonical representation."
 ```
 
-The guard follows Cargo library roots, actual modules, explicit imports, aliases,
+The guard follows Cargo library and binary roots, actual modules, imports, re-exports, aliases,
 all fields and enum variants, and concrete generic arguments. Platform entity and
 content references are always refused. Unknown types, ambiguous imports, transforming
 attributes, generated bindings and unsupported local scopes refuse a proof. The

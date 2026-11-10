@@ -4,6 +4,7 @@ mod canonical_claims;
 mod claims;
 mod closure;
 mod config;
+mod derive_origin;
 mod macro_origin;
 mod modules;
 mod type_resolution;
@@ -49,19 +50,24 @@ fn roots(input: &Inputs) -> Result<BTreeMap<String, String>, Vec<String>> {
                 }
             }
             for target in &package.targets {
-                if target.kind.iter().any(|kind| kind == "lib")
+                let binary = target.kind.iter().any(|kind| kind == "bin");
+                if (binary || target.kind.iter().any(|kind| kind == "lib"))
                     && (input.files.contains_key(&target.src_path)
                         || ["worth_query_decl", "worth_query_declaration"]
                             .contains(&target.name.as_str()))
                 {
+                    // A package's library and binary may have the same Cargo
+                    // name, but `crate` names a different module tree in each.
+                    let name = if binary {
+                        format!("{}[{}]", target.name.replace('-', "_"), target.src_path)
+                    } else {
+                        target.name.clone()
+                    };
                     if roots
-                        .insert(target.name.clone(), target.src_path.clone())
+                        .insert(name, target.src_path.clone())
                         .is_some_and(|previous| previous != target.src_path)
                     {
-                        return Err(vec![format!(
-                            "ambiguous Cargo library root {}",
-                            target.name
-                        )]);
+                        return Err(vec![format!("ambiguous Cargo crate root {}", target.name)]);
                     }
                 }
             }
@@ -76,7 +82,7 @@ fn check_sources(
     registry: &str,
 ) -> Result<(), Vec<String>> {
     let registrations = registrations(files, registry).map_err(|error| vec![error])?;
-    let sources = modules::Sources { files, roots };
+    let sources = modules::Sources::new(files, roots);
     let mut claims = Vec::new();
     let mut errors = Vec::new();
     for (source, text) in files {
@@ -127,17 +133,18 @@ fn check_sources(
             ));
             continue;
         }
-        let result = sources.find_source(&claim.source).and_then(|mut context| {
-            context.extend(claim.modules);
-            sources.certify_context(&context)?;
-            if let Some(origin) = &claim.origin {
-                sources.macro_origin(&context, origin, 0)?;
+        let result = sources.find_sources(&claim.source).and_then(|contexts| {
+            for mut context in contexts {
+                context.extend(claim.modules.clone());
+                sources.certify_context(&context)?;
+                if let Some(origin) = &claim.origin {
+                    sources.macro_origin(&context, origin, 0)?;
+                }
+                if !matches!(registration.posture, Posture::Diagnostic) {
+                    closure::check(&sources, &context, &claim.value, &registration.forbidden)?;
+                }
             }
-            if matches!(registration.posture, Posture::Diagnostic) {
-                Ok(Vec::new())
-            } else {
-                closure::check(&sources, &context, &claim.value, &registration.forbidden)
-            }
+            Ok(())
         });
         if let Err(error) = result {
             errors.push(format!("{}::{binding}: {error}", claim.source));

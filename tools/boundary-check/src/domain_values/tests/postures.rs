@@ -1,5 +1,6 @@
 //! Classification is mandatory; only reviewed diagnostics skip the field walk.
 use super::{registration, run};
+mod source_context;
 
 fn canonical(value: &str, constructor: &str) -> String {
     format!(
@@ -129,4 +130,181 @@ fn sdk_registrations_require_posture_and_reject_unknown_postures() {
         let error = run(&source, &invalid).unwrap_err().join("\n");
         assert!(error.contains("posture"), "{error}");
     }
+}
+
+#[test]
+fn binary_crate_roots_own_registered_claims_and_refuse_unregistered_claims() {
+    use crate::{
+        config::{Code, Metadata, Package, Target},
+        inputs::Inputs,
+    };
+    let source = canonical("u64", "of");
+    let registry = policy("domain").replace("app/lib.rs", "app/values.rs");
+    let mut input = Inputs::fixture(
+        &[
+            ("app/main.rs", "mod values;"),
+            ("app/values.rs", &source),
+            ("bindings.toml", &registry),
+        ],
+        "",
+    );
+    input.graphs.insert(
+        "Cargo.toml".into(),
+        Metadata {
+            packages: vec![Package {
+                targets: vec![Target {
+                    name: "app".into(),
+                    kind: vec!["bin".into()],
+                    src_path: "app/main.rs".into(),
+                }],
+                ..Default::default()
+            }],
+            ..Default::default()
+        },
+    );
+    assert!(super::super::check_registry(&input, "bindings.toml").is_empty());
+    // A same-named library cannot replace the binary's module tree.
+    input
+        .files
+        .insert("app/lib.rs".into(), "pub struct Other;".into());
+    input.graphs.get_mut("Cargo.toml").unwrap().packages[0]
+        .targets
+        .push(Target {
+            name: "app".into(),
+            kind: vec!["lib".into()],
+            src_path: "app/lib.rs".into(),
+        });
+    assert!(super::super::check_registry(&input, "bindings.toml").is_empty());
+    input
+        .files
+        .insert("bindings.toml".into(), "binding=[]".into());
+    let diagnostics = super::super::check_registry(&input, "bindings.toml");
+    assert_eq!(diagnostics.len(), 1, "{diagnostics:?}");
+    assert_eq!(diagnostics[0].code, Code::DomainValue);
+    assert!(diagnostics[0].message.contains("app/values.rs::Binding"));
+    assert!(diagnostics[0].message.contains("needs exactly one"));
+}
+
+#[test]
+fn whole_standard_values_resolve_after_glob_imports_without_ignoring_shadowing() {
+    use super::{check_sources, roots, Files};
+    for value in ["String", "bool", "u64", "i32", "Option<Vec<String>>"] {
+        let binding =
+            canonical("u64", "of").replace("type Value = Leaf;", &format!("type Value = {value};"));
+        let registry = policy("domain").replace("app/lib.rs", "app/values.rs");
+        let mut files = Files::from([
+            ("app/lib.rs".into(), "mod values;".into()),
+            ("app/values.rs".into(), format!("use super::*; {binding}")),
+            ("bindings.toml".into(), registry),
+        ]);
+        assert_eq!(
+            check_sources(&files, roots(), "bindings.toml"),
+            Ok(()),
+            "{value}"
+        );
+        files.insert(
+            "app/lib.rs".into(),
+            "mod values; struct String { hidden: EntityRef }".into(),
+        );
+        if value.contains("String") {
+            let error = check_sources(&files, roots(), "bindings.toml")
+                .unwrap_err()
+                .join("\n");
+            assert!(error.contains("EntityRef"), "{error}");
+        }
+        files.insert(
+            "app/lib.rs".into(),
+            "mod values; use unavailable::*;".into(),
+        );
+        assert!(check_sources(&files, roots(), "bindings.toml").is_err());
+    }
+}
+
+#[test]
+fn generic_arguments_follow_parent_globs_and_grouped_foreign_reexports() {
+    use super::{check_sources, roots, Files};
+    let binding =
+        canonical("u64", "delegated").replace("type Value = Leaf;", "type Value = Amount<Unit>;");
+    let registry = policy("domain").replace("app/lib.rs", "app/transcript/binding.rs");
+    let mut files = Files::from([
+        ("app/lib.rs".into(), "mod transcript;".into()),
+        (
+            "app/transcript.rs".into(),
+            "pub use owner::model::{Amount, Unit}; mod binding;".into(),
+        ),
+        (
+            "app/transcript/binding.rs".into(),
+            format!("use super::*; {binding}"),
+        ),
+        ("owner/lib.rs".into(), "pub mod model;".into()),
+        (
+            "owner/model.rs".into(),
+            "mod number; pub use number::{Amount, Unit};".into(),
+        ),
+        ("bindings.toml".into(), registry),
+    ]);
+    let mut roots = roots();
+    roots.insert("owner".into(), "owner/lib.rs".into());
+    for payload in ["", "{ hidden: EntityRef }"] {
+        let unit = if payload.is_empty() { ";" } else { payload };
+        files.insert("owner/model/number.rs".into(), format!(
+            "use std::marker::PhantomData; pub struct Unit{unit} pub struct Amount<T> {{ minor: i64, unit: PhantomData<T> }}"
+        ));
+        let result = check_sources(&files, roots.clone(), "bindings.toml");
+        if payload.is_empty() {
+            assert_eq!(result, Ok(()));
+        } else {
+            let error = result.unwrap_err().join("\n");
+            assert!(error.contains("EntityRef"), "{error}");
+        }
+    }
+    // Distinct glob candidates must refuse rather than selecting one owner.
+    files.insert(
+        "app/transcript.rs".into(),
+        "pub use owner::model::*; pub use other::*; mod binding; mod other { pub struct Unit; }"
+            .into(),
+    );
+    let error = check_sources(&files, roots, "bindings.toml")
+        .unwrap_err()
+        .join("\n");
+    assert!(error.contains("ambiguous glob"), "{error}");
+}
+
+#[test]
+fn source_preserving_namespace_attributes_do_not_license_type_transformations() {
+    use super::{check_sources, roots, Files};
+    let binding = canonical("u64", "of");
+    let registry = policy("domain").replace("app/lib.rs", "app/values.rs");
+    let mut files = Files::from([
+        (
+            "app/lib.rs".into(),
+            "#![cfg_attr(test, allow(unused))] #[macro_use] mod definitions; mod values;".into(),
+        ),
+        (
+            "app/definitions.rs".into(),
+            "#[macro_export] macro_rules! unrelated { () => {} }".into(),
+        ),
+        ("app/values.rs".into(), binding.clone()),
+        ("bindings.toml".into(), registry),
+    ]);
+    assert_eq!(check_sources(&files, roots(), "bindings.toml"), Ok(()));
+    for root in [
+        "#[cfg_attr(all(), path=\"other.rs\")] mod values;",
+        "#![cfg_attr(test, replace)] mod values;",
+    ] {
+        files.insert("app/lib.rs".into(), root.into());
+        let error = check_sources(&files, roots(), "bindings.toml")
+            .unwrap_err()
+            .join("\n");
+        assert!(error.contains("attribute"), "{error}");
+    }
+    files.insert(
+        "app/lib.rs".into(),
+        "#[macro_use] mod definitions; mod values;".into(),
+    );
+    files.insert("app/values.rs".into(), format!("unrelated!(); {binding}"));
+    let error = check_sources(&files, roots(), "bindings.toml")
+        .unwrap_err()
+        .join("\n");
+    assert!(error.contains("unknown binding macro origin"), "{error}");
 }
