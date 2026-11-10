@@ -14,6 +14,10 @@ pub use worth_query_testkit_execution_primary_graph_application_contribution::do
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::MultiFieldRetentionOperation;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::WrongFieldRetentionOperation;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcome;
+use worth_query_execution::facade::domain_computation::{
+    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
+};
+pub use worth_query_execution::facade::primary_graph::WorthQueryPreImageRetentionDenial;
 
 pub fn relational_head(
     phase_custody: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
@@ -29,11 +33,22 @@ pub fn relational_head(
         .expect("fixture has a Relational head")
 }
 
-pub fn assert_retention_denied(outcome: &WorthQueryApplicationCommitOutcome) {
-    assert!(
-        matches!(outcome, WorthQueryApplicationCommitOutcome::Aborted),
-        "unexpected retention-denial outcome: {outcome:?}"
+pub fn assert_retention_denied(
+    outcome: &WorthQueryApplicationCommitOutcome,
+    expected: WorthQueryPreImageRetentionDenial,
+) {
+    let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
+        panic!("unexpected retention-denial outcome: {outcome:?}");
+    };
+    assert_eq!(
+        denial.kind(),
+        WorthQueryApplicationCommitDenialKind::ProviderRejected
     );
+    assert_eq!(
+        denial.stage(),
+        WorthQueryApplicationCommitDenialStage::ProviderCommit
+    );
+    assert_eq!(denial.preimage_retention_denial(), Some(expected));
 }
 
 #[test]
@@ -141,7 +156,10 @@ fn right_record_wrong_field_retention_denial_commits_nothing() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     );
 
-    assert_retention_denied(&outcome);
+    assert_retention_denied(
+        &outcome,
+        WorthQueryPreImageRetentionDenial::MissingDemandedField,
+    );
     let after = world
         .application
         .with_host_advancement(|phase| relational_head(&phase, &world))
