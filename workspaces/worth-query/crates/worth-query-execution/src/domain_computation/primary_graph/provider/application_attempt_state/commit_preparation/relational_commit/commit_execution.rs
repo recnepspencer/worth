@@ -65,6 +65,8 @@ pub(in crate::domain_computation::primary_graph::provider) struct WorthQueryComm
         Option<crate::domain_computation::primary_graph::output_lineage::PreparedOutputLineageSlot>,
     prepared_output_witness:
         Option<crate::domain_computation::primary_graph::output_lineage::PreparedNativeOutputWitness>,
+    /// One coupled commit's deletions, shared by its root's and members' sessions.
+    coupled_deletions: super::evidence_seal::postcommit_currentness::coupled_deletions::CoupledCommitDeletions,
 }
 
 #[derive(Clone, Copy)]
@@ -358,6 +360,7 @@ pub(super) fn commit(
             required_prerequisites,
             prepared_lineage_slot,
             prepared_output_witness,
+            coupled_deletions: Default::default(),
         },
     ))
 }

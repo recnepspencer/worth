@@ -10,6 +10,7 @@ use crate::domain_computation::primary_graph::application_attempt::WorthQueryApp
 use crate::domain_computation::primary_graph::fact_verification_observation;
 
 mod applied_support;
+pub(in crate::domain_computation::primary_graph::provider) mod coupled_deletions;
 mod diagnostic;
 mod executed_adoption;
 pub use diagnostic::RebaseVerificationReason;
@@ -214,7 +215,10 @@ pub fn rebase_output(
     prepared: PreparedSourceFactRebase,
     correspondence: &crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
     changed_records: &[worth_relational::facade::transactions::RecordRef],
-    coupled_commit: Option<&worth_relational::facade::transactions::CommitResult>,
+    coupled_commit: Option<(
+        &worth_relational::facade::transactions::CommitResult,
+        &coupled_deletions::CoupledCommitDeletions,
+    )>,
     producer_output: bool,
 
     control: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl<'_, '_>,
@@ -226,38 +230,40 @@ pub fn rebase_output(
             _ => None,
         })
         .collect::<BTreeSet<_>>();
-    let mut retired: BTreeSet<_> = correspondence
+    let mut own: BTreeSet<_> = correspondence
         .retired_entity_ids()
         .filter(|entity| changed_entities.contains(entity))
         .collect();
-    if let Some(commit) = coupled_commit {
+    let deleted;
+    let retired = match coupled_commit {
+        None => &own,
         // Every participant settled this same admitted atomic commit. Business
         // correspondence remains writer-local; receipt dependencies also retain
         // the genuine retirements performed by its other writers.
-        for patch in commit.patch() {
-            if let Err(stop) = execution.consult() {
-                return RebasedSourceFacts::VerificationRequired {
-                    reason: RebaseVerificationFailure::admission_denied(
-                        CompanionPreflightStop::Execution(stop.into()),
-                    ),
-                    own_effect: OwnEffectOnReads(OwnEffect::Moved),
-                };
-            }
-            if patch.structural_change
-                == worth_relational::facade::publication::RecordStructuralChange::Deleted
-                && let worth_relational::facade::transactions::RecordRef::Entity(entity) =
-                    patch.target
-            {
-                retired.insert(entity);
+        Some((commit, deletions)) => {
+            deleted = match deletions.collect(execution, commit) {
+                Ok(deleted) => deleted,
+                Err(stop) => {
+                    return RebasedSourceFacts::VerificationRequired {
+                        reason: RebaseVerificationFailure::admission_denied(stop),
+                        own_effect: OwnEffectOnReads(OwnEffect::Moved),
+                    };
+                }
+            };
+            if own.is_subset(&deleted) {
+                &*deleted
+            } else {
+                own.extend(deleted.iter().copied());
+                &own
             }
         }
-    }
+    };
     preparation::rebase(
         execution,
         runtime,
         snapshot,
         prepared,
-        &retired,
+        retired,
         producer_output,
         control,
     )

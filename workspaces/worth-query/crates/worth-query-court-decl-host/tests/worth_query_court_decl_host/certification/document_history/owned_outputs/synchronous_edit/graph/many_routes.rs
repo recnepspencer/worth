@@ -2,6 +2,7 @@
 use super::*;
 mod ownership_reads;
 pub(super) mod program;
+mod rebase_walk;
 mod touch_work;
 use std::num::NonZeroUsize;
 use worth_query_host::facade::application_entry::ApplicationProducerRoundLimits;

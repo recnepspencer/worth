@@ -63,8 +63,12 @@ impl WorthQueryCommittedApplicationSession {
     }
     pub(in crate::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit) fn coupled_commit(
         &self,
-    ) -> Option<&worth_relational::facade::transactions::CommitResult> {
-        (!self.members.is_empty() || self.own_records.is_some()).then_some(self.committed.as_ref())
+    ) -> Option<(
+        &worth_relational::facade::transactions::CommitResult,
+        &super::super::evidence_seal::postcommit_currentness::coupled_deletions::CoupledCommitDeletions,
+    )>{
+        (!self.members.is_empty() || self.own_records.is_some())
+            .then_some((self.committed.as_ref(), &self.coupled_deletions))
     }
     pub(in crate::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit) fn output_correspondence(
         &self,

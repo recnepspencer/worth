@@ -259,6 +259,7 @@ impl WorthQueryCommittedApplicationSession {
             required_prerequisites: prepared.required,
             prepared_lineage_slot: prepared.slot,
             prepared_output_witness: prepared.witness,
+            coupled_deletions: self.coupled_deletions.clone(),
         }
     }
 }
