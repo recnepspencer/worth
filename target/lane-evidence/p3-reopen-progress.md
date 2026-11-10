@@ -561,3 +561,28 @@ Currentdirectproviderclosure194files (scopedrg), notallindependenttestcases.
 Continueadapterconsumers, then32warnings/CompleteACK. Noownershipblocker.
 Cumulative0check/3Clippy/6focusedbuilds/4selectedruns. Noignoredbody/oracle/scale/
 scenario/QueryStorebuild/merge/push.
+
+HISTORY/C2 LANDED50d691f03d (freshAPPROVE). Continue6shippingplannerDATAports:
+actualOwnerBound request replacesprivate literal/cfgtest overload; everyoriginal
+visibility/lifecycle/policy/digest assertion unchanged. Reusequalifiedheadread and
+ordinarybranchauthoring; addonlybranchdelete helper andnormalfeatureplanrecipe.
+Split3visibility/3policycasesunder400. No newplatformAPI orNativeadapter.
+Originalsremainmounted; firstsix-name packet pending sourceaudit.
+
+Sixcase precompile source review REJECTcaughtoneprivate read_version before
+Cargo. Correcttoexistingpublictry_read_version, explicitlyexpectbothrequest
+successandretainedvisibility, sameentitylookup/exactLiveassertion. No budget or
+APIchange, no buildrunconsumed. RemainingAPI/source reviewfindingsnone.
+
+MergeplannerDATA6/0/0 onfirstbuild/run. SourceprecompileP1fixedbeforeCargo;
+no testfailure. RemoveoldNative6casefile/mount andbaselineonlyafterpass. Original
+visibility/lifecycle/policy/digest assertions preservedpublicly. ScopedClippy
+nextsecondblockinground; no repeatprior8 or6tests. Cumulative0check/3Clippy/
+7focusedbuilds/5selectedruns beforeClippy. No API/budget/format changes.
+
+SixplannerDATAphasegatescomplete:6/0/0firstbuild/run;Root/certClippysame32/23
+only;fmt/context/caps6pass;5cohesivefunctionadvisories;boundary12nonechanged.
+FreshfinalreviewAPPROVEall29assertionspreserved. Commit thissafe point then
+46rootproof/witnessbatchfromcompletedboundaryclassification. No newdoor needed;
+publicHAPPY andactualNativeMemory-ownpureunits split; C4 exactrefs preservefaults.
+Cumulative0check/4Clippy/7builds/5runs. Noignored/oracle/scale/scenario/merge/push.

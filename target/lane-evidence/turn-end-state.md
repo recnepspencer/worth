@@ -42,3 +42,15 @@ RootClippyonlysame32/23,fmt/context/caps15pass,7cohesivefunctionadvisories,
 boundary12nonechanged. Runtimeattachmentremainsowned; directclosure194files
 fromexactscopedsearch. The eight-case original Nativecopiesremovedonlyafterpass.
 Counts thisturn:0check/3Clippy/6focusedbuilds/4selectedruns. Activequeue unchanged.
+
+
+## Shipping merge DATA reviewed slice
+
+Sixpublicports6/0/0firstbuild/run,29assertionsunchanged. FreshreviewAPPROVE.
+ledger landing2a-merge-data-lanes.md/json;fmt/context/caps6pass,5cohesiveadvisories,
+Clippy32/23only,boundary12nonechanged. No newproductAPI. Originalfile/mount and
+baseline row removed afterpass. Currentnext46-rootproof/witnessclassification
+atlanding2a-history-proof-claim-disposition.md:18HAPPY/15owner/5C4/8mixed,
+noC2claimmerelyfromprivateAPI. Memoryownerunitsmustnotclaimdurablereopen.
+All threegateitemsremainactive(runtimeattachment,32warnings,CompleteACK).
+Cumulativecounts0check/4Clippy/7focusedbuilds/5selectedtestruns.

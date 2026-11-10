@@ -1,0 +1,17 @@
+command: python scripts/quality/scrutinize_rust_functions.py --dirty .
+HEAD: 50d691f03dcc22d494504fbed3de189fabe0b9aa
+git_status_short_empty: false
+start_utc: 2026-11-10T00:04:57.564879+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/branch_history_publications.rs:47: create_with_fields: 22 lines, 5 parameters [many-parameters]
+crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/branch_history_publications.rs:79: update_entity_on_branch: 20 lines, 5 parameters [many-parameters]
+crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/branch_history_publications.rs:107: create_relation_outcome: 16 lines, 5 parameters [many-parameters]
+crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/branch_history_publications.rs:123: relation_with_fields: 25 lines, 6 parameters [many-parameters]
+crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/merge_visibility_evidence.rs:118: merge_planning_conflict_classification_carries_target_lookup_evidence_for_source_deleted_record: 77 lines, 0 parameters [long-function]
+scrutinized 6 Rust files; 5 candidate functions; 0 scan errors
+
+end_utc: 2026-11-10T00:05:00.119414+00:00
+exit_code: 0
+tests_passed: 0
+tests_failed: 0
+tests_ignored: 0

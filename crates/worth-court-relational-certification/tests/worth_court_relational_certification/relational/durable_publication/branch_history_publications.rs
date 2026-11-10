@@ -186,3 +186,20 @@ pub(super) fn delete_relation_on_branch(
     .unwrap();
     txn.commit(request, runtime).unwrap()
 }
+
+pub(super) fn delete_entity_on_branch(
+    request: &ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    entity_id: EntityId,
+    branch: BranchId,
+) -> CommitResult {
+    let mut txn = transaction(runtime, &branch);
+    txn.push_batch(
+        WorkerIntentBatch::new("delete-entity").push(MutationIntent::Entity(
+            EntityMutationIntent::Delete(DeleteEntityIntent { entity_id }),
+        )),
+        request.allocation_policy(),
+    )
+    .unwrap();
+    txn.commit(request, runtime).unwrap()
+}

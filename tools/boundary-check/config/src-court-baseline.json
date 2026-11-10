@@ -381,7 +381,6 @@
 {"source":"crates/worth-relational/src/tests/history/milestone_7c_phase_g/recovery_certification.rs","module":"file","roots":["ExecutionRequest","RelationalRuntime"]},
 {"source":"crates/worth-relational/src/tests/history/milestone_7c_phase_g/schema_fixtures.rs","module":"file","roots":["RelationalRuntime"]},
 {"source":"crates/worth-relational/src/tests/history/milestone_7c_phase_g/stale_prepared_merge_denials.rs","module":"file","roots":["ExecutionRequest"]},
-{"source":"crates/worth-relational/src/tests/history/milestone_7d_phase_a.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"crates/worth-relational/src/tests/history/milestone_7d_phase_b/deletion_block_reasons.rs","module":"file","roots":["ExecutionRequest","RelationalRuntime"]},
 {"source":"crates/worth-relational/src/tests/history/milestone_7d_phase_b/executable_admission.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"crates/worth-relational/src/tests/history/milestone_7d_phase_b/fixtures.rs","module":"file","roots":["RelationalRuntime"]},

@@ -4,7 +4,6 @@ mod milestone_7c_phase_a;
 mod milestone_7c_phase_d;
 mod milestone_7c_phase_e;
 mod milestone_7c_phase_g;
-mod milestone_7d_phase_a;
 mod milestone_7d_phase_b;
 mod milestone_7d_phase_c;
 mod milestone_7d_phase_d;

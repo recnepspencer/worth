@@ -52,3 +52,7 @@ mod branch_endpoint_history;
 mod branch_history_publications;
 mod branch_history_recovery;
 mod definition_lookup_snapshot;
+
+mod merge_history_planning;
+mod merge_policy_evidence;
+mod merge_visibility_evidence;

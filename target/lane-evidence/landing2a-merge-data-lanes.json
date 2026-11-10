@@ -1,0 +1,72 @@
+[
+  {
+    "log": "target/lane-evidence/landing2a-merge-data-boundary.log",
+    "command": "python scripts/application_build.py cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .",
+    "head": "50d691f03dcc22d494504fbed3de189fabe0b9aa",
+    "clean": "false",
+    "exit": "1",
+    "pass": "0",
+    "fail": "0",
+    "ignored": "0"
+  },
+  {
+    "log": "target/lane-evidence/landing2a-merge-data-clippy.log",
+    "command": "python scripts/application_build.py cargo clippy -p worth-relational -p worth-court-relational-certification --all-targets",
+    "head": "50d691f03dcc22d494504fbed3de189fabe0b9aa",
+    "clean": "false",
+    "exit": "0",
+    "pass": "0",
+    "fail": "0",
+    "ignored": "0"
+  },
+  {
+    "log": "target/lane-evidence/landing2a-merge-data-context.log",
+    "command": "python scripts/application_build.py cargo run --manifest-path tools/agent-context/Cargo.toml -- check",
+    "head": "50d691f03dcc22d494504fbed3de189fabe0b9aa",
+    "clean": "false",
+    "exit": "0",
+    "pass": "0",
+    "fail": "0",
+    "ignored": "0"
+  },
+  {
+    "log": "target/lane-evidence/landing2a-merge-data-fmt.log",
+    "command": "python scripts/application_build.py cargo fmt -p worth-relational -p worth-court-relational-certification",
+    "head": "50d691f03dcc22d494504fbed3de189fabe0b9aa",
+    "clean": "false",
+    "exit": "0",
+    "pass": "0",
+    "fail": "0",
+    "ignored": "0"
+  },
+  {
+    "log": "target/lane-evidence/landing2a-merge-data-functions.log",
+    "command": "python scripts/quality/scrutinize_rust_functions.py --dirty .",
+    "head": "50d691f03dcc22d494504fbed3de189fabe0b9aa",
+    "clean": "false",
+    "exit": "0",
+    "pass": "0",
+    "fail": "0",
+    "ignored": "0"
+  },
+  {
+    "log": "target/lane-evidence/landing2a-merge-data-line-caps.log",
+    "command": "\"C:/Program Files/Git/bin/bash.exe\" scripts/ci/check_workspace_rust_line_caps.sh dirty",
+    "head": "50d691f03dcc22d494504fbed3de189fabe0b9aa",
+    "clean": "false",
+    "exit": "0",
+    "pass": "0",
+    "fail": "0",
+    "ignored": "0"
+  },
+  {
+    "log": "target/lane-evidence/landing2a-merge-data-public.log",
+    "command": "python target/lane-evidence/landing2a_merge_data.py root",
+    "head": "50d691f03dcc22d494504fbed3de189fabe0b9aa",
+    "clean": "false",
+    "exit": "0",
+    "pass": "6",
+    "fail": "0",
+    "ignored": "0"
+  }
+]
