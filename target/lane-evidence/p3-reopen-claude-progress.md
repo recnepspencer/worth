@@ -1,123 +1,118 @@
-# P-A takeover progress (Fable 5.2)
+# P-A active continuation - 2026-11-10
 
-Resumed 2026-11-10 after the usage-limit stop. HEAD still f9f15bf8c8, NOTHING
-COMMITTED YET. Usage is the scarcest resource: no polling, tail/grep logs only.
+Branch codex/m3-p3-reopen; inherited reviewed HEAD e4d3b01c8d.
+Codex is the sole writer again. The completed handoff below is preserved.
 
-Counts so far: clippy 4 (batch1..4; batch2 first attempt was a cached no-op),
-focused builds 2 (court, native lib), test runs 3 (public 41/0/0; native 20/1/0;
-control 0/2/0), tool runs: boundary 2, agent-context 1, line caps 1.
+Current B2 checkpoint subfamily: 16 public tests and the Native builder-configuration
+unit pass. Exact C2/C4 portions are listed in the spec. Final scoped gates and
+independent review are being recorded before its coherent commit. Detailed
+plan and evidence: pa-resume-b2-checkpoint-plan.md and pa-b2-checkpoint-ledger.md.
+The unmounted association_checkpoint_journeys.rs starts the next B2 family; it
+is not part of this checkpoint commit and has not been compiled or qualified.
 
-## COMMITS
-- 780fe3ecfe test(native): port merge execution courts to public owners
-  (slice A; independent review APPROVE, claude-review-A.md; 2 config/spec
-  minors fixed before commit).
-  Deferred MINOR follow-ups from that review (need a compile round):
-  (a) rename `merge_commit_context_rejects_mismatched_parent_branch_metadata`
-      in merge_unknown_source_admission.rs to its real claim, or retire it if
-      merge_basis_journeys.rs:145 already covers it;
-  (b) expose entity/relation counts from VisibleTruthSummary and delete
-      `visible_named_counts` in merge_execution_certification.rs;
-  (c) move `prepare_feature_merge` from merge_prepared_verification.rs to
-      merge_feature_execution.rs;
-  (d) tidy ledgers; narrow two `pub(super)`; "counters" still in two test names.
+A renewed Codex login interrupted the first Native attempt at metadata only.
+Reuse the public 16/0/0 log; the resumed Native result is 1/0/0. No green input
+was rebuilt because of that interruption. No merge is in progress.
 
-## REVIEW OF DC AND B1 (claude-review-DC-B1.md): both REJECT, one MAJOR each
-- DC-1: kind-commitment preimage oracle dropped -> FIXED by new owner test
-  storage/residency/region_publication/kind_commitment_preimage_tests.rs.
-- B1-1: four Memory-only roots wrongly moved (canonical_commit_artifact/refusals.rs
-  x3, descriptor_continuity semantics-version test) -> RESTORED in place; spec
-  entries, baseline row and ledgers corrected (108 roots moved now: 90 C4... see
-  claude-durability-moved-roots.json).
-- B1 minor: empty impl in lifecycle_order_control.rs removed; the remaining
-  cfg(test) lifecycle control is now unarmable (follow-up: remove the whole
-  control or keep it whole).
-- Review-fix round logs: claude-reviewfix-{fmt,clippy,native}.log. After it is
-  green: rerun claude_slice_files.py, resume the reviewer for a re-verdict, then
-  `python target/lane-evidence/claude_stage_slice.py DC` + `git commit -F
-  target/lane-evidence/claude-commit-DC.txt`, same for B1.
+## Commits this takeover (base f9f15bf8c8), each with an approving independent review
 
-## STATE 2026-11-10 ~08:45 UTC
-- Clippy all-targets clean (claude-batch4-clippy.log): lib 0 warnings; 2
-  test-build warnings in tests/support/durable_medium.rs (TestRecoverySourceRefusal
-  payload), left until the adapter is deleted.
-- Public court 41/0/0 (claude-merge-execution-public.log). Native 20/1
-  (claude-batch-native.log): the 1 red is PRE-EXISTING (private CountedSource
-  fixture lacks funded reads; control claude-counted-source-control.log 0/2 on
-  untouched siblings). Reported in the shared notes folder
-  (p-a-finding-counted-source-red-tests.md). ~19 residency owner test files may
-  be red at HEAD for this reason; not in my closure.
-- Boundary 12 findings (claude-batch-boundary2.log): only runtime_attachment.rs
-  is mine. Seams added: certification-construction-callers.txt line for
-  merge_descriptive_touches.rs (native-home-complete-checkpoint; court already
-  has approved callers); baseline: 7c_phase_g/mod.rs row takes RelationalRuntime
-  root from deleted recovery_certification.rs row (net shrink).
-- Slice A is STAGED in the index (claude_stage_slice.py A; names in
-  claude-staged-A-names.txt). Per-slice shared-file states in claude-shared/{A,DC,B1}/.
-- Complete/ACK named lane GREEN on the dirty tree: claude-complete-ack-store.log
-  (selected_checkpoint_survives_observer_drop_online_history_and_mutation_before_ack_recovery 1/0/0)
-  and claude-complete-ack-query.log
-  (interrupted_owner_ack_resumes_original_attempt_and_reopens_unacknowledged_selection 1/0/0).
-  Rerun after commit for a clean-HEAD header: python target/lane-evidence/claude_lane_run.py
-  <label> python target/lane-evidence/claude_lane_tests.py <store|query> <label> <cases.json>.
-- Commit messages ready: claude-commit-{A,DC,B1}.txt (git commit -F).
-- Reviews running: claude-review-A.md, claude-review-DC-B1.md.
-- Next: fix findings -> commit A -> stage+commit DC -> stage+commit B1
-  (python target/lane-evidence/claude_stage_slice.py DC / B1), each with
-  trailer `Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>`.
+| sha | subject | content |
+|---|---|---|
+| 780fe3ecfe | test(native): port merge execution courts to public owners | Slice A. 65 merge-history roots: 41 public court tests in durable_publication/merge_*, 15 roots moved C4/C2 (previous owner's script), 6 C2 instrumentation remainders, owner units kept on Memory, orphan fixtures and cfg(test) merge hooks deleted. Review claude-review-A.md APPROVE. |
+| 40cafd5eed | refactor(native): delete the orphan original-intent executor and Full constructors | EVIDENCE ONLY (staging defect): adds landing2a-dead-code-deletion-notes.md. |
+| ff723988f4 | test(native): move cleanup-class durability roots out to C4 and C2 | EVIDENCE ONLY (staging defect): adds claude-durability-contract-claims.json and claude-durability-moved-roots.json. |
+| b0ac2e133e | ... Full constructors (sources) | Slice DC, the real change: the 32 worth-relational library dead-code diagnostics deleted (29 files modified, 15 deleted, 2 renamed), 8 tests removed (4 retired with implementation, 4 exact-bill tests listed under C2), preimage oracle kept on the live producer. Review claude-review-DC-B1.md REJECT -> fixed -> APPROVE. |
+| e4d3b01c8d | ... C4 and C2 (sources) | Slice B1, the real change: 108 pure C4 (89) / C2 (19) adapter-causal durability contract/medium roots moved out with restore refs; orphan fixtures, 21 emptied files and 10 cfg(test) control hooks removed. Same review: REJECT -> fixed -> APPROVE. |
 
-## Tree now holds three uncommitted slices (commit separately, in this order)
+Staging defect: claude_stage_slice.py fed CRLF path lists to `git update-index`,
+which ignored them; only the `git add -f` evidence files were committed. History
+is never rewritten here, so the sources followed as "(sources)" commits. The
+script is fixed (bytes stdin) and claude_verify_staged.py checks the shared files.
 
-### A. Merge-execution port (65 roots) - source complete, awaiting compile
-- Court (crates/worth-court-relational-certification/.../durable_publication/):
-  4 helper modules (merge_execution_{observation,recovery,schema,authoring}),
-  merge_feature_execution, 23 test files, 41 public tests
-  (claude-merge-execution-public-cases.json). mod.rs lines added.
-- Native: 39 originals retired (claude-merge-execution-retirement.json), 15
-  C2/C4 roots moved by previous owner, orphan fixtures deleted
-  (claude-merge-execution-fixture-deletions.txt): dirs milestone_7c_phase_e,
-  milestone_7d_phase_b, files milestone_7d_phase_c.rs, milestone_7d_phase_e.rs,
-  7c_phase_g/{artifacts,certification_cases,recovery_certification}.rs.
-  7c_phase_g/mod.rs rewritten as owner unit
-  `executed_merge_history_rebuilds_directly_from_its_audit_recovery_plan`
-  (Memory, private rebuild_runtime_from_plan). 7d_phase_d/mod.rs trimmed to the
-  registration fixture. Owner cases: claude-merge-execution-owner-cases.json (11).
-- Spec: 6 C2 instrumentation remainders + previous owner's 15 entries.
-- Merge seam: facade.rs diagnostics re-export of `RelationalDiagnosticValue`.
-- Reviewer points: merge_history_shape / merge_execution_certification use
-  `actual_basis` instead of cfg(test) LCA/inspect_merge; merge_descriptive_touches
-  proves Complete generation preservation by public restore; unknown-source test
-  asserts binding denial `UnknownBranch`; readiness test asserts Execute over
-  public `artifact().lowered_plan.records` (exact copied array stays owner).
+## Gate status
 
-### DC. 32 dead-code warnings - source complete, awaiting compile
-Notes: landing2a-dead-code-deletion-notes.md (29 modified, 15 deleted, 2 created).
-8 tests removed: 4 retired with implementation; 4 C2 candidates
-(cell/resident_full/tests.rs x2, region_publication/full/tests.rs x2) - need
-spec C2 entries + baseline rows 2 (lines for those two test files).
-Flag for review: pub serde variant `RecordAllocationDenial::ReplayRecordMismatch`
-deleted (only producer was the deleted cursor).
+1. Adapter closure: NOT closed. `tests/support/durable_medium/runtime_attachment.rs`
+   still exists (the one owned BC9002 finding). Done: 65 history roots (A), 108
+   pure durability move-outs (B1). Remaining:
+   - B2: the durability contract/medium roots with a HAPPY or owner part
+     (about 75 main rows) and the 24 owner-extension roots. Map:
+     claude-durability-contract-claims.json (215 rows; `classification`,
+     `adapter_causal`, `section`), text
+     landing2a-durability-contract-claim-disposition.md. The four rows wrongly
+     moved and restored (refusals.rs x3, descriptor semantics-version) are
+     Memory-only and stay.
+   - C: 154 other roots, landing2a-other-root-classification.json
+     (34 HAPPY, 32 UNCHANGED, 26 C2, 21 OWNER, 19 HAPPY+C2, 11 C4, ...).
+   - Then delete runtime_attachment.rs, the local test medium
+     (tests/support/durable_medium*), the mixed helpers in
+     tests/support/durability.rs and tests/support/runtime.rs
+     (durable_runtime_with_test_schema*, checkpoint_and_recover_with, recover_with,
+     recovery_plan_for, checkpoint_durably, ...), and the
+     `in_crate_test_medium` hook on the medium trait.
+2. 32 Native production warnings: DONE (b0ac2e133e). clippy all-targets on
+   worth-relational + its court: library 0 warnings.
+3. Complete/ACK named lane: GREEN, but logged on the pre-commit dirty tree
+   (source identical to HEAD): claude-complete-ack-store.log
+   (selected_checkpoint_survives_observer_drop_online_history_and_mutation_before_ack_recovery, 1/0/0)
+   and claude-complete-ack-query.log
+   (interrupted_owner_ack_resumes_original_attempt_and_reopens_unacknowledged_selection, 1/0/0).
+   For a clean-HEAD header rerun:
+   python target/lane-evidence/claude_lane_run.py claude-complete-ack-store python target/lane-evidence/claude_lane_tests.py store claude-complete-ack-store target/lane-evidence/claude-complete-ack-store-cases.json
+   (and the same with `query`).
+4. Allocation-refusal court: moved to C2 by the previous owner (b736be6f47).
+Boundary: 12 findings (claude-batch-boundary2.log, pre-commit tree): 1 owned
+(runtime_attachment.rs), 11 routed elsewhere. Zero-in-my-files needs item 1.
 
-### B1. Durability move-out - applied, orphan cleanup NOT done
-112 pure C2/C4 adapter-causal roots removed from 41 files
-(claude-durability-moved-roots.json), spec entries added. Orphaned fixtures in
-tests/durability must be cleaned (compiler warnings from batch1 clippy tell).
-Map of all 215 rows: claude-durability-contract-claims.json.
+## Known open points
 
-## Commit mechanics (shared files)
-plans/database-foundation/milestone-3.md and
-tools/boundary-check/config/src-court-baseline.json carry hunks of several
-slices. Per slice, regenerate the file state for that slice (HEAD + that
-slice's entries), `git add` it, commit, then restore the full version.
+- Two test-build warnings remain (`field 0 is never read`,
+  tests/support/durable_medium.rs:56-57). Reviewer accepted them only if the
+  adapter retirement lands in the same landing; otherwise drop the two payloads.
+- lifecycle_order_control.rs: its cfg(test) control is now unarmable residue;
+  remove the whole control (module, field, call sites) or restore it whole.
+- Slice A review MINOR follow-ups (source, need a compile round): rename or
+  retire `merge_commit_context_rejects_mismatched_parent_branch_metadata`
+  (merge_unknown_source_admission.rs; maybe duplicate of merge_basis_journeys.rs:145);
+  expose counts from VisibleTruthSummary and delete `visible_named_counts`
+  (merge_execution_certification.rs); move `prepare_feature_merge` to
+  merge_feature_execution.rs; narrow two `pub(super)`; two test names still say
+  "counters".
+- ASSIGNED RED (coordinator ruling): Native residency owner tests on the private
+  `CountedSource` fixture (storage/residency/region_fixture.rs) fail at
+  `region_load::load_head` (default `retain_members_for_request` refuses).
+  `region_with_history()` has 50 call sites in 19 files. Evidence:
+  claude-batch-native.log, claude-counted-source-control.log. Reported in the
+  shared notes folder (p-a-finding-counted-source-red-tests.md). It will fail
+  Landing 2a's Tier-3 lane. Fix the fixture's funded custody as its own reviewed commit.
+- Merge seams: facade.rs re-exports `RelationalDiagnosticValue`;
+  certification-construction-callers.txt adds merge_descriptive_touches.rs under
+  native-home-complete-checkpoint; src-court-baseline.json only shrinks
+  (milestone_7c_phase_g/mod.rs took the RelationalRuntime root of the deleted
+  recovery_certification.rs row); `RecordAllocationDenial::ReplayRecordMismatch`
+  (pub, serde, last variant, name-tagged) deleted with its only producer.
 
-## After these three
-- Slice B2: ~75 durability roots with HAPPY parts + 24 owner-extension roots.
-- Slice C: 154 other roots (landing2a-other-root-classification.json).
-- Delete runtime_attachment.rs + durable helpers in tests/support.
-- Complete/ACK named lane (two public flow courts in
-  landing2a-complete-ack-boundary-review.md).
-- Boundary check zero findings in my files.
+## Validation counts (whole takeover)
 
-## Tooling (target/lane-evidence/)
-claude_lane_run.py <label> <cmd...>; claude_lane_tests.py <root|native> <label> <cases.json>;
-claude_retire_merge_execution.py; claude_move_out_durability_roots.py;
-claude_orphan_fns.py (untested).
+clippy 5 rounds (batch1-4 + review-fix; one extra cached no-op), focused builds 5
+(court, native x2, store court, query court), test runs 6 (public 41/0/0;
+native 20/1/0 with the pre-existing red; control 0/2/0; store 1/0/0;
+query 1/0/0; review-fix native 6/0/0), tool runs: boundary 2, agent-context 1,
+line caps 1. No ignored body, query-scale, oracle or scenario suite ran. No push.
+
+## Tooling in target/lane-evidence/ (untracked, on disk)
+
+- claude_lane_run.py <label> <cmd...>: runs a lane, writes <label>.log with header and exit code.
+- claude_lane_tests.py <root|native|query|store> <label> <cases.json>: owned prebuild + selected nextest run.
+- claude_warnings.py <log> [--json out]: located warnings/errors grouped by file.
+- claude_apply_dead_items.py <warnings.json> <ledger.json> [--apply]: deletes
+  reported dead items/imports. Only feed it warnings from a build with ZERO
+  errors (warnings from a broken parse are wrong), and remove dangling
+  `#[path]` attributes after it unmounts emptied files.
+- claude_move_out_durability_roots.py, claude_retire_merge_execution.py: the
+  two move/retire scripts already applied (templates for B2/C).
+- claude_slice_files.py, claude_shared_states.py, claude_stage_slice.py,
+  claude_verify_staged.py: per-slice commit mechanics for the two shared files
+  (milestone-3.md, src-court-baseline.json).
+- Port-agent brief pattern that worked (four parallel subagents, no compile,
+  disjoint files, then one clippy round): see the slice A helper modules
+  durable_publication/merge_execution_{observation,recovery,schema,authoring}.rs.

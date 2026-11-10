@@ -11,8 +11,6 @@ use crate::durability::medium::DurablePublicationFate;
 pub(crate) enum ScriptedPublication {
     /// Nothing becomes durable and the medium proves it.
     ProvenNoEffect,
-    /// Nothing becomes durable, but the medium cannot tell.
-    IndeterminateWithoutEffect,
     /// The artifact becomes durable, but the medium cannot tell.
     IndeterminateAfterEffect,
 }
@@ -44,9 +42,6 @@ impl ScriptedPublication {
         match self {
             Self::ProvenNoEffect => DurablePublicationFate::ProvenNoEffect {
                 detail: "scripted: the journal refused before appending".to_owned(),
-            },
-            Self::IndeterminateWithoutEffect => DurablePublicationFate::Indeterminate {
-                detail: "scripted: the append's fate is unknown (not appended)".to_owned(),
             },
             Self::IndeterminateAfterEffect => DurablePublicationFate::Indeterminate {
                 detail: "scripted: the append's fate is unknown (appended)".to_owned(),

@@ -104,3 +104,16 @@ mod merge_region_topology;
 mod merge_source_admission;
 mod merge_stale_execution;
 mod merge_unknown_source_admission;
+
+mod checkpoint_recovery_observation;
+mod native_checkpoint_reopen;
+
+mod checkpoint_branch_targets;
+
+mod checkpoint_branch_lifecycle;
+
+mod checkpoint_tail_and_indexes;
+
+mod checkpoint_successor_authority;
+
+mod checkpoint_source_capture;

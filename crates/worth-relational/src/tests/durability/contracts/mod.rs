@@ -1,6 +1,5 @@
 mod associated_effects;
 mod associated_effects_discovery;
-mod branch_root_checkpoint;
 mod branch_root_content_binding;
 mod branch_root_schema_binding;
 mod branch_transition;

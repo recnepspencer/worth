@@ -21,6 +21,16 @@ each invariant is enforced and where each new type lives.
 
 ### C4 - Injected faults
 
+- `refused_durable_transition_returns_its_authority_and_moves_nothing` and
+  `unresolved_durable_transition_installs_nothing_and_names_its_fate`:
+  `restore from e4d3b01c8d:crates/worth-relational/src/durability/authority/checkpoint_transition/tests.rs`.
+  C4 retains the actual ProvenNoEffect/Indeterminate scripts, exact original
+  offered fate, authority return/retry and no-effect guards with the same-SHA
+  `recovered_world`, `candidate`, `main_basis` fixtures. Restore without the
+  deleted local provider/discovery adapters. Ordinary transition ownership
+  remains covered through `checkpoint_successor_authority.rs` public courts.
+
+
 - `checkpoint_recovery_rejects_foreign_branch_target_substitution`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_checkpoint/foreign_targets.rs`.
 - `tail_recovery_rejects_foreign_branch_target_substitution`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_checkpoint/foreign_targets.rs`.
 - `checkpoint_recovery_rejects_missing_exact_branch_root_artifact`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_checkpoint.rs`.
@@ -185,6 +195,27 @@ each invariant is enforced and where each new type lives.
   weakened fault assertions.
 
 ### C2 - Cost and bounds: backing and work budgets
+
+- `checkpoint_recovery_readmits_shared_root_once_for_sibling_heads`, physical
+  single image and exact readmitted Root pointer sharing:
+  `restore from e4d3b01c8d:crates/worth-relational/src/tests/durability/contracts/branch_root_checkpoint.rs`.
+  C2 restores the original fixture closure; the two readable branch contents
+  and equal admitted targets remain public in `checkpoint_branch_targets.rs`.
+- `durability_contract_checkpoint_tail_recovery_preserves_post_checkpoint_commits`,
+  exact retained envelope census and original partition-image backing pointer:
+  `restore from e4d3b01c8d:crates/worth-relational/src/tests/durability/contracts/checkpoint_recovery.rs`.
+  C2 restores these original allocation assertions; exact checkpoint/tail
+  coverage, receipts and old envelope readability remain in public
+  `checkpoint_tail_and_indexes.rs`.
+- `acknowledged_transition_admits_only_its_exact_successor_and_releases_snapshot`,
+  `foreign_recovery_and_foreign_candidate_are_refused_before_effects`, and
+  `moved_source_and_stale_candidate_cannot_extend_recovery_lineage`, private
+  published/preparation snapshot-handle census portions only:
+  `restore from e4d3b01c8d:crates/worth-relational/src/durability/authority/checkpoint_transition/tests.rs`.
+  Restore the original same-SHA fixture closure for C2 allocation/custody
+  observation. All exact public authority admission/refusal/retry and unchanged
+  descriptors/counts remain in `checkpoint_successor_authority.rs`.
+
 
 - `controlled_resident_cell_keeps_exact_charge_until_last_real_weak` and
   `controlled_resident_cell_refuses_exact_control_before_any_new_arc`:

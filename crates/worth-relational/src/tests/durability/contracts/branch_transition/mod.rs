@@ -2,11 +2,8 @@
 
 mod checkpoint_state;
 mod reconstruction;
-mod recovery;
 
-use crate::branch::{
-    RelationalBranchTransitionSequence as Sequence, RelationalBranchTransitionStop as Stop,
-};
+use crate::branch::RelationalBranchTransitionSequence as Sequence;
 use crate::facade::history::BranchId;
 use crate::runtime::RelationalRuntime;
 use crate::tests::support::*;
