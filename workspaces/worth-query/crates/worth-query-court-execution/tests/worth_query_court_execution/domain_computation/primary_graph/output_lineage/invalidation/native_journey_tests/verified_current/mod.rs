@@ -46,7 +46,7 @@ fn repeated_current_certification_preserves_image_and_retention_and_rejects_a_ra
         .primary_graph_for_test()
         .unwrap();
     let handle = graph.integration_handle_for_test();
-    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+    let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
     let status_ref = AccountStatus::at("AccountStatus");
     let status = graph
         .layout_for_test()

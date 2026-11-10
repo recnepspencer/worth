@@ -35,7 +35,7 @@ fn full_key_run_lookup_preserves_endpoints_and_interior_matches() {
             .unwrap()
             .borrow();
         assert_eq!(
-            (*found.as_ref().unwrap().value_for_test()).scalar,
+            found.as_ref().unwrap().value_for_test().scalar,
             limit as u64
         );
     }

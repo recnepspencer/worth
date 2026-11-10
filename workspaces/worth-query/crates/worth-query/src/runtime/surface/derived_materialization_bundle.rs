@@ -167,6 +167,6 @@ impl WorthQueryDerivedMaterializationBundle {
             WorthQueryDerivedMaterializationResult,
         >,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(snapshot_identity, materializations)?)
+        Self::new(snapshot_identity, materializations)
     }
 }

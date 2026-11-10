@@ -114,7 +114,7 @@ pub(super) fn plan(
         .is_some_and(|pending| pending != delta.maintenance_ordinal())
     {
         counters.operations_materialized = 1;
-        return Ok(reset_patch(
+        return reset_patch(
             state,
             delta,
             ResetPatchSpec {
@@ -128,12 +128,12 @@ pub(super) fn plan(
                 },
                 counters,
             },
-        )?);
+        );
     }
     let impact = delta.impact().class();
     if let Some(reset) = reset_for(impact, state.window.rows().len()) {
         counters.operations_materialized = 1;
-        return Ok(reset_patch(
+        return reset_patch(
             state,
             delta,
             ResetPatchSpec {
@@ -141,9 +141,9 @@ pub(super) fn plan(
                 operation: reset,
                 counters,
             },
-        )?);
+        );
     }
-    Ok(plan_incremental(
+    plan_incremental(
         execution,
         state,
         IncrementalPlan {
@@ -152,7 +152,7 @@ pub(super) fn plan(
             impact,
             counters,
         },
-    )?)
+    )
 }
 
 struct IncrementalPlan<'a> {

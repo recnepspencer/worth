@@ -54,11 +54,11 @@ pub fn owner(
     key: WorthQueryOutputDemandKey,
 ) -> WorthQueryOutputDemandInterest {
     let wake = Arc::clone(
-        &(*(*(*registry.state_for_test())
+        (*(*registry.state_for_test())
             .lock()
             .unwrap()
             .records_for_test())[&key]
-            .wake_for_test()),
+            .wake_for_test(),
     );
     interest(registry, key, wake)
 }
@@ -108,7 +108,7 @@ fn old_cell_cannot_finish_a_replacement_row_with_the_same_numeric_claim() {
         "the genuine replacement cell is lawful under the equal ordinal"
     );
     let state = (*registry.state_for_test()).lock().unwrap();
-    let DemandState::Output(output) = &(*(*state.records_for_test())[&key].state_for_test()) else {
+    let DemandState::Output(output) = (*state.records_for_test())[&key].state_for_test() else {
         unreachable!()
     };
     assert!(!output.owns_checkpoint_for_test(&old_checkpoint));

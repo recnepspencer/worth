@@ -113,7 +113,7 @@ impl WorthQuerySharedReadPinningCertification {
     }
 
     pub fn support_gate_required() -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::from_evidence(
+        Self::from_evidence(
             WorthQuerySharedReadPinningInventoryEvidence::new(
                 0,
                 0,
@@ -123,7 +123,7 @@ impl WorthQuerySharedReadPinningCertification {
             WorthQuerySharedReadPortabilityEvidence::proven(""),
             WorthQuerySharedReadStaleBasisDenialEvidence::proven(""),
             WorthQuerySharedReadPinningCounterEvidence::new(0, 0, 0, 0, 0),
-        )?)
+        )
     }
 
     pub fn closure(&self) -> &WorthQuerySharedReadPinningBoundaryClosure {

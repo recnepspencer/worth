@@ -5,7 +5,6 @@ use worth_query_declaration::facade::application_schema::ApplicationOperationDec
 use worth_query_installation::facade::{
     ApplicationSchemaMember, ErasedApplicationSchemaDeclaration,
 };
-use worth_relational::facade::indexes::DerivedIndexId;
 
 type EntityFields = BTreeMap<String, BTreeMap<String, BTreeSet<String>>>;
 #[derive(Debug)]
@@ -153,21 +152,6 @@ impl WorthQueryPrimaryGraphLayout {
                     .get(entity)
                     .and_then(|aspects| aspects.get(aspect))
                     .is_some_and(|fields| fields.contains(field))
-            })
-    }
-    pub(in crate::domain_computation::primary_graph) fn authorization_selector_index_ids(
-        &self,
-    ) -> impl Iterator<Item = DerivedIndexId> + '_ {
-        self.authorization_selectors
-            .fields
-            .values()
-            .flat_map(|entities| entities.iter())
-            .flat_map(move |(entity, aspects)| {
-                aspects.iter().flat_map(move |(aspect, fields)| {
-                    fields.iter().filter_map(move |field| {
-                        self.equality_selector_index(entity, aspect, field)
-                    })
-                })
             })
     }
 }

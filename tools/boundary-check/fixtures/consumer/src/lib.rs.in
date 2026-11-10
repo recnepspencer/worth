@@ -1,0 +1,15 @@
+mod values;
+
+trait ValueBinding {
+    type Value;
+    const DOMAIN_VALUE: bool;
+}
+
+struct MeasurementBinding;
+impl ValueBinding for MeasurementBinding {
+    type Value = values::Measurement;
+    const DOMAIN_VALUE: bool = true;
+}
+
+// Metadata and source inspection must succeed without compiling this crate.
+const COMPILE_TRIPWIRE: u8 = "consumer sources must not be compiled";

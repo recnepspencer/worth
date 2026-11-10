@@ -21,12 +21,12 @@ impl LiveQueryAdmissionArtifact {
         view_family: Option<LiveViewShapeFamily>,
         construction_source: QuerySubscriptionConstructionSource,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::for_test_with_basis(
+        Self::for_test_with_basis(
             live_family,
             view_family,
             construction_source,
             QuerySubscriptionBasisPosture::CurrentHead,
-        )?)
+        )
     }
 
     pub(crate) fn for_test_with_basis(
@@ -35,7 +35,7 @@ impl LiveQueryAdmissionArtifact {
         construction_source: QuerySubscriptionConstructionSource,
         basis_posture: QuerySubscriptionBasisPosture,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::for_test_with_context(
+        Self::for_test_with_context(
             live_family,
             view_family,
             construction_source,
@@ -45,7 +45,7 @@ impl LiveQueryAdmissionArtifact {
             Some("tenant".to_string()),
             Some("relationship-proof".to_string()),
             QuerySubscriptionRelationshipProofPosture::Admitted,
-        )?)
+        )
     }
 
     pub(crate) fn for_test_with_context(
@@ -164,7 +164,7 @@ impl LiveQueryAdmissionArtifact {
         construction_source: QuerySubscriptionConstructionSource,
         relationship_proof_posture: QuerySubscriptionRelationshipProofPosture,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::for_test_with_context(
+        Self::for_test_with_context(
             live_family,
             view_family,
             construction_source,
@@ -174,7 +174,7 @@ impl LiveQueryAdmissionArtifact {
             Some("tenant".to_string()),
             Some("relationship-proof".to_string()),
             relationship_proof_posture,
-        )?)
+        )
     }
 
     pub(crate) fn for_test_with_future_selection(
@@ -183,7 +183,7 @@ impl LiveQueryAdmissionArtifact {
         construction_source: QuerySubscriptionConstructionSource,
         future_selection: QuerySubscriptionFutureSelection,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::for_test_with_context(
+        Self::for_test_with_context(
             live_family,
             view_family,
             construction_source,
@@ -193,7 +193,7 @@ impl LiveQueryAdmissionArtifact {
             Some("tenant".to_string()),
             Some("relationship-proof".to_string()),
             QuerySubscriptionRelationshipProofPosture::Admitted,
-        )?)
+        )
     }
 }
 

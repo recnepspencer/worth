@@ -72,7 +72,7 @@ pub(crate) fn representative_effect_relational_mutation_row(
         EffectExecutionAuthority::relational(&mut runtime),
     )
     .expect("relational mutation should execute");
-    Ok(route_planned_row(
+    route_planned_row(
         WorthQueryLowerRuntimeSeamKey::EffectBackedRelationalMutation,
         WorthQueryLowerRuntimeAuthorityOwner::Relational,
         "Effect-backed relational mutation",
@@ -83,7 +83,7 @@ pub(crate) fn representative_effect_relational_mutation_row(
                 .lowered_effect_execution_plan_for_reporting(),
             executed.receipt().receipt_for_reporting(),
         )?,
-    )?)
+    )
 }
 
 pub(crate) fn representative_effect_relational_merge_row(
@@ -131,7 +131,7 @@ pub(crate) fn representative_effect_relational_merge_row(
         EffectExecutionAuthority::crate_relational_without_application_schema(&mut runtime),
     )
     .expect("relational merge should execute");
-    Ok(route_planned_row(
+    route_planned_row(
         WorthQueryLowerRuntimeSeamKey::EffectBackedRelationalMerge,
         WorthQueryLowerRuntimeAuthorityOwner::Relational,
         "Effect-backed relational merge",
@@ -142,7 +142,7 @@ pub(crate) fn representative_effect_relational_merge_row(
                 .lowered_effect_execution_plan_for_reporting(),
             executed.receipt().receipt_for_reporting(),
         )?,
-    )?)
+    )
 }
 
 pub(crate) fn representative_effect_bridge_writeback_row(
@@ -165,7 +165,7 @@ pub(crate) fn representative_effect_bridge_writeback_row(
     .expect("bridge writeback should lower")
     .execute_with(execution, EffectExecutionAuthority::bridge(&bridge))
     .expect("bridge writeback should execute");
-    Ok(route_planned_row(
+    route_planned_row(
         WorthQueryLowerRuntimeSeamKey::EffectBackedBridgeWriteback,
         WorthQueryLowerRuntimeAuthorityOwner::RuntimeBridge,
         "Effect-backed bridge writeback",
@@ -176,7 +176,7 @@ pub(crate) fn representative_effect_bridge_writeback_row(
                 .lowered_effect_execution_plan_for_reporting(),
             executed.receipt().receipt_for_reporting(),
         )?,
-    )?)
+    )
 }
 
 fn admit_effect(
@@ -209,19 +209,19 @@ fn branch_mutation_basis(
 
 fn runtime_workflow_binding(
 ) -> Result<crate::workflow::WorkflowContextBinding, IdentityDerivationDenial> {
-    Ok(synthetic_runtime_workflow_binding_for_snapshot_identity(
+    synthetic_runtime_workflow_binding_for_snapshot_identity(
         "lower-runtime-effect-phase-six",
         crate::memory_workspace::admit_external_snapshot_label("snapshot-1")?,
-    )?)
+    )
 }
 
 fn runtime_workflow_binding_for_snapshot_identity(
     snapshot_identity: crate::memory_workspace::WorthQuerySnapshotIdentity,
 ) -> Result<crate::workflow::WorkflowContextBinding, IdentityDerivationDenial> {
-    Ok(synthetic_runtime_workflow_binding_for_snapshot_identity(
+    synthetic_runtime_workflow_binding_for_snapshot_identity(
         "lower-runtime-effect-phase-six",
         snapshot_identity,
-    )?)
+    )
 }
 
 fn workflow_request(
@@ -252,16 +252,14 @@ fn effect_execution_evidence_identity(
     lowered_plan_digest: &str,
     receipt_digest: &str,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
-            .field_value(WorthQueryEvidenceTag::new("execution"), execution_digest)
-            .field_value(
-                WorthQueryEvidenceTag::new("lowered_plan"),
-                lowered_plan_digest,
-            )
-            .field_value(WorthQueryEvidenceTag::new("receipt"), receipt_digest)
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+        .field_value(WorthQueryEvidenceTag::new("execution"), execution_digest)
+        .field_value(
+            WorthQueryEvidenceTag::new("lowered_plan"),
+            lowered_plan_digest,
+        )
+        .field_value(WorthQueryEvidenceTag::new("receipt"), receipt_digest)
+        .seal()
 }
 
 fn route_planned_row(

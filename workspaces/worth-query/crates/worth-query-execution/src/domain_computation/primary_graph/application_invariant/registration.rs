@@ -20,6 +20,7 @@ where
         descriptor: CustomInvariantDescriptor,
         binding_identity: ApplicationSchemaBindingIdentity,
         program_selection: Option<WorthQueryProgramRuleSelection>,
+        content_fields: std::sync::Arc<super::content_fields::InvariantContentFields>,
     ) -> Result<CustomInvariantRegistration, String>;
 }
 
@@ -33,6 +34,7 @@ where
         descriptor: CustomInvariantDescriptor,
         binding_identity: ApplicationSchemaBindingIdentity,
         program_selection: Option<WorthQueryProgramRuleSelection>,
+        content_fields: std::sync::Arc<super::content_fields::InvariantContentFields>,
     ) -> Result<CustomInvariantRegistration, String> {
         super::refusal::maximum::<Rule::RefusalBinding>()?;
         CustomInvariantRegistration::new(InstalledApplicationInvariantRule {
@@ -40,6 +42,7 @@ where
             descriptor,
             binding_identity,
             program_selection,
+            content_fields,
             _schema: std::marker::PhantomData,
         })
         .map_err(|denial| format!("{denial:?}"))
@@ -51,6 +54,7 @@ struct InstalledApplicationInvariantRule<Schema, Rule> {
     descriptor: CustomInvariantDescriptor,
     binding_identity: ApplicationSchemaBindingIdentity,
     program_selection: Option<WorthQueryProgramRuleSelection>,
+    content_fields: std::sync::Arc<super::content_fields::InvariantContentFields>,
     _schema: std::marker::PhantomData<fn() -> Schema>,
 }
 
@@ -78,14 +82,22 @@ where
         let mut planner = super::WorthQueryApplicationInvariantScopePlanner::new(
             planner,
             self.binding_identity.clone(),
+            &self.content_fields,
         )
         .map_err(preparation_denial)?;
-        let rule_scope = self.rule.prepare_scope(&mut planner).map_err(|error| {
-            super::refusal::preparation_error::<Rule::RefusalBinding>(
-                error,
-                planner.refusal_budget(),
-            )
-        })?;
+        let rule_scope = self
+            .rule
+            .prepare_scope(&mut planner)
+            .and_then(|scope| {
+                planner.check_content()?;
+                Ok(scope)
+            })
+            .map_err(|error| {
+                super::refusal::preparation_error::<Rule::RefusalBinding>(
+                    error,
+                    planner.refusal_budget(),
+                )
+            })?;
         Ok(InstalledApplicationInvariantScope {
             rule_scope,
             admission: planner.freeze_admission().map_err(preparation_denial)?,
@@ -105,6 +117,7 @@ where
         let mut planner = match super::WorthQueryApplicationInvariantScopePlanner::new(
             planner,
             self.binding_identity.clone(),
+            &self.content_fields,
         ) {
             Ok(planner) => planner,
             Err(denial) => return Some(Err(preparation_denial(denial))),
@@ -113,6 +126,10 @@ where
             .prepare_scope_checked(&mut planner, budget)
             .map(|result| {
                 result
+                    .and_then(|scope| {
+                        planner.check_content()?;
+                        Ok(scope)
+                    })
                     .map_err(|error| {
                         super::refusal::preparation_error::<Rule::RefusalBinding>(error, budget)
                     })
@@ -146,11 +163,16 @@ where
             self.binding_identity.clone(),
             std::sync::Arc::clone(&scope.admission),
             scope.preparation_reads,
+            &self.content_fields,
         );
         self.rule
             .evaluate_checked(&context, &scope.rule_scope, budget)
             .map(|result| {
                 result
+                    .and_then(|verdict| {
+                        context.check_content()?;
+                        Ok(verdict)
+                    })
                     .map_err(|error| {
                         super::refusal::execution_error::<Rule::RefusalBinding>(error, budget)
                     })
@@ -176,9 +198,14 @@ where
             self.binding_identity.clone(),
             std::sync::Arc::clone(&scope.admission),
             scope.preparation_reads,
+            &self.content_fields,
         );
         self.rule
             .evaluate(&context, &scope.rule_scope)
+            .and_then(|verdict| {
+                context.check_content()?;
+                Ok(verdict)
+            })
             .map_err(|error| {
                 super::refusal::execution_error::<Rule::RefusalBinding>(error, refusal_budget)
             })

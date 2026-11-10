@@ -7,7 +7,7 @@ fn a_carried_stop_after_a_recomputed_slot_has_the_full_runs_bill() {
     for width in [1, 2] {
         let world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let installed = installed(StatusRead::Gather(0), sum);
-        *(*installed.owner_for_test()).steps.lock().unwrap() = Some([vec![1; 20], vec![1]]);
+        *installed.owner_for_test().steps.lock().unwrap() = Some([vec![1; 20], vec![1]]);
         let request = live_scope();
         let policy = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(std::num::NonZeroUsize::new(width).unwrap(), None);
         let billed = |prior, ceiling| {
@@ -32,7 +32,7 @@ fn a_carried_stop_after_a_recomputed_slot_has_the_full_runs_bill() {
         assert_eq!(
             (*typed.partitions_for_test())
                 .values_for_test()
-                .map(|p| (*p.key_for_test()).0)
+                .map(|p| p.key_for_test().0)
                 .collect::<Vec<_>>(),
             [0, 1],
             "the recomputed even slot precedes the carried odd slot"
@@ -73,7 +73,8 @@ fn a_public_nested_map_cost_cannot_be_retained_as_owner_steps() {
         )
     };
     let plain = billed();
-    (*installed.owner_for_test())
+    installed
+        .owner_for_test()
         .nested
         .store(true, std::sync::atomic::Ordering::Relaxed);
     let nested = billed();
@@ -183,7 +184,7 @@ fn a_ceiling_inside_carried_checkpoint_steps_has_the_full_runs_exact_stop() {
             // The even partition is carried, while the status-reading odd one
             // is gathered again. Each kernel must encounter the same local
             // ceiling before canonical settlement accepts or discards it.
-            *(*installed.owner_for_test()).steps.lock().unwrap() = Some([vec![1], steps.clone()]);
+            *installed.owner_for_test().steps.lock().unwrap() = Some([vec![1], steps.clone()]);
             let request = live_scope();
             let policy = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(std::num::NonZeroUsize::MIN, None);
             let billed = |prior, ceiling| {

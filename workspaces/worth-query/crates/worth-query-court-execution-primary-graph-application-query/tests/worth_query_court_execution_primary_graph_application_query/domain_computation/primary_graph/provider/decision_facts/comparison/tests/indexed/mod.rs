@@ -50,7 +50,7 @@ fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinit
                 .unwrap();
             let index = (*layout.equality_index_id_for_test()).unwrap();
             let locator = (*layout.locator_for_test()).clone();
-            let kind = (*layout.entity_kind_for_test());
+            let kind = *layout.entity_kind_for_test();
             let observe = |value: &str| {
                 graph
                     .integration_handle_for_test()
@@ -234,7 +234,7 @@ fn prepared_indexed_comparison_keeps_a_native_cancellation() {
         let field = (*graph.layout_for_test()).equality_field_for_test("Account", worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountStatus::at("AccountStatus").aspect(), "AccountStatus").unwrap();
         let (answer, seen) = graph.integration_handle_for_test().with_runtime(&execution, |runtime| {
             let fact = observe_indexed_entity_selection(runtime, &execution, snapshot,
-                (*field.equality_index_id_for_test()).unwrap(), (*field.entity_kind_for_test()), (*field.locator_for_test()).clone(),
+                (*field.equality_index_id_for_test()).unwrap(), *field.entity_kind_for_test(), (*field.locator_for_test()).clone(),
                 StringApplicationValueBinding::encode(&"open".to_owned()).unwrap(), 2).unwrap();
             let mut prepared = PreparedSelections::new_for_test();
             let control = StorageControl::new_for_test(ExecutionAllocationPolicy::SystemAllocation, None);

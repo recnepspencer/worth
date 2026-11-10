@@ -113,5 +113,5 @@ impl QuerySubscriptionDeliveryCause {
 pub(crate) fn delivery_cause_evidence_label_identity(
     label: &str,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(super::evidence_identities::delivery_cause_evidence_label_identity(label)?)
+    super::evidence_identities::delivery_cause_evidence_label_identity(label)
 }

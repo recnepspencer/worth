@@ -58,9 +58,9 @@ where
     T: WorthQueryDomainCapabilityTargetBinding,
     (P, T): super::proof_integration::AllowedContributionBinding<P, T>,
 {
-    Ok(ready(
+    ready(
         super::proof_integration::create_requested_domain_capability_contribution(target, payload)?,
-    )?)
+    )
 }
 
 pub(super) fn success<T>(outcome: WorthQueryDomainCapabilityTransitionOutcome<T>) -> T {

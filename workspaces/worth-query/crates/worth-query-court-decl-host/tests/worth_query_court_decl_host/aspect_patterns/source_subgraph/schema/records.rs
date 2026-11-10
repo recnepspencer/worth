@@ -4,13 +4,23 @@ pub struct SourceModel;
 impl Fragment for SourceModel {
     const NAME: &'static str = "source_model";
     type Bindings = SourceModelBindings;
-    type Members = (Mapping, Principal, Source, Generated, roster::Member);
+    type Members = (
+        Mapping,
+        Principal,
+        Source,
+        Generated,
+        roster::Member,
+        roster::Note,
+    );
 }
 pub struct SourceFeature;
 impl Fragment for SourceFeature {
     const NAME: &'static str = "source_feature";
     type Bindings = SourceModelBindings;
-    type Members = (Extend<Source, (Option<SourceFacts>,)>,);
+    type Members = (
+        Extend<Source, (Option<SourceFacts>,)>,
+        Extend<roster::Note, (Option<roster::NoteMark>,)>,
+    );
 }
 pub struct SourceModelBindings;
 impl BindingSet for SourceModelBindings {
@@ -63,7 +73,7 @@ pub struct Source;
 impl Entity for Source {
     const NAME: &'static str = "Source";
     type Aspects = ();
-    type Relations = (SourceMember,);
+    type Relations = (SourceMember, roster::Head);
 }
 impl Source {
     pub fn reference() -> ApplicationEntityRef<Schema, Self> {

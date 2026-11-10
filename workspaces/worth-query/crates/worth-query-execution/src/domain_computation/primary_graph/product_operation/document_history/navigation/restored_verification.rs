@@ -10,7 +10,6 @@ impl<S: ApplicationSchema> NavigationProgress<'_, S> {
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
     ) -> Result<bool, WorthQueryHistoryNavigationDenial> {
-        use WorthQueryHistoryNavigationDenial as Denial;
         if self.ownership.is_none()
             || !matches!(
                 self.phase,

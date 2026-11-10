@@ -30,9 +30,8 @@ pub fn inspect<Query>(
     let captured = CapturedFields {
         original,
         inputs,
-        layout: &(*(*(*(*runtime.runtime_for_test()).primary_provider_for_test())
-            .graph_for_test())
-        .layout_for_test()),
+        layout: (*(*(*runtime.runtime_for_test()).primary_provider_for_test()).graph_for_test())
+            .layout_for_test(),
         contracts: runtime.installed_schema().native_contracts(),
         producer_version: changes.commit_reference().version_id,
     };
@@ -109,7 +108,7 @@ impl<Query> CapturedFields<'_, Query> {
                 panic!("fixture's actual source field")
             };
             for row in self.original.original_row_footprints_for_test() {
-                for observed in &(*row.aspects_for_test()) {
+                for observed in row.aspects_for_test() {
                     if (*observed.entity_for_test()) != *entity_id
                         || (*observed.aspect_for_test()) != *locator.aspect().aspect_key()
                         || (*observed.field_for_test()) != *key
@@ -150,7 +149,7 @@ impl<Query> CapturedFields<'_, Query> {
             .layout
             .resolve_field_coordinate_for_test(
                 self.contracts,
-                &(*observed.entity_name_for_test()),
+                observed.entity_name_for_test(),
                 original,
                 |work| checkpoint(context, work),
             )
@@ -159,7 +158,7 @@ impl<Query> CapturedFields<'_, Query> {
         let planned = self
             .layout
             .field_locator_for_test(
-                &(*observed.entity_name_for_test()),
+                observed.entity_name_for_test(),
                 (*observed.aspect_for_test()).as_str(),
                 (*observed.field_for_test()).as_str(),
             )
@@ -172,7 +171,7 @@ impl<Query> CapturedFields<'_, Query> {
             .layout
             .resolve_field_coordinate_for_test(
                 self.contracts,
-                &(*observed.entity_name_for_test()),
+                observed.entity_name_for_test(),
                 planned,
                 |work| checkpoint(context, work),
             )
@@ -183,7 +182,7 @@ impl<Query> CapturedFields<'_, Query> {
             source.contract_revision(),
             (*observed.contract_revision_for_test())
         );
-        self.refuse_other_authorities(context, &(*observed.entity_name_for_test()), original);
+        self.refuse_other_authorities(context, observed.entity_name_for_test(), original);
         source
     }
 
@@ -212,7 +211,7 @@ impl<Query> CapturedFields<'_, Query> {
                 .layout
                 .resolve_field_coordinate_for_test(
                     self.contracts,
-                    &(*observed.entity_name_for_test()),
+                    observed.entity_name_for_test(),
                     locator,
                     |work| checkpoint(context, work),
                 )

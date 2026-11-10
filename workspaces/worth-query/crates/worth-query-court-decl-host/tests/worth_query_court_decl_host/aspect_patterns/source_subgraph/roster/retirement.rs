@@ -12,6 +12,8 @@ where
     Member: OperationReads<B::Operation>,
     OwnedBy: OperationReads<B::Operation>,
     Next: OperationReads<B::Operation>,
+    Head: OperationReads<B::Operation>,
+    Operand: OperationReads<B::Operation>,
 {
     let root = reader.resolve_entity(SourceKey::at("SourceKey"), input.key.clone())?;
     reader.entity(&root, Source::reference())?;
@@ -20,8 +22,15 @@ where
     reader
         .relations_to(OwnedBy::reference(), &root)
         .map_err(HandlerExecutionDenial::new)?;
+    let head = reader
+        .relations_from(Head::reference(), &root)
+        .map_err(HandlerExecutionDenial::new)?
+        .first()
+        .map(|edge| reader.mutation_target(edge.to()))
+        .transpose()?;
     let mut members = Vec::new();
     let mut links = Vec::new();
+    let mut operands = Vec::new();
     let mut observed = std::collections::BTreeSet::new();
     for key in &input.members {
         let member = reader.resolve_entity(MemberKey::at("MemberKey"), key.clone())?;
@@ -33,13 +42,22 @@ where
             let owners = reader
                 .relations_from(OwnedBy::reference(), &member)
                 .map_err(HandlerExecutionDenial::new)?;
-            let actual = owners.iter().next().ok_or_else(|| {
+            let actual = owners.first().ok_or_else(|| {
                 HandlerExecutionDenial::new(WorthQueryApplicationAttemptDenial::new(
                     WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
                     "OwnedBy",
                 ))
             })?;
             owner = Some(reader.mutation_target(actual.to())?);
+            for edge in reader
+                .relations_from(Operand::reference(), &member)
+                .map_err(HandlerExecutionDenial::new)?
+            {
+                operands.push((
+                    reader.mutation_target(edge.from())?,
+                    reader.mutation_target(edge.to())?,
+                ));
+            }
             for edge in reader
                 .relations_from(Next::reference(), &member)
                 .map_err(HandlerExecutionDenial::new)?
@@ -57,6 +75,8 @@ where
         root: reader.mutation_target(&root)?,
         members,
         links,
+        operands,
+        head,
     })
 }
 pub fn graph<B, Root, Members>(
@@ -70,6 +90,8 @@ where
     Member: OperationDeletes<B::Operation>,
     OwnedBy: OperationReads<B::Operation> + OperationUnlinks<B::Operation>,
     Next: OperationReads<B::Operation> + OperationUnlinks<B::Operation>,
+    Head: OperationReads<B::Operation> + OperationUnlinks<B::Operation>,
+    Operand: OperationReads<B::Operation> + OperationUnlinks<B::Operation>,
     Root: WorthQueryApplicationOutputRole<
         Schema = Schema,
         Contract = B::Output,
@@ -83,6 +105,15 @@ where
     >,
 {
     let root = writer.projected_entity(&decision.root)?;
+    if let Some(head) = &decision.head {
+        let head = writer.projected_entity(head)?;
+        writer.unlink(Head::reference(), &root, &head)?;
+    }
+    for (from, to) in decision.operands {
+        let from = writer.projected_entity(&from)?;
+        let to = writer.projected_entity(&to)?;
+        writer.unlink(Operand::reference(), &from, &to)?;
+    }
     for (from, to) in decision.links {
         let from = writer.projected_entity(&from)?;
         let to = writer.projected_entity(&to)?;

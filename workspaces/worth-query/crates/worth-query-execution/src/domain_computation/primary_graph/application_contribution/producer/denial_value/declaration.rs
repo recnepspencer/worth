@@ -3,7 +3,6 @@
 use super::{WorthQueryProducerDenialEncodingRefusal, WorthQueryProducerDenialValue};
 use crate::domain_computation::primary_graph::application_invariant::refusal::canonical_wire_maximum;
 use std::marker::PhantomData;
-use worth_foundational::facade::{AspectValue, InternedString};
 use worth_query_declaration::facade::application_schema::{
     ApplicationReadableScalarValueBinding, ApplicationScalarValueBinding,
 };

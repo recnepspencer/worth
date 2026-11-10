@@ -174,10 +174,7 @@ impl WorthQueryGraphCompositionProgram {
     }
 
     pub(crate) fn empty() -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
-            Vec::new(),
-            &WorthQueryGraphCompositionBreadth::empty(),
-        )?)
+        Self::new(Vec::new(), &WorthQueryGraphCompositionBreadth::empty())
     }
 
     pub fn is_empty(&self) -> bool {

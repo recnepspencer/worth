@@ -30,6 +30,8 @@ impl ApplicationManagedIndexBinding<IdentitySchema> for Index {
     const NAME: &'static str = "PrincipalPrefix";
     const PROVIDER: &'static str = "worth.query.tests.prefix-provider.v1";
     const PROVIDER_VERSION: u32 = 1;
+    const SOURCE_SCOPE: worth_query_declaration::facade::application_query::ApplicationManagedIndexSourceScope =
+        worth_query_declaration::facade::application_query::ApplicationManagedIndexSourceScope::OrderedPredecessor;
 }
 
 #[test]
@@ -89,6 +91,7 @@ fn managed_index_checks_actual_binding_and_probe_before_installation() {
     let schema = index.bind_application_schema(declaration).unwrap();
     let recipe = Index::descriptor();
     assert!(recipe.matches::<IdentitySchema, Index>());
+    assert_eq!(recipe.meaning().parts().source.scope, Index::SOURCE_SCOPE);
     let source = schema
         .query_catalog
         .get_binding(recipe.source().identity())
@@ -104,6 +107,23 @@ fn managed_index_checks_actual_binding_and_probe_before_installation() {
         &bindings,
     )
     .unwrap();
+    for different_version in [false, true] {
+        let mut parts = recipe.meaning().parts().clone();
+        if different_version {
+            parts.provider_version += 1;
+        } else {
+            parts.provider = "worth.query.tests.unrelated-provider.v1".into();
+        }
+        let foreign = ApplicationSchemaMember::ManagedIndex {
+            definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(parts),
+        };
+        assert_eq!(
+            validate_definitions(&[foreign], std::slice::from_ref(&recipe), &[], &bindings)
+                .unwrap_err()
+                .kind(),
+            Kind::ManagedIndexBindingMeaningChanged
+        );
+    }
     assert_eq!(
         validate_definitions(std::slice::from_ref(&valid), &[], &[], &bindings)
             .unwrap_err()

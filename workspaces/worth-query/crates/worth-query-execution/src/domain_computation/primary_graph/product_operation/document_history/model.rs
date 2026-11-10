@@ -26,18 +26,6 @@ impl HistoryModelIdentity {
     pub(super) fn kind(&self) -> KindId {
         self.kind
     }
-    pub(in crate::domain_computation::primary_graph) fn matches_output_source<Q>(
-        &self,
-        source: &crate::domain_computation::primary_graph::WorthQueryObservedSource<Q>,
-        observation: &crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
-    ) -> bool {
-        self.entity == source.model_root
-            && self.runtime.as_u64() == source.runtime_authority
-            && self.binding == source.schema_binding
-            && matches!(&source.selection,
-                crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity::Product(product)
-                    if product.matches_observation(observation.product_observation()))
-    }
     pub(in crate::domain_computation::primary_graph) fn record(
         &self,
     ) -> worth_relational::facade::transactions::RecordRef {

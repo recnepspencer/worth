@@ -34,7 +34,7 @@ fn exercise(worker: bool) {
     let current = document.selection(&request).unwrap();
     let document = courts::configure_all_trees(&host, document);
     let contacts = host.producer_contacts_on_this_thread_for_test();
-    let selected = courts::checkout(&document, &request, before, current, 0xf057_10)
+    let selected = courts::checkout(&document, &request, before, current, 0x00f0_5710)
         .unwrap_or_else(|cause| panic!("{cause:?}"));
     let output = world::outputs(&host, selected.physical_endpoint().product_branch());
     assert_eq!(output.0, original.0);
@@ -73,7 +73,7 @@ pub(super) fn record_edit<'a>(
             key: "a".into(),
             value: 2,
         })
-        .idempotency_owned(&request, "changed-build-model-edit".to_owned())
+        .idempotency_owned(request, "changed-build-model-edit".to_owned())
         .unwrap()
         .retain_in_program::<program::Program, program::EditAction>(host)
         .unwrap_or_else(|(_, cause)| panic!("{cause:?}"));

@@ -60,6 +60,8 @@ pub enum WorthQueryRelationPreImageDenial {
     IncompleteInverse,
     ForeignEndpoint,
     ExtraInverse,
+    RepeatedInverse,
+    RestoredFieldMismatch,
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryRelationPreImageFailure {

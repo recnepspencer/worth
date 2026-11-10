@@ -28,7 +28,7 @@ fn causal_fact_survives_post_commit_snapshot_failure_via_relational_owner_read()
         .application
         .with_host_advancement(|phase| {
             let selected = world.selected_product(&phase.test_host_request_for_test());
-            let provider = &(*(*world.application.runtime_for_test()).primary_provider_for_test());
+            let provider = (*world.application.runtime_for_test()).primary_provider_for_test();
             let request = phase.borrowed_request_for_test();
             let basis = selected.product().relational_basis_for_test();
             (*provider.graph_for_test()).with_runtime_mut_for_test(&request, |runtime| {

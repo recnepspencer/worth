@@ -57,7 +57,7 @@ pub enum WorthQueryTemporalReentryOutcome {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(super) enum WorthQueryTemporalControlStop {
+pub enum WorthQueryTemporalControlStop {
     Cancelled,
     TimedOut,
     Authorization(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial),
@@ -80,7 +80,7 @@ pub enum WorthQueryTemporalTerminalFailure {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(super) enum WorthQueryTemporalAdmissionTerminalFailure {
+pub enum WorthQueryTemporalAdmissionTerminalFailure {
     Principal(crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenialKind),
     Entity(crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind),
     Authorization(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial),

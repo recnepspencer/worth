@@ -45,7 +45,7 @@ pub(in crate::projection_consumption::extraction) fn native_value_or_absence(
     }
     let actual = native_value_posture(value);
     if actual != native_contract.expected_shape() {
-        return Err(
+        Err(
             ProjectionFactExtractionError::NativeContractValueShapeMismatch {
                 source_family: contract.source_family(),
                 source_identity: compose_scoped_row_source_identity(

@@ -9,7 +9,6 @@ use crate::application::{
     WorthQueryDeclarationLegalityInput, WorthQueryDeclaredFamilyChecked,
     WorthQueryDomainEntryMarker,
 };
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::WorthQueryInstalledDomainDeclarationContext;
 use crate::application::WorthQueryDomainOperatingContext;

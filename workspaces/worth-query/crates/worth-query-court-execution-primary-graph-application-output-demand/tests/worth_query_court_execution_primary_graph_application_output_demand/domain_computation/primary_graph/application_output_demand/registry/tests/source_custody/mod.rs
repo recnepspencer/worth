@@ -76,13 +76,13 @@ fn newer_root_retires_only_its_matching_source() {
     custody.retire_superseded_roots_for_test(&[newer, sibling.clone()]);
     assert_eq!(
         custody
-            .source_denial_for_test(&(*older.identity_for_test()))
+            .source_denial_for_test(older.identity_for_test())
             .unwrap()
             .kind(),
         WorthQueryOutputDemandDenialKind::Superseded
     );
     assert!(custody
-        .source_denial_for_test(&(*sibling.identity_for_test()))
+        .source_denial_for_test(sibling.identity_for_test())
         .is_none());
     assert!(
         (*custody.retired_for_test()).is_none(),

@@ -142,6 +142,7 @@ pub fn expiry_report(
     )
 }
 
+#[expect(clippy::disallowed_methods, reason = "Pipe-capture court")]
 pub fn capture(
     mut pipe: impl Read + Send + 'static,
     finished: mpsc::Sender<io::Result<()>>,

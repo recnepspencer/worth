@@ -17,6 +17,7 @@ mod kind_incremental;
 mod kind_index;
 mod kind_projection;
 pub(crate) use kind_commitment::RelationalRegionKindCommitment;
+#[cfg(test)]
 pub(crate) use kind_projection::rebuild_region_history_kind_buckets;
 mod current_edit;
 mod full_edit;

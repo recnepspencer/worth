@@ -31,7 +31,7 @@ pub(super) struct InspectionReferenceIdentities {
     pub(super) anchor: BridgeIdentityEvidence,
 }
 
-pub(super) enum InspectionIdentityStop<Stop> {
+pub enum InspectionIdentityStop<Stop> {
     Resource(Stop),
     Basis(CanonicalBasisPreparationStop<Stop>),
     Digest(CanonicalDigestAdmissionStop<Stop>),

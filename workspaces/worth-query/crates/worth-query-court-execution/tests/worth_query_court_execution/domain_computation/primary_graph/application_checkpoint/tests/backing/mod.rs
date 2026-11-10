@@ -87,7 +87,7 @@ pub fn assert_three_handoffs_share_backing(
         assert_eq!((*handoff.native_for_test()).bytes(), native_bytes);
         assert_eq!((*handoff.native_for_test()).bytes().as_ptr(), expected);
         assert_eq!((*handoff.native_for_test()).captured_sections(), None);
-        assert_eq!((*handoff.bootstrap_commit_id_for_test()).0, bootstrap);
+        assert_eq!(handoff.bootstrap_commit_id_for_test().0, bootstrap);
         assert!((*handoff.accepted_outputs_for_test()).is_empty());
     }
     let native_clone = (*decoded[0].native_for_test()).clone();

@@ -65,7 +65,7 @@ pub(super) fn retain(
         })
         .collect::<Result<_, _>>()?;
     let footprint = candidate
-        .relation_mutation_footprint(execution, &kinds)
+        .relation_mutation_footprint(execution, &kinds, &[], &[])
         .map_err(|cause| {
             provider_failure(
                 WorthQueryProviderSessionProtocolStage::Commit,

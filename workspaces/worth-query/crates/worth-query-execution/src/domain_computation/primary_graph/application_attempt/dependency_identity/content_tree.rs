@@ -291,6 +291,7 @@ impl FactContent {
     }
 }
 
+#[cfg(test)]
 pub(super) fn dependency_identity(
     key: [u8; 32],
     facts: &[super::super::WorthQueryApplicationObservedFact],

@@ -12,7 +12,7 @@ fn healthy(worker: bool) {
     let document = courts::configure_all_trees(&host, document);
     let contacts = host.producer_contacts_on_this_thread_for_test();
     let projection = source_projection::Observation::begin();
-    let selected = courts::checkout(&document, &request, before, current, 0xf057_11)
+    let selected = courts::checkout(&document, &request, before, current, 0x00f0_5711)
         .unwrap_or_else(|cause| panic!("{cause:?}"));
     assert_eq!(
         world::outputs(&host, selected.physical_endpoint().product_branch()),
@@ -68,7 +68,7 @@ fn corrupted_subject(worker: bool) -> WorthQueryHistoryPublicationCorrespondence
     let model = world::model(&host, branch);
     let contacts = host.producer_contacts_on_this_thread_for_test();
     let document = courts::configure_all_trees(&host, document);
-    let refusal = courts::checkout(&document, &request, before, current.clone(), 0xf057_12)
+    let refusal = courts::checkout(&document, &request, before, current.clone(), 0x00f0_5712)
         .expect_err("unowned role identity cannot cross the transport boundary");
     let (
         _,

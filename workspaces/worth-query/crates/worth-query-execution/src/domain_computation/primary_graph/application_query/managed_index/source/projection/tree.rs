@@ -167,6 +167,7 @@ pub(super) fn project(
     projector: &mut Projector<'_, '_, '_>,
     program: &ManagedIndexSourceProgram,
     root: &ManagedIndexSourceOccurrence,
+    root_read: &PreparedManagedIndexSourceRowRead<'_, '_>,
     fields: Vec<Field>,
     depth: usize,
 ) -> Result<Tree, MaterialDenial> {
@@ -195,8 +196,13 @@ pub(super) fn project(
                         .origin
                         .as_ref()
                         .map(|origin| (origin.read.as_ref(), &origin.occurrence));
-                    let acquired =
-                        projector.acquire(program, root, index, node.row.result_path(), parent)?;
+                    let acquired = projector.acquire(
+                        program,
+                        root_read,
+                        index,
+                        node.row.result_path(),
+                        parent,
+                    )?;
                     projector
                         .allocation
                         .claim_arc::<PreparedManagedIndexProjectionRead>(projector.execution)?;

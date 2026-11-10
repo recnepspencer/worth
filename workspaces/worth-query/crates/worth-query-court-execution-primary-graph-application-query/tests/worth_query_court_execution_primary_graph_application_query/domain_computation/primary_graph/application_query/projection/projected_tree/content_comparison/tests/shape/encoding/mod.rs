@@ -2,7 +2,7 @@
 use crate::domain_computation::primary_graph::application_query::projection::projected_tree::content_comparison::tests::shape::*;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::projection::projected_tree::content::ContentWriter;
 pub fn encode(node: WorthQueryApplicationProjectionNode, nested: bool) -> [u8; 32] {
-    let entity = (*node.entity_id_for_test());
+    let entity = *node.entity_id_for_test();
     let tree = tree(node);
     let mut admit = |_| Ok::<_, &'static str>(());
     let mut writer = ContentWriter::new_for_test(&mut admit, &|| "overflow");

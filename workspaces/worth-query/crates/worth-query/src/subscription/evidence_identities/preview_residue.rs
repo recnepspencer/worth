@@ -1,5 +1,4 @@
 use super::SUBSCRIPTION_IDENTITY_SCOPE;
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{WorthQueryEvidenceIdentity, WorthQueryEvidenceTag};
 
 pub(in crate::subscription) fn preview_residue_report_identity(

@@ -82,7 +82,7 @@ fn compose_workflow_payload_identity(
         ),
         None => identity.field_shape(WorthQueryEvidenceTag::new("inspection"), "none"),
     };
-    Ok(identity.seal()?)
+    identity.seal()
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -102,14 +102,7 @@ impl WorthQueryWorkflowContributionPayload {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_all_semantics(
-            posture,
-            semantic_code,
-            detail,
-            None,
-            None,
-            None,
-        )?)
+        Self::with_all_semantics(posture, semantic_code, detail, None, None, None)
     }
 
     pub fn with_runtime_semantics(
@@ -118,14 +111,14 @@ impl WorthQueryWorkflowContributionPayload {
         detail: impl Into<String>,
         runtime_semantics: Option<WorthQueryWorkflowRuntimeSemantics>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_all_semantics(
+        Self::with_all_semantics(
             posture,
             semantic_code,
             detail,
             runtime_semantics,
             None,
             None,
-        )?)
+        )
     }
 
     pub fn with_runtime_and_lowering_semantics(
@@ -135,14 +128,14 @@ impl WorthQueryWorkflowContributionPayload {
         runtime_semantics: Option<WorthQueryWorkflowRuntimeSemantics>,
         lowering_semantics: Option<WorthQueryWorkflowLoweringSemantics>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_all_semantics(
+        Self::with_all_semantics(
             posture,
             semantic_code,
             detail,
             runtime_semantics,
             lowering_semantics,
             None,
-        )?)
+        )
     }
 
     pub fn with_runtime_and_inspection_semantics(
@@ -152,14 +145,14 @@ impl WorthQueryWorkflowContributionPayload {
         runtime_semantics: Option<WorthQueryWorkflowRuntimeSemantics>,
         inspection_semantics: Option<WorthQueryWorkflowInspectionSemantics>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_all_semantics(
+        Self::with_all_semantics(
             posture,
             semantic_code,
             detail,
             runtime_semantics,
             None,
             inspection_semantics,
-        )?)
+        )
     }
 
     pub fn with_all_semantics(

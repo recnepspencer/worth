@@ -14,6 +14,7 @@ impl Default for WorkflowDefinitionCompilationReuse {
 }
 
 impl WorkflowDefinitionCompilationReuse {
+    #[cfg(test)]
     pub(super) const fn retained_bytes(&self) -> usize {
         self.retained_bytes
     }

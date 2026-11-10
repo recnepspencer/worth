@@ -257,6 +257,7 @@ fn require_field_influence<E>(
     Ok(())
 }
 
+#[cfg(test)]
 fn influence_permits_every(
     influence: &worth_query_declaration::facade::application_query::ApplicationQueryInfluenceContract,
     surfaces: impl IntoIterator<Item = ApplicationQueryObservableInfluence>,

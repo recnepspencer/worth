@@ -155,14 +155,14 @@ impl WorthQueryOrdinaryRuntimePosture {
                     &support_evidence_digest,
                 )
                 .seal()?;
-        Ok(Self::new_with_support_identity(
+        Self::new_with_support_identity(
             kind,
             cause_posture,
             async_posture,
             basis_posture,
             remask_posture,
             support_evidence_identity,
-        )?)
+        )
     }
 
     pub fn new_with_support_identity(

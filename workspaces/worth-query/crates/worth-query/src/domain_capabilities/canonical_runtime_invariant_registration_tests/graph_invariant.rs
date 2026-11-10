@@ -221,9 +221,7 @@ fn ready_invariant_capability(
     >,
     IdentityDerivationDenial,
 > {
-    Ok(ready(authoring.bind_to_lower_runtime_boundary_target(
-        lower_runtime_target("boundary-graph")?,
-    )?)?)
+    ready(authoring.bind_to_lower_runtime_boundary_target(lower_runtime_target("boundary-graph")?)?)
 }
 
 fn ready_invariant_payload(
@@ -234,8 +232,5 @@ fn ready_invariant_payload(
     >,
     IdentityDerivationDenial,
 > {
-    Ok(ready_payload(
-        lower_runtime_target("boundary-graph")?,
-        payload,
-    )?)
+    ready_payload(lower_runtime_target("boundary-graph")?, payload)
 }

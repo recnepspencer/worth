@@ -166,20 +166,19 @@ pub(crate) fn complete(
                     + candidate.required_output_codec_retirements.len()
                     + 1,
             )?;
-            if changed(&row.value.origin.meaning) {
-                if !successors
+            if changed(&row.value.origin.meaning)
+                && !successors
                     .iter()
                     .any(|(_, origin)| origin.meaning.same_route(&row.value.origin.meaning))
-                {
-                    claims_delta::retire(
-                        execution,
-                        basis,
-                        &mut writer,
-                        storage,
-                        row,
-                        replaced(&row.value.origin.meaning),
-                    )?;
-                }
+            {
+                claims_delta::retire(
+                    execution,
+                    basis,
+                    &mut writer,
+                    storage,
+                    row,
+                    replaced(&row.value.origin.meaning),
+                )?;
             }
         }
         routes.retain(|route| !replaced(&route.meaning));

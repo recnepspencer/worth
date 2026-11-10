@@ -149,6 +149,7 @@ impl WorkflowProposalMeaning {
     }
 }
 
+#[cfg(test)]
 pub(in crate::domain_computation::primary_graph) fn derive_workflow_proposal(
     transition_identity: &str,
     operation: &str,

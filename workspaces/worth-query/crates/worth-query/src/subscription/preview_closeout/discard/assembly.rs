@@ -11,7 +11,6 @@ use super::super::super::preview_isolation_error::{
 };
 use super::super::super::preview_residue::PreviewSubscriptionResidueReport;
 use super::PreviewSubscriptionDiscardCloseout;
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 impl PreviewSubscriptionDiscardCloseout {
     pub(super) fn new(

@@ -1,7 +1,7 @@
 //! Exact failing coordinates, never permission for another metric or axis to grow.
 use super::{
     growth::{self, Axis, GrowthFailure},
-    observation::{Metric, Phase, Sample},
+    observation::{Metric, Sample},
 };
 
 struct Exception {

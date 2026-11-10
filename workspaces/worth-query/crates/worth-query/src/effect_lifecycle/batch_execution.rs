@@ -141,22 +141,16 @@ impl EffectBatchDurabilityUnresolved {
     ) -> Self {
         let message = message.into();
         let batch_identity = lowered.batch_identity().clone();
-        let outcome_identity = (|| {
-            Ok(
-                super::durability_unresolved_subject::field_unresolved_subject(
-                    WorthQueryEvidenceIdentity::compose(
-                        WorthQueryEvidenceScope::WorkflowMutationLowering,
-                    )
-                    .field_shape(
-                        WorthQueryEvidenceTag::new("identity_family"),
-                        "effect_batch_durability_unresolved_v1",
-                    )
-                    .field_evidence_identity(WorthQueryEvidenceTag::new("batch"), &batch_identity),
-                    &unresolved,
+        let outcome_identity = super::durability_unresolved_subject::field_unresolved_subject(
+            WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
+                .field_shape(
+                    WorthQueryEvidenceTag::new("identity_family"),
+                    "effect_batch_durability_unresolved_v1",
                 )
-                .seal()?,
-            )
-        })();
+                .field_evidence_identity(WorthQueryEvidenceTag::new("batch"), &batch_identity),
+            &unresolved,
+        )
+        .seal();
         Self {
             message,
             batch_identity,
@@ -182,7 +176,7 @@ impl EffectBatchDurabilityUnresolved {
     pub fn outcome_identity(
         &self,
     ) -> Result<&WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-        Ok(self.outcome_identity.as_ref().map_err(|cause| *cause)?)
+        self.outcome_identity.as_ref().map_err(|cause| *cause)
     }
 
     pub fn counters(&self) -> &EffectLifecycleCounters {
@@ -263,10 +257,7 @@ impl ExecutedEffectBatchPlan {
         components: Vec<ExecutedEffectPlan>,
     ) -> Self {
         let batch_identity =
-            (|| -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-                Ok(WorthQueryEvidenceIdentity::compose(
-                    WorthQueryEvidenceScope::WorkflowMutationLowering,
-                )
+            WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
                 .field_shape(
                     WorthQueryEvidenceTag::new("identity_family"),
                     "executed_effect_batch_plan_v2",
@@ -294,8 +285,7 @@ impl ExecutedEffectBatchPlan {
                         .iter()
                         .map(ExecutedEffectPlan::effect_execution_identity),
                 )
-                .seal()?)
-            })();
+                .seal();
         let counters = EffectLifecycleCounters::executed_batch(
             components.len(),
             components

@@ -68,3 +68,15 @@ fn nested_authored_coanchors_refuse_instead_of_opening_a_recursive_wire_shape() 
     );
     assert!(roundtrip(&value).is_err());
 }
+
+#[test]
+fn a_single_members_live_owner_survives_the_archive() {
+    let value = identity("Member").with_live_member_owner(
+        PortablePreImageRelationLocus::from_untrusted_fields(
+            "MemberOf".into(),
+            "Member".into(),
+            "Anchor".into(),
+        ),
+    );
+    assert_eq!(roundtrip(&value).unwrap(), value);
+}

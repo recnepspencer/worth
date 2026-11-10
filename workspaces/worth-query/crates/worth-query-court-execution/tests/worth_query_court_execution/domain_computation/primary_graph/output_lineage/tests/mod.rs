@@ -120,15 +120,15 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
     .unwrap();
 
     assert!(Arc::ptr_eq(
-        &(*selected_first.correspondence_for_test()),
+        selected_first.correspondence_for_test(),
         &first
     ));
     assert!(Arc::ptr_eq(
-        &(*selected_sibling.correspondence_for_test()),
+        selected_sibling.correspondence_for_test(),
         &sibling
     ));
     assert!(Arc::ptr_eq(
-        &(*matching_sibling.correspondence_for_test()),
+        matching_sibling.correspondence_for_test(),
         &sibling
     ));
     assert_eq!(history[&maximum_generation].len(), 2);
@@ -144,7 +144,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         lineage.resolve_current_family_for_test(
             execution,
             runtime_authority,
-            &(*source.schema_for_test()),
+            source.schema_for_test(),
             scope,
             "partitioned-family",
             observation.lifecycle_incarnation(),
@@ -155,11 +155,11 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
 
     assert_eq!((*family.candidates_for_test()).len(), 2);
     assert!(Arc::ptr_eq(
-        &(*(*family.candidates_for_test())[0].correspondence_for_test()),
+        (*family.candidates_for_test())[0].correspondence_for_test(),
         &first
     ));
     assert!(Arc::ptr_eq(
-        &(*(*family.candidates_for_test())[1].correspondence_for_test()),
+        (*family.candidates_for_test())[1].correspondence_for_test(),
         &sibling
     ));
 
@@ -170,7 +170,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
     let candidates = lineage
         .retained_output_candidates_metered_for_test(
             runtime_authority,
-            &(*source.schema_for_test()),
+            source.schema_for_test(),
             scope,
             observation.lifecycle_incarnation(),
             maximum_generation,
@@ -190,7 +190,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         (*lineage
             .qualified_output_for_test::<RestoredOutputBinding>(
                 runtime_authority,
-                &(*source.schema_for_test()),
+                source.schema_for_test(),
                 scope,
                 observation.lifecycle_incarnation(),
                 maximum_generation,

@@ -92,7 +92,7 @@ impl<D, O, F, L: BasisOperationLane> WorthQuerySettledDomainProjection<D, O, F, 
     pub fn binding_identity_evidence(
         &self,
     ) -> Result<crate::WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-        Ok(crate::WorthQueryEvidenceIdentity::compose(
+        crate::WorthQueryEvidenceIdentity::compose(
             crate::WorthQueryEvidenceScope::ProjectionConsumptionIdentity,
         )
         .field_shape(
@@ -103,13 +103,13 @@ impl<D, O, F, L: BasisOperationLane> WorthQuerySettledDomainProjection<D, O, F, 
             crate::WorthQueryEvidenceTag::new("binding"),
             self.execution_receipt().binding_identity(),
         )
-        .seal()?)
+        .seal()
     }
 
     pub fn result_identity_evidence(
         &self,
     ) -> Result<crate::WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-        Ok(crate::WorthQueryEvidenceIdentity::compose(
+        crate::WorthQueryEvidenceIdentity::compose(
             crate::WorthQueryEvidenceScope::ProjectionConsumptionIdentity,
         )
         .field_shape(
@@ -120,7 +120,7 @@ impl<D, O, F, L: BasisOperationLane> WorthQuerySettledDomainProjection<D, O, F, 
             crate::WorthQueryEvidenceTag::new("settled"),
             self.identity(),
         )
-        .seal()?)
+        .seal()
     }
 
     pub fn into_lifecycle(self) -> WorthQueryCurrentDomainProjection<D, O, F, L> {

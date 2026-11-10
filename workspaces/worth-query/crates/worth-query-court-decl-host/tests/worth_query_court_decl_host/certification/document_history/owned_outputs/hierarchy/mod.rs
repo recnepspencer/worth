@@ -11,7 +11,9 @@ mod member_children;
 
 mod cold_parent;
 
-pub(super) use program::{Child, ChildInput, Input, Output, Parent, Program as HierarchyProgram};
+pub(super) use program::{
+    Child, ChildInput, Input, Output, Parent, Program as HierarchyProgram, SeedInput,
+};
 
 mod recording_parent;
 

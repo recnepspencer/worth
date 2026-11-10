@@ -38,15 +38,13 @@ pub(super) fn runtime_subscription_budget_policy() -> Result<
     crate::runtime::WorthQueryRuntimeLiveSubscriptionBudgetPolicyIdentity,
     IdentityDerivationDenial,
 > {
-    Ok(
-        crate::runtime::WorthQueryRuntimeLiveSubscriptionBudgetPolicyIdentity::subscription_policy(
-            [
-                RUNTIME_SUBSCRIPTION_FAMILY_BUDGET_POLICY,
-                RUNTIME_SUBSCRIPTION_SLICE_BUDGET_POLICY,
-                RUNTIME_SUBSCRIPTION_BRIDGE_BUDGET_POLICY,
-                RUNTIME_SUBSCRIPTION_ADMISSION_BUDGET_POLICY,
-            ]
-            .join("|"),
-        )?,
+    crate::runtime::WorthQueryRuntimeLiveSubscriptionBudgetPolicyIdentity::subscription_policy(
+        [
+            RUNTIME_SUBSCRIPTION_FAMILY_BUDGET_POLICY,
+            RUNTIME_SUBSCRIPTION_SLICE_BUDGET_POLICY,
+            RUNTIME_SUBSCRIPTION_BRIDGE_BUDGET_POLICY,
+            RUNTIME_SUBSCRIPTION_ADMISSION_BUDGET_POLICY,
+        ]
+        .join("|"),
     )
 }

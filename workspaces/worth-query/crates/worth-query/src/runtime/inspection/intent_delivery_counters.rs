@@ -3,7 +3,6 @@ use super::intent_identity::{
     intent_inspection_delivery_counter_identity, IntentInspectionDeliveryCounterIdentityParts,
 };
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryIntentInspectionDeliveryCounters {

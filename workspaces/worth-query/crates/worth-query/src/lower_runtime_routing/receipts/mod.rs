@@ -35,10 +35,7 @@ impl WorthQueryLowerRuntimeRetainedEvidenceIdentity {
         retained_family: impl AsRef<str>,
         evidence_identity: &WorthQueryEvidenceIdentity,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(worth_query_lower_runtime_retained_evidence_identity(
-            retained_family,
-            evidence_identity,
-        )?)
+        worth_query_lower_runtime_retained_evidence_identity(retained_family, evidence_identity)
     }
 
     pub fn evidence_identity(&self) -> &WorthQueryEvidenceIdentity {

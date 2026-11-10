@@ -99,6 +99,12 @@ impl<S: Scenario> ApplicationMutationOutputContract<S> for CreatedOutputs {
         };
 }
 impl<S: Scenario> ApplicationMutationOutputContract<S> for RetiredOutputs {
+    const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] = if S::MODE == 72
+    {
+        &[<coupled::creation_inverse::wire::RetiredMembers<S> as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR]
+    } else {
+        &[]
+    };
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
         if <S::Heterogeneous as heterogeneous::Profile>::PRESENT {
             &[
@@ -136,6 +142,7 @@ pub struct CreationTargets<S: Scenario> {
 }
 pub type Target<S> = WorthQueryInvariantMutationTarget<S, Node<S>>;
 pub struct RetirementTargets<S: Scenario> {
+    pub wire: Vec<coupled::creation_inverse::wire::Member<S>>,
     pub body: Option<WorthQueryInvariantMutationTarget<S, heterogeneous::Body>>,
     pub stage_edges: Vec<(Target<S>, Target<S>)>,
     pub stage_relinks: Vec<(Target<S>, Target<S>)>,

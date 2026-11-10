@@ -15,7 +15,7 @@ pub fn compare(
     let mut differences = Vec::new();
     for (id, key) in world.keys.iter().enumerate() {
         let physical = (*state.records_for_test()).get_for_test(key);
-        let observation = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::claim_readthrough::visibility::observe_row(&(*state.records_for_test()), key);
+        let observation = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::claim_readthrough::visibility::observe_row(state.records_for_test(), key);
         let (awaited, required, held) =
             (observation.awaited, observation.required, observation.held);
         if (awaited, required, held)
@@ -75,7 +75,7 @@ pub fn compare(
                     Phase::Closed
                 } else if row.has_cached_ready_for_test() {
                     Phase::Ready
-                } else if matches!((*row.state_for_test()), DemandState::Running) {
+                } else if matches!( *row.state_for_test(), DemandState::Running) {
                     Phase::Running
                 } else {
                     Phase::Pending
@@ -92,7 +92,7 @@ pub fn compare(
     for id in 0..2 {
         let actual = state.source_custody.get(&world.context.commit(id));
         let expected = world.model.custody.get(&id);
-        if expected.is_none() && actual.is_some_and(|c| !(*c.cleanup_for_test()).queued) {
+        if expected.is_none() && actual.is_some_and(|c| !c.cleanup_for_test().queued) {
             differences.push(format!("removed custody {id} unnoted"));
         }
         let visible = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::post_commit::custody_reader::visible(
@@ -171,7 +171,7 @@ pub fn compare(
     }
     if quiescent
         && ((*state.closed_cleanup_for_test()).len_for_test() != 0
-            || (*state.custody_cleanup_for_test()).len != 0)
+            || state.custody_cleanup_for_test().len != 0)
     {
         differences.push("final note orders nonempty".into());
     }

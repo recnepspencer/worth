@@ -27,7 +27,7 @@ impl CausalInspectionPerformanceEnvelope {
         redaction_count: usize,
     ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         let counters = envelope.counters();
-        Ok(Self::new(
+        Self::new(
             1,
             1,
             1,
@@ -39,18 +39,18 @@ impl CausalInspectionPerformanceEnvelope {
             counters.bridge_retained_lookup_count(),
             counters.bridge_record_unindexed_scan_count(),
             counters.materialized_detail_count(),
-        )?)
+        )
     }
 
     pub(super) fn for_denied_query() -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
-        Ok(Self::new(1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0)?)
+        Self::new(1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0)
     }
 
     pub(super) fn for_bridge_denial(
         denial: &BridgeCausalEnvelopeDenial,
     ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
         let counters = denial.counters();
-        Ok(Self::new(
+        Self::new(
             1,
             1,
             1,
@@ -62,7 +62,7 @@ impl CausalInspectionPerformanceEnvelope {
             counters.bridge_retained_lookup_count(),
             counters.bridge_record_unindexed_scan_count(),
             counters.materialized_detail_count(),
-        )?)
+        )
     }
 
     fn new(

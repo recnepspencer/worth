@@ -9,6 +9,7 @@ use worth_execution::ExecutionOrderedMap;
 
 mod entry;
 mod eviction;
+pub(crate) mod inspection;
 pub use eviction::ManagedIndexSourceCacheRetirement;
 mod key;
 pub(crate) mod public_cache;

@@ -22,6 +22,7 @@ pub struct AuthoredOwnedMemberKind {
 impl RelationalRuntime {
     /// O((A + R) K + A log A + R log R) over incoming owner adjacency A,
     /// submitted member roles R and declared member kinds K. Membership has no second authoritative list.
+    /// A request with no work account is polled, not charged.
     pub fn validate_authored_owned_members(
         &self,
         execution: &ExecutionRequest<'_, '_>,
@@ -58,13 +59,13 @@ impl RelationalRuntime {
             basis.inner.root.as_ref(),
             crate::identity::data::VersionId(axes.storage_version),
         );
+        use crate::execution::request_stage::checkpoint;
         execution
             .run_native_with_checkpoint(|context| {
                 let mut roster = OwnedMemberRoster::new(anchor);
                 let edges = state.relation_candidates(anchor, false);
                 for &id in edges.iter() {
-                    context
-                        .checkpoint(kinds.len() as u64 + 1)
+                    checkpoint(context, kinds.len() as u64 + 1)
                         .map_err(super::super::custody::execution_stop)?;
                     basis
                         .inner
@@ -98,9 +99,7 @@ impl RelationalRuntime {
                     role.posture == RequiredOutputRolePosture::Retire
                         && kinds.iter().any(|kind| kind.member_kind == role.kind)
                 }) {
-                    context
-                        .checkpoint(1)
-                        .map_err(super::super::custody::execution_stop)?;
+                    checkpoint(context, 1).map_err(super::super::custody::execution_stop)?;
                     roster.supply(role)?;
                 }
                 roster.finish()

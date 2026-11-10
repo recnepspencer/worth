@@ -13,6 +13,7 @@ pub(super) const PAGE_BITS: u32 = 5;
 pub(super) const PAGE_SIZE: usize = 1 << PAGE_BITS;
 
 mod edit;
+pub(in super::super::super) mod inspection;
 pub(in super::super) use edit::PageEdit;
 
 pub(in super::super) struct NodePages<Node> {

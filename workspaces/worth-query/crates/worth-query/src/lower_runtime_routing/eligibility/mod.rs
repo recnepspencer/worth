@@ -19,11 +19,11 @@ impl WorthQueryLowerRuntimeCapabilityEligibility {
         request: WorthQueryLowerRuntimeCapabilityRequest,
         posture_detail_identity: &WorthQueryEvidenceIdentity,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new_with_evidence_identity(
+        Self::new_with_evidence_identity(
             request,
             WorthQueryLowerRuntimeCapabilityPosture::Admitted,
             posture_detail_identity,
-        )?)
+        )
     }
 
     pub(crate) fn new_with_evidence_identity(

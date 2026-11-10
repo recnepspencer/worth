@@ -16,11 +16,11 @@ use worth_relational::facade::{
 /// Descriptive locator within the already checked schema/runtime/branch affinity.
 /// The retained Native observation, not this key, supplies Source currentness.
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub(in crate::domain_computation::primary_graph) struct ManagedSourceReadKey {
-    pub obligation: [u8; 32],
-    pub authorization: [u8; 32],
-    pub scope: EntityId,
-    pub influence: Option<ManagedInfluenceOrigin>,
+pub struct ManagedSourceReadKey {
+    pub(in crate::domain_computation::primary_graph) obligation: [u8; 32],
+    pub(in crate::domain_computation::primary_graph) authorization: [u8; 32],
+    pub(in crate::domain_computation::primary_graph) scope: EntityId,
+    pub(in crate::domain_computation::primary_graph) influence: Option<ManagedInfluenceOrigin>,
 }
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub(in crate::domain_computation::primary_graph) struct ManagedInfluenceOrigin {

@@ -31,15 +31,13 @@ pub(super) fn runtime_async_causality_from_bridge(
 pub(super) fn runtime_async_causality_label_identity(
     label: &str,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "worth_query_runtime_async_causality_label_v1",
-            )
-            .field_shape(WorthQueryEvidenceTag::new("label"), label)
-            .seal()?,
-    )
+    worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "worth_query_runtime_async_causality_label_v1",
+        )
+        .field_shape(WorthQueryEvidenceTag::new("label"), label)
+        .seal()
 }
 
 pub(crate) fn runtime_async_causality_identity(
@@ -88,13 +86,11 @@ pub(crate) fn runtime_async_causality_from_label(
 pub(crate) fn runtime_async_checkpoint_label_identity(
     label: &str,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "worth_query_runtime_async_checkpoint_label_v1",
-            )
-            .field_shape(WorthQueryEvidenceTag::new("label"), label)
-            .seal()?,
-    )
+    worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "worth_query_runtime_async_checkpoint_label_v1",
+        )
+        .field_shape(WorthQueryEvidenceTag::new("label"), label)
+        .seal()
 }

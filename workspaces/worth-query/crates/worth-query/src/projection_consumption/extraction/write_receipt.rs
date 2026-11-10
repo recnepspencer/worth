@@ -151,7 +151,7 @@ impl ExtractedWriteReceiptFacts {
             + self.source_references.len()
             + self.effect_continuity.len()
             + self.relation_endpoints.len();
-        Ok(ConsumedProjectionFactSet::new(
+        ConsumedProjectionFactSet::new(
             ConsumedProjectionContractProvenance::from_contract(contract),
             ConsumedProjectionSourceTruth::from_contract(
                 contract,
@@ -177,7 +177,7 @@ impl ExtractedWriteReceiptFacts {
                 effect_continuity_facts: self.effect_continuity,
                 relation_endpoints: self.relation_endpoints,
             },
-        )?)
+        )
     }
 }
 

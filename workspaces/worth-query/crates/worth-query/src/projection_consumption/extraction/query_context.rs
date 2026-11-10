@@ -195,7 +195,7 @@ fn build_query_context_fact_set(
         + extracted.derived_fields.len()
         + source_references.len();
 
-    Ok(ConsumedProjectionFactSet::new(
+    ConsumedProjectionFactSet::new(
         ConsumedProjectionContractProvenance::from_contract(contract),
         ConsumedProjectionSourceTruth::from_contract(
             contract,
@@ -222,17 +222,14 @@ fn build_query_context_fact_set(
             effect_continuity_facts: Vec::new(),
             relation_endpoints: Vec::new(),
         },
-    )?)
+    )
 }
 
 fn query_context_row_identity(
     execution: &QueryContextExecutionArtifact,
     index: usize,
 ) -> Result<String, IdentityDerivationDenial> {
-    Ok(compose_query_context_row_identity(
-        execution.family().as_str(),
-        index,
-    )?)
+    compose_query_context_row_identity(execution.family().as_str(), index)
 }
 
 fn query_context_source_identity(execution: &QueryContextExecutionArtifact) -> String {

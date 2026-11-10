@@ -78,7 +78,7 @@ impl SourceDetail {
         }
     }
 }
-pub(in super::super) enum SourceMaterializationDenial {
+pub enum SourceMaterializationDenial {
     UnresolvedField,
     MissingOriginalValue,
     Array(ExecutionRequestArrayDenial),

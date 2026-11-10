@@ -10,7 +10,6 @@ use super::super::maintenance_delta::{
 use super::class::SubscriptionContinuationClass;
 use super::evidence::SubscriptionContinuationEvidence;
 use super::report::SubscriptionContinuationReport;
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 pub fn apply_subscription_continuation(
     window: QueryDeliveryWindow,

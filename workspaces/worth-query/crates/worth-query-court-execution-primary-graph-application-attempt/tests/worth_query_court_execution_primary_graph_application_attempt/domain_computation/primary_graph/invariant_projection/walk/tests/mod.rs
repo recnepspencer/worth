@@ -68,7 +68,7 @@ fn snapshot_walks_mint_local_identities_without_rereading_metadata() {
                         assert!(empty.issued_at_for_test(
                             &(*reader.native_for_test())
                                 .origin_for_test(reader.snapshot_for_test()),
-                            (*reader.authority_identity_for_test())
+                            *reader.authority_identity_for_test()
                         ));
                         assert!(!empty.issued_at_for_test(
                             &(*reader.native_for_test())
@@ -78,7 +78,7 @@ fn snapshot_walks_mint_local_identities_without_rereading_metadata() {
                         assert!(walk.issued_at_for_test(
                             &(*reader.native_for_test())
                                 .origin_for_test(reader.snapshot_for_test()),
-                            (*reader.authority_identity_for_test())
+                            *reader.authority_identity_for_test()
                         ));
                         assert!(!walk.issued_at_for_test(
                             &(*reader.native_for_test())

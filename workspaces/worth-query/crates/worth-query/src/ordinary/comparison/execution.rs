@@ -13,7 +13,6 @@ use crate::correspondence::{
     resolve_correspondence_evidence, CorrespondenceEvaluationRequest,
     StructuralCandidateDiscoveryPlan, StructuralCandidateOrderingContract,
 };
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::ordinary::history::WorthQueryHistoricalPathDeclaration;
 use crate::ordinary::read::current;
 use crate::runtime::{WorthQueryReadResult, WorthQueryWorkspace};

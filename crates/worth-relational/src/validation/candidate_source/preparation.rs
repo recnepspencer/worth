@@ -11,6 +11,7 @@ use crate::identity::data::EntityId;
 use crate::validation::data::{StructuralAspectStateView, StructuralRelationView};
 use std::{any::Any, sync::Arc};
 
+mod ordered_predecessor;
 mod projection_rows;
 mod row_read;
 mod rows;
@@ -43,6 +44,7 @@ pub struct ManagedIndexSourceScope<'a> {
     pub(crate) program: &'a ManagedIndexSourceProgram,
     pub(crate) scope: EntityId,
     pub(crate) changed: &'a std::collections::BTreeSet<EntityId>,
+    closure: &'a PreparedManagedIndexScopeClosure,
     pub(crate) views: &'a SourceViews<'a>,
     pub(crate) availability: ManagedIndexSourceAvailability,
     pub(crate) committed_available: bool,
@@ -171,8 +173,11 @@ impl<'a> ManagedIndexSourceScope<'a> {
     }
 
     fn rows(&self, before: bool) -> ManagedIndexSourceRows<'_> {
+        self.rows_at(before, self.scope)
+    }
+    fn rows_at(&self, before: bool, scope: EntityId) -> ManagedIndexSourceRows<'_> {
         ManagedIndexSourceRows {
-            scope: self.scope,
+            scope,
             projection: ManagedIndexSourceProjection {
                 program: self.program,
                 backing: super::projection::SourceProjectionBacking::Invariant {
@@ -261,6 +266,7 @@ impl ManagedIndexSourcePreparation<'_> {
                 program: self.program,
                 scope,
                 changed,
+                closure: self.closure,
                 views: &self.views,
                 availability: self.availability,
                 committed_available: self.committed_available,

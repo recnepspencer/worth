@@ -6,7 +6,6 @@ use std::{
 };
 use worth_relational::facade::identity::EntityId;
 pub(crate) mod native_rendezvous;
-pub(in crate::domain_computation::primary_graph) use native_rendezvous::NativeReadRendezvousGuardForTest;
 thread_local! { static ACTIVE: RefCell<Option<Arc<DispatchWitness>>> = const { RefCell::new(None) }; }
 #[derive(Default)]
 pub struct DispatchWitness {

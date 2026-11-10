@@ -67,7 +67,7 @@ fn completed_query_roster_keeps_original_funding_until_final_observation_close()
                 .unwrap();
             assert_eq!(result.rows().len(), 1);
             let row = &result.observed_sources()[0];
-            let roster = &(*(*row.parameters_for_test()).rows_for_test());
+            let roster = (*row.parameters_for_test()).rows_for_test();
             let quote = std::alloc::Layout::array::<Arc<WorthQueryObservedSourceMeaning>>(1)
                 .unwrap()
                 .size() as u64;
@@ -76,7 +76,7 @@ fn completed_query_roster_keeps_original_funding_until_final_observation_close()
                 Some(quote),
                 "the actual original request funds the pointer roster"
             );
-            assert!(Arc::ptr_eq(&(*row.source_meaning_for_test()), &roster[0]));
+            assert!(Arc::ptr_eq(row.source_meaning_for_test(), &roster[0]));
             let row_weak = Arc::downgrade(&roster[0]);
             let completed = result.into_admitted_disclosed().into_output_demand_source();
             let observation = completed.retain_inspection_observation().unwrap();

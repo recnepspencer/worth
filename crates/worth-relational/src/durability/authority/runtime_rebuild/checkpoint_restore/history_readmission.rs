@@ -6,7 +6,6 @@ use crate::runtime::{HistorySubsystem, RelationalRuntime};
 use std::sync::Arc;
 
 pub(super) fn prepare_history(
-    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
     checkpoint: &DurableCheckpoint,
@@ -99,7 +98,6 @@ pub(super) fn prepare_history(
     )?;
     history
         .restore_branch_cells(
-            lane,
             &checkpoint.branch_cells,
             &checkpoint.branch_lifecycle,
             &checkpoint.retired_branch_names,

@@ -114,7 +114,7 @@ impl ManagedIndexSourceRows<'_> {
                     scope: self.scope,
                     row,
                 },
-                read,
+                membership: super::row_read::OccurrenceMembership::Inverse(read),
             }))
     }
     /// Field borrows cannot escape the actual loan's exact state callback.

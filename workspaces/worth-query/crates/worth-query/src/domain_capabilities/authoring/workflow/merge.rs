@@ -19,7 +19,7 @@ impl WorthQueryWorkflowContributionAuthoring {
         target_branch: BranchId,
         source_branch: BranchId,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_runtime_and_lowering_semantics(
+        Self::with_runtime_and_lowering_semantics(
             WorthQueryWorkflowContributionPosture::PromotionEligible,
             semantic_code,
             detail,
@@ -38,6 +38,6 @@ impl WorthQueryWorkflowContributionAuthoring {
                 target_branch,
                 source_branch,
             )),
-        )?)
+        )
     }
 }

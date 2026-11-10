@@ -124,26 +124,6 @@ impl crate::storage::overlay::PartitionAccess for ResidentVisibilitySnapshotBasi
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn selected_basis_cannot_infallibly_become_resident_custody() {
-        trait WithoutPromotion<A> {
-            fn witness() {}
-        }
-        impl<T> WithoutPromotion<()> for T {}
-        impl<T: Into<ResidentVisibilitySnapshotBasis>> WithoutPromotion<u8> for T {}
-        let _ = <VisibilitySnapshotBasis as WithoutPromotion<_>>::witness;
-        trait WithoutDefault<A> {
-            fn witness() {}
-        }
-        impl<T> WithoutDefault<()> for T {}
-        impl<T: Default> WithoutDefault<u8> for T {}
-        let _ = <ResidentVisibilitySnapshotBasis as WithoutDefault<_>>::witness;
-    }
-}
-
 impl crate::storage::overlay::CurrentPartitionAccess for ResidentVisibilitySnapshotBasis {
     fn get_current_partition(&self, id: PartitionId) -> Option<RelationalRegionHeadView<'_>> {
         self.head_region(id)
@@ -182,5 +162,25 @@ impl crate::storage::overlay::CurrentPartitionAccess for ResidentVisibilitySnaps
     }
     fn partition_ids_iter(&self) -> Box<dyn Iterator<Item = PartitionId> + '_> {
         Box::new(self.root().partition_ids_iter())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn selected_basis_cannot_infallibly_become_resident_custody() {
+        trait WithoutPromotion<A> {
+            fn witness() {}
+        }
+        impl<T> WithoutPromotion<()> for T {}
+        impl<T: Into<ResidentVisibilitySnapshotBasis>> WithoutPromotion<u8> for T {}
+        let _ = <VisibilitySnapshotBasis as WithoutPromotion<_>>::witness;
+        trait WithoutDefault<A> {
+            fn witness() {}
+        }
+        impl<T> WithoutDefault<()> for T {}
+        impl<T: Default> WithoutDefault<u8> for T {}
+        let _ = <ResidentVisibilitySnapshotBasis as WithoutDefault<_>>::witness;
     }
 }

@@ -43,9 +43,9 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
     where
         I: WorthQueryDeclarationInput<D>,
     {
-        Ok(ordinary_outcome_from_contribution_composed_checked(
+        ordinary_outcome_from_contribution_composed_checked(
             orchestrate_declaration_with_contributions_on_handle(self, input)?.into_checked(),
-        )?)
+        )
     }
 
     pub fn orchestrate_declaration_with_contributions_checked<I>(
@@ -65,8 +65,6 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
     where
         I: WorthQueryDeclarationInput<D>,
     {
-        Ok(orchestrate_declaration_with_contributions_on_handle(
-            self, input,
-        )?)
+        orchestrate_declaration_with_contributions_on_handle(self, input)
     }
 }

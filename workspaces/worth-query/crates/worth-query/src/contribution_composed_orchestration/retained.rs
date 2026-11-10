@@ -58,11 +58,7 @@ pub(crate) fn orchestrate_progressed_declaration_with_contributions_checked_on_h
         materialization_policy,
         linked.clone(),
     )?;
-    Ok(finalize_checked(
-        declaration.envelope,
-        linked,
-        intent_results,
-    )?)
+    finalize_checked(declaration.envelope, linked, intent_results)
 }
 
 fn finalize_checked<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>(

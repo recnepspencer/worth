@@ -17,9 +17,7 @@ fn encode(value: &str) -> InternedString {
     value.to_owned().into()
 }
 fn decode(value: InternedString) -> Option<String> {
-    let Some(value) = (value).raw_text() else {
-        return None;
-    };
+    let value = value.raw_text()?;
     assert_ne!(value, "decoder-must-not-run");
     (value != "malformed").then(|| value.to_owned())
 }

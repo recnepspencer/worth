@@ -56,6 +56,7 @@ impl AggregateProposal {
         identity: &RelationalMutationProposalIdentity,
         records: &[RecordRef],
         adjacency: &[AdjacencyDelta],
+        has_entity_deletions: bool,
         materialization: Option<RelationalMaterializationTransactionMode>,
     ) -> Option<Self> {
         let registry = authority.registry();
@@ -73,7 +74,7 @@ impl AggregateProposal {
             selected: selected.clone(),
             changes: materialization
                 .is_none()
-                .then(|| AggregateChanges::from_applied(records, adjacency)),
+                .then(|| AggregateChanges::from_applied(records, adjacency, has_entity_deletions)),
             state: Mutex::new(ArtifactState::Uninitialized),
         })
     }

@@ -152,7 +152,7 @@ impl WorthQueryPreviewPromotionDenialEvidence {
         staged_preview_write_count: usize,
         preview_binding_count: usize,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             WorthQueryPreviewPromotionDenialKind::StaleBasis,
             effect_policy,
             basis_admission,
@@ -167,7 +167,7 @@ impl WorthQueryPreviewPromotionDenialEvidence {
             None,
             "preview promotion rejected because authoritative basis changed before promotion"
                 .to_string(),
-        )?)
+        )
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -182,7 +182,7 @@ impl WorthQueryPreviewPromotionDenialEvidence {
         preview_binding_count: usize,
         reason: String,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             WorthQueryPreviewPromotionDenialKind::WriteFailed,
             effect_policy,
             basis_admission,
@@ -196,7 +196,7 @@ impl WorthQueryPreviewPromotionDenialEvidence {
             "retry_authoritative_write".to_string(),
             None,
             reason,
-        )?)
+        )
     }
 
     pub(in crate::runtime::preview) fn atomic_batch_unsupported(
@@ -207,7 +207,7 @@ impl WorthQueryPreviewPromotionDenialEvidence {
         staged_preview_write_count: usize,
         preview_binding_count: usize,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             WorthQueryPreviewPromotionDenialKind::AtomicBatchUnsupported,
             effect_policy,
             basis_admission,
@@ -222,7 +222,7 @@ impl WorthQueryPreviewPromotionDenialEvidence {
             None,
             "preview promotion rejected because multiple staged writes require atomic promotion support"
                 .to_string(),
-        )?)
+        )
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -236,7 +236,7 @@ impl WorthQueryPreviewPromotionDenialEvidence {
         crossed_authoritative_residue_count: usize,
         rebinding_identity: WorthQueryEvidenceIdentity,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             WorthQueryPreviewPromotionDenialKind::RebindingRequired,
             effect_policy,
             basis_admission,
@@ -251,7 +251,7 @@ impl WorthQueryPreviewPromotionDenialEvidence {
             Some(rebinding_identity),
             "preview promotion rejected because preview-owned temporal or async residue requires authoritative re-admission before promotion"
                 .to_string(),
-        )?)
+        )
     }
 
     pub fn label(&self) -> &str {

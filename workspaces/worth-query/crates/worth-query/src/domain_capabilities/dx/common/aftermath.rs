@@ -137,7 +137,7 @@ impl WorthQueryAdmittedPlanAftermathContribution {
         WorthQueryCheckedDomainCapabilityOutcome<WorthQueryAftermathProjectionConsumptionReview>,
         IdentityDerivationDenial,
     > {
-        Ok(self.materialize_checked(materialize_projection_consumption_review)?)
+        self.materialize_checked(materialize_projection_consumption_review)
     }
 
     pub fn review(
@@ -155,7 +155,7 @@ impl WorthQueryAdmittedPlanAftermathContribution {
         WorthQueryCheckedDomainCapabilityOutcome<ProjectionConsumptionSupportReport>,
         IdentityDerivationDenial,
     > {
-        Ok(self.materialize_checked(materialize_projection_consumption_support_report)?)
+        self.materialize_checked(materialize_projection_consumption_support_report)
     }
 
     pub fn materialize_support_report(
@@ -171,7 +171,7 @@ impl WorthQueryAdmittedPlanAftermathContribution {
         WorthQueryCheckedDomainCapabilityOutcome<ProjectionConsumptionEligibility>,
         IdentityDerivationDenial,
     > {
-        Ok(self.materialize_checked(materialize_projection_consumption_eligibility)?)
+        self.materialize_checked(materialize_projection_consumption_eligibility)
     }
 
     pub fn materialize_eligibility(
@@ -187,7 +187,7 @@ impl WorthQueryAdmittedPlanAftermathContribution {
         WorthQueryCheckedDomainCapabilityOutcome<AdmittedProjectionConsumption>,
         IdentityDerivationDenial,
     > {
-        Ok(self.materialize_checked(materialize_admitted_projection_consumption)?)
+        self.materialize_checked(materialize_admitted_projection_consumption)
     }
 
     pub fn materialize_admitted(
@@ -202,7 +202,7 @@ impl WorthQueryAdmittedPlanAftermathContribution {
         WorthQueryCheckedDomainCapabilityOutcome<MaterializedProjectionContract>,
         IdentityDerivationDenial,
     > {
-        Ok(self.materialize_checked(materialize_projection_consumption_contract)?)
+        self.materialize_checked(materialize_projection_consumption_contract)
     }
 
     pub fn materialize(
@@ -270,7 +270,7 @@ impl WorthQueryAdmittedPlanAftermathContribution {
         let target = self.target.clone();
         let requested = self.into_requested()?;
 
-        Ok(materialize_common_lane(
+        materialize_common_lane(
             "consequence-aftermath",
             WorthQueryDomainCapabilityTargetKind::AdmittedIntentPlan,
             posture.as_str(),
@@ -283,6 +283,6 @@ impl WorthQueryAdmittedPlanAftermathContribution {
                 )
             },
             materialize,
-        )?)
+        )
     }
 }

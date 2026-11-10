@@ -132,30 +132,28 @@ impl ResolvedSnapshotIdentity {
     }
 
     fn evidence_identity(&self) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-        Ok(
-            worth_query_evidence_identity(WorthQueryEvidenceScope::ResolvedSnapshotBasis)
-                .field_shape(
-                    WorthQueryEvidenceTag::new("authority_family"),
-                    self.authority_family.as_str(),
-                )
-                .field_evidence_identity(
-                    WorthQueryEvidenceTag::new("snapshot_identity"),
-                    &self.snapshot_identity,
-                )
-                .field_digest(
-                    WorthQueryEvidenceTag::new("schema_basis"),
-                    self.schema_basis().digest(),
-                )
-                .field_shape(
-                    WorthQueryEvidenceTag::new("lineage_class"),
-                    self.lineage_class.as_str(),
-                )
-                .optional_value(
-                    WorthQueryEvidenceTag::new("workspace_scope"),
-                    self.workspace_scope.as_deref(),
-                )
-                .seal()?,
-        )
+        worth_query_evidence_identity(WorthQueryEvidenceScope::ResolvedSnapshotBasis)
+            .field_shape(
+                WorthQueryEvidenceTag::new("authority_family"),
+                self.authority_family.as_str(),
+            )
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("snapshot_identity"),
+                &self.snapshot_identity,
+            )
+            .field_digest(
+                WorthQueryEvidenceTag::new("schema_basis"),
+                self.schema_basis().digest(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("lineage_class"),
+                self.lineage_class.as_str(),
+            )
+            .optional_value(
+                WorthQueryEvidenceTag::new("workspace_scope"),
+                self.workspace_scope.as_deref(),
+            )
+            .seal()
     }
 }
 
@@ -266,12 +264,12 @@ pub(crate) fn resolve_runtime_historical_snapshot_basis(
         schema_basis,
         SnapshotLineageClass::ReplayEquivalent,
     );
-    Ok(ResolvedSnapshotBasis::new_with_reporting_label(
+    ResolvedSnapshotBasis::new_with_reporting_label(
         intent,
         identity,
         BasisResolutionMode::RuntimeDirect,
         reporting_label,
-    )?)
+    )
 }
 
 pub fn admit_runtime_current_snapshot_basis(

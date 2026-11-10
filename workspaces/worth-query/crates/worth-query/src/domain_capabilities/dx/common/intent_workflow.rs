@@ -92,7 +92,7 @@ impl WorthQueryIntentPreviewInspectionContribution {
         )?
         .bind_to_installed_target(self.target)?;
 
-        Ok(materialize_common_lane(
+        materialize_common_lane(
             "workflow-preview",
             WorthQueryDomainCapabilityTargetKind::IntentDeclaration,
             crate::domain_capabilities::payloads::WorthQueryWorkflowContributionPosture::PreviewOnly
@@ -106,7 +106,7 @@ impl WorthQueryIntentPreviewInspectionContribution {
                 )
             },
             |ready| Ok(materialize_query_preview_workflow_artifact(ready)),
-        )?)
+        )
     }
 
     pub fn materialize(
@@ -174,7 +174,7 @@ impl WorthQueryIntentPreviewMutationContribution {
             )?
             .bind_to_installed_target(self.target)?;
 
-        Ok(materialize_common_lane(
+        materialize_common_lane(
             "workflow-preview",
             WorthQueryDomainCapabilityTargetKind::IntentDeclaration,
             crate::domain_capabilities::payloads::WorthQueryWorkflowContributionPosture::PromotionEligible
@@ -192,7 +192,7 @@ impl WorthQueryIntentPreviewMutationContribution {
                     |declaration| WorthQueryIntentPreviewMutationPlan { inner: declaration },
                 ))
             },
-        )?)
+        )
     }
 
     pub fn materialize(

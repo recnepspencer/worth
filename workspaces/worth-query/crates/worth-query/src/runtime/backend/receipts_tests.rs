@@ -186,11 +186,12 @@ fn bridge_authority_cannot_admit_a_different_mutation_subject(
         )?,
     ];
 
-    Ok(for delta in mismatched_deltas {
+    let _: () = for delta in mismatched_deltas {
         let receipt =
             projected_receipt_for_delta(delta, authority.clone()).admit_runtime_write_authority();
         assert!(!receipt.has_current_mutation_authority());
-    })
+    };
+    Ok(())
 }
 
 #[test]

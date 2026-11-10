@@ -80,7 +80,7 @@ pub fn leased_checkpoint_retains_one_frame_charge_through_native_handoff_and_reo
     let (system, system_sections) = worth_query_execution::facade::application_installation::WorthQueryApplicationCheckpoint::encode_for_test(
         (*decoded.native_for_test()).clone(),
         world.application.publication(),
-        &(*decoded.accepted_outputs_for_test()),
+        decoded.accepted_outputs_for_test(),
         Policy::SystemAllocation,
     )
     .unwrap();

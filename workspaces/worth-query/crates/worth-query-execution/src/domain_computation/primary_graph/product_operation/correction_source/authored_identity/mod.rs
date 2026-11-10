@@ -2,8 +2,10 @@
 mod candidate;
 #[cfg(test)]
 mod candidate_tests;
+mod live_owner_members;
 use super::{WorthQueryCorrectionDerivationDenial as Denial, WorthQuerySelectedCorrectionSource};
 pub(in crate::domain_computation::primary_graph) use candidate::AuthoredCorrectionCandidateDenial;
+pub(super) use live_owner_members::PreparedAuthoredCorrection;
 use worth_foundational::facade::{
     AspectFieldLocator, AspectKey, AspectValue, CanonicalFieldPath, FieldKey, LocatorAuthority,
 };
@@ -26,6 +28,9 @@ pub(super) struct PreparedAuthoredIdentity {
 impl PreparedAuthoredIdentity {
     pub(super) fn declaration(&self) -> &DeclaredAuthoredCorrection {
         &self.declaration
+    }
+    pub(super) fn original(&self) -> EntityId {
+        self.original
     }
     pub(super) fn retirement_anchor(&self) -> Option<EntityId> {
         (self.declaration.parts().source_posture == Posture::Create).then_some(self.original)
@@ -72,7 +77,8 @@ impl PreparedAuthoredIdentity {
         worth_relational::facade::transactions::CreatedEntityRef,
     )> {
         let parts = self.declaration.parts();
-        if parts.source_posture != Posture::Retire {
+        if parts.source_posture != Posture::Retire || self.declaration.live_member_owner().is_some()
+        {
             return None;
         }
         roles.find_map(|(name, posture, _, target)| match target {
@@ -85,17 +91,41 @@ impl PreparedAuthoredIdentity {
         })
     }
 
-    pub(super) fn prepare<S: ApplicationSchema, C: ApplicationCorrectionBinding<S>>(
+    /// One exact leaf per witnessed role of a declared member family. The role
+    /// suffix alone pairs a source member with its inverse role; work is one
+    /// scan of the source's witnessed roles and one key read per member.
+    fn prepare_members<S: ApplicationSchema, C: ApplicationCorrectionBinding<S>>(
         source: &WorthQuerySelectedCorrectionSource<'_, S>,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<Option<Self>, Denial> {
-        let Some(identity) = C::authored_identity() else {
-            return Ok(None);
-        };
-        let declaration = identity
-            .into_declaration()
-            .map_err(|_| Denial::UnsupportedSourceMeaning)?;
-        Self::prepare_identity::<S, C>(source, request, declaration)
+        family: &DeclaredAuthoredCorrection,
+        members: &mut Vec<Self>,
+    ) -> Result<(), Denial> {
+        let outputs = source
+            .occurrence()
+            .commit_evidence()
+            .output_correspondence();
+        for (name, _, _, _) in
+            outputs
+                .native_witness_roles()
+                .filter(|(name, posture, entity, _)| {
+                    family
+                        .member_role_suffix(name, *posture, entity, false)
+                        .is_some()
+                })
+        {
+            let mut parts = family.parts().clone();
+            let suffix = &name[parts.source_role.len()..];
+            parts.inverse_role = format!("{}{suffix}", parts.inverse_role);
+            parts.source_role = name.to_owned();
+            let mut member = DeclaredAuthoredCorrection::from_untrusted_parts(parts);
+            if let Some(owner) = family.live_member_owner() {
+                member = member.with_live_member_owner(owner.clone());
+            }
+            if let Some(member) = Self::prepare_identity::<S, C>(source, request, member)? {
+                members.push(member);
+            }
+        }
+        Ok(())
     }
 
     fn prepare_identity<S: ApplicationSchema, C: ApplicationCorrectionBinding<S>>(
@@ -174,24 +204,7 @@ impl PreparedAuthoredIdentity {
         let mut co_anchors = Vec::with_capacity(declaration.co_anchors().len());
         for declared in declaration.co_anchors() {
             if declared.member_owner().is_some() {
-                for (name, _, _, _) in
-                    outputs
-                        .native_witness_roles()
-                        .filter(|(name, posture, entity, _)| {
-                            declared
-                                .member_role_suffix(name, *posture, entity, false)
-                                .is_some()
-                        })
-                {
-                    let mut parts = declared.parts().clone();
-                    let suffix = &name[parts.source_role.len()..];
-                    parts.inverse_role = format!("{}{suffix}", parts.inverse_role);
-                    parts.source_role = name.to_owned();
-                    let member = DeclaredAuthoredCorrection::from_untrusted_parts(parts);
-                    if let Some(member) = Self::prepare_identity::<S, C>(source, request, member)? {
-                        co_anchors.push(member);
-                    }
-                }
+                Self::prepare_members::<S, C>(source, request, declared, &mut co_anchors)?;
                 continue;
             }
             if let Some(anchor) = Self::prepare_identity::<S, C>(source, request, declared.clone())?

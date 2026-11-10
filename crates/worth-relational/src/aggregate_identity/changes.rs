@@ -3,13 +3,19 @@ use crate::authority::mutation::AdjacencyDelta;
 use crate::transactions::data::RecordRef;
 
 pub(super) struct AggregateChanges {
+    pub(super) has_entity_deletions: bool,
     pub(super) adjacency: Vec<AdjacencyDelta>,
     pub(super) records: Vec<RecordRef>,
 }
 
 impl AggregateChanges {
-    pub(super) fn from_applied(records: &[RecordRef], adjacency: &[AdjacencyDelta]) -> Self {
+    pub(super) fn from_applied(
+        records: &[RecordRef],
+        adjacency: &[AdjacencyDelta],
+        has_entity_deletions: bool,
+    ) -> Self {
         Self {
+            has_entity_deletions,
             adjacency: adjacency.to_vec(),
             records: records.to_vec(),
         }

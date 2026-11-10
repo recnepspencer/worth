@@ -30,11 +30,11 @@ pub(crate) fn representative_compose_read_row(
         .compose_read(execution, read_declaration())
         .expect("compose-read fixture should execute");
 
-    Ok(route_planned_read_row(
+    route_planned_read_row(
         WorthQueryLowerRuntimeSeamKey::ComposeRead,
         "Composed current read",
         &result,
-    )?)
+    )
 }
 
 pub(crate) fn representative_execute_read_family_row(
@@ -46,11 +46,11 @@ pub(crate) fn representative_execute_read_family_row(
         .execute_read_family(execution, &family)
         .expect("execute-read-family fixture should execute");
 
-    Ok(route_planned_read_row(
+    route_planned_read_row(
         WorthQueryLowerRuntimeSeamKey::ExecuteReadFamily,
         "Defined read-family execution",
         &result,
-    )?)
+    )
 }
 
 pub(crate) fn representative_execute_read_family_in_basis_context_row(
@@ -69,11 +69,11 @@ pub(crate) fn representative_execute_read_family_in_basis_context_row(
         .execute_read_family_in_basis_context(execution, &family, &context)
         .expect("execute-read-family-in-basis-context fixture should execute");
 
-    Ok(route_planned_read_row(
+    route_planned_read_row(
         WorthQueryLowerRuntimeSeamKey::ExecuteReadFamilyInBasisContext,
         "Basis-context read-family execution",
         &result,
-    )?)
+    )
 }
 
 pub(crate) fn representative_runtime_current_read_graph_row(
@@ -85,11 +85,11 @@ pub(crate) fn representative_runtime_current_read_graph_row(
         .execute_read_family(execution, &family)
         .expect("runtime current-read fixture should execute");
 
-    Ok(route_planned_read_row(
+    route_planned_read_row(
         WorthQueryLowerRuntimeSeamKey::ExecuteRuntimeCurrentReadGraph,
         "Current read execution",
         &result,
-    )?)
+    )
 }
 
 pub(crate) fn representative_runtime_basis_context_read_graph_row(
@@ -107,11 +107,11 @@ pub(crate) fn representative_runtime_basis_context_read_graph_row(
         .execute_read_family_in_basis_context(execution, &family, &context)
         .expect("runtime basis-context read fixture should execute");
 
-    Ok(route_planned_read_row(
+    route_planned_read_row(
         WorthQueryLowerRuntimeSeamKey::ExecuteRuntimeBasisContextReadGraph,
         "Basis-context read execution",
         &result,
-    )?)
+    )
 }
 
 fn route_planned_read_row(
@@ -192,7 +192,7 @@ fn read_result_evidence_identity(
     if let Some(provenance) = receipt.execution_provenance_chain_digest() {
         builder = builder.field_value(WorthQueryEvidenceTag::new("provenance"), provenance);
     }
-    Ok(builder.seal()?)
+    builder.seal()
 }
 
 fn certification_workspace(

@@ -84,6 +84,21 @@ impl NativeManagedSourceInterpretation {
         .then(|| self.physical_basis.observation().version_id())
     }
 
+    pub(super) fn current_registration_generation(
+        &self,
+    ) -> Result<u64, super::ManagedIndexSourcePreparationDenial> {
+        use super::ManagedIndexSourcePreparationDenial as Denial;
+        let epoch = self
+            .publication
+            .companion_epoch()
+            .map_err(Denial::Registration)?;
+        epoch
+            .active()
+            .map_err(Denial::Registration)?
+            .map(|(generation, _)| generation)
+            .ok_or(Denial::MissingParticipant)
+    }
+
     pub(crate) fn physical_basis(&self) -> &AdmittedRelationalBranchBasis {
         &self.physical_basis
     }

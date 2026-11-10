@@ -11,12 +11,12 @@ fn registry_eager_completion_notes_without_sweeping_then_admission_prunes() {
         .complete_prepared_source_for_test(&context.completed);
     assert_eq!(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::post_commit::sweep_contacts(), contacts);
     assert!(
-        (*(*world.registry.state_for_test())
+        (*world.registry.state_for_test())
             .lock()
             .unwrap()
             .source_custody[&context.commit(1)]
-            .cleanup_for_test())
-        .queued
+            .cleanup_for_test()
+            .queued
     );
     world.drop_owner(1);
     world.drop_owner(2);

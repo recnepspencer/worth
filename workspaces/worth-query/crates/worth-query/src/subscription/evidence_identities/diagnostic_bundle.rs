@@ -69,34 +69,32 @@ pub(in crate::subscription) fn diagnostic_assembly_receipt_identity(
     stage_rederivation_count: usize,
     bundle_width_identity: &WorthQueryEvidenceIdentity,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "query_subscription_diagnostic_assembly_receipt_v1",
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("bundle_assembly_posture"),
-                bundle_assembly_posture,
-            )
-            .field_usize(
-                WorthQueryEvidenceTag::new("stage_evidence_composition_count"),
-                stage_evidence_composition_count,
-            )
-            .field_usize(
-                WorthQueryEvidenceTag::new("semantic_label_carry_forward_count"),
-                semantic_label_carry_forward_count,
-            )
-            .field_usize(
-                WorthQueryEvidenceTag::new("stage_rederivation_count"),
-                stage_rederivation_count,
-            )
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("bundle_width"),
-                bundle_width_identity,
-            )
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "query_subscription_diagnostic_assembly_receipt_v1",
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("bundle_assembly_posture"),
+            bundle_assembly_posture,
+        )
+        .field_usize(
+            WorthQueryEvidenceTag::new("stage_evidence_composition_count"),
+            stage_evidence_composition_count,
+        )
+        .field_usize(
+            WorthQueryEvidenceTag::new("semantic_label_carry_forward_count"),
+            semantic_label_carry_forward_count,
+        )
+        .field_usize(
+            WorthQueryEvidenceTag::new("stage_rederivation_count"),
+            stage_rederivation_count,
+        )
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("bundle_width"),
+            bundle_width_identity,
+        )
+        .seal()
 }
 
 pub(in crate::subscription) fn diagnostic_semantic_labels_identity(
@@ -110,69 +108,65 @@ pub(in crate::subscription) fn diagnostic_semantic_labels_identity(
     support_posture_label: &str,
     denial_or_coverage_class_label: &str,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "query_subscription_diagnostic_semantic_labels_v1",
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("query_family"),
-                query_family_label,
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("declaration_family"),
-                declaration_family_label,
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("bridge_family"),
-                bridge_family_label,
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("basis_posture"),
-                basis_posture_label,
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("signal_strategy_class"),
-                signal_strategy_class_label,
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("live_graph_access_posture"),
-                live_graph_access_posture_label,
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("support_posture"),
-                support_posture_label,
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("denial_or_coverage_class"),
-                denial_or_coverage_class_label,
-            )
-            .field_value_sequence(
-                WorthQueryEvidenceTag::new("bridge_slices"),
-                bridge_slice_labels.iter().map(String::as_str),
-            )
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "query_subscription_diagnostic_semantic_labels_v1",
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("query_family"),
+            query_family_label,
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("declaration_family"),
+            declaration_family_label,
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("bridge_family"),
+            bridge_family_label,
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("basis_posture"),
+            basis_posture_label,
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("signal_strategy_class"),
+            signal_strategy_class_label,
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("live_graph_access_posture"),
+            live_graph_access_posture_label,
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("support_posture"),
+            support_posture_label,
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("denial_or_coverage_class"),
+            denial_or_coverage_class_label,
+        )
+        .field_value_sequence(
+            WorthQueryEvidenceTag::new("bridge_slices"),
+            bridge_slice_labels.iter().map(String::as_str),
+        )
+        .seal()
 }
 
 pub(in crate::subscription) fn diagnostic_failure_identity(
     failure_kind: &str,
     diagnostic_identity: &WorthQueryEvidenceIdentity,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "query_subscription_diagnostic_failure_v1",
-            )
-            .field_shape(WorthQueryEvidenceTag::new("failure_kind"), failure_kind)
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("diagnostic"),
-                diagnostic_identity,
-            )
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "query_subscription_diagnostic_failure_v1",
+        )
+        .field_shape(WorthQueryEvidenceTag::new("failure_kind"), failure_kind)
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("diagnostic"),
+            diagnostic_identity,
+        )
+        .seal()
 }
 
 pub(in crate::subscription) fn diagnostic_admitted_bundle_identity(
@@ -219,7 +213,7 @@ pub(in crate::subscription) fn diagnostic_admitted_bundle_identity(
         composer = composer
             .field_evidence_identity(WorthQueryEvidenceTag::new("closeout"), closeout_identity);
     }
-    Ok(composer.seal()?)
+    composer.seal()
 }
 
 pub(in crate::subscription) fn diagnostic_denied_bundle_identity(
@@ -246,5 +240,5 @@ pub(in crate::subscription) fn diagnostic_denied_bundle_identity(
             support_report_identity,
         );
     }
-    Ok(composer.seal()?)
+    composer.seal()
 }

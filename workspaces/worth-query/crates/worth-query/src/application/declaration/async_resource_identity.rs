@@ -119,6 +119,12 @@ fn admit_identity_parts(
     Ok(parts)
 }
 
+impl From<IdentityDerivationDenial> for WorthQueryAsyncResourceRequestIdentityError {
+    fn from(cause: IdentityDerivationDenial) -> Self {
+        Self::EvidenceIdentityDerivationDenied(cause)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -173,11 +179,5 @@ mod tests {
 
     fn part(key: &str, value: &str) -> WorthQueryAsyncRequestIdentityPart {
         WorthQueryAsyncRequestIdentityPart::text(key, value)
-    }
-}
-
-impl From<IdentityDerivationDenial> for WorthQueryAsyncResourceRequestIdentityError {
-    fn from(cause: IdentityDerivationDenial) -> Self {
-        Self::EvidenceIdentityDerivationDenied(cause)
     }
 }

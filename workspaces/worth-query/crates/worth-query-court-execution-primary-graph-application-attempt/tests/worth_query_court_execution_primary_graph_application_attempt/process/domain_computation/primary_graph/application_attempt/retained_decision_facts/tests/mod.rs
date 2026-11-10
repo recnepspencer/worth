@@ -85,9 +85,9 @@ fn run_replacement_deduplicates_full_bodies_and_moves_canonical_and_authored_ord
             (*record.key_for_test()).locator_for_test(),
             format!("fact-{expected:03}").as_bytes()
         );
-        assert_eq!((*record.value_for_test()).scalar, expected as u64);
+        assert_eq!(record.value_for_test().scalar, expected as u64);
         assert_eq!(
-            (*record.value_for_test()).roles,
+            record.value_for_test().roles,
             if [0, 70, 95].contains(&expected) {
                 3
             } else {
@@ -98,7 +98,7 @@ fn run_replacement_deduplicates_full_bodies_and_moves_canonical_and_authored_ord
     let authored = restore_authored_order(canonical, policy).unwrap();
     for (ordinal, record) in authored.iter().enumerate() {
         assert_eq!((*record.ordinal_for_test()), ordinal);
-        assert_eq!((*record.value_for_test()).scalar, (95 - ordinal) as u64);
+        assert_eq!(record.value_for_test().scalar, (95 - ordinal) as u64);
     }
 }
 
@@ -194,10 +194,10 @@ fn sealed_canonical_seed_moves_into_merge_without_cloning_values() {
     let sealed = merged.finish_for_test(policy).unwrap();
     assert_eq!(sealed.len(), 66);
     for (index, record) in sealed.iter().enumerate() {
-        assert_eq!((*record.value_for_test()).scalar, index as u64);
+        assert_eq!(record.value_for_test().scalar, index as u64);
         assert_eq!((*record.ordinal_for_test()), index);
         assert_eq!(
-            (*record.value_for_test()).roles,
+            record.value_for_test().roles,
             if index == 64 { 3 } else { 1 }
         );
     }

@@ -104,7 +104,6 @@ impl HistorySubsystem {
 
     pub(crate) fn admit_recovered_branch_cell(
         &self,
-        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         checkpoint: RelationalBranchCellCheckpoint,
         expected_branch_id: &BranchId,
@@ -144,7 +143,6 @@ impl HistorySubsystem {
         {
             let commit_id = CommitId(target.selected_commit_id());
             self.readmit_replayed_root_descriptor(
-                lane,
                 execution,
                 commit_id,
                 target.roots().clone(),
@@ -163,7 +161,6 @@ impl HistorySubsystem {
                 let commit_id = CommitId(target.selected_commit_id());
                 Some(
                     self.readmit_replayed_root_descriptor(
-                        lane,
                         execution,
                         commit_id,
                         target.roots().clone(),

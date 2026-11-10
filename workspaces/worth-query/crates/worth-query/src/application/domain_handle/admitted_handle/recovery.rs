@@ -123,16 +123,14 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         &self,
         checked: WorthQueryContributionComposedOrchestrationChecked<D, I>,
     ) -> Result<Option<WorthQueryRecoveryBrief>, IdentityDerivationDenial> {
-        Ok(worth_query_recovery_brief_from_contribution_composed_checked(checked)?)
+        worth_query_recovery_brief_from_contribution_composed_checked(checked)
     }
 
     pub fn recover_from_contribution_composed_proof<I: WorthQueryDeclarationInput<D>>(
         &self,
         proof: WorthQueryContributionComposedOrchestrationTranscript<D, I>,
     ) -> Result<Option<WorthQueryRecoveryBrief>, IdentityDerivationDenial> {
-        Ok(worth_query_recovery_brief_from_contribution_composed_proof(
-            proof,
-        )?)
+        worth_query_recovery_brief_from_contribution_composed_proof(proof)
     }
 
     pub fn recover_from_grouped_orchestration_checked<I: WorthQueryDeclarationInput<D>>(

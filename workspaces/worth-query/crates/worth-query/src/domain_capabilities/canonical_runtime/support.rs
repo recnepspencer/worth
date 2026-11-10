@@ -17,7 +17,7 @@ pub fn materialize_canonical_support_traceability_artifact<T>(
 where
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    Ok(super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)?)
+    super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

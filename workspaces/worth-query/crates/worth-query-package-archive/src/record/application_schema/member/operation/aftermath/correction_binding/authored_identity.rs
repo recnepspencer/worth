@@ -38,7 +38,9 @@ pub(super) fn write(
             Posture::Create => 0,
             Posture::Preserve => 1,
             Posture::Retire => 2,
-        } + if identity.co_anchors().is_empty() && identity.member_owner().is_none() {
+        } + if identity.live_member_owner().is_some() {
+            6
+        } else if identity.co_anchors().is_empty() && identity.member_owner().is_none() {
             0
         } else {
             3
@@ -49,7 +51,10 @@ pub(super) fn write(
     })?;
     output.u16(if frame.is_some() { 25 } else { 3 })?;
     schema::write(output, &parts.logical_key)?;
-    if !identity.co_anchors().is_empty() || identity.member_owner().is_some() {
+    if !identity.co_anchors().is_empty()
+        || identity.member_owner().is_some()
+        || identity.live_member_owner().is_some()
+    {
         write_optional(output, identity.member_owner(), |output, owner| {
             output.text(owner.relation())?;
             output.text(owner.from())?;
@@ -59,6 +64,11 @@ pub(super) fn write(
             output.u16(u16::from(anchor.is_optional()))?;
             write(output, anchor)
         })?;
+    }
+    if let Some(owner) = identity.live_member_owner() {
+        output.text(owner.relation())?;
+        output.text(owner.from())?;
+        output.text(owner.to())?;
     }
     Ok(())
 }
@@ -95,7 +105,7 @@ fn decode_at_depth(
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let logical_key = schema::decode(tag, input, budget)?;
-    if posture > 5 {
+    if posture > 8 {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let mut identity =
@@ -127,6 +137,14 @@ fn decode_at_depth(
         })? {
             identity = identity.with_co_anchor(anchor, optional);
         }
+    }
+    if posture >= 6 {
+        identity =
+            identity.with_live_member_owner(PortablePreImageRelationLocus::from_untrusted_fields(
+                input.text()?.to_owned(),
+                input.text()?.to_owned(),
+                input.text()?.to_owned(),
+            ));
     }
     Ok(identity)
 }

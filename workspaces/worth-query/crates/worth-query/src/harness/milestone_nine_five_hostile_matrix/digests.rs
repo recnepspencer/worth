@@ -66,7 +66,7 @@ pub fn public_bridge_bootstrap_contract_digest() -> String {
 
 pub fn projection_bundle(
 ) -> Result<ProjectionConsumptionCertificationBundle, IdentityDerivationDenial> {
-    Ok(certify_projection_consumption_closeout_core()?)
+    certify_projection_consumption_closeout_core()
 }
 
 pub fn projection_surface_digest(

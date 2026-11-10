@@ -35,7 +35,7 @@ pub enum CurrentAcceptedResult<'basis> {
 /// The exact accepted row, admitted source basis, and actor image inspected as
 /// one current output. Only the owner can mint it; the selected Query snapshot
 /// keeps it inside the admitted read callback.
-pub(in crate::domain_computation::primary_graph) struct CurrentAcceptedOutput<'basis> {
+pub struct CurrentAcceptedOutput<'basis> {
     _computation: super::super::CurrentComputation,
     candidate: &'basis AcceptedCurrentCandidate,
     product: &'basis WorthQueryProductObservationLease,

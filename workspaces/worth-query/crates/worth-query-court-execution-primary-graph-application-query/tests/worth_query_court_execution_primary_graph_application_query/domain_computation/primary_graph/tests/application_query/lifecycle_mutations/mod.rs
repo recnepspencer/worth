@@ -55,10 +55,10 @@ pub fn revoke_account_ownership(
     let graph = (*world.application.runtime_for_test())
         .primary_graph_for_test()
         .expect("test world publishes a primary graph");
-    let relation_kind = (*(*graph.layout_for_test())
+    let relation_kind = *(*graph.layout_for_test())
         .relation(AccountOwner::reference().name())
         .expect("account ownership is installed")
-        .kind_for_test());
+        .kind_for_test();
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     let relation = graph
         .integration_handle_for_test()

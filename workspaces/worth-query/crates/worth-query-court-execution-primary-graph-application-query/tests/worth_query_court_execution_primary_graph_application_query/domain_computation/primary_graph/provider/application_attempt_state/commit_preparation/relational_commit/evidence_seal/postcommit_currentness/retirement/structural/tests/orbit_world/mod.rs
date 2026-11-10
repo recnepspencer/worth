@@ -38,10 +38,10 @@ pub fn capture(world: &World, key: u64, execution: &ExecutionRequest<'_, '_>) ->
     let kind = (*graph.layout_for_test())
         .entity_kind_for_test(NodeKey::at("NodeKey").entity())
         .unwrap();
-    let relation = (*(*graph.layout_for_test())
+    let relation = *(*graph.layout_for_test())
         .relation(Next::reference::<OrbitSchema<true>>().name())
         .unwrap()
-        .kind_for_test());
+        .kind_for_test();
     graph
         .integration_handle_for_test()
         .with_runtime(execution, |runtime| {

@@ -28,7 +28,6 @@ pub use worth_query_testkit_execution_primary_graph_application_contribution::do
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationQueryAccessContext;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationQueryAdmissionDenialKind;
 pub use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolutionMode;
-pub(crate) use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_query::observed_source_fixture::observed_account_source;
 #[test]
 fn execution_runtime_mints_plan_from_exact_mapped_principal_and_typed_scope() {
     let world = installed_authorization_world(

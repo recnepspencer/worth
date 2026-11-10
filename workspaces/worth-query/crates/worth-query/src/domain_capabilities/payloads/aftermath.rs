@@ -58,44 +58,42 @@ fn aftermath_source_identity(
             source.source_identity(),
         ),
     };
-    Ok(identity.seal()?)
+    identity.seal()
 }
 
 fn aftermath_binding_identity(
     binding: &ProjectionConsumptionBindingContext,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        domain_capability_scope_encoder("worth_query_aftermath_binding_v1")
-            .field_shape(
-                WorthQueryEvidenceTag::new("result_shape"),
-                binding.result_shape_digest(),
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("authorized_projection_query"),
-                binding.authorized_projection_query_digest(),
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("authorized_projection_result_shape"),
-                binding.authorized_projection_result_shape_digest(),
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("authorized_projection"),
-                binding.authorized_projection_identity(),
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("narrowed_result_shape"),
-                binding.narrowed_result_shape_digest(),
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("policy"),
-                binding.policy_digest(),
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("tenant_schema_basis"),
-                binding.tenant_schema_basis_digest(),
-            )
-            .seal()?,
-    )
+    domain_capability_scope_encoder("worth_query_aftermath_binding_v1")
+        .field_shape(
+            WorthQueryEvidenceTag::new("result_shape"),
+            binding.result_shape_digest(),
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("authorized_projection_query"),
+            binding.authorized_projection_query_digest(),
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("authorized_projection_result_shape"),
+            binding.authorized_projection_result_shape_digest(),
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("authorized_projection"),
+            binding.authorized_projection_identity(),
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("narrowed_result_shape"),
+            binding.narrowed_result_shape_digest(),
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("policy"),
+            binding.policy_digest(),
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("tenant_schema_basis"),
+            binding.tenant_schema_basis_digest(),
+        )
+        .seal()
 }
 
 fn compose_aftermath_runtime_semantics_identity(
@@ -106,19 +104,17 @@ fn compose_aftermath_runtime_semantics_identity(
         .requested()
         .map(compose_fact_request_entry_digest)
         .collect::<Result<Vec<_>, _>>()?;
-    Ok(domain_capability_scope_encoder(
-        "worth_query_domain_capability_aftermath_runtime_semantics_v2",
-    )
-    .field_evidence_identity(
-        WorthQueryEvidenceTag::new("source"),
-        &aftermath_source_identity(runtime_semantics.source())?,
-    )
-    .field_evidence_identity(
-        WorthQueryEvidenceTag::new("binding"),
-        &aftermath_binding_identity(runtime_semantics.binding())?,
-    )
-    .field_value_sequence(WorthQueryEvidenceTag::new("requested"), &requested)
-    .seal()?)
+    domain_capability_scope_encoder("worth_query_domain_capability_aftermath_runtime_semantics_v2")
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("source"),
+            &aftermath_source_identity(runtime_semantics.source())?,
+        )
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("binding"),
+            &aftermath_binding_identity(runtime_semantics.binding())?,
+        )
+        .field_value_sequence(WorthQueryEvidenceTag::new("requested"), &requested)
+        .seal()
 }
 
 fn compose_aftermath_payload_identity(
@@ -143,7 +139,7 @@ fn compose_aftermath_payload_identity(
         }
         None => identity.field_shape(WorthQueryEvidenceTag::new("runtime"), "none"),
     };
-    Ok(identity.seal()?)
+    identity.seal()
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -181,7 +177,7 @@ impl WorthQueryAftermathRuntimeSemantics {
     pub(in crate::domain_capabilities) fn semantics_identity(
         &self,
     ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-        Ok(compose_aftermath_runtime_semantics_identity(self)?)
+        compose_aftermath_runtime_semantics_identity(self)
     }
 }
 
@@ -200,12 +196,7 @@ impl WorthQueryAftermathContributionPayload {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_runtime_semantics(
-            posture,
-            semantic_code,
-            detail,
-            None,
-        )?)
+        Self::with_runtime_semantics(posture, semantic_code, detail, None)
     }
 
     pub fn with_runtime_semantics(

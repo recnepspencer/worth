@@ -7,10 +7,10 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 pub fn select(court: &Court) -> Result<Vec<NativePriorCheckpointOutput<'_>>, Denial> {
     court.lineage.checkpoint_prior_outputs_for_test(
         &worth_execution::ExecutionRequest::serial(&court.request),
-        (*court.source.runtime_authority_for_test()),
-        &(*court.source.schema_for_test()),
-        (*court.coordinate.occurrence_for_test()),
-        (*court.coordinate.generation_for_test()),
+        *court.source.runtime_authority_for_test(),
+        court.source.schema_for_test(),
+        *court.coordinate.occurrence_for_test(),
+        *court.coordinate.generation_for_test(),
     )
 }
 

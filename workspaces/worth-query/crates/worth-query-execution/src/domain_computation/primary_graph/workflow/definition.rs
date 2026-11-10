@@ -1,3 +1,5 @@
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use dependencies::WorkflowRetainedNode;
 mod codec;
 pub(crate) mod compilation;
 mod condition;
@@ -21,7 +23,6 @@ pub use condition::WorkflowConditionOperand;
 pub(in crate::domain_computation::primary_graph) use condition::{
     encode_draft, encode_operands, CompiledWorkflowCondition, CompiledWorkflowConditionExpression,
 };
-pub(in crate::domain_computation::primary_graph) use dependencies::WorkflowRetainedNode;
 pub(in crate::domain_computation::primary_graph) use dependencies::{
     read_definition_dependencies, WorkflowDefinitionDependencies,
 };

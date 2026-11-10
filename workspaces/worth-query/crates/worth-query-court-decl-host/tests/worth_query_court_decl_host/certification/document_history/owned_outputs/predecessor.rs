@@ -142,10 +142,6 @@ fn install(worker: bool) -> Host {
     world::install_program::<program::Program>(limits)
 }
 
-pub(super) mod fixture_world {
-    pub type Host = super::Host;
-}
-
 fn after_read() {
     let action = PROBE.with(|probe| probe.borrow_mut().after_read.take());
     if let Some(action) = action {

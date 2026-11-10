@@ -1,7 +1,7 @@
 //! Materialize candidates only through the current Native loan's occurrence and fields.
 use super::super::WorthQueryManagedIndexSourceSlot;
 use super::*;
-use worth_relational::facade::runtime::{ManagedIndexSourceOccurrence, ManagedIndexSourceRows};
+use worth_relational::facade::runtime::ManagedIndexSourceRows;
 type Denial = WorthQueryManagedIndexInvariantDenial;
 
 pub(super) fn read<S, I>(
@@ -18,6 +18,14 @@ where
     ManagedSourceValue<S, I>:
         WorthQueryApplicationProjection<S, <I::SourceBinding as ApplicationQueryBinding<S>>::Query>,
 {
+    if root.rows.program() != program
+        || rows.program() != program
+        || root.rows.scope() != rows.scope()
+    {
+        return Err(NativeDenial::ForeignSource.into());
+    }
+    // The fresh Native loan owns currency and audience. The sealed root owns
+    // complete material; reconstructing membership here would walk its history.
     let slots = selected
         .complete_slots()
         .map_err(|cause| Denial::Provider(cause.into()))?;
@@ -30,17 +38,10 @@ where
                 control
                     .checkpoint(1)
                     .map_err(|cause| Denial::Provider(cause.into()))?;
-                let occurrence = admit_occurrence(rows, root.rows.owner(), slot)?;
-                let (tree, _allocation) = project_row(
-                    execution,
-                    program,
-                    rows,
-                    occurrence,
-                    root.installed.source_read().query().read_graph(),
-                )
-                .map_err(|cause| Denial::Native(cause.into_native()))?;
+                let entity = admit_slot(root.rows.owner(), slot)?;
+                let node = root.rows.get(entity).ok_or(NativeDenial::ForeignSource)?;
                 let row = WorthQueryApplicationProjectionRow::new(
-                    tree.only().expect("one actual Native Source occurrence"),
+                    node,
                     &WorthQueryApplicationQueryGovernance::Public,
                     decode,
                 );
@@ -54,17 +55,14 @@ where
     .map_err(Denial::Provider)??;
     Ok(output)
 }
-fn admit_occurrence(
-    rows: &ManagedIndexSourceRows<'_>,
+fn admit_slot(
     owner: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
     slot: &WorthQueryManagedIndexSourceSlot,
-) -> Result<ManagedIndexSourceOccurrence, Denial> {
+) -> Result<worth_relational::facade::identity::EntityId, Denial> {
     if slot.owner != owner || slot.ordinal != 0 {
         return Err(NativeDenial::ForeignSource.into());
     }
-    let entity = slot.entity.ok_or(NativeDenial::ForeignSource)?;
-    rows.occurrence(entity)
-        .map_err(NativeDenial::from)?
+    slot.entity
         .ok_or_else(|| NativeDenial::ForeignSource.into())
 }
 fn reserve_output<T>(

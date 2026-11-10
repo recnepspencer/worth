@@ -70,12 +70,12 @@ pub trait WorthQueryRuntimeSubscriptionActivationAdapter {
         view_name: &str,
         activation: &SubscriptionActivationInput,
     ) -> Result<SubscriptionActivationReceipt, IdentityDerivationDenial> {
-        Ok(SubscriptionActivationReceipt::from_activation(
+        SubscriptionActivationReceipt::from_activation(
             view_name,
             activation,
             self.support_evidence_identity(),
             self.remask_projection(view_name, activation),
-        )?)
+        )
     }
 
     fn build_subscription_activation_boundary_receipt(

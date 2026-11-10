@@ -12,7 +12,7 @@ pub(super) fn preview_canonical_query_identity(
     evaluation_class: &crate::workflow::WorkflowPreviewEvaluationClass,
     request_family_label: &str,
 ) -> Result<crate::WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(crate::WorthQueryEvidenceIdentity::compose(
+    crate::WorthQueryEvidenceIdentity::compose(
         crate::WorthQueryEvidenceScope::WorkflowContextBinding,
     )
     .field_shape(
@@ -40,13 +40,13 @@ pub(super) fn preview_canonical_query_identity(
         crate::WorthQueryEvidenceTag::new("request_family"),
         request_family_label,
     )
-    .seal()?)
+    .seal()
 }
 
 pub(super) fn preview_validated_query_identity(
     canonical_query_identity: &crate::WorthQueryEvidenceIdentity,
 ) -> Result<crate::WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(crate::WorthQueryEvidenceIdentity::compose(
+    crate::WorthQueryEvidenceIdentity::compose(
         crate::WorthQueryEvidenceScope::WorkflowContextBinding,
     )
     .field_shape(
@@ -57,7 +57,7 @@ pub(super) fn preview_validated_query_identity(
         crate::WorthQueryEvidenceTag::new("canonical"),
         canonical_query_identity,
     )
-    .seal()?)
+    .seal()
 }
 
 pub(super) fn preview_declaration_identity(
@@ -68,7 +68,7 @@ pub(super) fn preview_declaration_identity(
     evaluation_class: &crate::workflow::WorkflowPreviewEvaluationClass,
     request_family_label: &str,
 ) -> Result<crate::WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(crate::WorthQueryEvidenceIdentity::compose(
+    crate::WorthQueryEvidenceIdentity::compose(
         crate::WorthQueryEvidenceScope::WorkflowContextBinding,
     )
     .field_shape(
@@ -99,7 +99,7 @@ pub(super) fn preview_declaration_identity(
         crate::WorthQueryEvidenceTag::new("request_family"),
         request_family_label,
     )
-    .seal()?)
+    .seal()
 }
 
 pub(super) fn canonical_query_digest_from_identity(
@@ -127,7 +127,7 @@ pub(super) fn preview_declaration_digest_identity(
     canonical_query_digest: &CanonicalQueryDigest,
     validated_query_digest: &ValidatedQueryDigest,
 ) -> Result<crate::WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(crate::WorthQueryEvidenceIdentity::compose(
+    crate::WorthQueryEvidenceIdentity::compose(
         crate::WorthQueryEvidenceScope::WorkflowContextBinding,
     )
     .field_shape(
@@ -146,13 +146,13 @@ pub(super) fn preview_declaration_digest_identity(
         crate::WorthQueryEvidenceTag::new("validated"),
         &domain_preview_validated_query_digest_evidence(validated_query_digest)?,
     )
-    .seal()?)
+    .seal()
 }
 
 fn domain_preview_canonical_query_digest_evidence(
     digest: &CanonicalQueryDigest,
 ) -> Result<crate::WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(crate::WorthQueryEvidenceIdentity::compose(
+    crate::WorthQueryEvidenceIdentity::compose(
         crate::WorthQueryEvidenceScope::WorkflowContextBinding,
     )
     .field_shape(
@@ -163,13 +163,13 @@ fn domain_preview_canonical_query_digest_evidence(
         crate::WorthQueryEvidenceTag::new("canonical_query_digest"),
         digest.as_str(),
     )
-    .seal()?)
+    .seal()
 }
 
 fn domain_preview_validated_query_digest_evidence(
     digest: &ValidatedQueryDigest,
 ) -> Result<crate::WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(crate::WorthQueryEvidenceIdentity::compose(
+    crate::WorthQueryEvidenceIdentity::compose(
         crate::WorthQueryEvidenceScope::WorkflowContextBinding,
     )
     .field_shape(
@@ -180,5 +180,5 @@ fn domain_preview_validated_query_digest_evidence(
         crate::WorthQueryEvidenceTag::new("validated_query_digest"),
         digest.as_str(),
     )
-    .seal()?)
+    .seal()
 }

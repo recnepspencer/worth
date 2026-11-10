@@ -17,7 +17,7 @@ pub(in crate::domain_capabilities::certification::reports) fn store_backed_repla
 
 pub(in crate::domain_capabilities::certification::reports) fn store_backed_replay_gap_parts(
 ) -> Result<(CausalEvidenceReferenceSet, CausalInspectionTarget), IdentityDerivationDenial> {
-    Ok(replay_gap_inputs()?)
+    replay_gap_inputs()
 }
 
 fn replay_gap_inputs(

@@ -25,6 +25,7 @@ pub struct DeclaredAuthoredCorrection {
     co_anchors: Vec<DeclaredAuthoredCorrection>,
     optional: bool,
     owner: Option<crate::application_aftermath::PortablePreImageRelationLocus>,
+    live_owner: Option<crate::application_aftermath::PortablePreImageRelationLocus>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -44,7 +45,22 @@ impl DeclaredAuthoredCorrection {
             co_anchors: Vec::new(),
             optional: false,
             owner: None,
+            live_owner: None,
         }
+    }
+    /// Zero to many members of this role family stay under this live owner;
+    /// the roles are family prefixes, as for a member of an authored anchor.
+    pub fn live_member_owner(
+        &self,
+    ) -> Option<&crate::application_aftermath::PortablePreImageRelationLocus> {
+        self.live_owner.as_ref()
+    }
+    pub fn with_live_member_owner(
+        mut self,
+        owner: crate::application_aftermath::PortablePreImageRelationLocus,
+    ) -> Self {
+        self.live_owner = Some(owner);
+        self
     }
     pub fn co_anchors(&self) -> &[Self] {
         &self.co_anchors
@@ -67,7 +83,7 @@ impl DeclaredAuthoredCorrection {
         entity: &str,
         inverse: bool,
     ) -> Option<&'a str> {
-        self.member_owner()?;
+        self.member_owner().or(self.live_member_owner())?;
         let ApplicationSchemaMember::Field {
             entity: declared_entity,
             ..

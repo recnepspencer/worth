@@ -75,6 +75,7 @@ pub fn candidate(
 }
 
 #[test]
+#[expect(clippy::disallowed_methods, reason = "Client-race court")]
 fn two_first_candidates_cannot_orphan_the_performed_publications_cell() {
     let host_request = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
@@ -108,7 +109,7 @@ fn two_first_candidates_cannot_orphan_the_performed_publications_cell() {
         .primary_graph_for_test()
         .unwrap();
     let handle = graph.integration_handle_for_test();
-    let owner = Arc::clone(&(*(*handle.source_owner_for_test()).invalidation_owner_for_test()));
+    let owner = Arc::clone((*handle.source_owner_for_test()).invalidation_owner_for_test());
     let reference = AccountStatus::at("AccountStatus");
     let status = graph
         .layout_for_test()

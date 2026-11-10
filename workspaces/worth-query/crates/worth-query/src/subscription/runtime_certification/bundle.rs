@@ -9,7 +9,6 @@ use super::identities::{
 };
 use super::scope::QuerySubscriptionRuntimeCertificationScope;
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::subscription::validation_evidence::{
     validation_role_evidence_identity, validation_shape_role_evidence_identity,
     validation_usize_role_evidence_identity,

@@ -77,6 +77,7 @@ pub(crate) fn apply(
         identity,
         &outcome.effect.publication.changed_records,
         &outcome.effect.adjacency.deltas,
+        outcome.effect.publication.has_entity_deletions,
         None,
     );
     Ok(AppliedMutationDraft {

@@ -10,7 +10,7 @@ use crate::domain_computation::primary_graph::provider::correction_witness::{
 use worth_execution::{ExecutionRequest, MapKernelContext, MapKernelStop};
 use worth_foundational::facade::{
     AspectFieldLocator, AspectValue, AuthoritativeRecordAspectState,
-    ContractValidatedAspectValueView, InternedString,
+    ContractValidatedAspectValueView,
 };
 use worth_relational::facade::{
     runtime::RelationalRuntime, snapshots::SnapshotHandle, storage::RecordLifecycleState,

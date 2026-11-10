@@ -283,7 +283,7 @@ fn mutation_lowering_identity(
             &runtime_snapshot_identity.evidence_identity(),
         );
     }
-    Ok(identity.seal()?)
+    identity.seal()
 }
 
 fn request_origin_label(origin: &StrategyRequestOrigin) -> &'static str {

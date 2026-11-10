@@ -312,12 +312,12 @@ pub(super) fn denied_cross_family_scope_failure(
 fn denied_support_artifacts(
     artifacts: &CertifiedLaneArtifacts,
 ) -> Result<SupportDeniedArtifacts, IdentityDerivationDenial> {
-    Ok(denied_support_artifacts_from_parts(
+    denied_support_artifacts_from_parts(
         &artifacts.selection,
         &artifacts.declaration,
         &artifacts.lowering,
         &artifacts.admission,
-    )?)
+    )
 }
 
 pub(super) fn denied_support_artifacts_from_parts(

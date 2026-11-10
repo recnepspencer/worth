@@ -148,18 +148,16 @@ fn inventory_digest(
     paths: &[String],
     findings: &[WorthQueryPublicBridgeForbiddenAccessFinding],
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::RuntimeHostileCertificationArtifact)
-            .field_value_sequence(
-                WorthQueryEvidenceTag::new("inventory_path"),
-                paths.iter().map(String::as_str),
-            )
-            .field_value_sequence(
-                WorthQueryEvidenceTag::new("forbidden_access"),
-                findings
-                    .iter()
-                    .map(WorthQueryPublicBridgeForbiddenAccessFinding::localized_pattern),
-            )
-            .seal()?,
-    )
+    worth_query_evidence_identity(WorthQueryEvidenceScope::RuntimeHostileCertificationArtifact)
+        .field_value_sequence(
+            WorthQueryEvidenceTag::new("inventory_path"),
+            paths.iter().map(String::as_str),
+        )
+        .field_value_sequence(
+            WorthQueryEvidenceTag::new("forbidden_access"),
+            findings
+                .iter()
+                .map(WorthQueryPublicBridgeForbiddenAccessFinding::localized_pattern),
+        )
+        .seal()
 }

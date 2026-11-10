@@ -170,6 +170,7 @@ pub(crate) fn prepare_coupled_candidate(
         identity,
         &mutation.outcome.effect.publication.changed_records,
         &mutation.outcome.effect.adjacency.deltas,
+        mutation.outcome.effect.publication.has_entity_deletions,
         None,
     );
     mutation.coupled_publication = Some(RequiredOutputPublicationAdmission {

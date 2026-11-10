@@ -26,35 +26,33 @@ impl WorthQueryLowerRuntimeGapRegistryRow {
     }
 
     fn row_identity(&self) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-        Ok(WorthQueryEvidenceIdentity::compose(
-            WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("identity_family"),
-            "lower_runtime_gap_registry_row_v1",
-        )
-        .field_shape(WorthQueryEvidenceTag::new("seam"), self.seam_key.as_str())
-        .field_value(
-            WorthQueryEvidenceTag::new("concrete_seam"),
-            self.concrete_seam,
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("current_shape"),
-            self.current_shape,
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("missing_contract_owner"),
-            self.missing_contract_owner.as_str(),
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("missing_contract"),
-            self.missing_contract,
-        )
-        .field_value(
-            WorthQueryEvidenceTag::new("required_closeout"),
-            self.required_closeout,
-        )
-        .seal()?)
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+            .field_shape(
+                WorthQueryEvidenceTag::new("identity_family"),
+                "lower_runtime_gap_registry_row_v1",
+            )
+            .field_shape(WorthQueryEvidenceTag::new("seam"), self.seam_key.as_str())
+            .field_value(
+                WorthQueryEvidenceTag::new("concrete_seam"),
+                self.concrete_seam,
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("current_shape"),
+                self.current_shape,
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("missing_contract_owner"),
+                self.missing_contract_owner.as_str(),
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("missing_contract"),
+                self.missing_contract,
+            )
+            .field_value(
+                WorthQueryEvidenceTag::new("required_closeout"),
+                self.required_closeout,
+            )
+            .seal()
     }
 
     pub fn required_closeout(&self) -> &'static str {

@@ -209,6 +209,11 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             self.identity,
             &self.mutation.outcome.effect.publication.changed_records,
             &self.mutation.outcome.effect.adjacency.deltas,
+            self.mutation
+                .outcome
+                .effect
+                .publication
+                .has_entity_deletions,
             None,
         );
         let ordinary_ids = publication

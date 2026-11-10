@@ -47,7 +47,7 @@ impl<'a> WorthQueryWorkspaceInspectionLane<'a> {
     where
         T: WorthQueryGenericInspectionIntentTarget<'a>,
     {
-        Ok(self.runtime.inspect_intent(target)?)
+        self.runtime.inspect_intent(target)
     }
 }
 

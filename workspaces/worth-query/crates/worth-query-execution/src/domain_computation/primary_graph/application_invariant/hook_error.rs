@@ -6,6 +6,7 @@ pub enum WorthQueryApplicationInvariantError<Cause = ()> {
     Cause(Cause),
     Access(WorthQueryInvariantAccessDenial),
     Stopped,
+    Content(super::super::WorthQueryValueDecodeDenial),
     ManagedIndex(Box<super::super::application_query::WorthQueryManagedIndexInvariantDenial>),
     Interrupted(super::CustomInvariantInterruption),
     Allocation,
@@ -29,6 +30,15 @@ impl<Cause> WorthQueryApplicationInvariantError<Cause> {
     pub(super) fn into_cause(self) -> Result<Cause, SystemInvariantError> {
         match self {
             Self::Access(cause) => Err(SystemInvariantError::Access(cause)),
+            Self::Content(cause) => Err(match cause {
+                super::super::WorthQueryValueDecodeDenial::Content(cause) => {
+                    SystemInvariantError::Content(cause.into_execution_cause())
+                }
+                _ => SystemInvariantError::Access(WorthQueryInvariantAccessDenial::new(
+                    super::WorthQueryInvariantAccessDenialKind::InvalidValue,
+                    format!("{cause:?}"),
+                )),
+            }),
             Self::Stopped => Err(SystemInvariantError::Stopped),
             Self::Interrupted(cause) => Err(SystemInvariantError::Interrupted(cause)),
             Self::ManagedIndex(cause) => Err(managed_index_cause(*cause)),
@@ -75,5 +85,20 @@ fn managed_index_cause(
 fn required_field_cause(field: &'static str) -> SystemInvariantError {
     SystemInvariantError::MissingRequiredField {
         field: field.to_owned(),
+    }
+}
+
+impl<Cause> From<super::super::ContentReadDenial> for WorthQueryApplicationInvariantError<Cause> {
+    fn from(cause: super::super::ContentReadDenial) -> Self {
+        use super::super::{ContentReadDenial as Denial, WorthQueryValueDecodeDenial as Stop};
+        match cause {
+            Denial::InvariantAccess(cause) => Self::Access(*cause),
+            Denial::InvariantSource(cause) => Self::from(*cause),
+            Denial::Content(cause) => Self::Content(Stop::Content(cause)),
+            Denial::Admission(cause) => Self::Content(cause),
+            Denial::RequiredFieldAbsent => Self::Content(Stop::RequiredContentFieldAbsent),
+            Denial::UnavailableBasis => Self::Content(Stop::ContentBasisUnavailable),
+            _ => Self::Content(Stop::BindingContractMismatch),
+        }
     }
 }

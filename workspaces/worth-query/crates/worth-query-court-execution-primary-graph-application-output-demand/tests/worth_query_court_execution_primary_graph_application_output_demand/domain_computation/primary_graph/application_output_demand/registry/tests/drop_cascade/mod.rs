@@ -23,7 +23,7 @@ fn registry_drop_cascade_transfers_before_newest_owner_can_close() {
         __base
     });
     let next_row = record(occurrence(), worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::closed_retirement::ready(), 1);
-    let next_wake = Arc::clone(&(*next_row.wake_for_test()));
+    let next_wake = Arc::clone(next_row.wake_for_test());
     (*state.records_mut_for_test()).insert_for_test(newest.clone(), next_row);
     let dependent_row = {
         let __prerequisites = vec![Arc::new(old.clone())];
@@ -31,7 +31,7 @@ fn registry_drop_cascade_transfers_before_newest_owner_can_close() {
         *__base.prerequisites_mut_for_test() = __prerequisites;
         __base
     };
-    let wake = Arc::clone(&(*dependent_row.wake_for_test()));
+    let wake = Arc::clone(dependent_row.wake_for_test());
     (*state.records_mut_for_test()).insert_for_test(dependent.clone(), dependent_row);
     (*state.required_keys_mut_for_test()).insert(Arc::new(newest.clone()));
     retain_owned_key(&mut state, &dependent);
@@ -96,7 +96,7 @@ fn registry_drop_cascade_names_its_released_row_bound() {
         }
         let root = key("chain", 1, 1);
         retain_owned_key(&mut state, &root);
-        let wake = Arc::clone(&(*(*state.records_for_test())[&root].wake_for_test()));
+        let wake = Arc::clone((*state.records_for_test())[&root].wake_for_test());
         drop(state);
         let before = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited();
         drop(interest(&registry, root, wake));
@@ -156,7 +156,7 @@ fn registry_drop_cascade_names_its_whole_map_claimant_bound() {
             *__base.prerequisites_mut_for_test() = __prerequisites;
             __base
         };
-        let wake = Arc::clone(&(*row.wake_for_test()));
+        let wake = Arc::clone(row.wake_for_test());
         (*state.records_mut_for_test()).insert_for_test(dependent.clone(), row);
         retain_owned_key(&mut state, &dependent);
         drop(state);

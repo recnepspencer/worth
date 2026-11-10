@@ -3,6 +3,7 @@ use super::*;
 mod court;
 mod fixture;
 mod pinned;
+mod precedence;
 pub(super) mod probe;
 mod refusal;
 pub(super) mod registry;

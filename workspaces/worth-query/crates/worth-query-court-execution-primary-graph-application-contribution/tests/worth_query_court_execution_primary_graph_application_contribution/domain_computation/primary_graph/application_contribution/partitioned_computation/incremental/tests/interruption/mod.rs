@@ -125,7 +125,7 @@ fn an_incremental_run_cancelled_inside_a_recombine_stops_and_does_not_rebuild() 
         )),
     );
     assert_eq!(first.gathered, [0, 1, 2, 3]);
-    *(*installed.owner_for_test()).bump.lock().unwrap() = 10;
+    *installed.owner_for_test().bump.lock().unwrap() = 10;
 
     let (stopped, combines) = cancelled_in_reducer(&world, &installed, Some(prior_of(first, true)));
     assert!(

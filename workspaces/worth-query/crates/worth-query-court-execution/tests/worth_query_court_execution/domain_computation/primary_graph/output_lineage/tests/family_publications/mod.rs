@@ -165,7 +165,7 @@ impl Court {
         records.push(cell);
         (*self.lineage.partition_index_mut_for_test()).insert_for_test(
             source,
-            (*coordinate.occurrence_for_test()),
+            *coordinate.occurrence_for_test(),
             generation,
             partition.map(|partition| [partition; 32]),
             slot,
@@ -177,12 +177,12 @@ impl Court {
         self.lineage
             .resolve_current_family_for_test(
                 &worth_execution::ExecutionRequest::serial(&self.request),
-                (*self.source.runtime_authority_for_test()),
+                *self.source.runtime_authority_for_test(),
                 self.source.schema_for_test(),
                 self.source.scope,
                 "family",
-                (*self.coordinate.occurrence_for_test()),
-                (*self.coordinate.generation_for_test()),
+                *self.coordinate.occurrence_for_test(),
+                *self.coordinate.generation_for_test(),
             )
             .expect("the installed family resolves")
     }

@@ -30,7 +30,7 @@ pub(in crate::domain_computation::primary_graph) struct ManagedSource {
     pub(in crate::domain_computation::primary_graph) cold: Cold,
 }
 
-fn requirements(schema: &ErasedApplicationSchemaDeclaration) -> BTreeMap<&str, Cold> {
+pub(super) fn requirements(schema: &ErasedApplicationSchemaDeclaration) -> BTreeMap<&str, Cold> {
     let mut required = BTreeMap::new();
     for member in schema.members() {
         let requirement = match member {
@@ -102,9 +102,10 @@ pub(super) fn lower(
         let handle = registry
             .derived_relation(&identity)
             .ok_or_else(|| unsupported(source_name))?;
-        let program = registry
-            .bind_managed_index_source(&handle, projection, routes)
-            .map_err(|cause| source_binding_denial(cause, source_name))?;
+        let program = match definition.parts().source.scope {
+            worth_query_declaration::facade::application_query::ApplicationManagedIndexSourceScope::SameAdmittedScope => registry.bind_managed_index_source(&handle, projection, routes),
+            worth_query_declaration::facade::application_query::ApplicationManagedIndexSourceScope::OrderedPredecessor => registry.bind_ordered_predecessor_managed_index_source(&handle, projection, routes),
+        }.map_err(|cause| source_binding_denial(cause, source_name))?;
         programs.insert(
             definition.parts().name.clone(),
             ManagedSource {
@@ -128,16 +129,15 @@ fn source_binding_denial(
     cause: worth_relational::facade::schema::DerivedRelationDenial,
     name: &str,
 ) -> Denial {
-    if cause
-        == worth_relational::facade::schema::DerivedRelationDenial::SourceProgramIdentityExhausted
-    {
-        Denial::new(
-            super::super::WorthQueryPrimaryGraphInstallationDenialKind::SourceProgramIdentityExhausted,
-            name,
-        )
-    } else {
-        unsupported(name)
-    }
+    use super::super::WorthQueryPrimaryGraphInstallationDenialKind as Kind;
+    use worth_relational::facade::schema::DerivedRelationDenial as Native;
+    let kind = match cause {
+        Native::SourceProgramIdentityExhausted => Kind::SourceProgramIdentityExhausted,
+        Native::OrderedPredecessorMembershipRequired => Kind::OrderedPredecessorMembershipRequired,
+        Native::OrderedPredecessorMustBeToOne => Kind::OrderedPredecessorMustBeToOne,
+        _ => return unsupported(name),
+    };
+    Denial::new(kind, name)
 }
 
 #[test]
@@ -150,6 +150,14 @@ fn source_program_identity_exhaustion_is_preserved_at_installation() {
             Kind::SourceProgramIdentityExhausted,
         ),
         (Native::ForeignDefinition, Kind::UnsupportedManagedSource),
+        (
+            Native::OrderedPredecessorMembershipRequired,
+            Kind::OrderedPredecessorMembershipRequired,
+        ),
+        (
+            Native::OrderedPredecessorMustBeToOne,
+            Kind::OrderedPredecessorMustBeToOne,
+        ),
     ] {
         assert_eq!(
             source_binding_denial(cause, "bounded-source").kind(),

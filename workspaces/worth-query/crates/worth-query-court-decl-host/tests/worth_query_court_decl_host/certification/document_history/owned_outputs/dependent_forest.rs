@@ -142,7 +142,7 @@ fn exercise(host: &world::Host, upstream_first: bool) {
     assert_eq!((before.0.value, before.1.value), (10, 500));
     let document = configured(host, document, upstream_first);
     let contacts = host.producer_contacts_on_this_thread_for_test();
-    let outcome = courts::checkout(&document, &request, step, selection.clone(), 0xf057_05);
+    let outcome = courts::checkout(&document, &request, step, selection.clone(), 0x00f0_5705);
     if upstream_first {
         let selected = outcome.unwrap_or_else(|cause| panic!("ordered dependent trees: {cause:?}"));
         let after = values(host, selected.physical_endpoint().product_branch());

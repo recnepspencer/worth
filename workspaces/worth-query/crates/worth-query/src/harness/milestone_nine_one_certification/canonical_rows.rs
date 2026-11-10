@@ -3,7 +3,6 @@ use super::lane_builders::{
     certified_lane_with_scale,
 };
 use super::{MilestoneNineOneCertificationRow, MilestoneNineOnePerturbationClass};
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::harness::certification::{HostileExpectation, ParityAnchor};
 use crate::live::LiveQueryFamily;
 use crate::subscription::QuerySubscriptionConstructionSource;

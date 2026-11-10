@@ -143,9 +143,9 @@ fn insert(
     map: &mut BTreeMap<RelationId, StructuralRelationRecord>,
     edge: StructuralRelationRecord,
 ) -> Result<(), Denial> {
-    if !map.contains_key(&edge.relation_id) {
+    if let std::collections::btree_map::Entry::Vacant(entry) = map.entry(edge.relation_id) {
         read.retain()?;
-        map.insert(edge.relation_id, edge);
+        entry.insert(edge);
     }
     Ok(())
 }
@@ -232,36 +232,35 @@ fn prepare(
         })?;
     let ((), validation_memory) = basis::read(native, execution, current, context, |read| {
         for edge in selected_relations.values() {
-            if let Some(now) = read.relation(edge.relation_id)? {
-                if !in_domain(now.source)
-                    && !(declared(read, installed, now)? && in_domain(now.target))
-                {
-                    return Err(Denial::ForeignRelationSource {
-                        relation: now.relation_id,
-                        owner: now.source,
+            if let Some(now) = read.relation(edge.relation_id)?
+                && !in_domain(now.source)
+                && !(declared(read, installed, now)? && in_domain(now.target))
+            {
+                return Err(Denial::ForeignRelationSource {
+                    relation: now.relation_id,
+                    owner: now.source,
+                });
+            }
+            if let Some(&owner) = transferred.get(&edge.target)
+                && !restored.contains(&edge.source)
+            {
+                if read.kind(edge.source)?.is_none() {
+                    return Err(Denial::SelectedOwnerUnavailable {
+                        entity: edge.target,
+                        owner,
+                        source: edge.source,
+                        relation: edge.relation_id,
                     });
                 }
-            }
-            if let Some(&owner) = transferred.get(&edge.target) {
-                if !restored.contains(&edge.source) {
-                    if read.kind(edge.source)?.is_none() {
-                        return Err(Denial::SelectedOwnerUnavailable {
-                            entity: edge.target,
-                            owner,
-                            source: edge.source,
-                            relation: edge.relation_id,
-                        });
-                    }
-                    let actual_owner = installed.owner(read, edge.source)?;
-                    if actual_owner != Some(owner) {
-                        return Err(Denial::SelectedOwnerChanged {
-                            entity: edge.target,
-                            owner,
-                            source: edge.source,
-                            actual_owner,
-                            relation: edge.relation_id,
-                        });
-                    }
+                let actual_owner = installed.owner(read, edge.source)?;
+                if actual_owner != Some(owner) {
+                    return Err(Denial::SelectedOwnerChanged {
+                        entity: edge.target,
+                        owner,
+                        source: edge.source,
+                        actual_owner,
+                        relation: edge.relation_id,
+                    });
                 }
             }
             for endpoint in [edge.source, edge.target] {

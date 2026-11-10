@@ -127,12 +127,12 @@ fn changed_source_can_return_after_its_prior_cycle_was_superseded() {
 
     let state = (*registry.state_for_test()).lock().unwrap();
     assert!(matches!(
-        &(*(*state.records_for_test())[&source_a].state_for_test()),
+        (*state.records_for_test())[&source_a].state_for_test(),
         DemandState::Failed(denial)
             if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded
     ));
     assert!(matches!(
-        &(*(*state.records_for_test())[&source_b].state_for_test()),
+        (*state.records_for_test())[&source_b].state_for_test(),
         DemandState::Failed(denial)
             if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded
     ));

@@ -61,58 +61,27 @@ pub fn retain_from_attempt<'fact>(
     })
 }
 
-/// Co-anchor declarations select exact records; loci never guess a common entity.
-pub(super) fn retain_from_authored_anchors<'fact>(
+/// One retained field under the demand's shared byte bound.
+fn seal_field(
     demand: &InstalledPreImageDemand,
-    facts: impl Iterator<Item = &'fact WorthQueryPrimaryGraphApplicationDecisionFact>,
-    mutation: &ValidatedMutationFootprint,
-    anchors: &[(RecordRef, &str)],
-) -> Result<WorthQueryRetainedPreImageSelection, WorthQueryPreImageRetentionDenial> {
-    let candidates = facts
-        .filter_map(WorthQueryObservedPreImageCandidate::from_decision_fact)
-        .collect::<Vec<_>>();
-    let mut fields = Vec::new();
-    let mut total = 0usize;
-    for (record, entity) in anchors {
-        for locus in demand
-            .loci()
-            .iter()
-            .filter(|locus| locus.entity() == *entity)
-        {
-            let mut matched = candidates.iter().filter(|candidate| {
-                candidate.target_record() == record
-                    && candidate_matches_locus(candidate, locus)
-                    && mutation.mutates_field(record, candidate.locator())
-            });
-            let candidate = matched
-                .next()
-                .ok_or(WorthQueryPreImageRetentionDenial::MissingDemandedField)?;
-            if matched.next().is_some() {
-                return Err(WorthQueryPreImageRetentionDenial::AmbiguousDemandedField);
-            }
-            let encoded_bytes = candidate.value().semantic_byte_width();
-            total = total
-                .checked_add(encoded_bytes)
-                .ok_or(WorthQueryPreImageRetentionDenial::ExceedsByteBound)?;
-            if total > demand.maximum_encoded_bytes() {
-                return Err(WorthQueryPreImageRetentionDenial::ExceedsByteBound);
-            }
-            fields.push(WorthQueryRetainedPreImageFieldSeal {
-                locus: locus.clone(),
-                value: candidate.value().clone(),
-                encoded_bytes,
-                target_record: record.clone(),
-                entity_kind: candidate.entity_kind(),
-                locator: candidate.locator().clone(),
-            });
-        }
+    total: &mut usize,
+    locus: &InstalledPreImageLocus,
+    candidate: &WorthQueryObservedPreImageCandidate,
+) -> Result<WorthQueryRetainedPreImageFieldSeal, WorthQueryPreImageRetentionDenial> {
+    let encoded_bytes = candidate.value().semantic_byte_width();
+    *total = total
+        .checked_add(encoded_bytes)
+        .ok_or(WorthQueryPreImageRetentionDenial::ExceedsByteBound)?;
+    if *total > demand.maximum_encoded_bytes() {
+        return Err(WorthQueryPreImageRetentionDenial::ExceedsByteBound);
     }
-    Ok(WorthQueryRetainedPreImageSelection {
-        retained: WorthQueryRetainedPreImage::from_retention_seal(WorthQueryRetainedPreImageSeal {
-            fields,
-            total_encoded_bytes: total,
-        }),
-        candidates_materialized: candidates.len(),
+    Ok(WorthQueryRetainedPreImageFieldSeal {
+        locus: locus.clone(),
+        value: candidate.value().clone(),
+        encoded_bytes,
+        target_record: candidate.target_record().clone(),
+        entity_kind: candidate.entity_kind(),
+        locator: candidate.locator().clone(),
     })
 }
 
@@ -155,17 +124,7 @@ impl WorthQueryObservedPreImageCandidate {
         entity_id: EntityId,
         entity_kind: KindId,
     ) -> Option<Self> {
-        demanded_field_slot(locator.field_path())?;
-        let WorthQueryOperationGraphReadScope::NativeProjection(scope) = &read_scope else {
-            return None;
-        };
-        if scope.aspect() != locator.aspect().aspect_key()
-            || !scope
-                .projection()
-                .mask()
-                .paths()
-                .contains(locator.field_path())
-        {
+        if !projection_admits(&read_scope, &locator) {
             return None;
         }
         Some(Self {
@@ -304,12 +263,37 @@ fn candidate_matches_locus(
     candidate: &WorthQueryObservedPreImageCandidate,
     locus: &InstalledPreImageLocus,
 ) -> bool {
-    let WorthQueryOperationGraphReadScope::NativeProjection(scope) = candidate.read_scope() else {
+    locus_matches(candidate.read_scope(), candidate.locator(), locus)
+}
+
+/// A native projection read whose mask names one demanded field slot.
+fn projection_admits(
+    read_scope: &WorthQueryOperationGraphReadScope,
+    locator: &AspectFieldLocator,
+) -> bool {
+    let WorthQueryOperationGraphReadScope::NativeProjection(scope) = read_scope else {
+        return false;
+    };
+    demanded_field_slot(locator.field_path()).is_some()
+        && scope.aspect() == locator.aspect().aspect_key()
+        && scope
+            .projection()
+            .mask()
+            .paths()
+            .contains(locator.field_path())
+}
+
+fn locus_matches(
+    read_scope: &WorthQueryOperationGraphReadScope,
+    locator: &AspectFieldLocator,
+    locus: &InstalledPreImageLocus,
+) -> bool {
+    let WorthQueryOperationGraphReadScope::NativeProjection(scope) = read_scope else {
         return false;
     };
     scope.entity().semantic_key() == locus.entity()
         && scope.aspect().as_str() == locus.aspect()
-        && demanded_field_slot(candidate.locator().field_path())
+        && demanded_field_slot(locator.field_path())
             .is_some_and(|field| field.as_str() == locus.field())
 }
 
@@ -341,4 +325,6 @@ impl WorthQueryRetainedPreImageFieldSeal {
     }
 }
 
+mod anchored;
+pub(super) use anchored::retain_from_authored_anchors;
 mod court_doors_for_test;

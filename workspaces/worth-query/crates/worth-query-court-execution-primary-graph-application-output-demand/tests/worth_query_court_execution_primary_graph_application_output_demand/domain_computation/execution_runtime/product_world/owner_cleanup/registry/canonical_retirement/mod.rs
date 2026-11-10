@@ -96,8 +96,8 @@ fn absent_cleanup_policy_keeps_reservations_until_drop() {
     let held: Vec<_> = (0..600)
         .map(|_| registry.reserve_for_test(worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::owner_cleanup::registry::CleanupScope::Application).unwrap())
         .collect();
-    assert_eq!((*worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::owner_cleanup::registry::lock(&(*registry.state_for_test())).reserved_for_test()), held.len());
+    assert_eq!((*worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::owner_cleanup::registry::lock(registry.state_for_test()).reserved_for_test()), held.len());
     drop(held);
-    assert_eq!((*worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::owner_cleanup::registry::lock(&(*registry.state_for_test())).reserved_for_test()), 0);
-    assert!((*worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::owner_cleanup::registry::lock(&(*registry.state_for_test())).entries_for_test()).is_empty());
+    assert_eq!((*worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::owner_cleanup::registry::lock(registry.state_for_test()).reserved_for_test()), 0);
+    assert!((*worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::owner_cleanup::registry::lock(registry.state_for_test()).entries_for_test()).is_empty());
 }

@@ -102,9 +102,9 @@ pub fn recorded_settlements(
             let recorded =
                 lineage.latest_output_in_partition_for_test(&source, coordinate, *partition);
             Arc::clone(
-                &(*recorded
+                recorded
                     .expect("restored output has one actual lineage slot")
-                    .settlement_identity_for_test()),
+                    .settlement_identity_for_test(),
             )
         })
         .collect();

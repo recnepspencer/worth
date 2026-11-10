@@ -1,7 +1,6 @@
 //! Ordinary admitted CRUD changes only the initially empty component member kind.
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::schema::*;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::world::World;
-use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::component_invariants::declaration::*;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationEffectProgram;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationEntityKey;
 use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolutionMode;

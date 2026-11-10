@@ -334,6 +334,22 @@ resolver authority. The 16 MiB content frame limit refuses at admission before
 effects; it never redirects the value to InlineBytes. Representation follows
 meaning and authority, never a size threshold.
 
+The typed content door is `content(entity, content_field(Field::at("Field"), Format))`.
+It returns `Result<Option<AdmittedContent<Format>>, ContentReadDenial>` on
+`DecisionReader`, `WorthQueryApplicationInvariantProjectionReader`,
+`WorthQueryApplicationOperationInvariantProjectionReader`,
+`WorthQueryComputationReader`, and `WorthQueryApplicationInvariantReadView`.
+For the invariant view, pass its own `WorthQueryApplicationInvariantEntity`;
+other readers use their resolved `WorthQueryInvariantEntityIdentity`.
+`payload()` borrows the admitted immutable bytes. An absent optional aspect or
+field returns `None`; a missing required field, missing content, mismatched
+format or invalid frame is a typed refusal. The installed field remains the
+dependency, so replacing its content identity invalidates consumers. Each read
+uses its reader's original request and work allowance. Refusals remain sticky
+through projection and invariant completion even if a callback catches them.
+The Host `primary_graph`, `application_invariants` and
+`application_contribution` facades export the content custody and denial types.
+
 The immutable
 `InlineBytes` carrier admits at most **4,294,967,290 payload bytes**
 (`u32::MAX - 5`). The existing native scalar frame uses a 32-bit body length;
@@ -416,19 +432,21 @@ canonical and manual bindings. Register its actual Rust source, binding name
 source = "app/src/value_binding.rs"
 binding = "RatioBinding"
 forbidden_types = ["app::graph::NodeKey", "app::names::StableName"]
+posture = "domain"
+reason = "Reference-free numerical ratio with a canonical representation."
 ```
 
-The guard follows Cargo library roots, actual modules, explicit imports, aliases,
+The guard follows Cargo library and binary roots, actual modules, imports, re-exports, aliases,
 all fields and enum variants, and concrete generic arguments. Platform entity and
 content references are always refused. Unknown types, ambiguous imports, transforming
 attributes, generated bindings and unsupported local scopes refuse a proof. The
 guard does not infer reference-free meaning from an innocent type name. Keep the
 owner's forbidden list complete; a primitive string or integer is not permission
 to encode a graph link. In WORTH this runs as part of `boundary-check`. An external
-consumer runs the same checker from its Git root, with its own registry and manifest:
+consumer runs the same checker from its Git and Cargo workspace root, with its own registry:
 
 ```text
-cargo run --manifest-path path/to/worth/tools/boundary-check/Cargo.toml -- --root . --domain-values domain-values.toml --manifest-path app/Cargo.toml
+cargo run --manifest-path path/to/worth/tools/boundary-check/Cargo.toml -- domain-values --root . --registry domain-values.toml
 ```
 
 A repository whose bindings live in a separate consumer workspace can list its actual
@@ -438,7 +456,16 @@ actual library roots and Rust declarations. It does not register generated conte
 workspaces or supply alternate type roots.
 
 
-Both source and registry must be in Git's tracked or unignored source inventory.
+Consumer sources must be in Git's tracked or unignored source inventory. The
+registry path is relative to the consumer root, or absolute. Consumer metadata
+uses `cargo metadata --no-deps --offline`; the checker never compiles consumers.
+Manual bindings returning `ApplicationCanonicalValueContract::of` or `delegated`
+also require registration. The guard walks their actual associated `Value`, not
+the constructor's codec or grammar type. Every entry requires a `posture` and a
+nonempty `reason`: `domain` and `exception` both receive the reference walk;
+`diagnostic` exempts owner diagnostic payloads from that walk. Diagnostics still
+require a real, uniquely registered source binding. Unmarked structured artifact
+macros retain their existing separate protocol posture.
 Unresolved external opaque types require a source representation the guard can
 inspect; they receive no automatic exemption. Installation independently refuses
 a mismatch between the declared domain posture, carrier and executable binding.
@@ -1891,7 +1918,9 @@ internal allowance of 16 times the admitted declaration's canonical entries and
 bytes. Package validation admits declaration meaning under the shared 64 MiB
 ceiling and byte-derived entry-storage bound; a size refusal occurs there with
 its typed kind and requested/maximum counts. There is no smaller fixed identity
-ceiling for an application resource profile to tune. Distinct aspect contracts
+ceiling for an application resource profile to tune. An operation's installed
+aftermath identity is bounded by that same ceiling, so a recorded inverse may
+demand every field and relation its operation reads. Distinct aspect contracts
 count once, references count per occurrence, and a complete explicit field mask
 counts once per projection. Partial masks, touches and bindings retain exact
 meaning. See the factor proof in the
@@ -4295,6 +4324,58 @@ in decision support; deleting another holder or claiming the value twice still
 refuses. An empty roster retains its intra-member empty loci from the genuinely
 observed empty owner adjacency, rather than inventing a member to read.
 
+A local recorded correction can delete zero to many members of several
+families while their owners stay live. Declare each family with its own owner
+relation:
+
+```rust
+ApplicationAuthoredCorrection::live_owner_members::<C, MemberFamily, Deleted, Restored, _, _>(
+    MemberOf::reference(),
+)
+.and_live_owner_members::<C, NoteFamily, DeletedNotes, RestoredNotes, _, _>(
+    NoteOf::reference(),
+)
+```
+
+`Deleted` and `Restored` are output-role families with minimum zero and one
+lifecycle posture each; an exactly-one role is refused at installation. The
+inverse answers each source role through the inverse family role with the same
+suffix. Each owner relation is the same exactly-one relation used by the
+roster and must be in the relation demand; this never requests a roster
+replacement. Demand and observe every changed incident relation, the logical
+key and all fields to restore. A demanded relation the mutation did not change
+retains as empty, so `relation_count` there reports the mutation's own changes.
+A mutation that moves no member commits, and its inverse restores none.
+The retained fields are the mutation's own changes: every demanded field of
+each member it retires, and each demanded field it changes on a record that
+stays. The live owner's kind is covered by the declared owner relation in the
+relation demand, so one inverse may also restore changed owner fields beside
+its deleted members. An unrelated kind still requires its own authored anchor;
+a relation absent from the demand cannot cover its owner's fields.
+Witness a staying member through a Preserve family role and read its
+prior value with `field_for_family_member`; a field the mutation left alone is
+absent. A retiring member may lack a demanded optional field or optional
+aspect: read it in the handler, and the observed absence retains nothing, so
+`field_for_family_member` answers `None` and the inverse leaves it unset. A
+demanded field the handler never read on a retiring member refuses with
+`MissingDemandedField`, present or not. This holds for every authored anchor
+and co-anchor, and costs one probe per absence the attempt observed.
+
+Each original Retire role identifies one deleted member. Native's validated
+relation footprint matches its retained family key to exactly one fresh member
+and carries that old-to-fresh pair into relation inversion. The family's
+logical key is the only correspondence. The original live owner must remain its
+owner, and the retained member fields must match exactly. A changed key refuses
+with `IncompleteInverse`, duplicate recreated keys with `RepeatedInverse`, a
+different owner with `ForeignEndpoint`, a recreated member of a declared family
+that the source did not retire with `ExtraInverse`, and changed retained fields
+with `RestoredFieldMismatch`. These typed pre-image failures name the affected
+member through `relation_preimage_failure()` and publish no effects. This uses
+the same total retained-byte bound and never re-evaluates the original
+candidate or recreates the unaffected roster. The member pass costs one
+correspondence probe per created member against the recorded members; it never
+reads a roster.
+
 Historical member fields are read using `family_member_suffix`,
 `family_member_entity` and `field_for_family_member` on the recorded pre-image.
 These descriptive values grant no current read or mutation authority.
@@ -4327,6 +4408,15 @@ retirement and every admitted Preserve publish in one atomic commit. A required
 coupling with no declaration refuses before any effect. Declarations remain
 inert when no surviving owner is required; a closed owner already covered by the
 retirement closure does not run a producer.
+
+A recorded creation inverse may retire a producer, its owned publication and
+its generated roster while retained owners perform their own cleanup. Aggregate
+preparation treats paths incident to an entity retired by this same candidate as
+retired paths, including while a coupled writer still holds its deferred edges.
+Native compares the actual before and candidate images; an endpoint already
+unavailable before this candidate still refuses with `RecordUnavailable`.
+Commits that delete no entities carry only a constant-size deletion summary and
+perform no additional endpoint acquisitions.
 
 Correction derives the same declared coupling with fresh source IDs. Native
 restores closed publications, while surviving owners run their own Preserves.
@@ -7489,6 +7579,9 @@ impl ApplicationManagedIndexBinding<Catalog> for PrefixIndex {
     const NAME: &'static str = "catalog_prefix_index";
     const PROVIDER: &'static str = "managed-catalog.utf8-prefix.v1";
     const PROVIDER_VERSION: u32 = 1;
+    const SOURCE_SCOPE:
+        worth_query_decl::facade::application_query::ApplicationManagedIndexSourceScope =
+        super::super::PREFIX_SOURCE_SCOPE;
     const MAINTENANCE: ApplicationManagedIndexMaintenance = super::super::PREFIX_MAINTENANCE;
     const REFINEMENT: Option<
         worth_query_decl::facade::application_query::ApplicationManagedIndexRefinement,
@@ -7578,7 +7671,8 @@ before/after Source rows, changed occurrences and isolated node writer. Share
 unchanged nodes; do not replace a warm update with a complete Source rebuild.
 Provider and controlled-work refusals prevent publication.
 
-The Source must use `SameAdmittedScope` with `NoParameters`, public disclosure,
+The Source uses `SameAdmittedScope` or declares `SOURCE_SCOPE =
+ApplicationManagedIndexSourceScope::OrderedPredecessor`, with `NoParameters`, public disclosure,
 physical scalar fields and supported stored/reverse/composed/union membership
 paths. Direct endpoint result relations may project scalar fields from the
 related entity. Their actual relation occurrences preserve cardinality: two
@@ -7594,6 +7688,18 @@ Source result limits remain enforced; unavailable material is not an empty set.
 Native discovers affected scopes from actual before/after changes, including
 scopes with no open public handle, and prepares their roots before validation.
 Applications do not supply an affected-scope list.
+
+`OrderedPredecessor` requires exactly one forward `ordered_events` membership
+root and a to-one order relation. Native derives the predecessor from that
+relation; another membership or a non-to-one predecessor returns a typed
+installation refusal. The retained provider program and version must match.
+At birth, a successor shares immutable predecessor pages and applies its step
+delta through copy-on-touch. The first scope builds its own membership. A missing
+retained predecessor permits one cold successor build under `AdmitRebuild`, or a
+typed refusal under `Refuse`; preparation never recursively builds predecessors.
+Changed prepared successors use same-scope updates; unprepared successors cannot
+be read as current. Every read retains independent branch, generation, image
+and READ admission.
 
 Inside a mutation handler, read a managed Parent through
 `DecisionReader::index_query`. Declare the Parent's projected fields in the
@@ -7729,8 +7835,8 @@ whole-request SDK growth guards, including Source acquisition, reverse-scope
 discovery, provider updates, rules and publication. Before/after public probes
 also verify authored membership with bounded summary comparisons. Cold setup is
 admitted and invoiced separately; unchanged warm roots are never rebuilt.
-This evidence covers the indirect geometry composition. Prefix-specific large
-qualification remains open. Retaining a one-shot response does not register a
+This evidence covers the indirect geometry composition. Ordered-predecessor
+chain qualification is separate from these same-scope prefix courts. Retaining a one-shot response does not register a
 live predicate or qualify later retained-query routing.
 
 A branch created through `ForkExact` attaches the selected immutable managed

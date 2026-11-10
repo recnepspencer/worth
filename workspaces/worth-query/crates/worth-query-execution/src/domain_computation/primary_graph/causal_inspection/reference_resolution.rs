@@ -14,8 +14,7 @@ use super::reference::{
     CausalEvidenceReferenceSet,
 };
 use super::reference_index::{
-    causal_evidence_reference_index, causal_evidence_reference_index_record, owner_for_family,
-    CausalEvidenceReferenceIndex,
+    causal_evidence_reference_index, owner_for_family, CausalEvidenceReferenceIndex,
 };
 
 pub fn resolve_causal_evidence_references(
@@ -23,11 +22,7 @@ pub fn resolve_causal_evidence_references(
     requested_families: &[CausalEvidenceFamily],
 ) -> Result<CausalEvidenceReferenceResolution, WorthQueryEvidenceIdentityDerivationDenial> {
     let index = anchor_derived_reference_index(&anchor)?;
-    Ok(resolve_indexed_causal_evidence_references(
-        anchor,
-        requested_families,
-        &index,
-    )?)
+    resolve_indexed_causal_evidence_references(anchor, requested_families, &index)
 }
 
 pub fn resolve_indexed_causal_evidence_references(
@@ -161,7 +156,7 @@ fn anchor_derived_reference_index(
             )
         })
         .collect::<Result<Vec<_>, _>>()?;
-    Ok(causal_evidence_reference_index(records)?)
+    causal_evidence_reference_index(records)
 }
 
 fn anchor_reference_digests_for_family(

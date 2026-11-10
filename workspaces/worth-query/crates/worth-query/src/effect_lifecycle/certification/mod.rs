@@ -260,9 +260,7 @@ pub fn certify_effect_lifecycle_seeded(
         seed,
         scenario_count.max(scenarios::minimum_seeded_scenario_count()),
     )?;
-    Ok(EffectLifecycleSeededCertificationBundle::new(
-        execution, seed, rows,
-    )?)
+    EffectLifecycleSeededCertificationBundle::new(execution, seed, rows)
 }
 
 fn rows_digest(rows: &[EffectLifecycleSeededCertificationRow]) -> String {

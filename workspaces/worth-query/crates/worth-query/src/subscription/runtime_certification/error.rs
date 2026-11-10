@@ -179,7 +179,7 @@ impl QuerySubscriptionRuntimeCertificationError {
     ) -> Self {
         let failure_identity = (|| {
             let evidence = evidence?;
-            Ok(WorthQueryEvidenceIdentity::compose(
+            WorthQueryEvidenceIdentity::compose(
                 WorthQueryEvidenceScope::SubscriptionActivationReceipt,
             )
             .field_shape(
@@ -192,7 +192,7 @@ impl QuerySubscriptionRuntimeCertificationError {
                 WorthQueryEvidenceTag::new("evidence"),
                 evidence.iter(),
             )
-            .seal()?)
+            .seal()
         })();
         Self {
             error_kind,

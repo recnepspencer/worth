@@ -112,10 +112,7 @@ fn display_text_for_test_aspect_value(value: AspectValue) -> String {
 
 fn display_text_for_test_interned_string(value: InternedString) -> String {
     match value {
-        InternedString::Stored(value) => {
-            let value = value.as_str().to_owned();
-            value
-        }
+        InternedString::Stored(value) => value.as_str().to_owned(),
         InternedString::Raw(value) => value,
         InternedString::Symbol(symbol) => format!("symbol:{}", symbol.0),
     }

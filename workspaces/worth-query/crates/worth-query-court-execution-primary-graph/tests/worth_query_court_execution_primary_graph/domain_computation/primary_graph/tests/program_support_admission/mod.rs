@@ -20,7 +20,7 @@ fn a_host_presents_only_the_program_revisions_it_admitted() {
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
-    let support = installed_program_support(&(*world.application.installed_schema_for_test()));
+    let support = installed_program_support(world.application.installed_schema_for_test());
     assert!(
         support
             .present_for_test(&rostered_program_revision())
@@ -41,7 +41,7 @@ fn an_activation_rendering_no_rostered_program_answers_to_resolves_to_nothing() 
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
-    let support = installed_program_support(&(*world.application.installed_schema_for_test()));
+    let support = installed_program_support(world.application.installed_schema_for_test());
     assert!(
         support
             .rostered_for_rendering_for_test(&program_revision_rendering(
@@ -66,7 +66,7 @@ fn a_host_without_a_published_activation_names_no_occurrence_program() {
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
-    let support = installed_program_support(&(*world.application.installed_schema_for_test()));
+    let support = installed_program_support(world.application.installed_schema_for_test());
     assert_eq!(
         support.activation().published_for_test(),
         None,
@@ -81,12 +81,12 @@ fn retained_program_meaning_does_not_authorize_an_inactive_or_replaced_support()
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let revision = rostered_program_revision();
-    let support = installed_program_support(&(*world.application.installed_schema_for_test()));
+    let support = installed_program_support(world.application.installed_schema_for_test());
     let prior = support.retain_interpretation_for_test(&revision).unwrap();
     let current = support.retain_interpretation_for_test(&revision).unwrap();
     assert!(prior.same_support_as(&current));
 
-    let replacement = installed_program_support(&(*world.application.installed_schema_for_test()));
+    let replacement = installed_program_support(world.application.installed_schema_for_test());
     let replacement_pin = replacement
         .retain_interpretation_for_test(&revision)
         .unwrap();
@@ -108,7 +108,7 @@ fn a_commit_names_why_it_cannot_present_a_retiring_or_unadmitted_revision() {
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let revision = rostered_program_revision();
-    let support = installed_program_support(&(*world.application.installed_schema_for_test()));
+    let support = installed_program_support(world.application.installed_schema_for_test());
     assert!(support.present_for_commit_for_test(&revision).is_ok());
     let unadmitted = support
         .present_for_commit_for_test(&unadmitted_program_revision())
@@ -142,7 +142,7 @@ fn a_completed_retirement_leaves_the_revision_permanently_retired() {
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let revision = rostered_program_revision();
-    let support = installed_program_support(&(*world.application.installed_schema_for_test()));
+    let support = installed_program_support(world.application.installed_schema_for_test());
     let receipt = support
         .lifecycle()
         .begin_retirement_for_test(&revision)

@@ -162,7 +162,7 @@ pub(crate) fn representative_basis_truth_view_readmission_row(
     )
     .expect("truth-view fixture should use canonical scoped readmission");
 
-    Ok(readmission_row(
+    readmission_row(
         WorthQueryLowerRuntimeSeamKey::BasisReadmissionFromTruthViewEvidence,
         "Basis readmission from truth-view evidence",
         crate::lower_runtime_routing::WorthQueryLowerRuntimeSubjectIdentity::compose(
@@ -175,7 +175,7 @@ pub(crate) fn representative_basis_truth_view_readmission_row(
         .seal()?,
         truth_view_evidence.clone(),
         truth_view_evidence,
-    )?)
+    )
 }
 
 pub(crate) fn representative_basis_subscription_readmission_row(
@@ -249,7 +249,7 @@ pub(crate) fn representative_basis_subscription_readmission_row(
         assert!(!scoped_digest.is_empty());
     }
 
-    Ok(readmission_row(
+    readmission_row(
         WorthQueryLowerRuntimeSeamKey::BasisReadmissionFromSubscriptionEvidence,
         "Basis readmission from subscription evidence",
         crate::lower_runtime_routing::WorthQueryLowerRuntimeSubjectIdentity::compose(
@@ -262,7 +262,7 @@ pub(crate) fn representative_basis_subscription_readmission_row(
         .seal()?,
         subscription_evidence.clone(),
         subscription_evidence,
-    )?)
+    )
 }
 
 fn readmission_row(

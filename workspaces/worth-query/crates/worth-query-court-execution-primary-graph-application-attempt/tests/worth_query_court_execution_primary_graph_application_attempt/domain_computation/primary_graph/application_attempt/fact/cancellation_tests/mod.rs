@@ -182,10 +182,10 @@ pub fn with_indexed_fact<R>(
     let layout = (*graph.layout_for_test())
         .equality_field_for_test(field.entity(), field.aspect(), field.field())
         .unwrap();
-    let relation_kind = (*(*graph.layout_for_test())
+    let relation_kind = *(*graph.layout_for_test())
         .relation(AccountOwner::reference().name())
         .unwrap()
-        .kind_for_test());
+        .kind_for_test();
     let source = CancellationSource::new();
     let serial = SerialRequest::from_memory(SerialMemoryBudget::new(None), source.token(), None);
     let execution = ExecutionRequest::serial(&serial);
@@ -198,7 +198,7 @@ pub fn with_indexed_fact<R>(
                     &execution,
                     snapshot,
                     (*layout.equality_index_id_for_test()).unwrap(),
-                    (*layout.entity_kind_for_test()),
+                    *layout.entity_kind_for_test(),
                     (*layout.locator_for_test()).clone(),
                     StringApplicationValueBinding::encode(&"open".to_owned()).unwrap(),
                     2,

@@ -62,14 +62,14 @@ impl WorthQueryDomainCapabilityCertifiedSurfaceRow {
     }
 
     pub fn row_digest(&self) -> Result<String, IdentityDerivationDenial> {
-        Ok(compose_certified_surface_row_digest(
+        compose_certified_surface_row_digest(
             self.category.as_str(),
             self.ordinary_lane,
             self.inspectable_lane,
             self.proof_lane,
             self.raw_lane,
             self.implementation_path,
-        )?)
+        )
     }
 }
 
@@ -90,12 +90,12 @@ impl WorthQueryDomainCapabilityCertifiedSurfaceInventory {
     }
 
     pub fn public_surface_digest(&self) -> Result<String, IdentityDerivationDenial> {
-        Ok(compose_public_surface_digest(
+        compose_public_surface_digest(
             self.rows
                 .iter()
                 .map(WorthQueryDomainCapabilityCertifiedSurfaceRow::row_digest)
                 .collect::<Result<Vec<_>, _>>()?,
-        )?)
+        )
     }
 }
 

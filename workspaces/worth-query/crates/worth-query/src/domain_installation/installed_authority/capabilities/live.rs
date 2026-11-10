@@ -107,7 +107,7 @@ impl<D: 'static> WorthQueryInstalledDomainLiveRequest<D> {
                         "live-context-admission",
                         &context_receipt_digest,
                     )
-                    .map_err(&identity_refused)?,
+                    .map_err(identity_refused)?,
                     handle.resource_identity().clone(),
                 );
                 WorthQueryInstalledDomainLiveOpenOutcome::Opened(

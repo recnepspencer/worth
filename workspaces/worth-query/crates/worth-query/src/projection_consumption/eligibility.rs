@@ -156,9 +156,7 @@ impl AdmittedProjectionConsumption {
     pub fn bind_contract(
         &self,
     ) -> Result<MaterializedProjectionContract, IdentityDerivationDenial> {
-        Ok(super::contracts::bind_materialized_projection_contract(
-            self,
-        )?)
+        super::contracts::bind_materialized_projection_contract(self)
     }
 }
 
@@ -268,11 +266,7 @@ pub fn evaluate_projection_consumption_eligibility(
         }
     }
 
-    Ok(admitted_projection_consumption(
-        declaration,
-        counters,
-        warnings,
-    )?)
+    admitted_projection_consumption(declaration, counters, warnings)
 }
 
 enum RequestedFactAdmission {

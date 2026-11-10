@@ -114,7 +114,7 @@ fn invalidation_keeps_no_window_so_a_finite_world_history_installs() {
         );
         let invalidation = WorthQueryInvalidationResources::new();
         let resources =
-            WorthQueryProductWorldResources::new(budgets, clock, invalidation, (*execution.policy_for_test()));
+            WorthQueryProductWorldResources::new(budgets, clock, invalidation, *execution.policy_for_test());
         if let Err(denial) = authority.prepare_primary_graph(
             &phase.bootstrap_for_test(),
             &runtime,

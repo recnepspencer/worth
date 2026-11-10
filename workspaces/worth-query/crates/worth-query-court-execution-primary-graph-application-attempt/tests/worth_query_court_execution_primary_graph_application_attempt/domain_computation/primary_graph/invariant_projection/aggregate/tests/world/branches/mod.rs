@@ -81,7 +81,7 @@ impl AggregateWorld {
         phase_custody: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         source: &str,
     ) -> EntityId {
-        (*self
+        *self
             .authority
             .project(
                 phase_custody,
@@ -94,7 +94,7 @@ impl AggregateWorld {
             .output()
             .as_ref()
             .expect("source identity resolves")
-            .entity_id_for_test())
+            .entity_id_for_test()
     }
 
     /// The one contribution a source makes to the target.
@@ -103,7 +103,7 @@ impl AggregateWorld {
         phase_custody: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         source: EntityId,
     ) -> RelationId {
-        (*self
+        *self
             .authority
             .project(
                 phase_custody,
@@ -117,7 +117,7 @@ impl AggregateWorld {
             .iter()
             .find(|relation| (*(*relation.from_for_test()).entity_id_for_test()) == source)
             .expect("the source contributes")
-            .relation_id_for_test())
+            .relation_id_for_test()
     }
 
     pub fn remove_relation_on(

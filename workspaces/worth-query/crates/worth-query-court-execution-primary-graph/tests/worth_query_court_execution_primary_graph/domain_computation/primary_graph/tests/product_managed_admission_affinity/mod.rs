@@ -46,8 +46,7 @@ fn direct_admission_rejects_a_same_relational_different_signal_product() {
         .execution_for_test()
         .managed_run_admission(
             &bridge,
-            &(*(*(*world.application.runtime_for_test()).product_runtime_for_test())
-                .source_for_test()),
+            (*(*world.application.runtime_for_test()).product_runtime_for_test()).source_for_test(),
         )
         .admit_direct(
             &operation,
@@ -110,8 +109,7 @@ fn workflow_admission_rejects_a_same_relational_different_signal_product() {
         .execution_for_test()
         .managed_run_admission(
             &bridge,
-            &(*(*(*world.application.runtime_for_test()).product_runtime_for_test())
-                .source_for_test()),
+            (*(*world.application.runtime_for_test()).product_runtime_for_test()).source_for_test(),
         )
         .admit_workflow(
             &operation,

@@ -216,11 +216,11 @@ fn matrix_rows_for_surface(
     surface: ProjectionConsumptionCertifiedSourceSurface,
 ) -> Result<Vec<ProjectionConsumptionSupportMatrixRow>, IdentityDerivationDenial> {
     let source = representative_source(surface)?;
-    Ok(ProjectionFactKind::all()
+    ProjectionFactKind::all()
         .iter()
         .copied()
         .map(|fact_kind| matrix_row(surface, &source, fact_kind))
-        .collect::<Result<Vec<_>, _>>()?)
+        .collect::<Result<Vec<_>, _>>()
 }
 
 fn matrix_row(

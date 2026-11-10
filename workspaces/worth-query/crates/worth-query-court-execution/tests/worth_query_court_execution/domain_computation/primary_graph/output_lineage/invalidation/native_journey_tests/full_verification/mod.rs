@@ -45,7 +45,7 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
         .primary_graph_for_test()
         .unwrap();
     let handle = graph.integration_handle_for_test();
-    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+    let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
     let label_ref = AccountLabel::at("AccountLabel");
     let label = graph
         .layout_for_test()

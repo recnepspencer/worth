@@ -100,12 +100,12 @@ pub(super) fn mutation_receipt_surface(
         entity_id,
         "after".to_string(),
     );
-    Ok(scalar_surface_evidence(
+    scalar_surface_evidence(
         execution,
         &basis,
         raw,
         EffectExecutionAuthority::relational(&mut runtime),
-    )?)
+    )
 }
 
 pub(super) fn writeback_receipt_surface(
@@ -121,12 +121,12 @@ pub(super) fn writeback_receipt_surface(
         input: WritebackLoweringInput::projected_state_diff(),
     };
     let bridge = test_bridge_with_writeback_authority();
-    Ok(scalar_surface_evidence(
+    scalar_surface_evidence(
         execution,
         &basis,
         raw,
         EffectExecutionAuthority::bridge(&bridge),
-    )?)
+    )
 }
 
 pub(super) fn batch_receipt_surface(

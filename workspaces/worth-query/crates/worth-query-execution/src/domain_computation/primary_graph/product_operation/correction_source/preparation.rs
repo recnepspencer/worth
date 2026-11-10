@@ -1,5 +1,6 @@
 //! Source material and exact target retained between inverse preparation and publication.
 use super::*;
+mod member_inverse;
 mod relation_inverse;
 mod workflow;
 use crate::basis::WorthQueryProductBranchReadIdentity;
@@ -26,7 +27,7 @@ use worth_relational::facade::{
 pub struct WorthQueryPreparedCorrectionSource {
     coupled_capture: Option<fn(&WorthQueryPrimaryGraphCommittedApplication, &worth_execution::ExecutionRequest<'_, '_>) -> crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemands>,
     content: worth_relational::facade::content::RelationalContentAttachments,
-    authored_identity: Option<super::authored_identity::PreparedAuthoredIdentity>,
+    authored_identity: Option<super::authored_identity::PreparedAuthoredCorrection>,
     workflow: Option<PreparedWorkflowCorrection>,
     ancestry: ProductBranchAncestorSelection,
     /// Keeps selected and active reversal material pinned for the prepared action's lifetime.
@@ -98,7 +99,7 @@ impl WorthQueryPreparedCorrectionSource {
             .map_err(|_| Denial::ForeignPhase)?;
         let authored_identity = if lineage.role() == WorthQueryAftermathCausalRole::RecordedReverse
         {
-            super::authored_identity::PreparedAuthoredIdentity::prepare::<Schema, C>(
+            super::authored_identity::PreparedAuthoredCorrection::prepare::<Schema, C>(
                 source, &execution,
             )?
         } else {

@@ -123,7 +123,7 @@ fn a_restored_row_without_performed_proof_stays_fresh_until_verified() {
             .is_none());
         stage.lineage.record_restoration_for_test(
             stage.lineage.binding_type_for_test(stage.source.output_binding_for_test()),
-            (*stage.source.runtime_authority_for_test()),
+            *stage.source.runtime_authority_for_test(),
             (*stage.source.schema_for_test()).clone(),
             stage.source.scope,
             stage.observation,
@@ -254,7 +254,7 @@ fn a_stable_alias_is_compared_by_the_witness_of_its_origin() {
         let candidates = stage
             .lineage
             .retained_output_candidates_metered_for_test(
-                (*stage.source.runtime_authority_for_test()),
+                *stage.source.runtime_authority_for_test(),
                 stage.source.schema_for_test(),
                 stage.source.scope,
                 stage.observation.lifecycle_incarnation(),

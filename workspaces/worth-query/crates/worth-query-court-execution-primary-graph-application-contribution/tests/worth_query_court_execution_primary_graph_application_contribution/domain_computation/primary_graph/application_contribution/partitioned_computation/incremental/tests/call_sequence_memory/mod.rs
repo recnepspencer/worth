@@ -23,9 +23,9 @@ fn measured_call_shape_view_keeps_its_own_grant_after_the_sequence_drops() {
         )),
         &request,
     );
-    let sequence=worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::ComputationCallSequence::build_for_test(||std::iter::once((ComputationRead::Membership,&(*(*prior.membership_for_test()).charge_for_test()),(*(*prior.membership_for_test()).declared_units_for_test())))
-        .chain((*prior.item_keys_for_test()).iter().map(|(item,call)|(ComputationRead::ItemKey(*item),&(*call.charge_for_test()),(*call.declared_units_for_test()))))
-        .chain((*prior.partitions_for_test()).iter_for_test().map(|(id,partition)|(ComputationRead::Partition(*id),&(*partition.gather_for_test()),Some(0)))),&execution).unwrap();
+    let sequence=worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::ComputationCallSequence::build_for_test(||std::iter::once((ComputationRead::Membership,(*prior.membership_for_test()).charge_for_test(),(*(*prior.membership_for_test()).declared_units_for_test())))
+        .chain((*prior.item_keys_for_test()).iter().map(|(item,call)|(ComputationRead::ItemKey(*item),call.charge_for_test(),(*call.declared_units_for_test()))))
+        .chain((*prior.partitions_for_test()).iter_for_test().map(|(id,partition)|(ComputationRead::Partition(*id),partition.gather_for_test(),Some(0)))),&execution).unwrap();
     let shape = Arc::clone(sequence.shape_for_test());
     drop(sequence);
     assert!(
@@ -53,7 +53,7 @@ fn measured_call_sequence_refuses_before_copy_and_holds_its_view_until_final_dro
         .typed_for_test())
         .downcast_ref::<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedPartitions<Parity, Number, u64>>()
         .unwrap();
-    let sequence = &(*prior.call_sequence_for_test());
+    let sequence = prior.call_sequence_for_test();
     let before = sequence.bytes_for_test();
     let (identity, partition) = (*prior.partitions_for_test())
         .iter_for_test()
@@ -62,7 +62,7 @@ fn measured_call_sequence_refuses_before_copy_and_holds_its_view_until_final_dro
     let change = || {
         std::iter::once((
             ComputationRead::Partition(*identity),
-            &(*partition.gather_for_test()),
+            partition.gather_for_test(),
             Some(0),
         ))
     };
@@ -118,7 +118,7 @@ fn measured_call_scope_index_requires_a_reaching_call_inside_the_carried_range()
             _ => None,
         })
         .unwrap();
-    let sequence = &(*prior.call_sequence_for_test());
+    let sequence = prior.call_sequence_for_test();
     assert!(sequence.contains_in(
         entity,
         &(sequence.prefix_for_test()..sequence.shape_for_test().len_for_test())

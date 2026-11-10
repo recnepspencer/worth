@@ -46,18 +46,16 @@ fn compose_admission_payload_identity(
     detail: &str,
     decision_stage: &str,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        domain_capability_scope_encoder("worth_query_domain_capability_payload_v3")
-            .field_shape(
-                WorthQueryEvidenceTag::new("category"),
-                WorthQueryDomainCapabilityCategory::Admission.as_str(),
-            )
-            .field_shape(WorthQueryEvidenceTag::new("posture"), posture.as_str())
-            .field_shape(WorthQueryEvidenceTag::new("semantic_code"), semantic_code)
-            .field_shape(WorthQueryEvidenceTag::new("detail"), detail)
-            .field_shape(WorthQueryEvidenceTag::new("decision_stage"), decision_stage)
-            .seal()?,
-    )
+    domain_capability_scope_encoder("worth_query_domain_capability_payload_v3")
+        .field_shape(
+            WorthQueryEvidenceTag::new("category"),
+            WorthQueryDomainCapabilityCategory::Admission.as_str(),
+        )
+        .field_shape(WorthQueryEvidenceTag::new("posture"), posture.as_str())
+        .field_shape(WorthQueryEvidenceTag::new("semantic_code"), semantic_code)
+        .field_shape(WorthQueryEvidenceTag::new("detail"), detail)
+        .field_shape(WorthQueryEvidenceTag::new("decision_stage"), decision_stage)
+        .seal()
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -75,12 +73,12 @@ impl WorthQueryAdmissionContributionPayload {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_decision_stage(
+        Self::with_decision_stage(
             posture,
             semantic_code,
             detail,
             posture.default_decision_stage(),
-        )?)
+        )
     }
 
     pub fn with_decision_stage(

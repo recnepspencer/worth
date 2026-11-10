@@ -34,13 +34,13 @@ impl WorthQueryDomainInstallationRegistry {
         portable_index: Arc<worth_query_installation::facade::WorthQueryInstalledPackageIndex>,
     ) -> Result<Self, IdentityDerivationDenial> {
         let generation = WorthQueryDomainInstallationGeneration::initial();
-        Ok(Self::from_artifacts_and_portable_index(
+        Self::from_artifacts_and_portable_index(
             artifacts,
             runtime_authority,
             generation,
             WorthQueryDomainInstallationGenerationLease::new(generation),
             portable_index,
-        )?)
+        )
     }
 
     fn from_artifacts_and_portable_index(
@@ -254,13 +254,13 @@ impl WorthQueryDomainInstallationRegistry {
         // Committing later advances the prior registry's separate lease, so a
         // failed conditional reconstitution leaves every published handle current.
         // Portable source authority stays exact: only runtime handles retire.
-        Ok(Self::from_artifacts_and_portable_index(
+        Self::from_artifacts_and_portable_index(
             artifacts,
             self.runtime_authority,
             generation,
             WorthQueryDomainInstallationGenerationLease::new(generation),
             portable_index,
-        )?)
+        )
     }
 
     #[cfg(test)]

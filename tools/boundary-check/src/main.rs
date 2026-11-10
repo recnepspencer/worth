@@ -16,20 +16,22 @@ fn main() {
     let mut config = format!("{}road1.toml", config::CONFIG);
     let mut json = false;
     let mut domain_registry = None;
-    let mut manifest = None;
-    let mut args = env::args().skip(1);
+    let mut args = env::args().skip(1).peekable();
+    let consumer = args.peek().is_some_and(|arg| arg == "domain-values");
+    if consumer {
+        args.next();
+    }
     while let Some(arg) = args.next() {
         match (arg.as_str(), args.next()) {
             ("--root", Some(value)) => root = value.into(),
             ("--config", Some(value)) => config = value,
-            ("--domain-values", Some(value)) => domain_registry = Some(value),
-            ("--manifest-path", Some(value)) => manifest = Some(value),
+            ("--registry", Some(value)) if consumer => domain_registry = Some(value),
             ("--format", Some(value)) if value == "json" || value == "human" => {
                 json = value == "json"
             }
             _ => {
                 eprintln!(
-                    "usage: boundary-check [--root PATH] [--config PATH] [--format human|json] [--domain-values REGISTRY --manifest-path MANIFEST]"
+                    "usage: boundary-check [--root PATH] [--config PATH] [--format human|json]\n       boundary-check domain-values --root PATH --registry TOML [--format human|json]"
                 );
                 std::process::exit(2);
             }
@@ -38,14 +40,19 @@ fn main() {
     let result = root
         .canonicalize()
         .map_err(|e| e.to_string())
-        .and_then(|root| match (&domain_registry, &manifest) {
-            (Some(_), Some(manifest)) => Inputs::read_domain_sources(&root, manifest),
-            (None, None) => Inputs::read(&root, &config),
-            _ => Err("--domain-values and --manifest-path must be supplied together".into()),
+        .and_then(|root| match (consumer, &domain_registry) {
+            (true, Some(registry)) => Inputs::read_domain_sources(&root, registry),
+            (false, None) => Inputs::read(&root, &config),
+            _ => Err("domain-values requires --registry TOML".into()),
         });
-    if let Some(registry) = domain_registry {
+    if consumer {
         let outcome = match result {
-            Ok(input) => Outcome::Checked(domain_values::check_registry(&input, &registry)),
+            Ok(input) => Outcome::Checked(domain_values::check_registry(
+                &input,
+                domain_registry
+                    .as_deref()
+                    .expect("consumer registry admitted"),
+            )),
             Err(error) => Outcome::InputFailure(error),
         };
         return emit(outcome, json);

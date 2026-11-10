@@ -12,8 +12,7 @@ use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationInspectionContract,
 };
 
-pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) enum InspectionPlanDenial
-{
+pub enum InspectionPlanDenial {
     Graph(WorthQueryGraphWorkAdmissionDenial),
     Storage(RetainedStorageDenial),
     Overflow,

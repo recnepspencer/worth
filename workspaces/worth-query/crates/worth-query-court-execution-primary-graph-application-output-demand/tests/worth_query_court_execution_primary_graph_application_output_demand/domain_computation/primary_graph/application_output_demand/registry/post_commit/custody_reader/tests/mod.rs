@@ -1,5 +1,4 @@
-use crate::domain_computation::primary_graph::application_output_demand::registry::tests::walk_bounds;
-    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandRegistryState;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandRegistryState;
     use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandState;
     use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenial;
     use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::post_commit::custody_reader::resolve_before_binding;
@@ -34,9 +33,9 @@ fn binding_reader_drains_only_its_named_queued_custody() {
             .composite_commit()
     };
     assert_eq!(state.source_custody.len(), 4);
-    assert_eq!((*state.custody_cleanup_for_test()).len, 4);
+    assert_eq!(state.custody_cleanup_for_test().len, 4);
     for i in 0..4 {
-        assert!((*state.source_custody[commit(i)].cleanup_for_test()).queued);
+        assert!(state.source_custody[commit(i)].cleanup_for_test().queued);
     }
     resolve_before_binding(&mut state, &receipts[2]);
     assert!(!state.source_custody.contains_key(commit(2)));
@@ -45,10 +44,10 @@ fn binding_reader_drains_only_its_named_queued_custody() {
             state.source_custody.contains_key(commit(i)),
             "unrelated custody stays owned"
         );
-        assert!((*state.source_custody[commit(i)].cleanup_for_test()).queued);
+        assert!(state.source_custody[commit(i)].cleanup_for_test().queued);
     }
     assert_eq!(
-        (*state.custody_cleanup_for_test()).len,
+        state.custody_cleanup_for_test().len,
         3,
         "only the named middle entry was drained"
     );

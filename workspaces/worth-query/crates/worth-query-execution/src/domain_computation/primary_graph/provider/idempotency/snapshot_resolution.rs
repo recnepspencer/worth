@@ -192,7 +192,7 @@ fn resolve_projected_idempotency(
     record: WorthQueryProjectedIdempotencyRecord,
 ) -> Result<WorthQueryProviderIdempotencyResolution, WorthQueryProviderIdempotencyResolutionDenial>
 {
-    let Some(recorded_intent) = (&record.intent).as_ref().and_then(|value| value.raw_text()) else {
+    let Some(recorded_intent) = record.intent.as_ref().and_then(|value| value.raw_text()) else {
         return Err("provider idempotency intent is unavailable".into());
     };
     match binding.match_recorded_intent(recorded_intent)? {

@@ -124,7 +124,7 @@ impl Record<MappingFactsRow> for Bindings {
     fn record() -> impl Shape<MappingFactsRow, Self> {
         field("ExternalId", |row: &MappingFactsRow| row.externalid.clone())
             .equality_queryable(true)
-            .and("Status", |row: &MappingFactsRow| row.status.clone())
+            .and("Status", |row: &MappingFactsRow| row.status)
             .equality_queryable(true)
             .build(|externalid, status, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(MappingFactsRow { externalid, status })
@@ -146,14 +146,12 @@ pub struct PrincipalFactsRow {
 }
 impl Record<PrincipalFactsRow> for Bindings {
     fn record() -> impl Shape<PrincipalFactsRow, Self> {
-        field("PrincipalId", |row: &PrincipalFactsRow| {
-            row.principalid.clone()
-        })
-        .equality_queryable(true)
-        .read_only()
-        .build(|principalid, _: &mut ValueDecodeAdmission<'_>| {
-            Ok::<_, std::convert::Infallible>(PrincipalFactsRow { principalid })
-        })
+        field("PrincipalId", |row: &PrincipalFactsRow| row.principalid)
+            .equality_queryable(true)
+            .read_only()
+            .build(|principalid, _: &mut ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(PrincipalFactsRow { principalid })
+            })
     }
 }
 pub struct ModelFacts;
@@ -175,7 +173,7 @@ impl Record<ModelFactsRow> for Bindings {
         field("ModelKey", |row: &ModelFactsRow| row.modelkey.clone())
             .equality_queryable(true)
             .unique()
-            .and("ModelValue", |row: &ModelFactsRow| row.modelvalue.clone())
+            .and("ModelValue", |row: &ModelFactsRow| row.modelvalue)
             .equality_queryable(true)
             .build(|modelkey, modelvalue, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ModelFactsRow {
@@ -204,9 +202,7 @@ impl Record<MemberFactsRow> for Bindings {
         field("MemberKey", |row: &MemberFactsRow| row.memberkey.clone())
             .equality_queryable(true)
             .unique()
-            .and("MemberValue", |row: &MemberFactsRow| {
-                row.membervalue.clone()
-            })
+            .and("MemberValue", |row: &MemberFactsRow| row.membervalue)
             .equality_queryable(true)
             .build(|memberkey, membervalue, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(MemberFactsRow {
@@ -235,7 +231,7 @@ impl Record<FirstFactsRow> for Bindings {
         field("FirstKey", |row: &FirstFactsRow| row.firstkey.clone())
             .equality_queryable(true)
             .unique()
-            .and("FirstValue", |row: &FirstFactsRow| row.firstvalue.clone())
+            .and("FirstValue", |row: &FirstFactsRow| row.firstvalue)
             .equality_queryable(true)
             .build(|firstkey, firstvalue, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(FirstFactsRow {
@@ -264,7 +260,7 @@ impl Record<ChildFactsRow> for Bindings {
         field("ChildKey", |row: &ChildFactsRow| row.childkey.clone())
             .equality_queryable(true)
             .unique()
-            .and("ChildValue", |row: &ChildFactsRow| row.childvalue.clone())
+            .and("ChildValue", |row: &ChildFactsRow| row.childvalue)
             .equality_queryable(true)
             .build(|childkey, childvalue, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ChildFactsRow {
@@ -293,9 +289,7 @@ impl Record<SecondFactsRow> for Bindings {
         field("SecondKey", |row: &SecondFactsRow| row.secondkey.clone())
             .equality_queryable(true)
             .unique()
-            .and("SecondValue", |row: &SecondFactsRow| {
-                row.secondvalue.clone()
-            })
+            .and("SecondValue", |row: &SecondFactsRow| row.secondvalue)
             .equality_queryable(true)
             .build(|secondkey, secondvalue, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(SecondFactsRow {

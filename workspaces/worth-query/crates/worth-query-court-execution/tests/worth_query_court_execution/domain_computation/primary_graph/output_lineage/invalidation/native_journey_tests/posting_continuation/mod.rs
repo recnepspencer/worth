@@ -44,7 +44,7 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
         .primary_graph_for_test()
         .unwrap();
     let handle = graph.integration_handle_for_test();
-    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+    let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
     let status_ref = AccountStatus::at("AccountStatus");
     let status = graph
         .layout_for_test()
@@ -177,12 +177,12 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
         .unwrap();
     let installed = cell.read_image();
     let a = Arc::clone(
-        &(*(*(*installed.payload().current_for_test()).settlements_for_test())[&first]
-            .posting_projection_for_test()),
+        (*(*installed.payload().current_for_test()).settlements_for_test())[&first]
+            .posting_projection_for_test(),
     );
     let b = Arc::clone(
-        &(*(*(*installed.payload().current_for_test()).settlements_for_test())[&second]
-            .posting_projection_for_test()),
+        (*(*installed.payload().current_for_test()).settlements_for_test())[&second]
+            .posting_projection_for_test(),
     );
     assert!(Arc::ptr_eq(&a, &b));
     assert_eq!(
@@ -191,10 +191,10 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
     );
     assert_eq!(
         (*(*(*installed.payload().current_for_test()).posting_bindings_for_test())
-            [&(*a.id_for_test())]
-            .settlements_for_test()
-            .unwrap()
-            .settlements_for_test())
+            [a.id_for_test()]
+        .settlements_for_test()
+        .unwrap()
+        .settlements_for_test())
         .len(),
         2
     );
@@ -210,8 +210,8 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
     let reconstructed = cell.read_image();
     assert!(
         !Arc::ptr_eq(
-            &(*(*(*reconstructed.payload().current_for_test()).settlements_for_test())[&third]
-                .posting_projection_for_test()),
+            (*(*reconstructed.payload().current_for_test()).settlements_for_test())[&third]
+                .posting_projection_for_test(),
             &a
         ),
         "equal unrelated backing reconstructs"
@@ -225,10 +225,10 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
     );
     assert!(
         (*(*(*retired_image.payload().current_for_test()).posting_bindings_for_test())
-            [&(*a.id_for_test())]
-            .settlements_for_test()
-            .unwrap()
-            .settlements_for_test())
+            [a.id_for_test()]
+        .settlements_for_test()
+        .unwrap()
+        .settlements_for_test())
         .contains(&second)
     );
     assert!(

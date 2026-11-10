@@ -22,9 +22,8 @@ pub use worth_query_testkit_execution_primary_graph_application_contribution::do
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::program_fixture::admitted_program_on_selected;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::program_fixture::admitted_program_with_emit;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::program_fixture::admitted_program_with_expected_status;
-pub(crate) use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::application_attempt::decision_currentness::assert_changed_decision;
-pub(crate) use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::application_attempt::decision_currentness::assert_product_basis_stale;
 #[test]
+#[expect(clippy::disallowed_methods, reason = "Client-race court")]
 fn concurrent_equivalent_attempts_publish_one_transaction() {
     let world = installed_authorization_world(
         true,

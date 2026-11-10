@@ -213,9 +213,7 @@ fn payload<'a>(
     let AspectValue::UInt64(publication) = fields.get(&FieldKey::new("publication")?)? else {
         return None;
     };
-    let Some(text) = (fields.get(&FieldKey::new("payload")?)?).raw_text() else {
-        return None;
-    };
+    let text = fields.get(&FieldKey::new("payload")?)?.raw_text()?;
     Some((*publication, text))
 }
 fn rewrite(

@@ -1,4 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use unique_fields::WorthQueryUniqueFieldFixture;
 
 use worth_foundational::facade::{AspectContract, AspectFieldLocator, AspectKey, FieldKey};
 use worth_query_installation::facade::{
@@ -51,7 +53,6 @@ mod support_admission;
 
 pub(crate) mod unique_fields;
 mod workflow_reads;
-pub(in crate::domain_computation::primary_graph) use unique_fields::WorthQueryUniqueFieldFixture;
 pub(in crate::domain_computation::primary_graph) use unique_fields::{
     WorthQueryUniqueFieldIndex, WorthQueryUniqueFields,
 };

@@ -164,7 +164,14 @@ impl RelationalPreparationRuntime {
                     ),
                     }}?;
                     let runtime = round.with_candidate_symbols(mutation.candidate_symbols());
-                    mutation.prepare_managed_sources(
+
+                    let control = crate::validation::engine::InvariantPreparationControl::for_transaction(
+                        &validation_input, execution.allocation_policy(), crate::mvcc::RelationalInterruptionBoundary::ProposalValidation,
+                    );
+                    let pending = runtime.invariant_authority().begin_proposed_state(
+                        &selected, mutation.state(), identity.proposed_version_id(), prepared.plan.view(), Some(&identity),
+                        mutation.aggregate_source(selected), execution, &control,
+                        &mut || mutation.prepare_managed_sources(
                         *execution,
                         &runtime,
                         selected,
@@ -172,13 +179,7 @@ impl RelationalPreparationRuntime {
                         (validation_input.merge_parent_bases().is_empty()
                             && !prepared.plan.view().has_selection())
                             .then_some(prepared.plan.view().commands()),
-                    )?;
-                    let control = crate::validation::engine::InvariantPreparationControl::for_transaction(
-                        &validation_input, execution.allocation_policy(), crate::mvcc::RelationalInterruptionBoundary::ProposalValidation,
-                    );
-                    let pending = runtime.invariant_authority().begin_proposed_state(
-                        &selected, mutation.state(), identity.proposed_version_id(), prepared.plan.view(), Some(&identity),
-                        mutation.aggregate_source(selected), execution, &control,
+                    ),
                     )?;
                     mutation.prepare_aggregate(
                         execution,

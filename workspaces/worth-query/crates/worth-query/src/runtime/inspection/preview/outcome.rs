@@ -49,7 +49,7 @@ impl WorthQueryPreviewOutcomeInspection {
     pub(in crate::runtime) fn from_outcome(
         outcome: &WorthQueryPreviewOutcome,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::from_closeout(
+        Self::from_closeout(
             outcome,
             outcome.closeout_evidence(),
             outcome.promoted(),
@@ -74,7 +74,7 @@ impl WorthQueryPreviewOutcomeInspection {
             outcome.authoritative_residue_count(),
             outcome.source_lane(),
             outcome.target_lane(),
-        )?)
+        )
     }
 
     #[allow(clippy::too_many_arguments)]

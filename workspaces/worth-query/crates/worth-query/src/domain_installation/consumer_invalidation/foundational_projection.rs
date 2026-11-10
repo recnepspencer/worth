@@ -51,10 +51,10 @@ impl super::WorthQueryConsumerInvalidationDelta {
     pub fn foundational_projection(
         &self,
     ) -> Result<WorthQueryFoundationalInvalidationProjection, IdentityDerivationDenial> {
-        Ok(foundational_projection(
+        foundational_projection(
             self,
             FoundationalBoundaryEvidenceFreshnessPosture::StaleRetained,
-        )?)
+        )
     }
 }
 

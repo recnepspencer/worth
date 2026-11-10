@@ -126,15 +126,12 @@ pub(super) fn finish(
     before: Option<u64>,
 ) {
     if let Some(before) = before {
-        ACTIVE.update(|observation| {
-            observation.map(|mut o| {
-                if o.commit == envelope.commit.commit_id && o.version == envelope.commit.version_id
-                {
-                    o.validations += 1;
-                    o.work += context.charged_work() - before;
-                }
-                o
-            })
-        });
+        ACTIVE.set(ACTIVE.get().map(|mut o| {
+            if o.commit == envelope.commit.commit_id && o.version == envelope.commit.version_id {
+                o.validations += 1;
+                o.work += context.charged_work() - before;
+            }
+            o
+        }));
     }
 }

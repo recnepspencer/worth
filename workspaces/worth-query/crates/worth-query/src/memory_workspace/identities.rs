@@ -77,7 +77,7 @@ impl WorthQueryCommitIdentity {
             crate::identity_authority::QueryCommitIdentityKind,
         >,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(super::truth_identity_admission::admit_external_commit_token(token)?)
+        super::truth_identity_admission::admit_external_commit_token(token)
     }
 
     pub fn absent() -> Self {
@@ -176,7 +176,7 @@ impl WorthQuerySnapshotIdentity {
             crate::identity_authority::QuerySnapshotIdentityKind,
         >,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(super::truth_identity_admission::admit_external_snapshot_token(token)?)
+        super::truth_identity_admission::admit_external_snapshot_token(token)
     }
 
     pub(crate) fn bridge_identity(&self) -> Option<&TruthSnapshotIdentity> {

@@ -1,7 +1,5 @@
 //! Enrollment can bind recipes only to the original current source endpoint.
-use super::super::{
-    journal::NodeBinding, WorthQueryDocumentHistory, WorthQueryHistoryOutputProfile,
-};
+use super::super::{WorthQueryDocumentHistory, WorthQueryHistoryOutputProfile};
 use super::*;
 use worth_query_declaration::facade::{
     application_history::ApplicationHistoryBinding,

@@ -57,7 +57,6 @@ pub(in crate::domain_computation) use application_commit_authorization::WorthQue
 pub(super) use bridge_binding::bridge_authorization_binding_identity;
 pub(in crate::domain_computation) use capability_decision_fact::WorthQueryCapabilityCommitBasis;
 pub(in crate::domain_computation) use capability_decision_fact::WorthQueryRetainedCapabilityAuthorization;
-pub(in crate::domain_computation) use capability_elevation_projection::validate_elevation_projection;
 pub use capability_registry::WorthQueryCapabilityPlanCompilationEvidence;
 pub(in crate::domain_computation) use capability_revocation_progression::WorthQueryCapabilityRevocationBinding;
 pub(in crate::domain_computation) use decision_facts::WorthQueryAuthorizationDecisionFact;
@@ -117,8 +116,6 @@ fn authorization_denial(
         format!("{}: {detail}", subject.into()),
     )
 }
-
-pub(in crate::domain_computation) use capability_observation::CancelGrantSelectionGuardForTest;
 
 pub(in crate::domain_computation) use operation_progression::{
     BrandTag, ReadCompletionAdmission, WorthQueryAdmittedOperation,

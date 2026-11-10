@@ -47,8 +47,7 @@ impl<'a> WorthQueryArtifactInspector<'a> {
     pub fn live_patch_artifacts(
         &self,
     ) -> Result<Vec<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
-        Ok(self
-            .receipt
+        self.receipt
             .deltas()
             .iter()
             .map(|delta| {
@@ -63,7 +62,7 @@ impl<'a> WorthQueryArtifactInspector<'a> {
                 )
                 .seal()
             })
-            .collect::<Result<Vec<_>, _>>()?)
+            .collect::<Result<Vec<_>, _>>()
     }
 }
 

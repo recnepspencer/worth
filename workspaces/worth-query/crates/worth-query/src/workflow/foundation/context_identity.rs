@@ -43,7 +43,7 @@ pub(super) fn workflow_context_binding_identity(
                 .field_evidence_identity(WorthQueryEvidenceTag::new("scope"), scope_identity),
         };
     }
-    Ok(identity.seal()?)
+    identity.seal()
 }
 
 pub(crate) enum WorkflowBindingScopeField<'a> {

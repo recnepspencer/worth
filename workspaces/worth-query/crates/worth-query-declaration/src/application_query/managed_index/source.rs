@@ -5,6 +5,8 @@ use crate::application_query::ApplicationQueryBindingReference;
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum ApplicationManagedIndexSourceScope {
     SameAdmittedScope,
+    /// Share immutable predecessor pages at birth through ordered-events membership.
+    OrderedPredecessor,
 }
 /// Source projection has no replayed or inferred parameters.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]

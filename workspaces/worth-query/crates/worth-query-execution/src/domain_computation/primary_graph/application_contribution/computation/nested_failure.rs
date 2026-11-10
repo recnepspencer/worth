@@ -11,7 +11,7 @@ pub enum MemberComputeFailure<E> {
 }
 
 /// Construction requires the value removed from the execution owner's latch.
-pub(in crate::domain_computation::primary_graph) struct TakenNestedFailure<E> {
+pub struct TakenNestedFailure<E> {
     cause: NestedComputationStop,
     failure: E,
 }

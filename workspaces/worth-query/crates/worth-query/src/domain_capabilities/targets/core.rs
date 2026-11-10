@@ -231,11 +231,11 @@ impl WorthQueryDomainCapabilityTarget {
     }
 
     pub fn target_identity(&self) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-        Ok(self.shared.target_identity()?)
+        self.shared.target_identity()
     }
 
     pub fn binding_identity(&self) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-        Ok(self.shared.binding_identity()?)
+        self.shared.binding_identity()
     }
 
     pub fn semantics(&self) -> &WorthQueryDomainCapabilityTargetSemantics {

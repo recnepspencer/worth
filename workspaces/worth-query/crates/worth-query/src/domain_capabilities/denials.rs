@@ -59,14 +59,12 @@ impl WorthQueryDomainCapabilityProgressionDenial {
         message: impl Into<String>,
     ) -> Self {
         let message = message.into();
-        let failure_identity = (|| {
-            Ok(compose_progression_denial_failure_identity(
-                kind,
-                category,
-                target_kind,
-                &request_identity,
-            )?)
-        })();
+        let failure_identity = compose_progression_denial_failure_identity(
+            kind,
+            category,
+            target_kind,
+            &request_identity,
+        );
         Self {
             kind,
             category,
@@ -104,7 +102,7 @@ impl WorthQueryDomainCapabilityProgressionDenial {
     pub fn failure_identity(
         &self,
     ) -> Result<&WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-        Ok(self.failure_identity.as_ref().map_err(|cause| *cause)?)
+        self.failure_identity.as_ref().map_err(|cause| *cause)
     }
 
     pub fn failure_for_reporting(&self) -> Result<&str, IdentityDerivationDenial> {
@@ -122,17 +120,15 @@ fn compose_progression_denial_failure_identity(
     target_kind: WorthQueryDomainCapabilityTargetKind,
     request_identity: &WorthQueryEvidenceIdentity,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        domain_capability_scope_encoder("worth_query_domain_capability_progression_denial_v1")
-            .field_shape(WorthQueryEvidenceTag::new("kind"), kind.as_str())
-            .field_shape(WorthQueryEvidenceTag::new("category"), category)
-            .field_shape(
-                WorthQueryEvidenceTag::new("target_kind"),
-                target_kind.as_str(),
-            )
-            .field_evidence_identity(WorthQueryEvidenceTag::new("request"), request_identity)
-            .seal()?,
-    )
+    domain_capability_scope_encoder("worth_query_domain_capability_progression_denial_v1")
+        .field_shape(WorthQueryEvidenceTag::new("kind"), kind.as_str())
+        .field_shape(WorthQueryEvidenceTag::new("category"), category)
+        .field_shape(
+            WorthQueryEvidenceTag::new("target_kind"),
+            target_kind.as_str(),
+        )
+        .field_evidence_identity(WorthQueryEvidenceTag::new("request"), request_identity)
+        .seal()
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

@@ -76,14 +76,14 @@ impl WorthQueryPendingApplicationQueryGovernance {
     }
 }
 
-pub(in crate::domain_computation) struct WorthQueryApplicationInternalComputationAuthority {
+pub struct WorthQueryApplicationInternalComputationAuthority {
     binding: WorthQueryApplicationGovernanceBinding,
     internal_field_rules: GovernedInternalFieldRules,
     disclosure_value: AspectValue,
 }
 
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation) struct WorthQueryApplicationDisclosureDecision {
+pub struct WorthQueryApplicationDisclosureDecision {
     classification: String,
     disclosed: BTreeMap<ApplicationQueryResultSlotKey, AdmittedDisclosureRule>,
     omitted: BTreeMap<ApplicationQueryResultSlotKey, AdmittedDisclosureRule>,

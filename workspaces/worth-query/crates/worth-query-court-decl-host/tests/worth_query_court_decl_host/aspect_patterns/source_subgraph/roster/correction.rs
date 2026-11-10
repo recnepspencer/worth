@@ -89,6 +89,8 @@ impl ApplicationCorrectionBinding<Schema> for UndoRetire {
             .with_relations([
                 DeclaredPreImageRelationLocus::from_relation(OwnedBy::reference()),
                 DeclaredPreImageRelationLocus::from_relation(Next::reference()),
+                DeclaredPreImageRelationLocus::from_relation(Operand::reference()),
+                DeclaredPreImageRelationLocus::from_relation(Head::reference()),
             ]),
         )
     }
@@ -158,6 +160,7 @@ impl ApplicationCorrectionBinding<Schema> for UndoRetire {
                 key,
                 value,
                 next: None,
+                operand: None,
             });
             index += 1;
         }
@@ -180,6 +183,27 @@ impl ApplicationCorrectionBinding<Schema> for UndoRetire {
                     .find(|row| &row.key == from)
                     .ok_or(InvalidPreImage)?
                     .next = Some(to.clone());
+            }
+        }
+        let links = DeclaredPreImageRelationLocus::from_relation(Operand::reference());
+        for index in 0..prior.relation_count(&links).ok_or(MissingPreImage)? {
+            let relation = prior.relation_at(&links, index).ok_or(MissingPreImage)?;
+            if let Some((from, to)) = relation.before() {
+                let from = &ids
+                    .iter()
+                    .find(|(id, _)| *id == from)
+                    .ok_or(InvalidPreImage)?
+                    .1;
+                let to = &ids
+                    .iter()
+                    .find(|(id, _)| *id == to)
+                    .ok_or(InvalidPreImage)?
+                    .1;
+                members
+                    .iter_mut()
+                    .find(|row| &row.key == from)
+                    .ok_or(InvalidPreImage)?
+                    .operand = Some(to.clone());
             }
         }
         Ok(Restore {

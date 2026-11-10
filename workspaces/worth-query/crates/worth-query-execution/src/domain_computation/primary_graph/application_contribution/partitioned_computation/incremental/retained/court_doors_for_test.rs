@@ -247,23 +247,21 @@ impl<Key, Item, Reduced> RetainedPartitions<Key, Item, Reduced> {
     }
 }
 
+type RetainedPartitionParts<Key, Item, Reduced> = (
+    Items<Item>,
+    ItemDigests,
+    RetainedCall,
+    Arc<worth_execution::ExecutionOrderedMap<PartitionItemId, RetainedCall>>,
+    Arc<crate::domain_computation::primary_graph::invariant_projection::ComputationCallSequence>,
+    Arc<ComputationPartitionRouting>,
+    super::super::partition_metadata::PartitionMetadata<Key>,
+    worth_execution::ExecutionRetainedRun<Reduced>,
+    NativeReductionTree<Reduced, fn(&Reduced, &Reduced) -> Reduced>,
+);
+
 impl<Key, Item, Reduced> RetainedPartitions<Key, Item, Reduced> {
     #[doc(hidden)]
-    pub fn into_parts_for_test(
-        self,
-    ) -> (
-        Items<Item>,
-        ItemDigests,
-        RetainedCall,
-        Arc<worth_execution::ExecutionOrderedMap<PartitionItemId, RetainedCall>>,
-        Arc<
-            crate::domain_computation::primary_graph::invariant_projection::ComputationCallSequence,
-        >,
-        Arc<ComputationPartitionRouting>,
-        super::super::partition_metadata::PartitionMetadata<Key>,
-        worth_execution::ExecutionRetainedRun<Reduced>,
-        NativeReductionTree<Reduced, fn(&Reduced, &Reduced) -> Reduced>,
-    ) {
+    pub fn into_parts_for_test(self) -> RetainedPartitionParts<Key, Item, Reduced> {
         (
             self.items,
             self.digests,

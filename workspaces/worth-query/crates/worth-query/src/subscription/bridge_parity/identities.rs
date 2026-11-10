@@ -161,26 +161,21 @@ pub(super) fn bridge_parity_failure_identity(
     source_identity: &WorthQueryEvidenceIdentity,
     evidence: &[WorthQueryEvidenceIdentity],
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "query_subscription_bridge_parity_failure_v1",
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("failure_kind"),
-                failure_kind.as_str(),
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("parity_class"),
-                parity_class.as_str(),
-            )
-            .field_shape(WorthQueryEvidenceTag::new("reason"), reason)
-            .field_evidence_identity(WorthQueryEvidenceTag::new("source"), source_identity)
-            .field_evidence_identity_sequence(
-                WorthQueryEvidenceTag::new("evidence"),
-                evidence.iter(),
-            )
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "query_subscription_bridge_parity_failure_v1",
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("failure_kind"),
+            failure_kind.as_str(),
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("parity_class"),
+            parity_class.as_str(),
+        )
+        .field_shape(WorthQueryEvidenceTag::new("reason"), reason)
+        .field_evidence_identity(WorthQueryEvidenceTag::new("source"), source_identity)
+        .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("evidence"), evidence.iter())
+        .seal()
 }

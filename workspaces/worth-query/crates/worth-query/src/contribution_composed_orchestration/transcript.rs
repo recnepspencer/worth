@@ -157,14 +157,14 @@ pub(crate) fn orchestrate_declaration_with_contributions_on_handle<
         materialization_policy_value,
         linked.clone(),
     )?;
-    Ok(finalize_transcript(
+    finalize_transcript(
         request_descriptor_value,
         request_digest_value,
         materialization_policy,
         declaration,
         linked,
         intent_results,
-    )?)
+    )
 }
 
 fn finalize_transcript<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>(

@@ -1,7 +1,8 @@
 //! Exact original source/input and producer/output joins, after fresh diagnostics.
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) use evaluation::require_compared;
 use super::WorthQueryApplicationInspectionTarget;
 mod evaluation;
-pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) use evaluation::require_compared;
 mod output_refusal;
 pub use evaluation::{
     WorthQueryApplicationProducerEvaluation, WorthQueryProducerEvaluationDecision,
@@ -50,7 +51,7 @@ pub enum WorthQueryProducerConnectionDenial {
 }
 
 /// Only the connection owner can attach output evidence after diagnostic admission.
-pub(super) enum ConnectionRefusal {
+pub enum ConnectionRefusal {
     General(WorthQueryProducerConnectionDenial),
     Output(WorthQueryProducerOutputConnectionDenial),
     Capture(

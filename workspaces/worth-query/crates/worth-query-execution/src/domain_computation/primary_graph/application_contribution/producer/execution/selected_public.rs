@@ -344,12 +344,11 @@ where
     if !source_matches {
         return Err(Stop::MovedHead);
     }
-    if let Some(control) = control {
-        if !source_readmission::is_current_selected_product::<S, B>(runtime, control.selected())
+    if let Some(control) = control
+        && !source_readmission::is_current_selected_product::<S, B>(runtime, control.selected())
             .map_err(Stop::CurrentHead)?
-        {
-            return Err(Stop::CurrentMovedHead);
-        }
+    {
+        return Err(Stop::CurrentMovedHead);
     }
     Ok(())
 }

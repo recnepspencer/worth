@@ -1,5 +1,4 @@
 use crate::basis_lifecycle::BasisFamily;
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceTag};
 
 use super::super::inventory_rows::{

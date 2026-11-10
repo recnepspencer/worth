@@ -1,3 +1,4 @@
+#[cfg(test)]
 use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_foundational::facade::{AspectKey, AspectValue, CanonicalFieldPath, FieldKey};
 

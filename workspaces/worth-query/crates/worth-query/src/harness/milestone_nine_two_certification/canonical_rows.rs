@@ -5,7 +5,6 @@ use super::{
     MilestoneNineTwoCertificationRow, MilestoneNineTwoPerturbationClass,
     SubscriptionLifecycleCertificationBundle,
 };
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::harness::certification::{HostileExpectation, ParityAnchor};
 use crate::live::LiveQueryFamily;
 use crate::subscription::QuerySubscriptionMaintenanceDeltaKind;

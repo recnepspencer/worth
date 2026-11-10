@@ -19,7 +19,7 @@ use crate::domain_computation::primary_graph::SourceInvalidationOwner;
 /// the selected native root remains borrowed from the admitted Product read.
 /// The record's whole root set is kept so a consumer of several outputs can
 /// continue to its next pending root once this one is resolved.
-pub(in crate::domain_computation::primary_graph) struct SelectedPendingConsumedOutput<'selected> {
+pub struct SelectedPendingConsumedOutput<'selected> {
     roots: Arc<[ConsumedOutputEvidence]>,
     index: usize,
     selected: &'selected PositionedRelationalSnapshot,

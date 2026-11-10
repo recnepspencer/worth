@@ -50,7 +50,7 @@ fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
         .primary_graph_for_test()
         .unwrap();
     let handle = graph.integration_handle_for_test();
-    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+    let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
     let status_ref = AccountStatus::at("AccountStatus");
     let label_ref = AccountLabel::at("AccountLabel");
     let status = graph
@@ -189,7 +189,7 @@ fn unchanged_own_evidence_waits_for_a_pending_equal_successor() {
         .primary_graph_for_test()
         .unwrap();
     let handle = graph.integration_handle_for_test();
-    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+    let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
     let status_ref = AccountStatus::at("AccountStatus");
     let label_ref = AccountLabel::at("AccountLabel");
     let status = graph
@@ -315,7 +315,7 @@ pub fn assert_source_only_alias_verification(
     };
     assert_eq!(verify(), Ok(ConsumedOutputVerification::Current));
     let _oracle =
-        worth_query_execution::facade::domain_computation::WorthQueryInvalidationEquivalenceForTest::arm_for_invalidation_resources_for_test(&(*owner.resources_for_test()));
+        worth_query_execution::facade::domain_computation::WorthQueryInvalidationEquivalenceForTest::arm_for_invalidation_resources_for_test(owner.resources_for_test());
     assert_eq!(
         verify(),
         Err(ConsumedOutputVerificationStop::Unavailable),

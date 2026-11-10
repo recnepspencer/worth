@@ -3,41 +3,8 @@ use super::super::roster::*;
 use super::owned_members::{created, image};
 use super::*;
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
-fn retire(
-    host: &world::Host,
-    request: &world::Request<'_, '_, '_>,
-    input: Retire,
-) -> WorthQueryApplicationMutationOutcome<edit::Denial, edit::Edited> {
-    request
-        .advanced()
-        .mutate(input)
-        .without_source()
-        .idempotency(&"refuse-roster".to_owned())
-        .execute_in_program(host, ExecutionAllocationPolicy::SystemAllocation)
-        .unwrap()
-}
-fn denied(
-    outcome: WorthQueryApplicationMutationOutcome<edit::Denial, edit::Edited>,
-) -> WorthQueryApplicationCommitDenial {
-    let WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::Denied(
-        denial,
-    )) = outcome
-    else {
-        panic!("{outcome:?}");
-    };
-    denial
-}
-fn command(count: usize) -> Retire {
-    Retire {
-        key: "roster".into(),
-        members: image(count)
-            .members
-            .into_iter()
-            .map(|row| row.key)
-            .collect(),
-        replacement: None,
-    }
-}
+mod retirement;
+use retirement::{command, denied, retire};
 #[test]
 fn a_foreign_member_and_a_repeated_member_have_distinct_native_refusals() {
     for repeated in [false, true] {
@@ -270,4 +237,95 @@ fn a_member_cannot_restore_without_its_anchor_output() {
         request.retain_current_read().unwrap().selected_commit()
     );
     super::owned_members::assert_absent(&request);
+}
+
+#[test]
+fn a_changed_member_key_leaves_the_original_inverse_incomplete() {
+    refuse_member(
+        world::Fault::ChangedRestoredKey,
+        WorthQueryRelationPreImageDenial::IncompleteInverse,
+    );
+}
+#[test]
+fn two_fresh_members_with_the_original_key_refuse_as_repeated() {
+    refuse_member(
+        world::Fault::RepeatedRestoredMember,
+        WorthQueryRelationPreImageDenial::RepeatedInverse,
+    );
+}
+#[test]
+fn a_restored_member_under_another_live_owner_refuses_as_foreign() {
+    refuse_member(
+        world::Fault::ForeignRestoredMember,
+        WorthQueryRelationPreImageDenial::ForeignEndpoint,
+    );
+}
+#[test]
+fn recreating_a_member_that_was_never_deleted_refuses_as_extra() {
+    refuse_member(
+        world::Fault::ExtraRestoredMember,
+        WorthQueryRelationPreImageDenial::ExtraInverse,
+    );
+}
+#[test]
+fn a_restored_members_fields_must_equal_the_retained_preimage() {
+    refuse_member(
+        world::Fault::ChangedRestoredValue,
+        WorthQueryRelationPreImageDenial::RestoredFieldMismatch,
+    );
+}
+fn refuse_member(fault: world::Fault, expected: WorthQueryRelationPreImageDenial) {
+    use super::owned_members::{delete_one, local_image, local_snapshot};
+    use world::Fault::ExtraRestoredMember;
+
+    let host = world::install(fault, Hashes::default());
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.runtime().request(&principal, &scope);
+    created(&host, &request, local_image());
+    let original = local_snapshot(&request).members[0].0;
+    let receipt = delete_one(&host, &request);
+    let before = local_snapshot(&request);
+    let retained = request.retain_current_read().unwrap();
+    let commit = retained.selected_commit();
+    let limits = WorthQueryCorrectionHistoryLimits::new(None, std::num::NonZeroUsize::MIN);
+    let selected = request.corrections().select(&receipt, limits).unwrap();
+    let preparation = request
+        .corrections()
+        .reverse(&selected)
+        .idempotency("refuse-one-member")
+        .limits(limits)
+        .prepare()
+        .unwrap();
+    let WorthQueryApplicationCorrectionPreparation::Prepared(prepared) = preparation else {
+        panic!("inverse did not prepare");
+    };
+    let result = prepared.publish().unwrap();
+    let WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::Denied(
+        denial,
+    )) = result
+    else {
+        panic!("{fault:?}: {result:?}");
+    };
+    let failure = denial
+        .relation_preimage_failure()
+        .unwrap_or_else(|| panic!("{fault:?}: {denial:?}"));
+    assert_eq!(failure.kind(), expected, "{fault:?}");
+    if fault == ExtraRestoredMember {
+        assert!(
+            matches!(failure.affected_records(), [worth_relational::facade::transactions::RecordRef::Entity(id)] if *id != original)
+        );
+    } else {
+        assert_eq!(
+            failure.affected_records(),
+            &[worth_relational::facade::transactions::RecordRef::Entity(
+                original
+            )]
+        );
+    }
+    assert_eq!(
+        commit,
+        request.retain_current_read().unwrap().selected_commit()
+    );
+    assert_eq!(before, local_snapshot(&request));
 }

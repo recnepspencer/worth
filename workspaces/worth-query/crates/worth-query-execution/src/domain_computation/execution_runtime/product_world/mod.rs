@@ -41,7 +41,6 @@ pub(crate) use receipt::{
     WorthQueryCommitHistoryHold, WorthQueryProductPublicationReceipt,
     WorthQueryReservedProductPublicationReceipt,
 };
-pub(in crate::domain_computation) use relational_publication::preserve_delivery_authority;
 pub use relational_publication::{
     WorthQueryPerformedRelationalProductChange,
     WorthQueryPerformedRelationalProductChangeDeliveryDenial,

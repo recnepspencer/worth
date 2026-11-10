@@ -1,3 +1,4 @@
+#[cfg(test)]
 use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity::CanonicalResultShapeDigest;
 use crate::intent_admission::WorthQueryIntentDecisionTraceEnvelope;

@@ -26,7 +26,7 @@ fn own_write_dirty_marks_cannot_be_cleared_by_postcondition_comparison() {
             .primary_graph_for_test()
             .unwrap()
             .integration_handle_for_test();
-        let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+        let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
         handle.with_runtime(execution, |runtime| {
             let basis = runtime
                 .admit_branch_basis(&runtime.main_branch_identity())
@@ -41,7 +41,7 @@ fn own_write_dirty_marks_cannot_be_cleared_by_postcondition_comparison() {
                 runtime,
                 &snapshot,
                 &selected,
-                &(*cell.get().unwrap().settlement_identity_for_test()),
+                cell.get().unwrap().settlement_identity_for_test(),
             );
             assert!(
                 matches!(

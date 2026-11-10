@@ -80,7 +80,7 @@ pub struct InspectionRead<'a, 'storage, Schema, Scope> {
     memory: &'storage mut Option<ExecutionMemoryReservation>,
 }
 
-pub(super) struct InspectionComparisonPreparation<'original> {
+pub struct InspectionComparisonPreparation<'original> {
     pub(super) before: &'original super::super::application_observation::WorthQueryApplicationQueryObservation,
     pub(super) pending: crate::domain_computation::authorization::application_disclosure::WorthQueryPendingApplicationQueryGovernance,
 }

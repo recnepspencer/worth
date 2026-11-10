@@ -188,7 +188,6 @@ pub(super) fn rebuild_runtime_from_plan(
         unshared_state(&mut restored)?
             .history
             .install_recovered_canonical_inventory(
-                lane,
                 execution,
                 recovered_canonical_commits,
                 &recovered_symbols,

@@ -8,7 +8,7 @@ use super::super::super::facts::ProjectionMaterializedFactPostureKind;
 pub(crate) fn compose_extraction_counters_digest(
     counters: &ProjectionFactExtractionCounters,
 ) -> Result<String, IdentityDerivationDenial> {
-    Ok(seal(
+    seal(
         consumption_scope_encoder("projection_fact_extraction_counters_v1")
             .field_usize(
                 WorthQueryEvidenceTag::new("declared"),
@@ -34,7 +34,7 @@ pub(crate) fn compose_extraction_counters_digest(
                 WorthQueryEvidenceTag::new("authority_reopen"),
                 counters.authority_reopen_count(),
             ),
-    )?)
+    )
 }
 
 pub(crate) fn compose_materialized_fact_posture_digest(
@@ -58,5 +58,5 @@ pub(crate) fn compose_materialized_fact_posture_digest(
     if let Some(runtime_origin) = runtime_origin_digest {
         encoder = encoder.field_shape(WorthQueryEvidenceTag::new("runtime_origin"), runtime_origin);
     }
-    Ok(seal(encoder)?)
+    seal(encoder)
 }

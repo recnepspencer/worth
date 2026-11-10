@@ -52,7 +52,7 @@ fn compose_invariant_capability_payload_identity(
         ),
         None => identity.field_shape(WorthQueryEvidenceTag::new("invariant_registration"), "none"),
     };
-    Ok(identity.seal()?)
+    identity.seal()
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -72,12 +72,7 @@ impl WorthQueryInvariantCapabilityContributionPayload {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_graph_capability(
-            posture,
-            semantic_code,
-            detail,
-            None,
-        )?)
+        Self::with_graph_capability(posture, semantic_code, detail, None)
     }
 
     pub fn with_graph_capability(
@@ -86,14 +81,7 @@ impl WorthQueryInvariantCapabilityContributionPayload {
         detail: impl Into<String>,
         graph_capability: Option<WorthQueryGraphCapabilityRuntimeSemantics>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_runtime_semantics(
-            posture,
-            semantic_code,
-            detail,
-            graph_capability,
-            None,
-            None,
-        )?)
+        Self::with_runtime_semantics(posture, semantic_code, detail, graph_capability, None, None)
     }
 
     pub fn with_graph_invariant_denial(
@@ -102,14 +90,14 @@ impl WorthQueryInvariantCapabilityContributionPayload {
         detail: impl Into<String>,
         graph_invariant_denial: Option<WorthQueryGraphInvariantDenialRuntimeSemantics>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_runtime_semantics(
+        Self::with_runtime_semantics(
             posture,
             semantic_code,
             detail,
             None,
             graph_invariant_denial,
             None,
-        )?)
+        )
     }
 
     pub fn with_invariant_registration(
@@ -118,14 +106,14 @@ impl WorthQueryInvariantCapabilityContributionPayload {
         detail: impl Into<String>,
         invariant_registration: Option<WorthQueryInvariantRegistrationRuntimeSemantics>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_runtime_semantics(
+        Self::with_runtime_semantics(
             posture,
             semantic_code,
             detail,
             None,
             None,
             invariant_registration,
-        )?)
+        )
     }
 
     pub fn with_runtime_semantics(

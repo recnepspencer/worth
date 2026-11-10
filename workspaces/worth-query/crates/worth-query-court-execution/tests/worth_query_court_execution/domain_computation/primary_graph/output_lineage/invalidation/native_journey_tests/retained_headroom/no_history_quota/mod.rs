@@ -56,7 +56,7 @@ fn no_position_policy_preserves_funded_history_and_original_reader_currentness()
         let label_ref = AccountLabel::at("AccountLabel");
         let label = graph.layout_for_test().field_locator_for_test(label_ref.entity(), label_ref.aspect(), label_ref.field()).unwrap().clone();
         let handle = graph.integration_handle_for_test();
-        let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+        let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
         let execution = custody.borrowed_request_for_test();
         handle.with_runtime_mut_for_test(&execution, |runtime| {
             let (original_handle, before) = snapshot(runtime);

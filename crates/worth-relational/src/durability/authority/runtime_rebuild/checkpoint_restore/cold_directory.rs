@@ -146,7 +146,6 @@ pub(super) fn restore(
     )?;
     history
         .restore_branch_cells(
-            lane,
             &checkpoint.branch_cells,
             &checkpoint.branch_lifecycle,
             &checkpoint.retired_branch_names,

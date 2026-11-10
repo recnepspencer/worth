@@ -106,7 +106,7 @@ mod principal;
 #[path = "model.rs"]
 mod storage_model;
 #[path = "../../../../../../../worth-query-certification/fixtures/consumer_values/src/integer_orientation.rs"]
-mod worth_query_consumer_values;
+pub mod worth_query_consumer_values;
 
 #[path = "../../../../../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/planar_read.rs"]
 mod planar_read;

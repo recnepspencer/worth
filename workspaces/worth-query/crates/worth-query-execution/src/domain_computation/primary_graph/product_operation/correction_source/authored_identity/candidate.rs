@@ -128,7 +128,9 @@ impl PreparedAuthoredIdentity {
                 let spec = matched.ok_or(Identity(
                     "authored inverse output has no actual creation intent",
                 ))?;
-                if spec.fields.get(&self.locator) != Some(&self.key) {
+                if self.declaration.live_member_owner().is_none()
+                    && spec.fields.get(&self.locator) != Some(&self.key)
+                {
                     return Err(Identity(
                         "authored inverse changed the declared logical key",
                     ));

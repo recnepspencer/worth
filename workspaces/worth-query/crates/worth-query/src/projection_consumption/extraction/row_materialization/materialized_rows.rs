@@ -207,7 +207,7 @@ impl ExtractedRowFacts {
             + self.view_local_identities.len()
             + self.display_fields.len()
             + self.derived_fields.len();
-        Ok(ConsumedProjectionFactSet::new(
+        ConsumedProjectionFactSet::new(
             ConsumedProjectionContractProvenance::from_contract(contract),
             ConsumedProjectionSourceTruth::from_contract(
                 contract,
@@ -233,7 +233,7 @@ impl ExtractedRowFacts {
                 effect_continuity_facts: Vec::new(),
                 relation_endpoints: Vec::new(),
             },
-        )?)
+        )
     }
 }
 

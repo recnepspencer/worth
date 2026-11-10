@@ -62,8 +62,5 @@ fn imported_artifact(
     crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
 > {
     let artifact = WorthQueryBridgeMutationArtifactIdentity::imported(role, artifact)?;
-    Ok(WorthQueryMutationEvidenceDigest::source_identity(
-        role,
-        artifact.evidence_identity(),
-    )?)
+    WorthQueryMutationEvidenceDigest::source_identity(role, artifact.evidence_identity())
 }

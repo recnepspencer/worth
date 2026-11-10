@@ -235,6 +235,7 @@ pub(crate) fn apply_retained_entity_selection_draft(
         identity,
         &outcome.effect.publication.changed_records,
         &outcome.effect.adjacency.deltas,
+        outcome.effect.publication.has_entity_deletions,
         None,
     );
     Ok(AppliedMutationDraft {

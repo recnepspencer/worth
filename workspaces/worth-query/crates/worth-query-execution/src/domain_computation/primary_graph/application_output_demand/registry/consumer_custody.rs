@@ -8,7 +8,7 @@ pub enum ConsumerCustody {
     Handoff(ConsumerHandoff),
     Released,
 }
-pub(in crate::domain_computation::primary_graph) struct ConsumerHandoff {
+pub struct ConsumerHandoff {
     identity: Arc<RecordedSettlementIdentity>,
     _interest: WorthQueryOutputDemandInterest,
 }

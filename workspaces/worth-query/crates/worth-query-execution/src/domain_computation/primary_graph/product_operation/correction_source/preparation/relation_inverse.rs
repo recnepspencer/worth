@@ -59,12 +59,17 @@ impl WorthQueryPreparedCorrectionSource {
                     .ok_or_else(missing)
             })
             .collect::<Result<_, _>>()?;
+        let members = self.member_inverses(retained, layout, execution)?;
+        let selectors = members.selectors();
         let inverse = candidate
-            .relation_mutation_footprint(execution, &kinds)
+            .relation_mutation_footprint(execution, &kinds, &selectors, members.kinds())
             .map_err(|cause| {
                 base("inverse relation mutation projection refused")
                     .with_native_preparation_error(cause)
             })?;
+        let restored_entities = inverse
+            .restored_entities()
+            .map_err(super::member_inverse::refused)?;
         let original = retained.relations();
         let actual = inverse.relations();
         let memory = execution
@@ -80,11 +85,10 @@ impl WorthQueryPreparedCorrectionSource {
                 let remap = |id,
                              context: &mut worth_execution::MapKernelContext<'_, '_>|
                  -> Result<EntityId, Denial> {
-                    checkpoint(context, inverse.restored_entities().len() as u64).map_err(
-                        |cause| request_stop(worth_execution::WorkCeilingDenial::Stopped(cause)),
-                    )?;
-                    Ok(inverse
-                        .restored_entities()
+                    checkpoint(context, restored_entities.len() as u64).map_err(|cause| {
+                        request_stop(worth_execution::WorkCeilingDenial::Stopped(cause))
+                    })?;
+                    Ok(restored_entities
                         .iter()
                         .find_map(|(old, fresh)| (*old == id).then_some(*fresh))
                         .unwrap_or(id))
@@ -199,7 +203,7 @@ impl WorthQueryPreparedCorrectionSource {
         Ok(())
     }
 }
-fn base(detail: &str) -> Denial {
+pub(super) fn base(detail: &str) -> Denial {
     Denial::new(
         WorthQueryProviderSessionDenialKind::ProviderRejected,
         WorthQueryProviderSessionProtocolStage::Commit,
@@ -207,10 +211,10 @@ fn base(detail: &str) -> Denial {
         Default::default(),
     )
 }
-fn fail(kind: Kind, records: Vec<RecordRef>) -> Denial {
+pub(super) fn fail(kind: Kind, records: Vec<RecordRef>) -> Denial {
     base("recorded inverse relation material does not match its source")
         .with_relation_preimage_failure(Failure::new(kind, records))
 }
-fn request_stop(cause: worth_execution::WorkCeilingDenial) -> Denial {
+pub(super) fn request_stop(cause: worth_execution::WorkCeilingDenial) -> Denial {
     Denial::checked_read_stopped(crate::domain_computation::primary_graph::application_contribution::publication_execution_kind(cause), WorthQueryProviderSessionProtocolStage::Commit, "relation inverse request stopped")
 }

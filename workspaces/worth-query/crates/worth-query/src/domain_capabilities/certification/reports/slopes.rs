@@ -76,10 +76,7 @@ pub fn worth_query_domain_capability_slope_report(
         crate::domain_capabilities::certification::install_domain_capability_certification(
             execution,
         );
-    Ok(worth_query_domain_capability_slope_report_in(
-        representative,
-        installation.contributions(),
-    )?)
+    worth_query_domain_capability_slope_report_in(representative, installation.contributions())
 }
 
 pub(crate) fn worth_query_domain_capability_slope_report_in(
@@ -129,7 +126,7 @@ fn slope_digest(
     scaled: &[super::scaled::WorthQueryDomainCapabilityScaledEvidence; 3],
     projector: impl Fn(&super::scaled::WorthQueryDomainCapabilityScaledEvidence) -> (usize, &str),
 ) -> Result<String, IdentityDerivationDenial> {
-    Ok(compose_slope_digest(
+    compose_slope_digest(
         scaled
             .iter()
             .enumerate()
@@ -138,7 +135,7 @@ fn slope_digest(
                 compose_slope_scale_entry_digest(label, index + 1, width, digest)
             })
             .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?,
-    )?)
+    )
 }
 
 #[cfg(test)]

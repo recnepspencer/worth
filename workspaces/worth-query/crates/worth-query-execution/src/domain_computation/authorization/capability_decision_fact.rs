@@ -13,7 +13,7 @@ use super::{
     WorthQueryRuntimeTimeSample,
 };
 
-pub(in crate::domain_computation) struct WorthQueryRetainedCapabilityAuthorization {
+pub struct WorthQueryRetainedCapabilityAuthorization {
     principal: WorthQueryPrincipalCurrentnessDependency,
     decision: WorthQueryAuthorizationDecisionFact,
     capability_authority_identity: Arc<str>,

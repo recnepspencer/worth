@@ -84,7 +84,7 @@ fn exercise(worker: bool, fault: Fault) {
     let contacts = host.producer_contacts_on_this_thread_for_test();
     let discovery = installed::observation::Observation::begin();
     let (_, denial) =
-        super::super::courts::checkout(&document, &request, before, selection.clone(), 0x1255_f1)
+        super::super::courts::checkout(&document, &request, before, selection.clone(), 0x0012_55f1)
             .unwrap_err();
     let WorthQueryHistoryNavigationAdvanceDenial::Outputs(
         WorthQueryHistoryOutputDenial::Preparation(

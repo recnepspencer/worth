@@ -32,11 +32,11 @@ fn pending_required_prerequisite_preserves_its_retryable_operation() {
         WorthQueryOutputDemandRecoveryPosture::Retryable
     );
     assert!(matches!(
-        (*(*(*registry.state_for_test())
+        *(*(*registry.state_for_test())
             .lock()
             .unwrap()
             .records_for_test())[&demand_key]
-            .state_for_test()),
+            .state_for_test(),
         DemandState::Scheduled
     ));
 }

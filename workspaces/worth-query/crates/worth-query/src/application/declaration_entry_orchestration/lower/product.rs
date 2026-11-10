@@ -13,7 +13,6 @@ use crate::application::{
     WorthQueryDeclarationRouteIntent, WorthQueryDeclarationRoutePlanChecked,
     WorthQueryDomainEntryMarker, WorthQueryDomainOperatingContext,
 };
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::target_binding::{resolve_admitted_progression_target, WorthQueryBindingTargetWitness};
 
 use super::super::artifacts::canonical_digest_token;

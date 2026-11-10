@@ -65,7 +65,7 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
     where
         I: WorthQueryDeclarationInput<D>,
     {
-        Ok(prepare_continuation_from_target_on_handle(self, request)?)
+        prepare_continuation_from_target_on_handle(self, request)
     }
 
     pub fn prepare_continuation_from_context<I>(
@@ -112,7 +112,7 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
     where
         I: WorthQueryDeclarationInput<D>,
     {
-        Ok(prepare_continuation_from_context_on_handle(self, request)?)
+        prepare_continuation_from_context_on_handle(self, request)
     }
 
     pub fn execute_prepared_continuation<I>(
@@ -170,9 +170,9 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
     where
         I: WorthQueryDeclarationInput<D>,
     {
-        Ok(execute_prepared_continuation_on_handle(
+        execute_prepared_continuation_on_handle(
             self,
             WorthQueryExecutePreparedContinuationRequest::new(prepared),
-        )?)
+        )
     }
 }

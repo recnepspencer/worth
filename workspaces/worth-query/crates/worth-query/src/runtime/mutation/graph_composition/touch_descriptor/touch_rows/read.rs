@@ -32,11 +32,11 @@ pub(in super::super) fn derive_read_touch_rows(
     verbs: impl IntoIterator<Item = WorthQueryGraphTouchReadVerb>,
     shape: &WorthQueryGraphReadTouchShape,
 ) -> Result<Vec<WorthQueryGraphTouchDescriptorRow>, IdentityDerivationDenial> {
-    Ok(verbs
+    verbs
         .into_iter()
         .enumerate()
         .map(|(component_index, verb)| read_touch_row(collection, component_index, verb, shape))
-        .collect::<Result<Vec<_>, _>>()?)
+        .collect::<Result<Vec<_>, _>>()
 }
 
 fn read_touch_row(
@@ -45,24 +45,22 @@ fn read_touch_row(
     verb: WorthQueryGraphTouchReadVerb,
     shape: &WorthQueryGraphReadTouchShape,
 ) -> Result<WorthQueryGraphTouchDescriptorRow, IdentityDerivationDenial> {
-    Ok(WorthQueryGraphTouchDescriptorRow::new(
-        WorthQueryGraphTouchDescriptorRowInput {
-            component_index,
-            mutation_family: WorthQueryMutationFamily::Assertion,
-            read_verb: Some(verb),
-            program_step_kind: None,
-            lifecycle_family: None,
-            declared_collection: Some(WorthQueryMutationTargetCollectionIdentity::new(
-                "graph-read-touch-row",
-                collection,
-            )?),
-            relation_kind_id: None,
-            declared_symbol: None,
-            declared_aspect_operations: Vec::new(),
-            touched_aspects: shape.aspect_touches().to_vec(),
-            has_symbolic_target_reference: false,
-            has_existing_truth_binding: false,
-            symbolic_aspect_reference_count: 0,
-        },
-    )?)
+    WorthQueryGraphTouchDescriptorRow::new(WorthQueryGraphTouchDescriptorRowInput {
+        component_index,
+        mutation_family: WorthQueryMutationFamily::Assertion,
+        read_verb: Some(verb),
+        program_step_kind: None,
+        lifecycle_family: None,
+        declared_collection: Some(WorthQueryMutationTargetCollectionIdentity::new(
+            "graph-read-touch-row",
+            collection,
+        )?),
+        relation_kind_id: None,
+        declared_symbol: None,
+        declared_aspect_operations: Vec::new(),
+        touched_aspects: shape.aspect_touches().to_vec(),
+        has_symbolic_target_reference: false,
+        has_existing_truth_binding: false,
+        symbolic_aspect_reference_count: 0,
+    })
 }

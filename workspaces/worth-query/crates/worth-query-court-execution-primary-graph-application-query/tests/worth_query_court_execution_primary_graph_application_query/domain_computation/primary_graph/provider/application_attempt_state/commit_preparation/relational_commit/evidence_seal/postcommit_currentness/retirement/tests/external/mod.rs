@@ -35,11 +35,11 @@ fn external_pair_and_adjacency_remain_current_after_owned_endpoint_retirement() 
                 "account-1",
             );
             let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
-            let relation = (*(*graph
+            let relation = *(*graph
                 .layout_for_test())
                 .relation(AccountAllActivity::reference().name())
                 .unwrap()
-                .kind_for_test());
+                .kind_for_test();
             let kind = (*graph
                 .layout_for_test())
                 .entity_kind_for_test(ActivityIdentity::at("ActivityIdentity").entity())
@@ -56,16 +56,16 @@ fn external_pair_and_adjacency_remain_current_after_owned_endpoint_retirement() 
                 ).unwrap()
                 .unwrap()
             });
-            let removed = (*relations
+            let removed = *relations
                 .iter()
                 .find(|entry| (*entry.to_for_test()) == owned)
                 .unwrap()
-                .relation_id_for_test());
-            let retained = (*relations
+                .relation_id_for_test();
+            let retained = *relations
                 .iter()
                 .find(|entry| (*entry.to_for_test()) != owned)
                 .unwrap()
-                .relation_id_for_test());
+                .relation_id_for_test();
             let facts = vec![
                 Fact::Entity {
                     entity_id: owned,

@@ -35,17 +35,16 @@ pub(super) fn adjacency(
     while let Some(id) = ids.try_next(|units, bytes| work.prepare(units, bytes))? {
         work.charge(1)?;
         work.note_adjacency_work_units(1);
-        if let Some(record) = record_metadata::relation(execution, Some(view), *id, work)? {
-            if record.kind == kind
-                && (if outgoing {
-                    record.source
-                } else {
-                    record.target
-                }) == entity
-            {
-                work.grow_vec(&mut records)?;
-                records.push(record);
-            }
+        if let Some(record) = record_metadata::relation(execution, Some(view), *id, work)?
+            && record.kind == kind
+            && (if outgoing {
+                record.source
+            } else {
+                record.target
+            }) == entity
+        {
+            work.grow_vec(&mut records)?;
+            records.push(record);
         }
     }
     Ok(records)

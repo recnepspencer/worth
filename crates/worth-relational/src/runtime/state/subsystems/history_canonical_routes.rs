@@ -146,7 +146,6 @@ impl HistorySubsystem {
 
     pub(crate) fn rebuild_recovered_canonical_routes(
         &mut self,
-        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         commits: impl IntoIterator<Item = Arc<crate::history::data::PositionedCanonicalCommit>>,
     ) -> Result<(), &'static str> {
         let routes = Arc::new(

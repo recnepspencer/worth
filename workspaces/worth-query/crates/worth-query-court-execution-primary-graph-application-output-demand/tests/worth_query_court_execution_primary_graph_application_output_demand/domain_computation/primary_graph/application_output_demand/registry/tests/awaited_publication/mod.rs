@@ -33,7 +33,7 @@ pub fn scenario(rejoin: bool, late_hold: bool) {
             let returned = registry.hold_required_successor_for_test(Box::new(refreshing), |successor| {
                 successor
                     .downcast_ref::<WorthQueryOutputDemandInterest>()
-                    .map(|interest| &(*interest.key_for_test()))
+                    .map(|interest| interest.key_for_test())
             });
             assert!(
                 returned.is_some(),
@@ -52,7 +52,7 @@ pub fn scenario(rejoin: bool, late_hold: bool) {
                 "the freshest Published answer still belongs to the stale owner"
             );
             assert!(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::refreshed_rejoin::awaited_by_stale_owner(
-                &(*state.records_for_test()),
+                state.records_for_test(),
                 &newest_key
             ));
         }
@@ -162,7 +162,7 @@ fn closing_the_last_stale_owner_releases_its_held_successor() {
         assert!(registry
             .hold_required_successor_for_test(Box::new(successor), |successor| successor
                 .downcast_ref::<WorthQueryOutputDemandInterest>()
-                .map(|interest| &(*interest.key_for_test())))
+                .map(|interest| interest.key_for_test()))
             .is_none());
         assert!((*(*(*registry.state_for_test()).lock().unwrap().records_for_test())[&newest_key]
             .held_successor_for_test())

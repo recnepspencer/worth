@@ -160,7 +160,7 @@ fn started_revision_missing_current_field_is_rejected_by_native_restore_before_p
         .unwrap();
     assert_eq!(
         arena.kind_ids[slot],
-        Some((*(*layout.instance_for_test()).entity_kind_for_test()))
+        Some(*(*layout.instance_for_test()).entity_kind_for_test())
     );
     // Only the mirror is changed. Untouched root digests remain valid; native
     // readmission must validate this divergent mirror before installing it.

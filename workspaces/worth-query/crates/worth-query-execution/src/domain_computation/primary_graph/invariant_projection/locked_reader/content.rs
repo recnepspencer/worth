@@ -1,6 +1,7 @@
 //! Content references retain field absence evidence instead of collapsing it into Option.
 use super::super::read_basis::NativeProjectionRead;
 use super::WorthQueryApplicationInvariantProjectionReader as Reader;
+use crate::domain_computation::primary_graph::content::{ContentFieldSelection, DecodeReference};
 use crate::domain_computation::primary_graph::WorthQueryValueDecodeDenial as Stop;
 use worth_foundational::facade::{AspectFieldLocator, ContentRefId};
 use worth_query_declaration::facade::application_schema::ApplicationContentReferenceBinding;
@@ -10,14 +11,13 @@ use worth_relational::facade::{
     runtime::RelationalProjectedFieldObservation as Raw,
 };
 impl<S: ApplicationSchema> Reader<'_, S> {
-    pub(in crate::domain_computation::primary_graph::invariant_projection) fn content_reference<
-        Binding: ApplicationContentReferenceBinding,
-    >(
+    fn content_reference(
         &mut self,
         entity: EntityId,
         kind: KindId,
         locus: (&str, &str, &str),
         locator: &AspectFieldLocator,
+        decode: DecodeReference,
     ) -> Result<Option<ContentRefId>, Stop> {
         ContentRead {
             native: &self.native,
@@ -34,7 +34,7 @@ impl<S: ApplicationSchema> Reader<'_, S> {
             kind,
             locus,
             locator,
-            decode: decode_reference::<Binding>,
+            decode,
             optional_field: self.layout.field_is_optional(locus.0, locator),
             optional_aspect: self.layout.aspect_is_optional(locus.0, locator),
         })
@@ -141,22 +141,98 @@ fn read_reference(
     observed.ok_or(Stop::ContentBasisUnavailable)?
 }
 
-type DecodeReference = fn(
-    &crate::domain_computation::primary_graph::value_decode::ValueDecodeSession<'_>,
-    &str,
-    &str,
-    &str,
-    &worth_foundational::facade::AspectValue,
-) -> Option<ContentRefId>;
-fn decode_reference<Binding: ApplicationContentReferenceBinding>(
-    decode: &crate::domain_computation::primary_graph::value_decode::ValueDecodeSession<'_>,
-    entity: &str,
-    aspect: &str,
-    field: &str,
-    value: &worth_foundational::facade::AspectValue,
-) -> Option<ContentRefId> {
-    decode
-        .decode::<Binding>(entity, aspect, field, value)
-        .as_ref()
-        .map(Binding::reference)
+impl<S: ApplicationSchema> Reader<'_, S> {
+    /// Resolves one field's immutable payload; work is proportional to the field
+    /// lookup and admitted frame, never the graph or its history.
+    pub fn content<E, F, C>(
+        &mut self,
+        identity: &crate::domain_computation::primary_graph::WorthQueryInvariantEntityIdentity<
+            S,
+            E,
+        >,
+        content: worth_query_declaration::facade::application_schema::ApplicationContentFieldRef<
+            F,
+            C,
+        >,
+    ) -> Result<
+        Option<crate::domain_computation::primary_graph::AdmittedContent<C>>,
+        crate::domain_computation::primary_graph::ContentReadDenial,
+    >
+    where
+        F: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = E,
+        >,
+        F::Binding: ApplicationContentReferenceBinding,
+        C: worth_query_declaration::facade::application_schema::ApplicationContentBinding,
+    {
+        crate::domain_computation::primary_graph::content::typed(self.content_frame(
+            identity.native_identity(),
+            ContentFieldSelection::of::<F, C>(content.field()),
+        ))
+    }
+
+    fn content_frame(
+        &mut self,
+        identity: super::super::native_read::NativeIdentity<'_>,
+        selection: ContentFieldSelection,
+    ) -> Result<
+        Option<worth_relational::facade::content::RelationalContentFrame>,
+        crate::domain_computation::primary_graph::ContentReadDenial,
+    > {
+        use crate::domain_computation::primary_graph::{content, ContentReadDenial as Denial};
+        let field = selection.column;
+        let session = self.value_decode;
+        if !identity.local_to(
+            self.authority_identity,
+            self.native
+                .candidate_identity()
+                .map(|id| id.qualification()),
+            field.entity(),
+        ) {
+            session.refuse_content(Stop::BindingContractMismatch);
+            return Err(Denial::BindingContractMismatch);
+        }
+        self.layout.record_column(field).map_err(|_| {
+            session.refuse_content(Stop::BindingContractMismatch);
+            Denial::BindingContractMismatch
+        })?;
+        let binding = session.content_binding_matching(
+            field.entity(),
+            field.aspect(),
+            field.field(),
+            selection.matches,
+        )?;
+        let locator = self
+            .layout
+            .field_locator(field.entity(), field.aspect(), field.field())
+            .ok_or_else(|| {
+                session.refuse_content(Stop::BindingContractMismatch);
+                Denial::BindingContractMismatch
+            })?
+            .clone();
+        let Some(value) = self.content_reference(
+            identity.entity_id,
+            identity.kind,
+            (field.entity(), field.aspect(), field.field()),
+            &locator,
+            selection.decode,
+        )?
+        else {
+            return Ok(None);
+        };
+        content::resolve_frame(self.execution, session, &binding, value, &mut || {
+            self.native
+                .projection(self.snapshot)
+                .ok_or(Denial::UnavailableBasis)?
+                .retain_entity_field_content(
+                    self.execution,
+                    identity.entity_id,
+                    identity.kind,
+                    &locator,
+                )
+                .map_err(Denial::Content)?
+                .ok_or(Denial::UnavailableBasis)
+        })
+        .map(Some)
+    }
 }

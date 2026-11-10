@@ -28,20 +28,18 @@ pub(super) fn write_receipt_committed_truth_identity(
             )
         })
         .collect::<Vec<_>>();
-    Ok(
-        crate::evidence_identity::WorthQueryEvidenceIdentity::compose(
-            crate::evidence_identity::WorthQueryEvidenceScope::JournalReplayOutcome,
-        )
-        .field_evidence_identity(
-            crate::evidence_identity::WorthQueryEvidenceTag::new("committed_write_identity"),
-            &receipt.commit_identity.evidence_identity(),
-        )
-        .field_value_sequence(
-            crate::evidence_identity::WorthQueryEvidenceTag::new("committed_delta_descriptor"),
-            delta_descriptors.iter().map(String::as_str),
-        )
-        .seal()?,
+    crate::evidence_identity::WorthQueryEvidenceIdentity::compose(
+        crate::evidence_identity::WorthQueryEvidenceScope::JournalReplayOutcome,
     )
+    .field_evidence_identity(
+        crate::evidence_identity::WorthQueryEvidenceTag::new("committed_write_identity"),
+        &receipt.commit_identity.evidence_identity(),
+    )
+    .field_value_sequence(
+        crate::evidence_identity::WorthQueryEvidenceTag::new("committed_delta_descriptor"),
+        delta_descriptors.iter().map(String::as_str),
+    )
+    .seal()
 }
 
 fn terminal_touched_aspect_digest_projections(touches: &[WorthQueryAspectTouch]) -> Vec<String> {

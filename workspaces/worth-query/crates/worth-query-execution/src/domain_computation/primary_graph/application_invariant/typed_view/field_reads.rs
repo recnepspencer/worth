@@ -39,7 +39,7 @@ impl<Schema> WorthQueryApplicationInvariantReadView<'_, Schema> {
 
 // Both prior and proposed invariant views consume this same material decision.
 // A child's requirement cannot describe whole-aspect absence.
-fn field_material<'a>(
+pub(super) fn field_material<'a>(
     aspect: Option<ContractValidatedAspectValueView<'a>>,
     aspect_absence: AbsenceLaw,
     presence: ApplicationFieldPresence,

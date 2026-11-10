@@ -83,7 +83,6 @@ pub(crate) mod session_commit;
 mod session_lifecycle;
 mod terminal_dispatch_release;
 pub(crate) mod unpublished_idempotency;
-pub(in crate::domain_computation::primary_graph) use unpublished_idempotency::unwind_recovery_inspection_count;
 pub(in crate::domain_computation) use unpublished_idempotency::WorthQueryUnpublishedIdempotencyDisposition;
 pub(in crate::domain_computation::primary_graph) use unpublished_idempotency::WorthQueryUnpublishedIdempotencyReservation;
 
@@ -320,9 +319,6 @@ impl WorthQueryPrimaryGraphProvider {
 }
 
 pub(super) struct WorthQueryPrimaryLogicalGraph;
-
-pub(in crate::domain_computation::primary_graph) use inbound_completion::completion_preparation_denial;
-pub(in crate::domain_computation::primary_graph) use inbound_completion::completion_validation_denial;
 
 pub(in crate::domain_computation::primary_graph) use application_attempt_state::PreparedRebaseDenial;
 pub(in crate::domain_computation::primary_graph) use application_attempt_state::PreparedSourceFactRebase;

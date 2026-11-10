@@ -1,4 +1,3 @@
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_relational::facade::transactions::{CommitResult, MergeExecutionOutcome};
 use worth_runtime_bridge::facade::{
     BridgeAdmittedWritebackExecution, BridgeAdmittedWritebackExecutionReceipt,

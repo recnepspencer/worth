@@ -24,15 +24,14 @@ pub(super) fn participants(
             .ok_or(Denial::TransferEvidenceUnavailable { model, commit })?;
         if let crate::history::data::CanonicalCommitAuthorityKind::OwnedGraphSelection(graph) =
             &envelope.authority_kind
+            && graph.model() == model
         {
-            if graph.model() == model {
-                let mut participants = BTreeSet::new();
-                for entity in graph.transfer_participants() {
-                    read.retain()?;
-                    participants.insert(entity);
-                }
-                return Ok(participants);
+            let mut participants = BTreeSet::new();
+            for entity in graph.transfer_participants() {
+                read.retain()?;
+                participants.insert(entity);
             }
+            return Ok(participants);
         }
         if envelope.commit.parents.len() > 1 {
             return Err(Denial::TransferEvidenceUnavailable { model, commit });

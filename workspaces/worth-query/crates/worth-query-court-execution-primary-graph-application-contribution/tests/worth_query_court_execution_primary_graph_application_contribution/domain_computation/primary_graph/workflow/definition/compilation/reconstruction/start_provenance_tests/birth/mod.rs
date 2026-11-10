@@ -107,7 +107,7 @@ fn birth_subject_provenance_and_start_actor_remain_readable() {
     let instance = only_new_entity(
         &world,
         &execution,
-        (*(*layout.instance_for_test()).entity_kind_for_test()),
+        *(*layout.instance_for_test()).entity_kind_for_test(),
         &inventories[1],
     );
     let current = selected(&world, &execution);
@@ -177,7 +177,7 @@ fn birth_subject_provenance_and_start_actor_remain_readable() {
                     &execution,
                     current.1.snapshot_handle(),
                     instance,
-                    (*(*layout.instance_for_test()).entity_kind_for_test()),
+                    *(*layout.instance_for_test()).entity_kind_for_test(),
                     &mut Vec::new(),
                 )
                 .unwrap();
@@ -190,7 +190,7 @@ fn birth_subject_provenance_and_start_actor_remain_readable() {
         &world,
         update(
             instance,
-            &(*(*layout.instance_for_test()).subject_slot_for_test()),
+            (*layout.instance_for_test()).subject_slot_for_test(),
             AspectValue::UInt64(subject.local_slot_value()),
         ),
     );

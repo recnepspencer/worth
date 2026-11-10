@@ -77,11 +77,11 @@ pub fn locators(
     layout: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::schema::layout::WorthQueryWorkflowLayout,
 ) -> [&AspectFieldLocator; 5] {
     [
-        &(*(*layout.approval_for_test()).authorization_request_for_test()),
-        &(*(*layout.approval_for_test()).authorization_principal_for_test()),
-        &(*(*layout.approval_for_test()).authorization_lineage_for_test()),
-        &(*(*layout.approval_for_test()).authorization_support_for_test()),
-        &(*(*layout.approval_for_test()).authorization_dependencies_for_test()),
+        (*layout.approval_for_test()).authorization_request_for_test(),
+        (*layout.approval_for_test()).authorization_principal_for_test(),
+        (*layout.approval_for_test()).authorization_lineage_for_test(),
+        (*layout.approval_for_test()).authorization_support_for_test(),
+        (*layout.approval_for_test()).authorization_dependencies_for_test(),
     ]
 }
 

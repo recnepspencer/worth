@@ -1,4 +1,3 @@
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::intent_admission::WorthQueryGenericInspectionRequestLabel;
 use crate::intent_admission::WorthQueryIntentDecisionTraceEnvelope;
 use crate::memory_workspace::WorthQuerySnapshotIdentity;

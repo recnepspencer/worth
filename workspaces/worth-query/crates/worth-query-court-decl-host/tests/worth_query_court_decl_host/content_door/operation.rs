@@ -78,6 +78,7 @@ impl ApplicationDeclaredOperation<Schema> for Change {
 }
 pub struct Handler {
     pub cancellation: Option<WorthQueryCancellationSource>,
+    pub computation: readers::computation::Installed,
 }
 impl OperationHandler<Schema, Binding> for Handler {
     fn decide(
@@ -110,10 +111,14 @@ impl OperationHandler<Schema, Binding> for Handler {
                     "the declared projection bound must stop repeated content reads"
                 );
             }
-            let before = reader
-                .content(&root, samples())
-                .map_err(HandlerExecutionDenial::new)?
-                .map(|content| (content.identity(), content.payload().to_vec()));
+            let before = if matches!(input.mode, 30 | 31) {
+                None
+            } else {
+                reader
+                    .content(&root, samples())
+                    .map_err(HandlerExecutionDenial::new)?
+                    .map(|content| (content.identity(), content.payload().to_vec()))
+            };
             let optional = reader
                 .content(
                     &root,
@@ -143,6 +148,46 @@ impl OperationHandler<Schema, Binding> for Handler {
         match result {
             Ok(value) => HandlerResult::Completed(value),
             Err(cause) => HandlerResult::ExecutionDenied(cause),
+        }
+    }
+    fn prepare_decision(
+        &self,
+        input: &Edit,
+        reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
+    ) -> WorthQueryDecisionPlan<Decision, Denial> {
+        if !matches!(input.mode, 30 | 31) {
+            return WorthQueryDecisionPlan::immediate(self.decide(input, reader));
+        }
+        let root = match reader.resolve_entity(Key::at("Key"), "record".to_owned()) {
+            Ok(root) => root,
+            Err(cause) => {
+                return WorthQueryDecisionPlan::immediate(HandlerResult::ExecutionDenied(cause))
+            }
+        };
+        let prepared = self.computation.prepare(
+            reader,
+            &readers::computation::ReadInput {
+                entity: root,
+                impostor: input.mode == 31,
+            },
+        );
+        let decided = self.decide(input, reader);
+        match prepared {
+            Ok(prepared) => {
+                prepared.into_decision_plan(move |completed| match (completed, decided) {
+                    (Ok(completed), HandlerResult::Completed(mut decision)) => {
+                        decision.before = completed.complete().unwrap();
+                        HandlerResult::Completed(decision)
+                    }
+                    (Err(cause), _) => {
+                        HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause))
+                    }
+                    (_, other) => other,
+                })
+            }
+            Err(cause) => WorthQueryDecisionPlan::immediate(HandlerResult::ExecutionDenied(
+                HandlerExecutionDenial::new(cause),
+            )),
         }
     }
     fn build_candidate(

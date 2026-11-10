@@ -26,10 +26,7 @@ impl WorthQuerySupportPinContractSchemaVersion {
     }
 
     pub(crate) fn identity(self) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-        Ok(
-            worth_query_evidence_identity(
-                WorthQueryEvidenceScope::ConsumerSupportPinContractSchema,
-            )
+        worth_query_evidence_identity(WorthQueryEvidenceScope::ConsumerSupportPinContractSchema)
             .field_shape(WorthQueryEvidenceTag::new("schema_version"), self.as_str())
             .field_usize(
                 WorthQueryEvidenceTag::new("schema_major"),
@@ -70,49 +67,46 @@ impl WorthQuerySupportPinContractSchemaVersion {
                     "observed_live_row_digest",
                 ],
             )
-            .seal()?,
-        )
+            .seal()
     }
 }
 
 pub(crate) fn support_pin_vocabulary_identity(
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::ConsumerSupportPinVocabulary)
-            .field_value_sequence(
-                WorthQueryEvidenceTag::new("support_status"),
-                ["supported", "deferred-debt", "unsupported"],
-            )
-            .field_value_sequence(
-                WorthQueryEvidenceTag::new("teaching_posture"),
-                [
-                    "ordinary-runtime-dx",
-                    "visible-but-deferred",
-                    "visible-vocabulary-only",
-                    "support-gate-only",
-                ],
-            )
-            .field_value_sequence(
-                WorthQueryEvidenceTag::new("facade_family"),
-                [
-                    "read",
-                    "live",
-                    "computed",
-                    "shared-read",
-                    "submission",
-                    "replay",
-                    "effect",
-                    "branch-preview",
-                    "write",
-                    "intent",
-                    "inspect",
-                    "temporal",
-                    "async-resource",
-                    "mixed-cause-delivery",
-                    "store-backed-execution",
-                    "durable-artifacts",
-                ],
-            )
-            .seal()?,
-    )
+    worth_query_evidence_identity(WorthQueryEvidenceScope::ConsumerSupportPinVocabulary)
+        .field_value_sequence(
+            WorthQueryEvidenceTag::new("support_status"),
+            ["supported", "deferred-debt", "unsupported"],
+        )
+        .field_value_sequence(
+            WorthQueryEvidenceTag::new("teaching_posture"),
+            [
+                "ordinary-runtime-dx",
+                "visible-but-deferred",
+                "visible-vocabulary-only",
+                "support-gate-only",
+            ],
+        )
+        .field_value_sequence(
+            WorthQueryEvidenceTag::new("facade_family"),
+            [
+                "read",
+                "live",
+                "computed",
+                "shared-read",
+                "submission",
+                "replay",
+                "effect",
+                "branch-preview",
+                "write",
+                "intent",
+                "inspect",
+                "temporal",
+                "async-resource",
+                "mixed-cause-delivery",
+                "store-backed-execution",
+                "durable-artifacts",
+            ],
+        )
+        .seal()
 }

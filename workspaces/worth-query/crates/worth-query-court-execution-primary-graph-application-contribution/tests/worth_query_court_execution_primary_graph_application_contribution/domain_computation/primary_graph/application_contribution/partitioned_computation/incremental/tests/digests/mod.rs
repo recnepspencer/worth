@@ -153,8 +153,8 @@ fn unretained_runs_serialize_neither_input_nor_items_for_digests() {
                         |reader, root| {
                             let execution = phase
                                 .execution_for_for_test(
-                                    &(*(*world.application.runtime_for_test())
-                                        .product_runtime_for_test()),
+                                    (*world.application.runtime_for_test())
+                                        .product_runtime_for_test(),
                                 )
                                 .expect("the installed fixture lends its computation execution");
                             installed

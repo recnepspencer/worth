@@ -28,33 +28,33 @@ impl WorthQueryAftermathContributionAuthoring {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             WorthQueryAftermathContributionPosture::EstablishesFact,
             semantic_code,
             detail,
-        )?)
+        )
     }
 
     pub fn consumes_fact(
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             WorthQueryAftermathContributionPosture::ConsumesFact,
             semantic_code,
             detail,
-        )?)
+        )
     }
 
     pub fn declares_residue(
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             WorthQueryAftermathContributionPosture::DeclaresResidue,
             semantic_code,
             detail,
-        )?)
+        )
     }
 
     pub fn establishes_projection_contract(
@@ -64,12 +64,12 @@ impl WorthQueryAftermathContributionAuthoring {
         binding: ProjectionConsumptionBindingContext,
         requested_facts: ProjectMaterializedFacts,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_runtime_semantics(
+        Self::with_runtime_semantics(
             WorthQueryAftermathContributionPosture::EstablishesFact,
             semantic_code,
             detail,
             WorthQueryAftermathRuntimeSemantics::new(source, binding, requested_facts),
-        )?)
+        )
     }
 
     pub fn consumes_projection_contract(
@@ -79,12 +79,12 @@ impl WorthQueryAftermathContributionAuthoring {
         binding: ProjectionConsumptionBindingContext,
         requested_facts: ProjectMaterializedFacts,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_runtime_semantics(
+        Self::with_runtime_semantics(
             WorthQueryAftermathContributionPosture::ConsumesFact,
             semantic_code,
             detail,
             WorthQueryAftermathRuntimeSemantics::new(source, binding, requested_facts),
-        )?)
+        )
     }
 
     pub fn declares_projection_residue(
@@ -94,12 +94,12 @@ impl WorthQueryAftermathContributionAuthoring {
         binding: ProjectionConsumptionBindingContext,
         requested_facts: ProjectMaterializedFacts,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_runtime_semantics(
+        Self::with_runtime_semantics(
             WorthQueryAftermathContributionPosture::DeclaresResidue,
             semantic_code,
             detail,
             WorthQueryAftermathRuntimeSemantics::new(source, binding, requested_facts),
-        )?)
+        )
     }
 
     pub fn for_admitted_intent_plan(
@@ -109,9 +109,9 @@ impl WorthQueryAftermathContributionAuthoring {
         WorthQueryRequestedAftermathContribution<WorthQueryAdmittedPlanBoundContributionTarget>,
         IdentityDerivationDenial,
     > {
-        Ok(self.bind_to_admitted_plan_target(
+        self.bind_to_admitted_plan_target(
             WorthQueryAdmittedPlanBoundContributionTarget::for_admitted_intent_plan(plan),
-        )?)
+        )
     }
 
     pub fn for_lower_runtime_boundary_envelope(
@@ -123,11 +123,11 @@ impl WorthQueryAftermathContributionAuthoring {
         >,
         IdentityDerivationDenial,
     > {
-        Ok(self.bind_to_lower_runtime_boundary_target(
+        self.bind_to_lower_runtime_boundary_target(
             WorthQueryLowerRuntimeBoundaryBoundContributionTarget::for_lower_runtime_boundary_envelope(
                 envelope,
             ),
-        )?)
+        )
     }
 
     pub fn for_lower_runtime_boundary_source<S>(
@@ -142,7 +142,7 @@ impl WorthQueryAftermathContributionAuthoring {
     where
         S: WorthQueryLowerRuntimeBoundaryEnvelopeSource + ?Sized,
     {
-        Ok(self.for_lower_runtime_boundary_envelope(source.lower_runtime_boundary_envelope())?)
+        self.for_lower_runtime_boundary_envelope(source.lower_runtime_boundary_envelope())
     }
 
     pub fn bind_to_admitted_plan_target(
@@ -152,7 +152,7 @@ impl WorthQueryAftermathContributionAuthoring {
         WorthQueryRequestedAftermathContribution<WorthQueryAdmittedPlanBoundContributionTarget>,
         IdentityDerivationDenial,
     > {
-        Ok(bind_requested(self.payload, target)?)
+        bind_requested(self.payload, target)
     }
 
     pub fn bind_to_lower_runtime_boundary_target(
@@ -164,7 +164,7 @@ impl WorthQueryAftermathContributionAuthoring {
         >,
         IdentityDerivationDenial,
     > {
-        Ok(bind_requested(self.payload, target)?)
+        bind_requested(self.payload, target)
     }
 
     pub(crate) fn bind_to_installed_target<T>(
@@ -184,10 +184,10 @@ impl WorthQueryAftermathContributionAuthoring {
                 T,
             >,
     {
-        Ok(bind_requested::<
+        bind_requested::<
             WorthQueryAftermathContributionPayload,
             crate::domain_capabilities::WorthQueryInstalledDomainContributionTarget<T>,
-        >(self.payload, target)?)
+        >(self.payload, target)
     }
 
     fn new(

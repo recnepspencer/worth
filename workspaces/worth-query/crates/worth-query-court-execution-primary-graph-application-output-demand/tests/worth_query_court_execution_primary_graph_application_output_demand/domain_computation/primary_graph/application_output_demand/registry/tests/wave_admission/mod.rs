@@ -18,7 +18,7 @@ fn uncommitted_upstream_never_admits_a_prepared_member() {
                 .with_runtime_for_test(
                     &phase
                         .execution_request_for_for_test(
-                            &(*(*world.application.runtime_for_test()).product_runtime_for_test()),
+                            (*world.application.runtime_for_test()).product_runtime_for_test(),
                         )
                         .unwrap(),
                     |runtime| {

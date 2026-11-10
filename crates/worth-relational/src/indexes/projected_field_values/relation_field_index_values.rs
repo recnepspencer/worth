@@ -4,7 +4,6 @@ use worth_foundational::facade::AspectFieldLocator;
 
 use crate::identity::data::RelationId;
 use crate::storage::data::AuthoritativeFieldComparisonKey;
-use crate::visibility::materialization::read_records::relation_query_locus_comparison_key;
 
 use super::checked_entry_map::{checked_push, IndexKernelStop};
 use super::field_projection_scope::{

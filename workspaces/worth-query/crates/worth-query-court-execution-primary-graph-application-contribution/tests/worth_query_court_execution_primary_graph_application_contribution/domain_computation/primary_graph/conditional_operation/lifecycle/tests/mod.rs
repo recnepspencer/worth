@@ -168,6 +168,7 @@ fn registry_requires_the_exact_private_installation_lease() {
 }
 
 #[test]
+#[expect(clippy::disallowed_methods, reason = "Client-race court")]
 fn parked_operation_does_not_hold_registry_lookup_or_another_operation_cell() {
     let first_lease = Arc::new(ConditionalClockLease);
     let second_lease = Arc::new(ConditionalClockLease);

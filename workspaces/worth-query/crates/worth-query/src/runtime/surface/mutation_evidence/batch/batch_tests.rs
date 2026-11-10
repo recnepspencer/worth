@@ -335,7 +335,7 @@ fn relational_entity(
 pub(super) fn retained_assertion_identity(
     label: &'static str,
 ) -> Result<crate::evidence_identity::WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(crate::evidence_identity::worth_query_evidence_identity(
+    crate::evidence_identity::worth_query_evidence_identity(
         crate::evidence_identity::WorthQueryEvidenceScope::RetainedExistingTruthAssertionEvidence,
     )
     .field_shape(
@@ -346,5 +346,5 @@ pub(super) fn retained_assertion_identity(
         crate::evidence_identity::WorthQueryEvidenceTag::new("label"),
         label,
     )
-    .seal()?)
+    .seal()
 }

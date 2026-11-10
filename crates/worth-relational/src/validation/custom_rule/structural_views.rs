@@ -2,6 +2,7 @@ use worth_foundational::facade::AuthoritativeRecordAspectState;
 
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::validation::engine::state_view::InvariantStateView;
+mod content;
 mod derived_admission;
 mod record_presence;
 pub(crate) use derived_admission::DerivedAdmissionCache;

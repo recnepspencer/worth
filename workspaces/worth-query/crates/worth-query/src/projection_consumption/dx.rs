@@ -237,9 +237,10 @@ impl crate::runtime::WorthQueryReadReceipt {
         &self,
         result_shape: &CanonicalResultShapeArtifact,
     ) -> Result<ProjectionConsumptionSupportReport, IdentityDerivationDenial> {
-        Ok(discover_projection_consumption_support(
-            &ProjectionConsumptionSource::from_read_receipt(self, result_shape),
-        )?)
+        discover_projection_consumption_support(&ProjectionConsumptionSource::from_read_receipt(
+            self,
+            result_shape,
+        ))
     }
 }
 
@@ -265,9 +266,9 @@ impl WorthQueryWriteReceipt {
     pub fn discover_projection_fact_consumption_support(
         &self,
     ) -> Result<ProjectionConsumptionSupportReport, IdentityDerivationDenial> {
-        Ok(discover_projection_consumption_support(
-            &ProjectionConsumptionSource::from_write_receipt(self),
-        )?)
+        discover_projection_consumption_support(&ProjectionConsumptionSource::from_write_receipt(
+            self,
+        ))
     }
 }
 
@@ -288,9 +289,9 @@ impl QueryContextExecutionArtifact {
     pub fn discover_projection_fact_consumption_support(
         &self,
     ) -> Result<ProjectionConsumptionSupportReport, IdentityDerivationDenial> {
-        Ok(discover_projection_consumption_support(
+        discover_projection_consumption_support(
             &ProjectionConsumptionSource::from_query_context_execution(self),
-        )?)
+        )
     }
 }
 
@@ -312,9 +313,9 @@ impl WorthQueryDerivedArtifactBinding {
     pub fn discover_projection_fact_consumption_support(
         &self,
     ) -> Result<ProjectionConsumptionSupportReport, IdentityDerivationDenial> {
-        Ok(discover_projection_consumption_support(
+        discover_projection_consumption_support(
             &ProjectionConsumptionSource::from_retained_derived_artifact_binding(self),
-        )?)
+        )
     }
 }
 
@@ -340,9 +341,9 @@ impl WorthQueryLiveArtifactBinding {
     pub fn discover_projection_fact_consumption_support(
         &self,
     ) -> Result<ProjectionConsumptionSupportReport, IdentityDerivationDenial> {
-        Ok(discover_projection_consumption_support(
+        discover_projection_consumption_support(
             &ProjectionConsumptionSource::from_live_artifact_binding(self),
-        )?)
+        )
     }
 }
 

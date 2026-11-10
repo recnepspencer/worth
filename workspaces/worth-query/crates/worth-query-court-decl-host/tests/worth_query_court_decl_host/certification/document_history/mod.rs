@@ -1,4 +1,6 @@
 //! Public model attachment uses declared READ, actual heads and full native identity.
+#[macro_use]
+mod navigation_grant;
 mod assessment;
 mod attachment;
 mod commands;

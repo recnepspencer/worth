@@ -23,7 +23,7 @@ impl WorthQueryStagedApplicationAttempt<'_> {
         )>,
         Failure,
     > {
-        let inverse = self.attempt.aftermath_causality().is_some();
+        let inverse = self.attempt.recorded_reverse().is_some();
         let identity = self.attempt.authored_correction_identity();
         let Some(identity) = identity else {
             return Ok(Vec::new());

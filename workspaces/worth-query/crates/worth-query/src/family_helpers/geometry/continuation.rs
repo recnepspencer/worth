@@ -22,11 +22,11 @@ pub(super) fn prepare_preview_for_active_face_selection<
     handle: &WorthQueryInstalledDomainDeclarationContext<D, C>,
     progression: WorthQueryAdmittedDeclarationProgression<D, I>,
 ) -> Result<WorthQuerySignalCompatibilityOrchestrationOutcome<D, I>, IdentityDerivationDenial> {
-    Ok(handle.orchestrate_signal_compatibility(continuation_input(
+    handle.orchestrate_signal_compatibility(continuation_input(
         handle,
         progression,
         preview_session_request(),
-    ))?)
+    ))
 }
 
 pub(super) fn prepare_preview_for_active_face_selection_outcome<
@@ -40,13 +40,11 @@ pub(super) fn prepare_preview_for_active_face_selection_outcome<
     WorthQueryOrdinaryOutcome<WorthQuerySignalCompatibilityOrchestration<D, I>>,
     IdentityDerivationDenial,
 > {
-    Ok(
-        handle.orchestrate_signal_compatibility_outcome(continuation_input(
-            handle,
-            progression,
-            preview_session_request(),
-        ))?,
-    )
+    handle.orchestrate_signal_compatibility_outcome(continuation_input(
+        handle,
+        progression,
+        preview_session_request(),
+    ))
 }
 
 pub(super) fn prepare_preview_for_active_face_selection_checked<
@@ -57,13 +55,11 @@ pub(super) fn prepare_preview_for_active_face_selection_checked<
     handle: &WorthQueryInstalledDomainDeclarationContext<D, C>,
     progression: WorthQueryAdmittedDeclarationProgression<D, I>,
 ) -> Result<WorthQuerySignalCompatibilityOrchestrationChecked<D, I>, IdentityDerivationDenial> {
-    Ok(
-        handle.orchestrate_signal_compatibility_checked(continuation_input(
-            handle,
-            progression,
-            preview_session_request(),
-        ))?,
-    )
+    handle.orchestrate_signal_compatibility_checked(continuation_input(
+        handle,
+        progression,
+        preview_session_request(),
+    ))
 }
 
 pub(super) fn prepare_preview_for_active_face_selection_proof<
@@ -74,13 +70,11 @@ pub(super) fn prepare_preview_for_active_face_selection_proof<
     handle: &WorthQueryInstalledDomainDeclarationContext<D, C>,
     progression: WorthQueryAdmittedDeclarationProgression<D, I>,
 ) -> Result<WorthQuerySignalCompatibilityOrchestrationTranscript<D, I>, IdentityDerivationDenial> {
-    Ok(
-        handle.orchestrate_signal_compatibility_proof(continuation_input(
-            handle,
-            progression,
-            preview_session_request(),
-        ))?,
-    )
+    handle.orchestrate_signal_compatibility_proof(continuation_input(
+        handle,
+        progression,
+        preview_session_request(),
+    ))
 }
 
 pub(super) fn prepare_runtime_route_for_active_face_selection<
@@ -91,11 +85,11 @@ pub(super) fn prepare_runtime_route_for_active_face_selection<
     handle: &WorthQueryInstalledDomainDeclarationContext<D, C>,
     progression: WorthQueryAdmittedDeclarationProgression<D, I>,
 ) -> Result<WorthQuerySignalCompatibilityOrchestrationOutcome<D, I>, IdentityDerivationDenial> {
-    Ok(handle.orchestrate_signal_compatibility(continuation_input(
+    handle.orchestrate_signal_compatibility(continuation_input(
         handle,
         progression,
         runtime_route_request(),
-    ))?)
+    ))
 }
 
 pub(super) fn prepare_runtime_route_for_active_face_selection_outcome<
@@ -109,13 +103,11 @@ pub(super) fn prepare_runtime_route_for_active_face_selection_outcome<
     WorthQueryOrdinaryOutcome<WorthQuerySignalCompatibilityOrchestration<D, I>>,
     IdentityDerivationDenial,
 > {
-    Ok(
-        handle.orchestrate_signal_compatibility_outcome(continuation_input(
-            handle,
-            progression,
-            runtime_route_request(),
-        ))?,
-    )
+    handle.orchestrate_signal_compatibility_outcome(continuation_input(
+        handle,
+        progression,
+        runtime_route_request(),
+    ))
 }
 
 pub(super) fn prepare_runtime_route_for_active_face_selection_checked<
@@ -126,13 +118,11 @@ pub(super) fn prepare_runtime_route_for_active_face_selection_checked<
     handle: &WorthQueryInstalledDomainDeclarationContext<D, C>,
     progression: WorthQueryAdmittedDeclarationProgression<D, I>,
 ) -> Result<WorthQuerySignalCompatibilityOrchestrationChecked<D, I>, IdentityDerivationDenial> {
-    Ok(
-        handle.orchestrate_signal_compatibility_checked(continuation_input(
-            handle,
-            progression,
-            runtime_route_request(),
-        ))?,
-    )
+    handle.orchestrate_signal_compatibility_checked(continuation_input(
+        handle,
+        progression,
+        runtime_route_request(),
+    ))
 }
 
 pub(super) fn prepare_runtime_route_for_active_face_selection_proof<
@@ -143,13 +133,11 @@ pub(super) fn prepare_runtime_route_for_active_face_selection_proof<
     handle: &WorthQueryInstalledDomainDeclarationContext<D, C>,
     progression: WorthQueryAdmittedDeclarationProgression<D, I>,
 ) -> Result<WorthQuerySignalCompatibilityOrchestrationTranscript<D, I>, IdentityDerivationDenial> {
-    Ok(
-        handle.orchestrate_signal_compatibility_proof(continuation_input(
-            handle,
-            progression,
-            runtime_route_request(),
-        ))?,
-    )
+    handle.orchestrate_signal_compatibility_proof(continuation_input(
+        handle,
+        progression,
+        runtime_route_request(),
+    ))
 }
 
 pub(super) fn prepare_current_truth_view_for_active_face_selection<
@@ -160,11 +148,11 @@ pub(super) fn prepare_current_truth_view_for_active_face_selection<
     handle: &WorthQueryInstalledDomainDeclarationContext<D, C>,
     progression: WorthQueryAdmittedDeclarationProgression<D, I>,
 ) -> Result<WorthQuerySignalCompatibilityOrchestrationOutcome<D, I>, IdentityDerivationDenial> {
-    Ok(handle.orchestrate_signal_compatibility(continuation_input(
+    handle.orchestrate_signal_compatibility(continuation_input(
         handle,
         progression,
         truth_view_request(WorthQueryDeclarationBridgeTruthContext::Current),
-    ))?)
+    ))
 }
 
 pub(super) fn prepare_current_truth_view_for_active_face_selection_outcome<
@@ -178,13 +166,11 @@ pub(super) fn prepare_current_truth_view_for_active_face_selection_outcome<
     WorthQueryOrdinaryOutcome<WorthQuerySignalCompatibilityOrchestration<D, I>>,
     IdentityDerivationDenial,
 > {
-    Ok(
-        handle.orchestrate_signal_compatibility_outcome(continuation_input(
-            handle,
-            progression,
-            truth_view_request(WorthQueryDeclarationBridgeTruthContext::Current),
-        ))?,
-    )
+    handle.orchestrate_signal_compatibility_outcome(continuation_input(
+        handle,
+        progression,
+        truth_view_request(WorthQueryDeclarationBridgeTruthContext::Current),
+    ))
 }
 
 pub(super) fn prepare_current_truth_view_for_active_face_selection_checked<
@@ -195,13 +181,11 @@ pub(super) fn prepare_current_truth_view_for_active_face_selection_checked<
     handle: &WorthQueryInstalledDomainDeclarationContext<D, C>,
     progression: WorthQueryAdmittedDeclarationProgression<D, I>,
 ) -> Result<WorthQuerySignalCompatibilityOrchestrationChecked<D, I>, IdentityDerivationDenial> {
-    Ok(
-        handle.orchestrate_signal_compatibility_checked(continuation_input(
-            handle,
-            progression,
-            truth_view_request(WorthQueryDeclarationBridgeTruthContext::Current),
-        ))?,
-    )
+    handle.orchestrate_signal_compatibility_checked(continuation_input(
+        handle,
+        progression,
+        truth_view_request(WorthQueryDeclarationBridgeTruthContext::Current),
+    ))
 }
 
 pub(super) fn prepare_current_truth_view_for_active_face_selection_proof<
@@ -212,13 +196,11 @@ pub(super) fn prepare_current_truth_view_for_active_face_selection_proof<
     handle: &WorthQueryInstalledDomainDeclarationContext<D, C>,
     progression: WorthQueryAdmittedDeclarationProgression<D, I>,
 ) -> Result<WorthQuerySignalCompatibilityOrchestrationTranscript<D, I>, IdentityDerivationDenial> {
-    Ok(
-        handle.orchestrate_signal_compatibility_proof(continuation_input(
-            handle,
-            progression,
-            truth_view_request(WorthQueryDeclarationBridgeTruthContext::Current),
-        ))?,
-    )
+    handle.orchestrate_signal_compatibility_proof(continuation_input(
+        handle,
+        progression,
+        truth_view_request(WorthQueryDeclarationBridgeTruthContext::Current),
+    ))
 }
 
 pub(super) fn prepare_historical_truth_view_for_active_face_selection<
@@ -229,11 +211,11 @@ pub(super) fn prepare_historical_truth_view_for_active_face_selection<
     handle: &WorthQueryInstalledDomainDeclarationContext<D, C>,
     progression: WorthQueryAdmittedDeclarationProgression<D, I>,
 ) -> Result<WorthQuerySignalCompatibilityOrchestrationOutcome<D, I>, IdentityDerivationDenial> {
-    Ok(handle.orchestrate_signal_compatibility(continuation_input(
+    handle.orchestrate_signal_compatibility(continuation_input(
         handle,
         progression,
         truth_view_request(WorthQueryDeclarationBridgeTruthContext::Historical),
-    ))?)
+    ))
 }
 
 pub(super) fn prepare_historical_truth_view_for_active_face_selection_outcome<
@@ -247,13 +229,11 @@ pub(super) fn prepare_historical_truth_view_for_active_face_selection_outcome<
     WorthQueryOrdinaryOutcome<WorthQuerySignalCompatibilityOrchestration<D, I>>,
     IdentityDerivationDenial,
 > {
-    Ok(
-        handle.orchestrate_signal_compatibility_outcome(continuation_input(
-            handle,
-            progression,
-            truth_view_request(WorthQueryDeclarationBridgeTruthContext::Historical),
-        ))?,
-    )
+    handle.orchestrate_signal_compatibility_outcome(continuation_input(
+        handle,
+        progression,
+        truth_view_request(WorthQueryDeclarationBridgeTruthContext::Historical),
+    ))
 }
 
 pub(super) fn prepare_historical_truth_view_for_active_face_selection_checked<
@@ -264,13 +244,11 @@ pub(super) fn prepare_historical_truth_view_for_active_face_selection_checked<
     handle: &WorthQueryInstalledDomainDeclarationContext<D, C>,
     progression: WorthQueryAdmittedDeclarationProgression<D, I>,
 ) -> Result<WorthQuerySignalCompatibilityOrchestrationChecked<D, I>, IdentityDerivationDenial> {
-    Ok(
-        handle.orchestrate_signal_compatibility_checked(continuation_input(
-            handle,
-            progression,
-            truth_view_request(WorthQueryDeclarationBridgeTruthContext::Historical),
-        ))?,
-    )
+    handle.orchestrate_signal_compatibility_checked(continuation_input(
+        handle,
+        progression,
+        truth_view_request(WorthQueryDeclarationBridgeTruthContext::Historical),
+    ))
 }
 
 pub(super) fn prepare_historical_truth_view_for_active_face_selection_proof<
@@ -281,13 +259,11 @@ pub(super) fn prepare_historical_truth_view_for_active_face_selection_proof<
     handle: &WorthQueryInstalledDomainDeclarationContext<D, C>,
     progression: WorthQueryAdmittedDeclarationProgression<D, I>,
 ) -> Result<WorthQuerySignalCompatibilityOrchestrationTranscript<D, I>, IdentityDerivationDenial> {
-    Ok(
-        handle.orchestrate_signal_compatibility_proof(continuation_input(
-            handle,
-            progression,
-            truth_view_request(WorthQueryDeclarationBridgeTruthContext::Historical),
-        ))?,
-    )
+    handle.orchestrate_signal_compatibility_proof(continuation_input(
+        handle,
+        progression,
+        truth_view_request(WorthQueryDeclarationBridgeTruthContext::Historical),
+    ))
 }
 
 fn continuation_input<D: WorthQueryDomainEntryMarker, I: WorthQueryDeclarationInput<D>>(

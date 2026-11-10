@@ -7,9 +7,7 @@ use crate::identity::data::{EntityId, RelationId};
 use crate::schema::data::{AggregateIdentityContractDeclaration, RelationalSchemaRegistry};
 use crate::validation::engine::state_view::InvariantStateView;
 use std::collections::{BTreeMap, BTreeSet};
-use worth_foundational::facade::{
-    AspectKey, AspectValue, ContractValidatedAspectValueView, FieldKey, InternedString,
-};
+use worth_foundational::facade::{AspectKey, ContractValidatedAspectValueView, FieldKey};
 
 /// One carrier may own different cohorts for its cases. Every complete logical
 /// key occurs on exactly one edge; a single (carrier,target) edge holds all its

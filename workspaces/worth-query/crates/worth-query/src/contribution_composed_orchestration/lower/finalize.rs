@@ -58,37 +58,35 @@ pub(crate) fn request_identity<D: WorthQueryDomainEntryMarker, I: WorthQueryDecl
                 .seal()
         })
         .collect::<Result<Vec<_>, _>>()?;
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "worth_query_contribution_composed_request_v1",
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("family"),
-                I::Family::semantic_family_key(),
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("declaration_entries"),
-                format!(
-                    "{:?}",
-                    input.declaration_input().canonical_declaration_entries()
-                ),
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("contribution_count"),
-                input.contributions().len().to_string(),
-            )
-            .field_evidence_identity_sequence(
-                WorthQueryEvidenceTag::new("contributions"),
-                contribution_identities.iter(),
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("materialization"),
-                format!("{:?}", input.materialization_policy()),
-            )
-            .seal()?,
-    )
+    worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "worth_query_contribution_composed_request_v1",
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("family"),
+            I::Family::semantic_family_key(),
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("declaration_entries"),
+            format!(
+                "{:?}",
+                input.declaration_input().canonical_declaration_entries()
+            ),
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("contribution_count"),
+            input.contributions().len().to_string(),
+        )
+        .field_evidence_identity_sequence(
+            WorthQueryEvidenceTag::new("contributions"),
+            contribution_identities.iter(),
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("materialization"),
+            format!("{:?}", input.materialization_policy()),
+        )
+        .seal()
 }
 
 pub(crate) fn build_composed_artifact<

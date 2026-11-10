@@ -36,6 +36,7 @@ pub use derived_source::{
     WorthQueryApplicationInvariantDerivedMemberRelation, WorthQueryApplicationInvariantDerivedWalk,
     WorthQueryApplicationInvariantDerivedWalkStep,
 };
+mod content;
 mod entity_reobservation;
 mod field_reads;
 mod graph_member;
@@ -135,6 +136,8 @@ pub struct WorthQueryApplicationInvariantReadView<'runtime, Schema> {
     admission: ApplicationInvariantAdmissionAccess,
     posture: ViewPosture,
     reads: &'runtime InvariantReadObservation,
+    content_fields: &'runtime super::content_fields::InvariantContentFields,
+    content_decode: &'runtime super::super::value_decode::ValueDecodeState,
     _schema: PhantomData<fn() -> Schema>,
 }
 
@@ -143,6 +146,8 @@ pub struct WorthQueryApplicationInvariantScopePlanner<'borrow, 'runtime, Schema 
     binding_identity: ApplicationSchemaBindingIdentity,
     admission: ApplicationInvariantAdmissionAccess,
     reads: InvariantReadObservation,
+    content_fields: &'borrow super::content_fields::InvariantContentFields,
+    content_decode: super::super::value_decode::ValueDecodeState,
     _schema: PhantomData<fn() -> Schema>,
 }
 
@@ -151,127 +156,12 @@ pub struct WorthQueryApplicationInvariantContext<'borrow, 'runtime, Schema = ()>
     binding_identity: ApplicationSchemaBindingIdentity,
     admission: ApplicationInvariantAdmissionAccess,
     reads: InvariantReadObservation,
+    content_fields: &'borrow super::content_fields::InvariantContentFields,
+    content_decode: super::super::value_decode::ValueDecodeState,
     _schema: PhantomData<fn() -> Schema>,
 }
 
-impl<'borrow, 'runtime, Schema>
-    WorthQueryApplicationInvariantScopePlanner<'borrow, 'runtime, Schema>
-{
-    pub(super) fn refusal_budget(
-        &self,
-    ) -> &dyn worth_relational::facade::runtime::CustomInvariantLeaseBudget {
-        self.lower.refusal_budget()
-    }
-
-    pub(super) fn new(
-        lower: &'borrow mut CustomInvariantScopePlanner<'runtime>,
-        binding_identity: ApplicationSchemaBindingIdentity,
-    ) -> Result<Self, WorthQueryInvariantAccessDenial> {
-        let admission = ApplicationInvariantAdmissionAccess::planning(lower.read_budget())?;
-        Ok(Self {
-            lower,
-            binding_identity,
-            admission,
-            reads: InvariantReadObservation::default(),
-            _schema: PhantomData,
-        })
-    }
-
-    pub(super) fn freeze_admission(
-        &self,
-    ) -> Result<std::sync::Arc<ApplicationInvariantAdmission>, WorthQueryInvariantAccessDenial>
-    {
-        self.admission.freeze(self.lower.read_budget())
-    }
-
-    /// Application field and business-structure acquisitions during preparation.
-    /// Native private identity preparation is outside these observations.
-    /// Observations grant no access and do not affect the rule's verdict.
-    pub fn reads(&self) -> WorthQueryInvariantProjectionWork {
-        self.reads.reads()
-    }
-
-    pub fn proposed(&self) -> WorthQueryApplicationInvariantReadView<'_, Schema> {
-        WorthQueryApplicationInvariantReadView {
-            aspects: self.lower.aspect_states(),
-            relations: self.lower.relations(),
-            touched_entities: self.lower.touched().direct_visible_entity_ids().to_vec(),
-            proposal_affinity: self.lower.proposal_affinity(),
-            binding_identity: self.binding_identity.clone(),
-            admission: self.admission.clone(),
-            posture: ViewPosture::Proposed,
-            reads: &self.reads,
-            _schema: PhantomData,
-        }
-    }
-
-    pub fn committed(&self) -> WorthQueryApplicationInvariantReadView<'_, Schema> {
-        WorthQueryApplicationInvariantReadView {
-            aspects: self.lower.committed_aspect_states(),
-            relations: self.lower.committed_relations(),
-            touched_entities: self.lower.touched().direct_visible_entity_ids().to_vec(),
-            proposal_affinity: self.lower.proposal_affinity(),
-            binding_identity: self.binding_identity.clone(),
-            admission: self.admission.clone(),
-            posture: ViewPosture::Committed,
-            reads: &self.reads,
-            _schema: PhantomData,
-        }
-    }
-}
-
-impl<'borrow, 'runtime, Schema> WorthQueryApplicationInvariantContext<'borrow, 'runtime, Schema> {
-    pub(super) fn new(
-        lower: &'borrow CustomInvariantExecutionContext<'runtime>,
-        binding_identity: ApplicationSchemaBindingIdentity,
-        admission: std::sync::Arc<ApplicationInvariantAdmission>,
-        preparation_reads: WorthQueryInvariantProjectionWork,
-    ) -> Self {
-        Self {
-            lower,
-            binding_identity,
-            admission: ApplicationInvariantAdmissionAccess::Evaluation(admission),
-            reads: InvariantReadObservation::from_preparation(preparation_reads),
-            _schema: PhantomData,
-        }
-    }
-
-    /// Observed application preparation acquisitions plus evaluation acquisitions.
-    /// Native private identity preparation is outside these observations.
-    /// Each evaluation starts from the same immutable preparation observation;
-    /// creating another view does not reset it. Counts do not affect the verdict.
-    pub fn reads(&self) -> WorthQueryInvariantProjectionWork {
-        self.reads.reads()
-    }
-
-    pub fn proposed(&self) -> WorthQueryApplicationInvariantReadView<'_, Schema> {
-        WorthQueryApplicationInvariantReadView {
-            aspects: self.lower.aspect_states(),
-            relations: self.lower.relations(),
-            touched_entities: self.lower.touched().direct_visible_entity_ids().to_vec(),
-            proposal_affinity: self.lower.proposal_affinity(),
-            binding_identity: self.binding_identity.clone(),
-            admission: self.admission.clone(),
-            posture: ViewPosture::Proposed,
-            reads: &self.reads,
-            _schema: PhantomData,
-        }
-    }
-
-    pub fn committed(&self) -> WorthQueryApplicationInvariantReadView<'_, Schema> {
-        WorthQueryApplicationInvariantReadView {
-            aspects: self.lower.committed_aspect_states(),
-            relations: self.lower.committed_relations(),
-            touched_entities: self.lower.touched().direct_visible_entity_ids().to_vec(),
-            proposal_affinity: self.lower.proposal_affinity(),
-            binding_identity: self.binding_identity.clone(),
-            admission: self.admission.clone(),
-            posture: ViewPosture::Committed,
-            reads: &self.reads,
-            _schema: PhantomData,
-        }
-    }
-}
+mod context;
 
 impl<'runtime, Schema> WorthQueryApplicationInvariantReadView<'runtime, Schema> {
     fn check_binding(

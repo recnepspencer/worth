@@ -1,4 +1,6 @@
 use super::*;
+mod consumer;
+mod postures;
 
 fn roots() -> BTreeMap<String, String> {
     BTreeMap::from([
@@ -15,7 +17,7 @@ fn run(source: &str, registrations: &str) -> Result<(), Vec<String>> {
     check_sources(&files, roots(), "bindings.toml")
 }
 fn registration(binding: &str) -> String {
-    format!("[[binding]]\nsource = 'app/lib.rs'\nbinding = '{binding}'\nforbidden_types = ['GraphKey', 'ObjectName']\n")
+    format!("[[binding]]\nsource = 'app/lib.rs'\nbinding = '{binding}'\nposture='domain'\nreason='reference-free fixture value'\nforbidden_types = ['GraphKey', 'ObjectName']\n")
 }
 
 #[test]
@@ -78,7 +80,7 @@ fn actual_imports_and_module_definitions_determine_the_referred_type() {
             struct Leaf { v: Wrap<Alias> }
             ::worth_query_decl::facade::worth_query_value_binding!(Binding for Leaf { identity: "a.v1", binary: Codec, });
         "#.into()),
-        ("bindings.toml".into(), "[[binding]]\nsource='app/binding.rs'\nbinding='Binding'\nforbidden_types=['app::owner::ObjectName']".into()),
+        ("bindings.toml".into(), "[[binding]]\nsource='app/binding.rs'\nbinding='Binding'\nposture='domain'\nreason='reference-free fixture value'\nforbidden_types=['app::owner::ObjectName']".into()),
     ]);
     let error = check_sources(&files, roots(), "bindings.toml")
         .unwrap_err()
@@ -168,7 +170,7 @@ fn module_paths_are_traced_from_the_actual_crate_source() {
         ("app/entry.rs".into(), "#[path = \"values/mod.rs\"] mod values;".into()),
         ("app/values/mod.rs".into(), "mod binding;".into()),
         ("app/values/binding.rs".into(), "struct Leaf(u64); ::worth_query_decl::facade::worth_query_value_binding!(Binding for Leaf { identity: \"a.v1\", binary: Codec, });".into()),
-        ("bindings.toml".into(), "[[binding]]\nsource='app/values/binding.rs'\nbinding='Binding'\nforbidden_types=[]".into()),
+        ("bindings.toml".into(), "[[binding]]\nsource='app/values/binding.rs'\nbinding='Binding'\nposture='domain'\nreason='reference-free fixture value'\nforbidden_types=[]".into()),
     ]);
     assert_eq!(check_sources(&files, roots(), "bindings.toml"), Ok(()));
 }

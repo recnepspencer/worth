@@ -207,11 +207,9 @@ impl DeclarativeLiveQueryRequest {
         &self,
     ) -> Result<crate::runtime::WorthQueryMutationTargetCollectionIdentity, IdentityDerivationDenial>
     {
-        Ok(
-            crate::runtime::WorthQueryMutationTargetCollectionIdentity::new(
-                "declarative-live-request-target",
-                self.target.clone(),
-            )?,
+        crate::runtime::WorthQueryMutationTargetCollectionIdentity::new(
+            "declarative-live-request-target",
+            self.target.clone(),
         )
     }
 

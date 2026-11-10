@@ -194,6 +194,7 @@ fn workflow_cleanup_pending_retains_run_until_live_artifact_owner_closes() {
 }
 
 #[test]
+#[expect(clippy::disallowed_methods, reason = "Foreign-thread court")]
 fn workflow_cleanup_thread_failure_returns_the_same_terminal_for_retry() {
     let host_request = worth_query_testkit_execution_primary_graph_application_attempt::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);

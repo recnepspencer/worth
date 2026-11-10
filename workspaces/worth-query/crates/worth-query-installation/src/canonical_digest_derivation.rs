@@ -2,7 +2,7 @@ use worth_foundational::facade::{
     canonicalization, prepare_canonical_basis_sequence, CanonicalBasisDomain, CanonicalBasisEntry,
     CanonicalBasisEntryKind, CanonicalBasisLocus, CanonicalBasisReadyArtifact, CanonicalBasisValue,
     CanonicalDigestAlgorithmId, CanonicalDigestDerivationDenial, CanonicalDigestId,
-    CanonicalDigestWorkBudget, CanonicalIntegerWidth, CanonicalizationRuleVersion, InternedString,
+    CanonicalDigestWorkBudget, CanonicalIntegerWidth, CanonicalizationRuleVersion,
 };
 
 use crate::canonical_work::WorthQueryCanonicalWorkEvidence;

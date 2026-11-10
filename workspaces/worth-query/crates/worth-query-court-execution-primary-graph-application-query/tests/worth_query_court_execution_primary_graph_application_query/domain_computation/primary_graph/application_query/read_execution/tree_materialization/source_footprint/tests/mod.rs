@@ -108,7 +108,7 @@ pub fn managed_order_matches_legacy_for_stable_keys_and_full_equality(
     let mut other = earlier.clone();
     (*other.field_mut_for_test()) = FieldKey::new("other-field").unwrap();
     let a = adjacency(
-        (*base.root_for_test()),
+        *base.root_for_test(),
         RelationalAdjacencyDirection::Incoming,
     );
     let mut b = a.clone();

@@ -113,9 +113,8 @@ impl WorthQueryWorkspace {
         &self,
         handoff: WorthQueryDerivedMaterializationExecutionHandoff,
     ) -> Result<WorthQueryDerivedMaterializationExecutionBinding, IdentityDerivationDenial> {
-        Ok(self
-            .runtime
-            .prepare_derived_materialization_execution_binding(handoff)?)
+        self.runtime
+            .prepare_derived_materialization_execution_binding(handoff)
     }
 
     pub(crate) fn execute_bound_derived_materialization(
@@ -153,9 +152,8 @@ impl WorthQueryWorkspace {
         &self,
         handoff: WorthQueryDerivedInspectionExecutionHandoff,
     ) -> Result<WorthQueryDerivedInspectionExecutionBinding, IdentityDerivationDenial> {
-        Ok(self
-            .runtime
-            .prepare_derived_inspection_execution_binding(handoff)?)
+        self.runtime
+            .prepare_derived_inspection_execution_binding(handoff)
     }
 
     pub(crate) fn execute_bound_derived_inspection(
@@ -261,16 +259,14 @@ impl WorthQueryRuntime {
         &self,
         handoff: WorthQueryDerivedMaterializationExecutionHandoff,
     ) -> Result<WorthQueryDerivedMaterializationExecutionBinding, IdentityDerivationDenial> {
-        Ok(WorthQueryDerivedMaterializationExecutionBinding::from_handoff(handoff)?)
+        WorthQueryDerivedMaterializationExecutionBinding::from_handoff(handoff)
     }
 
     pub(crate) fn prepare_derived_inspection_execution_binding(
         &self,
         handoff: WorthQueryDerivedInspectionExecutionHandoff,
     ) -> Result<WorthQueryDerivedInspectionExecutionBinding, IdentityDerivationDenial> {
-        Ok(WorthQueryDerivedInspectionExecutionBinding::from_handoff(
-            handoff,
-        )?)
+        WorthQueryDerivedInspectionExecutionBinding::from_handoff(handoff)
     }
 
     pub(crate) fn execute_derived_materialization_execution_binding(

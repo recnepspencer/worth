@@ -100,7 +100,7 @@ impl CausalInspectionRepresentativeRowDigestSet {
         family: CausalEvidenceFamily,
         failure_digest: &str,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::from_failure(kind, family.as_str(), failure_digest)?)
+        Self::from_failure(kind, family.as_str(), failure_digest)
     }
 
     pub(in crate::runtime::inspection::causal::certification) fn from_failure(

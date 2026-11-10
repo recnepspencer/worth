@@ -52,7 +52,7 @@ where
                     crate::application_entry::WorthQueryApplicationOutputDemandDenial::History(cause),
                 ))?
             } else {
-                let admitted = request.query(demand.source_intent()).with_admitted_query(phase,
+                request.query(demand.source_intent()).with_admitted_query(phase,
                 |_, binding, external, control| {
                     let access = worth_query_execution::publication_boundary::program_publication_access();
                     let read = application.execute_history_dependent_output_query::<ParentDemand, Connection, Source<Schema, ChildDemand<Schema, Connection>>>(
@@ -67,8 +67,7 @@ where
             ).map_err(WorthQueryRequiredOutputPreparationDenial::SourceQuery)?
                 .map_err(|cause| WorthQueryRequiredOutputPreparationDenial::Demand(
                     crate::application_entry::WorthQueryApplicationOutputDemandDenial::History(cause),
-                ))?;
-                admitted
+                ))?
             };
             Ok(WorthQueryApplicationProgramDemandHandle::new_history(
                 admitted,

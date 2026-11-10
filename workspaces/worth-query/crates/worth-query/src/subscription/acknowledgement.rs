@@ -1,5 +1,4 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::attachment_digest::SubscriptionConsumerAttachmentDigest;
 use super::evidence_identities::{

@@ -1,4 +1,4 @@
-//! Install the original-request preparation phase before any invariant family.
+//! Prepare managed Sources after Native prerequisites and before custom invariants.
 use super::preparation::{ManagedIndexSourcePreparation, PreparedSourceProgram, SourceViews};
 use super::staged::PreparedManagedIndexSources;
 use super::SourcePreparationGroup;
@@ -24,7 +24,7 @@ pub(in crate::validation::candidate_source) use discovery::DiscoveredSource;
 
 impl AppliedMutationDraft {
     pub(crate) fn prepare_managed_sources(
-        &mut self,
+        &self,
         execution: worth_execution::ExecutionRequest<'_, '_>,
         runtime: &RelationalPreparationRuntime,
         selected: SelectedRelationalBranchRead<'_>,

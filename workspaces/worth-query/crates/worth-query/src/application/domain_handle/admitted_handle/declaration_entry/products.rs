@@ -21,6 +21,7 @@ use crate::application::{
     WorthQueryDeclarationRouteIntent, WorthQueryDeclarationRoutePlan,
     WorthQueryDeclarationRoutePlanTerminalError,
 };
+#[cfg(test)]
 use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::super::WorthQueryInstalledDomainDeclarationContext;

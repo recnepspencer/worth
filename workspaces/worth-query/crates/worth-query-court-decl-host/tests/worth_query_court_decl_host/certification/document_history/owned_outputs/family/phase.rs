@@ -1,4 +1,4 @@
-//! Shared optional predecessor fixture program is declared at its real owner.
+//! Optional predecessor observations and lifecycle bindings stay at their fixture owner.
 macro_rules! producer_operation {
     (ConvergentPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => {
         worth_query_operation!(pub ConvergentPreserve for Schema, input InputBinding; access {
@@ -76,12 +76,6 @@ macro_rules! producer_member_effect {
         $writer.write_field(&member, MemberValue::at("MemberValue"), $input.0.value + 1)?;
     }};
     ($operation:ident, $writer:ident, $decision:ident, $input:ident) => { () };
-}
-macro_rules! predecessor_program {
-    (PredecessorInitial) => {
-        use super::super::predecessor::{fixture_world as world, program};
-    };
-    ($other:ident) => {};
 }
 // Shared fixture hooks default to no predecessor observation.
 macro_rules! predecessor_contract {

@@ -23,11 +23,11 @@ fn partition_metadata_refusal_preserves_prior_and_its_funded_view_lasts_until_fi
         .keys_for_test()
         .next()
         .unwrap();
-    let original = (*(*prior.partitions_for_test())
+    let original = (*prior.partitions_for_test())
         .get_for_test(&first_identity)
         .unwrap()
-        .key_for_test())
-    .0;
+        .key_for_test()
+        .0;
     let request = live_scope();
     let narrow = QueryRequestExecution::open_for_test(
         RuntimeWorldExecutionPlacement::Serial(test_policy(std::num::NonZeroUsize::MIN, Some(1))),
@@ -84,7 +84,11 @@ fn partition_metadata_refusal_preserves_prior_and_its_funded_view_lasts_until_fi
         "a surviving view retains the changed path grant"
     );
     assert_eq!(
-        (*clone.get_for_test(&first_identity).unwrap().key_for_test()).0,
+        clone
+            .get_for_test(&first_identity)
+            .unwrap()
+            .key_for_test()
+            .0,
         original
     );
     drop(clone);
@@ -94,11 +98,11 @@ fn partition_metadata_refusal_preserves_prior_and_its_funded_view_lasts_until_fi
     );
     assert_eq!((*prior.partitions_for_test()).len_for_test(), count);
     assert_eq!(
-        (*(*prior.partitions_for_test())
+        (*prior.partitions_for_test())
             .get_for_test(&first_identity)
             .unwrap()
-            .key_for_test())
-        .0,
+            .key_for_test()
+            .0,
         original
     );
 }

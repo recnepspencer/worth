@@ -14,7 +14,6 @@ use super::HistorySubsystem;
 impl HistorySubsystem {
     pub(crate) fn install_recovered_canonical_inventory(
         &mut self,
-        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         commits: Vec<Arc<crate::history::data::PositionedCanonicalCommit>>,
         symbols: &crate::symbols::data::StringInterner,
@@ -50,25 +49,22 @@ impl HistorySubsystem {
             .map(|commit| (commit.commit.commit_id, Arc::clone(commit)))
             .collect();
         self.rebuild_catalog_with_live_roots_and_descriptors(
-            lane,
             execution,
             &std::collections::BTreeMap::new(),
             &std::collections::BTreeMap::new(),
             &admitted,
             symbols,
         )?;
-        self.rebuild_recovered_canonical_routes(lane, commits)
+        self.rebuild_recovered_canonical_routes(commits)
             .map_err(|detail| RelationalHistoryRecoveryDenial::Invalid(detail.to_owned()))
     }
 
     pub(super) fn rebuild_catalog_with_live_roots(
         &self,
-        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         symbols: &crate::symbols::data::StringInterner,
     ) -> Result<(), RelationalHistoryRecoveryDenial> {
         self.rebuild_catalog_with_live_roots_and_descriptors(
-            lane,
             execution,
             &std::collections::BTreeMap::new(),
             &std::collections::BTreeMap::new(),
@@ -79,7 +75,6 @@ impl HistorySubsystem {
 
     fn rebuild_catalog_with_live_roots_and_descriptors(
         &self,
-        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         descriptors: &std::collections::BTreeMap<
             crate::history::data::CommitId,
@@ -214,7 +209,6 @@ impl HistorySubsystem {
 
     pub(super) fn readmit_replayed_root_descriptor(
         &self,
-        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         commit_id: crate::history::data::CommitId,
         descriptor: crate::branch::RelationalBranchRootDescriptor,
@@ -283,7 +277,6 @@ impl HistorySubsystem {
         let mut recovered_roots = std::collections::BTreeMap::new();
         recovered_roots.insert(commit_id, Arc::clone(&canonical_root));
         self.rebuild_catalog_with_live_roots_and_descriptors(
-            lane,
             execution,
             &descriptors,
             &recovered_roots,
@@ -295,7 +288,6 @@ impl HistorySubsystem {
 
     pub(crate) fn record_recovered_commit(
         &self,
-        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         envelope: &CanonicalCommitEnvelope,
         allow_reconstructed_replacement: bool,
@@ -317,7 +309,7 @@ impl HistorySubsystem {
                 )
                 .into());
             }
-            self.rebuild_catalog_with_live_roots(lane, execution, symbols)?;
+            self.rebuild_catalog_with_live_roots(execution, symbols)?;
         } else if catalog_artifact.is_none() {
             self.with_ledger_mut(|ledger| {
                 ledger

@@ -1,6 +1,8 @@
 //! A separate ordinary event-text composition shares the actual prefix implementation.
 #[path = "nested/authoring.rs"]
 mod authoring;
+#[cfg(test)]
+pub(super) mod chain;
 pub(super) mod composition;
 #[cfg(test)]
 mod court;
@@ -34,4 +36,16 @@ fn source_path() -> worth_query_decl::facade::application_query::ApplicationQuer
         schema::Directory::reference(),
     )
     .forward_derived(schema::LiveItems::reference())
+}
+
+const PREFIX_SOURCE_SCOPE: worth_query_decl::facade::application_query::ApplicationManagedIndexSourceScope = worth_query_decl::facade::application_query::ApplicationManagedIndexSourceScope::OrderedPredecessor;
+
+const SOURCE_COLD_POLICY:
+    worth_query_decl::facade::application_query::ApplicationManagedIndexColdSource =
+    worth_query_decl::facade::application_query::ApplicationManagedIndexColdSource::AdmitRebuild;
+const SCHEMA_OWNER: &str = "worth.query.consumer.ordered-event-text";
+
+fn source_graph_laws() -> worth_query_decl::facade::application_schema::ApplicationRelationGraphLaws
+{
+    worth_query_decl::facade::application_schema::ApplicationRelationGraphLaws::unbounded()
 }

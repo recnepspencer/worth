@@ -40,7 +40,7 @@ impl NativeManagedSourceInterpretation {
             })
             .map_err(|_| Denial::EncodingInconsistency)
     }
-    pub(in crate::validation::candidate_source) fn content_view(
+    pub(crate) fn content_view(
         &self,
         before: bool,
     ) -> Result<&NativeContentSourceView, crate::derived_relation::DerivedRelationReadDenial> {

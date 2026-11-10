@@ -10,8 +10,7 @@ pub enum SealedReadLayout {
     OwnerFixture,
 }
 
-pub(in crate::domain_computation::primary_graph::application_attempt::read_set) struct CheckedReadLayout
-{
+pub struct CheckedReadLayout {
     pub(super) contracts: Arc<WorthQueryCompiledApplicationOperationContracts>,
     pub(super) scopes:
         crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,

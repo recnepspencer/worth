@@ -15,7 +15,7 @@ fn round_trip(host: &world::Host) {
     } = courts::edited(host, &request, false);
     let document = courts::configure_all_trees(host, document);
     let contacts = host.producer_contacts_on_this_thread_for_test();
-    let undo = courts::checkout(&document, &request, before, selection, 0xf057_01)
+    let undo = courts::checkout(&document, &request, before, selection, 0x00f0_5701)
         .unwrap_or_else(|cause| panic!("healthy forest: {cause:?}"));
     let undo_branch = undo.physical_endpoint().product_branch();
     assert_eq!(world::model(host, undo_branch).value, 1);
@@ -28,7 +28,7 @@ fn round_trip(host: &world::Host) {
     // This deliberately selected step recorded no output completion. Both old
     // output versions are stale for value 2 and must fallback, then qualify at
     // the single endpoint containing both actual producer publications.
-    let redo = courts::checkout(&document, &request, after, undo, 0xf057_02)
+    let redo = courts::checkout(&document, &request, after, undo, 0x00f0_5702)
         .unwrap_or_else(|cause| panic!("stale forest: {cause:?}"));
     let redo_branch = redo.physical_endpoint().product_branch();
     let refreshed = world::outputs(host, redo_branch);

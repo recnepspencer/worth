@@ -1,6 +1,9 @@
 //! Sealed test doors over this module's private members.
 use super::*;
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct WorthQueryConditionalOperationAlreadyInstalled;
+
 impl<Schema> WorthQueryConditionalOperationRegistry<Schema> {
     #[doc(hidden)]
     pub fn admit_clock_for_test(
@@ -17,7 +20,7 @@ impl<Schema> WorthQueryConditionalOperationRegistry<Schema> {
     pub fn install_for_test(
         &mut self,
         operation: Box<dyn WorthQueryInstalledConditionalOperation<Schema>>,
-    ) -> Result<(), ()> {
-        Self::install(self, operation)
+    ) -> Result<(), WorthQueryConditionalOperationAlreadyInstalled> {
+        Self::install(self, operation).map_err(|()| WorthQueryConditionalOperationAlreadyInstalled)
     }
 }

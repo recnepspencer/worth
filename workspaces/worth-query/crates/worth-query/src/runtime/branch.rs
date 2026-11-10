@@ -4,7 +4,6 @@ use super::{
     WorthQueryIntentDenialEvidence, WorthQueryIntentSourceLane, WorthQueryRuntime,
     WorthQueryRuntimeError, WorthQueryRuntimeFacadeFamily,
 };
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::WorthQuerySnapshotIdentity;
 use crate::session_label::WorthQuerySessionLabel;
 

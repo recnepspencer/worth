@@ -44,7 +44,7 @@ fn returned_findings_retain_native_request_memory_until_the_result_drops() {
         .with_host_advancement(|phase| {
             let execution = phase
                 .execution_for_for_test(
-                    &(*(*world.application.runtime_for_test()).product_runtime_for_test()),
+                    (*world.application.runtime_for_test()).product_runtime_for_test(),
                 )
                 .unwrap();
             let available = match execution.reserve(1_u64 << 60) {

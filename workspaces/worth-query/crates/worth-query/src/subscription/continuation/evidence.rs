@@ -1,4 +1,5 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
+#[cfg(test)]
 use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity_authority::{QueryProjectionIdentity, QuerySubscriptionIdentityKind};
 

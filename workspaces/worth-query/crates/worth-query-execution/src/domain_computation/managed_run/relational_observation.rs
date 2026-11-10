@@ -84,7 +84,7 @@ impl WorthQueryManagedRelationalObservation {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) struct WorthQueryManagedRelationalObservationReleaseReceipt {
+pub struct WorthQueryManagedRelationalObservationReleaseReceipt {
     bridge_release: Option<RelationalBridgeObservationReleaseReceipt>,
 }
 

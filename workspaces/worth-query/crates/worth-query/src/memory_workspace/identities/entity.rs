@@ -70,7 +70,7 @@ impl WorthQueryEntityIdentity {
             QueryEntityIdentityKind,
         >,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(super::super::truth_identity_admission::admit_authored_entity_token(token)?)
+        super::super::truth_identity_admission::admit_authored_entity_token(token)
     }
 
     pub(crate) fn relational_record_parts(&self) -> Option<RelationalBridgeRecordIdentityParts> {

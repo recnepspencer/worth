@@ -85,8 +85,8 @@ fn mean_reported_update_nodes_obey_the_random_treap_depth_law() {
                 keys.iter().map(|id| (*id, 2)).collect(),
                 u64::MAX,
             );
-            reconcile((*next.report_for_test()));
-            let TreeRun::Edited(metrics) = (*next.report_for_test()) else {
+            reconcile(*next.report_for_test());
+            let TreeRun::Edited(metrics) = *next.report_for_test() else {
                 panic!("mean workload must edit")
             };
             let metrics = metrics

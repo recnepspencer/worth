@@ -29,10 +29,7 @@ fn family_publication_selection_preserves_ordered_heads_without_billing() {
             usize::from(population)
         );
         for (candidate, expected) in (*selected.candidates_for_test()).iter().zip(&expected) {
-            assert!(Arc::ptr_eq(
-                &(*candidate.correspondence_for_test()),
-                expected
-            ));
+            assert!(Arc::ptr_eq(candidate.correspondence_for_test(), expected));
         }
         assert!(!(*selected.ambiguous_publication_for_test()));
     }

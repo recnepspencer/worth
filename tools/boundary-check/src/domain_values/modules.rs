@@ -1,6 +1,7 @@
 //! Resolve through real Rust module declarations and explicit imports.
 use crate::config::Files;
-use std::collections::BTreeMap;
+use std::cell::RefCell;
+use std::collections::{BTreeMap, BTreeSet};
 use syn::Item;
 
 #[derive(Clone)]
@@ -10,10 +11,15 @@ pub(super) struct Module {
     directory: String,
     attribute_directory: String,
     pub items: Vec<Item>,
+    included: Vec<String>,
+    namespace_ambiguous: bool,
 }
 pub(super) struct Sources<'a> {
     pub files: &'a Files,
     pub roots: BTreeMap<String, String>,
+    pub certified: RefCell<BTreeMap<Vec<String>, Module>>,
+    parsed: RefCell<BTreeMap<Vec<String>, Module>>,
+    pub syntax: RefCell<BTreeSet<Vec<String>>>,
 }
 
 fn join(directory: &str, relative: &str) -> Result<String, String> {
@@ -36,7 +42,28 @@ fn join(directory: &str, relative: &str) -> Result<String, String> {
     Ok(parts.join("/"))
 }
 impl Sources<'_> {
-    fn file(&self, name: Vec<String>, source: String, directory: String) -> Result<Module, String> {
+    pub(super) fn new(
+        files: &crate::config::Files,
+        roots: BTreeMap<String, String>,
+    ) -> Sources<'_> {
+        Sources {
+            files,
+            roots,
+            certified: RefCell::new(BTreeMap::new()),
+            parsed: RefCell::new(BTreeMap::new()),
+            syntax: RefCell::new(BTreeSet::new()),
+        }
+    }
+    fn file(
+        &self,
+        name: Vec<String>,
+        source: String,
+        directory: String,
+        namespace_ambiguous: bool,
+    ) -> Result<Module, String> {
+        if !namespace_ambiguous && let Some(module) = self.parsed.borrow().get(&name) {
+            return Ok(module.clone());
+        }
         let text = self
             .files
             .get(&source)
@@ -48,13 +75,22 @@ impl Sources<'_> {
             .ok_or("source directory missing")?
             .0
             .to_owned();
-        Ok(Module {
+        let mut module = Module {
             name,
             source,
             directory,
             attribute_directory,
             items: file.items,
-        })
+            included: Vec::new(),
+            namespace_ambiguous,
+        };
+        self.expand_includes(&mut module)?;
+        if !namespace_ambiguous {
+            self.parsed
+                .borrow_mut()
+                .insert(module.name.clone(), module.clone());
+        }
+        Ok(module)
     }
     fn root(&self, name: &str) -> Result<Module, String> {
         let source = self
@@ -64,21 +100,40 @@ impl Sources<'_> {
         let (parent, _) = source
             .rsplit_once('/')
             .ok_or("crate source has no directory")?;
-        self.file(vec![name.into()], source.clone(), parent.into())
+        self.file(vec![name.into()], source.clone(), parent.into(), false)
     }
     pub(super) fn child(&self, parent: &Module, child: &syn::ItemMod) -> Result<Module, String> {
         super::attributes::check(&child.attrs, &parent.items)?;
         let mut name = parent.name.clone();
         name.push(child.ident.to_string());
+        let namespace_ambiguous = parent.namespace_ambiguous
+            || parent
+                .items
+                .iter()
+                .filter(|item| matches!(item, Item::Mod(module) if module.ident == child.ident))
+                .count()
+                != 1;
+        if !namespace_ambiguous && let Some(module) = self.parsed.borrow().get(&name) {
+            return Ok(module.clone());
+        }
         let directory = join(&parent.directory, &child.ident.to_string())?;
         if let Some((_, items)) = &child.content {
-            return Ok(Module {
+            let mut module = Module {
                 name,
                 source: parent.source.clone(),
                 attribute_directory: directory.clone(),
                 directory,
                 items: items.clone(),
-            });
+                included: Vec::new(),
+                namespace_ambiguous,
+            };
+            self.expand_includes(&mut module)?;
+            if !namespace_ambiguous {
+                self.parsed
+                    .borrow_mut()
+                    .insert(module.name.clone(), module.clone());
+            }
+            return Ok(module);
         }
         for attribute in &child.attrs {
             if attribute.path().is_ident("path") {
@@ -98,7 +153,7 @@ impl Sources<'_> {
                                         .ok_or("module must be Rust source")?,
                                 )?
                             };
-                            return self.file(name, source, directory);
+                            return self.file(name, source, directory, namespace_ambiguous);
                         }
                     }
                 }
@@ -111,12 +166,15 @@ impl Sources<'_> {
             self.files.contains_key(&flat),
             self.files.contains_key(&nested),
         ) {
-            (true, false) => self.file(name, flat, directory),
-            (false, true) => self.file(name, nested, directory),
+            (true, false) => self.file(name, flat, directory, namespace_ambiguous),
+            (false, true) => self.file(name, nested, directory, namespace_ambiguous),
             _ => Err(format!("missing or ambiguous module {}", name.join("::"))),
         }
     }
     pub fn module(&self, path: &[String]) -> Result<Module, String> {
+        if let Some(module) = self.parsed.borrow().get(path) {
+            return Ok(module.clone());
+        }
         let (root, rest) = path.split_first().ok_or("empty module path")?;
         let mut module = self.root(root)?;
         for segment in rest {
@@ -135,7 +193,58 @@ impl Sources<'_> {
         }
         Ok(module)
     }
-    pub fn find_source(&self, source: &str) -> Result<Vec<String>, String> {
+    fn expand_includes(&self, module: &mut Module) -> Result<(), String> {
+        let directory = module
+            .source
+            .rsplit_once('/')
+            .ok_or("source directory missing")?
+            .0;
+        module.items = self.include_items(&module.items, directory, &mut module.included, 0)?;
+        Ok(())
+    }
+    fn include_items(
+        &self,
+        items: &[Item],
+        directory: &str,
+        included: &mut Vec<String>,
+        depth: usize,
+    ) -> Result<Vec<Item>, String> {
+        if depth > 128 {
+            return Err("source inclusion depth refused".into());
+        }
+        let mut expanded = Vec::new();
+        for item in items {
+            if let Item::Macro(item) = item
+                && item.mac.path.is_ident("include")
+            {
+                super::attributes::check(&item.attrs, items)?;
+                let path = syn::parse2::<syn::LitStr>(item.mac.tokens.clone())
+                    .map_err(|_| "source inclusion requires a literal path")?;
+                let path = join(directory, &path.value())?;
+                let text = self
+                    .files
+                    .get(&path)
+                    .ok_or_else(|| format!("included source unavailable: {path}"))?;
+                let file = syn::parse_file(text).map_err(|error| format!("{path}: {error}"))?;
+                super::attributes::check(&file.attrs, &file.items)?;
+                if file.items.iter().any(|item| matches!(item, Item::Mod(_))) {
+                    return Err(
+                        "included module declarations require an explicit module source".into(),
+                    );
+                }
+                included.push(path.clone());
+                let directory = path
+                    .rsplit_once('/')
+                    .ok_or("included source directory missing")?
+                    .0;
+                expanded.extend(self.include_items(&file.items, directory, included, depth + 1)?);
+            } else {
+                expanded.push(item.clone());
+            }
+        }
+        Ok(expanded)
+    }
+    pub fn find_sources(&self, source: &str) -> Result<Vec<Vec<String>>, String> {
         // Longest real crate-root directory owns a source, not a caller mapping.
         let mut roots: Vec<_> = self
             .roots
@@ -145,19 +254,24 @@ impl Sources<'_> {
                     .is_some_and(|(directory, _)| source.starts_with(&format!("{directory}/")))
             })
             .collect();
-        roots.sort_by_key(|(_, path)| std::cmp::Reverse(path.len()));
-        let Some((root, _)) = roots.first() else {
-            return Err(format!("no Cargo library owns {source}"));
+        roots.sort_by_key(|(_, path)| std::cmp::Reverse(path.rsplit_once('/').unwrap().0.len()));
+        let Some((_, nearest)) = roots.first() else {
+            return Err(format!("no Cargo crate owns {source}"));
         };
+        let directory = nearest.rsplit_once('/').unwrap().0;
         let mut found = Vec::new();
-        self.find(&self.root(root)?, source, &mut found, 0)?;
-        if found.len() != 1 {
+        for (root, path) in roots {
+            if path.rsplit_once('/').unwrap().0 == directory {
+                self.find(&self.root(root)?, source, &mut found, 0)?;
+            }
+        }
+        if found.is_empty() {
             return Err(format!(
-                "source needs one actual module context: {source} (found {})",
+                "source needs an actual module context: {source} (found {})",
                 found.len()
             ));
         }
-        Ok(found.remove(0))
+        Ok(found)
     }
     fn find(
         &self,
@@ -172,6 +286,9 @@ impl Sources<'_> {
         if module.source == source {
             found.push(module.name.clone());
             return Ok(());
+        }
+        if module.included.iter().any(|path| path == source) {
+            found.push(module.name.clone());
         }
         for item in &module.items {
             if let Item::Mod(child) = item {

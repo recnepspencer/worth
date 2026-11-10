@@ -219,31 +219,29 @@ fn declared_aspect_value_digest_row(
     clears_existing_value: bool,
     terminal_value_digest: String,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
-            .field_shape(
-                WorthQueryEvidenceTag::new("role"),
-                "declared-aspect-value-row",
-            )
-            .field_shape(WorthQueryEvidenceTag::new("prefix"), prefix)
-            .field_value(
-                WorthQueryEvidenceTag::new("aspect_touch"),
-                aspect_touch.admitted_touch_digest_part(),
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("operation"),
-                if clears_existing_value {
-                    "clear"
-                } else {
-                    "set"
-                },
-            )
-            .field_value(
-                WorthQueryEvidenceTag::new("terminal_value"),
-                terminal_value_digest,
-            )
-            .seal()?,
-    )
+    worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
+        .field_shape(
+            WorthQueryEvidenceTag::new("role"),
+            "declared-aspect-value-row",
+        )
+        .field_shape(WorthQueryEvidenceTag::new("prefix"), prefix)
+        .field_value(
+            WorthQueryEvidenceTag::new("aspect_touch"),
+            aspect_touch.admitted_touch_digest_part(),
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("operation"),
+            if clears_existing_value {
+                "clear"
+            } else {
+                "set"
+            },
+        )
+        .field_value(
+            WorthQueryEvidenceTag::new("terminal_value"),
+            terminal_value_digest,
+        )
+        .seal()
 }
 
 fn symbolic_aspect_reference_digest_row(
@@ -280,35 +278,31 @@ fn symbolic_aspect_reference_digest_row(
             collection.evidence_identity(),
         );
     }
-    Ok(identity.seal()?)
+    identity.seal()
 }
 
 fn touched_aspect_digest_row(
     prefix: &'static str,
     aspect_touch: &WorthQueryAspectTouch,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
-            .field_shape(WorthQueryEvidenceTag::new("role"), "touched-aspect-row")
-            .field_shape(WorthQueryEvidenceTag::new("prefix"), prefix)
-            .field_value(
-                WorthQueryEvidenceTag::new("aspect_touch"),
-                aspect_touch.admitted_touch_digest_part(),
-            )
-            .seal()?,
-    )
+    worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
+        .field_shape(WorthQueryEvidenceTag::new("role"), "touched-aspect-row")
+        .field_shape(WorthQueryEvidenceTag::new("prefix"), prefix)
+        .field_value(
+            WorthQueryEvidenceTag::new("aspect_touch"),
+            aspect_touch.admitted_touch_digest_part(),
+        )
+        .seal()
 }
 
 fn declared_aspect_value_identity(
     rows: Vec<WorthQueryEvidenceIdentity>,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
-            .field_shape(
-                WorthQueryEvidenceTag::new("role"),
-                "declared-aspect-value-digest",
-            )
-            .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("row"), rows.iter())
-            .seal()?,
-    )
+    worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
+        .field_shape(
+            WorthQueryEvidenceTag::new("role"),
+            "declared-aspect-value-digest",
+        )
+        .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("row"), rows.iter())
+        .seal()
 }

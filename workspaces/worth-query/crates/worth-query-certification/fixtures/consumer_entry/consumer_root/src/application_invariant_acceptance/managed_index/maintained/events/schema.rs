@@ -15,7 +15,7 @@ impl worth_query_decl::facade::application_schema::fragment::Fragment for Catalo
     type Members = (super::composition::Contribution,);
 }
 impl worth_query_decl::facade::application_schema::ApplicationSchema for Catalog {
-    const OWNER: &'static str = "worth.query.consumer.ordered-event-text";
+    const OWNER: &'static str = super::SCHEMA_OWNER;
     const NAME: &'static str = "Catalog";
     const MAJOR: u32 = 1;
     const MINOR: u32 = 0;
@@ -51,7 +51,7 @@ pub(super) fn declare(
                 Contains::reference(),
                 Retires::reference(),
             ),
-            ApplicationRelationGraphLaws::unbounded(),
+            super::source_graph_laws(),
         )
         .principal_binding(CatalogPrincipal::reference());
     paths::declare(history::declare(plain::declare(authoring::declare(

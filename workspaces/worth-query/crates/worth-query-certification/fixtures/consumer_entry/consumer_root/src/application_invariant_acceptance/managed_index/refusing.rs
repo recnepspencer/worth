@@ -23,3 +23,5 @@ const PREFIX_REFINEMENT: Option<
 > = None;
 
 const PREFIX_MAINTENANCE: worth_query_decl::facade::application_query::ApplicationManagedIndexMaintenance = worth_query_decl::facade::application_query::ApplicationManagedIndexMaintenance::Native { cold: worth_query_decl::facade::application_query::ApplicationManagedIndexColdSource::AdmitRebuild };
+
+const PREFIX_SOURCE_SCOPE: worth_query_decl::facade::application_query::ApplicationManagedIndexSourceScope = worth_query_decl::facade::application_query::ApplicationManagedIndexSourceScope::SameAdmittedScope;

@@ -22,7 +22,7 @@ fn active_program_names_an_operation_missing_from_its_declared_routes() {
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     (*world.application.program_support_mut_for_test()) = Some(installed_program_support(
-        &(*world.application.installed_schema_for_test()),
+        world.application.installed_schema_for_test(),
     ));
 
     let request = live_scope();

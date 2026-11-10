@@ -14,13 +14,13 @@ fn exercise(host: &world::Host, configured: bool) {
     let projection = source_projection::Observation::begin();
     let selected = if configured {
         let document = courts::configure_all_trees(host, document);
-        let selected = courts::checkout(&document, &request, before, selection, 0xf057_06)
+        let selected = courts::checkout(&document, &request, before, selection, 0x00f0_5706)
             .unwrap_or_else(|cause| panic!("{cause:?}"));
         host.with_host_advancement(|phase| document.close(&phase).unwrap())
             .unwrap();
         selected
     } else {
-        let selected = courts::checkout(&document, &request, before, selection, 0xf057_07)
+        let selected = courts::checkout(&document, &request, before, selection, 0x00f0_5707)
             .unwrap_or_else(|cause| panic!("{cause:?}"));
         host.with_host_advancement(|phase| document.close(&phase).unwrap())
             .unwrap();
@@ -139,7 +139,7 @@ fn current_source_permission_is_not_needed_for_healthy_verification(host: &world
         "{denial:?}"
     );
     let contacts = host.producer_contacts_on_this_thread_for_test();
-    let selected = courts::checkout(&document, &request, before, current, 0xf057_08)
+    let selected = courts::checkout(&document, &request, before, current, 0x00f0_5708)
         .unwrap_or_else(|cause| {
             panic!("healthy verification must not admit a source query: {cause:?}")
         });

@@ -59,11 +59,11 @@ pub(crate) fn execute_prepared_continuation_on_handle<
             handle.installed_authority(),
         )
     {
-        return Ok(execution_installed_authority_drift_transcript(
+        return execution_installed_authority_drift_transcript(
             request_descriptor,
             linked,
             drift,
-        )?);
+        );
     }
 
     if prepared.operating_context_identity_digest() != handle.operating_context_identity_digest() {
@@ -109,11 +109,7 @@ pub(crate) fn execute_prepared_continuation_on_handle<
 
     let current_evidence = current_readmission_evidence_from_handle(handle, &prepared)?;
     if let Err(denial) = validate_execution_readmission(&prepared, &current_evidence) {
-        return Ok(transcript_from_readmission_denial(
-            request_descriptor,
-            linked,
-            denial,
-        )?);
+        return transcript_from_readmission_denial(request_descriptor, linked, denial);
     }
 
     if prepared.handle_identity_digest() != handle.handle_identity_digest() {

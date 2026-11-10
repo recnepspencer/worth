@@ -4,10 +4,6 @@ use crate::domain_computation::evidence_identity::{
     WorthQueryEvidenceTag,
 };
 
-use worth_runtime_bridge::facade::BridgeCausalEnvelopeDenial;
-
-use super::super::identity::compose_bridge_causal_denial_identity;
-
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum CausalInspectionArtifactKind {
     Admitted,
@@ -128,48 +124,12 @@ impl CausalInspectionMaterializationError {
         })
     }
 
-    fn from_typed_bridge_denial(
-        kind: CausalInspectionMaterializationErrorKind,
-        denial: &BridgeCausalEnvelopeDenial,
-    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
-        let bridge_denial_identity = compose_bridge_causal_denial_identity(denial)?;
-        Ok(Self {
-            kind,
-            failure_identity: WorthQueryEvidenceIdentity::compose(
-                WorthQueryEvidenceScope::CausalInspectionDeniedArtifactDetail,
-            )
-            .field_shape(WorthQueryEvidenceTag::new("kind"), kind.as_str())
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("bridge_denial"),
-                &bridge_denial_identity,
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("bridge_denial_kind"),
-                denial.kind().as_str(),
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("bridge_denial_family"),
-                denial.family().as_str(),
-            )
-            .seal()?,
-        })
-    }
-
     pub fn kind(&self) -> CausalInspectionMaterializationErrorKind {
         self.kind
     }
 
     pub fn failure_digest(&self) -> &str {
         self.failure_identity.as_str()
-    }
-
-    pub(crate) fn from_bridge_assembly_denial(
-        denial: &BridgeCausalEnvelopeDenial,
-    ) -> Result<Self, WorthQueryEvidenceIdentityDerivationDenial> {
-        Ok(Self::from_typed_bridge_denial(
-            CausalInspectionMaterializationErrorKind::MaterializationPolicyOverclaim,
-            denial,
-        )?)
     }
 }
 

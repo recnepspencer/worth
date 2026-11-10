@@ -42,7 +42,7 @@ impl<'phase, 'scope> WorthQueryHistoryOutputAuthority<'phase, 'scope> {
             current: self.current.retained_clone(),
             restored: self.restored.clone(),
             request: self.request.clone(),
-            principal: self.principal.clone(),
+            principal: self.principal,
             selection: self.selection.clone(),
             callback: self.callback.clone(),
         };

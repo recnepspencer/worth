@@ -112,10 +112,9 @@ fn prepare_checkpoint_state(
     )?;
     let partitions =
         prepare_partitions(execution, restored, checkpoint, &branch_root_images, work)?;
-    let history =
-        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+    let history = crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
+        |_lane| {
             prepare_history(
-                lane,
                 execution,
                 restored,
                 checkpoint,
@@ -123,7 +122,8 @@ fn prepare_checkpoint_state(
                 &symbols,
                 work,
             )
-        })?;
+        },
+    )?;
     let lineage =
         crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
             prepare_lineage(lane, restored, checkpoint)

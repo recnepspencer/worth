@@ -81,16 +81,13 @@ pub(super) fn project(
     rows: &ManagedIndexSourceRows<'_>,
     occurrence: ManagedIndexSourceOccurrence,
     graph: &WorthQueryInstalledGraphReadContract,
-    support: Option<ProjectionMembership<'_>>,
+    support: ProjectionMembership<'_>,
 ) -> Result<Entry, MaterialDenial> {
     let row_read = match support {
-        Some(ProjectionMembership::Forward(read)) => {
-            rows.prepare_row_from_read(read, &occurrence)?
-        }
-        Some(ProjectionMembership::Inverse(read)) => {
+        ProjectionMembership::Forward(read) => rows.prepare_row_from_read(read, &occurrence)?,
+        ProjectionMembership::Inverse(read) => {
             rows.prepare_row_from_occurrence(read, &occurrence)?
         }
-        None => rows.prepare_row(&occurrence)?,
     };
     let mut projector = Projector {
         execution,
@@ -123,6 +120,7 @@ pub(super) fn project(
             &mut projector,
             program,
             &occurrence,
+            &row_read,
             fields,
             comparison_depth,
         )?
@@ -135,7 +133,7 @@ pub(super) fn project(
             .try_reserve_exact(program.projection_routes().len())
             .map_err(|_| Storage::AllocationFailed)?;
         for (index, route) in program.projection_routes().iter().enumerate() {
-            let acquired = projector.acquire(program, &occurrence, index, "root", None)?;
+            let acquired = projector.acquire(program, &row_read, index, "root", None)?;
             let relation = acquired.relation;
             let read = acquired.read;
             let occurrences = acquired.occurrences;
@@ -266,15 +264,4 @@ impl Projector<'_, '_, '_> {
         }
         Ok(())
     }
-}
-
-pub(in crate::domain_computation::primary_graph::application_query::managed_index) fn project_row(
-    execution: &ExecutionRequest<'_, '_>,
-    program: &ManagedIndexSourceProgram,
-    rows: &ManagedIndexSourceRows<'_>,
-    occurrence: ManagedIndexSourceOccurrence,
-    graph: &WorthQueryInstalledGraphReadContract,
-) -> Result<(Tree, Arc<SourceFactsAllocation>), MaterialDenial> {
-    let entry = project(execution, program, rows, occurrence, graph, None)?;
-    Ok((entry.row, entry._allocation))
 }

@@ -9,9 +9,7 @@ pub struct AuthoringSourceFacts {
     failure: Option<StoreDenial>,
 }
 pub struct RetainedSourceFacts(ExecutionArray<RetainedFact<Fact>>);
-pub(in crate::domain_computation::primary_graph) struct RetainedSourceFactValues(
-    ExecutionArrayIntoIter<RetainedFact<Fact>>,
-);
+pub struct RetainedSourceFactValues(ExecutionArrayIntoIter<RetainedFact<Fact>>);
 impl AuthoringSourceFacts {
     pub fn new(control: StorageControl<'_, '_>) -> Result<Self, StoreDenial> {
         Ok(Self {

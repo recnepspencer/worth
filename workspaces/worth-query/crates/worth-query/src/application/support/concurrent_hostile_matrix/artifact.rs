@@ -121,7 +121,7 @@ impl WorthQueryConcurrentHostileMatrixArtifact {
         counters: &WorthQueryConcurrentHostileMatrixCounterSnapshot,
         posture: WorthQueryConcurrentHostileMatrixPosture,
     ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-        Ok(WorthQueryEvidenceIdentity::compose(
+        WorthQueryEvidenceIdentity::compose(
             WorthQueryEvidenceScope::RuntimeHostileCertificationArtifact,
         )
         .field_usize(
@@ -169,6 +169,6 @@ impl WorthQueryConcurrentHostileMatrixArtifact {
             WorthQueryEvidenceTag::new("phase_sixteen_posture"),
             posture.as_str(),
         )
-        .seal()?)
+        .seal()
     }
 }

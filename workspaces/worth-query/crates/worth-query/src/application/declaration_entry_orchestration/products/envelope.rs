@@ -7,7 +7,6 @@ use crate::application::{
     WorthQueryDeclarationInput, WorthQueryDeclarationRouteIntent, WorthQueryDomainEntryMarker,
     WorthQueryDomainOperatingContext, WorthQueryInstalledDomainDeclarationContext,
 };
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::common::{envelope_orchestration_identity, envelope_terminal_from_checked};
 use super::transcript::WorthQueryDeclarationEnvelopeOrchestrationTranscript;

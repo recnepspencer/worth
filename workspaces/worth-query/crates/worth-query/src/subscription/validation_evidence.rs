@@ -25,12 +25,10 @@ pub(crate) fn validation_shape_role_evidence_identity(
     role: &'static str,
     shape: &str,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
-            .field_shape(WorthQueryEvidenceTag::new("role"), role)
-            .field_shape(WorthQueryEvidenceTag::new("subject"), shape)
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
+        .field_shape(WorthQueryEvidenceTag::new("role"), role)
+        .field_shape(WorthQueryEvidenceTag::new("subject"), shape)
+        .seal()
 }
 
 pub(crate) fn validation_u64_role_evidence_identity(
@@ -58,13 +56,11 @@ pub(crate) fn validation_label_list_evidence_identity(
     role: &'static str,
     labels: &[String],
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
-            .field_shape(WorthQueryEvidenceTag::new("role"), role)
-            .field_value_sequence(
-                WorthQueryEvidenceTag::new("subject"),
-                labels.iter().map(String::as_str),
-            )
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::SubscriptionActivationReceipt)
+        .field_shape(WorthQueryEvidenceTag::new("role"), role)
+        .field_value_sequence(
+            WorthQueryEvidenceTag::new("subject"),
+            labels.iter().map(String::as_str),
+        )
+        .seal()
 }

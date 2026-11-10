@@ -74,10 +74,7 @@ where
             WorthQueryLowerRuntimeBoundaryBoundContributionTarget,
         >,
 {
-    Ok(ready_payload(
-        lower_runtime_target("boundary-provenance")?,
-        payload,
-    )?)
+    ready_payload(lower_runtime_target("boundary-provenance")?, payload)
 }
 
 fn forensic_support_profile() -> FoundationalProfileSet {

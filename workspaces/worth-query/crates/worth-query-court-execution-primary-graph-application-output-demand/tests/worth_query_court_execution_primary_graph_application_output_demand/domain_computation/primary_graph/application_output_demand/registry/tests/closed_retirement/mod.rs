@@ -1,5 +1,4 @@
 use std::sync::Arc;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandRecord;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandState;
 use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenial;
 use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenialKind;
@@ -12,7 +11,6 @@ use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_co
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::closed_retirement::ready;
 
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint;
 #[test]
 fn a_closing_dependent_keeps_its_claim_while_the_newest_row_still_refreshes() {
     let (registry, interest, old, newest) = claim_on_superseded(DemandState::Running);
@@ -96,7 +94,7 @@ fn an_unpublished_refresh_its_last_owner_lets_go_gives_the_occurrence_back() {
         *__base.successor_of_mut_for_test() = __successor_of;
         __base
     };
-    let wake = Arc::clone(&(*refresh_record.wake_for_test()));
+    let wake = Arc::clone(refresh_record.wake_for_test());
     {
         let mut state = (*registry.state_for_test()).lock().unwrap();
         (*state.records_mut_for_test()).insert_for_test(replaced.clone(), replaced_record);
@@ -107,7 +105,7 @@ fn an_unpublished_refresh_its_last_owner_lets_go_gives_the_occurrence_back() {
     assert!(!(*state.records_for_test()).contains_key_for_test(&refresh));
     // The Ready the refresh replaced answers for the occurrence again.
     assert!(
-        matches!(&(*(*state.records_for_test())[&replaced].state_for_test()), DemandState::Output(output)
+        matches!((*state.records_for_test())[&replaced].state_for_test(), DemandState::Output(output)
         if matches!(output.advancement_for_test(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputAdvancement::Idle))
     );
 }

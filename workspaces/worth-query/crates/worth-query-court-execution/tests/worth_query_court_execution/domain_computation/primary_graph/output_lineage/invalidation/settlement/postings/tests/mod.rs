@@ -66,7 +66,7 @@ fn source_and_output_facts_share_one_key_but_keep_both_composite_ordinals() {
     let mut state = MarkState::initial_for_test();
     let projection = prepared.into_projection_for_test(0, source.len(), output.len(), None);
     worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_bindings::bind(&mut state, &projection, &identity).unwrap();
-    let ordinals = &(*projection.ordinals_for_test());
+    let ordinals = projection.ordinals_for_test();
     let key = FactPostingKey::EntityLifecycle(entity);
     let own = ordinals.get(&key).unwrap();
     assert_eq!(own.iter().copied().collect::<Vec<_>>(), vec![0, 1]);

@@ -116,7 +116,7 @@ impl QuerySubscriptionFamilyCoverageRow {
             return Err(QuerySubscriptionRuntimeCertificationError::new(
                 QuerySubscriptionRuntimeCertificationErrorKind::ScopeSourceMismatch,
                 "admitted family coverage rows require diagnostic bundle digests aligned with support and lifecycle evidence",
-                (|| { Ok(vec![
+                Ok(vec![
                     validation_role_evidence_identity(
                         "diagnostic_support",
                         diagnostic.support_report_identity(),
@@ -130,12 +130,12 @@ impl QuerySubscriptionFamilyCoverageRow {
                         "lifecycle",
                         lifecycle.certification_bundle_identity(),
                     ),
-                ]) })(),
+                ]),
                 QuerySubscriptionRuntimeCertificationCounters::default(),
             ));
         }
 
-        Ok(Self::new(
+        Self::new(
             family,
             QuerySubscriptionFamilyCoverageRowClass::Admitted,
             lifecycle,
@@ -150,7 +150,7 @@ impl QuerySubscriptionFamilyCoverageRow {
                 cause,
                 QuerySubscriptionRuntimeCertificationCounters::default(),
             )
-        })?)
+        })
     }
 
     pub fn hostile(
@@ -182,7 +182,7 @@ impl QuerySubscriptionFamilyCoverageRow {
             ));
         }
 
-        Ok(Self::new(
+        Self::new(
             family,
             QuerySubscriptionFamilyCoverageRowClass::HostileDenied,
             lifecycle,
@@ -197,7 +197,7 @@ impl QuerySubscriptionFamilyCoverageRow {
                 cause,
                 QuerySubscriptionRuntimeCertificationCounters::default(),
             )
-        })?)
+        })
     }
 
     fn new(

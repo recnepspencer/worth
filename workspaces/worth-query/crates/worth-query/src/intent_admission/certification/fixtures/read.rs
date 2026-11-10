@@ -1,5 +1,4 @@
 use crate::authoring::{AspectFieldSelector, AuthoredResultShapeField};
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::facade::foundation::{
     basis_lifecycle, preflight_execution_basis, resolve_snapshot_basis, BasisAuthorityFamily,
     BasisResolutionMode, ExecutionBasisIntent, ResolvedSnapshotIdentity, SnapshotLineageClass,

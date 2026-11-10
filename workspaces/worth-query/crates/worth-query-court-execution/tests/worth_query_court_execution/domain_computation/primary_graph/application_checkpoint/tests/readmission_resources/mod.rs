@@ -49,12 +49,12 @@ fn bootstrap_metadata_keeps_its_charge_and_refuses_an_unfunded_row() {
         let recovered = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::recovered_outputs::WorthQueryRecoveredOutputs::from_checkpoint_for_test(
             decoded, &execution, |accepted| worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles_for_test(
                 worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of_for_test::<()>(),
-                worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of_for_test::<()>(), std::iter::empty(), &(*accepted.roles_for_test()), |_| Some(worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of_for_test::<()>()), &execution)
+                worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of_for_test::<()>(), std::iter::empty(), accepted.roles_for_test(), |_| Some(worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of_for_test::<()>()), &execution)
                 .map(std::sync::Arc::new)).unwrap();
         let escaped = recovered.iter().next().unwrap().clone();
         let twin = escaped.clone();
-        assert!(std::sync::Arc::ptr_eq(&(*escaped.checkpoint.producer_for_test()), &(*twin.checkpoint.producer_for_test())));
-        assert!(std::sync::Arc::ptr_eq(&(*escaped.checkpoint.roles_for_test()), &(*twin.checkpoint.roles_for_test())));
+        assert!(std::sync::Arc::ptr_eq(escaped.checkpoint.producer_for_test(), twin.checkpoint.producer_for_test()));
+        assert!(std::sync::Arc::ptr_eq(escaped.checkpoint.roles_for_test(), twin.checkpoint.roles_for_test()));
         assert!(std::sync::Arc::ptr_eq((*escaped.checkpoint.producer_facts_for_test()).as_ref().unwrap(),
             (*twin.checkpoint.producer_facts_for_test()).as_ref().unwrap()));
         assert_eq!((*twin.checkpoint.producer_facts_for_test()).as_ref().unwrap().as_slice(), source);

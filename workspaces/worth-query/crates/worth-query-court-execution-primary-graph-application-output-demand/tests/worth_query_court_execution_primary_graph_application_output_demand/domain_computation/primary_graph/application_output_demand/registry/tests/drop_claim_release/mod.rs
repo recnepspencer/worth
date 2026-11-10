@@ -44,7 +44,7 @@ fn registry_drop_closed_claim_release_is_two_rows_without_a_registry_pass() {
             );
         }
         retain_owned_key(&mut state, &old[0]);
-        let wake = Arc::clone(&(*(*state.records_for_test())[&old[0]].wake_for_test()));
+        let wake = Arc::clone((*state.records_for_test())[&old[0]].wake_for_test());
         drop(state);
         let whole = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::whole_rows().expect("bounded registry observation");
         let occurrence = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited();

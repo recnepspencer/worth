@@ -1,5 +1,4 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::evidence_identities::patch_group_identity;
 use super::maintenance_delta::QuerySubscriptionMaintenanceDeltaKind;

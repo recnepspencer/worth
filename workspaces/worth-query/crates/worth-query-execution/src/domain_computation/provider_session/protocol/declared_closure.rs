@@ -10,8 +10,6 @@ use worth_query_installation::facade::{
 pub(crate) mod aftermath_posture;
 #[path = "declared_closure/application.rs"]
 pub(crate) mod application;
-pub(super) use aftermath_posture::reversal_posture;
-pub(super) use application::bind_application_candidate_effect_closure;
 pub(crate) use application::WorthQueryApplicationEffectPosture;
 
 #[derive(Clone, Debug)]

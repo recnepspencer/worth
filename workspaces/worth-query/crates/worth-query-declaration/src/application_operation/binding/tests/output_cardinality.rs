@@ -156,10 +156,7 @@ fn cardinality_loci(declaration: &ErasedApplicationSchemaDeclaration) -> Vec<Str
             ) if locus.as_str().contains(".output-role[")
                 && locus.as_str().ends_with(".cardinality") =>
             {
-                let locus = locus.as_string();
-                {
-                    Some(value.as_str().to_string())
-                }
+                Some(value.as_str().to_string())
             }
             (
                 CanonicalBasisLocus::Named(InternedString::Raw(locus)),

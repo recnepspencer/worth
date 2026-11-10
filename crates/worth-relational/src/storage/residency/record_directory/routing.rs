@@ -58,7 +58,7 @@ fn update(
     } else {
         regions.remove(&partition);
     }
-    if regions.len() == 0 {
+    if regions.is_empty() {
         directory.remove(&kind);
     } else {
         directory.insert(kind, regions);

@@ -111,8 +111,7 @@ impl WriteAuthorityExecutionReceipt {
         &self,
         mutation: &WorthQueryBackendAdmissibleMutation,
     ) -> Result<Option<String>, IdentityDerivationDenial> {
-        Ok(self
-            .drift_from_subject_identity(backend_admissible_mutation_subject_identity(mutation))?)
+        self.drift_from_subject_identity(backend_admissible_mutation_subject_identity(mutation))
     }
 
     fn drift_from_subject_identity(

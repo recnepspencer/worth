@@ -255,6 +255,33 @@ pub(super) fn install_events(
     provider: Arc<super::events::prefix::Calls>,
     records: Arc<super::events::rule::Calls>,
 ) -> EventHost {
+    install_events_with_policy(
+        provider,
+        records,
+        super::super::super::resources::EXECUTION_POLICY,
+    )
+}
+#[cfg(test)]
+pub(super) fn install_event_growth(
+    provider: Arc<super::events::prefix::Calls>,
+    records: Arc<super::events::rule::Calls>,
+) -> EventHost {
+    let policy = worth_foundational::ExecutionRequestPolicy::new(
+        worth_foundational::ExecutionPosture::Serial,
+        worth_foundational::DeterminismContract::CanonicalBitwise,
+        worth_foundational::ExecutionBudget::new(
+            std::num::NonZeroUsize::MIN,
+            None,
+            Some(20_000_000_000),
+        ),
+    );
+    install_events_with_policy(provider, records, policy)
+}
+fn install_events_with_policy(
+    provider: Arc<super::events::prefix::Calls>,
+    records: Arc<super::events::rule::Calls>,
+    policy: worth_foundational::ExecutionRequestPolicy,
+) -> EventHost {
     use super::events::{
         composition::{Configuration as EventConfiguration, Program as EventProgram},
         schema::*,
@@ -264,11 +291,33 @@ pub(super) fn install_events(
             .unwrap();
     in_memory_program(ApplicationProgramAuthoring::<Catalog,EventProgram>::begin().with_schema(&declaration).validated_program().unwrap(),declaration,(EventConfiguration {provider,records},),
         ApplicationBuildIdentity::parse("19191919-1919-4919-8919-191919191927").unwrap(),
-        super::super::super::resources::application_limits_with_observations(super::super::super::resources::EXECUTION_POLICY,320),
+        super::super::super::resources::application_limits_with_observations(policy,320),
         |_,graph,installed| {
             graph.bind_principal(&installed.principal_binding(CatalogPrincipal::reference()).unwrap(),WorthQueryApplicationPrincipalKey::new("event-reader").unwrap(),1u64,
                 super::super::super::authentication::external_identity(),worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatus::Enabled)?;
             graph.bind_entity(WorthQueryApplicationEntitySeed::new(Directory::reference(),WorthQueryApplicationEntityKey::new("catalog").unwrap()).field(DirectoryIdentity::at("DirectoryIdentity"),"catalog".to_owned()))?;
             Ok(())
         }).expect("the declared event capability installs through the ordinary host")
+}
+
+#[cfg(test)]
+pub(super) fn install_ordered_refusing(
+    calls: Arc<super::ordered_refusing::prefix::Calls>,
+) -> WorthQueryProgramApplicationRuntime<
+    super::ordered_refusing::schema::Catalog,
+    super::ordered_refusing::composition::Program,
+> {
+    use super::super::super::authentication;
+    use super::ordered_refusing::{composition, rule, schema::*};
+    let declaration = Catalog::declaration().unwrap();
+    in_memory_program(ApplicationProgramAuthoring::<Catalog,composition::Program>::begin().with_schema(&declaration).validated_program().unwrap(), declaration,
+        (composition::Configuration { provider: Arc::clone(&calls), records: Arc::new(rule::Calls::default()) },),
+        ApplicationBuildIdentity::parse("19191919-1919-4919-8919-191919191928").unwrap(),
+        super::super::super::resources::application_limits(),
+        |_,graph,installed| {
+            graph.bind_principal(&installed.principal_binding(CatalogPrincipal::reference()).unwrap(),WorthQueryApplicationPrincipalKey::new("refusing-event-reader").unwrap(),1u64,
+                authentication::external_identity(),worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatus::Enabled)?;
+            graph.bind_entity(WorthQueryApplicationEntitySeed::new(Directory::reference(),WorthQueryApplicationEntityKey::new("catalog").unwrap()).field(DirectoryIdentity::at("DirectoryIdentity"),"catalog".to_owned()))?;
+            Ok(())
+        }).unwrap()
 }

@@ -28,7 +28,7 @@ pub fn materialize_canonical_admission_artifact<T>(
 where
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    Ok(super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)?)
+    super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)
 }
 
 pub(crate) fn materialize_runtime_admission_decision<T>(

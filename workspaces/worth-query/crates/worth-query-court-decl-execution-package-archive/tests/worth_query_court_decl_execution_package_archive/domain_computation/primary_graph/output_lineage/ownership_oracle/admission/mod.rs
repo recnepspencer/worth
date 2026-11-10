@@ -14,9 +14,9 @@ pub fn refuse_mixed_and_created_subset(
 ) {
     let scope = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
     runtime.with_application_advancement(&scope, |phase| {
-        let execution = phase.execution_request_for_for_test(&(*(*runtime.runtime_for_test()).product_runtime_for_test())).unwrap();
+        let execution = phase.execution_request_for_for_test((*runtime.runtime_for_test()).product_runtime_for_test()).unwrap();
         let (_, product, _application_basis) = runtime.on_branch(runtime.current_world()).select(&phase).unwrap().into_parts_for_test();
-        let graph = &(*(*(*runtime.runtime_for_test()).primary_provider_for_test()).graph_for_test());
+        let graph = (*(*runtime.runtime_for_test()).primary_provider_for_test()).graph_for_test();
         let publisher = graph.application_publication.as_ref().expect("actual installed publication owner");
         let roles: Vec<_> = settled.output_correspondence.native_witness_roles_for_test().map(|(role, posture, name, entity)| RequiredOutputRoleTarget {
             role: role.to_owned(), entity_name: name.to_owned(), kind: (*graph.layout_for_test()).entity_kind_for_test(name).unwrap(),

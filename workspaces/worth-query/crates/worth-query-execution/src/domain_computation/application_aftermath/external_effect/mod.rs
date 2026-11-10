@@ -39,6 +39,7 @@ pub use inbound::{
     WorthQueryInboundCleanupReport, WorthQueryInboundOccurrenceClaims,
     WorthQueryInboundOccurrenceVerifier, WorthQueryInboundVerificationDenial,
 };
+#[cfg(test)]
 pub(crate) use outbox::dispatch_outbox_create_intent;
 pub(crate) use outbox::{
     bind_dispatch_outbox_create_intent, WorthQueryDispatchOutboxRestoredFields,

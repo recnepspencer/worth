@@ -69,7 +69,7 @@ fn selected_execution_failure_fails_the_row_only_for_an_intrinsic_stop() {
             finish.failure(&mut denial);
             if !peer_executes {
                 let state = (*registry.state_for_test()).lock().unwrap();
-                let dependent = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_stop::head_stop(&(*state.records_for_test()), &demand_key)
+                let dependent = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_stop::head_stop(state.records_for_test(), &demand_key)
                     .expect("a dependent receives the original intrinsic failure");
                 assert_eq!(dependent, denial);
             }

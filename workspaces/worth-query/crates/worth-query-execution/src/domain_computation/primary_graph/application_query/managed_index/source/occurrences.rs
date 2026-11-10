@@ -110,7 +110,7 @@ impl PersistentSourceRows {
                 rows,
                 occurrence,
                 graph,
-                Some(ProjectionMembership::Forward(&support)),
+                ProjectionMembership::Forward(&support),
             )?;
             if entries.contains_key(&entity) {
                 return Err(ManagedIndexSourcePreparationDenial::ForeignSource.into());
@@ -129,6 +129,25 @@ impl PersistentSourceRows {
         })
     }
 
+    /// Reassociate immutable material only through Native's declared predecessor.
+    pub(super) fn handoff(
+        &self,
+        scope: &ManagedIndexSourceScope<'_>,
+    ) -> Result<Self, ManagedIndexSourcePreparationDenial> {
+        if self.program != *scope.program() || scope.ordered_predecessor()? != Some(self.scope) {
+            return Err(ManagedIndexSourcePreparationDenial::ForeignSource);
+        }
+        // Slots embedded in immutable shared nodes keep their build-session
+        // coordinates. The successor owns this row set and its distinct key.
+        Ok(Self {
+            owner: self.owner,
+            program: self.program.clone(),
+            scope: scope.scope(),
+            entries: self.entries.clone(),
+            dependencies: self.dependencies.clone(),
+        })
+    }
+
     /// The actual changed before/after occurrences come from Native's inverse
     /// path. Unchanged rows and subtrees are shared; no full roster is visited.
     pub(in crate::domain_computation::primary_graph::application_query::managed_index) fn update(
@@ -140,6 +159,7 @@ impl PersistentSourceRows {
             Option<worth_relational::facade::runtime::PreparedManagedIndexSourceOccurrence>,
         )],
         graph: &WorthQueryInstalledGraphReadContract,
+        inherited: bool,
     ) -> Result<Self, MaterialDenial> {
         if self.program != *scope.program() || self.scope != scope.scope() {
             return Err(ManagedIndexSourcePreparationDenial::ForeignSource.into());
@@ -164,7 +184,7 @@ impl PersistentSourceRows {
             allocation.claim_tree::<EntityId>(execution, changed_keys.len())?;
             changed_keys.insert(entity);
         }
-        for entity in scope.changed_entities() {
+        for entity in scope.changed_entities().filter(|_| !inherited) {
             for key in self.dependencies.entries_for_entity(entity) {
                 scope
                     .read_budget()
@@ -182,7 +202,11 @@ impl PersistentSourceRows {
             if let Some(before) = before {
                 // This also convicts a stale/missing retained full-generation
                 // occurrence; a later generation never aliases an earlier slot.
-                if entries.get(&before.entity()).map(|entry| &entry.occurrence) != Some(before) {
+                if entries
+                    .get(&before.entity())
+                    .map(|entry| entry.occurrence.entity())
+                    != Some(before.entity())
+                {
                     return Err(ManagedIndexSourcePreparationDenial::ForeignSource.into());
                 }
                 let old = entries
@@ -198,7 +222,7 @@ impl PersistentSourceRows {
                     &after,
                     proposed.occurrence().clone(),
                     graph,
-                    Some(ProjectionMembership::Inverse(proposed)),
+                    ProjectionMembership::Inverse(proposed),
                 )?;
                 dependencies.insert_entry(entity, &entry.dependencies, execution)?;
                 entries

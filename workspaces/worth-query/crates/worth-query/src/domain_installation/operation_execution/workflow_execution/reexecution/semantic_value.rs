@@ -1,5 +1,4 @@
 use super::WorthQueryWorkflowValue;
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 /// Typed, owned semantic projection of a workflow value.
 ///

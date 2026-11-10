@@ -10,7 +10,7 @@ use worth_query_testkit_execution_primary_graph_application_contribution::domain
 fn a_current_proof_from_another_basis_acknowledges_nothing() {
     with_committed_own_write(|world, _receipt, _recorded, _resources| {
         world.application.with_host_advancement(|phase| {
-        let execution = phase.execution_request_for_for_test(&(*(*world.application.runtime_for_test()).product_runtime_for_test())).unwrap();
+        let execution = phase.execution_request_for_for_test((*world.application.runtime_for_test()).product_runtime_for_test()).unwrap();
         let runtime = &world.application;
 
         let (basis_a, _) = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::selection::select_required_basis(
@@ -107,7 +107,7 @@ fn a_current_proof_from_another_basis_acknowledges_nothing() {
 fn a_current_proof_of_record_a_cannot_acknowledge_record_b_at_the_same_basis() {
     with_committed_own_write(|world, _, _, _| {
         world.application.with_host_advancement(|phase| {
-        let execution = phase.execution_request_for_for_test(&(*(*world.application.runtime_for_test()).product_runtime_for_test())).unwrap();
+        let execution = phase.execution_request_for_for_test((*world.application.runtime_for_test()).product_runtime_for_test()).unwrap();
         let runtime = &world.application;
 
         let (selected, _) = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::selection::select_required_basis(

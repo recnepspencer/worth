@@ -36,7 +36,7 @@ fn program_activation_changed_after_preparation_cannot_readmit_the_old_program()
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     (*world.application.program_support_mut_for_test()) = Some(installed_program_support(
-        &(*world.application.installed_schema_for_test()),
+        world.application.installed_schema_for_test(),
     ));
     let layout = (*(*(*(*world.application.runtime_for_test()).primary_provider_for_test())
         .graph_for_test())
@@ -161,7 +161,7 @@ fn a_program_action_on_an_unseeded_occurrence_names_the_unresolved_activation() 
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     (*world.application.program_support_mut_for_test()) = Some(installed_program_support(
-        &(*world.application.installed_schema_for_test()),
+        world.application.installed_schema_for_test(),
     ));
     let request = live_scope();
     let principal = world
@@ -249,7 +249,7 @@ fn a_required_output_source_on_an_unseeded_occurrence_is_gated_like_its_siblings
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     (*world.application.program_support_mut_for_test()) = Some(installed_program_support(
-        &(*world.application.installed_schema_for_test()),
+        world.application.installed_schema_for_test(),
     ));
     let request = live_scope();
     let principal = world

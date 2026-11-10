@@ -39,7 +39,7 @@ fn equal_native_field_write_keeps_revision_and_downstream_clean_until_a_real_cha
         .primary_graph_for_test()
         .unwrap();
     let handle = graph.integration_handle_for_test();
-    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+    let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
     let status_ref = AccountStatus::at("AccountStatus");
     let status = graph
         .layout_for_test()
