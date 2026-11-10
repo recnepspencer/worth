@@ -1,6 +1,7 @@
 //! Exact-root applicability carries persistent selections.
 mod admission;
 mod checkpoint;
+mod cold_merge;
 mod empty_basis;
 mod payment;
 use super::{IndexingState, IndexingSubsystem};
@@ -176,13 +177,6 @@ impl BasisSelections {
             self.replace_lookup(key, None);
         }
         self.retirement = self.entries.keys().cloned().collect();
-    }
-    pub(super) fn merge(&mut self, previous: &Self) {
-        for (key, basis) in &previous.entries {
-            if !self.entries.contains_key(key) {
-                self.replace_lookup(key.clone(), Some(Arc::clone(basis)));
-            }
-        }
     }
     fn replace_lookup(&mut self, key: Key, basis: Option<Arc<PreparedIndexBasisSelection>>) {
         if let Some(basis) = basis {

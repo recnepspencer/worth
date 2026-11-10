@@ -192,14 +192,14 @@ impl<E, F: FnMut() -> Result<(), E>> EntityFieldCollectionRead<E>
             self.prepared.index_id(),
             self.admission,
         )?;
-        Ok(
-            crate::indexes::projected_field_values::exact_entity_field_matches(
-                self.prepared.basis.root(),
-                entity,
-                self.prepared.field_locator(),
-                self.value,
-            ),
+        crate::indexes::projected_field_values::exact_entity_field_matches(
+            &self.prepared.basis,
+            execution,
+            entity,
+            self.prepared.field_locator(),
+            self.value,
         )
+        .map_err(|cause| Stop::Lookup(denied(Denial::Execution(cause), self.prepared.index_id())))
     }
 }
 

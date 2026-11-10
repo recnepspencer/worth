@@ -116,11 +116,13 @@ impl PreparedEntityFieldLookup {
                 .and_then(|rows| rows.get(offset))
                 .expect(/* Proof: Page bounds and posting offsets were checked against these same immutable retained rows; no row mutation occurs during page extraction. */ "bounded posting offset");
             let observed = crate::indexes::projected_field_values::exact_entity_field_matches(
-                self.basis.root(),
+                &self.basis,
+                execution,
                 entity,
                 self.field_locator(),
                 value,
-            );
+            )
+            .map_err(|cause| PageStop::Lookup(denied(Denial::Execution(cause), self.index_id())))?;
             let Some((kind, true)) = observed else {
                 return Err(self.corrupt_page(offset + 1));
             };
@@ -141,11 +143,13 @@ impl PreparedEntityFieldLookup {
                 .and_then(|rows| rows.get(offset))
                 .expect(/* Proof: Page bounds and posting offsets were checked against these same immutable retained rows; no row mutation occurs during page extraction. */ "validated posting offset");
             if crate::indexes::projected_field_values::exact_entity_field_matches(
-                self.basis.root(),
+                &self.basis,
+                execution,
                 entity,
                 self.field_locator(),
                 value,
             )
+            .map_err(|cause| PageStop::Lookup(denied(Denial::Execution(cause), self.index_id())))?
             .is_some_and(|(kind, matches)| kind == self.kind && matches)
             {
                 ids.push(entity).map_err(PageStop::Allocation)?;

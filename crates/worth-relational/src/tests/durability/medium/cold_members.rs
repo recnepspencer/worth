@@ -28,6 +28,8 @@ mod cold_index_fixture;
 mod cold_index_frontier;
 #[path = "cold_index_matrix.rs"]
 mod cold_index_matrix;
+#[path = "cold_index_selections.rs"]
+mod cold_index_selections;
 #[path = "cold_invariants.rs"]
 mod cold_invariants;
 #[path = "cold_lineage_custody.rs"]
