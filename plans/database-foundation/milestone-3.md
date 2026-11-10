@@ -597,13 +597,13 @@ retired runtime-discovery adapters.
 
 - C2: private per-runtime interner absence in current-scan cells of
   `residency_failure_matrix_full_read_subjects_cover_every_door_and_class`:
-  `restore from 14e282569e:crates/worth-relational/src/tests/durability/medium/cold_read_matrix/exhaustive.rs`.
+  `restore from 8283728aff:crates/worth-relational/src/tests/durability/medium/cold_read_matrix/exhaustive.rs`.
   The public counterpart keeps all 47 doors, three subjects, six causes, exact
   refusal/retry behavior, target reads, current-scan history noninterference and
   publication invariance. The existing request-funded version read is now public.
 - C2: exact receiver dictionary absence/admission/resolved text in
   `every_full_read_door_admits_its_runtime_dictionary_or_preserves_page_damage`:
-  `restore from 14e282569e:crates/worth-relational/src/tests/durability/medium/cold_symbol_read_doors.rs`.
+  `restore from 8283728aff:crates/worth-relational/src/tests/durability/medium/cold_symbol_read_doors.rs`.
   All original public success/refusal, sticky I/O, Head identity and frontier
   observations remain in `full_read_doors_preserve_history_symbol_refusals_and_current_head`.
 - C2: private Full/Head probes, metadata-history length, dictionary contents and
@@ -631,7 +631,7 @@ retired runtime-discovery adapters.
   against an issued main observation; an old receipt is not inferred to be a root.
 - C2: whole private allocation/inventory court
   `residency_cold_index_frontier_prevents_reissue_before_any_image_demand`:
-  `restore from 14e282569e:crates/worth-relational/src/tests/durability/medium/cold_index_frontier.rs`.
+  `restore from 8283728aff:crates/worth-relational/src/tests/durability/medium/cold_index_frontier.rs`.
   Restore all four actual IndexSubsystem reserve/publish/frontier/inventory
   sequences with their zero/positive source reads. Public actual builds retain
   monotonic generations and the original <old+16 bound; they do not stand in for
@@ -721,15 +721,14 @@ the same test names in the cold-residency court
   `complete_checkpoint_saves_the_selection_carried_to_its_current_root` and
   `reclose_before_any_image_demand_keeps_the_selections_the_image_carried`:
   `restore from 8283728aff:crates/worth-relational/src/tests/durability/medium/complete_index_selections.rs`.
-- The four C2 bill courts above restored from `f9f15bf8c8` (`resident_full/tests.rs`,
-  `region_publication/full/tests.rs`) target `resident_for_request` and the unified
-  `PreparedResidentRegion::initial(lane, request, partition, symbols)` that the
-  integration branch kept as its production region constructor; restore them against
-  that signature and the v3 kind-commitment oracle at
-  `region_publication/full/tests/kind_oracle.rs`. The retained preimage court
-  `full_region_kind_commitment_matches_independent_projection_preimages` stays at the
-  integration path `storage/residency/region_publication/full/tests.rs` (module
-  `kind_commitment_preimage_tests`), whose src-court baseline row it inherits.
+- The two `resident_full` C2 charge courts above, restored from `f9f15bf8c8`, target
+  `resident_for_request`, which the integration branch's production region constructor
+  `PreparedResidentRegion::initial(lane, request, partition, symbols)` calls; restore them
+  against that signature. The Full region courts were not moved:
+  `controlled_full_region_matches_current_kind_preimages_and_truth` and
+  `controlled_full_commitment_clone_retains_only_its_actual_node_backing` stay in
+  `storage/residency/region_publication/full/tests.rs` with the v3 kind-commitment oracle
+  (`full/tests/kind_oracle.rs`) and its src-court baseline row.
 
 The integration branch's cleanup ledgers (`merge-cleanup-reds.md`, `merge-families.md`) become entries here when their courts leave the tree before landing 2.
 
