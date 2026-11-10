@@ -21,13 +21,13 @@ pub(crate) fn materialize_bridge_denied_admitted_causal_inspection(
     redaction_policy: CausalInspectionRedactionPolicy,
     materialization_policy: CausalInspectionMaterializationPolicy,
 ) -> Result<QueryCausalInspectionArtifact, WorthQueryEvidenceIdentityDerivationDenial> {
-    Ok(materialize_bridge_denied_query_inspection(
+    materialize_bridge_denied_query_inspection(
         inspection,
         inspection.admitted_inspection_identity(),
         bridge_denial,
         redaction_policy,
         materialization_policy,
-    )?)
+    )
 }
 
 pub(crate) fn materialize_bridge_denied_advisory_causal_inspection(
@@ -36,13 +36,13 @@ pub(crate) fn materialize_bridge_denied_advisory_causal_inspection(
     redaction_policy: CausalInspectionRedactionPolicy,
     materialization_policy: CausalInspectionMaterializationPolicy,
 ) -> Result<QueryCausalInspectionArtifact, WorthQueryEvidenceIdentityDerivationDenial> {
-    Ok(materialize_bridge_denied_query_inspection(
+    materialize_bridge_denied_query_inspection(
         inspection,
         inspection.advisory_inspection_identity(),
         bridge_denial,
         redaction_policy,
         materialization_policy,
-    )?)
+    )
 }
 
 fn materialize_bridge_denied_query_inspection(

@@ -5,7 +5,6 @@ use std::sync::{
 
 use crate::projection_consumption::ProjectionAuthorityOutcome;
 use crate::runtime::tests::support::*;
-use worth_foundational::facade::InternedString;
 
 mod schedule;
 

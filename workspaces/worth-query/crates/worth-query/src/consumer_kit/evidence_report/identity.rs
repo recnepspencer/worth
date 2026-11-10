@@ -76,10 +76,7 @@ fn derive_report_field_inventory_identity(
     field_count: usize,
     field_inventory_identities: &[WorthQueryEvidenceIdentity],
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(
-            WorthQueryEvidenceScope::ConsumerEvidenceReportFieldInventory,
-        )
+    worth_query_evidence_identity(WorthQueryEvidenceScope::ConsumerEvidenceReportFieldInventory)
         .field_shape(WorthQueryEvidenceTag::new("report_scope"), scope.as_str())
         .field_shape(WorthQueryEvidenceTag::new("report_name"), report_name)
         .field_usize(WorthQueryEvidenceTag::new("field_count"), field_count)
@@ -87,8 +84,7 @@ fn derive_report_field_inventory_identity(
             WorthQueryEvidenceTag::new("field_identity"),
             field_inventory_identities.iter(),
         )
-        .seal()?,
-    )
+        .seal()
 }
 
 fn derive_report_digest_participation_identity(
@@ -96,7 +92,7 @@ fn derive_report_digest_participation_identity(
     report_name: &str,
     participating_inventory_identities: &[&WorthQueryEvidenceIdentity],
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(worth_query_evidence_identity(
+    worth_query_evidence_identity(
         WorthQueryEvidenceScope::ConsumerEvidenceReportDigestParticipation,
     )
     .field_shape(WorthQueryEvidenceTag::new("report_scope"), scope.as_str())
@@ -109,7 +105,7 @@ fn derive_report_digest_participation_identity(
         WorthQueryEvidenceTag::new("participating_field_identity"),
         participating_inventory_identities.iter().copied(),
     )
-    .seal()?)
+    .seal()
 }
 
 fn derive_participating_field_value_identities(
@@ -128,38 +124,34 @@ fn derive_report_value_identity(
     digest_participation_identity: &WorthQueryEvidenceIdentity,
     participating_value_identities: &[WorthQueryEvidenceIdentity],
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::ConsumerEvidenceReport)
-            .field_shape(WorthQueryEvidenceTag::new("report_scope"), scope.as_str())
-            .field_shape(WorthQueryEvidenceTag::new("report_name"), report_name)
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("digest_participation_identity"),
-                digest_participation_identity,
-            )
-            .field_evidence_identity_sequence(
-                WorthQueryEvidenceTag::new("participating_field_identity"),
-                participating_value_identities.iter(),
-            )
-            .seal()?,
-    )
+    worth_query_evidence_identity(WorthQueryEvidenceScope::ConsumerEvidenceReport)
+        .field_shape(WorthQueryEvidenceTag::new("report_scope"), scope.as_str())
+        .field_shape(WorthQueryEvidenceTag::new("report_name"), report_name)
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("digest_participation_identity"),
+            digest_participation_identity,
+        )
+        .field_evidence_identity_sequence(
+            WorthQueryEvidenceTag::new("participating_field_identity"),
+            participating_value_identities.iter(),
+        )
+        .seal()
 }
 
 fn derive_field_inventory_identity(
     field: &EvidenceReportField,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::ConsumerEvidenceReportField)
-            .field_shape(WorthQueryEvidenceTag::new("field_name"), field.name())
-            .field_shape(
-                WorthQueryEvidenceTag::new("field_kind"),
-                field.kind().as_str(),
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("participation"),
-                field.participation().as_str(),
-            )
-            .seal()?,
-    )
+    worth_query_evidence_identity(WorthQueryEvidenceScope::ConsumerEvidenceReportField)
+        .field_shape(WorthQueryEvidenceTag::new("field_name"), field.name())
+        .field_shape(
+            WorthQueryEvidenceTag::new("field_kind"),
+            field.kind().as_str(),
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("participation"),
+            field.participation().as_str(),
+        )
+        .seal()
 }
 
 fn derive_field_inventory_or_diagnostic_identity(

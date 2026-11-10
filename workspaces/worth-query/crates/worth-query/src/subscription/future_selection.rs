@@ -64,59 +64,53 @@ pub struct QuerySubscriptionFutureSelection {
 
 impl QuerySubscriptionFutureSelection {
     pub fn ordinary() -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             QuerySubscriptionFutureSelectionClass::Ordinary,
             false,
             Vec::new(),
-        )?)
+        )
     }
 
     pub fn temporal() -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             QuerySubscriptionFutureSelectionClass::Temporal,
             false,
             Vec::new(),
-        )?)
+        )
     }
 
     pub fn async_resource(
         requests_completion_lifecycle: bool,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::async_resource_with_identity(
-            requests_completion_lifecycle,
-            Vec::new(),
-        )?)
+        Self::async_resource_with_identity(requests_completion_lifecycle, Vec::new())
     }
 
     pub fn async_resource_with_identity(
         requests_completion_lifecycle: bool,
         async_request_identity: Vec<QuerySubscriptionAsyncRequestIdentityPart>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             QuerySubscriptionFutureSelectionClass::AsyncResource,
             requests_completion_lifecycle,
             async_request_identity,
-        )?)
+        )
     }
 
     pub fn temporal_async(
         requests_completion_lifecycle: bool,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::temporal_async_with_identity(
-            requests_completion_lifecycle,
-            Vec::new(),
-        )?)
+        Self::temporal_async_with_identity(requests_completion_lifecycle, Vec::new())
     }
 
     pub fn temporal_async_with_identity(
         requests_completion_lifecycle: bool,
         async_request_identity: Vec<QuerySubscriptionAsyncRequestIdentityPart>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             QuerySubscriptionFutureSelectionClass::TemporalAsync,
             requests_completion_lifecycle,
             async_request_identity,
-        )?)
+        )
     }
 
     fn new(

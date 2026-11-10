@@ -326,7 +326,7 @@ struct SnapshotDigestParts<'a> {
 fn snapshot_identity(
     parts: SnapshotDigestParts<'_>,
 ) -> Result<CausalInspectionPerformanceSnapshotIdentity, IdentityDerivationDenial> {
-    Ok(compose_causal_performance_snapshot_identity(
+    compose_causal_performance_snapshot_identity(
         parts.fixture_size,
         parts.artifact_identity,
         parts.evidence_reference_width,
@@ -338,7 +338,7 @@ fn snapshot_identity(
         parts.artifact_serialization_slope_counter,
         parts.bridge_unindexed_scan_count,
         parts.bridge_readmission_proof_identity,
-    )?)
+    )
 }
 
 fn slope_identity(
@@ -347,7 +347,5 @@ fn slope_identity(
     medium: usize,
     large: usize,
 ) -> Result<CausalInspectionPerformanceSlopeIdentity, IdentityDerivationDenial> {
-    Ok(compose_causal_performance_slope_identity(
-        label, small, medium, large,
-    )?)
+    compose_causal_performance_slope_identity(label, small, medium, large)
 }

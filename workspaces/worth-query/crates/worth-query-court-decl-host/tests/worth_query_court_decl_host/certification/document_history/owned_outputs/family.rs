@@ -15,11 +15,10 @@ worth_query_structured_value_binding!(pub ResultBinding for () { identity: "owne
 pub type Request<'a, 'p, 's> = WorthQueryApplicationRequest<'a, 'p, 's, Schema>;
 macro_rules! family {
     ($module:ident, $ownership:ident, $direction:ident, $source_entity:ident, $source_facts:ident, $source_key:ident, $source_value:ident, $source_query:ident, $profile:literal, $initial:literal, $preserve:literal, $initial_op:ident, $preserve_op:ident,
-     $entity:ident, $facts:ident, $key:ident, $value:ident, $of:ident, $tree:ident, $derive:expr) => {
+     $entity:ident, $facts:ident, $key:ident, $value:ident, $of:ident, $derive:expr $(, $settle:ident => $tree:ident)?) => {
         pub mod $module {
-            predecessor_program!($initial_op);
             use super::super::schema::{
-                $source_entity as SourceEntity, $source_facts as SourceFacts,
+                $source_entity as SourceEntity,
                 $source_key as SourceKey, $source_value as SourceValue,
             };
             use super::*;
@@ -128,8 +127,9 @@ macro_rules! family {
                 setup.conditional::<initial::Readiness>(())?;
                 setup.conditional::<preserve::Readiness>(())
             }
+            $(
             /// Demand and settle this family for one model on the request's branch.
-            pub fn settle(host: &world::Host, request: &Request<'_, '_, '_>, model: &str) {
+            pub fn $settle(host: &world::Host, request: &Request<'_, '_, '_>, model: &str) {
                 let mut operation = request
                     .demand(Demand(model.into()))
                     .retain_program_outputs::<program::Program, program::$tree>(host)
@@ -154,6 +154,7 @@ macro_rules! family {
                 }
                 panic!("{} did not settle", PROFILE);
             }
+            )?
         }
     };
 }
@@ -176,8 +177,8 @@ family!(
     FirstKey,
     FirstValue,
     FirstOf,
-    FirstTree,
-    |value: u64| value * 10
+    |value: u64| value * 10,
+    settle => FirstTree
 );
 family!(
     second,
@@ -198,8 +199,8 @@ family!(
     SecondKey,
     SecondValue,
     SecondOf,
-    SecondTree,
-    |value: u64| value + 1000
+    |value: u64| value + 1000,
+    settle => SecondTree
 );
 
 family!(
@@ -221,8 +222,8 @@ family!(
     ChildKey,
     ChildValue,
     ChildOf,
-    ChildTree,
-    |value: u64| value * 100
+    |value: u64| value * 100,
+    settle => ChildTree
 );
 
 family!(
@@ -244,8 +245,8 @@ family!(
     ChildKey,
     ChildValue,
     ChildOf,
-    RestrictedTree,
-    |value: u64| value * 100
+    |value: u64| value * 100,
+    settle => RestrictedTree
 );
 
 family!(
@@ -267,8 +268,8 @@ family!(
     MemberKey,
     MemberValue,
     UpstreamOf,
-    UpstreamTree,
-    |value: u64| value * 5
+    |value: u64| value * 5,
+    settle => UpstreamTree
 );
 family!(
     downstream,
@@ -289,8 +290,8 @@ family!(
     ChildKey,
     ChildValue,
     ChildOf,
-    DownstreamTree,
-    |value: u64| value * 100
+    |value: u64| value * 100,
+    settle => DownstreamTree
 );
 
 family!(
@@ -312,8 +313,8 @@ family!(
     ChildKey,
     ChildValue,
     ChildOf,
-    RestrictedOwnedTree,
-    |value: u64| value * 100
+    |value: u64| value * 100,
+    settle => RestrictedOwnedTree
 );
 
 family!(
@@ -335,7 +336,6 @@ family!(
     ChildKey,
     ChildValue,
     ChildOfFirst,
-    FromFirstTree,
     |value: u64| value * 100
 );
 family!(
@@ -357,7 +357,6 @@ family!(
     ChildKey,
     ChildValue,
     ChildOfFirst,
-    RestrictedFromFirstTree,
     |value: u64| value * 100
 );
 
@@ -380,6 +379,5 @@ family!(
     FirstKey,
     FirstValue,
     FirstOf,
-    PredecessorTree,
     |value| value + 9000
 );

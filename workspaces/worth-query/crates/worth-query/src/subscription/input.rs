@@ -49,12 +49,12 @@ impl LiveQueryAdmissionArtifact {
         scoped_declaration_basis: ScopedSubscriptionDeclarationBasis,
         dimensions: QuerySubscriptionAdmissionDimensions,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::from_live_promotion_with_future_selection(
+        Self::from_live_promotion_with_future_selection(
             descriptor,
             scoped_declaration_basis,
             QuerySubscriptionFutureSelection::ordinary()?,
             dimensions,
-        )?)
+        )
     }
 
     pub fn from_live_promotion_with_future_selection(
@@ -63,14 +63,14 @@ impl LiveQueryAdmissionArtifact {
         future_selection: QuerySubscriptionFutureSelection,
         dimensions: QuerySubscriptionAdmissionDimensions,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::from_promotion_parts(
+        Self::from_promotion_parts(
             descriptor,
             scoped_declaration_basis,
             None,
             dimensions,
             QuerySubscriptionConstructionSource::FacadeLive,
             future_selection,
-        )?)
+        )
     }
 
     pub fn from_live_promotion_with_view(
@@ -79,13 +79,13 @@ impl LiveQueryAdmissionArtifact {
         view_family: LiveViewShapeFamily,
         dimensions: QuerySubscriptionAdmissionDimensions,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::from_live_promotion_with_view_and_future_selection(
+        Self::from_live_promotion_with_view_and_future_selection(
             descriptor,
             scoped_declaration_basis,
             view_family,
             QuerySubscriptionFutureSelection::ordinary()?,
             dimensions,
-        )?)
+        )
     }
 
     pub fn from_live_promotion_with_view_and_future_selection(
@@ -95,14 +95,14 @@ impl LiveQueryAdmissionArtifact {
         future_selection: QuerySubscriptionFutureSelection,
         dimensions: QuerySubscriptionAdmissionDimensions,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::from_promotion_parts(
+        Self::from_promotion_parts(
             descriptor,
             scoped_declaration_basis,
             Some(view_family),
             dimensions,
             QuerySubscriptionConstructionSource::FacadeLive,
             future_selection,
-        )?)
+        )
     }
 
     fn from_promotion_parts(

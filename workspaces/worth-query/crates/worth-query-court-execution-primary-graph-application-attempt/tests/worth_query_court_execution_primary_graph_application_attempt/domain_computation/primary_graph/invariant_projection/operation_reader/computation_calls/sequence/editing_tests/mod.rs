@@ -100,9 +100,9 @@ fn insert_retire_changes_only_paths_preserving_order_history_range_and_fresh_clo
                     .consumed_for_test()),
                 truth[start..end]
                     .iter()
-                    .map(|(_, (charge, _))| (*(*charge.accounting_for_test())
+                    .map(|(_, (charge, _))| *(*charge.accounting_for_test())
                         .unwrap()
-                        .consumed_for_test()))
+                        .consumed_for_test())
                     .sum::<usize>()
             );
         }
@@ -114,8 +114,8 @@ fn insert_retire_changes_only_paths_preserving_order_history_range_and_fresh_clo
         let mut full = Budget::bounded_for_test(remaining);
         let expected = truth.iter().position(|(_, (charge, _))| {
             let charge = (*charge.accounting_for_test()).unwrap();
-            if full.can_afford_for_test((*charge.demand_for_test())) {
-                assert!(full.consume_for_test((*charge.consumed_for_test())));
+            if full.can_afford_for_test(*charge.demand_for_test()) {
+                assert!(full.consume_for_test(*charge.consumed_for_test()));
                 false
             } else {
                 true
@@ -131,14 +131,14 @@ fn insert_retire_changes_only_paths_preserving_order_history_range_and_fresh_clo
                     CallVisit::Range(_, sum) => {
                         let cost = (*sum.accounting_for_test()).unwrap();
                         Ok(ranged
-                            .carry_for_test((*cost.demand_for_test()), (*cost.consumed_for_test())))
+                            .carry_for_test(*cost.demand_for_test(), *cost.consumed_for_test()))
                     }
                     CallVisit::Leaf(at, _, charge, _) => {
                         let charge = (*charge.accounting_for_test()).unwrap();
-                        if !ranged.can_afford_for_test((*charge.demand_for_test())) {
+                        if !ranged.can_afford_for_test(*charge.demand_for_test()) {
                             return Err(at);
                         }
-                        assert!(ranged.consume_for_test((*charge.consumed_for_test())));
+                        assert!(ranged.consume_for_test(*charge.consumed_for_test()));
                         Ok(true)
                     }
                 }

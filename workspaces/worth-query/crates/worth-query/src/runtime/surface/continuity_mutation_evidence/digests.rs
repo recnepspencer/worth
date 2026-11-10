@@ -58,10 +58,7 @@ fn continuity_lineage_digest(
                     .map(WorthQueryMutationEvidenceDigest::evidence_identity),
             )
             .seal()?;
-    Ok(WorthQueryMutationEvidenceDigest::aggregate(
-        "continuity-lineage",
-        lineage_identity,
-    )?)
+    WorthQueryMutationEvidenceDigest::aggregate("continuity-lineage", lineage_identity)
 }
 
 fn continuity_resolution_digest(
@@ -102,8 +99,5 @@ fn continuity_resolution_digest(
                     .map(WorthQueryMutationTargetCollectionIdentity::evidence_identity),
             )
             .seal()?;
-    Ok(WorthQueryMutationEvidenceDigest::aggregate(
-        "continuity-resolution",
-        resolution_identity,
-    )?)
+    WorthQueryMutationEvidenceDigest::aggregate("continuity-resolution", resolution_identity)
 }

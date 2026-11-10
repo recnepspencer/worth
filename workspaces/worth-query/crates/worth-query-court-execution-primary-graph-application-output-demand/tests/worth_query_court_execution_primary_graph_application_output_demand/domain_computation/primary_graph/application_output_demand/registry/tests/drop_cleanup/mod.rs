@@ -55,11 +55,11 @@ pub fn fixture(
 fn registry_interest_drop_leaves_custody_note_without_sweeping() {
     let (registry, selected, receipts) = fixture(false);
     let wake = Arc::clone(
-        &(*(*(*registry.state_for_test())
+        (*(*registry.state_for_test())
             .lock()
             .unwrap()
             .records_for_test())[&selected]
-            .wake_for_test()),
+            .wake_for_test(),
     );
     let owner = interest(&registry, selected, wake);
     let before = contacts();
@@ -74,7 +74,7 @@ fn registry_interest_drop_leaves_custody_note_without_sweeping() {
         .composite_commit();
     let mut state = (*registry.state_for_test()).lock().unwrap();
     assert!(state.pending_custody_prune_for_test());
-    assert!((*state.source_custody[commit].cleanup_for_test()).queued);
+    assert!(state.source_custody[commit].cleanup_for_test().queued);
     state.drain_completed_custody_for_test();
     assert!(!state.source_custody.contains_key(commit));
     assert!(!state.pending_custody_prune_for_test());
@@ -91,7 +91,7 @@ fn registry_prepared_token_drop_leaves_custody_note_without_sweeping() {
     assert_eq!(contacts(), before, "token Drop does not inspect custody");
     let mut state = (*registry.state_for_test()).lock().unwrap();
     assert_eq!((*state.source_custody[commit].token_count_for_test()), 0);
-    assert!((*state.source_custody[commit].cleanup_for_test()).queued);
+    assert!(state.source_custody[commit].cleanup_for_test().queued);
     state.drain_completed_custody_for_test();
     assert!(!state.source_custody.contains_key(commit));
     assert!(!state.pending_custody_prune_for_test());

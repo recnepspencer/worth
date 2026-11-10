@@ -104,9 +104,7 @@ pub fn certify_domain_capabilities(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<WorthQueryDomainCapabilityCertificationBundle, IdentityDerivationDenial> {
     let installation = super::install_domain_capability_certification(execution);
-    Ok(certify_domain_capabilities_in(
-        installation.contributions(),
-    )?)
+    certify_domain_capabilities_in(installation.contributions())
 }
 
 pub(crate) fn certify_domain_capabilities_in(
@@ -116,10 +114,7 @@ pub(crate) fn certify_domain_capabilities_in(
     let slope_report =
         worth_query_domain_capability_slope_report_in(&representative_report, domain)?;
 
-    Ok(WorthQueryDomainCapabilityCertificationBundle::new(
-        representative_report,
-        slope_report,
-    )?)
+    WorthQueryDomainCapabilityCertificationBundle::new(representative_report, slope_report)
 }
 
 fn validate_output_manifest(

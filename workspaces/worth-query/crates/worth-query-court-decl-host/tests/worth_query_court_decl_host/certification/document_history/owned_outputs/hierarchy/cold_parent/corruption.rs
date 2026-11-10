@@ -57,7 +57,7 @@ fn exercise(worker: bool) {
         &request,
         before,
         current.clone(),
-        0xd1214_41,
+        0x0d12_1441,
     )
     .expect_err("wrong parent lineage must refuse atomically");
     assert_eq!(document.selection(&request).unwrap(), current);

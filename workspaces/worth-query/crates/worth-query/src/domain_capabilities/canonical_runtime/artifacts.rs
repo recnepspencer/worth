@@ -131,17 +131,15 @@ fn canonical_runtime_semantic_identity(
     semantic_code: &str,
     detail: &str,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        domain_capability_scope_encoder("worth_query_domain_capability_semantic_identity_v1")
-            .field_shape(WorthQueryEvidenceTag::new("category"), category.as_str())
-            .field_shape(
-                WorthQueryEvidenceTag::new("posture"),
-                semantic_posture.as_str(),
-            )
-            .field_shape(WorthQueryEvidenceTag::new("code"), semantic_code)
-            .field_shape(WorthQueryEvidenceTag::new("detail"), detail)
-            .seal()?,
-    )
+    domain_capability_scope_encoder("worth_query_domain_capability_semantic_identity_v1")
+        .field_shape(WorthQueryEvidenceTag::new("category"), category.as_str())
+        .field_shape(
+            WorthQueryEvidenceTag::new("posture"),
+            semantic_posture.as_str(),
+        )
+        .field_shape(WorthQueryEvidenceTag::new("code"), semantic_code)
+        .field_shape(WorthQueryEvidenceTag::new("detail"), detail)
+        .seal()
 }
 
 pub fn materialize_domain_capability_canonical_runtime_artifact<P, T>(
@@ -151,9 +149,7 @@ where
     P: WorthQueryDomainCapabilityPayload,
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    Ok(WorthQueryCanonicalRuntimeMaterialization::new(
-        contribution,
-    )?)
+    WorthQueryCanonicalRuntimeMaterialization::new(contribution)
 }
 
 pub type WorthQueryCanonicalAdmissionArtifact<T> =

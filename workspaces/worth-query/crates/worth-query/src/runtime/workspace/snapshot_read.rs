@@ -1,6 +1,5 @@
 //! Current snapshot reads under caller custody.
 use super::WorthQueryWorkspace;
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::WorthQuerySnapshotIdentity;
 
 impl WorthQueryWorkspace {

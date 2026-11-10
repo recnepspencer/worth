@@ -64,7 +64,7 @@ fn retained_source_must_include_every_registered_upstream_edge() {
         .primary_graph_for_test()
         .unwrap();
     let handle = graph.integration_handle_for_test();
-    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+    let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
     handle.with_runtime_mut_for_test(request_execution, |runtime| {
         let basis = runtime
             .admit_branch_basis(&runtime.main_branch_identity())

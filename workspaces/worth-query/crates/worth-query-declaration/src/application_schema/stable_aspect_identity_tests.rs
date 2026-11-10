@@ -169,10 +169,7 @@ fn canonical_entry<'a>(
             CanonicalBasisLocus::Named(InternedString::Stored(name))
                 if name.as_str().ends_with(suffix) =>
             {
-                let name = name.as_string();
-                {
-                    Some((index, entry.value()))
-                }
+                Some((index, entry.value()))
             }
             CanonicalBasisLocus::Named(InternedString::Raw(name))
                 if name.as_str().ends_with(suffix) =>

@@ -100,54 +100,52 @@ impl WorthQueryContributionComposedComposition {
 fn compose_intent_result_identity(
     value: &WorthQueryContributionComposedIntentResult,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "worth_query_contribution_composed_intent_result_v1",
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("category_family"),
-                value.category_family().as_str(),
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("classification"),
-                format!("{:?}", value.classification()),
-            )
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("request"),
-                value.request_identity(),
-            )
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("binding"),
-                value.binding_identity(),
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("declaration_contract"),
-                format!("{:?}", value.aspect_record().declaration_contract()),
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("declaration_coverage"),
-                format!("{:?}", value.aspect_record().declaration_coverage()),
-            )
-            .optional_evidence_identity(
-                WorthQueryEvidenceTag::new("evaluation"),
-                value.evaluation().stage_identity(),
-            )
-            .optional_evidence_identity(
-                WorthQueryEvidenceTag::new("admission"),
-                value.admission().stage_identity(),
-            )
-            .optional_evidence_identity(
-                WorthQueryEvidenceTag::new("materialization"),
-                value
-                    .materialization()
-                    .stage_identity()
-                    .or_else(|| value.admission().stage_identity())
-                    .or_else(|| value.evaluation().stage_identity()),
-            )
-            .seal()?,
-    )
+    worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "worth_query_contribution_composed_intent_result_v1",
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("category_family"),
+            value.category_family().as_str(),
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("classification"),
+            format!("{:?}", value.classification()),
+        )
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("request"),
+            value.request_identity(),
+        )
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("binding"),
+            value.binding_identity(),
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("declaration_contract"),
+            format!("{:?}", value.aspect_record().declaration_contract()),
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("declaration_coverage"),
+            format!("{:?}", value.aspect_record().declaration_coverage()),
+        )
+        .optional_evidence_identity(
+            WorthQueryEvidenceTag::new("evaluation"),
+            value.evaluation().stage_identity(),
+        )
+        .optional_evidence_identity(
+            WorthQueryEvidenceTag::new("admission"),
+            value.admission().stage_identity(),
+        )
+        .optional_evidence_identity(
+            WorthQueryEvidenceTag::new("materialization"),
+            value
+                .materialization()
+                .stage_identity()
+                .or_else(|| value.admission().stage_identity())
+                .or_else(|| value.evaluation().stage_identity()),
+        )
+        .seal()
 }
 
 fn compose_composition_identity(
@@ -159,22 +157,20 @@ fn compose_composition_identity(
         .map(compose_intent_result_identity)
         .collect::<Result<Vec<_>, _>>()?;
     intent_identities.sort_by_key(|identity| identity.as_str().to_owned());
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "worth_query_contribution_composed_composition_v1",
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("classification"),
-                format!("{classification:?}"),
-            )
-            .field_evidence_identity_sequence(
-                WorthQueryEvidenceTag::new("intent_results"),
-                intent_identities.iter(),
-            )
-            .seal()?,
-    )
+    worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "worth_query_contribution_composed_composition_v1",
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("classification"),
+            format!("{classification:?}"),
+        )
+        .field_evidence_identity_sequence(
+            WorthQueryEvidenceTag::new("intent_results"),
+            intent_identities.iter(),
+        )
+        .seal()
 }
 
 pub fn classify_intent_results(

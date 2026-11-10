@@ -1,5 +1,7 @@
 //! External effects, recovery custody, and canonical recorded correction causality.
 
+#[cfg(test)]
+pub(crate) use external_effect::dispatch_outbox_create_intent;
 mod correction;
 pub(in crate::domain_computation) use correction::OriginalCorrectionDisclosure;
 pub(crate) mod commit_causality;
@@ -27,7 +29,6 @@ pub use causal_fact::{
     WorthQueryCorrectionLineageBinding, WorthQueryRecordedCorrectionSource,
 };
 pub(in crate::domain_computation) use external_effect::dispatch_external_effect;
-pub(crate) use external_effect::dispatch_outbox_create_intent;
 pub use external_effect::WorthQueryInboundCleanupReport;
 pub(crate) use external_effect::{
     bind_dispatch_outbox_create_intent, WorthQueryDispatchOutboxRestoredFields,

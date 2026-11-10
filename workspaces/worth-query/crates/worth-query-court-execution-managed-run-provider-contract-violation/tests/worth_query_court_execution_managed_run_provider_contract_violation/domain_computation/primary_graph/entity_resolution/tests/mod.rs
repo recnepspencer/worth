@@ -126,7 +126,7 @@ fn rebuilt_index_generation_preserves_stable_entity_meaning() {
             let index_id = graph
                 .layout_for_test()
                 .equality_field_for_test("Account", worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountStatus::at("AccountStatus").aspect(), "AccountStatus")
-                .and_then(|field| (*field.equality_index_id_for_test()))
+                .and_then(|field| *field.equality_index_id_for_test())
                 .unwrap();
 
             graph

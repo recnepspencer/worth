@@ -76,11 +76,11 @@ fn owner_sized_image_grows_from_actual_census_and_preserves_clean_arcs() {
                 )
                 .unwrap();
             let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
-            let kind = (*(*graph
+            let kind = *(*graph
                 .layout_for_test())
                 .relation(AccountOwner::reference().name())
                 .unwrap()
-                .kind_for_test());
+                .kind_for_test();
             let bind = |account, key| {
                 worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::publish_relational_mutation(
                     &host_custody.borrowed_request_for_test(),

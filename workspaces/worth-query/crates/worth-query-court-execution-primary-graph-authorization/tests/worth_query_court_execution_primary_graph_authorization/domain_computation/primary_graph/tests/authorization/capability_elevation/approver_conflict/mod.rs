@@ -179,11 +179,11 @@ pub fn add_approver_conflict(
     let graph = (*world.application.runtime_for_test())
         .primary_graph_for_test()
         .unwrap();
-    let relation_kind = (*graph
+    let relation_kind = *graph
         .layout_for_test()
         .relation(CapabilityConflictingBeneficiary::reference().name())
         .unwrap()
-        .kind_for_test());
+        .kind_for_test();
     worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::publish_relational_mutation(
         execution,
         world,

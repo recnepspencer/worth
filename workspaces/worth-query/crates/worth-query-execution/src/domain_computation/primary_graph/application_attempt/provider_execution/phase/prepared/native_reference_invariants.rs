@@ -4,7 +4,6 @@ use crate::domain_computation::primary_graph::{
     schema_layout::WorthQueryPrimaryGraphLayout,
 };
 use std::collections::{BTreeMap, BTreeSet};
-use worth_foundational::facade::{AspectValue, InternedString};
 use worth_query_declaration::facade::application_schema::ApplicationInvariantScopeTarget;
 use worth_query_installation::facade::{
     WorthQueryInstalledApplicationInvariantCatalog, WorthQueryInvariantExecutionContract,

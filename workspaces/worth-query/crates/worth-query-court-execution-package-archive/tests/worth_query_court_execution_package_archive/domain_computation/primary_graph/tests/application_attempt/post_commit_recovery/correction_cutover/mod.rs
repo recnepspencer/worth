@@ -5,6 +5,7 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationIdempotencyResolution;
 
 #[test]
+#[expect(clippy::disallowed_methods, reason = "Client-race court")]
 fn pending_correction_cutover_never_looks_unseen_on_another_branch() {
     let world = installed_authorization_world(
         true,
@@ -90,7 +91,7 @@ fn pending_correction_cutover_never_looks_unseen_on_another_branch() {
         ),
         "the held real post-commit boundary must leave pending custody: {outcome:?}"
     );
-    let provider = &(*(*world.application.runtime_for_test()).primary_provider_for_test());
+    let provider = (*world.application.runtime_for_test()).primary_provider_for_test();
     assert!(
         matches!(provider.observe_correction_key_for_test(&sibling_observation, binding.key_identity()),
         Observed::Pending(Some(recorded)) if recorded.key_identity() == binding.key_identity())

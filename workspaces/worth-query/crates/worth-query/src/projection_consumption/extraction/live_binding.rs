@@ -172,7 +172,7 @@ impl ExtractedLiveBindingFacts {
             self.row_count * (self.requested_field_lookups + row_identity_surface_count),
             source_references.len(),
         );
-        Ok(ConsumedProjectionFactSet::new(
+        ConsumedProjectionFactSet::new(
             ConsumedProjectionContractProvenance::from_contract(contract),
             ConsumedProjectionSourceTruth::from_contract(
                 contract,
@@ -193,7 +193,7 @@ impl ExtractedLiveBindingFacts {
                 effect_continuity_facts: Vec::new(),
                 relation_endpoints: Vec::new(),
             },
-        )?)
+        )
     }
 }
 
@@ -202,11 +202,7 @@ fn live_binding_row_identity(
     view_name: &str,
     index: usize,
 ) -> Result<String, IdentityDerivationDenial> {
-    Ok(compose_live_binding_row_identity(
-        binding_digest,
-        view_name,
-        index,
-    )?)
+    compose_live_binding_row_identity(binding_digest, view_name, index)
 }
 
 fn binding_target_source_references<'a>(

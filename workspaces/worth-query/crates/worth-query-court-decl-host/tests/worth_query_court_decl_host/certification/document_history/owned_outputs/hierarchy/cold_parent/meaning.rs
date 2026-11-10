@@ -123,7 +123,7 @@ fn exercise(worker: bool, model_edit: bool) {
     let current = document.selection(&request).unwrap();
     let contacts = host.producer_contacts_on_this_thread_for_test();
     let selected =
-        super::super::super::courts::checkout(&document, &request, before, current, 0xd1214_40)
+        super::super::super::courts::checkout(&document, &request, before, current, 0x0d12_1440)
             .unwrap_or_else(|cause| panic!("changed discovery: {cause:?}"));
     assert_eq!(
         host.producer_contacts_on_this_thread_for_test(),

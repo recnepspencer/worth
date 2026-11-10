@@ -102,7 +102,7 @@ impl WorthQueryIntentAdmissionContribution {
             WorthQueryAdmissionContributionPosture::SupportOnly => unreachable!(),
         })?;
 
-        Ok(materialize_common_lane(
+        materialize_common_lane(
             "admission",
             WorthQueryDomainCapabilityTargetKind::IntentDeclaration,
             self.posture.as_str(),
@@ -119,7 +119,7 @@ impl WorthQueryIntentAdmissionContribution {
                     materialize_canonical_admission_artifact(ready)?,
                 ))
             },
-        )?)
+        )
     }
 
     pub fn materialize(

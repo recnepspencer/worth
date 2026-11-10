@@ -38,7 +38,6 @@ use super::delivery_work_packet::{ActiveDeliveryWorkPacket, ActiveDeliveryWorkPa
 use super::maintenance_delta::{
     QueryMaintenanceDeltaLoweringReport, QuerySubscriptionMaintenanceDelta,
 };
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[derive(Debug, Default, Eq, PartialEq)]
 pub struct ActiveSubscriptionRuntime {

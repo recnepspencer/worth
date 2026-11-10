@@ -17,7 +17,7 @@ pub(crate) fn representative_runtime_intent_authority_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let receipt = certification_intent_receipt(execution);
-    Ok(route_planned_row(
+    route_planned_row(
         WorthQueryLowerRuntimeSeamKey::RuntimeIntentAuthorityAdapter,
         "Runtime intent authority seam",
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
@@ -46,14 +46,14 @@ pub(crate) fn representative_runtime_intent_authority_row(
                 receipt.execution_provenance_chain_digest(),
             )
             .seal()?,
-    )?)
+    )
 }
 
 pub(crate) fn representative_intent_runtime_execution_row(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let receipt = certification_intent_receipt(execution);
-    Ok(route_planned_row(
+    route_planned_row(
         WorthQueryLowerRuntimeSeamKey::IntentRuntimeExecution,
         "Intent runtime execution",
         WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
@@ -78,7 +78,7 @@ pub(crate) fn representative_intent_runtime_execution_row(
             )
             .seal()?,
         receipt.receipt_identity().clone(),
-    )?)
+    )
 }
 
 fn certification_intent_receipt(

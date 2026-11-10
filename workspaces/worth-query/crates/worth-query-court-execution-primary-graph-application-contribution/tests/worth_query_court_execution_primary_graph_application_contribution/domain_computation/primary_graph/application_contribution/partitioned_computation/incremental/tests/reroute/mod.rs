@@ -170,7 +170,7 @@ fn every_edit_retains_what_a_fresh_full_run_retains() {
         let mut entries = (1..=6)
             .map(|id| (id, (id % 3, 10 * id)))
             .collect::<BTreeMap<_, _>>();
-        *(*installed.owner_for_test()).entries.lock().unwrap() = entries.clone();
+        *installed.owner_for_test().entries.lock().unwrap() = entries.clone();
         let fresh = || {
             Some(ComputationPrior::new_for_test(
                 edition(),
@@ -189,7 +189,7 @@ fn every_edit_retains_what_a_fresh_full_run_retains() {
             }
             applied.insert(edit);
             let before = std::mem::replace(
-                &mut *(*installed.owner_for_test()).entries.lock().unwrap(),
+                &mut *installed.owner_for_test().entries.lock().unwrap(),
                 entries.clone(),
             );
             // Every fourth step moves the label every key read, so every item
@@ -200,9 +200,9 @@ fn every_edit_retains_what_a_fresh_full_run_retains() {
                 .iter()
                 .filter(|(id, entry)| keys || before.get(id) != Some(entry));
             let touched = touched.map(|(id, _)| *id).collect::<Vec<_>>();
-            (*installed.owner_for_test()).keyed.lock().unwrap().clear();
+            installed.owner_for_test().keyed.lock().unwrap().clear();
             let next = attempt(&world, &installed, Some(moved_facts(last, keys)));
-            let keyed = std::mem::take(&mut *(*installed.owner_for_test()).keyed.lock().unwrap());
+            let keyed = std::mem::take(&mut *installed.owner_for_test().keyed.lock().unwrap());
             let full = attempt(&world, &installed, fresh());
             let context = format!("seed {seed:#x}, step {step}, {edit:?}, items {entries:?}");
             assert!(
@@ -235,7 +235,7 @@ fn every_record_absence_rebuilds_the_same_state_as_a_fresh_run() {
         Rerouted::default(),
         ComputationRetention::ProducerOperation,
     );
-    *(*installed.owner_for_test()).entries.lock().unwrap() =
+    *installed.owner_for_test().entries.lock().unwrap() =
         (1..=6).map(|id| (id, (id % 3, 10 * id))).collect();
     let full = attempt(
         &world,
@@ -267,7 +267,7 @@ fn every_record_absence_rebuilds_the_same_state_as_a_fresh_run() {
             Cause::CollisionSuppressed,
         ),
     ] {
-        (*installed.owner_for_test()).keyed.lock().unwrap().clear();
+        installed.owner_for_test().keyed.lock().unwrap().clear();
         let next = attempt(
             &world,
             &installed,
@@ -281,7 +281,7 @@ fn every_record_absence_rebuilds_the_same_state_as_a_fresh_run() {
             matches!(next.runs.as_slice(), [(Run::Full(observed), Some(_))] if *observed == cause)
         );
         assert_eq!(
-            *(*installed.owner_for_test()).keyed.lock().unwrap(),
+            *installed.owner_for_test().keyed.lock().unwrap(),
             (1..=6).collect::<Vec<_>>(),
             "every key is routed afresh"
         );
@@ -322,8 +322,8 @@ fn a_missing_call_measurement_is_recorded_as_unmeasured_at_the_discard() {
     // invokes the production discard, with a real completed reduction tree.
     recording.membership_for_test(
         None,
-        &(*typed.items_for_test()),
-        Arc::clone(&(*typed.digests_for_test())),
+        typed.items_for_test(),
+        Arc::clone(typed.digests_for_test()),
     );
     let request = live_scope();
     let execution = QueryRequestExecution::open_for_test(

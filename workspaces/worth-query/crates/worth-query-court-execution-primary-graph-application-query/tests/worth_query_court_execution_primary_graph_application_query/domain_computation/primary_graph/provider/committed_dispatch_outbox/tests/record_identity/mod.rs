@@ -9,7 +9,7 @@ fn unrelated_identical_row_cannot_make_owner_mapping_ambiguous() {
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
-    let provider = &(*(*world.application.runtime_for_test()).primary_provider_for_test());
+    let provider = (*world.application.runtime_for_test()).primary_provider_for_test();
     let record = record_for(5);
     (*provider
         .graph_for_test())
@@ -96,7 +96,7 @@ fn another_committed_record_ref_cannot_substitute_for_the_bound_outbox() {
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
-    let provider = &(*(*world.application.runtime_for_test()).primary_provider_for_test());
+    let provider = (*world.application.runtime_for_test()).primary_provider_for_test();
     let first = record_for(61);
     let second = record_for(62);
     let (first_binding, second_binding, commit, runtime_id) =

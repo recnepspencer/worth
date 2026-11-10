@@ -1,5 +1,4 @@
 use super::*;
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::intent_admission::{
     WorthQueryAuthoritativeIntentExecutionHandoff, WorthQueryEffectTriggeredIntentExecutionHandoff,
     WorthQueryIntentDecisionTraceEnvelope, WorthQueryIntentViolationDecision,

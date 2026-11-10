@@ -317,7 +317,7 @@ fn a_live_member_owner_requires_its_exact_relation_demand_and_cardinality() {
                 source_posture: Posture::Retire,
             })
             .with_live_member_owner(declared_owner.clone());
-        let mut association = parts(&source);
+        let mut association = parts(source);
         association.inverse = inverse.description().clone();
         association.inverse_handler = inverse.handler().identity().to_owned();
         association.authored_identity = Some(authored);
@@ -386,7 +386,7 @@ fn a_live_member_owner_requires_its_exact_relation_demand_and_cardinality() {
                 integrity: integrity.into(),
             });
         }
-        let result = resolve_correction_binding(&actual, &source, &inventory, &queries);
+        let result = resolve_correction_binding(&actual, source, &inventory, &queries);
         if axis == "valid" {
             assert!(result.unwrap().is_some());
         } else {

@@ -4,8 +4,6 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::SourceCustody;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryPerformedOutputDemandSource;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
-use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture;
-use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support;
 use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
 
 #[test]

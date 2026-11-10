@@ -42,8 +42,6 @@ impl ApplicationProgramDefinition<Schema> for Program {
     }
 }
 
-pub type PredecessorTree = Tree;
-
 pub(in crate::certification::document_history::owned_outputs) fn feature() -> ApplicationFeatureSpec
 {
     ApplicationFeatureSpec::root::<Schema, Derived>()

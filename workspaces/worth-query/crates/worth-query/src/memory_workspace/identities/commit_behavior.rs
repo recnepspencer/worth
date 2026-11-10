@@ -1,4 +1,3 @@
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::sync::Arc;
 use worth_foundational::facade::admit_foundational_authority_identity;
 use worth_runtime_bridge::facade::{BridgeIdentityEvidence, TruthCommitIdentity};

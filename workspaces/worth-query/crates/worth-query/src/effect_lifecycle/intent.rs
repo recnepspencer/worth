@@ -121,7 +121,7 @@ fn normalize(
         ));
     }
 
-    Ok(NormalizedEffectIntent::new(
+    NormalizedEffectIntent::new(
         authoring_basis,
         effect_family,
         authority_lane,
@@ -138,7 +138,7 @@ fn normalize(
             1,
             basis_pairing_check_width(authoring_basis),
         )
-    })?)
+    })
 }
 
 fn binding_matches_basis(

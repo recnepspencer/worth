@@ -298,13 +298,13 @@ pub(super) fn causal_materialization_identity(
     bridge_identity: Option<&WorthQueryEvidenceIdentity>,
     bridge_envelope: Option<&WorthQueryEvidenceIdentity>,
 ) -> Result<CausalInspectionArtifactIdentity, WorthQueryEvidenceIdentityDerivationDenial> {
-    Ok(compose_causal_artifact_causal_identity(
+    compose_causal_artifact_causal_identity(
         kind,
         query_admission_identity,
         query_observation_identity,
         bridge_identity,
         bridge_envelope,
-    )?)
+    )
 }
 
 fn materialized_detail_identity(
@@ -318,14 +318,14 @@ fn materialized_detail_identity(
     super::identity::CausalInspectionMaterializedDetailIdentity,
     WorthQueryEvidenceIdentityDerivationDenial,
 > {
-    Ok(compose_causal_materialized_detail_identity(
+    compose_causal_materialized_detail_identity(
         query_observation_identity,
         advisory_reason,
         readmission_proof,
         evidence_references,
         redaction_policy,
         materialization_policy,
-    )?)
+    )
 }
 
 fn artifact_identity(
@@ -337,7 +337,7 @@ fn artifact_identity(
     readmission_proof: Option<&CausalBridgeReadmissionProof>,
     detail_identity: &WorthQueryEvidenceIdentity,
 ) -> Result<CausalInspectionArtifactIdentity, WorthQueryEvidenceIdentityDerivationDenial> {
-    Ok(compose_causal_artifact_identity(
+    compose_causal_artifact_identity(
         kind,
         query_admission_identity,
         bridge_identity,
@@ -345,5 +345,5 @@ fn artifact_identity(
         receipt.receipt_identity(),
         readmission_proof.map(CausalBridgeReadmissionProof::readmission_proof_identity),
         detail_identity,
-    )?)
+    )
 }

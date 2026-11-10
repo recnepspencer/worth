@@ -19,7 +19,7 @@ impl QuerySubscriptionRuntimeCertificationError {
         &self,
     ) -> Result<&crate::evidence_identity::WorthQueryEvidenceIdentity, IdentityDerivationDenial>
     {
-        Ok(self.failure_identity.as_ref().map_err(|cause| *cause)?)
+        self.failure_identity.as_ref().map_err(|cause| *cause)
     }
 
     pub fn failure_projection(

@@ -171,9 +171,9 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         self.runtime
             .primary_provider
             .graph
-            .with_runtime(&execution, |native| {
+            .with_runtime(execution, |native| {
                 let evidence = authority
-                    .selected_output_read(&execution, native)
+                    .selected_output_read(execution, native)
                     .map_err(ReadDenial::SelectionRead)?;
                 for registered in authority.profile().tree_profiles() {
                     let mut original = false;
@@ -183,7 +183,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                     }
                     if !original
                         && !super::super::output_verification::profile_is_current(
-                            execution, native, &evidence, &selected, registered,
+                            execution, native, evidence, selected, registered,
                         )?
                     {
                         return Err(ReadDenial::Incomplete {

@@ -23,7 +23,7 @@ fn unavailable_completion_checks_foreign_phase_before_foreign_demand() {
                 let mut demand_checks = 0;
                 let denial = admit_unavailable_completion(
                     &phase,
-                    &(*(*owner.application.runtime_for_test()).product_runtime_for_test()),
+                    (*owner.application.runtime_for_test()).product_runtime_for_test(),
                     || {
                         demand_checks += 1;
                         !foreign_demand

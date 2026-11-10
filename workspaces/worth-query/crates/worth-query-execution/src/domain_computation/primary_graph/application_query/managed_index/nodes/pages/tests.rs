@@ -127,6 +127,21 @@ fn isolated_node_pages_share_unchanged_backing_and_release_staged_edits() {
         let candidate = candidate.seal(control)?;
         assert!(!Arc::ptr_eq(leaf_at(&original, 0), leaf_at(&candidate, 0)));
         assert!(Arc::ptr_eq(leaf_at(&original, 3), leaf_at(&candidate, 3)));
+        {
+            let mut inspection = inspection::PageInspection::default();
+            original.inspect_pages(&mut inspection);
+            original.inspect_pages(&mut inspection);
+            candidate.inspect_pages(&mut inspection);
+            assert_eq!(inspection.distinct(), 6);
+            assert_eq!(inspection.references, 12);
+            let equal_values = (0..4 * PAGE_SIZE)
+                .map(|index| RefCell::new(Some(index as u64)))
+                .collect::<Vec<_>>();
+            let independent = NodePages::from_scratch(&execution, &equal_values, control)?;
+            independent.inspect_pages(&mut inspection);
+            assert_eq!(inspection.distinct(), 10);
+            assert_eq!(inspection.references, 16);
+        }
         let staged_page = Arc::downgrade(leaf_at(&candidate, 0));
         drop(candidate);
         assert!(staged_page.upgrade().is_none());

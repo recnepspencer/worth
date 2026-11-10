@@ -39,10 +39,10 @@ impl WorthQueryDomainCapabilityCertificationSurface {
 pub fn worth_query_domain_capability_certification_surface(
 ) -> Result<WorthQueryDomainCapabilityCertificationSurface, IdentityDerivationDenial> {
     let inventory = worth_query_domain_capability_public_surface_inventory();
-    Ok(WorthQueryDomainCapabilityCertificationSurface::new(
+    WorthQueryDomainCapabilityCertificationSurface::new(
         inventory.public_surface_digest()?,
         inventory.rows().len(),
-    )?)
+    )
 }
 
 #[cfg(test)]

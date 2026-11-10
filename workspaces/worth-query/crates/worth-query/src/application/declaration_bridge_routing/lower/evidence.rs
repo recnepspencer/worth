@@ -13,31 +13,27 @@ pub(super) fn runtime_surface_identity<
 >(
     envelope: &WorthQueryDeclarationEnvelope<D, I>,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::DeclarationBridgeLoweringIdentity)
-            .field_shape(WorthQueryEvidenceTag::new("role"), "runtime-surface")
-            .field_shape(
-                WorthQueryEvidenceTag::new("declaration_family"),
-                envelope.declaration_family_key(),
-            )
-            .field_value(
-                WorthQueryEvidenceTag::new("handle"),
-                envelope.handle_identity_digest(),
-            )
-            .seal()?,
-    )
+    worth_query_evidence_identity(WorthQueryEvidenceScope::DeclarationBridgeLoweringIdentity)
+        .field_shape(WorthQueryEvidenceTag::new("role"), "runtime-surface")
+        .field_shape(
+            WorthQueryEvidenceTag::new("declaration_family"),
+            envelope.declaration_family_key(),
+        )
+        .field_value(
+            WorthQueryEvidenceTag::new("handle"),
+            envelope.handle_identity_digest(),
+        )
+        .seal()
 }
 
 pub(super) fn bridge_lowering_evidence_identity(
     role: &'static str,
     evidence: impl AsRef<str>,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::DeclarationBridgeLoweringIdentity)
-            .field_shape(WorthQueryEvidenceTag::new("role"), role)
-            .field_value(WorthQueryEvidenceTag::new("evidence"), evidence)
-            .seal()?,
-    )
+    worth_query_evidence_identity(WorthQueryEvidenceScope::DeclarationBridgeLoweringIdentity)
+        .field_shape(WorthQueryEvidenceTag::new("role"), role)
+        .field_value(WorthQueryEvidenceTag::new("evidence"), evidence)
+        .seal()
 }
 
 pub(super) fn bridge_lowering_bridge_evidence_identity(

@@ -82,7 +82,7 @@ pub fn reject_occupied_registration(
     let execution = phase;
 
     let (
-        coupled_outputs,
+        _coupled_outputs,
         admission,
         lease,
         provider_attempt,

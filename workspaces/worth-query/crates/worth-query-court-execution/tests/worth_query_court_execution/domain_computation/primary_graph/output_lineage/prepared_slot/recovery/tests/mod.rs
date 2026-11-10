@@ -60,7 +60,7 @@ fn world_recovery_metadata_carries_the_original_computation_and_absence() {
             .entry(*coordinate.occurrence_for_test())
             .or_default()
             .insert(
-                (*coordinate.generation_for_test()),
+                *coordinate.generation_for_test(),
                 vec![Arc::clone(&record_cell)],
             );
         let partition_cell = (*lineage.partition_index_mut_for_test()).insert_vacancy_for_test(
@@ -89,7 +89,7 @@ fn world_recovery_metadata_carries_the_original_computation_and_absence() {
         );
         if !produced {
             assert!(matches!(
-                (*replacement.computation_for_test()),
+                *replacement.computation_for_test(),
                 PreparedComputationCustody::Assigned(SealedComputationRetention::Absent(
                     PriorAbsence::Stopped
                 ))

@@ -123,9 +123,9 @@ pub use request_execution::{
     WorthQueryAdvancementObservationForTest,
 };
 
-pub(crate) use request_execution::{
-    with_test_advancement, with_test_bootstrap_advancement, TestHostRequest,
-};
+#[cfg(test)]
+pub(crate) use request_execution::advancement::with_test_advancement;
+pub(crate) use request_execution::TestHostRequest;
 
 pub use request_execution::{with_bootstrap_advancement, with_bootstrap_advancement_from_request};
 
@@ -133,8 +133,6 @@ pub use request_execution::WorthQueryBootstrapAdvancementPhase;
 
 pub(in crate::domain_computation::primary_graph) use execution_denial::publication_execution_kind;
 pub(in crate::domain_computation::primary_graph) use request_execution::advancement::observation::application::record_commit as record_advancement_commit;
-
-pub(in crate::domain_computation::primary_graph) use request_execution::test_policy;
 
 pub(in crate::domain_computation::primary_graph) use producer::{
     ComparedProducerOutput, ProducerOutputEvaluation, ProducerOutputEvaluationState,

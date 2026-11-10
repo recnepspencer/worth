@@ -1,5 +1,4 @@
 //! A freshly validated portable schema, assembled from real declaration fixtures.
-use super::*;
 use worth_query_declaration::facade::application_schema::*;
 use worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity;
 mod graph;

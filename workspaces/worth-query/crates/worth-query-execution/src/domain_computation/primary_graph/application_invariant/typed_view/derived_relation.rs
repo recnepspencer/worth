@@ -142,9 +142,6 @@ pub(in crate::domain_computation::primary_graph::application_invariant) fn nativ
     }
 }
 
-#[cfg(test)]
-use worth_testkit_relational::derived_relation as native_fixture;
-
 #[test]
 fn malformed_event_chain_preserves_its_typed_query_denial() {
     let denial = native_denial(NativeDenial::Definition(

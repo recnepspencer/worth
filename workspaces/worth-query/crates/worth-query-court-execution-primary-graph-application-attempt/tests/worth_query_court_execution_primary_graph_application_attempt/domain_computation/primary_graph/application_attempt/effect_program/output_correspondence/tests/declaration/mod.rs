@@ -124,7 +124,7 @@ family!(Mixed: MixedOutputs, "family.", ApplicationMutationOutputPostureSet::ALL
 contract!(ForeignOutputs: [Foreign], []);
 role!(Foreign: ForeignOutputs, WorthQueryPreserveOutput, WorthQueryExactlyOneOutput, "foreign");
 
-pub const _: () = {
+const _: () = {
     let () = <Preserved as Declared>::DECLARED;
     let () = <Created as Declared>::DECLARED;
     let () = <Retired as Declared>::DECLARED;

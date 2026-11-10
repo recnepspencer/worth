@@ -20,10 +20,10 @@ fn pair_rebase_uses_native_revision_and_never_retains_partial_facts() {
     let graph = (*world.application.runtime_for_test())
         .primary_graph_for_test()
         .unwrap();
-    let relation_kind = (*(*graph.layout_for_test())
+    let relation_kind = *(*graph.layout_for_test())
         .relation(AccountOwner::reference().name())
         .unwrap()
-        .kind_for_test());
+        .kind_for_test();
     let selected = world
         .application
         .with_host_advancement(|phase| {

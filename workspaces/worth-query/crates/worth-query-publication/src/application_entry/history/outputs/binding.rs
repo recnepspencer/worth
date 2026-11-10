@@ -123,10 +123,7 @@ where
         })
         .map_err(Denial::Query)
         .and_then(|result| result);
-    let profile = match profile {
-        Ok(profile) => profile,
-        Err(cause) => return Err(cause),
-    };
+    let profile = profile?;
     Ok(WorthQueryHistoryWithOutputs {
         application: application.clone(),
         profile,

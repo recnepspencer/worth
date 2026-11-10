@@ -218,7 +218,7 @@ fn same_scope_reused_slot_cannot_inherit_original_observation_generation() {
         .unwrap();
     assert!(
         matches!(
-            (*denial.cause_for_test()),
+            *denial.cause_for_test(),
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::stop::InspectionCause::Admission(
                 worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::admission::InspectionAdmissionDenial::ForeignIssuedAccess
             )

@@ -47,7 +47,6 @@ pub(super) fn confirm_in_execution_with_effect<S: ApplicationSchema, T>(
 }
 pub(super) fn document_denial(cause: CurrentReadDenial) -> Denial {
     match cause {
-        CurrentReadDenial::ForeignPhase => Denial::ForeignPhase,
         CurrentReadDenial::HeadDiverged => Denial::HeadDiverged,
         CurrentReadDenial::NativeBasis(cause) => Denial::NativeBasis(cause),
         CurrentReadDenial::HeadAdmission(cause) => Denial::HeadAdmission(cause),

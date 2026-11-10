@@ -8,9 +8,7 @@ use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_co
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_work::RequiredWorkMembership;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_work::queue::RequiredWorkPop;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_work::queue::RequiredWorkQueue;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_work::SelectedRequiredWork;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_work::SelectedRequiredWorkKind;
-use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::output_lineage::registry_fixture;
 #[test]
 fn activation_and_newer_hint_survive_an_older_selected_ack() {
     let (_lineage, [earlier, later]) = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement_pair();

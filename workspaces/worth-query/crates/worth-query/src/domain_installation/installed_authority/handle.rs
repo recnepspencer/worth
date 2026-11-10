@@ -1,4 +1,3 @@
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use std::marker::PhantomData;
 use std::sync::Arc;
 

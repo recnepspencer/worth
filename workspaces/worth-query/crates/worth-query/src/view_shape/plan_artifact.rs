@@ -33,11 +33,9 @@ impl ViewShapePlanDigest {
     pub(crate) fn evidence_identity(
         &self,
     ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-        Ok(
-            worth_query_evidence_identity(WorthQueryEvidenceScope::ViewShapePlanDigest)
-                .field_value(WorthQueryEvidenceTag::new("plan_digest"), self.as_str())
-                .seal()?,
-        )
+        worth_query_evidence_identity(WorthQueryEvidenceScope::ViewShapePlanDigest)
+            .field_value(WorthQueryEvidenceTag::new("plan_digest"), self.as_str())
+            .seal()
     }
 }
 

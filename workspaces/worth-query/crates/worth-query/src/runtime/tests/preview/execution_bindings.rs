@@ -92,7 +92,6 @@ fn derive_only_preview_binds_handles_and_mutes_effects_without_residue() {
         )
     };
     let outcome = outcome.expect("fixture digest must fit");
-    let outcome = outcome;
 
     assert_eq!(outcome.preview_binding_count(), 4);
     assert_eq!(outcome.effect_binding_count(), 2);

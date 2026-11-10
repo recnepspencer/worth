@@ -11,6 +11,9 @@ pub enum SourceFacts {
     Projected(Option<RetainedSourceFacts>, Option<RetainedSourceFacts>),
 }
 impl SourceFacts {
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
     pub fn len(&self) -> usize {
         match self {
             Self::Admitted(facts) => facts.len(),

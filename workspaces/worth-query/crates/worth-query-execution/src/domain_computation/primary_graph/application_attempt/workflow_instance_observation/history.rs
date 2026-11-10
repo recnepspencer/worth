@@ -206,8 +206,7 @@ pub(super) fn observe(
             &layout.transition.identity,
         )? {
             Some(AspectValue::String(InternedString::Stored(identity))) => {
-                let identity = identity.as_str().to_owned();
-                identity
+                identity.as_str().to_owned()
             }
             Some(AspectValue::String(InternedString::Raw(identity))) => identity,
             _ => return Err(denial("workflow transition identity is unavailable")),

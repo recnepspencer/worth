@@ -4,9 +4,8 @@ use crate::application_schema::{
 };
 use std::collections::BTreeMap;
 use worth_foundational::facade::{
-    encode_canonical_value, AspectContractRevision, AspectIdentity, CanonicalBasisLocus,
-    CanonicalBasisValue as V, CanonicalIntegerWidth, CanonicalValue, InternedString,
-    ScalarAspectType, ValueDecodeBounds, WorthValue,
+    encode_canonical_value, AspectContractRevision, AspectIdentity, CanonicalBasisValue as V,
+    CanonicalIntegerWidth, CanonicalValue, ScalarAspectType, ValueDecodeBounds, WorthValue,
 };
 
 const BOUNDS: ValueDecodeBounds = ValueDecodeBounds::new(1024, 64, 16, 8);

@@ -3,8 +3,6 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::source_custody::PreparedOutputRootKind;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::SourceCustody;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
-use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture;
-use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support;
 use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId;
 
 #[test]
@@ -167,7 +165,7 @@ fn registry_binding_reader_ignores_logically_absent_completed_custody() {
         let a = (*eager.state_for_test()).lock().unwrap();
         let mut b = (*deferred.state_for_test()).lock().unwrap();
         assert!(a.source_custody[&current_commit]
-            .source_denial_for_test(&(*selected.identity_for_test()))
+            .source_denial_for_test(selected.identity_for_test())
             .is_none());
         assert_eq!(
             (*b.source_custody[&current_commit].retired_sources_for_test()),

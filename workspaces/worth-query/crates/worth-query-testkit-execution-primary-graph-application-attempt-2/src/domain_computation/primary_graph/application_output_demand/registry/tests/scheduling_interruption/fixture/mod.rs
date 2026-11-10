@@ -52,11 +52,11 @@ impl Fixture {
             for (reader, input) in [(&interest, &upstream), (&dependent, &interest)] {
                 let claims = vec![Arc::new((*input.key_for_test()).clone())];
                 (*(*state.records_mut_for_test())
-                    .get_mut(&(*reader.key_for_test()))
+                    .get_mut(reader.key_for_test())
                     .unwrap()
                     .prerequisites_mut_for_test()) = claims;
                 (*(*state.records_mut_for_test())
-                    .get_mut(&(*input.key_for_test()))
+                    .get_mut(input.key_for_test())
                     .unwrap()
                     .framework_required_count_mut_for_test()) += 1;
             }
@@ -75,7 +75,7 @@ impl Fixture {
                     ready_identity = std::ptr::from_ref(&*ready).cast::<()>();
                 }
                 (*(*state.records_mut_for_test())
-                    .get_mut(&(*input.key_for_test()))
+                    .get_mut(input.key_for_test())
                     .unwrap()
                     .state_mut_for_test()) =
                     DemandState::Output(WorthQueryOutputProgress::new_for_test(
@@ -96,7 +96,7 @@ impl Fixture {
                 .lock()
                 .unwrap()
                 .records_mut_for_test())
-                .get_mut(&(*interest.key_for_test()))
+                .get_mut(interest.key_for_test())
                 .unwrap()
                 .successor_of_mut_for_test()) = Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::succession::Succession::new_for_test(
                 *receipt.idempotency_binding().key_identity(),
@@ -105,7 +105,7 @@ impl Fixture {
         {
             let mut state = (*registry.state_for_test()).lock().unwrap();
             let mut row = (*state.records_mut_for_test())
-                .get_mut(&(*interest.key_for_test()))
+                .get_mut(interest.key_for_test())
                 .unwrap();
             (*row.performed_source_mut_for_test()) =
                 Some(WorthQueryPerformedOutputDemandSource::new_for_test(

@@ -265,6 +265,11 @@ fn assert_mixed_direct_world(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut crate::runtime::WorthQueryWorkspace,
 ) {
+    // Ord/Eq compare immutable value text, never the mutable codec seal.
+    #[expect(
+        clippy::mutable_key_type,
+        reason = "Codec seals do not participate in Ord/Eq"
+    )]
     let values = workspace
         .live_view::<WorthQueryUnrefinedLiveShape>(
             request_execution,

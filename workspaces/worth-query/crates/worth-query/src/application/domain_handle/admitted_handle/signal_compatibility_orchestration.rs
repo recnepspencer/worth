@@ -55,6 +55,6 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
         input: WorthQuerySignalCompatibilityOrchestrationInput<D, I>,
     ) -> Result<WorthQuerySignalCompatibilityOrchestrationTranscript<D, I>, IdentityDerivationDenial>
     {
-        Ok(orchestrate_signal_compatibility_on_handle(self, input)?)
+        orchestrate_signal_compatibility_on_handle(self, input)
     }
 }

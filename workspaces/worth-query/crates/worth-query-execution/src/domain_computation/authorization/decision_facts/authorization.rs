@@ -20,7 +20,7 @@ mod source_support;
 pub(in crate::domain_computation::authorization) use delegation_activation::WorthQueryDelegationActivationDecisionFact;
 
 #[derive(Clone)]
-pub(in crate::domain_computation) struct WorthQueryAuthorizationDecisionFact {
+pub struct WorthQueryAuthorizationDecisionFact {
     session_identity:
         crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
     relational: Arc<RelationalAuthorizationObservationEvidence>,

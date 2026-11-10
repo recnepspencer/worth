@@ -79,7 +79,7 @@ pub(super) fn continuity_mutation_evidence(
 ) -> Result<Option<WorthQueryContinuityMutationEvidence>, IdentityDerivationDenial> {
     let basis_binding_identity =
         existing_truth_binding.map(|binding| binding.binding_evidence_identity());
-    Ok(bridge_continuity
+    bridge_continuity
         .map(|bundle| {
             WorthQueryContinuityMutationEvidence::from_bridge_with_query_context(
                 bundle,
@@ -98,7 +98,7 @@ pub(super) fn continuity_mutation_evidence(
                 )
             })
         })
-        .transpose()?)
+        .transpose()
 }
 
 pub(super) fn assertion_evidence(
@@ -109,9 +109,7 @@ pub(super) fn assertion_evidence(
     declared_aspect_value_digest: Option<&WorthQueryEvidenceIdentity>,
     snapshot_identity: &WorthQuerySnapshotIdentity,
 ) -> Option<WorthQueryExistingTruthAssertionEvidence> {
-    let Some(_binding) = existing_truth_binding else {
-        return None;
-    };
+    let _binding = existing_truth_binding?;
     if let Some(verification) = existing_truth_assertion {
         return Some(WorthQueryExistingTruthAssertionEvidence::backend_verified(
             verification,

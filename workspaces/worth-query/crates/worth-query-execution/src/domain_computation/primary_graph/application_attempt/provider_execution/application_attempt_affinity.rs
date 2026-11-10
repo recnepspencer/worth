@@ -108,13 +108,16 @@ impl WorthQueryApplicationAttemptAffinityView for WorthQueryProviderSessionTermi
     }
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct WorthQueryApplicationAttemptBasisMismatch;
+
 impl WorthQueryApplicationAttemptBasis {
     pub fn capture<Schema, Operation, Input, Scope>(
         application: &super::super::super::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         snapshot: &SnapshotHandle,
         product: &crate::basis::WorthQueryProductBranchLease,
-    ) -> Result<Self, ()> {
+    ) -> Result<Self, WorthQueryApplicationAttemptBasisMismatch> {
         if admission.runtime_authority() != application.runtime.authority_identity()
             || snapshot.branch_id() != admission.graph_work_branch()
             || snapshot.branch_id()
@@ -132,7 +135,7 @@ impl WorthQueryApplicationAttemptBasis {
                     .observation()
                     .version_id()
         {
-            return Err(());
+            return Err(WorthQueryApplicationAttemptBasisMismatch);
         }
         Ok(Self {
             core: WorthQueryApplicationAttemptCore {

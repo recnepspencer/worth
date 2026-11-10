@@ -25,7 +25,7 @@ fn preview_readmission_retains_original_source_and_runtime_until_promotion() {
         .unwrap();
     let original_identity = (*preview.handle_for_test()).session_identity().clone();
     let diagnostics = (*preview.handle_for_test()).diagnostics().clone();
-    let original_source = std::sync::Arc::clone(&(*preview._source_for_test()));
+    let original_source = std::sync::Arc::clone(preview._source_for_test());
     let observer = (*preview.handle_for_test()).liveness_observer();
     let original_execution = (*preview.handle_for_test())
         .execution_record()
@@ -40,7 +40,7 @@ fn preview_readmission_retains_original_source_and_runtime_until_promotion() {
         WorthQueryApplicationPreviewReadmissionDenial::ForeignPhase
     );
     assert!(std::sync::Arc::ptr_eq(
-        &(*preview._source_for_test()),
+        preview._source_for_test(),
         &original_source
     ));
     let (preview, denial) = other
@@ -57,7 +57,7 @@ fn preview_readmission_retains_original_source_and_runtime_until_promotion() {
         .unwrap();
     assert!(observer.admit_active_session().is_some());
     assert!(std::sync::Arc::ptr_eq(
-        &(*(*preview.session_for_test())._source_for_test()),
+        (*preview.session_for_test())._source_for_test(),
         &original_source
     ));
     assert_eq!(
@@ -97,7 +97,7 @@ fn readmitted_preview_discard_refusal_retains_source_and_liveness_until_real_clo
         .unwrap()
         .unwrap();
     let diagnostics = (*preview.handle_for_test()).diagnostics().clone();
-    let source = std::sync::Arc::clone(&(*preview._source_for_test()));
+    let source = std::sync::Arc::clone(preview._source_for_test());
     let observer = (*preview.handle_for_test()).liveness_observer();
     let fault = preview.reject_discard_for_test();
     let preview = runtime
@@ -107,7 +107,7 @@ fn readmitted_preview_discard_refusal_retains_source_and_liveness_until_real_clo
     let (preview, denial) = preview.discard().unwrap_err();
     assert_eq!(denial.kind(), worth_runtime_bridge::facade::BridgeSpeculationErrorKind::PreviewResidueClassificationMismatch);
     assert!(std::sync::Arc::ptr_eq(
-        &(*(*preview.session_for_test())._source_for_test()),
+        (*preview.session_for_test())._source_for_test(),
         &source
     ));
     assert!(observer.admit_active_session().is_some());

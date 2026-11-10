@@ -151,7 +151,7 @@ fn exercise(worker: bool) {
         &request,
         before,
         document.selection(&request).unwrap(),
-        0x1255_01,
+        0x0012_5501,
     )
     .unwrap();
     assert_eq!(reads.reads(), 0, "the healthy root remains unopened");
@@ -198,12 +198,13 @@ fn exercise(worker: bool) {
         &request,
         before,
         document.selection(&request).unwrap(),
-        0x1255_02,
+        0x0012_5502,
     )
     .unwrap();
     let discovered = installed::observation::Observation::begin();
     let selected =
-        super::super::courts::checkout(&document, &request, forward, selected, 0x1255_03).unwrap();
+        super::super::courts::checkout(&document, &request, forward, selected, 0x0012_5503)
+            .unwrap();
     assert!(discovered.saw("b"));
     assert!(!discovered.saw("a"));
     let at = host

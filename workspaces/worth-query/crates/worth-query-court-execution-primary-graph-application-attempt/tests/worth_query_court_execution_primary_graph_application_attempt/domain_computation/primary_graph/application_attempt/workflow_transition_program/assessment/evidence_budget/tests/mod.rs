@@ -25,7 +25,7 @@ pub fn evidence_effects(
     };
     [
         entity(
-            (*layout.assessment_evidence.entity_kind_for_test()),
+            *layout.assessment_evidence.entity_kind_for_test(),
             BTreeMap::from([
                 (
                     (*layout.assessment_evidence.publication_identity_for_test()).clone(),
@@ -38,7 +38,7 @@ pub fn evidence_effects(
             ]),
         ),
         entity(
-            (*layout.evidence_dependency.entity_kind_for_test()),
+            *layout.evidence_dependency.entity_kind_for_test(),
             BTreeMap::from([
                 (
                     (*layout.evidence_dependency.fact_kind_for_test()).clone(),

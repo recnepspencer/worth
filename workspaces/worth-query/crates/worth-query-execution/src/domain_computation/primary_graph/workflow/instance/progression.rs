@@ -143,6 +143,7 @@ impl WorkflowInstanceProgress {
             ))
     }
 
+    #[cfg(test)]
     fn reconstruct_with(
         settled: &mut [SettledWorkflowTransition],
         start: EntityId,

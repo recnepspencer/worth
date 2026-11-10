@@ -19,7 +19,7 @@ impl WorthQueryWorkflowContributionAuthoring {
         detail: impl Into<String>,
         runtime_snapshot_identity: WorthQuerySnapshotIdentity,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_runtime_and_lowering_semantics(
+        Self::with_runtime_and_lowering_semantics(
             WorthQueryWorkflowContributionPosture::ConfirmationRequired,
             semantic_code,
             detail,
@@ -36,7 +36,7 @@ impl WorthQueryWorkflowContributionAuthoring {
             WorthQueryWorkflowLoweringSemantics::writeback(
                 WritebackLoweringInput::projected_state_diff(),
             ),
-        )?)
+        )
     }
 
     pub fn confirmation_required_writeback_projected_state_diff_from_preflight(
@@ -44,7 +44,7 @@ impl WorthQueryWorkflowContributionAuthoring {
         detail: impl Into<String>,
         preflight: ExecutionPreflightBundle,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_runtime_and_lowering_semantics(
+        Self::with_runtime_and_lowering_semantics(
             WorthQueryWorkflowContributionPosture::ConfirmationRequired,
             semantic_code,
             detail,
@@ -59,7 +59,7 @@ impl WorthQueryWorkflowContributionAuthoring {
             WorthQueryWorkflowLoweringSemantics::writeback(
                 WritebackLoweringInput::projected_state_diff(),
             ),
-        )?)
+        )
     }
 
     pub fn discard_required_writeback_projected_state_diff(
@@ -67,7 +67,7 @@ impl WorthQueryWorkflowContributionAuthoring {
         detail: impl Into<String>,
         preview_session_identity: BridgePreviewSessionIdentity,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_runtime_and_lowering_semantics(
+        Self::with_runtime_and_lowering_semantics(
             WorthQueryWorkflowContributionPosture::DiscardRequired,
             semantic_code,
             detail,
@@ -85,6 +85,6 @@ impl WorthQueryWorkflowContributionAuthoring {
             WorthQueryWorkflowLoweringSemantics::writeback(
                 WritebackLoweringInput::projected_state_diff(),
             ),
-        )?)
+        )
     }
 }

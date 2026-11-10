@@ -17,7 +17,6 @@ use super::report::{
     QueryPostMergeInspectionArtifact,
 };
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 #[cfg(test)]
 use crate::workflow::foundation::WorkflowDeclarationFamily;
 use crate::workflow::foundation::{QueryWorkflowDeclaration, WorkflowPredictionDriftOutcome};

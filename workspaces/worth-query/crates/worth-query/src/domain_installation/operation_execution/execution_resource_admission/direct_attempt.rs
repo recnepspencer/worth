@@ -3,7 +3,6 @@ use crate::domain_installation::operation_authority_chain::{
     mint_operation_phase_proof, operation_phase_basis, WorthQueryOperationPhaseProof,
     WorthQueryResourceAdmittedOperationPhase,
 };
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_proof::TransitionOutcome;
 use worth_query_declaration::facade::domain_computation::WorthQueryExecutionResourceRequest;
 

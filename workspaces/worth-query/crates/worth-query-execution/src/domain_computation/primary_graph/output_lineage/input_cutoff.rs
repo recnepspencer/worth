@@ -11,7 +11,6 @@ pub(super) use stable_publication::performed_fact_sequence;
 pub(in crate::domain_computation::primary_graph) use stable_publication::prepare_stable_address;
 pub(in crate::domain_computation::primary_graph) use stable_publication::PreparedStableLineageAddress;
 pub(in crate::domain_computation::primary_graph) use stable_publication::StableEqualityConsequence;
-pub(in crate::domain_computation::primary_graph) use verification::InputCutoffDecision;
 
 pub(in crate::domain_computation::primary_graph) use selected_basis::PreparedInputCutoffBasis;
 pub(in crate::domain_computation::primary_graph) use verification::cutoff_declines;

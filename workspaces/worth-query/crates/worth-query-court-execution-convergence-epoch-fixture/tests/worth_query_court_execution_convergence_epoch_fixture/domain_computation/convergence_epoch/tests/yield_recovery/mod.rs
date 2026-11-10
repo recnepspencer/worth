@@ -309,6 +309,7 @@ pub fn resume_workflow(
     }
 }
 
+#[expect(clippy::disallowed_methods, reason = "Foreign-thread court")]
 pub fn foreign_direct_running_recovery(
     paused: worth_query_execution::facade::convergence_epoch::WorthQueryPausedDirectConvergenceIteration,
 ) -> WorthQueryDirectConvergenceYieldRunningRecovery {
@@ -322,6 +323,7 @@ pub fn foreign_direct_running_recovery(
     .expect("direct recovery thread must return its exact owner")
 }
 
+#[expect(clippy::disallowed_methods, reason = "Foreign-thread court")]
 pub fn foreign_workflow_running_recovery(
     paused: worth_query_execution::facade::convergence_epoch::WorthQueryPausedWorkflowConvergenceIteration,
 ) -> WorthQueryWorkflowConvergenceYieldRunningRecovery {

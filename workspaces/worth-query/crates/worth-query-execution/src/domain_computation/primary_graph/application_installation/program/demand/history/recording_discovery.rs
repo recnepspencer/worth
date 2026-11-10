@@ -10,9 +10,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationOutputDemandSource, WorthQueryApplicationReadObservation,
     WorthQueryHistoryOutputReadDenial as Denial, WorthQueryHistoryRecordingOutputOrigin,
 };
-use worth_query_declaration::facade::application_query::{
-    ApplicationQueryIntent, ApplicationQueryScopeResolution,
-};
+use worth_query_declaration::facade::application_query::ApplicationQueryScopeResolution;
 impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
     WorthQueryProgramApplicationRuntime<S, P>
 {

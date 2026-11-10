@@ -62,9 +62,7 @@ impl WorthQueryRuntime {
         &self,
         handoff: WorthQueryUnifiedInspectionExecutionHandoff,
     ) -> Result<WorthQueryUnifiedInspectionExecutionBinding, IdentityDerivationDenial> {
-        Ok(WorthQueryUnifiedInspectionExecutionBinding::from_handoff(
-            handoff,
-        )?)
+        WorthQueryUnifiedInspectionExecutionBinding::from_handoff(handoff)
     }
 
     pub(crate) fn execute_unified_inspection_execution_binding(

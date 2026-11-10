@@ -1,4 +1,3 @@
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::WorthQuerySnapshotIdentity;
 use crate::runtime::WorthQueryWorkspace;
 

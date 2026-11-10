@@ -189,7 +189,7 @@ impl WorthQueryProjectionConsumptionPlan {
     pub fn bind_contract(
         &self,
     ) -> Result<MaterializedProjectionContract, IdentityDerivationDenial> {
-        Ok(self.admitted.bind_contract()?)
+        self.admitted.bind_contract()
     }
 
     pub fn warning_kinds(&self) -> Option<&ProjectionConsumptionWarnings> {

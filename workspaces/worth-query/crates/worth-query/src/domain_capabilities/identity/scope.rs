@@ -36,10 +36,10 @@ pub(crate) fn compose_certification_sequence_digest(
     tag: &'static str,
     values: impl IntoIterator<Item = impl AsRef<str>>,
 ) -> Result<String, IdentityDerivationDenial> {
-    Ok(seal(
+    seal(
         domain_capability_certification_scope_encoder(identity_family)
             .field_value_sequence(WorthQueryEvidenceTag::new(tag), values),
-    )?)
+    )
 }
 
 pub(crate) fn compose_fact_request_entry_digest(
@@ -53,5 +53,5 @@ pub(crate) fn compose_fact_request_entry_digest(
             field.terminal_projection_for_boundary(),
         );
     }
-    Ok(seal(encoder)?)
+    seal(encoder)
 }

@@ -71,7 +71,7 @@ fn require_refusal<O: WorthQueryHistoryOutputsMode<Schema, History>>(
     model: worth_relational::facade::identity::EntityId,
     contacts: u64,
 ) {
-    let denial = courts::checkout(&document, request, before, selection.clone(), 0xf057_03)
+    let denial = courts::checkout(&document, request, before, selection.clone(), 0x00f0_5703)
         .expect_err("second is a Native-owned route even when it is omitted from configuration");
     let (
         "advance",

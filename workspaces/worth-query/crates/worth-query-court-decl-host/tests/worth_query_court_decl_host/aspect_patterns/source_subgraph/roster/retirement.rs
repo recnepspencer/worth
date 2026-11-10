@@ -25,8 +25,7 @@ where
     let head = reader
         .relations_from(Head::reference(), &root)
         .map_err(HandlerExecutionDenial::new)?
-        .iter()
-        .next()
+        .first()
         .map(|edge| reader.mutation_target(edge.to()))
         .transpose()?;
     let mut members = Vec::new();
@@ -43,7 +42,7 @@ where
             let owners = reader
                 .relations_from(OwnedBy::reference(), &member)
                 .map_err(HandlerExecutionDenial::new)?;
-            let actual = owners.iter().next().ok_or_else(|| {
+            let actual = owners.first().ok_or_else(|| {
                 HandlerExecutionDenial::new(WorthQueryApplicationAttemptDenial::new(
                     WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
                     "OwnedBy",

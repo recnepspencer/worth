@@ -53,33 +53,29 @@ impl WorthQueryBindingTarget {
     }
 
     pub fn target_identity(&self) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-        Ok(WorthQueryEvidenceIdentity::compose(
-            WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("identity_family"),
-            "worth_query_binding_target_target_v1",
-        )
-        .field_shape(WorthQueryEvidenceTag::new("kind"), self.kind.as_str())
-        .field_value(WorthQueryEvidenceTag::new("target"), &self.target_digest)
-        .seal()?)
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+            .field_shape(
+                WorthQueryEvidenceTag::new("identity_family"),
+                "worth_query_binding_target_target_v1",
+            )
+            .field_shape(WorthQueryEvidenceTag::new("kind"), self.kind.as_str())
+            .field_value(WorthQueryEvidenceTag::new("target"), &self.target_digest)
+            .seal()
     }
 
     pub fn binding_identity(&self) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-        Ok(WorthQueryEvidenceIdentity::compose(
-            WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence,
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("identity_family"),
-            "worth_query_binding_target_binding_v1",
-        )
-        .field_shape(WorthQueryEvidenceTag::new("kind"), self.kind.as_str())
-        .field_evidence_identity(
-            WorthQueryEvidenceTag::new("target"),
-            &self.target_identity()?,
-        )
-        .field_value(WorthQueryEvidenceTag::new("binding"), &self.binding_digest)
-        .seal()?)
+        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+            .field_shape(
+                WorthQueryEvidenceTag::new("identity_family"),
+                "worth_query_binding_target_binding_v1",
+            )
+            .field_shape(WorthQueryEvidenceTag::new("kind"), self.kind.as_str())
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("target"),
+                &self.target_identity()?,
+            )
+            .field_value(WorthQueryEvidenceTag::new("binding"), &self.binding_digest)
+            .seal()
     }
 
     pub fn semantics(&self) -> &WorthQueryBindingTargetSemantics {

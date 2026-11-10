@@ -155,6 +155,7 @@ fn stalled_consumer_cancellation_releases_the_chunk_before_terminal_cleanup() {
 }
 
 #[test]
+#[expect(clippy::disallowed_methods, reason = "Foreign-thread court")]
 fn foreign_consumer_failure_preserves_queue_occupancy_for_owner_cleanup() {
     worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
@@ -361,7 +362,6 @@ fn pending_and_paused_abandonment_release_queue_and_output_retention() {
 
 pub fn start_projection(
     execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
-
     provider: MultiChunkProvider,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> worth_query_execution::facade::domain_computation::WorthQueryActiveDirectGraphExecution {

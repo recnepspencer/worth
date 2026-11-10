@@ -160,7 +160,7 @@ fn digest_for_bridge_families(
         .iter()
         .map(BridgeCausalEvidenceFamily::as_str)
         .collect::<Vec<_>>();
-    Ok(digest_for_any_family(references, &family_names)?)
+    digest_for_any_family(references, &family_names)
 }
 
 fn digest_for_query_families(
@@ -171,7 +171,7 @@ fn digest_for_query_families(
         .iter()
         .map(CausalEvidenceFamily::as_str)
         .collect::<Vec<_>>();
-    Ok(digest_for_any_family(references, &family_names)?)
+    digest_for_any_family(references, &family_names)
 }
 
 fn digest_for_any_family(

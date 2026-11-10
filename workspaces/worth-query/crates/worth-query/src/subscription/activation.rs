@@ -3,7 +3,6 @@ use crate::basis_lifecycle::{
     ScopedSubscriptionDeclarationBasis,
 };
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::identity_authority::{
     project_query_subscription_evidence, QueryProjectionIdentity, QuerySubscriptionIdentityKind,
 };

@@ -1,7 +1,6 @@
 //! Refusing discovery cannot classify a displaced settlement as unposted.
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
 use worth_query_execution::facade::domain_computation::WorthQueryInvalidationResources;
-use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::output_lineage::registry_fixture;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::owner::SourceInvalidationOwner;
 
 #[test]

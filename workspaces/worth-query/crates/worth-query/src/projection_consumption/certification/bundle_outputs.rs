@@ -322,5 +322,5 @@ fn certification_row(
 }
 
 fn target_dx_digest() -> Result<String, IdentityDerivationDenial> {
-    Ok(compose_target_dx_digest()?)
+    compose_target_dx_digest()
 }

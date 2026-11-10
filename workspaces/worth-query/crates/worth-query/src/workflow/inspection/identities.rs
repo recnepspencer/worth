@@ -1,3 +1,4 @@
+#[cfg(test)]
 use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,
@@ -18,47 +19,45 @@ pub(super) fn conflict_scope_identity(
     merge_class_admission: &str,
     row_digest: &str,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowContextBinding)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "workflow_conflict_scope_v1",
-            )
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("conflict_declaration"),
-                declaration.report().declaration_identity(),
-            )
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("merge_declaration"),
-                merge_declaration
-                    .declaration()
-                    .report()
-                    .declaration_identity(),
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("target"),
-                &merge_declaration.merge_request().target_branch().0,
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("source"),
-                &merge_declaration.merge_request().source_branch().0,
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("merge_intent"),
-                merge_declaration.merge_intent().as_str(),
-            )
-            .field_shape(WorthQueryEvidenceTag::new("row_digest"), row_digest)
-            .field_shape(
-                WorthQueryEvidenceTag::new("merge_class_family"),
-                merge_class_family,
-            )
-            .field_shape(WorthQueryEvidenceTag::new("merge_class"), merge_class)
-            .field_shape(
-                WorthQueryEvidenceTag::new("merge_class_admission"),
-                merge_class_admission,
-            )
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowContextBinding)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "workflow_conflict_scope_v1",
+        )
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("conflict_declaration"),
+            declaration.report().declaration_identity(),
+        )
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("merge_declaration"),
+            merge_declaration
+                .declaration()
+                .report()
+                .declaration_identity(),
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("target"),
+            &merge_declaration.merge_request().target_branch().0,
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("source"),
+            &merge_declaration.merge_request().source_branch().0,
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("merge_intent"),
+            merge_declaration.merge_intent().as_str(),
+        )
+        .field_shape(WorthQueryEvidenceTag::new("row_digest"), row_digest)
+        .field_shape(
+            WorthQueryEvidenceTag::new("merge_class_family"),
+            merge_class_family,
+        )
+        .field_shape(WorthQueryEvidenceTag::new("merge_class"), merge_class)
+        .field_shape(
+            WorthQueryEvidenceTag::new("merge_class_admission"),
+            merge_class_admission,
+        )
+        .seal()
 }
 
 #[cfg(test)]

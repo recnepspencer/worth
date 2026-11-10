@@ -1,3 +1,4 @@
+#[cfg(test)]
 use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{
     worth_query_evidence_identity, WorthQueryEvidenceScope, WorthQueryEvidenceTag,

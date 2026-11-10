@@ -71,7 +71,7 @@ impl InstalledTransportCompletion {
 }
 
 /// A World-performed terminal from an actual installed transport completion.
-pub(in crate::domain_computation::primary_graph) struct PerformedInstalledTransportCompletion {
+pub struct PerformedInstalledTransportCompletion {
     evidence: Arc<InstalledTransportCompletion>,
     binding: WorthQueryInstalledTransportCompletionBinding,
     original_incarnation: ProductBranchIncarnation,
@@ -137,7 +137,7 @@ impl PerformedInstalledTransportCompletion {
 /// A completed transport attempt whose Relational owner effect escaped before
 /// a World product transition. It must remain in managed recovery custody.
 #[must_use = "retain unpublished installed transport completion for recovery"]
-pub(in crate::domain_computation::primary_graph) struct UnpublishedInstalledTransportCompletion {
+pub struct UnpublishedInstalledTransportCompletion {
     evidence: Arc<InstalledTransportCompletion>,
     unpublished: WorthQueryProductUnpublishedApplication,
 }

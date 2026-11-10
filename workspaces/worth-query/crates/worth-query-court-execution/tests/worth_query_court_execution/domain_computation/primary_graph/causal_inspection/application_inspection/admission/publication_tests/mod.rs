@@ -87,7 +87,7 @@ fn cancelled_after_consuming_completion_cannot_publish_and_keeps_original_payer(
                             &installed,
                             None,
                             &external,
-                            &(*original.source_for_test()),
+                            original.source_for_test(),
                             &selected,
                             &request,
                             |_, principal, scope| {
@@ -150,7 +150,7 @@ fn cancelled_after_consuming_completion_cannot_publish_and_keeps_original_payer(
         InspectionCause::Admission(failed.unwrap()),
         memory,
     );
-    assert!(matches!((*denial.cause_for_test()), InspectionCause::Admission(InspectionAdmissionDenial::RequestControl(
+    assert!(matches!( *denial.cause_for_test(), InspectionCause::Admission(InspectionAdmissionDenial::RequestControl(
         worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption::Cancelled
     ))));
     assert!(parent.charged_memory_bytes() > before_memory);

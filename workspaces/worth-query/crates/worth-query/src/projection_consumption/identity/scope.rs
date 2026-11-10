@@ -39,10 +39,10 @@ pub(crate) fn compose_sequence_digest(
     tag: &'static str,
     values: impl IntoIterator<Item = impl AsRef<str>>,
 ) -> Result<String, IdentityDerivationDenial> {
-    Ok(seal(
+    seal(
         consumption_scope_encoder(identity_family)
             .field_value_sequence(WorthQueryEvidenceTag::new(tag), values),
-    )?)
+    )
 }
 
 pub(crate) fn compose_certification_sequence_digest(
@@ -50,10 +50,10 @@ pub(crate) fn compose_certification_sequence_digest(
     tag: &'static str,
     values: impl IntoIterator<Item = impl AsRef<str>>,
 ) -> Result<String, IdentityDerivationDenial> {
-    Ok(seal(
+    seal(
         certification_scope_encoder(identity_family)
             .field_value_sequence(WorthQueryEvidenceTag::new(tag), values),
-    )?)
+    )
 }
 
 pub(crate) fn compose_labeled_entry_digest(
@@ -64,5 +64,5 @@ pub(crate) fn compose_labeled_entry_digest(
     for (tag, value) in entries {
         encoder = encoder.field_shape(WorthQueryEvidenceTag::new(tag), *value);
     }
-    Ok(seal(encoder)?)
+    seal(encoder)
 }

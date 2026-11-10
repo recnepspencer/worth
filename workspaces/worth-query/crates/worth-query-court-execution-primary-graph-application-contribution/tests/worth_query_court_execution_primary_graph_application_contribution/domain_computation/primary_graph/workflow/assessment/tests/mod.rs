@@ -63,21 +63,21 @@ fn evidence_and_each_dependency_charge_their_field_widths_and_nothing_else_does(
     let charge = |effect| workflow_evidence_retained_bytes(layout, &effect);
     assert_eq!(
         charge(created(
-            (*layout.assessment_evidence.entity_kind_for_test()),
+            *layout.assessment_evidence.entity_kind_for_test(),
             evidence.clone()
         )),
         5 + 9
     );
     assert_eq!(
         charge(created(
-            (*layout.evidence_dependency.entity_kind_for_test()),
+            *layout.evidence_dependency.entity_kind_for_test(),
             dependency
         )),
         6 + 9 + 2
     );
     assert_eq!(
         charge(created(
-            (*(*layout.transition_for_test()).entity_kind_for_test()),
+            *(*layout.transition_for_test()).entity_kind_for_test(),
             evidence
         )),
         0
@@ -150,21 +150,21 @@ fn performed_entity_kind_dependency_uses_a_distinct_durable_shape() {
         entity_id: dependent,
     });
     assert_eq!(
-        legacy.get(&(*layout.evidence_dependency.fact_kind_for_test())),
+        legacy.get(layout.evidence_dependency.fact_kind_for_test()),
         Some(&text("entity"))
     );
-    assert!(!legacy.contains_key(&(*layout.evidence_dependency.native_entity_kind_for_test())));
+    assert!(!legacy.contains_key(layout.evidence_dependency.native_entity_kind_for_test()));
 
     let exact = projected(Fact::Entity {
         entity_id: dependent,
         kind,
     });
     assert_eq!(
-        exact.get(&(*layout.evidence_dependency.fact_kind_for_test())),
+        exact.get(layout.evidence_dependency.fact_kind_for_test()),
         Some(&text("entity-kind"))
     );
     assert_eq!(
-        exact.get(&(*layout.evidence_dependency.native_entity_kind_for_test())),
+        exact.get(layout.evidence_dependency.native_entity_kind_for_test()),
         Some(&AspectValue::UInt64(u64::from(kind.as_u32())))
     );
 }

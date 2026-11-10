@@ -114,9 +114,7 @@ impl RuntimeApiStabilizationAdapter {
         crate::runtime::WorthQueryRuntimePublicApiTranscriptEvidence,
         IdentityDerivationDenial,
     > {
-        Ok(transcripts::composed_runtime_hostile_transcript(
-            request_execution,
-        )?)
+        transcripts::composed_runtime_hostile_transcript(request_execution)
     }
 }
 

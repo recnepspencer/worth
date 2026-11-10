@@ -23,17 +23,17 @@ fn bootstrap_seeds_exact_workflow_transition_lookup_before_any_settlement() {
         .primary_graph_for_test()
         .unwrap();
     let handle = graph.integration_handle_for_test();
-    let transition = &(*(*graph.layout_for_test()).workflow().transition_for_test());
+    let transition = (*graph.layout_for_test()).workflow().transition_for_test();
     let host_request = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host_request);
     handle.with_runtime_mut_for_test(&execution, |runtime| {
         let basis = runtime.admit_branch_basis(&runtime.main_branch_identity()).unwrap();
         assert!(runtime.index_access().read_published_generation_for_observation(&execution,
-            (*transition.identity_index_id_for_test()), &basis.observation(),
+            *transition.identity_index_id_for_test(), &basis.observation(),
         ).unwrap().is_some(), "bootstrap must seed the exact installed transition index");
         let snapshot = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(runtime, &basis).unwrap();
         let request = BoundedEntityFieldLookupRequest::new(
-            snapshot.clone(), (*transition.identity_index_id_for_test()), (*transition.entity_kind_for_test()),
+            snapshot.clone(), *transition.identity_index_id_for_test(), *transition.entity_kind_for_test(),
             (*transition.identity_for_test()).clone(), AspectValue::String(InternedString::Raw("unsettled-operation".to_owned())), 2,
         ).unwrap();
         let outcome = runtime.index_access().execute_bounded_entity_field_lookup(

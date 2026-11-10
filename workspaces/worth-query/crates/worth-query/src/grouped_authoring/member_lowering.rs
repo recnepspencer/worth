@@ -6,7 +6,6 @@ use crate::application::{
     WorthQueryDomainEntryMarker, WorthQueryDomainOperatingContext,
     WorthQueryInstalledDomainDeclarationContext,
 };
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use worth_foundational::facade::CanonicalDerivedDigest;
 
 use super::artifact::WorthQueryGroupedDeclarationArtifact;

@@ -101,7 +101,6 @@ fn demand_denial(cause: CurrentReadDenial) -> WorthQueryOutputDemandDenial {
         CurrentReadDenial::NativeBasis(
             worth_relational::facade::branch::RelationalBranchBasisDenial::TimedOut,
         ) => Kind::TimedOut,
-        CurrentReadDenial::ForeignPhase => Kind::ForeignDemand,
         CurrentReadDenial::HeadDiverged
         | CurrentReadDenial::NativeBasis(_)
         | CurrentReadDenial::HeadAdmission(_) => Kind::Superseded,

@@ -8,7 +8,7 @@ use crate::runtime::{WorthQueryAspectMutationOperation, WorthQueryMutationMetada
 pub(super) fn declared_aspect_operation_identities(
     operations: &[WorthQueryAspectMutationOperation],
 ) -> Result<Vec<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
-    Ok(operations
+    operations
         .iter()
         .map(|operation| {
             worth_query_evidence_identity(
@@ -24,13 +24,13 @@ pub(super) fn declared_aspect_operation_identities(
             )
             .seal()
         })
-        .collect::<Result<Vec<_>, _>>()?)
+        .collect::<Result<Vec<_>, _>>()
 }
 
 pub(super) fn mutation_metadata_entry_identities(
     mutation_metadata: &WorthQueryMutationMetadata,
 ) -> Result<Vec<WorthQueryEvidenceIdentity>, IdentityDerivationDenial> {
-    Ok(mutation_metadata
+    mutation_metadata
         .entries()
         .map(|(key, value)| {
             worth_query_evidence_identity(
@@ -43,5 +43,5 @@ pub(super) fn mutation_metadata_entry_identities(
             )
             .seal()
         })
-        .collect::<Result<Vec<_>, _>>()?)
+        .collect::<Result<Vec<_>, _>>()
 }

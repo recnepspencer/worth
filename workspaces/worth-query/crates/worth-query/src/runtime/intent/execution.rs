@@ -1,5 +1,4 @@
 use super::*;
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::{WorthQueryCommitIdentity, WorthQuerySnapshotIdentity};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

@@ -19,7 +19,7 @@ fn synthetic_runtime_workflow_query_identity(
     binding_scope: &WorkflowBindingScopeField<'_>,
     runtime_snapshot_identity: &WorthQueryEvidenceIdentity,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(apply_binding_scope_field(
+    apply_binding_scope_field(
         WorthQueryEvidenceIdentity::compose(
             crate::evidence_identity::WorthQueryEvidenceScope::WorkflowContextBinding,
         )
@@ -34,7 +34,7 @@ fn synthetic_runtime_workflow_query_identity(
         WorthQueryEvidenceTag::new("runtime_snapshot"),
         runtime_snapshot_identity,
     )
-    .seal()?)
+    .seal()
 }
 
 fn synthetic_runtime_workflow_source_identity(
@@ -42,7 +42,7 @@ fn synthetic_runtime_workflow_source_identity(
     binding_scope: &WorkflowBindingScopeField<'_>,
     runtime_snapshot_identity: &WorthQueryEvidenceIdentity,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(apply_binding_scope_field(
+    apply_binding_scope_field(
         WorthQueryEvidenceIdentity::compose(
             crate::evidence_identity::WorthQueryEvidenceScope::WorkflowContextBinding,
         )
@@ -57,7 +57,7 @@ fn synthetic_runtime_workflow_source_identity(
         WorthQueryEvidenceTag::new("runtime_snapshot"),
         runtime_snapshot_identity,
     )
-    .seal()?)
+    .seal()
 }
 
 fn synthetic_runtime_workflow_basis_identity(
@@ -65,7 +65,7 @@ fn synthetic_runtime_workflow_basis_identity(
     binding_scope: &WorkflowBindingScopeField<'_>,
     runtime_snapshot_identity: &WorthQueryEvidenceIdentity,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(apply_binding_scope_field(
+    apply_binding_scope_field(
         WorthQueryEvidenceIdentity::compose(
             crate::evidence_identity::WorthQueryEvidenceScope::WorkflowContextBinding,
         )
@@ -84,19 +84,17 @@ fn synthetic_runtime_workflow_basis_identity(
         WorthQueryEvidenceTag::new("runtime_snapshot"),
         runtime_snapshot_identity,
     )
-    .seal()?)
+    .seal()
 }
 
 pub(crate) fn synthetic_runtime_workflow_binding_for_snapshot_identity(
     source_label: &str,
     runtime_snapshot_identity: WorthQuerySnapshotIdentity,
 ) -> Result<WorkflowContextBinding, IdentityDerivationDenial> {
-    Ok(
-        synthetic_runtime_workflow_binding_scoped_for_snapshot_identity(
-            source_label,
-            "unscoped",
-            runtime_snapshot_identity,
-        )?,
+    synthetic_runtime_workflow_binding_scoped_for_snapshot_identity(
+        source_label,
+        "unscoped",
+        runtime_snapshot_identity,
     )
 }
 
@@ -106,12 +104,10 @@ pub(crate) fn synthetic_runtime_workflow_binding_scoped_for_snapshot_identity(
     runtime_snapshot_identity: WorthQuerySnapshotIdentity,
 ) -> Result<WorkflowContextBinding, IdentityDerivationDenial> {
     let binding_scope = workflow_scope_from_label(binding_scope_label);
-    Ok(
-        synthetic_runtime_workflow_binding_scoped_for_snapshot_binding_identity(
-            source_label,
-            &binding_scope,
-            runtime_snapshot_identity,
-        )?,
+    synthetic_runtime_workflow_binding_scoped_for_snapshot_binding_identity(
+        source_label,
+        &binding_scope,
+        runtime_snapshot_identity,
     )
 }
 
@@ -120,13 +116,11 @@ pub(crate) fn synthetic_runtime_workflow_binding_scoped_for_snapshot_binding_ide
     binding_scope: &WorkflowBindingScopeField<'_>,
     runtime_snapshot_identity: WorthQuerySnapshotIdentity,
 ) -> Result<WorkflowContextBinding, IdentityDerivationDenial> {
-    Ok(
-        synthetic_runtime_workflow_binding_scoped_for_branch_snapshot_binding_identity(
-            source_label,
-            binding_scope,
-            runtime_snapshot_identity,
-            BranchId("main".to_string()),
-        )?,
+    synthetic_runtime_workflow_binding_scoped_for_branch_snapshot_binding_identity(
+        source_label,
+        binding_scope,
+        runtime_snapshot_identity,
+        BranchId("main".to_string()),
     )
 }
 
@@ -137,13 +131,11 @@ pub(crate) fn synthetic_runtime_workflow_binding_scoped_for_branch_snapshot_iden
     runtime_target_branch: BranchId,
 ) -> Result<WorkflowContextBinding, IdentityDerivationDenial> {
     let binding_scope = workflow_scope_from_label(binding_scope_label);
-    Ok(
-        synthetic_runtime_workflow_binding_scoped_for_branch_snapshot_binding_identity(
-            source_label,
-            &binding_scope,
-            runtime_snapshot_identity,
-            runtime_target_branch,
-        )?,
+    synthetic_runtime_workflow_binding_scoped_for_branch_snapshot_binding_identity(
+        source_label,
+        &binding_scope,
+        runtime_snapshot_identity,
+        runtime_target_branch,
     )
 }
 

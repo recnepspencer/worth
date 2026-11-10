@@ -312,22 +312,20 @@ fn workflow_lowering_posture_identity(
     target_identity: &WorthQueryEvidenceIdentity,
     error: &WorkflowLoweringError,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "worth_query_domain_capability_workflow_lowering_posture_v1",
-            )
-            .field_evidence_identity(WorthQueryEvidenceTag::new("target"), target_identity)
-            .field_shape(
-                WorthQueryEvidenceTag::new("failure"),
-                error.failure_class().as_str(),
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("staleness"),
-                error.staleness_class().as_str(),
-            )
-            .field_shape(WorthQueryEvidenceTag::new("message"), error.message())
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "worth_query_domain_capability_workflow_lowering_posture_v1",
+        )
+        .field_evidence_identity(WorthQueryEvidenceTag::new("target"), target_identity)
+        .field_shape(
+            WorthQueryEvidenceTag::new("failure"),
+            error.failure_class().as_str(),
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("staleness"),
+            error.staleness_class().as_str(),
+        )
+        .field_shape(WorthQueryEvidenceTag::new("message"), error.message())
+        .seal()
 }

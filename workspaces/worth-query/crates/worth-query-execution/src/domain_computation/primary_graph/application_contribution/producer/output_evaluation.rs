@@ -9,7 +9,6 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitReceipt, WorthQueryOutputDemandDenial,
     WorthQueryOutputDemandDenialKind, WorthQueryPrimaryGraphLayout,
 };
-pub(super) use native::dependency_matches_output;
 use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 use worth_relational::facade::{
@@ -33,7 +32,7 @@ pub enum WorthQueryProducerEvaluationIneligibility {
     ReadinessPublicationMismatch,
     ReadinessFieldMismatch,
 }
-pub(in crate::domain_computation::primary_graph) struct ProducerOutputEvaluation {
+pub struct ProducerOutputEvaluation {
     field: Arc<InstalledProducerOutputEquivalence>,
     role: Arc<str>,
     pub(in crate::domain_computation::primary_graph) state: ProducerOutputEvaluationState,

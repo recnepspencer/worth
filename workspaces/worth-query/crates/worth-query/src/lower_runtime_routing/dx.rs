@@ -1,4 +1,5 @@
 use super::{WorthQueryLowerRuntimeBoundaryEnvelope, WorthQueryLowerRuntimeCloseoutRow};
+#[cfg(test)]
 use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 #[derive(Clone, Debug, Eq, PartialEq)]

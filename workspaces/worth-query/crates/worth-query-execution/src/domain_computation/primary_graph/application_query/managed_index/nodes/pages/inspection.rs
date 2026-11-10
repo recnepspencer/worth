@@ -1,10 +1,10 @@
 //! Diagnostic-only distinct physical node pages across retained roots.
 use super::*;
-use std::{any::Any, collections::BTreeMap};
+use std::any::Any;
 
 #[derive(Default)]
 pub(crate) struct PageInspection {
-    pages: BTreeMap<usize, Arc<dyn Any + Send + Sync>>,
+    pages: Vec<Arc<dyn Any + Send + Sync>>,
     pub(in super::super::super::super) references: usize,
 }
 impl PageInspection {
@@ -26,12 +26,15 @@ fn visit<Node: Send + Sync + 'static>(
     match &directory.entry {
         Entry::Page(_) => {
             inspection.references += 1;
-            // Keep each inspected allocation alive until counting finishes, so a
-            // concurrent eviction cannot recycle its address into a false share.
-            inspection
+            // Retain allocations while comparing identity so eviction cannot create a false share.
+            let page = Arc::clone(directory) as Arc<dyn Any + Send + Sync>;
+            if !inspection
                 .pages
-                .entry(Arc::as_ptr(directory) as usize)
-                .or_insert_with(|| Arc::clone(directory) as Arc<dyn Any + Send + Sync>);
+                .iter()
+                .any(|retained| Arc::ptr_eq(retained, &page))
+            {
+                inspection.pages.push(page);
+            }
         }
         Entry::Branch { left, right } => {
             visit(left, inspection);

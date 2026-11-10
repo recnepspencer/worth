@@ -23,10 +23,7 @@ pub(super) fn observe(
     )
     .map_err(Denial::Relational)?;
     let path = match resume {
-        Some(AspectValue::String(InternedString::Stored(path))) => {
-            let path = path.as_str().to_owned();
-            path
-        }
+        Some(AspectValue::String(InternedString::Stored(path))) => path.as_str().to_owned(),
         Some(AspectValue::String(InternedString::Raw(path))) => path,
         None => {
             let starts = adjacency_with_kind(
@@ -53,10 +50,7 @@ pub(super) fn observe(
             )
             .map_err(Denial::Relational)?
             {
-                Some(AspectValue::String(InternedString::Stored(path))) => {
-                    let path = path.as_str().to_owned();
-                    path
-                }
+                Some(AspectValue::String(InternedString::Stored(path))) => path.as_str().to_owned(),
                 Some(AspectValue::String(InternedString::Raw(path))) => path,
                 _ => return Err(Denial::Corrupt),
             }

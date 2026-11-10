@@ -28,11 +28,11 @@ pub(super) fn validate_hostile_diagnostic_alignment(
         return Err(QuerySubscriptionRuntimeCertificationError::new(
                 QuerySubscriptionRuntimeCertificationErrorKind::ScopeSourceMismatch,
                 "hostile family coverage rows require denied diagnostic bundles to preserve support-report identity when support evidence is present",
-                (|| { Ok(vec![
+                Ok(vec![
                     validation_role_evidence_identity("diagnostic_support", support_report_identity),
                     validation_role_evidence_identity("support", support.report_identity()),
                     validation_role_evidence_identity("diagnostic", diagnostic.bundle_identity()),
-                ]) })(),
+                ]),
                 QuerySubscriptionRuntimeCertificationCounters::default(),
             ));
     }
@@ -181,7 +181,7 @@ pub(super) fn validate_row_alignment(
         return Err(QuerySubscriptionRuntimeCertificationError::new(
             QuerySubscriptionRuntimeCertificationErrorKind::ScopeSourceMismatch,
             "runtime family coverage rows require support, parity, and lifecycle certification to preserve canonical declaration and bridge identity",
-            (|| { Ok(vec![
+            Ok(vec![
                 validation_role_evidence_identity(
                     "support_declaration",
                     support.support_subject().declaration_identity(),
@@ -202,7 +202,7 @@ pub(super) fn validate_row_alignment(
                     "lifecycle_bridge",
                     lifecycle.bridge_declaration_identity(),
                 ),
-            ]) })(),
+            ]),
             QuerySubscriptionRuntimeCertificationCounters::default(),
         ));
     }

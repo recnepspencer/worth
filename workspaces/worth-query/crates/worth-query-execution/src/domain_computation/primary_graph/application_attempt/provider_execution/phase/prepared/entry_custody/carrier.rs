@@ -4,9 +4,7 @@ mod sealed {
     pub trait Sealed {}
 }
 
-pub(in crate::domain_computation) trait CommitCarrier<Schema>:
-    sealed::Sealed
-{
+pub trait CommitCarrier<Schema>: sealed::Sealed {
     type Operation;
     type Input;
     type Scope;

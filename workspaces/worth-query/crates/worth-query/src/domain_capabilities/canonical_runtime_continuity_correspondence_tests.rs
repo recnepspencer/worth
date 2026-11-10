@@ -158,13 +158,13 @@ fn ready_continuity(
     >,
     IdentityDerivationDenial,
 > {
-    Ok(ready_continuity_payload(
+    ready_continuity_payload(
         authoring
             .bind_to_admitted_plan_target(admitted_plan_target("plan-continuity-correspondence")?)?
             .payload()
             .payload()
             .clone(),
-    )?)
+    )
 }
 
 fn ready_continuity_payload(
@@ -175,8 +175,8 @@ fn ready_continuity_payload(
     >,
     IdentityDerivationDenial,
 > {
-    Ok(ready_payload(
+    ready_payload(
         admitted_plan_target("plan-continuity-correspondence")?,
         payload,
-    )?)
+    )
 }

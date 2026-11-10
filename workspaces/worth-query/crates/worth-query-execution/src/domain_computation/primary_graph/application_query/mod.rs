@@ -114,7 +114,6 @@ pub use admitted_result::{
     WorthQueryApplicationOutputDemandSource,
 };
 pub use authorization_work::WorthQueryApplicationAuthorizationWorkEvidence;
-pub(crate) use basis::WorthQueryApplicationHistoricalRead;
 pub use continuation::{
     WorthQueryApplicationContinuationDenial, WorthQueryApplicationContinuationDenialKind,
     WorthQueryApplicationContinuationPageResult, WorthQueryApplicationQueryContinuation,
@@ -176,19 +175,14 @@ pub use resource_lifecycle::{
     WorthQueryApplicationBasisReleaseReceipt, WorthQueryApplicationBasisSelectionIdentity,
 };
 pub use retained_read::WorthQueryApplicationReadObservation;
-pub(in crate::domain_computation::primary_graph) use runtime_support::primary_graph_support_inventory;
 
 pub use one_shot::{WorthQueryDependentPairReadContext, WorthQueryDerivedPairReadPlans};
 
-pub(in crate::domain_computation::primary_graph) use read_execution::dispatch_witness::{
-    DispatchWitness, Interrupt as DispatchInterrupt, InterruptionPoint,
-};
+pub(in crate::domain_computation::primary_graph) use read_execution::dispatch_witness::DispatchWitness;
 
 pub use observed_source::retained_dependencies::{
     WorthQueryRequiredSetCurrentnessDenial, WorthQueryRetainedQueryDependencies,
 };
-
-pub(in crate::domain_computation::primary_graph) use read_execution::component_native_acquisitions_on_this_thread_for_test;
 
 pub(in crate::domain_computation::primary_graph) use projection::retained_projection::materialize_original_projection;
 pub use projection::retained_projection::{

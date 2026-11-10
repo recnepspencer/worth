@@ -64,33 +64,31 @@ impl WorthQueryWorkflowRuntimeSemantics {
     pub(crate) fn semantics_identity(
         &self,
     ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-        Ok(
-            domain_capability_scope_encoder("worth_query_workflow_runtime_semantics_v1")
-                .field_evidence_identity(
-                    WorthQueryEvidenceTag::new("binding"),
-                    &self.binding.semantics_identity()?,
-                )
-                .field_shape(
-                    WorthQueryEvidenceTag::new("declaration_family"),
-                    self.declaration_family.as_str(),
-                )
-                .field_shape(
-                    WorthQueryEvidenceTag::new("authority_target_family"),
-                    self.authority_target_family.as_str(),
-                )
-                .field_shape(
-                    WorthQueryEvidenceTag::new("cost_class"),
-                    self.cost_class.as_str(),
-                )
-                .field_shape(
-                    WorthQueryEvidenceTag::new("budget_class"),
-                    self.budget_class.as_str(),
-                )
-                .field_shape(
-                    WorthQueryEvidenceTag::new("freshness_policy"),
-                    self.freshness_policy.as_str(),
-                )
-                .seal()?,
-        )
+        domain_capability_scope_encoder("worth_query_workflow_runtime_semantics_v1")
+            .field_evidence_identity(
+                WorthQueryEvidenceTag::new("binding"),
+                &self.binding.semantics_identity()?,
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("declaration_family"),
+                self.declaration_family.as_str(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("authority_target_family"),
+                self.authority_target_family.as_str(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("cost_class"),
+                self.cost_class.as_str(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("budget_class"),
+                self.budget_class.as_str(),
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("freshness_policy"),
+                self.freshness_policy.as_str(),
+            )
+            .seal()
     }
 }

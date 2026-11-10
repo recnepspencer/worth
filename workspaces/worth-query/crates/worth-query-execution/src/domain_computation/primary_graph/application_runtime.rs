@@ -30,7 +30,6 @@ mod mutation_partition;
 mod teardown;
 pub use execution_memory::WorthQueryExecutionLeaseDenial;
 pub(crate) mod inbound_occurrence;
-pub(in crate::domain_computation::primary_graph) use inbound_occurrence::WorthQueryInboundAdmission;
 pub(crate) mod inbound_publication;
 pub use certification_cost::{
     WorthQueryCertificationApplicationWork, WorthQueryCertificationCostObservation,
@@ -325,11 +324,6 @@ impl WorthQueryApplicationLiveDeliveryCloseReceipt {
         self.remaining_live_consumers == 0
     }
 }
-
-pub(in crate::domain_computation::primary_graph) use inbound_publication::{
-    authenticated_completion_candidate, transport_completion_candidate,
-    InstalledTransportPublicationOutcome,
-};
 
 mod candidate_input_observation;
 

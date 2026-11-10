@@ -25,9 +25,7 @@ pub fn encode_elevation_status(value: &CapabilityElevationStatus) -> InternedStr
 }
 
 pub fn decode_elevation_status(value: InternedString) -> Option<CapabilityElevationStatus> {
-    let Some(value) = value.raw_text() else {
-        return None;
-    };
+    let value = value.raw_text()?;
     match value {
         "requested" => Some(CapabilityElevationStatus::Requested),
         "approved" => Some(CapabilityElevationStatus::Approved),
@@ -54,9 +52,7 @@ pub fn encode_review_status(value: &CapabilityReviewStatus) -> InternedString {
 }
 
 pub fn decode_review_status(value: InternedString) -> Option<CapabilityReviewStatus> {
-    let Some(value) = value.raw_text() else {
-        return None;
-    };
+    let value = value.raw_text()?;
     match value {
         "required" => Some(CapabilityReviewStatus::Required),
         "completed" => Some(CapabilityReviewStatus::Completed),

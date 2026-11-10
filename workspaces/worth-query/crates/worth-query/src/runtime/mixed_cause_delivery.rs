@@ -108,10 +108,10 @@ impl WorthQueryRuntimeMixedCauseDelivery {
     pub(crate) fn atomic_relational_patch(
         delivery_cause_identity: &WorthQueryEvidenceIdentity,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::atomic(
+        Self::atomic(
             WorthQueryRuntimeMixedCauseMemberKind::TruthPatch,
             delivery_cause_identity,
-        )?)
+        )
     }
 
     pub(crate) fn atomic_time_only(
@@ -143,7 +143,7 @@ impl WorthQueryRuntimeMixedCauseDelivery {
                 WorthQueryRuntimeMixedCauseMemberKind::TemporalTimeOnly
             }
         };
-        Ok(Self::atomic(member_kind, delivery_cause_identity)?)
+        Self::atomic(member_kind, delivery_cause_identity)
     }
 
     fn atomic(

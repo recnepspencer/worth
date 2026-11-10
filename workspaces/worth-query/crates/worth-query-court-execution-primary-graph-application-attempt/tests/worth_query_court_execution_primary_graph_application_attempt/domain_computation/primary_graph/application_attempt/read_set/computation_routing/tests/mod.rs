@@ -319,12 +319,12 @@ fn completion_metadata_retains_the_exact_original_pre_effect_payload() {
     );
     let cloned = sealed.clone();
     assert!(std::sync::Arc::ptr_eq(
-        &(*sealed.index_for_test()),
-        &(*cloned.index_for_test())
+        sealed.index_for_test(),
+        cloned.index_for_test()
     ));
     assert!(std::sync::Arc::ptr_eq(
-        &(*sealed.metadata_for_test()),
-        &(*cloned.metadata_for_test())
+        sealed.metadata_for_test(),
+        cloned.metadata_for_test()
     ));
     assert!(sealed.original.same_backing_for_test(&cloned.original));
     let replacement = WorthQueryApplicationObservedFact::Entity {

@@ -105,11 +105,11 @@ pub fn add_self_approver(
     let graph = (*world.application.runtime_for_test())
         .primary_graph_for_test()
         .unwrap();
-    let relation_kind = (*graph
+    let relation_kind = *graph
         .layout_for_test()
         .relation(CapabilityElevationApprover::reference().name())
         .unwrap()
-        .kind_for_test());
+        .kind_for_test();
     worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::publish_relational_mutation(
         execution,
         world,
@@ -175,11 +175,11 @@ pub fn replace_elevation_resource(
     let graph = (*world.application.runtime_for_test())
         .primary_graph_for_test()
         .unwrap();
-    let relation_kind = (*graph
+    let relation_kind = *graph
         .layout_for_test()
         .relation(CapabilityElevationResource::reference().name())
         .unwrap()
-        .kind_for_test());
+        .kind_for_test();
     let handle = graph.integration_handle_for_test();
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     let relation = handle.with_runtime_mut_for_test(execution, |runtime| {
@@ -260,11 +260,11 @@ pub fn add_elevation_resource(
     let graph = (*world.application.runtime_for_test())
         .primary_graph_for_test()
         .unwrap();
-    let relation_kind = (*graph
+    let relation_kind = *graph
         .layout_for_test()
         .relation(CapabilityElevationResource::reference().name())
         .unwrap()
-        .kind_for_test());
+        .kind_for_test();
     worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::publish_relational_mutation(
         execution,
         world,

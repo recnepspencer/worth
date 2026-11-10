@@ -8,7 +8,7 @@ impl WorthQueryWorkspace {
     pub fn public_downstream_delivery_contract(
         &self,
     ) -> Result<WorthQueryRuntimeDownstreamDeliveryContract, IdentityDerivationDenial> {
-        Ok(self.runtime.public_downstream_delivery_contract()?)
+        self.runtime.public_downstream_delivery_contract()
     }
 
     pub fn downstream_delivery<T>(

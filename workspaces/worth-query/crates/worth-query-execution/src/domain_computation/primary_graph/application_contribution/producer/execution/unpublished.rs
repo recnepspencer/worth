@@ -28,7 +28,7 @@ pub(in crate::domain_computation::primary_graph) struct PreparedProducerPublicat
 }
 
 /// Fixed-size registry custody for the original preallocated cold cell.
-pub(in crate::domain_computation::primary_graph) struct PendingProducerPublication {
+pub struct PendingProducerPublication {
     slot: Box<Option<ContinuationState>>,
 }
 

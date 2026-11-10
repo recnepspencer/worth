@@ -3,7 +3,6 @@ use crate::application::{
     WorthQueryDomainEntryMarker, WorthQueryDomainOperatingContext,
     WorthQueryInstalledDomainDeclarationContext,
 };
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::grouped_authoring::{
     ordinary_outcome_from_grouped_orchestration_checked,
     worth_query_grouped_declaration_checked_on_handle,

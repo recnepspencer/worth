@@ -1,7 +1,6 @@
 use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 use worth_foundational::facade::{
-    AspectFieldLocator, AspectKey, AspectValue, CanonicalFieldPath, FieldKey, InternedString,
-    LocatorAuthority,
+    AspectFieldLocator, AspectKey, AspectValue, CanonicalFieldPath, FieldKey, LocatorAuthority,
 };
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_relational::facade::identity::{EntityId, KindId, PartitionId, VersionId};

@@ -157,11 +157,11 @@ impl DemandRecords {
             .range((Included(key), Unbounded))
             .take_while(move |(other, _)| other.same_occurrence(key));
         let rows = before.chain(from);
-        let rows = rows.inspect(|_| {
+
+        rows.inspect(|_| {
             self.4.set(self.4.get() + 1);
             OCCURRENCE_ROWS.with(|count| count.set(count.get() + 1));
-        });
-        rows
+        })
     }
 }
 impl std::ops::Index<&WorthQueryOutputDemandKey> for DemandRecords {

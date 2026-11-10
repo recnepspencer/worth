@@ -43,7 +43,7 @@ pub fn run_population(population: usize) -> WorthQueryNativeMarkingWork {
     let coordinate = ProductCoordinate::new_for_test(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation().get());
     let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
     let handle = graph.integration_handle_for_test();
-    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+    let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
     let kind = graph
         .layout_for_test()
         .entity_kind_for_test(Account::reference().name())
@@ -120,7 +120,7 @@ let report = owner.native_marking_report_for_test(&after)
             .unwrap().expect("exact Native publication owns a delivery report");
 
 
-        let WorthQueryNativeMarkingPrecision::Exact(counts) = (*report.precision_for_test()) else {
+        let WorthQueryNativeMarkingPrecision::Exact(counts) = *report.precision_for_test() else {
             panic!("the actual declared field change must have exact logical counts");
         };
         for ((entity, output), old) in entities.iter().zip(&identities).zip(old_revisions) {

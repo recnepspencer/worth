@@ -1,5 +1,4 @@
 use crate::declarative_live::{DeclarativeLiveQueryRequest, DeclarativeLiveViewShape};
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::memory_workspace::{WorthQueryMutationKind, WorthQueryMutationReceipt};
 use crate::subscription::{
     advance_subscription_acknowledgement, build_active_delivery_work_packet,

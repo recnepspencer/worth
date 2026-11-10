@@ -20,8 +20,8 @@ use super::execution_denial::{interruption_stop, lease_denial, memory_denial};
 use super::{WorthQueryManagedComputationInterruption, WorthQueryManagedComputationResourceDenial};
 
 pub(crate) mod test_placement;
+#[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use test_placement::test_policy;
-pub(in crate::domain_computation::primary_graph) use test_placement::FixturePlacement;
 pub use test_placement::{
     bound_advancement_requests_on_this_thread_for_test,
     place_managed_computations_on_this_thread_for_test, test_execution_workers_for_test,
@@ -258,9 +258,7 @@ pub use advancement::{
     WorthQueryAdvancementObservationForTest,
 };
 
-pub(crate) use advancement::{
-    with_test_advancement, with_test_bootstrap_advancement, TestHostRequest,
-};
+pub(crate) use advancement::TestHostRequest;
 
 pub use advancement::{with_bootstrap_advancement, with_bootstrap_advancement_from_request};
 

@@ -77,7 +77,7 @@ impl<D: 'static> WorthQueryInstalledDomainInspectionRequest<D> {
                     drift,
                 )
             })?;
-        let outcome = self.request.run(workspace).map_err(&identity_refused)?;
+        let outcome = self.request.run(workspace).map_err(identity_refused)?;
         let operational_identity = outcome
             .settled()
             .map(|completion| completion.receipt().identity().clone())

@@ -213,13 +213,11 @@ pub(super) fn support_traceability_requested(
     WorthQueryRequestedSupportContribution<WorthQueryInstalledDeclarationContributionTarget>,
     IdentityDerivationDenial,
 > {
-    Ok(
-        WorthQuerySupportContributionAuthoring::declaration_traceability(
-            "worth.spatial.traceability.edge_split",
-            "declaration-scoped support remains declaration scoped",
-        )?
-        .bind_to_installed_target(target)?,
-    )
+    WorthQuerySupportContributionAuthoring::declaration_traceability(
+        "worth.spatial.traceability.edge_split",
+        "declaration-scoped support remains declaration scoped",
+    )?
+    .bind_to_installed_target(target)
 }
 
 pub(super) fn plain_support_requested(
@@ -228,11 +226,11 @@ pub(super) fn plain_support_requested(
     WorthQueryRequestedSupportContribution<WorthQueryInstalledDeclarationContributionTarget>,
     IdentityDerivationDenial,
 > {
-    Ok(WorthQuerySupportContributionAuthoring::declaration_support(
+    WorthQuerySupportContributionAuthoring::declaration_support(
         "worth.spatial.traceability.edge_split",
         "declaration-scoped support remains declaration scoped",
     )?
-    .bind_to_installed_target(target)?)
+    .bind_to_installed_target(target)
 }
 
 pub(super) fn plan_support_requested(
@@ -241,11 +239,11 @@ pub(super) fn plan_support_requested(
     WorthQueryRequestedSupportContribution<WorthQueryInstalledAdmittedPlanContributionTarget>,
     IdentityDerivationDenial,
 > {
-    Ok(WorthQuerySupportContributionAuthoring::declaration_support(
+    WorthQuerySupportContributionAuthoring::declaration_support(
         "worth.spatial.support.runtime_floor",
         "runtime floor remains explicitly supported",
     )?
-    .bind_to_installed_target(target)?)
+    .bind_to_installed_target(target)
 }
 
 pub(super) fn admission_requested(
@@ -254,13 +252,11 @@ pub(super) fn admission_requested(
     WorthQueryRequestedAdmissionContribution<WorthQueryInstalledAdmittedPlanContributionTarget>,
     IdentityDerivationDenial,
 > {
-    Ok(
-        crate::domain_capabilities::WorthQueryAdmissionContributionAuthoring::advisory(
-            "worth.spatial.admission.routing_gap",
-            "runtime routing still needs clarification",
-        )?
-        .bind_to_installed_target(target)?,
-    )
+    crate::domain_capabilities::WorthQueryAdmissionContributionAuthoring::advisory(
+        "worth.spatial.admission.routing_gap",
+        "runtime routing still needs clarification",
+    )?
+    .bind_to_installed_target(target)
 }
 
 pub(super) fn workflow_requested(
@@ -269,12 +265,12 @@ pub(super) fn workflow_requested(
     WorthQueryRequestedWorkflowContribution<WorthQueryInstalledDeclarationContributionTarget>,
     IdentityDerivationDenial,
 > {
-    Ok(crate::domain_capabilities::WorthQueryWorkflowContributionAuthoring::promotion_eligible_mutation_lowering(
+    crate::domain_capabilities::WorthQueryWorkflowContributionAuthoring::promotion_eligible_mutation_lowering(
         "worth.spatial.workflow.preview_mutation",
         "preview mutation planning should preserve canonical workflow semantics",
         BridgePreviewSessionIdentity::from_stable_name("preview-session:certification"),
     )?
-    .bind_to_installed_target(target)?)
+    .bind_to_installed_target(target)
 }
 
 pub(super) fn continuity_requested(
@@ -283,15 +279,13 @@ pub(super) fn continuity_requested(
     WorthQueryRequestedContinuityContribution<WorthQueryInstalledAdmittedPlanContributionTarget>,
     IdentityDerivationDenial,
 > {
-    Ok(
-        crate::domain_capabilities::WorthQueryContinuityContributionAuthoring::preserved_rebind(
-            "edge:before",
-            "edge:after",
-            "worth.spatial.continuity.edge_split",
-            "edge split preserves one authoritative successor",
-        )?
-        .bind_to_installed_target(target)?,
-    )
+    crate::domain_capabilities::WorthQueryContinuityContributionAuthoring::preserved_rebind(
+        "edge:before",
+        "edge:after",
+        "worth.spatial.continuity.edge_split",
+        "edge split preserves one authoritative successor",
+    )?
+    .bind_to_installed_target(target)
 }
 
 pub(super) fn aftermath_requested(
@@ -301,14 +295,14 @@ pub(super) fn aftermath_requested(
     IdentityDerivationDenial,
 > {
     let (source, binding, facts) = projection_contract_parts()?;
-    Ok(crate::domain_capabilities::WorthQueryAftermathContributionAuthoring::consumes_projection_contract(
+    crate::domain_capabilities::WorthQueryAftermathContributionAuthoring::consumes_projection_contract(
         "worth.spatial.aftermath.projection_contract",
         "projection aftermath should bind a stable contract",
         source,
         binding,
         facts,
     )?
-    .bind_to_installed_target(target)?)
+    .bind_to_installed_target(target)
 }
 
 pub(super) fn explanation_requested(
@@ -318,7 +312,7 @@ pub(super) fn explanation_requested(
     IdentityDerivationDenial,
 > {
     let (reference_set, inspection_target) = store_backed_replay_gap_parts()?;
-    Ok(crate::domain_capabilities::WorthQueryExplanationContributionAuthoring::store_backed_replay_gap_explanation(
+    crate::domain_capabilities::WorthQueryExplanationContributionAuthoring::store_backed_replay_gap_explanation(
         "worth.spatial.explanation.store_backed_replay",
         "store-backed replay should preserve denied explanation identity",
         reference_set,
@@ -327,7 +321,7 @@ pub(super) fn explanation_requested(
         crate::runtime::CausalInspectionRedactionPolicy::PreserveDetail,
         crate::runtime::CausalInspectionMaterializationPolicy::OfflineInterpretableArtifact,
     )?
-    .bind_to_installed_target(installed_target)?)
+    .bind_to_installed_target(installed_target)
 }
 
 pub(super) fn invariant_requested(
@@ -338,12 +332,12 @@ pub(super) fn invariant_requested(
     >,
     IdentityDerivationDenial,
 > {
-    Ok(crate::domain_capabilities::WorthQueryInvariantCapabilityContributionAuthoring::invariant_registration(
+    crate::domain_capabilities::WorthQueryInvariantCapabilityContributionAuthoring::invariant_registration(
         InvariantCatalog::default(),
         "worth.spatial.invariant.edge_split",
         "geometry kernel must reject invalid edge splits",
     )?
-    .bind_to_installed_target(target)?)
+    .bind_to_installed_target(target)
 }
 
 pub(super) fn capability_requested(
@@ -354,13 +348,13 @@ pub(super) fn capability_requested(
     >,
     IdentityDerivationDenial,
 > {
-    Ok(crate::domain_capabilities::WorthQueryInvariantCapabilityContributionAuthoring::graph_capability_gap(
+    crate::domain_capabilities::WorthQueryInvariantCapabilityContributionAuthoring::graph_capability_gap(
         "face-split-target-combination",
         WorthQueryGraphCompositionCapabilityClass::TargetCombination,
         "worth.spatial.capability.face_split",
         "face split still depends on graph-composition capability support",
     )?
-    .bind_to_installed_target(target)?)
+    .bind_to_installed_target(target)
 }
 
 pub(super) fn invariant_denial_requested(
@@ -371,7 +365,7 @@ pub(super) fn invariant_denial_requested(
     >,
     IdentityDerivationDenial,
 > {
-    Ok(crate::domain_capabilities::WorthQueryInvariantCapabilityContributionAuthoring::graph_invariant_denial(
+    crate::domain_capabilities::WorthQueryInvariantCapabilityContributionAuthoring::graph_invariant_denial(
         "non_manifold_edge_split",
         vec!["edges".to_string()],
         vec!["edge_symbol".to_string()],
@@ -383,5 +377,5 @@ pub(super) fn invariant_denial_requested(
         "worth.spatial.invariant.non_manifold",
         "non-manifold edge split must deny graph composition",
     )?
-    .bind_to_installed_target(target)?)
+    .bind_to_installed_target(target)
 }

@@ -104,10 +104,10 @@ impl<S: ApplicationSchema, O>
             .into_expected(&execution)
             .map_err(|cause| Denial::Decision(format!("{cause:?}")))?;
         access.record_predecessor_read(HistoricalProducerRead {
-            publication: prior.authority().publication_coordinate(),
-            basis: basis.descriptor().clone(),
-            operation: R::IDENTIFIER,
-            keys: keys.into_historical_keys(),
+            _publication: prior.authority().publication_coordinate(),
+            _basis: basis.descriptor().clone(),
+            _operation: R::IDENTIFIER,
+            _keys: keys.into_historical_keys(),
         });
         // Only C authorization becomes a current dependency. Old read keys and
         // old values are descriptive evidence and never rechecked at C.

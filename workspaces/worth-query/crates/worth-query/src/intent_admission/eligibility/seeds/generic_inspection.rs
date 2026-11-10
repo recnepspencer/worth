@@ -109,7 +109,7 @@ impl WorthQueryGenericInspectionIntentSeed {
     pub(crate) fn live_view<T>(
         view: &WorthQueryLiveView<T>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::from_live_view_name(view.name())?)
+        Self::from_live_view_name(view.name())
     }
 
     fn from_live_view_name(view_name: &str) -> Result<Self, IdentityDerivationDenial> {
@@ -129,7 +129,7 @@ impl WorthQueryGenericInspectionIntentSeed {
     pub(crate) fn effect<T>(
         effect: &WorthQueryEffectHandle<T>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::from_effect_name(effect.name())?)
+        Self::from_effect_name(effect.name())
     }
 
     fn from_effect_name(effect_name: &str) -> Result<Self, IdentityDerivationDenial> {

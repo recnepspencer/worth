@@ -1,10 +1,4 @@
-//! Shared optional predecessor fixture program is declared at its real owner.
-macro_rules! predecessor_program {
-    (PredecessorInitial) => {
-        use super::super::predecessor::{fixture_world as world, program};
-    };
-    ($other:ident) => {};
-}
+//! Optional predecessor observations and lifecycle bindings stay at their fixture owner.
 // Shared fixture hooks default to no predecessor observation.
 macro_rules! predecessor_contract {
     (PredecessorInitial) => {

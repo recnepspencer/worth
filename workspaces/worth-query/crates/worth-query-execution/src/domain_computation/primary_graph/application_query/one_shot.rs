@@ -64,7 +64,7 @@ pub struct WorthQueryApplicationOneShotResult<Query, QueryResult> {
 /// The admitted read keeps its original semantic denial and accounts for
 /// newly performed Query execution work on either outcome.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum WorthQueryAdmittedOneShotStop {
+pub enum WorthQueryAdmittedOneShotStop {
     Admission(CompanionPreflightStop),
 
     WorkCounterOverflow,

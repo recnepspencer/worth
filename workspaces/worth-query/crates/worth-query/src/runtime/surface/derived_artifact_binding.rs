@@ -149,7 +149,7 @@ mod tests {
     use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
     use std::collections::BTreeMap;
 
-    use worth_foundational::facade::{AspectValue, CanonicalFieldPath, FieldKey, InternedString};
+    use worth_foundational::facade::{AspectValue, CanonicalFieldPath, FieldKey};
 
     use super::WorthQueryDerivedArtifactBinding;
 

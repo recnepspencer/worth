@@ -94,7 +94,7 @@ pub fn run_locality(count: usize) -> LocalityRun {
                 grow_unrelated_accounts(
                     &phase
                         .execution_request_for_for_test(
-                            &(*(*world.application.runtime_for_test()).product_runtime_for_test()),
+                            (*world.application.runtime_for_test()).product_runtime_for_test(),
                         )
                         .unwrap(),
                     &world,

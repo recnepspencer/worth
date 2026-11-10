@@ -1,5 +1,6 @@
 //! Installed component contracts exercised through genuine Query and Native owners.
 
+pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::components::{declare, Allowed, Missing, Omitted};
 pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::components::*;
 pub use worth_execution::ExecutionRequest;
 pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::declarations::NodeRow;
@@ -29,11 +30,6 @@ pub use crate::domain_computation::primary_graph::tests::application_attempt::in
 pub use worth_query_declaration::facade::application_query::*;
 pub use worth_query_declaration::facade::application_schema::*;
 pub use worth_query_declaration::*;
-macro_rules! query {
-    ($q:ident,$name:literal) => {
-        worth_query_application_query!(pub $q for Schema:OrbitModel,identity stringify!($q),parameters ParametersBinding,result RowsBinding,scope Node=>"Node",name $name);
-    };
-}
 
 #[path = "custody/mod.rs"]
 pub mod custody;

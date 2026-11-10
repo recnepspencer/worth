@@ -2,7 +2,7 @@ mod scalar_observation;
 use scalar_observation::{
     observed_bool, observed_optional_text, observed_optional_u64, observed_text, observed_u64,
 };
-use worth_foundational::facade::{AspectFieldLocator, AspectValue, InternedString};
+use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 use worth_relational::facade::identity::{EntityId, KindId};
 

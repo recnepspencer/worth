@@ -185,11 +185,7 @@ fn retained_binding_row_identity(
     view_name: &str,
     index: usize,
 ) -> Result<String, IdentityDerivationDenial> {
-    Ok(compose_retained_binding_row_identity(
-        binding_digest,
-        view_name,
-        index,
-    )?)
+    compose_retained_binding_row_identity(binding_digest, view_name, index)
 }
 
 fn binding_target_source_references<'a>(

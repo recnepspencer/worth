@@ -110,7 +110,7 @@ pub(crate) fn compose_consumed_projection_fact_set_digest(
             .iter()
             .map(compose_relation_endpoint_entry),
     )?;
-    Ok(seal(
+    seal(
         encoder
             .field_value_sequence(
                 WorthQueryEvidenceTag::new("warning_kind"),
@@ -159,14 +159,14 @@ pub(crate) fn compose_consumed_projection_fact_set_digest(
                 WorthQueryEvidenceTag::new("relation_endpoint_family"),
                 relation_endpoint_digest,
             ),
-    )?)
+    )
 }
 
 fn compose_entity_identity_entry(
     fact: &ConsumedEntityIdentityFact,
 ) -> Result<String, IdentityDerivationDenial> {
     let entity_identity = fact.entity_identity().evidence_identity();
-    Ok(seal(
+    seal(
         scope_encoder("consumed_entity_identity_entry_v1")
             .field_shape(
                 WorthQueryEvidenceTag::new("source_row"),
@@ -176,13 +176,13 @@ fn compose_entity_identity_entry(
                 WorthQueryEvidenceTag::new("entity_identity"),
                 &entity_identity,
             ),
-    )?)
+    )
 }
 
 fn compose_view_local_identity_entry(
     fact: &ConsumedViewLocalIdentityFact,
 ) -> Result<String, IdentityDerivationDenial> {
-    Ok(seal(
+    seal(
         scope_encoder("consumed_view_local_identity_entry_v1")
             .field_shape(
                 WorthQueryEvidenceTag::new("source_row"),
@@ -192,13 +192,13 @@ fn compose_view_local_identity_entry(
                 WorthQueryEvidenceTag::new("view_local_identity"),
                 fact.view_local_identity(),
             ),
-    )?)
+    )
 }
 
 fn compose_membership_entry(
     fact: &ConsumedMembershipFact,
 ) -> Result<String, IdentityDerivationDenial> {
-    Ok(seal(
+    seal(
         scope_encoder("consumed_membership_entry_v1")
             .field_shape(
                 WorthQueryEvidenceTag::new("source_row"),
@@ -212,7 +212,7 @@ fn compose_membership_entry(
                 WorthQueryEvidenceTag::new("grouping_value"),
                 prepare_aspect_value_identity_basis(fact.grouping_value()).as_str(),
             ),
-    )?)
+    )
 }
 
 fn compose_field_value_entry(
@@ -249,22 +249,22 @@ fn compose_target_identity_entry(
     fact: &ConsumedTargetIdentityFact,
 ) -> Result<String, IdentityDerivationDenial> {
     let target_identity = fact.target_identity().evidence_identity();
-    Ok(seal(
+    seal(
         scope_encoder("consumed_target_identity_entry_v1").field_evidence_identity(
             WorthQueryEvidenceTag::new("target_identity"),
             &target_identity,
         ),
-    )?)
+    )
 }
 
 fn compose_source_reference_entry(
     fact: &ConsumedSourceReferenceFact,
 ) -> Result<String, IdentityDerivationDenial> {
-    Ok(seal(
+    seal(
         scope_encoder("consumed_source_reference_entry_v1")
             .field_shape(WorthQueryEvidenceTag::new("label"), fact.label())
             .field_shape(WorthQueryEvidenceTag::new("identity"), fact.identity()),
-    )?)
+    )
 }
 
 fn compose_effect_continuity_entries(

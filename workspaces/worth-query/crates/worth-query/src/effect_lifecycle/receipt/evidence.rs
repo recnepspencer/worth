@@ -1,4 +1,3 @@
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvidenceTag};
 
 use super::super::batch_execution::ExecutedEffectBatchPlan;

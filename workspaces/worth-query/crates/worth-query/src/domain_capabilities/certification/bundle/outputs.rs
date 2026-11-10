@@ -105,9 +105,9 @@ pub(crate) fn assemble_certification_outputs(
 pub(crate) fn certification_bundle_digest(
     outputs: &[WorthQueryDomainCapabilityCertificationOutputSpec],
 ) -> Result<String, IdentityDerivationDenial> {
-    Ok(compose_certification_bundle_digest(
+    compose_certification_bundle_digest(
         outputs
             .iter()
             .map(|output| (output.name(), output.digest())),
-    )?)
+    )
 }

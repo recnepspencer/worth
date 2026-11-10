@@ -25,7 +25,7 @@ pub fn court() -> Court {
     let cell = (*court.lineage.by_source_mut_for_test())
         .get_mut(&court.source)
         .unwrap()
-        .get_mut(&(*court.coordinate.occurrence_for_test()))
+        .get_mut(court.coordinate.occurrence_for_test())
         .unwrap()
         .get_mut(&9)
         .unwrap();
@@ -101,10 +101,10 @@ pub fn select<'a>(
         .lineage
         .checkpoint_prior_outputs_for_test(
             &worth_execution::ExecutionRequest::serial(&court.request),
-            (*court.source.runtime_authority_for_test()),
-            &(*court.source.schema_for_test()),
-            (*court.coordinate.occurrence_for_test()),
-            (*court.coordinate.generation_for_test()),
+            *court.source.runtime_authority_for_test(),
+            court.source.schema_for_test(),
+            *court.coordinate.occurrence_for_test(),
+            *court.coordinate.generation_for_test(),
         )
         .unwrap()
 }
@@ -232,7 +232,7 @@ fn required_native_locator_materializes_the_complete_identity() {
     let cell = (*missing.lineage.by_source_mut_for_test())
         .get_mut(&missing.source)
         .unwrap()
-        .get_mut(&(*missing.coordinate.occurrence_for_test()))
+        .get_mut(missing.coordinate.occurrence_for_test())
         .unwrap()
         .get_mut(&9)
         .unwrap();
@@ -262,7 +262,7 @@ fn missing_locator_still_checks_the_recorded_pair_before_retaining_accepted_data
             let cell = (*court.lineage.by_source_mut_for_test())
                 .get_mut(&court.source)
                 .unwrap()
-                .get_mut(&(*court.coordinate.occurrence_for_test()))
+                .get_mut(court.coordinate.occurrence_for_test())
                 .unwrap()
                 .get_mut(&9)
                 .unwrap();

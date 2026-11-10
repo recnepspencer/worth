@@ -21,9 +21,9 @@ fn successful_edits_failed_attempt_and_rebuild_are_all_reported() {
         BTreeMap::from([(keys[0], 2), (keys[1], 3)]),
         u64::MAX,
     );
-    reconcile((*next.report_for_test()));
+    reconcile(*next.report_for_test());
     assert!(matches!(
-        (*next.report_for_test()),
+        *next.report_for_test(),
         TreeRun::Rebuilt(Rebuild::ReducerPanicked, _)
     ));
     assert_eq!(
@@ -88,9 +88,9 @@ fn a_failed_edit_followed_by_a_stopped_rebuild_preserves_both_attempts() {
         &reducer,
         &execution,
     );
-    reconcile((*next.report_for_test()));
+    reconcile(*next.report_for_test());
     assert!(matches!(
-        (*next.report_for_test()),
+        *next.report_for_test(),
         TreeRun::Rebuilt(Rebuild::ReducerPanicked, _)
     ));
     assert!((*next.outcome_for_test()).is_err());
@@ -140,9 +140,9 @@ fn a_work_stopped_rebuild_reports_the_work_it_entered() {
         BTreeMap::from([(keys[0], 2)]),
         plan(&keys).checked_build_work().unwrap() - 1,
     );
-    reconcile((*next.report_for_test()));
+    reconcile(*next.report_for_test());
     assert!(matches!(
-        (*next.report_for_test()),
+        *next.report_for_test(),
         TreeRun::Rebuilt(Rebuild::WorkCeiling, _)
     ));
     assert!((*next.outcome_for_test()).is_err());

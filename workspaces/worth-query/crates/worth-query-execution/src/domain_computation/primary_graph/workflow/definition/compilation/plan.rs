@@ -91,7 +91,7 @@ pub enum CompiledWorkflowNodeKind {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum CompiledWorkflowAssessmentApplicability {
+pub enum CompiledWorkflowAssessmentApplicability {
     Always,
     WhenRelatedRelationPresent {
         relation: String,

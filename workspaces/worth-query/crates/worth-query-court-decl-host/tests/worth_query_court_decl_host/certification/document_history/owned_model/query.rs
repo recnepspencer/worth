@@ -10,7 +10,7 @@ pub struct Parameters;
 worth_query_structured_value_binding!(pub ParametersBinding for Parameters { identity: "owned-model.parameters.v1" });
 macro_rules! scalar_read { ($module:ident, $entity:ident, $facts:ident, $key:ident, $value:ident, $semantic:literal, $query:literal, $binding:literal) => { pub mod $module {
 use super::*;
-use super::super::schema::{$entity as Entity, $facts as Facts, $key as Key, $value as Value};
+use super::super::schema::{$entity as Entity, $key as Key, $value as Value};
 worth_query_application_query!(pub Query for Schema, identity $query, parameters ParametersBinding, result RowBinding, scope Entity => $semantic, name $semantic);
 const BINDING_ID: &str = $binding;
 pub struct KeySlot;

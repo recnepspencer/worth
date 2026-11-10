@@ -173,7 +173,7 @@ fn exercise_selection<O: WorthQueryHistoryOutputsMode<Schema, History>>(
             &request,
             before_delete,
             current.clone(),
-            0xd1207_02,
+            0x0d12_0702,
         )
         .expect_err("D must not lend its restored grants to this C-denied principal");
         let (
@@ -209,7 +209,7 @@ fn exercise_selection<O: WorthQueryHistoryOutputsMode<Schema, History>>(
             .unwrap();
         return;
     }
-    let restored = courts::checkout(&document, &request, before_delete, current, 0xd1207_01)
+    let restored = courts::checkout(&document, &request, before_delete, current, 0x0d12_0701)
         .unwrap_or_else(|cause| panic!("restored source fallback: {cause:?}"));
     let restored = host
         .request(&principal, &scope)

@@ -265,7 +265,7 @@ fn lineage_report_identity(
     trace_identity: &str,
     evidence: &[super::WorthQueryTraceLineageEvidence],
 ) -> Result<String, IdentityDerivationDenial> {
-    Ok(canonical_operation_identity(
+    canonical_operation_identity(
         "trace-lineage-report-v2",
         vec![
             ("lineage.trace", trace_identity.to_owned()),
@@ -290,5 +290,5 @@ fn lineage_report_identity(
                 ),
             ),
         ],
-    )?)
+    )
 }

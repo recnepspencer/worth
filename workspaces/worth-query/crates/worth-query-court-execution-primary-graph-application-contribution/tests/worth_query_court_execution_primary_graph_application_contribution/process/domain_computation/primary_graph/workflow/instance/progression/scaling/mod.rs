@@ -69,11 +69,12 @@ fn progress_snapshots_share_maps_and_preserve_isolated_values() {
     for count in [100, 1_000, 10_000] {
         let source = populated(count);
         let mut advanced = source.clone();
-        assert!((*source.retry_counts_for_test()).ptr_eq(&(*advanced.retry_counts_for_test())));
-        assert!((*source.latest_transitions_for_test())
-            .ptr_eq(&(*advanced.latest_transitions_for_test())));
+        assert!((*source.retry_counts_for_test()).ptr_eq(advanced.retry_counts_for_test()));
+        assert!(
+            (*source.latest_transitions_for_test()).ptr_eq(advanced.latest_transitions_for_test())
+        );
         assert!((*source.latest_assessment_evidence_for_test())
-            .ptr_eq(&(*advanced.latest_assessment_evidence_for_test())));
+            .ptr_eq(advanced.latest_assessment_evidence_for_test()));
         update_last(&mut advanced, count);
         assert_eq!(
             source
@@ -138,7 +139,7 @@ fn ten_thousand_back_settlements_keep_warm_navigation_state_bounded() {
     );
     let snapshot = progress.clone();
     assert!((*snapshot.back_edge_iterations_for_test())
-        .ptr_eq(&(*progress.back_edge_iterations_for_test())));
+        .ptr_eq(progress.back_edge_iterations_for_test()));
 }
 
 #[test]

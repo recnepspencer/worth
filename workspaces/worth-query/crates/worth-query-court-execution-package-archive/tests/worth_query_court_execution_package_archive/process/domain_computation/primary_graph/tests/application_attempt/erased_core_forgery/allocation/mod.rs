@@ -50,14 +50,14 @@ fn isolated_brand_check_allocation_probe() {
         std::hint::black_box(admission.validate_installed_entry_for_test(
             runtime,
             &binding,
-            &(*(*world.application.runtime_for_test()).installed_operations_for_test()),
+            (*world.application.runtime_for_test()).installed_operations_for_test(),
         ))
         .unwrap();
         assert!(std::hint::black_box(
             admission.belongs_to_for_test(runtime, &binding)
         ));
         std::hint::black_box(admission.validate_installed_operation_for_test(
-            &(*(*world.application.runtime_for_test()).installed_operations_for_test()),
+            (*world.application.runtime_for_test()).installed_operations_for_test(),
         ))
         .unwrap();
         std::hint::black_box(admission.validate_installed_mutation_binding_for_test(descriptor))

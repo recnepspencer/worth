@@ -15,8 +15,8 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
     use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::definition::compilation::plan::CompiledWorkflowNode;
     use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::definition::compilation::plan::CompiledWorkflowNodeKind;
     use worth_relational::facade::identity::EntityId;
-    use crate::domain_computation::primary_graph::workflow::definition::compilation::plan::resume::tests;
-    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow_instance_observation::step_budget::WorkflowStepAllowance;
+
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow_instance_observation::step_budget::WorkflowStepAllowance;
     use worth_query_execution::facade::domain_computation::WorthQueryApplicationAttemptDenialKind;
     use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::program_roster::rostered_program_revision;
     use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::definition::compilation::plan::CompiledWorkflowConnection;
@@ -131,9 +131,9 @@ pub fn definition(definition_slot: u64) -> CompiledWorkflowDefinition {
         .map(|(ordinal, semantic)| {
             CompiledWorkflowConnection::new_for_test(
                 entity(definition_slot + ordinal as u64 + 1),
-                nodes[(*semantic.source_for_test())].entity_for_test(),
-                nodes[(*semantic.target_for_test())].entity_for_test(),
-                Arc::clone(&(*semantic.kind_for_test())),
+                nodes[*semantic.source_for_test()].entity_for_test(),
+                nodes[*semantic.target_for_test()].entity_for_test(),
+                Arc::clone(semantic.kind_for_test()),
             )
         })
         .collect::<Vec<_>>();

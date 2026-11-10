@@ -67,7 +67,7 @@ impl WorthQueryRuntime {
         WorthQueryRuntimePublicApiNamingContract,
         crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
     > {
-        Ok(WorthQueryRuntimePublicApiNamingContract::standard()?)
+        WorthQueryRuntimePublicApiNamingContract::standard()
     }
 
     pub fn public_api_contract(
@@ -76,9 +76,7 @@ impl WorthQueryRuntime {
         WorthQueryRuntimePublicApiContract,
         crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
     > {
-        Ok(WorthQueryRuntimePublicApiContract::from_support_profile(
-            &self.backend.support_profile(),
-        )?)
+        WorthQueryRuntimePublicApiContract::from_support_profile(&self.backend.support_profile())
     }
 
     pub fn public_handle_contract(
@@ -98,10 +96,8 @@ impl WorthQueryRuntime {
         WorthQueryRuntimeDownstreamDeliveryContract,
         crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
     > {
-        Ok(
-            WorthQueryRuntimeDownstreamDeliveryContract::from_support_profile(
-                &self.backend.support_profile(),
-            )?,
+        WorthQueryRuntimeDownstreamDeliveryContract::from_support_profile(
+            &self.backend.support_profile(),
         )
     }
 
@@ -111,11 +107,7 @@ impl WorthQueryRuntime {
         WorthQueryRuntimePublicSupportMatrix,
         crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
     > {
-        Ok(
-            WorthQueryRuntimePublicSupportMatrix::from_public_api_contract(
-                &self.public_api_contract()?,
-            )?,
-        )
+        WorthQueryRuntimePublicSupportMatrix::from_public_api_contract(&self.public_api_contract()?)
     }
 
     pub fn public_mutation_surface_report(
@@ -159,10 +151,8 @@ impl WorthQueryRuntime {
         WorthQueryAuthoritativeMutationEvidenceCloseout,
         crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
     > {
-        Ok(
-            Self::public_authoritative_mutation_evidence_closeout_for_support_profile(
-                &self.backend.support_profile(),
-            )?,
+        Self::public_authoritative_mutation_evidence_closeout_for_support_profile(
+            &self.backend.support_profile(),
         )
     }
 

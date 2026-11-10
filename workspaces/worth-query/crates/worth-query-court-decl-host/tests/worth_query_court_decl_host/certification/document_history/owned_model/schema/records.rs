@@ -103,7 +103,7 @@ impl Record<MappingFactsRow> for Bindings {
     fn record() -> impl Shape<MappingFactsRow, Self> {
         field("ExternalId", |row: &MappingFactsRow| row.externalid.clone())
             .equality_queryable(true)
-            .and("Status", |row: &MappingFactsRow| row.status.clone())
+            .and("Status", |row: &MappingFactsRow| row.status)
             .equality_queryable(true)
             .build(|externalid, status, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(MappingFactsRow { externalid, status })
@@ -125,14 +125,12 @@ pub struct PrincipalFactsRow {
 }
 impl Record<PrincipalFactsRow> for Bindings {
     fn record() -> impl Shape<PrincipalFactsRow, Self> {
-        field("PrincipalId", |row: &PrincipalFactsRow| {
-            row.principalid.clone()
-        })
-        .equality_queryable(true)
-        .read_only()
-        .build(|principalid, _: &mut ValueDecodeAdmission<'_>| {
-            Ok::<_, std::convert::Infallible>(PrincipalFactsRow { principalid })
-        })
+        field("PrincipalId", |row: &PrincipalFactsRow| row.principalid)
+            .equality_queryable(true)
+            .read_only()
+            .build(|principalid, _: &mut ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(PrincipalFactsRow { principalid })
+            })
     }
 }
 pub struct ModelFacts;
@@ -154,7 +152,7 @@ impl Record<ModelFactsRow> for Bindings {
         field("ModelKey", |row: &ModelFactsRow| row.modelkey.clone())
             .equality_queryable(true)
             .unique()
-            .and("ModelValue", |row: &ModelFactsRow| row.modelvalue.clone())
+            .and("ModelValue", |row: &ModelFactsRow| row.modelvalue)
             .equality_queryable(true)
             .build(|modelkey, modelvalue, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(ModelFactsRow {
@@ -183,9 +181,7 @@ impl Record<MemberFactsRow> for Bindings {
         field("MemberKey", |row: &MemberFactsRow| row.memberkey.clone())
             .equality_queryable(true)
             .unique()
-            .and("MemberValue", |row: &MemberFactsRow| {
-                row.membervalue.clone()
-            })
+            .and("MemberValue", |row: &MemberFactsRow| row.membervalue)
             .equality_queryable(true)
             .build(|memberkey, membervalue, _: &mut ValueDecodeAdmission<'_>| {
                 Ok::<_, std::convert::Infallible>(MemberFactsRow {
@@ -239,7 +235,7 @@ impl Relation for Reference {
     type To = Member;
 }
 impl Reference {
-    pub fn reference() -> ApplicationRelationRef<Schema, Self, Model, Member> {
+    pub fn binding() -> ApplicationRelationRef<Schema, Self, Model, Member> {
         relation(Storage, Model, Self)
     }
 }

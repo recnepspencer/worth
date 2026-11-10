@@ -110,7 +110,7 @@ impl WorthQueryLowerRuntimeSupportContribution {
         )?
         .bind_to_installed_target(self.target)?;
 
-        Ok(materialize_common_lane(
+        materialize_common_lane(
             "support-traceability",
             WorthQueryDomainCapabilityTargetKind::LowerRuntimeBoundaryEnvelope,
             WorthQuerySupportContributionPosture::NarrowedSupport.as_str(),
@@ -123,7 +123,7 @@ impl WorthQueryLowerRuntimeSupportContribution {
                 )
             },
             materialize_lower_runtime_support_traceability_artifact,
-        )?)
+        )
     }
 
     pub fn materialize(
@@ -188,7 +188,7 @@ impl WorthQueryLowerRuntimeExplanationContribution {
         let target = self.target.clone();
         let requested = self.into_requested()?;
 
-        Ok(materialize_common_lane(
+        materialize_common_lane(
             "explanation-inspection",
             WorthQueryDomainCapabilityTargetKind::LowerRuntimeBoundaryEnvelope,
             posture.as_str(),
@@ -201,7 +201,7 @@ impl WorthQueryLowerRuntimeExplanationContribution {
                 )
             },
             materialize_query_causal_inspection_review,
-        )?)
+        )
     }
 
     pub fn review(
@@ -221,7 +221,7 @@ impl WorthQueryLowerRuntimeExplanationContribution {
         let target = self.target.clone();
         let requested = self.into_requested()?;
 
-        Ok(materialize_common_lane(
+        materialize_common_lane(
             "explanation-inspection",
             WorthQueryDomainCapabilityTargetKind::LowerRuntimeBoundaryEnvelope,
             posture.as_str(),
@@ -234,7 +234,7 @@ impl WorthQueryLowerRuntimeExplanationContribution {
                 )
             },
             materialize_query_causal_inspection_artifact,
-        )?)
+        )
     }
 
     pub fn materialize_artifact(

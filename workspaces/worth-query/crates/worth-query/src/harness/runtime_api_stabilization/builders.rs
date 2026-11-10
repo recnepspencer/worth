@@ -318,9 +318,9 @@ fn bundle(
 }
 
 fn contract() -> Result<WorthQueryRuntimePublicApiContract, IdentityDerivationDenial> {
-    Ok(WorthQueryRuntimePublicApiContract::from_support_profile(
+    WorthQueryRuntimePublicApiContract::from_support_profile(
         &WorthQueryRuntimeSupportProfile::scaffold_backend_profile(),
-    )?)
+    )
 }
 
 fn deferred_gate_digest(contract: &WorthQueryRuntimePublicApiContract) -> String {

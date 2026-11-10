@@ -61,7 +61,7 @@ fn exercise(host: &world::Host) {
         })
         .unwrap();
     let contacts = host.producer_contacts_on_this_thread_for_test();
-    let selected = courts::checkout(&document, &request, step, current, 0xf057_09)
+    let selected = courts::checkout(&document, &request, step, current, 0x00f0_5709)
         .unwrap_or_else(|cause| panic!("{cause:?}"));
     let after = outputs(host, selected.physical_endpoint().product_branch());
     assert_eq!((after.0.value, after.1.value), (10, 600));

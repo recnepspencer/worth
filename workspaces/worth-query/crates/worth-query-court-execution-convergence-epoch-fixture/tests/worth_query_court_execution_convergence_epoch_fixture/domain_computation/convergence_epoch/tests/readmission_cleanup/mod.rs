@@ -215,6 +215,7 @@ pub fn workflow_cleanup_required(
     }
 }
 
+#[expect(clippy::disallowed_methods, reason = "Client-race court")]
 pub fn direct_pending(
     recovery: RecoveryCleanup<WorthQueryDirectConvergenceReadmissionCleanupRequired>,
 ) -> DirectPendingRecovery {
@@ -240,6 +241,7 @@ pub fn direct_pending(
     }
 }
 
+#[expect(clippy::disallowed_methods, reason = "Client-race court")]
 pub fn workflow_pending(
     recovery: RecoveryCleanup<WorthQueryWorkflowConvergenceReadmissionCleanupRequired>,
 ) -> WorkflowPendingRecovery {

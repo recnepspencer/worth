@@ -7,7 +7,6 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestSco
 use worth_query_installation::facade::{ApplicationScalarValueBinding, ApplicationSchema};
 use worth_relational::facade::{
     identity::{EntityId, PartitionId},
-    indexes::DerivedIndexBuildRequest,
     transactions::{
         AspectFieldPatch, EntityMutationIntent, MutationIntent, UpdateEntityFieldsIntent,
         WorkerIntentBatch,
@@ -104,7 +103,7 @@ where
                     .expect("the native publication has a canonical commit");
                 runtime
                     .index_authority()
-                    .verify_index_basis_for_commit(&execution, &head)
+                    .verify_index_basis_for_commit(&execution, head)
                     .expect("the native publication refreshes its exact indexes");
             });
             Ok(())

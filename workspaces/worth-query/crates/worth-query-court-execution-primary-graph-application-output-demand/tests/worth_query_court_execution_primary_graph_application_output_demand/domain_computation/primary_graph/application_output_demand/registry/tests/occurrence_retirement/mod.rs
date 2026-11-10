@@ -27,7 +27,7 @@ fn retiring_occurrence_closes_live_work_and_completion_cannot_resurrect_it() {
     );
 
     assert!(matches!(
-        &(*(*(*registry.state_for_test()).lock().unwrap().records_for_test())[&demand_key].state_for_test()),
+        (*(*registry.state_for_test()).lock().unwrap().records_for_test())[&demand_key].state_for_test(),
         DemandState::Failed(denial)
             if denial.kind() == WorthQueryOutputDemandDenialKind::Closed
     ));

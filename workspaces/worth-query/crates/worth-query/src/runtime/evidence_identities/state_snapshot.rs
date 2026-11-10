@@ -49,30 +49,28 @@ pub(in crate::runtime) fn runtime_state_snapshot_result_shape_write_receipt_iden
     let declared_entity_identity = receipt
         .declared_entity_identity()
         .map(|identity| identity.evidence_identity());
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "worth_query_runtime_state_snapshot_result_shape_write_receipt_v1",
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("mutation_family"),
-                receipt.mutation_family().as_str(),
-            )
-            .optional_shape(
-                WorthQueryEvidenceTag::new("declared_collection"),
-                receipt.terminal_declared_collection_projection(),
-            )
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("commit_evidence_identity"),
-                receipt.commit_evidence_identity(),
-            )
-            .optional_evidence_identity(
-                WorthQueryEvidenceTag::new("declared_entity_identity"),
-                declared_entity_identity.as_ref(),
-            )
-            .seal()?,
-    )
+    worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "worth_query_runtime_state_snapshot_result_shape_write_receipt_v1",
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("mutation_family"),
+            receipt.mutation_family().as_str(),
+        )
+        .optional_shape(
+            WorthQueryEvidenceTag::new("declared_collection"),
+            receipt.terminal_declared_collection_projection(),
+        )
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("commit_evidence_identity"),
+            receipt.commit_evidence_identity(),
+        )
+        .optional_evidence_identity(
+            WorthQueryEvidenceTag::new("declared_entity_identity"),
+            declared_entity_identity.as_ref(),
+        )
+        .seal()
 }
 
 pub(in crate::runtime) fn runtime_state_snapshot_result_shape_batch_write_receipt_identity(
@@ -93,13 +91,11 @@ pub(in crate::runtime) fn runtime_state_snapshot_result_shape_batch_write_receip
 pub(in crate::runtime) fn runtime_live_view_consumer_attachment_identity(
     view_name: &str,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "runtime_live_view_consumer_attachment_v1",
-            )
-            .field_shape(WorthQueryEvidenceTag::new("view"), view_name)
-            .seal()?,
-    )
+    worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "runtime_live_view_consumer_attachment_v1",
+        )
+        .field_shape(WorthQueryEvidenceTag::new("view"), view_name)
+        .seal()
 }

@@ -19,7 +19,7 @@ pub(super) fn require<'s, S: ApplicationSchema>(
     }
     let graph = &selected_output.application().runtime.primary_provider.graph;
     graph.with_runtime(execution, |native| {
-        let evidence = authority.selected_output_read(&execution, native)
+        let evidence = authority.selected_output_read(execution, native)
             .map_err(Denial::SelectionRead)?;
         for route in evidence.selected_output_routes(execution).map_err(Denial::SelectionRead)? {
             let route = route.map_err(Denial::SelectionRead)?;
@@ -74,22 +74,4 @@ impl<S: ApplicationSchema + 'static, P: worth_query_declaration::facade::applica
         })();
         authority.confirm_read(phase, self.runtime(), authority.request(), result).map_err(control)?
     }
-}
-
-pub(super) fn charge(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    work: u64,
-) -> Result<(), Denial> {
-    use worth_relational::facade::runtime::RelationalHistoricalSelectionReadDenial as Read;
-    execution
-        .run_native_with_checkpoint(|context| {
-            crate::domain_computation::primary_graph::admitted_capture::checkpoint(context, work)
-        })
-        .map_err(|cause| Denial::SelectionRead(Read::Request(cause)))?
-        .0
-        .map_err(|cause| {
-            Denial::SelectionRead(Read::Request(worth_execution::WorkCeilingDenial::Stopped(
-                cause,
-            )))
-        })
 }

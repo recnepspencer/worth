@@ -19,7 +19,7 @@ impl WorthQueryContinuityContributionAuthoring {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_correspondence_semantics(
+        Self::with_correspondence_semantics(
             WorthQueryContinuityContributionPosture::CorrespondenceOnly,
             semantic_code,
             detail,
@@ -29,7 +29,7 @@ impl WorthQueryContinuityContributionAuthoring {
                 discovery_plan,
                 budget,
             ),
-        )?)
+        )
     }
 
     pub fn correspondence_structural_only(
@@ -40,7 +40,7 @@ impl WorthQueryContinuityContributionAuthoring {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_correspondence_semantics(
+        Self::with_correspondence_semantics(
             WorthQueryContinuityContributionPosture::CorrespondenceOnly,
             semantic_code,
             detail,
@@ -50,7 +50,7 @@ impl WorthQueryContinuityContributionAuthoring {
                 budget,
                 ordering_contract,
             ),
-        )?)
+        )
     }
 
     pub fn correspondence_mixed(
@@ -63,7 +63,7 @@ impl WorthQueryContinuityContributionAuthoring {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_correspondence_semantics(
+        Self::with_correspondence_semantics(
             WorthQueryContinuityContributionPosture::CorrespondenceOnly,
             semantic_code,
             detail,
@@ -75,7 +75,7 @@ impl WorthQueryContinuityContributionAuthoring {
                 budget,
                 ordering_contract,
             ),
-        )?)
+        )
     }
 
     fn with_correspondence_semantics(

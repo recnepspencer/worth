@@ -132,6 +132,7 @@ pub fn workflow_recovery_cleanup(
     }
 }
 
+#[expect(clippy::disallowed_methods, reason = "Foreign-thread court")]
 pub fn pending_workflow_cleanup(
     cleanup: WorthQueryWorkflowReadmissionCleanupRequired,
 ) -> WorthQueryWorkflowReadmissionCleanupPending {

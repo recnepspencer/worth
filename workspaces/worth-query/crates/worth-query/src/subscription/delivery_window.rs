@@ -1,5 +1,4 @@
 use crate::evidence_identity::WorthQueryEvidenceIdentity;
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 
 use super::acknowledgement::{QueryDeliveryBatchReceipt, QueryDeliverySequence};
 use super::active_budget::ActiveSubscriptionAllocationPosture;

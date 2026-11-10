@@ -98,6 +98,7 @@ impl RelationalPublicationCompanion for TwoCellHints {
 pub use crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::required_hints::prepare_update::prepare_update;
 
 #[test]
+#[expect(clippy::disallowed_methods, reason = "Client-race court")]
 fn two_branch_cells_preserve_prepared_fences_and_selected_branch_identity() {
     {
         let allowed_hints = 2_u64;
@@ -137,7 +138,7 @@ fn two_branch_cells_preserve_prepared_fences_and_selected_branch_identity() {
                     let execution = &host_custody.borrowed_request_for_test();
                     let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
                     let handle = graph.integration_handle_for_test();
-                    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+                    let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
                     let status_ref = AccountStatus::at("AccountStatus");
                     let locator = graph
                         .layout_for_test()

@@ -41,8 +41,6 @@ mod mandatory_review_replay;
 pub(crate) mod migration;
 pub(crate) mod observation;
 pub(in crate::domain_computation::primary_graph) use observation::observe_aspect_presence;
-pub(in crate::domain_computation::primary_graph) use observation::take_native_field_contacts;
-pub(in crate::domain_computation::primary_graph) use observation::ReadRendezvous;
 pub(in crate::domain_computation::primary_graph) use observation::{
     observe_aspect_absence, observe_field_from_view_admitted, observe_field_value_borrowed,
     WorthQueryApplicationFieldObservation,
@@ -63,7 +61,6 @@ mod signed_selection;
 mod signing_lifecycle;
 pub(in crate::domain_computation::primary_graph) use read_set::request_liveness::check_request_live;
 pub(in crate::domain_computation) use read_set::CompletedHandlerFactBoundary;
-pub(in crate::domain_computation::primary_graph) use read_set::ComputationFactReaders;
 pub(in crate::domain_computation::primary_graph) use read_set::FactRoutes;
 pub(in crate::domain_computation::primary_graph) use read_set::{
     observe_admitted_fact, CheckedCallShape, CompletedDecisionReuseProof,
@@ -80,7 +77,6 @@ pub(crate) mod snapshot_lease;
 pub(crate) mod workflow_deadline;
 mod workflow_definition_program;
 pub(crate) mod workflow_instance_observation;
-pub(in crate::domain_computation::primary_graph) use workflow_instance_observation::decode_field_revision_fact;
 pub(in crate::domain_computation::primary_graph) use workflow_instance_observation::WorkflowStepAllowance;
 pub(crate) mod workflow_instance_program;
 mod workflow_proposal_program;

@@ -363,10 +363,8 @@ fn workflow_lower_identity(
     role: &'static str,
     digest: &str,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
-            .field_shape(WorthQueryEvidenceTag::new("role"), role)
-            .field_value(WorthQueryEvidenceTag::new("digest"), digest)
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
+        .field_shape(WorthQueryEvidenceTag::new("role"), role)
+        .field_value(WorthQueryEvidenceTag::new("digest"), digest)
+        .seal()
 }

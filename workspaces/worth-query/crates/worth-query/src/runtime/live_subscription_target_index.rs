@@ -347,7 +347,7 @@ mod tests {
         collection: &str,
         aspect: &str,
     ) -> Result<WorthQueryMutationDelta, IdentityDerivationDenial> {
-        Ok(WorthQueryMutationDelta::from_touched_aspects(
+        WorthQueryMutationDelta::from_touched_aspects(
             collection,
             crate::memory_workspace::WorthQueryEntityIdentity::from_relational_record(
                 worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts::entity(1, 1, 1),
@@ -356,7 +356,7 @@ mod tests {
             vec![crate::runtime::WorthQueryAspectTouch::whole_aspect(
                 worth_foundational::facade::AspectKey::new(aspect).unwrap(),
             )],
-        )?)
+        )
     }
 
     fn field_mutation(
@@ -364,7 +364,7 @@ mod tests {
         aspect: &str,
         fields: &[&str],
     ) -> Result<WorthQueryMutationDelta, IdentityDerivationDenial> {
-        Ok(WorthQueryMutationDelta::from_touched_aspects(
+        WorthQueryMutationDelta::from_touched_aspects(
             collection,
             crate::memory_workspace::WorthQueryEntityIdentity::from_relational_record(
                 worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts::entity(1, 1, 1),
@@ -379,6 +379,6 @@ mod tests {
                 )
                 .unwrap(),
             )],
-        )?)
+        )
     }
 }

@@ -149,7 +149,7 @@ fn edit_encoding_denial_rebuilds_and_matches_reuse_off() {
         };
         let edited = run(plan(&keys).checked_build_work());
         assert!(
-            matches!((*edited.report_for_test()), TreeRun::Rebuilt(observed, _) if observed == cause)
+            matches!( *edited.report_for_test(), TreeRun::Rebuilt(observed, _) if observed == cause)
         );
         assert!(matches!(edited.outcome_into_for_test(), Err(actual) if actual == denial));
         let rebuilt = run(None);
@@ -216,7 +216,7 @@ fn supplied_native_counter_failure_is_normalized_and_its_metrics_are_carried() {
         })
     });
     assert!(matches!(
-        (*reported.report_for_test()),
+        *reported.report_for_test(),
         TreeRun::Rebuilt(Rebuild::WorkCounterOverflow, _)
     ));
     assert_eq!(
@@ -247,7 +247,7 @@ fn supplied_native_counter_failure_is_normalized_and_its_metrics_are_carried() {
             .map_result_for_test(|outcome| outcome.map_err(worth_query_execution::facade::application_contribution::WorthQueryPartitionedComputationDenial::from_reduction_for_test))
         });
         assert!(
-            matches!((*reported.report_for_test()), TreeRun::Rebuilt(actual, _) if actual == cause)
+            matches!( *reported.report_for_test(), TreeRun::Rebuilt(actual, _) if actual == cause)
         );
     }
 }

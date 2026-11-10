@@ -82,13 +82,13 @@ impl QuerySubscriptionDiagnosticEvidence {
         source_identity: &WorthQueryEvidenceIdentity,
         counter_identity: &WorthQueryEvidenceIdentity,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             stage,
             QuerySubscriptionDiagnosticOutcome::Admitted,
             reason,
             source_identity,
             counter_identity,
-        )?)
+        )
     }
 
     pub(crate) fn denied(
@@ -97,13 +97,13 @@ impl QuerySubscriptionDiagnosticEvidence {
         source_identity: &WorthQueryEvidenceIdentity,
         counter_identity: &WorthQueryEvidenceIdentity,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             stage,
             QuerySubscriptionDiagnosticOutcome::Denied,
             reason,
             source_identity,
             counter_identity,
-        )?)
+        )
     }
 
     fn new(

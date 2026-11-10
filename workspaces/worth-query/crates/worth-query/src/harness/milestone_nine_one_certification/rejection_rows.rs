@@ -5,7 +5,6 @@ use super::rejection_evidence::{
     view_family_mismatch_rejection,
 };
 use super::{MilestoneNineOnePerturbationClass, MilestoneNineOneRejectionRow};
-use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::live::LiveQueryFamily;
 use crate::subscription::QuerySubscriptionConstructionSource;
 use crate::view_shape_live::LiveViewShapeFamily;

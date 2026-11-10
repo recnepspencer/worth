@@ -32,7 +32,7 @@ pub fn fixture(
         1,
     );
     (*next.source_commits_mut_for_test()).push(commit.clone());
-    let next_wake = Arc::clone(&(*next.wake_for_test()));
+    let next_wake = Arc::clone(next.wake_for_test());
     (*state.records_mut_for_test()).insert_for_test(newest.clone(), next);
     (*state.records_mut_for_test()).insert_for_test(old.clone(), {
         let __framework_required_count = 1;
@@ -56,7 +56,7 @@ pub fn fixture(
     let mut row = row;
     (*row.required_interests_mut_for_test()) = 1;
 
-    let wake = Arc::clone(&(*row.wake_for_test()));
+    let wake = Arc::clone(row.wake_for_test());
     (*state.records_mut_for_test()).insert_for_test(dependent.clone(), row);
     let member = state.prepare_required_member_for_test(&newest).unwrap();
     state.install_required_member_for_test(member);
@@ -136,7 +136,7 @@ fn registry_custody_note_survives_a_held_drain_and_claim_transfer() {
             "stale claim still holds custody"
         );
         assert!(
-            (*state.source_custody[commit].cleanup_for_test()).queued,
+            state.source_custody[commit].cleanup_for_test().queued,
             "held debt stays noted"
         );
     }
@@ -160,7 +160,7 @@ pub fn copy_ready(ready: &DemandState) -> DemandState {
     let DemandState::Output(output) = ready else {
         panic!("Ready fixture")
     };
-    let Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint::Ready(completion)) = &(*output.checkpoint_for_test())
+    let Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint::Ready(completion)) = output.checkpoint_for_test()
     else {
         panic!("Ready fixture")
     };

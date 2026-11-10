@@ -40,7 +40,7 @@ fn retained_re_registration_marks_existing_consumers_pending() {
         .primary_graph_for_test()
         .unwrap();
     let handle = graph.integration_handle_for_test();
-    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+    let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
     let status_ref = AccountStatus::at("AccountStatus");
     let status = graph
         .layout_for_test()

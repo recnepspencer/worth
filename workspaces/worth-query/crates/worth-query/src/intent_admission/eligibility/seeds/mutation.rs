@@ -97,7 +97,7 @@ impl WorthQueryAuthoritativeMutationIntentSeed {
     }
 
     pub fn command_input_digest(&self) -> Result<String, IdentityDerivationDenial> {
-        Ok(mutation_input_digest(&self.command)?)
+        mutation_input_digest(&self.command)
     }
 }
 
@@ -287,28 +287,26 @@ pub(crate) fn authoritative_mutation_input_identity(
             &identity_evidence,
         );
     }
-    Ok(identity.seal()?)
+    identity.seal()
 }
 
 fn declared_aspect_operation_identity(
     operation: WorthQueryAspectMutationOperation,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::AuthoritativeMutationIntentSeed)
-            .field_shape(
-                WorthQueryEvidenceTag::new("role"),
-                "declared-aspect-operation",
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("kind"),
-                operation.kind().as_str(),
-            )
-            .field_value(
-                WorthQueryEvidenceTag::new("admitted_aspect_touch"),
-                operation.aspect_touch().admitted_touch_digest_part(),
-            )
-            .seal()?,
-    )
+    worth_query_evidence_identity(WorthQueryEvidenceScope::AuthoritativeMutationIntentSeed)
+        .field_shape(
+            WorthQueryEvidenceTag::new("role"),
+            "declared-aspect-operation",
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("kind"),
+            operation.kind().as_str(),
+        )
+        .field_value(
+            WorthQueryEvidenceTag::new("admitted_aspect_touch"),
+            operation.aspect_touch().admitted_touch_digest_part(),
+        )
+        .seal()
 }
 
 fn symbolic_target_reference_identity(
@@ -325,43 +323,39 @@ fn symbolic_target_reference_identity(
             )
         })
         .transpose()?;
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::AuthoritativeMutationIntentSeed)
-            .field_shape(WorthQueryEvidenceTag::new("role"), "symbolic-target")
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("symbol"),
-                symbol_identity.evidence_identity(),
-            )
-            .optional_evidence_identity(
-                WorthQueryEvidenceTag::new("collection"),
-                collection_identity
-                    .as_ref()
-                    .map(WorthQueryMutationTargetCollectionIdentity::evidence_identity),
-            )
-            .seal()?,
-    )
+    worth_query_evidence_identity(WorthQueryEvidenceScope::AuthoritativeMutationIntentSeed)
+        .field_shape(WorthQueryEvidenceTag::new("role"), "symbolic-target")
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("symbol"),
+            symbol_identity.evidence_identity(),
+        )
+        .optional_evidence_identity(
+            WorthQueryEvidenceTag::new("collection"),
+            collection_identity
+                .as_ref()
+                .map(WorthQueryMutationTargetCollectionIdentity::evidence_identity),
+        )
+        .seal()
 }
 
 fn symbolic_aspect_reference_identity(
     reference: &WorthQuerySymbolicAspectReference,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::AuthoritativeMutationIntentSeed)
-            .field_shape(WorthQueryEvidenceTag::new("role"), "symbolic-aspect")
-            .field_value(
-                WorthQueryEvidenceTag::new("admitted_aspect_touch"),
-                reference.aspect_touch().admitted_touch_digest_part(),
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("family"),
-                reference.family().as_str(),
-            )
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("target"),
-                &symbolic_target_reference_identity(reference.reference())?,
-            )
-            .seal()?,
-    )
+    worth_query_evidence_identity(WorthQueryEvidenceScope::AuthoritativeMutationIntentSeed)
+        .field_shape(WorthQueryEvidenceTag::new("role"), "symbolic-aspect")
+        .field_value(
+            WorthQueryEvidenceTag::new("admitted_aspect_touch"),
+            reference.aspect_touch().admitted_touch_digest_part(),
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("family"),
+            reference.family().as_str(),
+        )
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("target"),
+            &symbolic_target_reference_identity(reference.reference())?,
+        )
+        .seal()
 }
 
 fn mutation_target_label(command: &WorthQueryWriteCommand) -> String {

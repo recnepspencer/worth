@@ -8,7 +8,7 @@ pub(crate) fn compose_oracle_parity_lane_digest(
     fact_set_digest: &str,
     receipt_digest: &str,
 ) -> Result<String, IdentityDerivationDenial> {
-    Ok(seal(
+    seal(
         certification_scope_encoder("projection_consumption_oracle_parity_lane_v1")
             .field_shape(
                 WorthQueryEvidenceTag::new("declaration"),
@@ -17,7 +17,7 @@ pub(crate) fn compose_oracle_parity_lane_digest(
             .field_shape(WorthQueryEvidenceTag::new("contract"), contract_digest)
             .field_shape(WorthQueryEvidenceTag::new("fact_set"), fact_set_digest)
             .field_shape(WorthQueryEvidenceTag::new("receipt"), receipt_digest),
-    )?)
+    )
 }
 
 pub(crate) fn compose_oracle_comparison_row_digest(
@@ -26,13 +26,13 @@ pub(crate) fn compose_oracle_comparison_row_digest(
     actual_digest: &str,
     matched: bool,
 ) -> Result<String, IdentityDerivationDenial> {
-    Ok(seal(
+    seal(
         certification_scope_encoder("projection_consumption_oracle_comparison_row_v1")
             .field_shape(WorthQueryEvidenceTag::new("lane"), lane)
             .field_shape(WorthQueryEvidenceTag::new("expected"), expected_digest)
             .field_shape(WorthQueryEvidenceTag::new("actual"), actual_digest)
             .field_bool(WorthQueryEvidenceTag::new("match"), matched),
-    )?)
+    )
 }
 
 pub(crate) fn compose_oracle_manifest_row_digest(
@@ -43,7 +43,7 @@ pub(crate) fn compose_oracle_manifest_row_digest(
     forbidden_helpers: &[&str],
     fields: &[&str],
 ) -> Result<String, IdentityDerivationDenial> {
-    Ok(seal(
+    seal(
         certification_scope_encoder("projection_consumption_oracle_manifest_row_v1")
             .field_shape(WorthQueryEvidenceTag::new("lane"), lane)
             .field_shape(WorthQueryEvidenceTag::new("lane_name"), lane_name)
@@ -57,7 +57,7 @@ pub(crate) fn compose_oracle_manifest_row_digest(
                 forbidden_helpers.iter().copied(),
             )
             .field_value_sequence(WorthQueryEvidenceTag::new("field"), fields.iter().copied()),
-    )?)
+    )
 }
 
 pub(crate) fn compose_oracle_report_digest(
@@ -68,12 +68,12 @@ pub(crate) fn compose_oracle_report_digest(
         .into_iter()
         .map(|digest| digest.as_ref().to_string())
         .collect::<Vec<_>>();
-    Ok(seal(
+    seal(
         certification_scope_encoder("projection_consumption_oracle_report_v1")
             .field_value_sequence(
                 WorthQueryEvidenceTag::new("comparison_row"),
                 comparison_rows,
             )
             .field_shape(WorthQueryEvidenceTag::new("manifest"), manifest_digest),
-    )?)
+    )
 }

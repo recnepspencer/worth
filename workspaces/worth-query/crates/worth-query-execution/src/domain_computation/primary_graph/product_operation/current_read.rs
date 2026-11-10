@@ -17,7 +17,6 @@ pub(super) mod head;
 
 #[derive(Debug)]
 pub(in crate::domain_computation) enum CurrentReadDenial {
-    ForeignPhase,
     HeadDiverged,
     NativeBasis(RelationalBranchBasisDenial),
     HeadAdmission(RuntimeWorldServiceDenial<RuntimeWorldBranchAdmissionDenial>),

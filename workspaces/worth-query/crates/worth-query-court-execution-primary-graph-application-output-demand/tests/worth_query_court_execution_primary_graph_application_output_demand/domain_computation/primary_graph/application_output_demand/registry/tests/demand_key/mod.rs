@@ -4,9 +4,7 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::demand_key::family_declarations;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::demand_key::initial;
 
-use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
 use std::cmp::Ordering;
-use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_execution::facade::application_contribution::WorthQueryProducerApplicability;
 use worth_query_execution::facade::application_contribution::WorthQueryProducerLifecyclePosture;
 #[test]

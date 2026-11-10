@@ -24,15 +24,14 @@ impl super::WorthQueryAdmittedConsumerInvalidation<'_> {
         workspace: &crate::runtime::WorthQueryWorkspace,
     ) -> Result<Option<super::WorthQueryFoundationalInvalidationProjection>, IdentityDerivationDenial>
     {
-        Ok(self
-            .remains_current(workspace)
+        self.remains_current(workspace)
             .then(|| {
                 super::foundational_projection::foundational_projection(
                     self.delta(),
                     FoundationalBoundaryEvidenceFreshnessPosture::FreshRetained,
                 )
             })
-            .transpose()?)
+            .transpose()
     }
 
     pub fn materialize_foundational_projection(

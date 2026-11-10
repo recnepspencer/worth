@@ -295,8 +295,5 @@ fn graph_program_step(
 fn graph_program_declared_collection(
     collection: impl Into<String>,
 ) -> Result<WorthQueryMutationTargetCollectionIdentity, IdentityDerivationDenial> {
-    Ok(WorthQueryMutationTargetCollectionIdentity::new(
-        "graph-composition-program",
-        collection,
-    )?)
+    WorthQueryMutationTargetCollectionIdentity::new("graph-composition-program", collection)
 }

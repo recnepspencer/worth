@@ -80,9 +80,7 @@ impl WorthQueryRuntime {
         &self,
         handoff: WorthQueryExistingTruthProbeExecutionHandoff,
     ) -> Result<WorthQueryExistingTruthProbeExecutionBinding, IdentityDerivationDenial> {
-        Ok(WorthQueryExistingTruthProbeExecutionBinding::from_handoff(
-            handoff,
-        )?)
+        WorthQueryExistingTruthProbeExecutionBinding::from_handoff(handoff)
     }
 
     pub(crate) fn execute_existing_truth_probe_execution_binding(
@@ -158,17 +156,14 @@ impl WorthQueryRuntime {
         binding: &WorthQueryExistingTruthTargetBinding,
     ) -> Option<WorthQueryExistingTruthProbeDenial> {
         let support_profile = self.backend.support_profile();
-        let Some(row) = support_profile
+        let row = support_profile
             .bridge_backed_verification_support_rows()
             .iter()
             .find(|row| {
                 row.operation_family() == "probe_existing"
                     && row.target_binding_family()
                         == binding.family().bridge_backed_support_family()
-            })
-        else {
-            return None;
-        };
+            })?;
         let supported = match support_profile.posture() {
             WorthQueryRuntimeBackendPosture::Scaffold => row.scaffold_profile_supported(),
             WorthQueryRuntimeBackendPosture::Primary => {

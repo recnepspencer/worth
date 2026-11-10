@@ -136,7 +136,7 @@ impl WorthQueryIntentSupportContribution {
             WorthQuerySupportContributionPosture::NarrowedSupport => unreachable!(),
         })?;
 
-        Ok(materialize_common_lane(
+        materialize_common_lane(
             "support-traceability",
             WorthQueryDomainCapabilityTargetKind::IntentDeclaration,
             self.posture.as_str(),
@@ -149,7 +149,7 @@ impl WorthQueryIntentSupportContribution {
                 )
             },
             materialize_intent_declaration_support_traceability_artifact,
-        )?)
+        )
     }
 
     pub fn materialize(
@@ -206,7 +206,7 @@ impl WorthQueryIntentInvariantRegistrationContribution {
         )?
         .bind_to_installed_target(self.target)?;
 
-        Ok(materialize_common_lane(
+        materialize_common_lane(
             "invariant-capability",
             WorthQueryDomainCapabilityTargetKind::IntentDeclaration,
             WorthQueryInvariantCapabilityContributionPosture::InvariantRegistration.as_str(),
@@ -219,7 +219,7 @@ impl WorthQueryIntentInvariantRegistrationContribution {
                 )
             },
             materialize_query_invariant_catalog_registration_artifact,
-        )?)
+        )
     }
 
     pub fn materialize(

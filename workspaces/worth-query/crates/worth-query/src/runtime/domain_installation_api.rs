@@ -182,9 +182,8 @@ impl WorthQueryRuntime {
     pub fn verify_domain_execution_index_rebuild(
         &self,
     ) -> Result<WorthQueryDomainExecutionIndexRebuildReport, IdentityDerivationDenial> {
-        Ok(self
-            .domain_installation_registry
-            .rebuild_execution_index_report()?)
+        self.domain_installation_registry
+            .rebuild_execution_index_report()
     }
 
     pub fn rebind_domain<D: 'static>(

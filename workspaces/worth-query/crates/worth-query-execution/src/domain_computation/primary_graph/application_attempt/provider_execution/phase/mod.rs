@@ -4,10 +4,6 @@ pub(crate) mod prepared;
 // the surrounding application-attempt owner.
 
 pub(in crate::domain_computation::primary_graph::application_attempt) use prepared::WorthQueryEarlyEquivalentCommitReceiptPermit;
-pub(super) use prepared::{
-    prepare_application_commit, WorthQueryApplicationCommitPreparation,
-    WorthQueryApplicationCommitPreparationRequest,
-};
 pub(in crate::domain_computation::primary_graph::application_attempt) use prepared::running::progression::{
     WorthQueryFreshCommitReceiptPermit, WorthQueryManagedEquivalentCommitReceiptPermit,
     WorthQueryRegisteredEquivalentCommitReceiptPermit,
@@ -22,7 +18,6 @@ pub(super) use prepared::running::progression::progressed::finish_application_co
 pub(super) use prepared::running::{
     start_managed_application_commit,
 };
-pub(super) use prepared::running::WorthQueryRunningApplicationCommit;
 
 pub(in crate::domain_computation::primary_graph) use prepared::ReadmittedCommitProgram;
 

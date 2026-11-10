@@ -63,13 +63,11 @@ impl<D: WorthQueryDomainEntryMarker, C: WorthQueryDomainOperatingContext<D>>
                 }
             })
             .unwrap_or(WorthQueryDeclarationRelationalTruthRoutingSupportStatus::Unsupported);
-        Ok(
-            worth_query_checked_declaration_relational_routing_on_handle(
-                self.handle_identity_digest(),
-                self.operating_context_identity_digest(),
-                support_status,
-                subject,
-            )?,
+        worth_query_checked_declaration_relational_routing_on_handle(
+            self.handle_identity_digest(),
+            self.operating_context_identity_digest(),
+            support_status,
+            subject,
         )
     }
 

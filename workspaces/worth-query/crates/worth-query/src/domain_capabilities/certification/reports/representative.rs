@@ -118,9 +118,7 @@ pub fn worth_query_domain_capability_representative_report(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<WorthQueryDomainCapabilityRepresentativeReport, IdentityDerivationDenial> {
     let installation = install_domain_capability_certification(execution);
-    Ok(worth_query_domain_capability_representative_report_in(
-        installation.contributions(),
-    )?)
+    worth_query_domain_capability_representative_report_in(installation.contributions())
 }
 
 pub(crate) fn worth_query_domain_capability_representative_report_in(

@@ -9,7 +9,7 @@ pub enum IdleRowDisposition {
 }
 
 #[derive(Clone, Copy)]
-pub(super) enum RowRetirement {
+pub enum RowRetirement {
     Unstarted,
     Finished,
     AbandonedPublication,

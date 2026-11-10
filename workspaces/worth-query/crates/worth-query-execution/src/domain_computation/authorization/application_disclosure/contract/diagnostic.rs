@@ -8,7 +8,7 @@ use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelFai
 mod allocation;
 mod work;
 
-pub(in crate::domain_computation) enum DiagnosticContractDenial {
+pub enum DiagnosticContractDenial {
     NotDeclared,
     UnsupportedShape,
     Storage(RetainedStorageDenial),

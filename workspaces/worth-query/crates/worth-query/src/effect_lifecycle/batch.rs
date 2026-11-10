@@ -53,7 +53,7 @@ impl AdmittedEffectBatch {
         };
         let artifact =
             LoweredRelationalMutationBatchExecutionArtifact::new(workflow_basis_lane, declarations)
-                .map_err(&identity_refused)?;
+                .map_err(identity_refused)?;
         LoweredEffectBatchExecutionPlan::new(
             self.authority_lane(),
             self.basis_family(),

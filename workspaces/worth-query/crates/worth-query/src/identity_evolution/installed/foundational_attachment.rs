@@ -251,7 +251,7 @@ fn boundary_identity(
     role: &'static str,
     value: &str,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(WorthQueryEvidenceIdentity::compose(
+    WorthQueryEvidenceIdentity::compose(
         crate::evidence_identity::WorthQueryEvidenceScope::InstalledDomainExecution,
     )
     .field_shape(
@@ -262,5 +262,5 @@ fn boundary_identity(
         crate::evidence_identity::WorthQueryEvidenceTag::new("source_value"),
         value,
     )
-    .seal()?)
+    .seal()
 }

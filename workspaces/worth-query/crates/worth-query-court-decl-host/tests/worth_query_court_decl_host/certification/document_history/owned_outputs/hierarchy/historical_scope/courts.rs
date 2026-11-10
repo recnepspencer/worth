@@ -123,7 +123,7 @@ fn exercise(worker: bool) {
         &request,
         before_delete,
         current,
-        0xd1214_20,
+        0x0d12_1420,
     )
     .unwrap_or_else(|cause| panic!("historical-only non-leaf discovery: {cause:?}"));
     assert_eq!(

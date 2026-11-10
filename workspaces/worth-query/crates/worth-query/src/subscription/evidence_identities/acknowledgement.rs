@@ -1,5 +1,6 @@
 use super::super::attachment_budget::DeliveryBackpressurePolicy;
 use super::SUBSCRIPTION_IDENTITY_SCOPE;
+#[cfg(test)]
 use crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial as IdentityDerivationDenial;
 use crate::evidence_identity::{WorthQueryEvidenceIdentity, WorthQueryEvidenceTag};
 
@@ -44,16 +45,14 @@ pub(in crate::subscription) fn lifecycle_continuation_endpoint_identity(
     role: &str,
     source_identity: &WorthQueryEvidenceIdentity,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "subscription_continuation_endpoint_v1",
-            )
-            .field_shape(WorthQueryEvidenceTag::new("role"), role)
-            .field_evidence_identity(WorthQueryEvidenceTag::new("source"), source_identity)
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "subscription_continuation_endpoint_v1",
+        )
+        .field_shape(WorthQueryEvidenceTag::new("role"), role)
+        .field_evidence_identity(WorthQueryEvidenceTag::new("source"), source_identity)
+        .seal()
 }
 
 #[cfg(test)]

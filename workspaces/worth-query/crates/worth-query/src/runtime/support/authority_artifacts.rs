@@ -295,10 +295,10 @@ fn mutation_label_identity(
     WorthQueryEvidenceIdentity,
     crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
 > {
-    Ok(worth_query_evidence_identity(scope)
+    worth_query_evidence_identity(scope)
         .field_shape(WorthQueryEvidenceTag::new("role"), role)
         .field_value(WorthQueryEvidenceTag::new("label"), label)
-        .seal()?)
+        .seal()
 }
 
 fn mutation_digest_identity(
@@ -309,10 +309,10 @@ fn mutation_digest_identity(
     WorthQueryEvidenceIdentity,
     crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
 > {
-    Ok(worth_query_evidence_identity(scope)
+    worth_query_evidence_identity(scope)
         .field_shape(WorthQueryEvidenceTag::new("role"), role)
         .field_evidence_identity(WorthQueryEvidenceTag::new("digest"), digest)
-        .seal()?)
+        .seal()
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

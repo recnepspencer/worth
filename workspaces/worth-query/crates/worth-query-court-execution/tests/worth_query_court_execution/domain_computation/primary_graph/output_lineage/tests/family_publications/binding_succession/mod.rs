@@ -6,7 +6,7 @@ use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
 pub fn scope(court: &Court) -> WorthQueryOperationScopeBinding {
     let entity = court.source.scope;
     WorthQueryOperationScopeBinding::axis_probe_scope_for_test(
-        (*court.source.runtime_authority_for_test()),
+        *court.source.runtime_authority_for_test(),
         (*court.source.schema_for_test()).clone(),
         "index selection",
         entity.partition_id(),
@@ -24,8 +24,8 @@ pub fn resolve(court: &Court) -> Result<WorthQueryPriorOutputBindingResolution, 
         .resolve_binding_succession_for_test::<Preserve, Initial>(
             &worth_execution::ExecutionRequest::serial(&court.request),
             &scope(court),
-            (*court.coordinate.occurrence_for_test()),
-            (*court.coordinate.generation_for_test()),
+            *court.coordinate.occurrence_for_test(),
+            *court.coordinate.generation_for_test(),
             [1; 32],
         )
 }
@@ -142,8 +142,8 @@ fn paired_prior_refuses_ambiguous_foreign_and_cancelled_selection() {
                 .resolve_binding_succession_for_test::<OtherRole, Initial>(
                     execution,
                     &scope(&court),
-                    (*court.coordinate.occurrence_for_test()),
-                    (*court.coordinate.generation_for_test()),
+                    *court.coordinate.occurrence_for_test(),
+                    *court.coordinate.generation_for_test(),
                     [1; 32],
                 ),
             Err(Stop::SelectedSourceMismatch)
@@ -163,8 +163,8 @@ fn paired_prior_refuses_ambiguous_foreign_and_cancelled_selection() {
             .resolve_binding_succession_for_test::<Preserve, Initial>(
                 &worth_execution::ExecutionRequest::serial(&request),
                 &scope(&court),
-                (*court.coordinate.occurrence_for_test()),
-                (*court.coordinate.generation_for_test()),
+                *court.coordinate.occurrence_for_test(),
+                *court.coordinate.generation_for_test(),
                 [1; 32],
             ),
         Err(Stop::Execution(

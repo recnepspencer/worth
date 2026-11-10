@@ -231,11 +231,9 @@ where
             crate::domain_capabilities::WorthQueryDeclarationBoundContributionTarget::for_canonical_declaration(
                 declaration,
             );
-        Ok(
-            crate::domain_capabilities::WorthQueryInstalledDomainContributionTarget::bind(
-                self.installed_authority.authority_arc(),
-                semantic_target,
-            )?,
+        crate::domain_capabilities::WorthQueryInstalledDomainContributionTarget::bind(
+            self.installed_authority.authority_arc(),
+            semantic_target,
         )
     }
 
@@ -315,18 +313,16 @@ where
     C: WorthQueryDomainOperatingContext<D>,
 {
     let declaration = operating_context.context_identity();
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::InstalledDomainDeclarationContext)
-            .field_value_sequence(
-                WorthQueryEvidenceTag::new("operating_context_field_name"),
-                declaration.fields().map(|(name, _)| name),
-            )
-            .field_value_sequence(
-                WorthQueryEvidenceTag::new("operating_context_field_value"),
-                declaration.fields().map(|(_, value)| value),
-            )
-            .seal()?,
-    )
+    worth_query_evidence_identity(WorthQueryEvidenceScope::InstalledDomainDeclarationContext)
+        .field_value_sequence(
+            WorthQueryEvidenceTag::new("operating_context_field_name"),
+            declaration.fields().map(|(name, _)| name),
+        )
+        .field_value_sequence(
+            WorthQueryEvidenceTag::new("operating_context_field_value"),
+            declaration.fields().map(|(_, value)| value),
+        )
+        .seal()
 }
 
 impl From<IdentityDerivationDenial> for WorthQueryInstalledDomainDeclarationContextDenial {

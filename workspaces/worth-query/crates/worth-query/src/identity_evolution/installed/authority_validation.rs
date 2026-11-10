@@ -22,7 +22,7 @@ pub(super) fn semantic_evidence_identity(
         .iter()
         .map(crate::memory_workspace::WorthQueryEntityIdentity::evidence_identity)
         .collect::<Vec<_>>();
-    Ok(identity
+    identity
         .field_evidence_identity_sequence(
             crate::evidence_identity::WorthQueryEvidenceTag::new("establishing_entity_target"),
             &establishing_target_identities,
@@ -31,7 +31,7 @@ pub(super) fn semantic_evidence_identity(
             crate::evidence_identity::WorthQueryEvidenceTag::new("lifecycle_target"),
             lifecycle_identity.as_ref(),
         )
-        .seal()?)
+        .seal()
 }
 
 fn semantic_identity_basis(

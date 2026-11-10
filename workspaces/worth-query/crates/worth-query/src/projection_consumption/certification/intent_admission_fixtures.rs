@@ -10,24 +10,24 @@ use worth_foundational::facade::{AspectKey, FieldKey};
 
 pub(crate) fn intent_admission_admitted_projection_declaration(
 ) -> Result<ProjectionConsumptionDeclaration, IdentityDerivationDenial> {
-    Ok(declaration(
+    declaration(
         ProjectionSourceFamily::QueryReadReceipt,
         ProjectionSourceCapabilityProfile::QueryReadReceipt {
             execution_posture: ProjectionSourceExecutionPosture::Current,
         },
         "query-read:certification-admitted",
-    )?)
+    )
 }
 
 pub(crate) fn intent_admission_warning_projection_declaration(
 ) -> Result<ProjectionConsumptionDeclaration, IdentityDerivationDenial> {
-    Ok(declaration(
+    declaration(
         ProjectionSourceFamily::QueryContextExecution,
         ProjectionSourceCapabilityProfile::QueryContextExecution {
             execution_posture: ProjectionSourceExecutionPosture::Current,
         },
         "query-context:certification-warning",
-    )?)
+    )
 }
 
 fn declaration(

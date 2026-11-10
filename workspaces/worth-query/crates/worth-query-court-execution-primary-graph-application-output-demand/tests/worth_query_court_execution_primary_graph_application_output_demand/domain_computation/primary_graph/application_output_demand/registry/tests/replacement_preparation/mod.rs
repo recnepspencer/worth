@@ -42,12 +42,12 @@ pub fn fixture_with_commit(
     let old_interest = interest(
         &registry,
         old.clone(),
-        Arc::clone(&(*old_record.wake_for_test())),
+        Arc::clone(old_record.wake_for_test()),
     );
     let next_interest = interest(
         &registry,
         next.clone(),
-        Arc::clone(&(*next_record.wake_for_test())),
+        Arc::clone(next_record.wake_for_test()),
     );
     {
         let mut state = (*registry.state_for_test()).lock().unwrap();
@@ -64,14 +64,13 @@ fn replacement_prepares_exact_commit_growth_and_transfers_matching_obligations()
         .finish_replaced_interest_for_test(&old, &next, "replacement")
         .unwrap();
     let state = (*registry.state_for_test()).lock().unwrap();
-    let successor = &(*state.records_for_test())[&(*next.key_for_test())];
+    let successor = &(*state.records_for_test())[next.key_for_test()];
     assert_eq!((*successor.performed_obligations_for_test()).len(), 2);
     assert_eq!((*successor.source_commits_for_test()), [commit]);
 
-    assert!((*state.required_keys_for_test()).contains(&(*next.key_for_test())));
+    assert!((*state.required_keys_for_test()).contains(next.key_for_test()));
     assert_eq!(
-        (*(*state.records_for_test())[&(*old.key_for_test())].performed_obligations_for_test())
-            .len(),
+        (*(*state.records_for_test())[old.key_for_test()].performed_obligations_for_test()).len(),
         0
     );
 }

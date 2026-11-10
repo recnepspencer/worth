@@ -63,8 +63,8 @@ where
                 .outputs
                 .with_recording(&phase, |mut recording| {
                     let result = (|| {
-                        if let Some(forest) = recording.as_deref_mut() {
-                            if !super::recording::advance_output_recording::<
+                        if let Some(forest) = recording.as_deref_mut()
+                            && !super::recording::advance_output_recording::<
                                 S,
                                 H,
                                 I,
@@ -85,7 +85,6 @@ where
                             )? {
                                 return Ok(false);
                             }
-                        }
                         let operation = WorthQueryDocumentHistoryOperation::new(
                             &selected,
                             &prepared.admission,

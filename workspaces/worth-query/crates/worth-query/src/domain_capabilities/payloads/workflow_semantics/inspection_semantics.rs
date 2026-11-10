@@ -115,12 +115,12 @@ impl WorthQueryWorkflowInspectionSemantics {
 fn workflow_external_relational_inspection_reference_identity(
     external_artifact_digest: &str,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(domain_capability_scope_encoder(
+    domain_capability_scope_encoder(
         "worth_query_workflow_external_relational_inspection_reference_v1",
     )
     .field_shape(
         WorthQueryEvidenceTag::new("external_artifact_digest"),
         external_artifact_digest,
     )
-    .seal()?)
+    .seal()
 }

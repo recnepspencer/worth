@@ -276,11 +276,11 @@ fn ready_admission(
     >,
     IdentityDerivationDenial,
 > {
-    Ok(ready(
+    ready(
         authoring
             .bind_to_admitted_plan_target(admitted_plan_target("plan-admission")?)
             .expect("fixture digest must fit"),
-    )?)
+    )
 }
 
 fn ready_support(
@@ -291,11 +291,11 @@ fn ready_support(
     >,
     IdentityDerivationDenial,
 > {
-    Ok(ready(
+    ready(
         authoring
             .bind_to_admitted_plan_target(admitted_plan_target("plan-admission")?)
             .expect("fixture digest must fit"),
-    )?)
+    )
 }
 
 fn ready_continuity(
@@ -306,13 +306,13 @@ fn ready_continuity(
     >,
     IdentityDerivationDenial,
 > {
-    Ok(ready_continuity_payload(
+    ready_continuity_payload(
         authoring
             .bind_to_admitted_plan_target(admitted_plan_target("plan-continuity")?)?
             .payload()
             .payload()
             .clone(),
-    )?)
+    )
 }
 
 fn ready_continuity_payload(
@@ -323,10 +323,10 @@ fn ready_continuity_payload(
     >,
     IdentityDerivationDenial,
 > {
-    Ok(ready(
+    ready(
         super::proof_integration::create_requested_domain_capability_contribution(
             admitted_plan_target("plan-continuity")?,
             payload,
         )?,
-    )?)
+    )
 }

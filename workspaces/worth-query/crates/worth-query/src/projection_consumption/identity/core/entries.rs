@@ -25,17 +25,17 @@ pub(crate) fn compose_fact_request_entry_digest(
             native_contract.canonical_contract_material(),
         );
     }
-    Ok(seal(encoder)?)
+    seal(encoder)
 }
 
 pub(crate) fn compose_projection_source_reference_entry_digest(
     identity: &ProjectionSourceReferenceIdentity,
 ) -> Result<String, IdentityDerivationDenial> {
-    Ok(seal(
+    seal(
         consumption_scope_encoder("projection_source_reference_entry_v1")
             .field_shape(WorthQueryEvidenceTag::new("label"), identity.label())
             .field_shape(WorthQueryEvidenceTag::new("identity"), identity.identity()),
-    )?)
+    )
 }
 
 pub(crate) fn compose_bound_fact_family_entry_digest(
@@ -62,5 +62,5 @@ pub(crate) fn compose_bound_fact_family_entry_digest(
             native_contract.canonical_contract_material(),
         );
     }
-    Ok(seal(encoder)?)
+    seal(encoder)
 }

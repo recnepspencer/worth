@@ -302,7 +302,7 @@ impl CarriedCalls {
 }
 
 /// What a completed run leaves for seal.
-pub(in crate::domain_computation::primary_graph) struct CompletedComputationRun {
+pub struct CompletedComputationRun {
     pub(super) basis: RetainedBasis,
     pub(super) typed: Arc<dyn Any + Send + Sync>,
     /// The canonical shape and receipts of the actual owner calls.

@@ -9,39 +9,37 @@ pub(super) fn intent_execution_provenance_chain_identity(
     WorthQueryEvidenceIdentity,
     crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
 > {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::IntentExecutionProvenanceChain)
-            .field_shape(WorthQueryEvidenceTag::new("family"), provenance.family)
-            .field_shape(
-                WorthQueryEvidenceTag::new("entrypoint"),
-                provenance.entrypoint,
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("seam"),
-                provenance.execution_seam,
-            )
-            .field_value(
-                WorthQueryEvidenceTag::new("admission_decision_digest"),
-                provenance.admission_decision_digest,
-            )
-            .field_value(
-                WorthQueryEvidenceTag::new("execution_handoff_digest"),
-                provenance.execution_handoff_digest,
-            )
-            .field_value(
-                WorthQueryEvidenceTag::new("execution_binding_digest"),
-                provenance.execution_binding_digest,
-            )
-            .field_value(
-                WorthQueryEvidenceTag::new("execution_outcome_digest"),
-                provenance.execution_outcome_digest,
-            )
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("snapshot_token"),
-                provenance.snapshot_evidence_identity,
-            )
-            .seal()?,
-    )
+    worth_query_evidence_identity(WorthQueryEvidenceScope::IntentExecutionProvenanceChain)
+        .field_shape(WorthQueryEvidenceTag::new("family"), provenance.family)
+        .field_shape(
+            WorthQueryEvidenceTag::new("entrypoint"),
+            provenance.entrypoint,
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("seam"),
+            provenance.execution_seam,
+        )
+        .field_value(
+            WorthQueryEvidenceTag::new("admission_decision_digest"),
+            provenance.admission_decision_digest,
+        )
+        .field_value(
+            WorthQueryEvidenceTag::new("execution_handoff_digest"),
+            provenance.execution_handoff_digest,
+        )
+        .field_value(
+            WorthQueryEvidenceTag::new("execution_binding_digest"),
+            provenance.execution_binding_digest,
+        )
+        .field_value(
+            WorthQueryEvidenceTag::new("execution_outcome_digest"),
+            provenance.execution_outcome_digest,
+        )
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("snapshot_token"),
+            provenance.snapshot_evidence_identity,
+        )
+        .seal()
 }
 
 pub(super) struct IntentExecutionProvenanceIdentityParts<'a> {

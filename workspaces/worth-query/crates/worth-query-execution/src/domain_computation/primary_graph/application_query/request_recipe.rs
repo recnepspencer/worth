@@ -2,6 +2,7 @@
 use super::CapturedApplicationQueryParameters;
 use crate::domain_computation::primary_graph::WorthQueryHistoryOutputReadDenial as Denial;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+use crate::equality_type_id::EqualityTypeId;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::AspectValue;
@@ -22,7 +23,7 @@ type Field<S, B> =
 type Scalar<S, B> = <Field<S, B> as RecordSelection>::Binding;
 
 pub(in crate::domain_computation::primary_graph) struct CapturedSourceQueryRequest {
-    binding: std::any::TypeId,
+    binding: EqualityTypeId,
     parameters: CapturedApplicationQueryParameters,
     request: worth_query_admission::facade::application_query::WorthQueryCanonicalSourceRequest,
     field: (&'static str, &'static str, &'static str),
@@ -102,7 +103,7 @@ impl CapturedSourceQueryRequest {
             }
         })?;
         let captured = Self {
-            binding: std::any::TypeId::of::<B>(),
+            binding: EqualityTypeId::of::<B>(),
             parameters,
             field,
             seal: *request.identity().bytes(),
@@ -137,7 +138,7 @@ impl CapturedSourceQueryRequest {
         // The recorded query identity protects the original input. Current
         // installation meaning and parameter readmission remain the reader's
         // owner, including genuine changed-build fallback.
-        self.binding == std::any::TypeId::of::<B>()
+        self.binding == EqualityTypeId::of::<B>()
             && self.field == (field.entity(), field.aspect(), field.field())
     }
     pub(in crate::domain_computation::primary_graph) fn validate(
