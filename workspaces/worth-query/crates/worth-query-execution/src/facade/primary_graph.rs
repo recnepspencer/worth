@@ -1,4 +1,6 @@
 //! Primary Graph application contracts.
+mod correction;
+pub use correction::*;
 mod managed_index;
 mod mutation_handler;
 pub use crate::domain_computation::application_aftermath::{
@@ -377,6 +379,7 @@ pub use crate::domain_computation::primary_graph::provider::session_commit::Wort
 
 mod read_denials;
 pub use read_denials::*;
+
 pub use worth_runtime_bridge::facade::BridgeExecutionBasisFinalizationFailureKind;
 
 /// Original field refusals carried through primary-graph installation.

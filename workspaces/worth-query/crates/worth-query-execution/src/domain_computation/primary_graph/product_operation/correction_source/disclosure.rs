@@ -23,6 +23,8 @@ use worth_query_declaration::facade::{
 /// A source-disclosure, semantic-comparison or inverse-derivation refusal.
 /// Current principal, execution and resource causes remain typed in their original owner.
 pub enum WorthQueryCorrectionDerivationDenial {
+    Idempotency(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial),
+    Material(crate::facade::correction_material::QueryCorrectionMaterialDenial),
     ForeignPhase,
     ForeignSelection,
     TargetIncarnationChanged,
@@ -42,6 +44,9 @@ pub enum WorthQueryCorrectionDerivationDenial {
     MissingPreImage,
     SourceOutput(super::material::WorthQueryCorrectionOutputProjectionDenial),
     SemanticMaterialUnavailable,
+    OriginalInputDecode(
+        worth_query_declaration::facade::application_operation::ApplicationRetainedInputDenial,
+    ),
     MissingTargetParent,
     InputCapture(crate::domain_computation::primary_graph::WorthQueryOperationInputCaptureDenial),
     CommandKey(worth_query_declaration::facade::application_schema::ApplicationValueEncodeDenial),
@@ -122,15 +127,20 @@ where
             maximum_history,
         )
         .map_err(Denial::Ancestry)?;
-    let original = source.occurrence().commit_evidence().original_authority();
-    let retained = original
-        .retained_governed_input_carrier()
-        .ok_or(Denial::UnsupportedSourceMeaning)?;
-    let disclosure = retained
-        .correction()
+    if source.occurrence().home_material().is_some() {
+        application
+            .runtime
+            .primary_provider
+            .observe_correction_material(source.occurrence().commit_reference())
+            .map_err(Denial::Material)?;
+    }
+    let disclosure = source
+        .occurrence()
+        .disclosure()
         .ok_or(Denial::UnsupportedSourceMeaning)?;
     let association = disclosure.association();
-    let original_program = original
+    let original_program = source
+        .occurrence()
         .original_program()
         .ok_or(Denial::UnsupportedSourceMeaning)?;
     if !original_program.declares_binding(association.source_type()) {
@@ -160,8 +170,9 @@ where
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .map_err(Denial::Principal)?;
-    let selector = retained
-        .original_scope()
+    let selector = source
+        .occurrence()
+        .scope()
         .ok_or(Denial::UnsupportedSourceMeaning)?;
     if <<Disclosure<Schema, C> as ApplicationQueryBinding<Schema>>::ScopeBinding as ApplicationQueryScopeBinding<Schema>>::RESOLUTION_MODE
         == ApplicationQueryScopeResolutionMode::PrincipalIdentity

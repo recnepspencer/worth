@@ -28,6 +28,8 @@ mod cold_index_fixture;
 mod cold_index_frontier;
 #[path = "cold_index_matrix.rs"]
 mod cold_index_matrix;
+#[path = "cold_index_selections.rs"]
+mod cold_index_selections;
 #[path = "cold_invariants.rs"]
 mod cold_invariants;
 #[path = "cold_lineage_custody.rs"]
@@ -68,6 +70,8 @@ mod cold_symbols;
 mod cold_tail_matrix;
 #[path = "cold_visibility.rs"]
 mod cold_visibility;
+#[path = "complete_index_selections.rs"]
+mod complete_index_selections;
 #[path = "replay_pin_concurrency.rs"]
 mod replay_pin_concurrency;
 use crate::durability::data::{

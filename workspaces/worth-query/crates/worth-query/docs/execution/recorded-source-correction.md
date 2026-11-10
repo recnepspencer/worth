@@ -43,6 +43,8 @@ and list it in the contribution's `corrections: [RecordedEdit]` declaration.
 | `authored_identity()` | The authored lifecycle family, logical-key field and exact source/inverse output roles for create/delete inversion. |
 | `completed_external_reconciliation()` | The exact reconciliation procedure authorizing business compensation of a completed external workflow operation. |
 | `disclosure_parameters(original)` | Query parameters associated with the original governed input. |
+| `recover_source_input(bytes, identity, bounds)` | Required DATA factory that decodes and validates the exact canonical source input under its original binding. |
+| `recover_inverse_input(bytes, identity, bounds)` | Required DATA factory that reconstructs the performed inverse input for retry; it does not derive another inverse. |
 | `derive_correction(original, material)` | The domain's deterministic action construction from the original input and its mechanism-specific material. |
 | `inverse_key(key)` | Fallible conversion to the inverse binding's key type, returning `Result<Key, ApplicationValueEncodeDenial>`. Validation refusals use the ordinary mutation key-identity denial. |
 | `visit(dispatch)` | Typed selection of conventional or capability admission for the inverse. |
@@ -59,6 +61,55 @@ The
 addresses the original number and applies its current read-enabled predicate.
 The [contribution](../../../worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/schema.rs)
 installs the association alongside the ordinary schema members.
+
+Original admission retains an `ApplicationRetainedInput` canonical snapshot
+before erasing the input's Rust type. Correction derivation, reapplication and
+completed-command lookup use the recorded bytes through these factories after
+fresh source disclosure. Each reconstructed value must keep the recorded input
+identity. A decoding or identity refusal remains typed as
+`OriginalInputDecode`; replacement input is never substituted. These factories
+construct DATA; fresh action admission governs its use.
+
+Bindings with `RETAIN_CANONICAL_INPUT` enabled share the stream captured by the
+original identity pass. Otherwise retention explicitly encodes the held value
+again and verifies its original identity. Request identity and its derivation
+work evidence remain unchanged.
+
+## Directory Homes and graceful reopen
+
+A directory Home records the original canonical input, disclosure parameters,
+pre-image and output correspondence in `query.corrections`. Readmission joins
+that material to the protected World original and its Native idempotency row
+before service. It does not execute a handler or derive an inverse at open.
+Use `select_coordinates` with the recorded source coordinates after reopening;
+a receipt retained from the previous open refuses with `StaleIncarnation`.
+Selection still requires the original program to be rostered, current disclosure
+and retained ancestry. Recorded bytes grant no mutation authority.
+
+The acknowledged World open transfers its existing `OriginalProgramMeaning`
+interpretation into `query.obligations`. It replaces the local count; reopening
+retains the durable count. The original Native key and complete intent remain the
+source of correction retry. A repeated successful command answers
+`RecoveredCommitted`, using its recorded inverse input instead of deriving a
+second inverse.
+
+A prepared correction pins its material as a mandatory obligation. Its pin moves
+to the exact publishing original before Native preparation, then releases only
+after that publication's material is recorded. Owning Home close durably
+discharges an unperformed preparation. After reopen its key answers
+`PreparationDischarged`; the platform does not derive or run that command again.
+The terminal command disposition remains authoritative when its material becomes
+optional. Dropping a live pin never publishes a durable release.
+
+The owning directory runtime can call
+`expire_optional_correction_material(&execution, &coordinates)`. A mandatory pin
+refuses with `MaterialPinned`. Acknowledged expiry preserves the original key,
+intent, lineage and Native receipt, then releases only the matching durable
+interpretation. A selected view must recheck the current receiver; expired
+payload answers `RetainedMaterialExpired` even through a previously selected
+view. A support-disposal refusal keeps that obligation owned. Retry, close and
+cold admission settle it through the original owner before completion or service.
+Expiry never runs an inverse or changes authored fields.
 
 ## Select, prepare and publish
 

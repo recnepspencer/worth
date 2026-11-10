@@ -46,6 +46,24 @@ fn residency_cold_index_frontier_prevents_reissue_before_any_image_demand() {
             .demand_checkpoint_image(execution)
             .unwrap();
         assert!(fixture.source.reads.load(Ordering::Relaxed) > 0);
+        let (_, basis) = fixture
+            .runtime
+            .observe_branch(&fixture.runtime.main_branch_identity())
+            .unwrap();
+        assert_eq!(
+            fixture
+                .runtime
+                .index_access()
+                .read_published_generation_for_observation(
+                    execution,
+                    fixture.index,
+                    &basis.observation()
+                )
+                .unwrap()
+                .unwrap()
+                .generation_id,
+            reserved
+        );
         let loaded = owner.all_generations();
         assert_eq!(
             loaded

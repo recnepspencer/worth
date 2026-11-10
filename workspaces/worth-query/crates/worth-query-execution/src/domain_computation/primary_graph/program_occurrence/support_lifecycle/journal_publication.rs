@@ -51,8 +51,24 @@ impl SupportJournalPublication<'_> {
                 QueryObligationPublicationOutcome::ProvenNoEffect(proof) => {
                     Self::admit_subject(proof.subject(), medium, &frame)?;
                     medium.acknowledge_no_effect(proof)?;
-                    self.lifecycle
-                        .state()
+                    let mut state = self.lifecycle.state();
+                    if let Some(transfer) = state
+                        .journal
+                        .as_ref()
+                        .and_then(|journal| journal.interpretation_transfer.as_ref())
+                    {
+                        transfer.validate(&state, &frame)?;
+                    }
+                    if let Some(transfer) = state
+                        .journal
+                        .as_mut()
+                        .expect("original pending journal")
+                        .interpretation_transfer
+                        .take()
+                    {
+                        transfer.no_effect(&mut state);
+                    }
+                    state
                         .journal
                         .as_mut()
                         .expect("original pending journal")
@@ -103,12 +119,28 @@ impl SupportJournalPublication<'_> {
         proof.consume(|publication| {
             Self::admit_subject(publication.subject(), medium, &frame)?;
             let mut state = self.lifecycle.state();
+            if let Some(transfer) = state
+                .journal
+                .as_ref()
+                .and_then(|journal| journal.interpretation_transfer.as_ref())
+            {
+                transfer.validate(&state, &frame)?;
+            }
             state
                 .journal
                 .as_mut()
                 .expect("prepared original journal")
                 .ledger
                 .readmit(frame.clone())?;
+            if let Some(transfer) = state
+                .journal
+                .as_mut()
+                .expect("prepared original journal")
+                .interpretation_transfer
+                .take()
+            {
+                transfer.committed(&mut state);
+            }
             if let QueryProgramSupportRecord::Status {
                 revision, after, ..
             } = frame.record()

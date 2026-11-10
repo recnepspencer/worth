@@ -142,8 +142,11 @@ impl WorthQueryApplicationIdempotencyBinding {
         self.producer_dependency_identity
     }
 
+    pub(in crate::domain_computation::primary_graph) fn recorded_key_text(key: [u8; 32]) -> String {
+        encode_identity(key)
+    }
     pub(in crate::domain_computation::primary_graph) fn key_text(self) -> String {
-        encode_identity(self.key_identity)
+        Self::recorded_key_text(self.key_identity)
     }
 
     pub const fn bind_source(mut self, source_identity: Option<&[u8; 32]>) -> Self {

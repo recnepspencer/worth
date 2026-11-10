@@ -1,9 +1,16 @@
 //! Exact installed parameter layout validation for fresh and retained admission.
 use super::*;
 
-pub(super) fn validate_parameter_layout<Schema, Query, Parameters, QueryResult, Scope>(
+pub(super) fn validate_parameter_layout<
+    Schema,
+    Query,
+    Parameters,
+    QueryResult,
+    Scope,
+    Name: AsRef<str>,
+>(
     query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
-    bindings: &[(&'static str, AspectValue)],
+    bindings: &[(Name, AspectValue)],
 ) -> Result<(), WorthQueryApplicationQueryParameterDenial> {
     if bindings.len() != query.parameters().len() {
         return Err(WorthQueryApplicationQueryParameterDenial::new(
@@ -13,7 +20,7 @@ pub(super) fn validate_parameter_layout<Schema, Query, Parameters, QueryResult, 
     }
     for declared in query.parameters() {
         let Some((_, value)) = bindings
-            .binary_search_by(|(name, _)| name.cmp(&declared.name()))
+            .binary_search_by(|(name, _)| name.as_ref().cmp(declared.name()))
             .ok()
             .and_then(|index| bindings.get(index))
         else {

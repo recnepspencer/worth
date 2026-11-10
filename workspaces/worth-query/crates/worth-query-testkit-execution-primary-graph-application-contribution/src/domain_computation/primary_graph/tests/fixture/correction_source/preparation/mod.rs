@@ -106,3 +106,30 @@ pub fn derive(
         PreparedLabelCorrection { program, input, key, binding, source }
     }).unwrap()
 }
+
+/// Retain the real label input and native source grant without a live candidate.
+/// The actual receiver owns authentication, selection, disclosure and derivation.
+pub fn retain_home_label_input(
+    application: &worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<IdentityExecutionSchema>,
+    coordinates: &worth_query_execution::facade::primary_graph::WorthQueryCorrectionSourceCoordinates,
+    wire_key: &str,
+    request: &WorthQueryRequestScope,
+) -> (
+    ApplicationEncodedInput<LabelInput>,
+    std::sync::Arc<WorthQueryPreparedCorrectionSource>,
+) {
+    application.with_application_advancement(request, |phase| {
+        let principal = crate::domain_computation::primary_graph::tests::fixture::authentication::authenticate_external(
+            application.installed_schema(), "alice", std::time::Duration::from_secs(120), request,
+        );
+        let target = application.on_branch(application.current_world()).select(&phase).unwrap();
+        let access = worth_query_execution::publication_boundary::program_publication_access();
+        let source = target.select_correction_source_coordinates(&phase, &principal, request,
+            coordinates, None, std::num::NonZeroUsize::new(8).unwrap()).unwrap();
+        let key = target.correction_command_key::<super::recorded::RecordedLabelEdit>(
+            &access, &phase, &principal, request, wire_key).unwrap();
+        target.derive_correction_inverse::<super::recorded::RecordedLabelEdit>(
+            &access, &phase, &principal, request, &source, &key, None,
+            std::num::NonZeroUsize::new(8).unwrap()).unwrap()
+    }).unwrap()
+}

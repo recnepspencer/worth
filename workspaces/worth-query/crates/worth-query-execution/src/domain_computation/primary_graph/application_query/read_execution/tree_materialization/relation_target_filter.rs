@@ -31,7 +31,7 @@ pub(super) fn retain_matching_targets<T>(
     let expected = parameters
         .bindings()
         .iter()
-        .find(|(name, _)| *name == predicate.parameter())
+        .find(|(name, _)| name.as_ref() == predicate.parameter())
         .map(|(_, value)| value)
         .ok_or_else(|| projection_denial(predicate.parameter()))?;
     if expected.value_family() != predicate.scalar_family() {

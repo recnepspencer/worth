@@ -10,7 +10,7 @@ use super::{
 
 const DOMAIN: &[u8] = b"worth-query.idempotency-mutation-binding.v1";
 
-fn slot(binding_identity: &str) -> [u8; 32] {
+pub(super) fn slot(binding_identity: &str) -> [u8; 32] {
     let mut digest = Sha256::new();
     for part in [DOMAIN, binding_identity.as_bytes()] {
         digest.update((part.len() as u64).to_be_bytes());

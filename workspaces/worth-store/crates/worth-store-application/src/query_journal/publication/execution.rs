@@ -1,17 +1,17 @@
 //! Drive the retained original under the current receiver request.
 use super::*;
-impl QueryObligationPublication {
-    pub(in crate::query_obligations) fn advance(
+impl QueryJournalPublication {
+    pub(in crate::query_journal) fn advance(
         &mut self,
         serving: &ServingPhysicalRuntime,
         request: &ExecutionRequest<'_, '_>,
-    ) -> QueryObligationNativeProgress {
-        use QueryObligationNativeProgress as Outcome;
+    ) -> QueryJournalNativeProgress {
+        use QueryJournalNativeProgress as Outcome;
         self.resume();
         if let Some(outcome) = self.outcome() {
             return outcome;
         }
-        let journal = match journal(serving) {
+        let journal = match journal(serving, self.journal) {
             Ok(journal) => journal,
             Err(cause) => return Outcome::Refused(cause),
         };
@@ -62,7 +62,7 @@ impl QueryObligationPublication {
             if let Some(outcome) = self.outcome() {
                 return outcome;
             }
-            return Outcome::Refused(QueryProgramSupportDenial::Execution(cause));
+            return Outcome::Refused(QueryJournalDenial::Execution(cause));
         }
         Outcome::Pending
     }

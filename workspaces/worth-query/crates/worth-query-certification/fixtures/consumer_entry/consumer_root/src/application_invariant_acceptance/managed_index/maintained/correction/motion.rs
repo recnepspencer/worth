@@ -3,7 +3,7 @@ use super::super::{bounds::Coordinates, geometry::schema::*};
 use super::*;
 use worth_query_decl::facade::{application_operation::*, *};
 
-#[derive(Clone, Debug, serde::Serialize)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Input {
     pub directory: String,
     pub vertex: String,

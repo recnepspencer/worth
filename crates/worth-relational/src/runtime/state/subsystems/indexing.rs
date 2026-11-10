@@ -117,11 +117,8 @@ impl IndexingState {
     }
 
     pub(crate) fn restore_generation(&mut self, generation: DerivedIndexGeneration) {
-        self.next_generation_id = self
-            .next_generation_id
-            .max(generation.generation_id.0.saturating_add(1));
         let id = generation.generation_id;
-        self.generations.insert(generation);
+        self.restore_generation_payload(generation);
         self.record_basis_generation(id);
     }
 

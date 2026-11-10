@@ -1,5 +1,7 @@
+mod complete_view;
 mod readmission;
 mod request_quote;
+pub(crate) use complete_view::CompleteIndexCheckpointView;
 pub(super) use request_quote::quote_decode;
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
@@ -84,6 +86,11 @@ impl DerivedIndexCheckpointArtifacts {
 
     pub(crate) fn bases(&self) -> &[crate::indexes::data::IndexBasisCheckpoint] {
         &self.bases
+    }
+    pub(in crate::durability::derived_index_artifacts) fn into_bases(
+        self,
+    ) -> Vec<crate::indexes::data::IndexBasisCheckpoint> {
+        self.bases
     }
 
     pub(crate) fn capture(

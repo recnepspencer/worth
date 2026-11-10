@@ -31,6 +31,7 @@ use worth_query_execution::facade::program_support::QueryObligationsMedium;
 pub struct UnadmittedHomeQueryService<Schema: ApplicationSchemaComposition, Program> {
     _query: ReadmittedHomeQueryService<Schema, Program>,
     obligations: Arc<dyn QueryObligationsMedium>,
+    material: Arc<dyn worth_query_execution::facade::correction_material::QueryCorrectionsMedium>,
 }
 impl<Schema: ApplicationSchemaComposition, Program: 'static> AuthorityMarker
     for UnadmittedHomeQueryService<Schema, Program>
@@ -59,10 +60,14 @@ impl<Schema: ApplicationSchemaComposition, Program: 'static>
     pub(in crate::application_home) fn retain(
         query: ReadmittedHomeQueryService<Schema, Program>,
         obligations: Arc<dyn QueryObligationsMedium>,
+        material: Arc<
+            dyn worth_query_execution::facade::correction_material::QueryCorrectionsMedium,
+        >,
     ) -> Self {
         Self {
             _query: query,
             obligations,
+            material,
         }
     }
 
@@ -75,14 +80,16 @@ impl<Schema: ApplicationSchemaComposition, Program: 'static>
         let Self {
             _query: query,
             obligations,
+            material,
         } = self;
-        match query.readmit_custody(execution, Arc::clone(&obligations)) {
-            Ok(admitted) => Ok(admitted
-                .consume(|query| CustodyReadmitted::from_owner(Self::retain(query, obligations)))),
+        match query.readmit_custody(execution, Arc::clone(&obligations), Arc::clone(&material)) {
+            Ok(admitted) => Ok(admitted.consume(|query| {
+                CustodyReadmitted::from_owner(Self::retain(query, obligations, material))
+            })),
             Err(refused) => {
                 let (query, cause) = refused.into_parts();
                 Err(UnadmittedHomeQueryCustodyRefused {
-                    query: Self::retain(query, obligations),
+                    query: Self::retain(query, obligations, material),
                     cause,
                 })
             }

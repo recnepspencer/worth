@@ -26,6 +26,31 @@ pub(in super::super) fn quote_decode(
         })
     })?;
     add(&mut bytes, vector::<CheckpointGeneration>(count)?)?;
+    // Carried exact-root selections are decoded with the same payload.
+    let bases = raw.field("bases", request)?.elements(request, |basis| {
+        basis.fields(request, |name, value| {
+            match name {
+                "branch" => add(&mut bytes, value.text_length(request)? as u64)?,
+                "empty" => {
+                    let count = value.elements(request, |_| Ok(()))?;
+                    add(&mut bytes, vector::<DerivedIndexId>(count)?)?;
+                }
+                "bindings" => {
+                    let count = value.elements(request, |_| Ok(()))?;
+                    add(
+                        &mut bytes,
+                        vector::<(DerivedIndexId, DerivedIndexGenerationId)>(count)?,
+                    )?;
+                }
+                _ => {}
+            }
+            Ok(())
+        })
+    })?;
+    add(
+        &mut bytes,
+        vector::<crate::indexes::data::IndexBasisCheckpoint>(bases)?,
+    )?;
     let ids = raw
         .field("generation_ids", request)?
         .elements(request, |_| Ok(()))?;

@@ -44,7 +44,9 @@ mod graph_participation;
 mod history_retirement;
 mod home_retirement;
 pub(crate) use home_retirement::PrimaryProviderCustody;
+mod correction_material;
 pub(crate) mod idempotency;
+mod original_meaning_support;
 mod original_publication;
 pub use idempotency::{
     WorthQueryRecoveredAftermathCausality, WorthQueryRecoveredApplicationCommitReceipt,
@@ -145,6 +147,8 @@ pub struct WorthQueryPrimaryGraphProvider {
         pending_application_publication::registry::WorthQueryPendingApplicationPublicationRegistryOwner,
     fault_port: Arc<dyn fault_port::WorthQueryPrimaryGraphFaultPort>,
     pub(in crate::domain_computation::primary_graph) publication_fault_control: Arc<publication_fault_control::PublicationFaultControl>,
+    correction_material: std::sync::OnceLock<super::retained_correction::CorrectionMaterialOwner>,
+    original_meaning_support: std::sync::OnceLock<std::sync::Weak<super::program_occurrence::support_lifecycle::WorthQueryProgramSupportLifecycle>>,
     world_history: std::sync::OnceLock<worth_runtime_world::facade::RuntimeWorldRecoveryPort>,
     pub(super) teardown_sentinel: Mutex<Option<Box<dyn std::any::Any + Send + Sync>>>,
 }

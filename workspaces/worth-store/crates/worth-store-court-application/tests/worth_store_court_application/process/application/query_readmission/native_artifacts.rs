@@ -23,16 +23,19 @@ use worth_query_testkit_host::facade::host::{
 };
 use worth_store_application::*;
 mod administration;
+mod corrections;
 mod epoch;
 mod home_close;
 mod idempotency;
 mod native_preparation;
+mod owner_family_refusals;
 mod successor_compilation;
 use native_preparation::{transition_unshared, unshared};
 mod observation_policy;
 mod operations;
 use observation_policy::{no_operation_admission, ObservationMaintenanceMustRemainUnentered};
 mod original_image;
+mod original_membership;
 mod selected;
 mod stops;
 use operations::{balance, fresh_closed, set};
@@ -145,49 +148,6 @@ fn reopen_refusal(
         .unwrap()
         .err()
         .expect("actual existing artifacts require owned refusal")
-}
-
-#[test]
-fn latest_native_owner_rows_refuse_their_actual_family_kind_and_record_before_service() {
-    for (name, family) in [
-        ("worth-query-workflow-lineage", "workflow"),
-        ("worth-query-dispatch-outbox", "outbox"),
-        ("worth-query-inbound-completion", "inbound"),
-        ("worth-query-aftermath-causality", "aftermath"),
-    ] {
-        let path = tempfile::tempdir().unwrap();
-        let lease = checkpoint_capture::lease(128 * 1024 * 1024);
-        let execution = ExecutionRequest::leased(&lease);
-        fresh_closed(path.path(), execution);
-        let (kind, record) = with_bootstrap_advancement_from_request(execution, |phase| {
-            let (query, mut home) = unshared(path.path(), &phase);
-            let (native, _, _) = home.recovered_query_finalization_parts().unwrap();
-            let result = administration::create_required_row(native, &execution, name);
-            drop(query);
-            assert!(matches!(
-                home.close(&execution).unwrap(),
-                ApplicationHomeCloseOutcome::Closed { .. }
-            ));
-            result
-        })
-        .unwrap();
-        let refused = reopen_refusal(path.path(), execution);
-        match &refused {
-            WorthQueryApplicationHomeOpenRefused::ExistingNativeFinalization { query, .. } => {
-                assert_eq!(
-                    query.reason().subject(),
-                    format!(
-                        "Home unsupported Native {family} entity kind {} record {record:?}",
-                        kind.0
-                    )
-                )
-            }
-            other => panic!("latest Native owner gate must refuse first: {other:?}"),
-        }
-        refused
-            .close(&execution)
-            .unwrap_or_else(|refused| panic!("owned family close: {refused:?}"));
-    }
 }
 
 #[test]

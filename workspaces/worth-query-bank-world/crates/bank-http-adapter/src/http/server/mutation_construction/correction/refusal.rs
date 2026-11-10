@@ -40,6 +40,10 @@ fn query(cause: WorthQueryApplicationRequestQueryDenial) -> BankHttpDenial {
 fn selection(cause: WorthQueryCorrectionSelectionDenial) -> BankHttpDenial {
     use WorthQueryCorrectionSelectionDenial as D;
     match cause {
+        D::StaleIncarnation => stale(),
+        D::Material(_) | D::ExactHistory(_) | D::HistorySource(_) | D::HistoryLimit => {
+            unavailable()
+        }
         D::Disclosure(cause) => derivation(cause),
         D::Ancestry(cause) => ancestry(cause),
         D::SourceUnavailable
@@ -95,10 +99,12 @@ fn derivation(cause: WorthQueryCorrectionDerivationDenial) -> BankHttpDenial {
         | D::SourceDiverged
         | D::ProgramMeaningChanged(_)
         | D::Domain(_) => stale(),
+        D::Material(_) | D::Idempotency(_) => unavailable(),
         D::UnsupportedSourceMeaning
         | D::ReapplicationUnavailable
         | D::MissingPreImage
         | D::SourceOutput(_)
+        | D::OriginalInputDecode(_)
         | D::SemanticMaterialUnavailable
         | D::MissingTargetParent
         | D::CommandKey(_)

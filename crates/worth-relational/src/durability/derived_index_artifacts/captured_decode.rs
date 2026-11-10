@@ -10,6 +10,8 @@ use worth_execution::{
 
 pub(crate) struct CapturedCheckpointGenerations {
     pub(crate) generations: ExecutionArray<Arc<DerivedIndexGeneration>>,
+    /// Exact-root selections the image carried beside its generations.
+    pub(crate) bases: Vec<crate::indexes::data::IndexBasisCheckpoint>,
     _funding: ExecutionArray<Option<ExecutionMemoryReservation>>,
 }
 pub(crate) fn decode(
@@ -57,18 +59,19 @@ pub(crate) fn decode(
             .map_err(wire_stop)?
     };
     let mut budget = IndexDecodeBudget::new(*request, count)?;
-    let generations = if checkpoint.is_none() {
+    let (generations, bases) = if checkpoint.is_none() {
         budget.reserve(quote::full(legacy_generations, request).map_err(wire_stop)?)?;
         let decoded: DerivedIndexArtifacts = rmp_serde::from_slice(legacy.0)
             .map_err(|_| super::corrupt("invalid full index generations"))?;
-        decoded.into_generations()
+        (decoded.into_generations(), Vec::new())
     } else {
         budget.reserve(
             super::checkpoint_delta::quote_decode(checkpoint, request).map_err(wire_stop)?,
         )?;
         let decoded: DerivedIndexCheckpointArtifacts = rmp_serde::from_slice(checkpoint.0)
             .map_err(|_| super::corrupt("invalid delta index generations"))?;
-        decoded.readmit_controlled(lane, &mut budget)?
+        let generations = decoded.readmit_controlled(lane, &mut budget)?;
+        (generations, decoded.into_bases())
     };
     if generations.len() != count {
         return Err(super::corrupt("index generation count mismatch").into());
@@ -82,6 +85,7 @@ pub(crate) fn decode(
     }
     Ok(CapturedCheckpointGenerations {
         generations: output.seal().map_err(array_stop)?,
+        bases,
         _funding: budget.finish()?,
     })
 }

@@ -49,6 +49,7 @@ fn capture_inner(
         &dictionary,
         &lineage,
         &indexes,
+        &super::super::metadata::retained_selection(&roots, &frozen.current.branches),
         None,
         request,
     )?;

@@ -28,6 +28,8 @@ pub enum WorthQueryHomeRetirementOwner {
 
 #[derive(Debug)]
 pub enum WorthQueryHomeRetirementDenial {
+    CorrectionRetention(super::super::WorthQueryCorrectionRetentionDenial),
+    CorrectionMaterial(crate::facade::correction_material::QueryCorrectionMaterialDenial),
     Busy(WorthQueryHomeRetirementOwner),
     Unsupported(WorthQueryHomeRetirementOwner),
     Handler {

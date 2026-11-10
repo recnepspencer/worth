@@ -49,6 +49,9 @@ use worth_store::physical_runtime::{
 #[derive(Debug)]
 pub enum ApplicationHomeOwnerAdmissionDenial {
     QueryObligations(worth_query_execution::facade::program_support::QueryProgramSupportDenial),
+    QueryCorrections(
+        worth_query_execution::facade::correction_material::QueryCorrectionMaterialDenial,
+    ),
     Execution(worth_execution::WorkCeilingDenial),
     NativeRecoveryRequired,
     NativeCodecTransitionPending,
@@ -112,6 +115,12 @@ pub(crate) fn require_no_pending_home_journals(
                     .query_obligations
                     .require_admitted(request)
                     .map_err(ApplicationHomeOwnerAdmissionDenial::QueryObligations)?;
+            }
+            HomeJournalAdmission::QueryCorrections => {
+                context
+                    .query_corrections
+                    .require_admitted(request)
+                    .map_err(ApplicationHomeOwnerAdmissionDenial::QueryCorrections)?;
             }
             HomeJournalAdmission::RequireAbsent => {
                 require_empty_journal(context, journal.name, request)?;

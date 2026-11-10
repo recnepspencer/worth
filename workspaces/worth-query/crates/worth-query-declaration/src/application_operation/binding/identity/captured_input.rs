@@ -70,6 +70,12 @@ impl EncodedInputIdentity {
 }
 
 impl ApplicationCanonicalInput {
+    /// The exact domain/type-framed stream from the original identity pass.
+    /// These bytes are value data and convey no admission or disclosure grant.
+    pub fn recorded_bytes(&self) -> &[u8] {
+        &self.bytes
+    }
+
     pub fn encoded_byte_length(&self) -> usize {
         self.bytes.len() - self.value_offset
     }

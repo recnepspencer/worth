@@ -46,6 +46,7 @@ pub enum BankCommitDenialKind {
     MutationBindingMismatch,
     MutationInputMismatch,
     CorrectionContextMismatch,
+    StaleIncarnation,
     CorrectionIdentityMismatch,
     OperationBodyExecutionRequired,
     UnobservedWrite,
@@ -154,6 +155,7 @@ pub(crate) const fn denial_kind(
         Query::IdempotencyIntentUnverifiable => BankCommitDenialKind::IdempotencyIntentUnverifiable,
         Query::MutationBindingMismatch => BankCommitDenialKind::MutationBindingMismatch,
         Query::MutationInputMismatch => BankCommitDenialKind::MutationInputMismatch,
+        Query::StaleIncarnation => BankCommitDenialKind::StaleIncarnation,
         Query::CorrectionContextMismatch => BankCommitDenialKind::CorrectionContextMismatch,
         Query::CorrectionIdentityMismatch => BankCommitDenialKind::CorrectionIdentityMismatch,
         Query::OperationBodyExecutionRequired => {

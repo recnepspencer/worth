@@ -213,8 +213,25 @@ impl QueryProgramSupportLedger {
                     ProgramSupportObligationKind::BranchAdoption => {}
                 }
                 for revision in [&row.source, &row.target] {
-                    if self.status(revision) != Some(ProgramSupportStatus::Active) {
-                        return Err(Denial::SupportUnavailable);
+                    match (row.kind, self.status(revision)) {
+                        (
+                            ProgramSupportObligationKind::OriginalInterpretation
+                            | ProgramSupportObligationKind::BranchAdoption,
+                            Some(ProgramSupportStatus::Active),
+                        )
+                        | (
+                            ProgramSupportObligationKind::OriginalInterpretation,
+                            Some(ProgramSupportStatus::Retiring),
+                        ) => {}
+                        (
+                            ProgramSupportObligationKind::BranchAdoption,
+                            Some(ProgramSupportStatus::Retiring),
+                        )
+                        | (
+                            ProgramSupportObligationKind::OriginalInterpretation
+                            | ProgramSupportObligationKind::BranchAdoption,
+                            Some(ProgramSupportStatus::Retired) | None,
+                        ) => return Err(Denial::SupportUnavailable),
                     }
                 }
             }

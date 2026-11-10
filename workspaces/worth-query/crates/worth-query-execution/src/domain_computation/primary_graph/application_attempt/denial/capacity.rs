@@ -25,6 +25,9 @@ impl ChargedBytes for AttemptDenialCause {
                     crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop::ManagedIndex(cause) => cause.additional_charged_bytes(),
                     _ => 0,
                 }),
+            AttemptDenialCause::RetainedInput(cause) =>
+                (std::mem::size_of_val(cause.as_ref()) as u64)
+                    .saturating_add(cause.retained_heap_bytes() as u64),
             AttemptDenialCause::None => 0,
             // Native query stops contain only inline reports, identities and enums.
             AttemptDenialCause::NativeQueryRead(_) => std::mem::size_of::<
