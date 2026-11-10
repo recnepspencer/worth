@@ -50,6 +50,10 @@ pub(crate) struct PendingSymbolMeanings {
     binding: RuntimeSymbolTable,
     interner: StringInterner,
     admitted: BTreeMap<Symbol, StoredSymbolText>,
+    /// The base dictionary's text-to-symbol map with every admitted meaning.
+    /// It changes only where `admitted` does, so `binding` is O(1) per call
+    /// instead of re-inserting each admitted meaning.
+    configuration: im::OrdMap<StoredSymbolText, Symbol>,
     reserved: BTreeMap<Symbol, Arc<ReservedSymbolMeaning>>,
     required: BTreeSet<Symbol>,
 }
@@ -112,6 +116,7 @@ impl RuntimeSymbolTable {
         PendingSymbolMeanings {
             owner: self.clone(),
             interner: binding.interner_snapshot(),
+            configuration: binding.read_state(|state| state.configuration.clone()),
             binding,
             admitted: BTreeMap::new(),
             reserved: BTreeMap::new(),
@@ -181,6 +186,7 @@ impl PendingSymbolMeanings {
                 })
                 .map_err(|_| SymbolReservationDenial::InvalidDictionary)?;
             self.admitted.insert(*symbol, text.clone());
+            self.configuration.insert(text.clone(), *symbol);
         }
         self.reserved.extend(
             prior
@@ -193,11 +199,9 @@ impl PendingSymbolMeanings {
 
     pub(crate) fn binding(&self) -> RuntimeSymbolTable {
         let binding = self.binding.detached_owner_snapshot();
-        binding.with_write(|symbols| *symbols = self.interner.clone());
         binding.update(|state| {
-            for (symbol, text) in &self.admitted {
-                state.configuration.insert(text.clone(), *symbol);
-            }
+            state.interner = self.interner.clone();
+            state.configuration = self.configuration.clone();
         });
         binding
     }
@@ -267,6 +271,7 @@ impl PendingSymbolMeanings {
         if let Some(reservation) = reservation {
             self.reserved.insert(symbol, reservation);
         }
+        self.configuration.insert(text.clone(), symbol);
         self.admitted.insert(symbol, text);
         Ok(symbol)
     }
