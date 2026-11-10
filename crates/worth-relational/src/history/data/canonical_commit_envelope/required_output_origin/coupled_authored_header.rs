@@ -12,6 +12,12 @@ impl CanonicalCommitEnvelope {
     ) -> Result<(), Stop> {
         let charge = super::super::super::codec_retirement_closure::charge;
         charge(context, event.participants.len() + 1)?;
+        // An envelope records its prefix and at least one later stage; fewer
+        // is an Edit, so a shorter list is a corrupt header, refused first.
+        if matches!(&event.sources, CanonicalCoupledAuthoredSources::Stages(sources) if sources.len() < 2)
+        {
+            return Err("coupled authored stage list is shorter than two".into());
+        }
         if self.required_output_origin.is_some()
             || self.authored_cascade_retirement.is_some()
             || self.authored_cascade_restoration.is_some()
@@ -22,11 +28,6 @@ impl CanonicalCommitEnvelope {
         }
         match &event.sources {
             CanonicalCoupledAuthoredSources::Edit(_) => {}
-            // An envelope records its prefix and at least one later stage;
-            // fewer is an Edit, so a shorter list is a corrupt header.
-            CanonicalCoupledAuthoredSources::Stages(sources) if sources.len() < 2 => {
-                return Err("coupled authored stage list is shorter than two".into());
-            }
             CanonicalCoupledAuthoredSources::Stages(_) => {}
             CanonicalCoupledAuthoredSources::Retirement(source) => {
                 self.validate_authored_retirement_components(source, true, context)?;
@@ -101,3 +102,6 @@ impl CanonicalCommitEnvelope {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests;

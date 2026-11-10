@@ -189,9 +189,8 @@ L1 as a single landing would combine a stored-format addition with a new generic
     - a stage after a producer: refused `UnadmittedAuthoredStage` until L2's qualification;
     - a later stage writing a record an earlier stage wrote: one Native commit carries one intent per record, so it is refused `ConflictingIntent`, and stages write disjoint records;
     - unscoped local client keys: Native scopes each applied part's local keys, so L1b resolves a stage's created references through the stage's applied outcome;
-    - a courted short-list header check (public #140).
 - **Not in parallel with:** as L1.
-- **Closes when:** the Native stage courts and the Phase 1 regression courts are green, mutants M-a1..M-a6 are killed (`l1a-mutants*.log`), and the review is certified.
+- **Closes when:** the Native stage courts and the Phase 1 regression courts are green, mutants M-a1..M-a7 are killed (`l1a-mutants*.log`), and the review is certified.
 
 ### L1b header
 

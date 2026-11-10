@@ -14,7 +14,7 @@ This ledger lists existing court assertions CP3 changed and any typed-error or s
 
 - The one addition is `CanonicalCoupledAuthoredSources::Stages(Vec<EntityId>)`, appended last in the enum. No existing variant, field or tag changes, so existing stores decode unchanged.
 - The Native cold court reopens a `Stages` record (`coupled_producers/stages.rs`).
-- The header refuses a recorded list shorter than two. No court reaches that check under corruption yet (public #140). The mutant that accepts a short list survives, as scoped.
+- The header refuses a recorded list shorter than two, before any other reading. The in-crate court `coupled_authored_header/tests.rs` feeds a genuine recorded envelope an empty list and a prefix-only list (D1594; closes public #140).
 
 ### Producer-path numbering
 
