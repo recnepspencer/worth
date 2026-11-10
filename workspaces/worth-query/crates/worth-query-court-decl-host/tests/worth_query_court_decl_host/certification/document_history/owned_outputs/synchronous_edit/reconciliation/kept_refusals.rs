@@ -14,15 +14,16 @@ use worth_query_host::facade::admission::authenticated_principal::{
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 use worth_relational::facade::inspection::observe_maintenance_work;
 
-type Host = WorthQueryProgramApplicationRuntime<Schema, program::Synchronous>;
+pub(super) type Host = WorthQueryProgramApplicationRuntime<Schema, program::Synchronous>;
 
 /// Consults counted back from the end of the shrink's unstopped run. A stop
 /// there lands inside the rebase after the commit: the measured window runs
-/// from about 516 to about 220 back (`d1506-undecidable-window.log`), and the
-/// count moves by about 20 between runs.
+/// from about 516 to about 220 back hot (`d1506-undecidable-window.log`) and
+/// about 468 to 216 back on the worker path (`d1506-kept-refusals.log`, WSCAN
+/// lines), and the count moves by about 20 between runs.
 const INSIDE_THE_REBASE: usize = 370;
 
-fn settled_host(worker: bool) -> Host {
+pub(super) fn settled_host(worker: bool) -> Host {
     let limits = if worker {
         world::worker_limits()
     } else {
@@ -38,7 +39,7 @@ fn settled_host(worker: bool) -> Host {
 
 /// Run `body` under a request that stops at consult `stop_at`; also return
 /// the consults it made.
-fn stoppable<R>(
+pub(super) fn stoppable<R>(
     host: &Host,
     stop_at: Option<usize>,
     body: impl FnOnce(&family::Request<'_, '_, '_>) -> R,
@@ -62,7 +63,7 @@ fn stoppable<R>(
 }
 
 /// The edit to `value`: whether it performed, its consults, and its commits.
-fn edit(host: &Host, value: u64, stop_at: Option<usize>) -> (bool, usize, usize) {
+pub(super) fn edit(host: &Host, value: u64, stop_at: Option<usize>) -> (bool, usize, usize) {
     let ((performed, consults), work) = observe_maintenance_work(64, || {
         stoppable(host, stop_at, |request| {
             matches!(
@@ -91,7 +92,10 @@ fn edit(host: &Host, value: u64, stop_at: Option<usize>) -> (bool, usize, usize)
 
 /// A fresh demand settled or refused (rendered), with its producer contacts
 /// and commits.
-fn demand(host: &Host, request: &family::Request<'_, '_, '_>) -> (Result<(), String>, u64, usize) {
+pub(super) fn demand(
+    host: &Host,
+    request: &family::Request<'_, '_, '_>,
+) -> (Result<(), String>, u64, usize) {
     let contacts = host.producer_contacts_on_this_thread_for_test();
     let (outcome, work) = observe_maintenance_work(64, || {
         let mut outputs = request
@@ -159,22 +163,26 @@ fn edit_bases(host: &Host, edit: impl FnOnce()) -> Vec<(bool, bool)> {
         .collect()
 }
 
-/// Hot only: on the worker path the same stop lands after the commit but the
-/// edit reports a refusal before any effect, so no worker edit performs here.
-/// That is public #132; its fix adds the worker variant.
-fn undecided_rebase() {
+/// On both paths the stop lands after the World commit, so the edit reports
+/// `Performed` (public #132: the worker path reported a refusal before any
+/// effect).
+fn undecided_rebase(worker: bool) {
     let _execution = WorthQueryExecutionObservation::install_on_this_thread();
-    let (performed, total, commits) = edit(&settled_host(false), 2, None);
+    let (performed, total, commits) = edit(&settled_host(worker), 2, None);
     assert!(
         performed && commits == 1,
         "the unstopped shrink is one commit"
     );
-    let host = settled_host(false);
+    let host = settled_host(worker);
     let mut stopped = (false, 0, 0);
     let bases = edit_bases(&host, || {
         stopped = edit(&host, 2, Some(total - INSIDE_THE_REBASE))
     });
-    let (performed, _, commits) = stopped;
+    let (performed, consults, commits) = stopped;
+    assert!(
+        consults >= total - INSIDE_THE_REBASE,
+        "the stop fired: {consults} consults"
+    );
     assert!(
         performed,
         "the stop lands after the World commit, which it cannot undo"
@@ -232,7 +240,11 @@ fn stopped_demand(worker: bool) {
 
 #[test]
 fn a_shrink_stopped_inside_its_rebase_still_refuses_its_undecidable_record() {
-    undecided_rebase();
+    undecided_rebase(false);
+}
+#[test]
+fn worker_only_shrink_stopped_inside_its_rebase_still_refuses_its_undecidable_record() {
+    undecided_rebase(true);
 }
 #[test]
 fn a_demand_stopped_by_its_request_still_refuses_before_any_contact() {

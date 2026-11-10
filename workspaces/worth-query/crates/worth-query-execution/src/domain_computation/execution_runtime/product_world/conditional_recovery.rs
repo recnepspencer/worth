@@ -7,8 +7,8 @@ use worth_runtime_bridge::facade::{
 use worth_runtime_world::facade::{
     NoEffectCompositePublication, PerformedCompositePublication, PlannedProductReferenceSuccessor,
     PreparedConditionalDefinitionRecovery, ProductUnpublishedRecoveryHandle,
-    RuntimeWorldConditionalDefinitionPublicationOutcome, RuntimeWorldPublicationPort,
-    RuntimeWorldSettledRelationalAdoptionDenial, RuntimeWorldUnpublishedConditionalDefinition,
+    RuntimeWorldPublicationPort, RuntimeWorldSettledRelationalAdoptionDenial,
+    RuntimeWorldUnpublishedConditionalDefinition,
 };
 
 use super::publication_denial::{
@@ -47,25 +47,15 @@ impl WorthQueryPreparedConditionalRecovery {
         >,
         Denial<NoEffectCompositePublication>,
     > {
-        match self
-            .publication
-            .execute_bridge_conditional_definition_adoption(
-                execution,
-                self.prepared,
-                bridge,
-                self.control.cancellation(),
-            ) {
-            RuntimeWorldConditionalDefinitionPublicationOutcome::Performed {
-                publication,
-                lowering,
-            } => Ok(Outcome::Performed((publication, lowering))),
-            RuntimeWorldConditionalDefinitionPublicationOutcome::ProductUnpublished(effects) => {
-                Ok(Outcome::ProductUnpublished(effects))
-            }
-            RuntimeWorldConditionalDefinitionPublicationOutcome::NoEffect(no_effect) => {
-                Err(Denial::publication(no_effect))
-            }
-        }
+        super::request_control::conditional_outcome(
+            self.publication
+                .execute_bridge_conditional_definition_adoption(
+                    execution,
+                    self.prepared,
+                    bridge,
+                    self.control.cancellation(),
+                ),
+        )
     }
 }
 

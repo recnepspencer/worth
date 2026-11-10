@@ -54,6 +54,7 @@ impl WorthQueryProductRuntime {
             )
             .map_err(WorthQueryProductBranchCreationDenial::World)?;
         if let RuntimeWorldBranchCreationOutcome::Performed(observation) = &outcome {
+            super::published_effect::record();
             reservation.commit(observation);
         }
         Ok(outcome)

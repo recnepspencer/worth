@@ -85,8 +85,12 @@ fn relational_outcome(
     outcome: RuntimeWorldPublicationOutcome,
 ) -> Result<Outcome, Denial<NoEffectCompositePublication>> {
     match outcome {
-        RuntimeWorldPublicationOutcome::Performed(performed) => Ok(Outcome::Performed(performed)),
+        RuntimeWorldPublicationOutcome::Performed(performed) => {
+            super::published_effect::record();
+            Ok(Outcome::Performed(performed))
+        }
         RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => {
+            super::published_effect::record();
             Ok(Outcome::ProductUnpublished(effects))
         }
         RuntimeWorldPublicationOutcome::NoEffect(no_effect) => Err(Denial::publication(no_effect)),
@@ -282,8 +286,14 @@ pub(super) fn conditional_outcome(
     Denial<NoEffectCompositePublication>,
 > {
     match outcome {
-        worth_runtime_world::facade::RuntimeWorldConditionalDefinitionPublicationOutcome::Performed { publication, lowering } => Ok(Outcome::Performed((publication, lowering))),
-        worth_runtime_world::facade::RuntimeWorldConditionalDefinitionPublicationOutcome::ProductUnpublished(effects) => Ok(Outcome::ProductUnpublished(effects)),
+        worth_runtime_world::facade::RuntimeWorldConditionalDefinitionPublicationOutcome::Performed { publication, lowering } => {
+            super::published_effect::record();
+            Ok(Outcome::Performed((publication, lowering)))
+        }
+        worth_runtime_world::facade::RuntimeWorldConditionalDefinitionPublicationOutcome::ProductUnpublished(effects) => {
+            super::published_effect::record();
+            Ok(Outcome::ProductUnpublished(effects))
+        }
         worth_runtime_world::facade::RuntimeWorldConditionalDefinitionPublicationOutcome::NoEffect(no_effect) => Err(Denial::publication(no_effect)),
     }
 }

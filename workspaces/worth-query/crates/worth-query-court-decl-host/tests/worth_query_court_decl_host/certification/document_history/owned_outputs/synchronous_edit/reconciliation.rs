@@ -177,4 +177,5 @@ mod changed_source;
 mod unkeyed;
 
 mod kept_refusals;
+mod late_stop;
 mod original_root;

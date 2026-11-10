@@ -11,6 +11,7 @@ mod installation_denial;
 mod owned_async;
 pub(crate) mod owner_cleanup;
 pub(crate) mod publication_binding;
+pub(crate) mod published_effect;
 mod receipt;
 pub(crate) mod relational_publication;
 pub(crate) mod request_control;

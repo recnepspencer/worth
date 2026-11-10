@@ -87,6 +87,24 @@ pub(super) fn record_workers(workers: usize) {
 pub(super) fn record_report(report: ExecutionReport) {
     finish(report, None);
 }
+/// A published body kept its result past a late native stop (public #132).
+/// Execution returns no report with its refusal, so the native report is empty.
+pub(super) fn record_kept_after_publication() {
+    if !observing() {
+        return;
+    }
+    let posture = ACTIVE.with(|active| {
+        active
+            .borrow()
+            .as_ref()
+            .map(|active| active.posture)
+            .expect("the kept advancement is active")
+    });
+    finish(
+        ExecutionReport::native(posture, ExecutionPhysicalReport::default()),
+        None,
+    );
+}
 fn finish(report: ExecutionReport, refusal: Option<WorthQueryAdvancementDenial>) {
     if !observing() {
         return;

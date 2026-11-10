@@ -1,5 +1,6 @@
 //! Sealed static compute transport; owner completion is a separate value.
 use super::WorthQueryMemberExecution;
+use crate::domain_computation::execution_runtime::product_world::published_effect::PublishedEffect;
 use std::any::Any;
 
 pub struct PreparedCompute {
@@ -10,7 +11,12 @@ impl PreparedCompute {
     pub(in crate::domain_computation::primary_graph) fn new<T: Any + Send>(
         run: impl for<'a> FnOnce(WorthQueryMemberExecution<'a>) -> T + Send + 'static,
     ) -> Self {
+        // A member may run on a descendant worker and commit there. It carries
+        // its advancement's published-effect marker (public #132), so World's
+        // outcome reaches the runner from that thread too.
+        let published = PublishedEffect::current();
         let callback = move |member: WorthQueryMemberExecution<'_>| {
+            let _published = PublishedEffect::install(published);
             let value = run(member);
             ComputedSlot {
                 value: Box::new(value),
