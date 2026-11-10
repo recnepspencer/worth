@@ -49,6 +49,8 @@ impl ApplicationOperationBodyPathValueAssignment {
 }
 impl ApplicationOperationBodyProgram {
     pub(super) fn has_duplicate_path_destinations(&self) -> bool {
+        // Guard text Ord/Hash read immutable bytes, never StoredValueText's mutable codec seal.
+        #[expect(clippy::mutable_key_type)]
         let mut writes = std::collections::BTreeSet::new();
         self.path_value_assignments().iter().any(|step| {
             !writes.insert((&step.target.path, &step.target.field))

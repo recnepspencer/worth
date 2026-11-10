@@ -41,10 +41,9 @@ pub use publication::{
     StaleRelationalBranchObservation,
 };
 pub(crate) use publication::{
-    ManagedSourceHistoryOwner, ManagedSourceRootImage, PreparedIndexRefreshBasis,
-    PreparedManagedIndexSourceFork, PreparedRelationalCandidateAdmissionStop,
-    PreparedRelationalPublication, PreparedRelationalPublicationAccelerators,
-    PublicationPreparationDenial,
+    ManagedSourceHistoryOwner, ManagedSourceRootImage, PreparedManagedIndexSourceFork,
+    PreparedRelationalCandidateAdmissionStop, PreparedRelationalPublication,
+    PreparedRelationalPublicationAccelerators, PublicationPreparationDenial,
 };
 pub use publication::{
     RelationalAuthoredCoupledCandidate, RelationalAuthoredCoupledOwners,

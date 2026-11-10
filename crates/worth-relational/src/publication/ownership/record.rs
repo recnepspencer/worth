@@ -84,9 +84,7 @@ pub(crate) fn fields<'a>(
     let AspectValue::String(payload) = fields.get(&FieldKey::new("payload")?)? else {
         return None;
     };
-    let Some(payload) = (payload).raw_text() else {
-        return None;
-    };
+    let payload = payload.raw_text()?;
     Some((CommitId(*publication), payload.as_bytes()))
 }
 

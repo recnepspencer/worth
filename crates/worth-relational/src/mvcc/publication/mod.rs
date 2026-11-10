@@ -28,8 +28,7 @@ mod port;
 mod validation;
 
 pub(crate) use authority::{
-    PreparedIndexRefreshBasis, PreparedRelationalPublication,
-    PreparedRelationalPublicationAccelerators,
+    PreparedRelationalPublication, PreparedRelationalPublicationAccelerators,
 };
 pub(crate) use candidate::{CandidatePayload, PreparedRelationalCandidateAdmissionStop};
 pub use candidate::{DiscardedRelationalCommitCandidate, PreparedRelationalCommitCandidate};

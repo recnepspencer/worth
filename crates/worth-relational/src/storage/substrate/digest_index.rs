@@ -49,7 +49,7 @@ impl DigestIndex {
     /// Cold reconstruction of the same key-shaped Patricia commitment without
     /// copying an immutable path for every successive insertion.
     pub(crate) fn from_sorted_entries(
-        lane: &super::maintenance::ReconstructionLane<'_>,
+        _lane: &super::maintenance::ReconstructionLane<'_>,
         entries: &[(u128, [u8; 32])],
     ) -> Self {
         debug_assert!(
@@ -57,7 +57,7 @@ impl DigestIndex {
             entries.windows(2).all(|pair| pair[0].0 < pair[1].0)
         );
         Self {
-            root: (!entries.is_empty()).then(|| build_sorted(lane, entries)),
+            root: (!entries.is_empty()).then(|| build_sorted(entries)),
             history_last_value: None,
         }
     }
@@ -171,10 +171,7 @@ impl DigestIndex {
     }
 }
 
-fn build_sorted(
-    lane: &super::maintenance::ReconstructionLane<'_>,
-    entries: &[(u128, [u8; 32])],
-) -> Arc<Node> {
+fn build_sorted(entries: &[(u128, [u8; 32])]) -> Arc<Node> {
     if let [(key, digest)] = entries {
         return Arc::new(Node {
             key: *key,
@@ -189,8 +186,8 @@ fn build_sorted(
     let node = Node::branch(
         bit,
         [
-            build_sorted(lane, &entries[..split]),
-            build_sorted(lane, &entries[split..]),
+            build_sorted(&entries[..split]),
+            build_sorted(&entries[split..]),
         ],
     );
     // Cold construction pays its whole tree here, under the admitted lane.

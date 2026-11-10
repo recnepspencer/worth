@@ -17,7 +17,6 @@ use super::super::recovered_schema_basis::RecoveredSchemaBasis;
 use super::owner_bindings::{owner_merge_parent_bases, owner_options_for_branch};
 
 pub(super) fn replay_envelope_effect(
-    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
     positioned: &crate::history::data::PositionedCanonicalCommit,
@@ -38,7 +37,7 @@ pub(super) fn replay_envelope_effect(
             require_merge_execution_authority(envelope)?;
         }
         recovered_branch_basis(restored, &envelope.branch_context)?;
-        apply_authoritative_commit_artifacts(lane, execution, restored, positioned, false, false)?;
+        apply_authoritative_commit_artifacts(execution, restored, positioned, false, false)?;
         let branch_basis = recovered_branch_basis(restored, &envelope.branch_context)?;
         let published_partition_delta = restored.storage_authority().affirm_no_partition_changes();
         let mut admitted_envelope = positioned.envelope().clone();
@@ -94,7 +93,6 @@ pub(super) fn replay_envelope_effect(
 }
 
 pub(super) fn restore_authoritative_artifacts_when_required(
-    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
     positioned: &crate::history::data::PositionedCanonicalCommit,
@@ -105,7 +103,6 @@ pub(super) fn restore_authoritative_artifacts_when_required(
     if restore_authoritative_envelope {
         validate_recovered_history_parity(restored, envelope)?;
         apply_authoritative_commit_artifacts(
-            lane,
             execution,
             restored,
             positioned,

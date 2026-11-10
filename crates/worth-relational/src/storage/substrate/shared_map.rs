@@ -50,7 +50,6 @@ impl<K: Ord + Copy, V: Clone> SharedMap<K, V> {
             .as_ref()
             .map_or(1, |root| root.height.saturating_add(1))
     }
-    #[cfg(test)]
     pub(crate) fn is_empty(&self) -> bool {
         self.root.is_none()
     }

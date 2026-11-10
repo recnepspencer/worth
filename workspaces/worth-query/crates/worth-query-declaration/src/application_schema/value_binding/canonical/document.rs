@@ -1,9 +1,7 @@
 //! Entry adapters delegate sealed document construction to the pure envelope owner.
 use super::{super::*, *};
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
-use worth_foundational::facade::{
-    AspectValue, CanonicalDocumentCodec, InternedString, ScalarAspectType,
-};
+use worth_foundational::facade::{AspectValue, CanonicalDocumentCodec, ScalarAspectType};
 
 pub fn encode_application_document<Codec: CanonicalDocumentCodec>(
     value: &Codec::Document,

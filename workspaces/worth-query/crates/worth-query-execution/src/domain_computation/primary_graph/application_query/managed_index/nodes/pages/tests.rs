@@ -197,7 +197,7 @@ fn empty_inserted_page_is_pruned(
     let mut edited = PageEdit::new(original.clone(), *execution);
     edited.replace(ordinal, Some(1), control)?;
     edited.replace(ordinal, None, control)?;
-    assert_eq!(edited.get(ordinal, control)?.copied(), None);
+    assert_eq!(edited.get(ordinal, control)?.map(|node| *node), None);
     let edited = edited.seal(control)?;
     assert_eq!(edited.get(ordinal, control)?.copied(), None);
     assert!(
