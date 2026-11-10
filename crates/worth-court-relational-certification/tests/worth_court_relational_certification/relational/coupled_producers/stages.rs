@@ -155,6 +155,14 @@ fn an_authored_stage_reads_the_candidate_and_commits_with_the_prefix_once() {
         assert!(proposal
             .authored_stage_mutation_touches(execution, 1)
             .is_none());
+        // Its projection examines only its own commands, not the whole proposal.
+        let whole = proposal.mutation_touches(execution).unwrap();
+        assert!(
+            stage.work().validated_intents_examined() < whole.work().validated_intents_examined(),
+            "{:?} vs {:?}",
+            stage.work(),
+            whole.work()
+        );
         let result = world.publish(execution, proposal);
         // With an owned participant the canonical event records the prefix's
         // and the stage's sources in order; with none, no coupled event exists.
