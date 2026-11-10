@@ -85,13 +85,4 @@ impl ReadmittedCanonicalCommit {
     pub(crate) fn into_positioned(self) -> PositionedCanonicalCommit {
         self.positioned
     }
-
-    #[cfg(test)]
-    pub(crate) fn envelope_mut_for_test(
-        &mut self,
-        request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> &mut crate::history::data::CanonicalCommitEnvelopeBody {
-        self.journal = None;
-        self.positioned.envelope_mut_for_test(request)
-    }
 }

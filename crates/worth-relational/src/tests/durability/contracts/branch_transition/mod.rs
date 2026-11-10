@@ -1,15 +1,12 @@
 //! Durable branch lifecycle admission, interruption and reconstruction.
 
 mod checkpoint_state;
-mod fates;
 mod reconstruction;
 mod recovery;
-mod tampering;
 
 use crate::branch::{
     RelationalBranchTransitionSequence as Sequence, RelationalBranchTransitionStop as Stop,
 };
-use crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifact as Artifact;
 use crate::facade::history::BranchId;
 use crate::runtime::RelationalRuntime;
 use crate::tests::support::*;

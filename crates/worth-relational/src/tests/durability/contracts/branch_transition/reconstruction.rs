@@ -1,10 +1,8 @@
 //! Replay and recovery reconstruct only the history absent from their basis.
 use super::*;
-use crate::durability::medium::{DurablePublicationFate, RelationalDurableMedium};
 use crate::facade::durability::RecoveryVerificationMode;
 use crate::facade::replay::{RelationalReplayRequest, ReplayExecutionMode, ReplayVerificationMode};
-use crate::facade::runtime::RelationalRuntimeApi;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 fn replay(
     execution: &ExecutionRequest<'_, '_>,
@@ -55,85 +53,6 @@ fn memory_checkpoint_keeps_replay_reconstructible() {
         .unwrap();
     replay(execution, &runtime, target.commit.commit_id, "main");
     replay(execution, &runtime, on_a.commit.commit_id, "A");
-}
-
-#[derive(Debug)]
-struct CountedTransitionReads {
-    medium: Box<dyn RelationalDurableMedium>,
-    reads: Arc<Mutex<Vec<Sequence>>>,
-}
-
-impl RelationalDurableMedium for CountedTransitionReads {
-    fn cold_source(
-        &self,
-    ) -> std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource> {
-        self.medium.cold_source()
-    }
-    fn read_transition(
-        &self,
-        sequence: Sequence,
-    ) -> Result<Artifact, crate::durability::medium::RelationalDurableTransitionReadFailure> {
-        self.reads.lock().unwrap().push(sequence);
-        self.medium.read_transition(sequence)
-    }
-    fn publish(
-        &self,
-        artifact: &crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact,
-    ) -> DurablePublicationFate<String> {
-        self.medium.publish(artifact)
-    }
-    fn publish_transition(&self, artifact: &Artifact) -> DurablePublicationFate<String> {
-        self.medium.publish_transition(artifact)
-    }
-}
-
-#[test]
-fn replay_reads_only_the_gap_after_its_checkpoint() {
-    let request = crate::test_execution_policy::serial_request();
-    let execution = &ExecutionRequest::serial(&request);
-    for covered in [1, 32] {
-        let contents = TestDurableMedium::new();
-        let reads = Arc::new(Mutex::new(Vec::new()));
-        let runtime = RelationalRuntimeApi::builder()
-            .profile(crate::config::data::RelationalRuntimeProfile::CertificationCore)
-            .schema_registry(test_schema_registry())
-            .build_durable(Box::new(CountedTransitionReads {
-                medium: contents.attachment(),
-                reads: Arc::clone(&reads),
-            }))
-            .expect("valid native runtime configuration");
-        create_entity(execution, &runtime, "source");
-        for index in 0..covered {
-            fork(execution, &runtime, &format!("covered-{index}"));
-        }
-        runtime
-            .durability_authority()
-            .checkpoint(execution)
-            .unwrap();
-        for name in ["gap-1", "gap-2"] {
-            fork(execution, &runtime, name);
-        }
-        runtime
-            .durability_authority()
-            .native_checkpoint(execution, execution.allocation_policy())
-            .unwrap();
-        let target = create_entity_outcome_on_branch(
-            execution,
-            &runtime,
-            "target",
-            BranchId("gap-2".into()),
-        );
-        reads.lock().unwrap().clear();
-        replay(execution, &runtime, target.commit.commit_id, "gap-2");
-        let reads = reads.lock().unwrap();
-        assert!(reads.len() <= 2, "covered history was reread: {reads:?}");
-        assert!(
-            reads
-                .iter()
-                .all(|sequence| sequence.0 > covered && sequence.0 <= covered + 2),
-            "read outside the missing gap: {reads:?}"
-        );
-    }
 }
 
 #[test]

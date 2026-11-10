@@ -28,13 +28,4 @@ impl IndexAccess<'_> {
     pub fn definition_lookup_snapshot(&self) -> DerivedIndexDefinitionLookup {
         DerivedIndexDefinitionLookup::new(self.runtime.indexes.definitions())
     }
-    #[cfg(test)]
-    pub(crate) fn definitions_snapshot(&self) -> Vec<DerivedIndexDefinition> {
-        self.runtime
-            .indexes
-            .definitions()
-            .into_iter()
-            .map(|definition| definition.as_ref().clone())
-            .collect()
-    }
 }

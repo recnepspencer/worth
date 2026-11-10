@@ -92,11 +92,6 @@ impl HistorySubsystem {
         self.retention_owner.has_detached_obligations()
     }
 
-    #[cfg(test)]
-    pub(crate) fn retired_branch_binding_count(&self) -> usize {
-        self.retention_owner.retired_branch_binding_count()
-    }
-
     pub(crate) fn retained_index_roots(&self) -> crate::history::retention::RetainedIndexRoots {
         let mut roots = self.retention_owner.retained_index_roots();
         for cell in self.branch_cells.values() {

@@ -21,6 +21,107 @@ each invariant is enforced and where each new type lives.
 
 ### C4 - Injected faults
 
+- `checkpoint_recovery_rejects_foreign_branch_target_substitution`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_checkpoint/foreign_targets.rs`.
+- `tail_recovery_rejects_foreign_branch_target_substitution`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_checkpoint/foreign_targets.rs`.
+- `checkpoint_recovery_rejects_missing_exact_branch_root_artifact`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_checkpoint.rs`.
+- `checkpoint_recovery_rejects_root_artifact_without_commit_envelope`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_checkpoint.rs`.
+- `checkpoint_recovery_rejects_duplicate_commit_envelopes_before_root_readmission`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_checkpoint.rs`.
+- `checkpoint_recovery_rejects_duplicate_global_partition_images`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_checkpoint.rs`.
+- `checkpoint_recovery_rejects_duplicate_branch_root_partition_images`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_checkpoint.rs`.
+- `checkpoint_rejects_previous_branch_root_format_before_readmission`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_content_binding.rs`.
+- `checkpoint_rejects_altered_root_content_with_recomputed_image_digest`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_content_binding.rs`.
+- `checkpoint_rejects_omitted_root_partition_with_recomputed_image_digest`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_content_binding.rs`.
+- `checkpoint_rejects_same_commit_truth_root_relabeling`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_content_binding.rs`.
+- `checkpoint_rejects_same_commit_schema_root_relabeling`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_content_binding.rs`.
+- `tail_rejects_same_commit_root_descriptor_substitution`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_content_binding.rs`.
+- `checkpoint_owner_root_is_stable_across_fingerprint_symbol_ids`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_content_binding.rs`.
+- `recovery_rejects_a_missing_branch_root_schema_carrier`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_schema_binding.rs`.
+- `recovery_rejects_a_tampered_branch_root_schema_carrier`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_schema_binding.rs`.
+- `recovery_rejects_a_schema_carrier_swapped_between_exact_roots`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_schema_binding.rs`.
+- `checkpoint_rejects_later_shared_root_cell_with_relabeled_schema_root`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_shared_target_binding.rs`.
+- `checkpoint_rejects_later_shared_root_cell_with_relabeled_truth_root`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_shared_target_binding.rs`.
+- `a_deleting_checkpoint_cell_requires_its_retired_name`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_transition/checkpoint_state.rs`.
+- `every_transition_fate_preserves_the_durable_before_live_boundary`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_transition/fates.rs`.
+- `an_unresolved_commit_also_blocks_branch_transitions_with_its_original_fate`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_transition/fates.rs`.
+- `a_damaged_transition_frame_is_refused_at_the_medium_read`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_transition/tampering.rs`.
+- `a_sequence_gap_and_invalid_follows_positions_are_refused`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_transition/tampering.rs`.
+- `a_commit_carrying_an_unknown_branch_cell_cannot_replace_its_missing_fork`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_transition/tampering.rs`.
+- `durability_contract_damaged_checkpoint_refuses_rather_than_shortening_history`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/checkpoint_recovery/checkpoint_fallback.rs`.
+- `durability_contract_recovery_fails_closed_without_exact_branch_cells`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/checkpoint_recovery.rs`.
+- `durability_contract_recovery_rejects_branch_cell_target_without_catalog_artifact`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/checkpoint_recovery.rs`.
+- `durability_contract_recovery_rejects_tail_checkpoint_drift_before_mutation`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/checkpoint_recovery.rs`.
+- `legacy_index_affinity_is_checked_before_replacing_a_live_recovery_target`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/derived_index_checkpoint/artifact_affinity.rs`.
+- `envelope_index_affinity_requires_admission_before_installation`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/derived_index_checkpoint/artifact_affinity.rs`.
+- `digest_valid_unissued_scoped_branch_denies_without_replacing_target_state`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/derived_index_checkpoint/scoped_affinity.rs`.
+- `checkpoint_index_artifact_missing_payload_denies_before_recovery`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/derived_index_checkpoint.rs`.
+- `checkpoint_recovery_denies_a_digest_valid_foreign_generation_affinity`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/derived_index_checkpoint.rs`.
+- `contradictory_descriptor_version_refuses_before_recovery_or_owner_effects`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/descriptor_continuity.rs`.
+- `durability_contract_failure_descriptor_canonical_basis_version_mismatch_is_explicit`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/descriptor_continuity.rs`.
+- `recovery_rejects_one_sided_fork_provenance_in_checkpoint`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/fork_provenance_checkpoint.rs`.
+- `recovery_rejects_mismatched_fork_provenance_identity_in_checkpoint`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/fork_provenance_checkpoint.rs`.
+- `recovery_rejects_one_sided_fork_provenance_in_tail`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/fork_provenance_checkpoint.rs`.
+- `tail_created_lineage_allocator_exhaustion_denies_before_replay`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/lineage_allocator_denials.rs`.
+- `live_lineage_allocator_exhaustion_denies_before_public_effects`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/lineage_allocator_denials.rs`.
+- `tail_created_lineage_regression_below_checkpoint_high_water_denies`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/lineage_artifact_recovery/lineage_regression.rs`.
+- `tail_lineage_event_regression_below_checkpoint_high_water_denies`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/lineage_artifact_recovery/lineage_regression.rs`.
+- `checkpoint_duplicate_lineage_event_ids_deny`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/lineage_artifact_recovery.rs`.
+- `tail_duplicate_lineage_event_ids_deny`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/lineage_artifact_recovery.rs`.
+- `checkpoint_and_tail_lineage_event_id_collision_denies`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/lineage_artifact_recovery.rs`.
+- `tail_lineage_commit_and_branch_cross_splices_deny`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/lineage_artifact_recovery.rs`.
+- `checkpoint_lineage_commit_cross_splice_denies`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/lineage_artifact_recovery.rs`.
+- `replay_and_durable_lineage_payload_conflict_denies`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/lineage_artifact_recovery.rs`.
+- `checkpoint_lineage_node_deletion_denies_before_installation`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/lineage_artifact_recovery.rs`.
+- `checkpoint_lineage_node_remap_denies_before_installation`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/lineage_artifact_recovery.rs`.
+- `checkpoint_lineage_node_swap_denies_before_installation`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/lineage_artifact_recovery.rs`.
+- `checkpoint_duplicate_lineage_entity_mapping_denies_before_installation`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/lineage_artifact_recovery.rs`.
+- `tail_lineage_event_allocator_exhaustion_denies_before_replay`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/lineage_event_allocator_recovery.rs`.
+- `unresolved_durable_publication_blocks_descendants_and_recovers_last_checkpoint`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/lineage_event_allocator_recovery.rs`.
+- `multi_event_reservation_exhaustion_denies_before_public_effects`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/lineage_event_allocator_recovery.rs`.
+- `native_field_text_missing_tail_dictionary_refuses_without_target_or_source_effect`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/managed_field_text/missing_dictionary.rs`.
+- `native_field_text_prior_checkpoint_format_refuses_before_managed_text`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/managed_field_text.rs`.
+- `durability_contract_rejects_parent_order_tampering_at_source_admission`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/merge_replay_continuity.rs`.
+- `durability_contract_does_not_reconstruct_missing_merge_authority_from_diagnostics`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/merge_replay_continuity.rs`.
+- `corrupt_native_checkpoint_is_denied_without_publishing_recovered_state`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/native_checkpoint.rs`.
+- `tail_replay_rejects_canonical_allocation_targeting_a_live_slot`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/record_allocation_recovery.rs`.
+- `tail_replay_rejects_missing_canonical_allocation_evidence`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/record_allocation_recovery.rs`.
+- `tail_replay_gap_admission_cannot_replace_a_different_canonical_effect`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/record_allocation_recovery.rs`.
+- `metadata_only_merge_rejects_unconsumable_allocation_evidence`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/record_allocation_recovery.rs`.
+- `recorded_component_checkpoint_refuses_chk15_before_source_admission`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/recorded_component_checkpoint.rs`.
+- `semantic_result_bulk_malformed_correspondence_refuses_after_frame_reseal`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/semantic_result/bulk.rs`.
+- `durability_contract_recovery_rejects_tail_target_without_immutable_artifact`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/tail_checkpoint_validation.rs`.
+- `a_refused_publication_was_offered_to_the_medium_and_moved_nothing_live`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/durable_before_live.rs`.
+- `a_refused_position_is_not_consumed`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/durable_before_live.rs`.
+- `fork_against_checkpoint_capture` (also holds a C2 cost/residency assertion): `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/lifecycle_lock_order.rs`.
+- `fork_against_runtime_fork` (also holds a C2 cost/residency assertion): `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/lifecycle_lock_order.rs`.
+- `fork_against_reclamation` (also holds a C2 cost/residency assertion): `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/lifecycle_lock_order.rs`.
+- `archive_against_checkpoint_capture` (also holds a C2 cost/residency assertion): `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/lifecycle_lock_order.rs`.
+- `archive_against_runtime_fork` (also holds a C2 cost/residency assertion): `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/lifecycle_lock_order.rs`.
+- `archive_against_reclamation` (also holds a C2 cost/residency assertion): `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/lifecycle_lock_order.rs`.
+- `checkpoint_registry_is_readable_while_a_fork_is_durable_not_yet_live`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/lifecycle_lock_order.rs`.
+- `an_artifact_whose_frame_is_damaged_is_refused_at_the_read`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/recovery_refusals.rs`.
+- `an_artifact_that_does_not_readmit_refuses_as_corrupt`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/recovery_refusals.rs`.
+- `a_gap_in_the_journal_refuses_as_non_contiguous`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/recovery_refusals.rs`.
+- `a_repeated_entry_refuses_as_non_contiguous`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/recovery_refusals.rs`.
+- `a_tail_that_does_not_continue_from_the_checkpoint_refuses`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/recovery_refusals.rs`.
+- `a_checkpoint_filed_under_the_wrong_position_refuses_as_corrupt`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/recovery_refusals.rs`.
+- `a_damaged_checkpoint_refuses_as_corrupt`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/recovery_refusals.rs`.
+- `a_durable_publisher_waits_for_the_reservation_instead_of_deferring` (also holds a C2 cost/residency assertion): `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/reservation_wait.rs`.
+- `a_cancelled_waiter_stops_before_any_effect` (also holds a C2 cost/residency assertion): `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/reservation_wait.rs`.
+- `an_unresolved_publication_installs_nothing_and_refuses_every_later_commit_alike`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/unresolved_fate.rs`.
+- `reopening_resolves_an_absent_unresolved_commit_as_never_committed`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/unresolved_fate.rs`.
+- `reopening_resolves_a_present_unresolved_commit_as_committed_exactly_once`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/unresolved_fate.rs`.
+  C4 owns each of these durability contract/medium roots under Landing 2a's
+  per-claim disposition. Restore each root's same-SHA fixture closure (parent
+  module helpers, `tests/support/durability.rs` and the original local medium
+  controls) as recorded per root in
+  `target/lane-evidence/landing2a-durability-contract-claim-disposition.md`.
+  This is relocation with the original assertions, scripted fates and no-effect
+  oracles, not retirement or weakened evidence. Restore over genuine owned
+  media; do not revive the removed runtime-discovery adapter.
+  The `cfg(test)` owner control hooks that only these moved roots called were
+  removed with them and restore from the same SHA (paths under
+  `crates/worth-relational/src/`): `durability/data/branch_root_schema_images.rs::corrupt_schema_root_for_test`, `durability/migration/readmitted_canonical_commit.rs::envelope_mut_for_test`, `history/data/canonical_commit_envelope.rs::rebuild_lineage_basis_for_test`, `history/data/canonical_record_allocation.rs::new`, `history/retention/owner.rs::retired_branch_binding_count`, `indexes/access/pinning/definition_inventory.rs::definitions_snapshot`, `lineage/data/artifacts/checkpoint_artifact.rs::nodes_mut`, `runtime/state/subsystems/canonical_publication_routes/lifecycle_order_control.rs::LifecycleSnapshotPause`, `runtime/state/subsystems/canonical_publication_routes/lifecycle_order_control.rs::await_admission`, `runtime/state/subsystems/canonical_publication_routes/lifecycle_order_control.rs::await_transition_lifecycle_contact_for_test`, `runtime/state/subsystems/canonical_publication_routes/lifecycle_order_control.rs::pause_exclusive_snapshot_for_test`, `runtime/state/subsystems/canonical_publication_routes/lifecycle_order_control.rs::release`, `runtime/state/subsystems/canonical_publication_routes/lifecycle_order_control.rs::transition_lifecycle_contacts_for_test`, `runtime/state/subsystems/history_retention.rs::retired_branch_binding_count`, `runtime/state/subsystems/lineage.rs::event_count`, `runtime/state/subsystems/lineage.rs::node_count`.
+
 - `compile_execution_ready_merge_plan_rejects_missing_source_record`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7c_phase_a/compilation_denials.rs`.
 - `verify_prepared_merge_execution_rejects_corrupted_compiled_plan`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7c_phase_a/compilation_denials.rs`.
 - `verify_prepared_merge_execution_rejects_schema_semantic_drift`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7c_phase_a/prepared_merge_verification.rs`.
@@ -117,6 +218,34 @@ each invariant is enforced and where each new type lives.
   `target/lane-evidence/landing2a-history-compiler-claim-disposition.md`.
   Restore the whole original root and its same-SHA fixtures, with genuine owned
   inputs and without reviving the removed runtime-discovery adapter.
+
+- `branch_roots_with_one_schema_deduplicate_the_durable_carrier`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_schema_binding.rs`.
+- `replay_reads_only_the_gap_after_its_checkpoint`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_transition/reconstruction.rs`.
+- `durability_tail_replay_releases_each_commit_snapshot_beyond_live_capacity`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/checkpoint_recovery.rs`.
+- `deleted_branch_reader_retains_only_its_exact_scoped_generation`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/derived_index_checkpoint/deleted_branch_reader.rs`.
+- `historical_reader_from_live_head_survives_head_retirement`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/derived_index_checkpoint/historical_reader.rs`.
+- `reclamation_and_checkpoint_keep_sibling_head_generation`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/derived_index_checkpoint.rs`.
+- `repeated_edits_checkpoint_only_the_live_index_payload`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/derived_index_checkpoint.rs`.
+- `reclamation_keeps_a_pinned_old_reader_until_release`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/derived_index_checkpoint.rs`.
+- `repeated_closed_branches_leave_no_latest_generation_residue`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/derived_index_checkpoint.rs`.
+- `repeated_global_same_basis_builds_reclaim_duplicates_but_keep_pinned_root`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/global_generation_reclamation.rs`.
+- `native_field_text_checkpoint_readmission_denial_keeps_bytes_and_target_root_intact`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/managed_field_text.rs`.
+- `repeated_native_captures_do_not_retain_checkpoint_images`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/native_checkpoint.rs`.
+- `synthetic_native_restore_and_image_digest_benchmark`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/native_checkpoint_restore_benchmark.rs`.
+- `checkpoint_restores_burned_append_frontier_beyond_all_retained_roots`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/record_allocation_recovery.rs`.
+- `recovery_releases_orphaned_append_reservation_without_reusing_its_gap`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/record_allocation_recovery.rs`.
+- `recovery_returns_orphaned_reclaimed_reservation_to_reuse`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/record_allocation_recovery.rs`.
+- `durability_contract_branch_heads_do_not_mutate_legacy_record_pins`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/retention_inspection_store.rs`.
+- `embedded_restore_allocation_grows_linearly_in_relation_bearing_regions`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/embedded_cost.rs`.
+- `an_attachment_the_medium_moved_out_of_publishes_nothing`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/single_owner.rs`.
+  C2 owns each of these durability contract/medium roots under Landing 2a's
+  per-claim disposition. Restore each root's same-SHA fixture closure (parent
+  module helpers, `tests/support/durability.rs` and the original local medium
+  controls) as recorded per root in
+  `target/lane-evidence/landing2a-durability-contract-claim-disposition.md`.
+  This is relocation with the original assertions, scripted fates and no-effect
+  oracles, not retirement or weakened evidence. Restore over genuine owned
+  media; do not revive the removed runtime-discovery adapter.
 
 - `verify_prepared_merge_execution_does_not_increment_planning_counters`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7c_phase_a/verification_counters.rs`.
 - `verify_prepared_merge_execution_reports_verification_counters_without_planning_work`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7c_phase_a/verification_counters.rs`.

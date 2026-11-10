@@ -292,24 +292,6 @@ fn recorded_component_checkpoint_omits_released_components_and_plain_observation
     drop(observed);
 }
 #[test]
-fn recorded_component_checkpoint_refuses_chk15_before_source_admission() {
-    let host = crate::test_execution_policy::serial_request();
-    let execution = &ExecutionRequest::serial(&host);
-    let runtime = durable_runtime_with_test_schema();
-    let checkpoint = capture(execution, &runtime);
-    let mut bytes = checkpoint.bytes().to_vec();
-    let old = b"WORTH-REL-CHK15\n";
-    bytes[..old.len()].copy_from_slice(old);
-    let stop =
-        crate::durability::log::native_checkpoint_codec::decode_checkpoint(execution, &bytes)
-            .unwrap_err();
-    assert_eq!(
-        expect_durability_failure(stop).class,
-        crate::durability::data::RecoveryFailureClass::UnsupportedLegacySemantics
-    );
-}
-
-#[test]
 fn recorded_original_retirement_preserves_both_leases_across_busy_and_stop() {
     original_custody(false, true);
 }

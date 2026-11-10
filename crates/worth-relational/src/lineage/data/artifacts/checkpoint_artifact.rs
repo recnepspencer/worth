@@ -65,9 +65,4 @@ impl LineageCheckpointArtifact {
     pub fn nodes(&self) -> &[LineageNode] {
         &self.nodes
     }
-
-    #[cfg(test)]
-    pub(crate) fn nodes_mut(&mut self) -> &mut Vec<LineageNode> {
-        &mut self.nodes
-    }
 }

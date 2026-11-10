@@ -177,11 +177,6 @@ impl LineageSubsystem {
         self.state.read().nodes.values().cloned().collect()
     }
 
-    #[cfg(test)]
-    pub(crate) fn node_count(&self) -> usize {
-        self.state.read().nodes.len()
-    }
-
     pub(crate) fn branch_event_positions_for_sources(
         &self,
         branch_id: &BranchId,
@@ -235,11 +230,6 @@ impl LineageSubsystem {
     /// hold the subsystem lock while they filter.
     pub(crate) fn shared_events(&self) -> Vec<std::sync::Arc<LineageEventRecord>> {
         self.state.read().shared_events()
-    }
-
-    #[cfg(test)]
-    pub(crate) fn event_count(&self) -> usize {
-        self.state.read().events().count()
     }
 
     #[cfg(test)]

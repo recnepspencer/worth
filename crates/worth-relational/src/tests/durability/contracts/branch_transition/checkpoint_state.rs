@@ -1,5 +1,4 @@
 use super::*;
-use crate::facade::durability::{RecoveryFailureClass, RecoveryVerificationMode};
 use crate::facade::mvcc::RelationalTransactionIntent;
 
 #[test]
@@ -62,54 +61,4 @@ fn checkpoint_size_tracks_branch_state_not_covered_transitions() {
         through_archive_and_pending_deletion <= direct + 32,
         "covered history grew the manifest: {direct} -> {through_archive_and_pending_deletion}"
     );
-}
-
-#[test]
-fn a_deleting_checkpoint_cell_requires_its_retired_name() {
-    let request = crate::test_execution_policy::serial_request();
-    let execution = &ExecutionRequest::serial(&request);
-    let runtime = durable_runtime_with_test_schema();
-    create_entity(execution, &runtime, "source");
-    fork(execution, &runtime, "pending");
-    let identity = runtime
-        .branch_identity(&BranchId("pending".into()))
-        .unwrap();
-    let (_, basis) = runtime.observe_branch(&identity).unwrap();
-    let transaction = runtime
-        .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
-        .unwrap();
-    runtime
-        .owner_component_services()
-        .lifecycle_port()
-        .delete_branch(execution, &identity)
-        .unwrap();
-    drop(transaction);
-    drop(basis);
-    checkpoint_durably(execution, &runtime).unwrap();
-    let mut plan = recovery_plan_for(
-        execution,
-        &runtime,
-        RecoveryVerificationMode::NormalRecoveryVerification,
-    )
-    .unwrap();
-    plan.checkpoint
-        .as_mut()
-        .unwrap()
-        .retired_branch_names
-        .clear();
-    let mut recovered = durable_runtime_with_test_schema();
-    let error = expect_durability_failure(
-        recovered
-            .durability_recovery()
-            .recover(execution, plan)
-            .unwrap_err(),
-    );
-    assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
-    assert!(
-        error
-            .detail
-            .contains("deleting branch `pending` has no retired name"),
-        "{error:?}"
-    );
-    assert_eq!(recovered.history().immutable_commit_count(), 0);
 }

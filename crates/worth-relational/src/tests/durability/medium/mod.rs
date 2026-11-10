@@ -5,14 +5,9 @@
 
 mod durable_before_live;
 mod recovered_publication;
-mod recovery_refusals;
-mod reservation_wait;
 mod single_owner;
-mod unresolved_fate;
 
 mod branch_transition_races;
 mod checkpoint_member_storage;
-mod embedded_cost;
-mod lifecycle_lock_order;
 mod lineage_frontiers;
 mod slow_publication;

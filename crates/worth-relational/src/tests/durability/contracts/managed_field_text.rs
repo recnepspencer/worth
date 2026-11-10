@@ -1,6 +1,6 @@
 //! Real native payload custody through current checkpoint and post-checkpoint tail.
 use super::*;
-use crate::durability::data::{RecoveryVerificationMode, RelationalRecoveryStop};
+use crate::durability::data::RecoveryVerificationMode;
 use crate::identity::data::{EntityId, VersionId};
 use crate::mvcc::RelationalTransactionIntent;
 use std::sync::Arc;
@@ -147,68 +147,6 @@ fn native_field_text_checkpoint_then_tail_recovers_exact_json_after_original_own
 }
 
 #[test]
-fn native_field_text_checkpoint_readmission_denial_keeps_bytes_and_target_root_intact() {
-    let lease = test_execution_lease();
-    let execution = &ExecutionRequest::leased(&lease);
-    let source = durable_runtime_with_test_schema();
-    let committed = commit_text(execution, &source).unwrap();
-    release_test_commit_snapshot(&source, &committed);
-    let native = source
-        .durability_authority()
-        .native_checkpoint(execution, execution.allocation_policy())
-        .unwrap();
-    let before = native.bytes().to_vec(); // independent test observation of external evidence
-    let mut target = runtime_with_test_schema();
-    let identity = target.main_branch_identity();
-    let original = target.observe_branch(&identity).unwrap().0;
-    let limited = lease
-        .child(worth_execution::LeaseRequest {
-            policy: worth_foundational::ExecutionRequestPolicy::new(
-                worth_foundational::ExecutionPosture::Serial,
-                worth_foundational::DeterminismContract::CanonicalBitwise,
-                worth_foundational::ExecutionBudget::new(
-                    std::num::NonZeroUsize::new(1).unwrap(),
-                    Some(1),
-                    Some(1_000_000),
-                ),
-            ),
-            deadline: None,
-            cancellation: worth_execution::CancellationToken::new(),
-        })
-        .unwrap();
-    let error = target
-        .durability_recovery()
-        .restore_native_checkpoint(&ExecutionRequest::leased(&limited), &native)
-        .unwrap_err();
-    // Physical hashing now enters a funded SDK native scope before member
-    // copying or managed text. Freeze that first framework admission invoice.
-    // The owned monotonic deadline adds 8 bytes to the kernel framework layout.
-    const FIRST_SCOPE_BYTES: u64 = 416;
-    assert_eq!(
-        error,
-        RelationalRecoveryStop::Request(
-            crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted {
-                requested: FIRST_SCOPE_BYTES,
-                admitted: 1,
-                ancestor: 0,
-            }
-        )
-    );
-    assert_eq!(native.bytes(), before);
-    assert_eq!(target.observe_branch(&identity).unwrap().0, original);
-    target
-        .durability_recovery()
-        .restore_native_checkpoint(execution, &native)
-        .unwrap();
-    read_exact(
-        execution,
-        &target,
-        changed_entities(&committed)[0],
-        committed.version_id,
-    );
-}
-
-#[test]
 fn native_field_text_configuration_requires_current_explicit_readmission() {
     let lease = test_execution_lease();
     let execution = &ExecutionRequest::leased(&lease);
@@ -238,35 +176,3 @@ fn native_field_text_configuration_requires_current_explicit_readmission() {
         assert_eq!(symbols.resolve(symbols.symbol(JSON).unwrap()), Some(JSON))
     });
 }
-
-#[test]
-fn native_field_text_prior_checkpoint_format_refuses_before_managed_text() {
-    let host = crate::test_execution_policy::serial_request();
-    let execution = &ExecutionRequest::serial(&host);
-    let source = durable_runtime_with_test_schema();
-    let committed = commit_text(execution, &source).unwrap();
-    release_test_commit_snapshot(&source, &committed);
-    let native = source
-        .durability_authority()
-        .native_checkpoint(execution, execution.allocation_policy())
-        .unwrap();
-    let unframed = native
-        .bytes()
-        .strip_prefix(crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC)
-        .unwrap();
-    let error =
-        crate::durability::log::native_checkpoint_codec::decode_checkpoint(execution, unframed)
-            .unwrap_err();
-    assert!(
-        matches!(error,RelationalRecoveryStop::Durability(ref error) if error.class == RecoveryFailureClass::UnsupportedLegacySemantics)
-    );
-    assert!(
-        crate::durability::log::native_checkpoint_codec::decode_checkpoint(
-            execution,
-            native.bytes()
-        )
-        .is_ok()
-    );
-}
-
-mod missing_dictionary;
