@@ -26,6 +26,11 @@ pub enum RelationalRetainedStorageInspectionDenial {
 /// storage is separate and remains append-only regardless of reader release.
 /// Nested optional authority records use their existing canonical encoded
 /// footprint convention, rather than an allocator layout measurement.
+/// Persistent aspect backing nested in an entity or relation payload carrier
+/// is that carrier's checked declared upper bound: backing shared by distinct
+/// carriers is counted once per carrier, so root totals may exceed the
+/// physical bytes and are not an exact deduplicated inventory of that backing.
+/// An unrepresentable bound or total refuses the census; none is saturated.
 /// Optional caches/index estimates, allocator-private headers, diagnostics and
 /// inspection backing are excluded, as are unpublished candidate roots and
 /// transaction working sets. A cold/unlinked root refuses the census.
@@ -87,7 +92,7 @@ fn inventory(
         observe_root(runtime, root, &catalog, &mut seen_roots, &mut accounting)?;
     }
     let current_roots = seen_roots.len();
-    let current_bytes = accounting.unique_bytes();
+    let current_bytes = accounting.unique_bytes()?;
     for entry in retired.iter().filter(|entry| !entry.reclaimable) {
         observe_root(
             runtime,
@@ -98,7 +103,7 @@ fn inventory(
         )?;
     }
     let held_roots = seen_roots.len() - current_roots;
-    let held_bytes = accounting.unique_bytes() - current_bytes;
+    let held_bytes = accounting.unique_bytes()? - current_bytes;
     for entry in retired.iter().filter(|entry| entry.reclaimable) {
         observe_root(
             runtime,
@@ -109,11 +114,11 @@ fn inventory(
         )?;
     }
     let reclaimable_roots = seen_roots.len() - current_roots - held_roots;
-    let root_bytes = accounting.unique_bytes();
+    let root_bytes = accounting.unique_bytes()?;
     for artifact in catalog.values() {
         accounting.observe_commit_allocation(runtime.runtime_instance_id(), artifact, 0);
     }
-    let total = accounting.unique_bytes();
+    let total = accounting.unique_bytes()?;
     Ok(RelationalRetainedStorageObservation {
         work: accounting.census_work().clone(),
         current_roots,

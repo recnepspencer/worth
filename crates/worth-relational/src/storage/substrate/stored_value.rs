@@ -96,6 +96,18 @@ impl StoredValueObservation {
         self.allocation
             .is_none_or(|allocation| visitor.visit(allocation))
     }
+    /// Adds this carrier's checked declared nested upper bound.
+    pub(crate) fn add_checked_nested_bound(&mut self, bound: Option<u64>) {
+        if let Some(allocation) = &mut self.allocation {
+            allocation.add_checked_nested_bound(bound);
+        } else {
+            assert_eq!(
+                bound,
+                Some(0),
+                "inline shallow carriers have no separately owned payload heap"
+            );
+        }
+    }
     pub(crate) fn add_owned_bytes(&mut self, bytes: u64) {
         if let Some(allocation) = &mut self.allocation {
             allocation.bytes = allocation.bytes.saturating_add(bytes);

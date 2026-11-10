@@ -48,6 +48,15 @@ pub(super) fn readmit(
         .map_err(|detail| {
             DurabilityError::new(RecoveryFailureClass::CorruptCanonicalArtifact, detail)
         })?;
+    if !delta.definitions().is_empty() {
+        // A definition insert retires the installed routing, exactly as on the
+        // live registration path; replay must derive index writes under the
+        // same routing the original commit used.
+        runtime
+            .index_authority()
+            .recover_installed_index_routing(execution)
+            .map_err(RelationalRecoveryStop::Request)?;
+    }
     Ok(RecoveredIndexCatalog {
         runtime_instance_id: runtime.runtime_instance_id(),
         delta: delta.clone(),

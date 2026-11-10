@@ -77,12 +77,7 @@ fn report<K: Ord + Copy>(axis: &str, scenario: &str, old: &[Old<K>], new: &[New<
         "both representations hold the SAME real payload producer allocations"
     );
     assert!(new.headers.0.is_empty());
-    let header_arc = std::alloc::Layout::new::<[usize; 2]>()
-        .extend(std::alloc::Layout::new::<DigestIndex>())
-        .unwrap()
-        .0
-        .pad_to_align()
-        .size() as u64;
+    let header_arc = StorageAllocation::<DigestIndex>::layout_bytes();
     if let Some(bytes) = old.headers.uniform_size() {
         assert_eq!(bytes, header_arc);
     }

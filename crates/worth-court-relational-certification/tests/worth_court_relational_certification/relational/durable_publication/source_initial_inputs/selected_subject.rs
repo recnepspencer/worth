@@ -72,7 +72,7 @@ fn crossed_runtime(
     let image = capture_external(&original, &medium, execution);
     medium.file_checkpoint(image.checkpoint().clone());
     let bytes = image.checkpoint().bytes();
-    let payload = bytes.strip_prefix(b"WORTH-REL-CHK18\n").unwrap();
+    let payload = bytes.strip_prefix(b"WORTH-REL-CHK22\n").unwrap();
     let rows = crate::messagepack_value_spans::sequence(crate::messagepack_value_spans::field(
         crate::messagepack_value_spans::field(payload, "manifest"),
         "canonical_members",

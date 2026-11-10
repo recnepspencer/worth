@@ -64,8 +64,44 @@ pub(super) fn quote(
         panic!("fixture payload application")
     };
     Footprint {
-        peak: u64::try_from(peak).unwrap(),
-        retained: u64::try_from(applied.retained_bytes).unwrap(),
+        peak: u64::try_from(peak)
+            .unwrap()
+            .checked_add(scope_entries())
+            .unwrap(),
+        retained: if next.is_some() {
+            u64::try_from(applied.retained_bytes).unwrap()
+        } else {
+            0
+        },
         next: next.map(|state| state.into_parts().into_parts().0),
     }
+}
+
+// The tested serial adapter owns two real metered scopes: in_scope's
+// run_serial and its nested run_with_checkpoint. Quote that same stack and
+// callback result type through the existing owner, without any payload work.
+fn scope_entries() -> u64 {
+    let budget = SerialMemoryBudget::new(None);
+    let cancellation = CancellationSource::new();
+    let host = SerialRequest::from_memory(budget.clone(), cancellation.token(), None);
+    let request = ExecutionRequest::serial(&host);
+    let mut entry = None;
+    let outcome = request
+        .in_scope(|lease| {
+            ExecutionWorkCeiling::new(request.work_ceiling()).run_with_checkpoint(
+                lease,
+                None,
+                |_| {
+                    entry = Some(budget.charged_memory_bytes());
+                    // Preserve apply's exact Result type. This empty data error
+                    // constructs no reconstructed payload or Original evidence.
+                    Err::<ReconstructedPayload, Stop>(Stop::Payload(String::new()))
+                },
+            )
+        })
+        .unwrap()
+        .unwrap();
+    drop(outcome);
+    assert_eq!(budget.charged_memory_bytes(), 0);
+    entry.expect("both actual reconstruction scopes were entered")
 }

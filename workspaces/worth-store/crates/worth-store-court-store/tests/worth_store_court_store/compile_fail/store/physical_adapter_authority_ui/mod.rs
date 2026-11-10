@@ -14,7 +14,23 @@ fn physical_adapters_receive_observation_without_pool_control() {
         "successor_allocation_cannot_escape_runtime.rs",
         "successor_runtime_cannot_close_with_live_allocation.rs",
     ] {
-        worth_testkit_compiler::denied(format!("{}/tests/worth_store_court_store/sources/worth_store/physical_adapter_authority/{denied}", env!("CARGO_MANIFEST_DIR"))).expect("prebuilt compiler denial");
+        let path = format!("{}/tests/worth_store_court_store/sources/worth_store/physical_adapter_authority/{denied}", env!("CARGO_MANIFEST_DIR"));
+        if denied == "successor_allocation_forgery_is_rejected.rs" {
+            worth_testkit_compiler::certification_semantic_denial(
+                &path,
+                "E0451",
+                &["field `allocation` of struct `RecoveryPhysicalAllocation` is private"],
+            )
+            .expect("the actual recovery allocation field stays private");
+            worth_testkit_compiler::certification_uncoded_semantic_denial(
+                &path,
+                "is private",
+                &["type `physical_runtime::record_serving::residency::scoped_allocation::grant::StoreScopedAllocation<'_, physical_runtime::record_serving::residency::scoped_allocation::scope::RecoveryScope>` is private"],
+            )
+            .expect("the actual scoped recovery allocation type stays private");
+        } else {
+            worth_testkit_compiler::denied(&path).expect("prebuilt compiler denial");
+        }
     }
 }
 

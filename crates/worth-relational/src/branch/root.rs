@@ -299,11 +299,13 @@ impl RelationalBranchRoot {
     }
 
     /// Logical authoritative partition payload bytes reachable from this root.
+    /// A recorded descriptive figure: region inventories carry per-carrier
+    /// declared bounds and may be saturated, so this total saturates as well.
     pub(crate) fn logical_partition_payload_bytes(&self) -> u64 {
         self.regions
             .values()
             .map(|region| region.allocation_inventory().authoritative_bytes)
-            .sum()
+            .fold(0_u64, u64::saturating_add)
     }
 
     pub(crate) fn publication_cost(&self) -> RelationalBranchRootPublicationCost {

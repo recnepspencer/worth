@@ -222,5 +222,3 @@ fn worker_only_recorded_parameter_inverse_rederives_through_the_owned_predecesso
     assert_eq!(super::coupled::producer::handler::contacts(), 2);
     assert!(request.query(query::Input { id: 101 }).execute().is_ok());
 }
-
-mod adjacency_gap;

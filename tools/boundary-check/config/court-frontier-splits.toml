@@ -207,11 +207,6 @@ owners = ["authored_ownership"]
 delegates = []
 
 [[splits]]
-court = "worth-query-court-decl-host-owned-codec-transition"
-frontier = ["worth-query-decl", "worth-query-host"]
-area = "owned-codec-transition"
-owners = ["owned_codec_transition"]
-[[splits]]
 court = "worth-query-court-execution"
 frontier = ["worth-query-execution"]
 area = "application-aftermath"

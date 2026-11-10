@@ -43,10 +43,23 @@ pub(super) fn apply<T>(
     patch: &Patch,
     build: impl FnOnce(Option<State>, Option<ExecutionMemoryReservation>) -> T,
 ) -> Result<T, ExtraPayloadDenial> {
-    let (memory, _scratch) =
+    let (mut memory, _scratch) =
         admit::<T>(request, current, patch).map_err(ExtraPayloadDenial::Request)?;
     match patch.apply_to_optional(current) {
         worth_proof::TransitionOutcome::Success(state) => {
+            if state.is_none() {
+                // apply_to_optional has already dropped its empty tree roots.
+                // The actual Extra survives; retain only its fixed carrier bill.
+                if let Some(memory) = &mut memory {
+                    memory
+                        .resize(StorageAllocation::<T>::layout_bytes())
+                        .map_err(|denial| {
+                            ExtraPayloadDenial::Request(crate::execution::denial::lease_denial(
+                                worth_execution::LeaseDenial::MemoryExhausted(denial),
+                            ))
+                        })?;
+                }
+            }
             Ok(build(state.map(|a| a.into_parts().into_parts().0), memory))
         }
         worth_proof::TransitionOutcome::Denied(denial) => {

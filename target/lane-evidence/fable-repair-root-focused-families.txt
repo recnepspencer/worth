@@ -1,0 +1,202 @@
+﻿[15] ion/tests/worth_court_relational_certification/cost/relational/cold_checkpoint.rs:132
+     called `Result::unwrap()` on an `Err` value: Durability(DurabilityError { class: UnsupportedLegacySemantics, detail: "original protected canonical source unsupported", history_drift_class: None, authority_continuity_mismatch: None, storage_unavailable: None, context: ErrorContext { subsystem: Durability, operation: Recover, affected_records: [], version_context: None, suggested_fix: Some(RepairDurableStore) } })
+       - cost::relational::global_laws::cold_restore::cold_cross_region_predecessor_is_demanded_before_a_disconnect_is_judged
+       - cost::relational::global_laws::equality::maintained_sources_equal_cold_seeds_13_to_16
+       - cost::relational::global_laws::equality::maintained_sources_equal_cold_seeds_1_to_4
+       - cost::relational::global_laws::equality::maintained_sources_equal_cold_seeds_5_to_8
+       - cost::relational::global_laws::equality::maintained_sources_equal_cold_seeds_9_to_12
+       - cost::relational::kind_directory::cold::fixed_kind_read_is_flat_in_unrelated_regions_and_history
+       - cost::relational::kind_directory::exact_kind_membership_survives_retirement_replacement_and_retained_roots
+       - cost::relational::lazy_pin::lazy_pin_and_fixed_read_do_not_grow_with_unrelated_regions_or_history
+       - cost::relational::lazy_pin::queries::cold_explicit_scan_and_traversal_keep_their_selected_rows
+       - cost::relational::lazy_pin::wide_frontier_does_not_escalate_to_unreached_regions
+       - cost::relational::snapshot_counts::count_only_read_does_not_grow_with_history
+       - cost::relational::snapshot_counts::count_only_read_does_not_grow_with_model
+       - cost::relational::symbol_admission::a_fixed_edit_does_not_pay_the_previous_large_edit_again
+       - cost::relational::symbol_admission::renewed_cell_symbol_admission_is_flat_in_history
+       - cost::relational::symbol_admission::renewed_cell_symbol_admission_is_flat_in_model
+[10] rtification/relational/relational_certification/history_ownership/fixture/cold.rs:119
+     called `Result::unwrap()` on an `Err` value: Durability(DurabilityError { class: UnsupportedLegacySemantics, detail: "original protected canonical source unsupported", history_drift_class: None, authority_continuity_mismatch: None, storage_unavailable: None, context: ErrorContext { subsystem: Durability, operation: Recover, affected_records: [], version_context: None, suggested_fix: Some(RepairDurableStore) } })
+       - relational::relational_certification::history_ownership::cold_model_ownership_demands_cross_partition_endpoints_and_edges
+       - ional_certification::history_ownership::entity_boundary::entity_boundary_refuses_wrong_model_kind_and_original_request_limits
+       - ification::history_ownership::entity_boundary::entity_boundary_rejects_foreign_selected_basis_before_reading_current_material
+       - certification::history_ownership::graph_boundary::graph_selection_preserves_corrupt_cold_relation_material_as_a_typed_refusal
+       - ication::history_ownership::graph_resources::graph_relation_preparation_retains_its_funding_and_cannot_reset_the_entity_meter
+       - relational::relational_certification::history_ownership::missing_cold_ownership_edge_material_refuses_with_its_real_partition
+       - relational::relational_certification::history_ownership::ownership_observation_preserves_work_and_memory_refusals
+       - relational::relational_certification::history_ownership::ownership_observation_refuses_a_basis_from_another_runtime
+       - istory_ownership::publication_membership::cold_native_publication_custody_proves_owned_members_without_history_reconstruction
+       - ication::history_ownership::publication_membership::missing_cold_publication_material_refuses_at_its_actual_custody_partition
+[8] cation/tests/worth_court_relational_certification/support/canonical_commit_frame.rs:6
+     assertion `left == right` failed left: 8 right: 5
+       - content::cold_envelope::content_cold_envelope_preserves_a_literal_version_refusal_without_poisoning_history
+       - content::journal_recovery::content_controlled_journal_seed_admits_the_canonical_omitted_history_tail
+       - content::journal_recovery::content_decoded_journal_omission_refuses_before_selecting_a_root
+       - content::recovery::content_corruption_refuses_even_after_an_independent_outer_digest_repair
+       - onal::durable_publication::index_catalog::required_catalog_delta_survives_all_projections_and_rejects_missing_or_older_format
+       - tional::durable_publication::index_catalog::wire::valid_delta_shape_still_refuses_source_identity_gap_and_conflicting_overlap
+       - relational::durable_publication::semantic_result::semantic_result_is_required_even_after_a_corrupt_frame_is_resealed
+       - tained_entity_selection::provenance::rehashed_selection_artifacts_refuse_wrong_source_identity_predecessor_and_mixed_profiles
+[4] crates/worth-testkit-relational/src/durable_publication.rs:72
+     called `Result::unwrap()` on an `Err` value: Publication { error: PublicationError { stage: BundleAssembly, detail: "derived index maintenance denied: ColdReconstructionRequired", context: ErrorContext { subsystem: Publication, operation: Publish, affected_records: [], version_context: None, suggested_fix: Some(InspectDiagnostics) }, authored_retirement_refusal: None, invariant_violation: None, index_maintenance_denial: Some(DerivedIndexMaintenanceDenial { kind: ColdReconstructionRequired, work: DerivedIndexMaintenanceWork { work_units: 1, patch_records: 1, record_reads: 0, adjacency_work_unit
+       - ble_publication::index_catalog::checkpoint_only_definitions_overlap_tail_and_restored_directory_acknowledges_only_its_capture
+       - able_publication::index_catalog::recovery::expanded_restore_reemits_checkpoint_only_definitions_without_fabricating_selection
+       - ble_publication::index_catalog::recovery::same_position_checkpoint_catalog_cannot_regress_selection_or_ack_later_registration
+       - ational::durable_publication::index_catalog::recovery::unselected_original_capture_cannot_acknowledge_definition_introduction
+[3] crates/worth-relational/src/tests/support/durability/canonical_commit_frame.rs:6
+     assertion `left == right` failed left: 8 right: 5
+       - tests::durability::contracts::semantic_result::bulk::semantic_result_bulk_malformed_correspondence_refuses_after_frame_reseal
+       - ontracts::semantic_result::custom_versions::semantic_result_preserves_independent_original_execution_and_enforcement_versions
+       - tests::durability::medium::recovery_refusals::an_artifact_that_does_not_readmit_refuses_as_corrupt
+[2] rth_court_relational_certification/content/historical_kind/retention_roundtrip.rs:322
+     called `Result::unwrap()` on an `Err` value: Durability(DurabilityError { class: UnsupportedLegacySemantics, detail: "original protected canonical source unsupported", history_drift_class: None, authority_continuity_mismatch: None, storage_unavailable: None, context: ErrorContext { subsystem: Durability, operation: Recover, affected_records: [], version_context: None, suggested_fix: Some(RepairDurableStore) } })
+       - content::historical_kind::retention_roundtrip::a_reused_relation_slot_keeps_retention_readmission_valid
+       - content::historical_kind::retention_roundtrip::mixed_retirement_replacement_reuse_and_cold_roundtrips_keep_region_integrity
+[1] _time/oracle/relational/relational_certification/root_branch_copy_on_write/mod.rs:163
+     assertion `left == right` failed: publication accounting must equal the independent owner-ledger allocation delta left: 70818 right: 62626
+       - oracle::relational::relational_certification::root_branch_copy_on_write::forked_topology_write_copies_only_touched_regions
+[1] rt/relational_certification/ordinary_context/root_named_delta_cow/declarations.rs:134
+     assertion `left == right` failed left: 74522 right: 66330
+       - ational_certification::root_named_delta_cow::every_supply_chain_delta_shares_payloads_within_its_declared_partition_footprint
+[1] e/cost/relational/relational_certification/root_cost_scale_axes/publication/mod.rs:71
+     assertion `left == right` failed left: 56370 right: 48178
+       - certification::root_cost_scale_axes::publication::production_write_footprints_report_exact_records_and_local_publication_cost
+[1] tests/worth_court_relational_certification/relational/validated_proposal_memory.rs:63
+     CommitExecutionDenial { kind: Cause(PolicyMemoryExhausted { requested: 4208, admitted: 2208, ancestor: 0 }), partition_identity: None }
+       - relational::validated_proposal_memory::unfunded_validated_proposal_backing_refuses_and_releases_original_custody
+[1] rth_court_relational_certification/relational/durable_publication/index_catalog.rs:50
+     called `Result::unwrap()` on an `Err` value: Publication { error: PublicationError { stage: BundleAssembly, detail: "derived index maintenance denied: ColdReconstructionRequired", context: ErrorContext { subsystem: Publication, operation: Publish, affected_records: [], version_context: None, suggested_fix: Some(InspectDiagnostics) }, authored_retirement_refusal: None, invariant_violation: None, index_maintenance_denial: Some(DerivedIndexMaintenanceDenial { kind: ColdReconstructionRequired, work: DerivedIndexMaintenanceWork { work_units: 1, patch_records: 1, record_reads: 0, adjacency_work_unit
+       - lication::index_catalog::recovery::checkpoint_catalog_ahead_of_frozen_tail_preserves_original_body_and_refuses_false_coverage
+[1] rth_court_relational_certification/relational/durable_publication/index_catalog.rs:83
+     called `Result::unwrap()` on an `Err` value: Publication { error: PublicationError { stage: BundleAssembly, detail: "derived index maintenance denied: ColdReconstructionRequired", context: ErrorContext { subsystem: Publication, operation: Publish, affected_records: [], version_context: None, suggested_fix: Some(InspectDiagnostics) }, authored_retirement_refusal: None, invariant_violation: None, index_maintenance_denial: Some(DerivedIndexMaintenanceDenial { kind: ColdReconstructionRequired, work: DerivedIndexMaintenanceWork { work_units: 1, patch_records: 1, record_reads: 0, adjacency_work_unit
+       - durable_publication::index_catalog::frozen_catalog_overlap_preserves_issued_ids_and_never_regresses_after_reverse_publication
+[1] _court_relational_certification/relational/durable_publication/semantic_result.rs:117
+     assertion `left == right` failed left: 8 right: 5
+       - relational::durable_publication::semantic_result::semantic_result_preserves_original_create_bindings_and_validation_meaning
+[1] /source_initial_inputs/checkpoint_admission/cold_materialization/shared_custody.rs:46
+     assertion `left == right` failed left: 256 right: 0
+       - d_materialization::shared_custody::shared_history_custody_refuses_unfunded_admission_then_survives_until_the_last_basis_drops
+[1] ational/durable_publication/source_initial_inputs/checkpoint_admission/indexes.rs:121
+     incremental=false: DerivedIndexMaintenanceDenial { kind: ColdReconstructionRequired, work: DerivedIndexMaintenanceWork { work_units: 1, patch_records: 0, record_reads: 0, adjacency_work_units: 0, entry_edits: 0, seek_comparisons: 0, path_copy_units_reserved: 0, cold_record_slots: 0, derived_rows: 0, reused_generations: 0, seeded_generations: 0, generation_publications_reserved: 0 } }
+       - inputs::checkpoint_admission::indexes::checkpoint_image_roots_build_cold_and_incremental_indexes_without_canonical_body_reads
+[1] durable_publication/source_initial_inputs/checkpoint_admission/required_outputs.rs:73
+     called `Result::unwrap_err()` on an `Ok` value: RelationalCheckpointAdmissionArtifact(ArtifactBacking { bytes: ExecutionImmutableBytes { byte_len: 13329, .. }, region: 0..13329, cut: CheckpointAdmissionCut { scope: Home { home: HomeIdentity([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]), native_origin: [59, 139, 190, 113, 22, 30, 209, 65, 188, 41, 28, 59, 153, 10, 231, 115, 99, 8, 112, 100, 169, 13, 187, 193, 112, 47, 148, 142, 69, 165, 127, 20], complete_source_digest: [200, 182, 116, 221, 61, 88, 127, 74, 51, 4, 134, 207, 35, 6, 138, 168, 19, 161, 47, 7, 38, 224, 139, 76, 82, 165, 194, 19
+       - puts::checkpoint_admission::required_outputs::checkpoint_image_records_original_required_output_membership_with_logical_basis
+[1] urable_publication/source_initial_inputs/checkpoint_admission/retained_indexes.rs:148
+     called `Result::unwrap()` on an `Err` value: BoundedEntityFieldLookupDenial { kind: CorruptIndexEntries, index_id: DerivedIndexId(1), examined_entry_count: 1 }
+       - t_admission::retained_indexes::checkpoint_image_retained_commit_reconstruction_uses_its_own_root_without_canonical_body_reads
+[1] ation/relational/relational_certification/history_ownership/historical_artifact.rs:32
+     called `Result::unwrap()` on an `Err` value: DigestMismatch { recorded: sha256:2986b10f4168a147ad2470c32459b582cb2f05f9004909fccc22d91bcfda3848, computed: sha256:74a4548caed96762574d234dba7c951a8dd4ed8745cf24447b2937882f3d3bba }
+       - istory_ownership::historical_publication::selected_publication_keeps_original_ids_under_fresh_commit_and_cold_current_custody
+[1] ication/tests/worth_court_relational_certification/content/durable_publication.rs:316
+     assertion `left == right` failed left: Some(67107201) right: Some(67108864)
+       - content::durable_publication::content_durable_artifact_original_work_exhaustion_is_exact_and_pre_effect
+[1] ication/tests/worth_court_relational_certification/content/durable_publication.rs:133
+     called `Result::unwrap()` on an `Err` value: Execution { denial: CommitExecutionDenial { kind: Cause(PolicyMemoryExhausted { requested: 1049088, admitted: 235715, ancestor: 0 }), partition_identity: None }, context: ErrorContext { subsystem: Transaction, operation: Commit, affected_records: [], version_context: None, suggested_fix: None }, commit_log: CommitLog { events: [PhaseStarted(DraftPreparation), StructuralSummary, PhaseCompleted(DraftPreparation), PhaseStarted(InvariantPreCheck), InvariantEvaluated { execution_point: ProposedState, observation_kind: Committed, disposition: Executed, pr
+       - content::durable_publication::content_durable_artifact_memory_refuses_before_the_medium_and_selected_commit
+[1] ication/tests/worth_court_relational_certification/content/durable_publication.rs:255
+     assertion `left == right` failed left: 1663 right: 0
+       - content::durable_publication::content_durable_artifact_cancellation_after_original_allocation_never_calls_medium
+[1] certification/tests/worth_court_relational_certification/content/preimage_work.rs:114
+     called `Result::unwrap()` on an `Err` value: Execution { denial: CommitExecutionDenial { kind: Cause(PolicyMemoryExhausted { requested: 132065173, admitted: 66941970, ancestor: 0 }), partition_identity: None }, context: ErrorContext { subsystem: Transaction, operation: Commit, affected_records: [], version_context: None, suggested_fix: None }, commit_log: CommitLog { events: [PhaseStarted(DraftPreparation), CommitRejected { phase: DraftPreparation, diagnostic_code: None, publication_stage: None, detail: "commit preparation execution stopped: CommitExecutionDenial { kind: Cause(PolicyMemoryExha
+       - content::preimage_work::content_original_field_capture_charges_real_aspect_count_and_key_bytes
+[1] ion/tests/worth_court_relational_certification/content/historical_kind/custody.rs:131
+     assertion `left == right` failed left: 51894 right: 0
+       - content::historical_kind::custody::original_kind_custody_survives_successor_basis_checkpoint_tail_and_reopen
+[1] on/tests/worth_court_relational_certification/cost/relational/checkpoint_stage.rs:135
+     assertion `left == right` failed: rows=0 left: ExecutionScopeSetupCountsForTest { stage_setups: 14, limit_derivations: 14, admissions: 14 } right: ExecutionScopeSetupCountsForTest { stage_setups: 1, limit_derivations: 1, admissions: 1 }
+       - cost::relational::checkpoint_stage::checkpoint_capture_sets_up_exactly_one_stage_whatever_the_row_count
+[1] ion/tests/worth_court_relational_certification/cost/relational/checkpoint_stage.rs:91
+     assertion `left == right` failed: rows=0 left: 2645 right: 1108
+       - cost::relational::checkpoint_stage::checkpoint_stage_charges_the_documented_rate_for_each_encoded_byte
+[1] on/tests/worth_court_relational_certification/cost/relational/checkpoint_stage.rs:215
+     leased=false: Err(Request(PolicyMemoryExhausted { requested: 2645, admitted: 724, ancestor: 0 }))
+       - cost::relational::checkpoint_stage::empty_checkpoint_memory_boundary_is_its_bytes_plus_one_stage
+[1] on/tests/worth_court_relational_certification/cost/relational/checkpoint_stage.rs:169
+     assertion `left == right` failed: ceiling=2376 left: 549 right: 585
+       - cost::relational::checkpoint_stage::empty_checkpoint_work_ceiling_bounds_the_whole_capture
+[1] ertification/cost/relational/relational_certification/retained_entity_selection.rs:52
+     assertion `left == right` failed: actual request charged work left: 15557 right: 15554
+       - cation::retained_entity_selection::equal_payload_jumps_charge_the_same_receiving_owner_work_at_near_and_distant_history_nodes
+[1] l/source_initial_inputs/checkpoint_admission/cold_materialization/byte_payloads.rs:47
+     called `Result::unwrap()` on an `Err` value: Request(PolicyMemoryExhausted { requested: 1249772, admitted: 129176, ancestor: 0 })
+       - cold_materialization::byte_payloads::cold_inline_bytes_head_refuses_after_member_read_then_retains_exact_payload_through_edit
+[1] /source_initial_inputs/checkpoint_admission/cold_materialization/byte_payloads.rs:120
+     called `Result::unwrap()` on an `Err` value: PolicyMemoryExhausted { requested: 589986, admitted: 130672, ancestor: 0 }
+       - on::cold_materialization::byte_payloads::cold_inline_bytes_history_refuses_after_read_then_retries_full_with_exact_old_values
+[1] ation/tests/worth_court_relational_certification/relational/checkpoint_versions.rs:47
+     assertion `left == right` failed left: NativeCheckpointModelBytes { envelope: {"envelopes": [144], "members": [157, 146, 130, 166, 115, 104, 97, 50, 53, 54, 220, 0, 32, 7, 112, 204, 130, 204, 192, 45, 102, 204, 231, 204, 193, 68, 204, 236, 204, 139, 204, 199, 119, 204, 245, 204, 168, 204, 151, 204, 234, 80, 75, 48, 204, 182, 11, 119, 204, 162, 91, 204, 195, 74, 204, 191, 204, 133, 14, 204, 190, 86, 166, 108, 101, 110, 103, 116, 104, 39, 196, 39, 87, 79, 82, 84, 72, 45, 82, 69, 76, 45, 77, 66, 82, 49, 10, 0, 1, 0, 129, 167, 101, 110, 116, 114, 105, 101, 115, 145, 146, 4, 168, 110, 111, 100, 101
+       - relational::checkpoint_versions::current_checkpoint_preserves_meaning_and_retired_or_unknown_versions_refuse
+[1] ation/tests/worth_court_relational_certification/relational/cold_index_refresh.rs:285
+     called `Result::unwrap()` on an `Err` value: DerivedIndexMaintenanceDenial { kind: ColdReconstructionRequired, work: DerivedIndexMaintenanceWork { work_units: 1, patch_records: 0, record_reads: 0, adjacency_work_units: 0, entry_edits: 0, seek_comparisons: 0, path_copy_units_reserved: 0, cold_record_slots: 0, derived_rows: 0, reused_generations: 0, seeded_generations: 0, generation_publications_reserved: 0 } }
+       - relational::cold_index_refresh::cold_selected_index_refresh_preserves_budget_gate_and_reads_head_without_history
+[1] te/tests/worth_court_server_certification_suite/process/durable_query_retry/mod.rs:23
+     called `Result::unwrap()` on an `Err` value: Idempotency(WorthQueryApplicationIdempotencyResolutionDenial { kind: ProviderUnavailable, authorization: None })
+       - process::durable_query_retry::restarted_server_returns_the_original_receipt_after_later_history
+[1] te/tests/worth_court_server_certification_suite/process/durable_query_retry/mod.rs:56
+     called `Result::unwrap()` on an `Err` value: Idempotency(WorthQueryApplicationIdempotencyResolutionDenial { kind: ProviderUnavailable, authorization: None })
+       - process::durable_query_retry::server_changed_intent_refuses_without_reentering_the_handler
+[1] _court_server_certification_suite/process/durable_query_retry/child_reexecution.rs:89
+     called `Result::unwrap()` on an `Err` value: Idempotency(WorthQueryApplicationIdempotencyResolutionDenial { kind: ProviderUnavailable, authorization: None })
+       - process::durable_query_retry::child_reexecution::killed_server_reopens_home_and_returns_its_original_query_receipt
+[1] te/tests/worth_court_server_certification_suite/process/durable_query_retry/mod.rs:95
+     called `Result::unwrap()` on an `Err` value: Any { .. }
+       - process::durable_query_retry::concurrent_server_identical_keys_publish_one_original_occurrence
+[1] court_server_product_operation_phase_eleven/server/compat_http_phase_three/mod.rs:222
+     called `Result::unwrap()` on an `Err` value: Idempotency(WorthQueryApplicationIdempotencyResolutionDenial { kind: ProviderUnavailable, authorization: None })
+       - server::compat_http_phase_three::compat_http_idempotency_resolves_identical_retries_and_denies_conflicts
+[1] orth-relational/src/authority/commit/pipeline/request_checkpoints/work_account.rs:175
+     assertion `left == right` failed: the authoritative account settles all SDK work left: 22897 right: 23433
+       - authority::commit::pipeline::request_checkpoints::work_account::one_work_account_bounds_the_same_proposal_on_every_entry
+[1] orth-relational/src/authority/commit/pipeline/request_checkpoints/work_account.rs:148
+     assertion `left == right` failed: Ordinary: every original SDK charge settles into the same account left: 22897 right: 23433
+       - :commit::pipeline::request_checkpoints::work_account::one_work_account_bounds_each_entry_with_its_original_canonical_evidence
+[1] crates/worth-relational/src/tests/support/records.rs:127
+     called `Result::unwrap()` on an `Err` value: Publication { error: PublicationError { stage: BundleAssembly, detail: "derived index maintenance denied: ColdReconstructionRequired", context: ErrorContext { subsystem: Publication, operation: Publish, affected_records: [], version_context: None, suggested_fix: Some(InspectDiagnostics) }, authored_retirement_refusal: None, invariant_violation: None, index_maintenance_denial: Some(DerivedIndexMaintenanceDenial { kind: ColdReconstructionRequired, work: DerivedIndexMaintenanceWork { work_units: 1, patch_records: 1, record_reads: 0, adjacency_work_unit
+       - ive_checkpoint::tests::selected_ack::selected_ack_exposes_backed_data_before_retirement_and_releases_holds_only_on_completion
+[1] elational/src/durability/log/native_checkpoint_codec/kind_authentication_tests.rs:160
+     assertion `left == right` failed left: 1 right: 0
+       - ::log::native_checkpoint_codec::kind_authentication_tests::forged_cross_region_kind_commitment_is_refused_before_member_reads
+[1] crates/worth-relational/src/history/commit/artifact_tests.rs:260
+     assertion `left == right` failed: unpositioned scalar observations retain no byte allocation left: 8192 right: 0
+       - history::commit::artifact::tests::canonical_artifact_accounting_excludes_nested_diagnostic_perturbation
+[1] orth-relational/src/history/commit/envelope_residency/memory_publication_tests.rs:154
+     the actual frame reservation must refuse
+       - history::commit::envelope_residency::memory_publication_tests::memory_frame_quota_and_cancel_refuse_before_position_or_head
+[1] h-relational/src/history/data/canonical_commit_envelope/payload_encoding_tests.rs:106
+     assertion `left == right` failed left: Some(SchemaTransitionArtifact { source_schema_id: SchemaId("test"), source_schema_version_id: SchemaVersionId(1), target_schema_id: SchemaId("test"), target_schema_version_id: SchemaVersionId(2), diff_atoms: [SchemaDiffAtom { element: SchemaElementRef { kind: Field, schema_id: SchemaId("test"), schema_version_id: SchemaVersionId(2), kind_id: Some(KindId(1)), element_name: "tag" }, strata: [StructuralShape, PublicationContract], publication_impact: ObservableSurfaceChanged, subscriber_impact: ConsumableSurfaceChanged, boundary_visibility: VisibleSemantical
+       - a::canonical_commit_envelope::payload_encoding::tests::transition_payload_round_trips_schema_material_and_transition_identity
+[1] ry/data/codec_retirement_closure/payload_reconstruction/tests/storage_footprint.rs:36
+     fixture patch admission
+       - _retirement_closure::payload_reconstruction::tests::optional_output::clearing_reconstructed_last_aspect_retains_no_state_bill
+[1] crates/worth-relational/src/validation/engine/tests/acyclicity_resources.rs:22
+     a DAG needs live scratch, not the sum of every freed successor buffer: Execution { denial: CommitExecutionDenial { kind: Cause(PolicyMemoryExhausted { requested: 69824, admitted: 69429, ancestor: 0 }), partition_identity: None }, context: ErrorContext { subsystem: Transaction, operation: Validate, affected_records: [], version_context: None, suggested_fix: Some(InspectDiagnostics) }, commit_log: CommitLog { events: [], running_summary: CommitSummary { phase_count: 0, structural_summary: None, history_summary: None, patch_budget_summary: None, change_summary: None, aspect_summary: None, publica
+       - validation::engine::tests::acyclicity_resources::repeated_dag_reachability_reuses_scratch_under_the_same_finite_policy
+[1] sibility/materialization/read_records/projection/field_revisions/restore_tests.rs:327
+     DurabilityError { class: CorruptCheckpoint, detail: "record arena SoA column lengths differ", history_drift_class: None, authority_continuity_mismatch: None, storage_unavailable: None, context: ErrorContext { subsystem: Durability, operation: Recover, affected_records: [], version_context: None, suggested_fix: Some(RepairDurableStore) } }
+       - zation::read_records::projection::field_revisions::restore_tests::checkpoint_restore_rejects_incomplete_field_revision_column
+[1] crates/worth-relational/src/storage/substrate/record_arena/values/tests.rs:176
+     called `Result::unwrap()` on an `Err` value: Request(PolicyMemoryExhausted { requested: 5718, admitted: 3696, ancestor: 0 })
+       - storage::substrate::record_arena::values::tests::funded_extra_refuses_copy_and_replacement_before_growth
+[1] es/worth-relational/src/tests/durability/contracts/branch_root_content_binding.rs:323
+     unexpected denial: DurabilityError { class: CorruptCheckpoint, detail: "branch cell `main` target does not match immutable commit artifact `1`: target version/parents/roots = 1/[]/RelationalBranchRootDescriptor { truth_root: CanonicalDigestId([114, 188, 127, 221, 177, 103, 85, 43, 25, 227, 81, 40, 129, 15, 37, 118, 42, 155, 59, 85, 234, 0, 154, 217, 38, 203, 50, 92, 5, 214, 119, 77]), schema_root: CanonicalDigestId([133, 97, 197, 233, 123, 140, 54, 30, 146, 28, 253, 137, 138, 5, 65, 1, 73, 142, 153, 85, 71, 242, 107, 77, 240, 100, 71, 241, 106, 117, 106, 86]) }, artifact = 1/[]/RelationalBranc
+       - tests::durability::contracts::branch_root_content_binding::checkpoint_rejects_same_commit_truth_root_relabeling
+[1] tes/worth-relational/src/tests/durability/contracts/branch_root_content_binding.rs:11
+     assertion `left == right` failed left: 6 right: 5
+       - tests::durability::contracts::branch_root_content_binding::checkpoint_rejects_previous_branch_root_format_before_readmission
+[1] es/worth-relational/src/tests/durability/contracts/branch_root_content_binding.rs:323
+     unexpected denial: DurabilityError { class: CorruptCheckpoint, detail: "branch cell `shared-root-sibling` target does not match immutable commit artifact `1`: target version/parents/roots = 1/[]/RelationalBranchRootDescriptor { truth_root: CanonicalDigestId([117, 94, 74, 160, 179, 158, 61, 41, 243, 186, 125, 94, 238, 229, 152, 184, 36, 9, 8, 168, 223, 243, 172, 19, 34, 213, 78, 58, 34, 113, 163, 126]), schema_root: CanonicalDigestId([197, 97, 197, 233, 123, 140, 54, 30, 146, 28, 253, 137, 138, 5, 65, 1, 73, 142, 153, 85, 71, 242, 107, 77, 240, 100, 71, 241, 106, 117, 106, 86]) }, artifact = 1/
+       - urability::contracts::branch_root_shared_target_binding::checkpoint_rejects_later_shared_root_cell_with_relabeled_schema_root
+[1] es/worth-relational/src/tests/durability/contracts/branch_root_content_binding.rs:323
+     unexpected denial: DurabilityError { class: CorruptCheckpoint, detail: "branch cell `main` target does not match immutable commit artifact `1`: target version/parents/roots = 1/[]/RelationalBranchRootDescriptor { truth_root: CanonicalDigestId([180, 110, 161, 137, 147, 187, 85, 26, 58, 118, 199, 157, 142, 186, 238, 28, 206, 250, 63, 80, 234, 153, 158, 74, 132, 187, 191, 39, 87, 173, 94, 92]), schema_root: CanonicalDigestId([197, 97, 197, 233, 123, 140, 54, 30, 146, 28, 253, 137, 138, 5, 65, 1, 73, 142, 153, 85, 71, 242, 107, 77, 240, 100, 71, 241, 106, 117, 106, 86]) }, artifact = 1/[]/Relation
+       - tests::durability::contracts::branch_root_content_binding::checkpoint_rejects_same_commit_schema_root_relabeling
+[1] es/worth-relational/src/tests/durability/contracts/branch_root_content_binding.rs:323
+     unexpected denial: DurabilityError { class: CorruptCheckpoint, detail: "branch cell `shared-root-sibling` target does not match immutable commit artifact `1`: target version/parents/roots = 1/[]/RelationalBranchRootDescriptor { truth_root: CanonicalDigestId([164, 103, 130, 198, 21, 94, 112, 227, 71, 217, 188, 87, 233, 57, 221, 158, 39, 203, 173, 23, 165, 231, 95, 233, 252, 84, 132, 67, 83, 245, 53, 254]), schema_root: CanonicalDigestId([133, 97, 197, 233, 123, 140, 54, 30, 146, 28, 253, 137, 138, 5, 65, 1, 73, 142, 153, 85, 71, 242, 107, 77, 240, 100, 71, 241, 106, 117, 106, 86]) }, artifact =
+       - durability::contracts::branch_root_shared_target_binding::checkpoint_rejects_later_shared_root_cell_with_relabeled_truth_root
+[1] crates/worth-relational/src/tests/durability/medium/durable_before_live.rs:86
+     assertion failed: matches!(refused, TransactionCommitError::PublicationDenied { denial: RelationalPublicationDenial::DurablePublicationRefused(RelationalDurablePublicationRefusal::ProvenNoEffect { .. }), .. })
+       - tests::durability::medium::durable_before_live::a_refused_publication_was_offered_to_the_medium_and_moved_nothing_live
+[1] crates/worth-relational/src/tests/durability/medium/unresolved_fate.rs:55
+     the error names the unresolved publication
+       - tests::durability::medium::unresolved_fate::an_unresolved_publication_installs_nothing_and_refuses_every_later_commit_alike
+GROUPS 55 TESTS 91 UNEXPLAINED 0

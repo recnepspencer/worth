@@ -1,6 +1,7 @@
 [package]
 name = "worth-query-court-decl-host-authored-ownership"
 autotests = false
+build = "build.rs"
 edition.workspace = true
 rust-version.workspace = true
 version.workspace = true
@@ -31,3 +32,9 @@ features = ["derive"]
 
 [dev-dependencies.worth-query-decl]
 path = "../worth-query-decl"
+
+[build-dependencies]
+toml = "=1.1.8"
+
+[package.metadata.worth_test_link.x86_64-pc-windows-msvc]
+rustc-link-arg-tests = ["/PDBPAGESIZE:8192"]

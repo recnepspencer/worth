@@ -1,5 +1,6 @@
 //! Finite original serial funding for pure payload reconstruction owners.
 use super::*;
+mod optional_output;
 mod storage_footprint;
 use crate::publication::patch::data::{
     PublishedAuthoritativeFieldSet, PublishedAuthoritativePatchOperation as Op,

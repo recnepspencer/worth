@@ -109,12 +109,18 @@ impl std::fmt::Debug for ValidatedRelationalProposal {
 }
 
 impl ValidatedRelationalProposal {
+    /// Layout of this owner's single boxed state allocation on the current target.
+    /// Nested backing and allocator bookkeeping are outside this layout.
+    pub const fn state_backing_layout() -> std::alloc::Layout {
+        std::alloc::Layout::new::<ValidatedProposalState>()
+    }
+
     pub(crate) fn retain(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         state: ValidatedProposalState,
     ) -> Result<Self, crate::transactions::data::TransactionCommitError> {
-        let memory = execution
-            .reserve_retained_memory(std::mem::size_of::<ValidatedProposalState>() as u64)?;
+        let memory =
+            execution.reserve_retained_memory(Self::state_backing_layout().size() as u64)?;
         Ok(Self {
             state: Box::new(state),
             memory,

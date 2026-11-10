@@ -15,9 +15,7 @@ mod schema;
 mod stage_schema;
 use schema::*;
 use stage_schema::*;
-mod co_checkpoint_tamper;
 mod co_courts;
-mod co_history;
 mod co_refusals;
 mod co_roles;
 mod content;
@@ -29,7 +27,6 @@ mod lifecycle;
 mod lifecycle_handlers;
 mod locality;
 mod metadata_guard;
-mod native_checkpoint_tamper;
 mod parameter_inverse;
 mod producer;
 mod program;
@@ -100,15 +97,11 @@ mod heterogeneous;
 
 mod current_fence;
 
-mod coherent_roster;
 mod cold_pairing;
-mod current_roster;
 
 mod endpoint_fence;
 
 mod merged_generation;
-
-mod current_history;
 
 mod cold_owned_revision;
 

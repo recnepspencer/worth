@@ -21,86 +21,10 @@ pub(super) fn contracts() -> Vec<Contract<'static>> {
         },
         Contract {
             fixture: "preview_session_declaration_literal_private.rs",
-            errors: &[
-                Diagnostic::Code {
-                    code: "E0624",
-                    symbols: &["new"],
-                },
-                Diagnostic::TypeMismatch {
-                    pairs: &[
-                        Pair {
-                            expected: "worth_foundational::identities::authority_identity::current::FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>",
-                            found: "&'static str",
-                        },
-                    ],
-                    symbols: &["Arc", "BridgeEvidenceReferenceIdentityKind", "BridgeTruthAuthority", "FoundationalAuthorityIdentity", "str"],
-                },
-                Diagnostic::Code {
-                    code: "E0624",
-                    symbols: &["new"],
-                },
-                Diagnostic::TypeMismatch {
-                    pairs: &[
-                        Pair {
-                            expected: "worth_foundational::identities::authority_identity::current::FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>",
-                            found: "&'static str",
-                        },
-                    ],
-                    symbols: &["Arc", "BridgeEvidenceReferenceIdentityKind", "BridgeTruthAuthority", "FoundationalAuthorityIdentity", "str"],
-                },
-                Diagnostic::Code {
-                    code: "E0624",
-                    symbols: &["new"],
-                },
-                Diagnostic::TypeMismatch {
-                    pairs: &[
-                        Pair {
-                            expected: "worth_foundational::identities::authority_identity::current::FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>",
-                            found: "&'static str",
-                        },
-                    ],
-                    symbols: &["Arc", "BridgeEvidenceReferenceIdentityKind", "BridgeTruthAuthority", "FoundationalAuthorityIdentity", "str"],
-                },
-                Diagnostic::Code {
-                    code: "E0624",
-                    symbols: &["new"],
-                },
-                Diagnostic::TypeMismatch {
-                    pairs: &[
-                        Pair {
-                            expected: "worth_foundational::identities::authority_identity::current::FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>",
-                            found: "&'static str",
-                        },
-                    ],
-                    symbols: &["Arc", "BridgeEvidenceReferenceIdentityKind", "BridgeTruthAuthority", "FoundationalAuthorityIdentity", "str"],
-                },
-                Diagnostic::Code {
-                    code: "E0624",
-                    symbols: &["new"],
-                },
-                Diagnostic::TypeMismatch {
-                    pairs: &[
-                        Pair {
-                            expected: "worth_foundational::identities::authority_identity::current::FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>",
-                            found: "&'static str",
-                        },
-                    ],
-                    symbols: &["Arc", "BridgeEvidenceReferenceIdentityKind", "BridgeTruthAuthority", "FoundationalAuthorityIdentity", "str"],
-                },
-                Diagnostic::Code {
-                    code: "E0624",
-                    symbols: &["new"],
-                },
-                Diagnostic::TypeMismatch {
-                    pairs: &[
-                        Pair {
-                            expected: "worth_foundational::identities::authority_identity::current::FoundationalAuthorityIdentity<Arc<str>, BridgeTruthAuthority, BridgeEvidenceReferenceIdentityKind>",
-                            found: "&'static str",
-                        },
-                    ],
-                    symbols: &["Arc", "BridgeEvidenceReferenceIdentityKind", "BridgeTruthAuthority", "FoundationalAuthorityIdentity", "str"],
-                },
-            ],
+            errors: &[Diagnostic::Code {
+                code: "E0451",
+                symbols: &["BridgePreviewSessionDeclaration", "declaration_identity", "request_kind", "branch_binding", "session_basis", "request_shape_basis", "structural_basis", "truth_view_basis_digest", "structural_basis_digest", "source_capability_digest", "request_shape_digest", "retained_artifact_schema_digest", "canonical_basis", "digest", "private"],
+            }],
         },
     ]
 }

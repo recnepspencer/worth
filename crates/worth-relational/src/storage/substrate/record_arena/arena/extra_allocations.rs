@@ -53,10 +53,10 @@ fn visit_extra<K: RecordKind>(
     visitor: &mut dyn StorageAllocationVisitor,
 ) {
     if seen.insert(extra.id()) {
+        // Each distinct carrier reports its own declared bound, including
+        // aspect backing it shares with another carrier: a deliberate overbound.
         let mut allocation = extra.observation(false);
-        allocation.bytes = allocation
-            .bytes
-            .saturating_add(K::extra_owned_allocation_bytes(extra));
+        allocation.add_checked_nested_bound(K::extra_reachable_bound_bytes(extra));
         visitor.visit(allocation);
     }
 }

@@ -23,35 +23,31 @@ impl CanonicalAspectStateMap {
     pub(crate) fn from_validated_entries(
         entries: impl IntoIterator<Item = ContractValidatedAspectValue>,
     ) -> Result<Self, AuthoritativeStateAdmissionDenial> {
-        let mut canonical_entries = OrdMap::new();
+        let mut map = Self::from_canonical_entries(std::iter::empty());
         for entry in entries {
             let key = entry.key().clone();
-            if canonical_entries.insert(key.clone(), entry).is_some() {
+            if map.entries.contains_key(&key) {
                 return Err(AuthoritativeStateAdmissionDenial::DuplicateAspectKey(key));
             }
+            map.insert(key, entry);
         }
-
-        Ok(Self::from_canonical_entries(canonical_entries))
+        Ok(map)
     }
 
     pub(crate) fn from_canonical_entries(
-        entries: OrdMap<AspectKey, ContractValidatedAspectValue>,
+        entries: impl IntoIterator<Item = (AspectKey, ContractValidatedAspectValue)>,
     ) -> Self {
-        let allocation_bytes = entries
-            .iter()
-            .map(|(key, value)| entry_bytes(key, value))
-            .sum();
-        let mut key_width_counts = OrdMap::new();
-        for key in entries.keys() {
-            let width = key.as_str().len();
-            let count = key_width_counts.get(&width).copied().unwrap_or(0usize);
-            key_width_counts.insert(width, count + 1);
+        let mut map = Self {
+            entries: OrdMap::new(),
+            allocation_bytes: 0,
+            key_width_counts: OrdMap::new(),
+        };
+        // Maintain these existing extents while consuming the input. Scanning a
+        // completed im map would allocate two iterator paths for each pass.
+        for (key, value) in entries {
+            map.insert(key, value);
         }
-        Self {
-            entries,
-            allocation_bytes,
-            key_width_counts,
-        }
+        map
     }
 
     pub fn entries(&self) -> impl Iterator<Item = (&AspectKey, &ContractValidatedAspectValue)> {
@@ -129,10 +125,20 @@ impl std::fmt::Debug for CanonicalAspectStateMap {
 }
 
 impl CanonicalAspectStateMap {
-    /// Checked reachable bound for one independent retained storage holder.
-    /// Shared backing is included; this is deliberately not a physical Clone bill.
+    /// Checked declared upper bound of the backing reachable from one holder:
+    /// persistent tree nodes, the key-width index, keys, values and contracts.
+    /// Backing shared with another holder is included in full for each holder.
+    /// That is a deliberate overbound: it is neither a physical Clone bill nor
+    /// an exact deduplicated inventory, and summing it across sharing holders
+    /// counts their shared backing once per holder. Every step is checked. A
+    /// saturated nested extent cannot pass, because the nonzero node backing
+    /// added last overflows it: `None` means the bound is unrepresentable.
     pub fn retained_storage_bytes(&self) -> Option<usize> {
-        usize::try_from(self.allocation_bytes)
+        let inline = std::mem::size_of::<(AspectKey, ContractValidatedAspectValue)>() as u128;
+        let payload = self
+            .allocation_bytes
+            .checked_sub(inline.checked_mul(self.len() as u128)?)?;
+        usize::try_from(payload)
             .ok()?
             .checked_add(storage_geometry::retained_nodes::<
                 AspectKey,
@@ -175,10 +181,19 @@ impl CanonicalAspectStateMap {
             .key_width_counts
             .len()
             .checked_add(additional_entries)?;
-        let key_bytes = self
-            .maximum_key_width()
-            .max(new_key_width)
-            .checked_mul(64)?;
+        let maximum_key_width = self.maximum_key_width().max(new_key_width);
+        if self.len() <= 62 && self.key_width_counts.len() <= 62 && entries <= 64 && widths <= 64 {
+            // A retained tree can still have children at63/64 entries. At62
+            // it is a leaf; this batch never fills beyond its64 inline cells.
+            // Each shared root is detached at most once across the whole batch.
+            return if operations == 0 {
+                Some(0)
+            } else {
+                Self::construction_storage_bytes(0)?
+                    .checked_add(self.len().checked_mul(maximum_key_width)?)
+            };
+        }
+        let key_bytes = maximum_key_width.checked_mul(64)?;
         storage_geometry::edit_paths::<AspectKey, ContractValidatedAspectValue>(
             entries, operations, key_bytes,
         )?
@@ -205,5 +220,7 @@ impl CanonicalAspectStateMap {
     }
 }
 
+#[cfg(test)]
+mod shared_holder_bound_tests;
 #[cfg(test)]
 mod tests;

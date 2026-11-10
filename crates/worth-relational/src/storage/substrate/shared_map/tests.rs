@@ -131,12 +131,7 @@ fn inline_header_footprints_remove_only_actual_header_arcs() {
     };
     type Header = SharedMap<RelationId, ()>;
     fn header_arc<T>() -> u64 {
-        std::alloc::Layout::new::<[usize; 2]>()
-            .extend(std::alloc::Layout::new::<T>())
-            .unwrap()
-            .0
-            .pad_to_align()
-            .size() as u64
+        Arc::<T>::layout_bytes()
     }
     #[derive(Default)]
     struct Inventory(Vec<StorageAllocationObservation>);

@@ -76,7 +76,7 @@ def consumer_doctest_commands():
     ] + [
         ("doc-owning-fixtures", ["cargo", "test", "--manifest-path", FIXTURE,
          "-p", "worth-query-consumer-root", "-p", "worth-query-topology-entry",
-         "--bins", "--lib", "--config", "build.incremental=false", "--no-fail-fast", "--",
+         "--bins", "--lib", "--no-fail-fast", "--",
          "compiled_examples_match_consumer_documents"]),
         ("doc-owning-examples", ["cargo", "test", "--manifest-path", QUERY,
          *packages("worth-query-declaration", "worth-query-execution", "worth-query-publication",

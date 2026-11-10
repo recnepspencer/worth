@@ -127,7 +127,6 @@ pub fn observe<B: ApplicationMutationBinding<Schema>>(
 }
 mod control;
 mod courts;
-mod foreign;
 pub(super) mod inspection;
 pub(super) mod program;
 type Host = WorthQueryProgramApplicationRuntime<Schema, program::Program>;

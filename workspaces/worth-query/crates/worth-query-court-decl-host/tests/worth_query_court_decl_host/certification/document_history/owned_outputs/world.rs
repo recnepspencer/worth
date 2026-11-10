@@ -191,53 +191,6 @@ pub fn outputs(host: &Host, branch: WorthQueryProductBranch) -> (query::Row, que
     (first, second)
 }
 
-pub fn restore_changed_build(checkpoint: WorthQueryApplicationCheckpoint, worker: bool) -> Host {
-    restore_program_checkpoint::<program::Program>(checkpoint, worker, true)
-}
-pub fn restore_same_build(checkpoint: WorthQueryApplicationCheckpoint, worker: bool) -> Host {
-    restore_program_checkpoint::<program::Program>(checkpoint, worker, false)
-}
-pub(super) fn restore_program_checkpoint<P>(
-    checkpoint: WorthQueryApplicationCheckpoint,
-    worker: bool,
-    changed: bool,
-) -> WorthQueryProgramApplicationRuntime<Schema, P>
-where
-    P: ApplicationProgramDefinition<Schema, Contributions = (Contribution,)>,
-    P::Outputs: WorthQueryApplicationProgramRoots<Schema>,
-{
-    let schema = Schema::declaration().unwrap();
-    let program = ApplicationProgramAuthoring::<Schema, P>::begin()
-        .with_schema(&schema)
-        .validated_program()
-        .unwrap();
-    let limits = if worker {
-        worker_limits()
-    } else {
-        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
-    };
-    WorthQueryInterimCheckpointRestore::program(
-        program,
-        schema,
-        (Configuration {
-            second_derivation: if changed {
-                Some(|value| value + 2000)
-            } else {
-                None
-            },
-        },),
-        ApplicationBuildIdentity::parse(if changed {
-            "91830000-0000-0000-0000-000000005357"
-        } else {
-            "91830000-0000-0000-0000-000000005356"
-        })
-        .unwrap(),
-        limits,
-        checkpoint,
-    )
-    .unwrap()
-}
-
 pub(super) fn seed(
     graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
     installed: &WorthQueryInstalledApplicationSchema<Schema>,

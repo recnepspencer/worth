@@ -123,8 +123,9 @@ impl PreparedResidentRegion {
         let inventory = partition
             .allocation_inventory_since(&previous.partition, basis.inventory)
             .map_err(RegionContentFailure::Content)?;
-        let new_payload_bytes =
-            partition.new_authoritative_allocation_bytes_since(&previous.partition);
+        let new_payload_bytes = partition
+            .new_authoritative_allocation_bytes_since(&previous.partition)
+            .map_err(RegionContentFailure::Content)?;
         let delta = unavailable_delta(
             &partition.entity_arena,
             &previous.partition.entity_arena,

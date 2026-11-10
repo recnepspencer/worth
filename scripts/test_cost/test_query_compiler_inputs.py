@@ -4,6 +4,7 @@ import unittest
 import tempfile
 
 from compile_batch import BatchCompilationFailure
+from compiler_prebuild import normalized_source_key
 from query_compiler_inputs import attributed, resolve_locations
 
 
@@ -24,8 +25,9 @@ class ConsumerCompilerReceipts(unittest.TestCase):
             self.assertEqual(observed['children'][0]['spans'][0]['file_name'], '<generated>')
 
     def test_compiler_receipts_require_observation_and_preserve_denial(self):
-        source = str(Path('consumer.rs').resolve())
-        target = {'src_path': source, 'name': 'consumer', 'kind': ['bin']}
+        raw_source = str(Path('consumer.rs').resolve())
+        source = normalized_source_key(raw_source)
+        target = {'src_path': raw_source, 'name': 'consumer', 'kind': ['bin']}
         targets = {source: ('consumer-package', target)}
         artifact = {'reason': 'compiler-artifact', 'package_id': 'consumer-package', 'target': target}
         denial = dict(artifact, reason='compiler-message', message={'level': 'error', 'message': 'unmet schema requirement'})

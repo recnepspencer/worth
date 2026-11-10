@@ -8,7 +8,7 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_execution::{ExecutionRequest, WorkCeilingDenial};
 use worth_foundational::facade::{
-    AspectValue, CanonicalDigestId, ContractValidatedAspectValueView, InternedString,
+    AspectValue, CanonicalDigestId, ContractValidatedAspectValueView,
 };
 use worth_relational::facade::runtime::{RelationalRuntime, VisibilityProjectionView};
 
@@ -81,10 +81,17 @@ fn admit_row(
             )
             .ok_or_else(|| denied("Home idempotency required field is missing"))
     };
-    let AspectValue::String(InternedString::Raw(key)) = field(&layout.key_locator)? else {
+    // Text read back from a reopened Home is stored text; both spell the same value.
+    fn text(value: &AspectValue) -> Option<&str> {
+        match value {
+            AspectValue::String(text) => text.raw_text(),
+            _ => None,
+        }
+    }
+    let Some(key) = text(field(&layout.key_locator)?) else {
         return Err(denied("Home idempotency key has foreign shape"));
     };
-    let AspectValue::String(InternedString::Raw(intent)) = field(&layout.intent_locator)? else {
+    let Some(intent) = text(field(&layout.intent_locator)?) else {
         return Err(denied("Home idempotency intent has foreign shape"));
     };
     context

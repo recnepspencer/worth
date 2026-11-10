@@ -1,3 +1,4 @@
+mod proposed_families;
 use super::*;
 use crate::validation::engine::InvariantExecutionMetadata;
 

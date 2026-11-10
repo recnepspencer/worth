@@ -6,17 +6,31 @@ use worth_testkit_compiler::{
 pub(super) fn contracts() -> Vec<Contract<'static>> {
     vec![
         Contract {
+            fixture: "descriptor_cannot_begin_transaction.rs",
+            errors: &[Diagnostic::TypeMismatch {
+                pairs: &[Pair {
+                    expected: "&AdmittedRelationalBranchBasis",
+                    found: "&RelationalBranchBasisDescriptor",
+                }],
+                symbols: &["AdmittedRelationalBranchBasis", "RelationalBranchBasisDescriptor"],
+            }],
+        },
+        Contract {
+            fixture: "fork_basis_has_no_nonfork_capabilities.rs",
+            errors: &[Diagnostic::TypeMismatch {
+                pairs: &[Pair {
+                    expected: "&AdmittedRelationalBranchBasis",
+                    found: "&AdmittedRelationalForkSourceBasis",
+                }],
+                symbols: &["AdmittedRelationalBranchBasis", "AdmittedRelationalForkSourceBasis"],
+            }],
+        },
+        Contract {
             fixture: "admitted_basis_cannot_be_fabricated.rs",
-            errors: &[
-                Diagnostic::Code {
-                    code: "E0451",
-                    symbols: &["AdmittedRelationalBranchBasis", "inner"],
-                },
-                Diagnostic::Uncoded {
-                    cause: "is private",
-                    symbols: &["AdmittedRelationalBranchBasisInner"],
-                },
-            ],
+            errors: &[Diagnostic::Code {
+                code: "E0451",
+                symbols: &["AdmittedRelationalBranchBasis", "inner", "private"],
+            }],
         },
         Contract {
             fixture: "commit_reference_is_not_public.rs",

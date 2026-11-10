@@ -1,4 +1,5 @@
-//! Exact physical union without per-root logical or excluded-lane inventories.
+//! Owner-allocation union without per-root logical or excluded-lane inventories.
+//! Nested persistent aspect backing is each payload carrier's declared bound.
 use super::*;
 use crate::branch::{
     RelationalRootAllocationVisitor, RelationalRootAuthoritativeAllocationObservation,
@@ -82,7 +83,7 @@ impl RelationalRootAllocationVisitor for CensusRootWalk<'_> {
                 partition,
                 &mut self.accounting.seen_payload,
                 self.accounting.census_work.as_mut(),
-            )
+            )?
         {
             self.accounting
                 .insert(allocation.locator(), allocation.authoritative_bytes());

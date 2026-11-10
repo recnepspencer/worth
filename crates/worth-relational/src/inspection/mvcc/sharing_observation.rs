@@ -111,8 +111,9 @@ use super::root_commitment::{
 /// assert_eq!(observation.branch_count(), 1);
 /// assert_eq!(observation.unique_root_count(), 1);
 ///
-/// // Live authoritative lanes: the byte total is exactly the deduplicated
-/// // allocation evidence, so callers can re-derive it themselves.
+/// // Live authoritative lanes: the byte total is exactly the sum of the
+/// // per-allocation evidence, so callers can re-derive it themselves. Rows
+/// // of payload carriers include a declared bound for nested aspect backing.
 /// let summed: u64 = observation
 ///     .authoritative_allocations()
 ///     .iter()
