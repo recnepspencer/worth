@@ -11,7 +11,6 @@ mod milestone_7d_phase_e;
 mod milestone_7e_phase_a;
 mod milestone_7e_phase_b;
 mod milestone_7e_phase_c;
-mod milestone_7e_phase_d;
 mod milestone_7e_phase_e;
 mod milestone_7e_phase_f;
 mod milestone_7e_phase_g;

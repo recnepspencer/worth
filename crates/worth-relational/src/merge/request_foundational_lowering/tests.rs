@@ -1,23 +1,19 @@
 use worth_foundational::{FoundationalMergeIntent, FoundationalMergeScopeFamily};
 use worth_proof::TransitionOutcome;
 
+use super::lower_merge_request_to_foundational;
 use crate::facade::history::BranchId;
 use crate::facade::merge::{
-    MergeExecutionRequest, MergeIntent, NormalizedRelationalMergeRequest,
-    RelationalMergeCorrespondencePosture, RelationalMergeRequestFamily,
-    RelationalMergeSchemaReconciliationPosture, RelationalMergeScope,
+    MergeIntent, NormalizedRelationalMergeRequest, RelationalMergeCorrespondencePosture,
+    RelationalMergeRequestFamily, RelationalMergeSchemaReconciliationPosture, RelationalMergeScope,
     RelationalMergeTopologyIntent,
 };
-use crate::tests::support::durable_runtime_with_test_schema;
 
 #[test]
 fn foundational_lowering_preserves_exact_relational_request_truth() {
-    let runtime = durable_runtime_with_test_schema();
     let normalized = normalized_request("main", "feature");
 
-    let lowered = runtime
-        .merge()
-        .lower_merge_request_to_foundational(normalized.clone());
+    let lowered = lower_merge_request_to_foundational(normalized.clone());
     let TransitionOutcome::Success(lowered) = lowered else {
         panic!("expected foundational admission success");
     };
@@ -59,16 +55,11 @@ fn foundational_lowering_preserves_exact_relational_request_truth() {
 
 #[test]
 fn foundational_lowering_does_not_collapse_distinct_relational_meanings() {
-    let runtime = durable_runtime_with_test_schema();
     let main_to_feature = normalized_request("main", "feature");
     let release_to_hotfix = normalized_request("release", "hotfix");
 
-    let lowered_main_to_feature = runtime
-        .merge()
-        .lower_merge_request_to_foundational(main_to_feature);
-    let lowered_release_to_hotfix = runtime
-        .merge()
-        .lower_merge_request_to_foundational(release_to_hotfix);
+    let lowered_main_to_feature = lower_merge_request_to_foundational(main_to_feature);
+    let lowered_release_to_hotfix = lower_merge_request_to_foundational(release_to_hotfix);
     let TransitionOutcome::Success(lowered_main_to_feature) = lowered_main_to_feature else {
         panic!("expected foundational admission success");
     };
@@ -95,52 +86,6 @@ fn foundational_lowering_does_not_collapse_distinct_relational_meanings() {
     );
 }
 
-#[test]
-fn execution_authoring_and_explicit_normalization_lower_identically() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = durable_runtime_with_test_schema();
-    crate::tests::support::create_entity_outcome(execution, &runtime, "merge-seed");
-    runtime
-        .history_authority()
-        .fork_branch_from(
-            execution,
-            BranchId("feature".to_string()),
-            &BranchId("main".to_string()),
-        )
-        .expect("feature branch has an exact owner cell");
-    let raw = MergeExecutionRequest::new(
-        BranchId("main".to_string()),
-        BranchId("feature".to_string()),
-        MergeIntent::ReconcileIntoTarget,
-    );
-    let normalized_from_execution = runtime
-        .merge()
-        .normalize_merge_request(raw)
-        .expect("normalized execution request");
-    let explicit = normalized_request("main", "feature");
-
-    let lowered_from_execution = runtime
-        .merge()
-        .lower_merge_request_to_foundational(normalized_from_execution);
-    let lowered_from_explicit = runtime
-        .merge()
-        .lower_merge_request_to_foundational(explicit);
-    let TransitionOutcome::Success(lowered_from_execution) = lowered_from_execution else {
-        panic!("expected foundational admission success");
-    };
-    let TransitionOutcome::Success(lowered_from_explicit) = lowered_from_explicit else {
-        panic!("expected foundational admission success");
-    };
-
-    assert_eq!(lowered_from_execution, lowered_from_explicit);
-    assert_eq!(
-        lowered_from_execution.lowering_digest(),
-        lowered_from_explicit.lowering_digest()
-    );
-}
-
 fn normalized_request(
     target_branch: &str,
     source_branch: &str,
@@ -158,12 +103,9 @@ fn normalized_request(
 
 #[test]
 fn foundational_lowering_uses_foundational_admission_vocabulary() {
-    let runtime = durable_runtime_with_test_schema();
     let normalized = normalized_request("main", "feature");
 
-    let lowered = runtime
-        .merge()
-        .lower_merge_request_to_foundational(normalized);
+    let lowered = lower_merge_request_to_foundational(normalized);
 
     match lowered {
         TransitionOutcome::Success(lowered) => {

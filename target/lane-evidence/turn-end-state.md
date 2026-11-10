@@ -54,3 +54,12 @@ atlanding2a-history-proof-claim-disposition.md:18HAPPY/15owner/5C4/8mixed,
 noC2claimmerelyfromprivateAPI. Memoryownerunitsmustnotclaimdurablereopen.
 All threegateitemsremainactive(runtimeattachment,32warnings,CompleteACK).
 Cumulativecounts0check/4Clippy/7focusedbuilds/5selectedtestruns.
+
+
+Proof/request slice complete:11public+14ownerfirstbuild/run, each0fail/0ignored.
+Fmt/context/caps16green,8cohesiveadvisories,Clippyonly32/23,boundarysame12
+nonechanged. Ledgerlanding2a-merge-proof-lanes.md/json. Baseline-2; onlynew
+productionseam existingbasisfacadeexport, statelessmapperunitmount. ExactC4
+restores45b6e87a0a. FreshindependentreviewAPPROVE. Activegatequeuecontinues:
+remainingruntimeattachmentconsumers,32warningfamilies,Complete/ACKpubliclane.
+Cumulative0check/5Clippy/9focusedbuilds/7selectedruns, noforbiddenbodyrun.

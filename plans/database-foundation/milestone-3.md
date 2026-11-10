@@ -21,6 +21,17 @@ each invariant is enforced and where each new type lives.
 
 ### C4 - Injected faults
 
+- Disconnected-graph half of `merge_branch_basis_denial_happens_before_planning_for_missing_or_disconnected_branches`:
+  `restore from 45b6e87a0a:crates/worth-relational/src/tests/history/milestone_7e_phase_a.rs`.
+  Restore `graft_disconnected_branch_head` from that file. C4 owns its forged
+  receipt/cell/graph installation and exact missing-base/binding denials. The
+  ordinary missing-source half now observes shipping owner binding publicly.
+- `replay_rebuild_denies_summary_and_packet_drift`:
+  `restore from 45b6e87a0a:crates/worth-relational/src/tests/history/milestone_7e_phase_e/replay_drift.rs`.
+  Restore its parent fixture from the same SHA. This injects summary/packet drift
+  and checks the private consistency predicate; it never actually ran a rebuild.
+  C4 must retain the exact fault assertions without reviving runtime attachment.
+
 - `residency_failure_matrix_nonhead_merge_history_covers_every_door_and_class`:
   `restore from 9addca7179:crates/worth-relational/src/tests/durability/medium/cold_merge_history_matrix/exhaustive.rs`.
   Moved under the coordinator's 2026-11-09 merge-parent ruling. C4 owns the

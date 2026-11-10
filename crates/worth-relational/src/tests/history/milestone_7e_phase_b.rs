@@ -5,8 +5,8 @@ use crate::history::data::{
     RelationalMergeBranchBasis, RelationalMergeBranchBasisFoundationalLoweringDenial,
 };
 use crate::tests::support::{
-    checkpoint_and_recover_with, create_branch_from_main, create_entity,
-    create_entity_outcome_on_branch, durable_runtime_with_test_schema,
+    create_branch_from_main, create_entity, create_entity_outcome_on_branch,
+    runtime_with_test_schema,
 };
 use crate::transactions::data::PublishedMergeExecutionAuthority;
 use worth_foundational::{
@@ -112,7 +112,7 @@ fn foundational_current_basis_bridge_and_readmission_preserve_exact_basis_truth(
 }
 
 #[test]
-fn foundational_current_basis_lowering_rejects_published_historical_basis_in_live_and_recovered_lanes(
+fn foundational_current_basis_lowering_rejects_published_historical_basis_in_live_and_memory_rebuilt_lanes(
 ) {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
@@ -134,8 +134,22 @@ fn foundational_current_basis_lowering_rejects_published_historical_basis_in_liv
     let live_authority =
         published_merge_authority(execution, &runtime, merge.commit.commit.commit_id);
 
-    let (_recovery, recovered) =
-        checkpoint_and_recover_with(execution, &runtime, durable_runtime_with_test_schema);
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let plan = runtime
+        .durability()
+        .recovery_plan(
+            execution,
+            crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
+    let mut recovered = runtime_with_test_schema();
+    recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
     let recovered_authority =
         published_merge_authority(execution, &recovered, merge.commit.commit.commit_id);
 
@@ -184,7 +198,7 @@ fn foundational_current_basis_lowering_rejects_stale_relational_basis_before_pub
 }
 
 fn merge_ready_runtime(execution: &worth_execution::ExecutionRequest<'_, '_>) -> RelationalRuntime {
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(

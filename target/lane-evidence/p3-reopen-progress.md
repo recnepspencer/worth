@@ -586,3 +586,23 @@ FreshfinalreviewAPPROVEall29assertionspreserved. Commit thissafe point then
 46rootproof/witnessbatchfromcompletedboundaryclassification. No newdoor needed;
 publicHAPPY andactualNativeMemory-ownpureunits split; C4 exactrefs preservefaults.
 Cumulative0check/4Clippy/7builds/5runs. Noignored/oracle/scale/scenario/merge/push.
+
+Proof/request first22-root batch:11public observations and14ownerunits selected.
+TwoC4restore45b6e references; stateless d mapping now actualowner. Honest
+Memory reconstructs Native retained originals for exact current-basis proof;
+external pair checks physical historical/current basis. Precompile review caught
+UnknownBranch tuple and missing facade export; both fixed before any Cargo.
+No authority door added; narrow existing publicbasis facade line is merge seam.
+
+Proof/request public firstbuild11/0/0. Native14ownerunitpacketbuildingsecondround,
+onlypackagecachelockwaitingsofar. Cumulative0check/4Clippy/9builds/6selectedruns
+(Nativebuildpending, 7thselectedrunpending). Noignored body executed.
+
+
+Proof/request slice complete:11public+14ownerfirstbuild/run, each0fail/0ignored.
+Fmt/context/caps16green,8cohesiveadvisories,Clippyonly32/23,boundarysame12
+nonechanged. Ledgerlanding2a-merge-proof-lanes.md/json. Baseline-2; onlynew
+productionseam existingbasisfacadeexport, statelessmapperunitmount. ExactC4
+restores45b6e87a0a. FreshindependentreviewAPPROVE. Activegatequeuecontinues:
+remainingruntimeattachmentconsumers,32warningfamilies,Complete/ACKpubliclane.
+Cumulative0check/5Clippy/9focusedbuilds/7selectedruns, noforbiddenbodyrun.

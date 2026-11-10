@@ -1,0 +1,97 @@
+Command: ["cargo", "nextest", "run", "--cargo-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\landing2a-merge-proof-native-initial\\build\\cargo-metadata.json", "--binaries-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\landing2a-merge-proof-native-initial\\build\\binaries.json", "--profile", "ci", "--config-file", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\landing2a-merge-proof-native-initial\\nextest.toml", "--ignore-default-filter", "--no-fail-fast", "--no-tests=fail", "--message-format", "libtest-json", "-E", "test(=merge::request_foundational_lowering::tests::foundational_lowering_does_not_collapse_distinct_relational_meanings) | test(=merge::request_foundational_lowering::tests::foundational_lowering_preserves_exact_relational_request_truth) | test(=merge::request_foundational_lowering::tests::foundational_lowering_uses_foundational_admission_vocabulary) | test(=tests::history::milestone_7e_phase_a::merge_branch_basis_matches_planning_artifact_and_history_scope_authority) | test(=tests::history::milestone_7e_phase_b::foundational_current_basis_bridge_and_readmission_preserve_exact_basis_truth) | test(=tests::history::milestone_7e_phase_b::foundational_current_basis_lowering_preserves_exact_relational_basis_truth) | test(=tests::history::milestone_7e_phase_b::foundational_current_basis_lowering_rejects_published_historical_basis_in_live_and_memory_rebuilt_lanes) | test(=tests::history::milestone_7e_phase_b::foundational_current_basis_lowering_rejects_stale_relational_basis_before_publication) | test(=tests::history::milestone_7e_phase_c::normalized_request_deserialization_revalidates_admitted_truth) | test(=tests::history::milestone_7e_phase_c::planning_execution_and_publication_consume_normalized_request_authority) | test(=tests::history::milestone_7e_phase_c::unsupported_request_posture_denies_before_history_or_planning_work) | test(=tests::history::milestone_7e_phase_e::proof_packet_deserialization_rejects_forged_retained_truth) | test(=tests::history::milestone_7e_phase_e::retained_merge_proof_packet_preserves_exact_authority_truth) | test(=tests::history::milestone_7e_phase_f::merge_proof_packet_canonical_basis_localizes_single_field_drift)"]
+Working directory: C:\programming\worth worktees\worktrees\m3-p3-reopen
+HEAD: 45b6e87a0a9be6d3536f73917dec7924c7f94868
+Git status --short empty: False
+Start: 2026-11-10T00:28:13.689004+00:00
+
+{"type": "cargo-invocation", "command": ["cargo", "nextest", "run", "--cargo-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\landing2a-merge-proof-native-initial\\build\\cargo-metadata.json", "--binaries-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\landing2a-merge-proof-native-initial\\build\\binaries.json", "--profile", "ci", "--config-file", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\landing2a-merge-proof-native-initial\\nextest.toml", "--ignore-default-filter", "--no-fail-fast", "--no-tests=fail", "--message-format", "libtest-json", "-E", "test(=merge::request_foundational_lowering::tests::foundational_lowering_does_not_collapse_distinct_relational_meanings) | test(=merge::request_foundational_lowering::tests::foundational_lowering_preserves_exact_relational_request_truth) | test(=merge::request_foundational_lowering::tests::foundational_lowering_uses_foundational_admission_vocabulary) | test(=tests::history::milestone_7e_phase_a::merge_branch_basis_matches_planning_artifact_and_history_scope_authority) | test(=tests::history::milestone_7e_phase_b::foundational_current_basis_bridge_and_readmission_preserve_exact_basis_truth) | test(=tests::history::milestone_7e_phase_b::foundational_current_basis_lowering_preserves_exact_relational_basis_truth) | test(=tests::history::milestone_7e_phase_b::foundational_current_basis_lowering_rejects_published_historical_basis_in_live_and_memory_rebuilt_lanes) | test(=tests::history::milestone_7e_phase_b::foundational_current_basis_lowering_rejects_stale_relational_basis_before_publication) | test(=tests::history::milestone_7e_phase_c::normalized_request_deserialization_revalidates_admitted_truth) | test(=tests::history::milestone_7e_phase_c::planning_execution_and_publication_consume_normalized_request_authority) | test(=tests::history::milestone_7e_phase_c::unsupported_request_posture_denies_before_history_or_planning_work) | test(=tests::history::milestone_7e_phase_e::proof_packet_deserialization_rejects_forged_retained_truth) | test(=tests::history::milestone_7e_phase_e::retained_merge_proof_packet_preserves_exact_authority_truth) | test(=tests::history::milestone_7e_phase_f::merge_proof_packet_canonical_basis_localizes_single_field_drift)"], "cwd": "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen", "capture": "ordered", "mode": "build", "target_dir": "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target", "cargo_profile": "test"}
+info: experimental features enabled: wrapper-scripts
+────────────
+ Nextest run ID 1ca10d99-b428-44a3-96c2-2bf5a90d6881 with nextest profile: ci
+    Starting 14 tests across 1 binary (2383 tests skipped)
+        PASS [   2.614s] ( 1/14) worth-relational tests::history::milestone_7e_phase_b::foundational_current_basis_lowering_rejects_published_historical_basis_in_live_and_memory_rebuilt_lanes
+        PASS [   3.326s] ( 2/14) worth-relational tests::history::milestone_7e_phase_c::planning_execution_and_publication_consume_normalized_request_authority
+        PASS [   4.113s] ( 3/14) worth-relational tests::history::milestone_7e_phase_b::foundational_current_basis_bridge_and_readmission_preserve_exact_basis_truth
+        PASS [   4.743s] ( 4/14) worth-relational tests::history::milestone_7e_phase_a::merge_branch_basis_matches_planning_artifact_and_history_scope_authority
+{"type":"suite","event":"started","test_count":33}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$storage::substrate::shared_column::tests::synthetic_dense_column_bootstrap_benchmark"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::durability::contracts::native_checkpoint_restore_benchmark::synthetic_native_restore_and_image_digest_benchmark"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_a::merge_branch_basis_matches_planning_artifact_and_history_scope_authority"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$merge::request_foundational_lowering::tests::foundational_lowering_uses_foundational_admission_vocabulary"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_b::foundational_current_basis_lowering_preserves_exact_relational_basis_truth"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_b::foundational_current_basis_bridge_and_readmission_preserve_exact_basis_truth"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$merge::request_foundational_lowering::tests::foundational_lowering_preserves_exact_relational_request_truth"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$merge::request_foundational_lowering::tests::foundational_lowering_does_not_collapse_distinct_relational_meanings"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_b::foundational_current_basis_lowering_rejects_stale_relational_basis_before_publication"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_c::planning_execution_and_publication_consume_normalized_request_authority"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_c::normalized_request_deserialization_revalidates_admitted_truth"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_b::foundational_current_basis_lowering_rejects_published_historical_basis_in_live_and_memory_rebuilt_lanes"}
+{"type":"test","event":"ignored","name":"worth-relational::worth_relational$storage::substrate::shared_column::tests::synthetic_dense_column_bootstrap_benchmark"}
+{"type":"test","event":"ignored","name":"worth-relational::worth_relational$tests::durability::contracts::native_checkpoint_restore_benchmark::synthetic_native_restore_and_image_digest_benchmark"}
+{"type":"test","event":"ok","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_b::foundational_current_basis_lowering_rejects_published_historical_basis_in_live_and_memory_rebuilt_lanes","exec_time":2.6142809}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_c::unsupported_request_posture_denies_before_history_or_planning_work"}
+{"type":"test","event":"ok","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_c::planning_execution_and_publication_consume_normalized_request_authority","exec_time":3.3264038}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_e::proof_packet_deserialization_rejects_forged_retained_truth"}
+{"type":"test","event":"ok","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_b::foundational_current_basis_bridge_and_readmission_preserve_exact_basis_truth","exec_time":4.1127274}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_e::retained_merge_proof_packet_preserves_exact_authority_truth"}
+{"type":"test","event":"ok","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_a::merge_branch_basis_matches_planning_artifact_and_history_scope_authority","exec_time":4.7433171}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::lineage::fork_scale::retained_fork_lineage_ancestry_is_flat_at_scale_profile"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::lineage::fork_scale::selected_main_lineage_is_flat_at_65_536_unrelated_commits"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::cad_topology_matrix::perf_cad_topology_matrix"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::downstream_runtime_mock_matrix::perf_downstream_runtime_mock_matrix"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::game_engine_matrix::perf_game_engine_matrix"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::geometry_artifact_decomposition_matrix::perf_geometry_artifact_decomposition_matrix"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::inspection_budget_matrix::perf_inspection_budget_matrix"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::invariant_materialization_matrix::perf_invariant_materialization_matrix"}
+{"type":"suite","event":"ok","passed":4,"failed":0,"ignored":19,"measured":0,"filtered_out":2364,"exec_time":14.7967292}
+        PASS [   5.487s] ( 5/14) worth-relational merge::request_foundational_lowering::tests::foundational_lowering_uses_foundational_admission_vocabulary
+        PASS [   6.339s] ( 6/14) worth-relational tests::history::milestone_7e_phase_b::foundational_current_basis_lowering_preserves_exact_relational_basis_truth
+        PASS [   7.184s] ( 7/14) worth-relational merge::request_foundational_lowering::tests::foundational_lowering_does_not_collapse_distinct_relational_meanings
+        PASS [   7.889s] ( 8/14) worth-relational tests::history::milestone_7e_phase_b::foundational_current_basis_lowering_rejects_stale_relational_basis_before_publication
+        PASS [   8.759s] ( 9/14) worth-relational tests::history::milestone_7e_phase_c::normalized_request_deserialization_revalidates_admitted_truth
+{"type":"suite","event":"started","test_count":33}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::mixed_load_matrix::perf_mixed_load_matrix"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::performance_harness_matrix::perf_harness_measurement_matrix"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::profile_matrix::capture::perf_profile_matrix"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::query_packet_matrix::perf_query_packet_matrix"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::retention_reclaim_matrix::perf_retention_reclaim_matrix"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::rocketship_scale_matrix::perf_rocketship_scale_matrix"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::performance_profiles::snapshot_materialization_matrix::perf_snapshot_materialization_matrix"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::publication::cdc::certification::seeded_resume::cdc_certification_rewrite_storm_preserves_exact_suffix_under_tiny_windows"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::publication::cdc::certification::seeded_resume::cdc_certification_thousand_step_random_resume_matrix_converges"}
+{"type":"test","event":"started","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_f::merge_proof_packet_canonical_basis_localizes_single_field_drift"}
+{"type":"test","event":"ignored","name":"worth-relational::worth_relational$tests::performance_profiles::mixed_load_matrix::perf_mixed_load_matrix"}
+{"type":"test","event":"ignored","name":"worth-relational::worth_relational$tests::performance_profiles::performance_harness_matrix::perf_harness_measurement_matrix"}
+{"type":"test","event":"ignored","name":"worth-relational::worth_relational$tests::performance_profiles::profile_matrix::capture::perf_profile_matrix"}
+{"type":"test","event":"ignored","name":"worth-relational::worth_relational$tests::performance_profiles::query_packet_matrix::perf_query_packet_matrix"}
+{"type":"test","event":"ignored","name":"worth-relational::worth_relational$tests::performance_profiles::retention_reclaim_matrix::perf_retention_reclaim_matrix"}
+{"type":"test","event":"ignored","name":"worth-relational::worth_relational$tests::performance_profiles::rocketship_scale_matrix::perf_rocketship_scale_matrix"}
+{"type":"test","event":"ignored","name":"worth-relational::worth_relational$tests::performance_profiles::snapshot_materialization_matrix::perf_snapshot_materialization_matrix"}
+{"type":"test","event":"ignored","name":"worth-relational::worth_relational$tests::publication::cdc::certification::seeded_resume::cdc_certification_rewrite_storm_preserves_exact_suffix_under_tiny_windows"}
+{"type":"test","event":"ignored","name":"worth-relational::worth_relational$tests::publication::cdc::certification::seeded_resume::cdc_certification_thousand_step_random_resume_matrix_converges"}
+{"type":"test","event":"ok","name":"worth-relational::worth_relational$merge::request_foundational_lowering::tests::foundational_lowering_uses_foundational_admission_vocabulary","exec_time":5.4867142}
+{"type":"test","event":"ok","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_b::foundational_current_basis_lowering_preserves_exact_relational_basis_truth","exec_time":6.3388863}
+{"type":"test","event":"ok","name":"worth-relational::worth_relational$merge::request_foundational_lowering::tests::foundational_lowering_does_not_collapse_distinct_relational_meanings","exec_time":7.1837231}
+{"type":"test","event":"ok","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_b::foundational_current_basis_lowering_rejects_stale_relational_basis_before_publication","exec_time":7.8889875}
+{"type":"test","event":"ok","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_c::normalized_request_deserialization_revalidates_admitted_truth","exec_time":8.7591515}
+{"type":"suite","event":"ok","passed":5,"failed":0,"ignored":19,"measured":0,"filtered_out":2364,"exec_time":35.6574626}
+        PASS [   9.669s] (10/14) worth-relational merge::request_foundational_lowering::tests::foundational_lowering_preserves_exact_relational_request_truth
+        PASS [   8.040s] (11/14) worth-relational tests::history::milestone_7e_phase_c::unsupported_request_posture_denies_before_history_or_planning_work
+        PASS [   8.192s] (12/14) worth-relational tests::history::milestone_7e_phase_e::proof_packet_deserialization_rejects_forged_retained_truth
+        PASS [   8.544s] (13/14) worth-relational tests::history::milestone_7e_phase_e::retained_merge_proof_packet_preserves_exact_authority_truth
+        PASS [   8.541s] (14/14) worth-relational tests::history::milestone_7e_phase_f::merge_proof_packet_canonical_basis_localizes_single_field_drift
+────────────
+     Summary [  13.302s] 14 tests run: 14 passed, 2383 skipped
+{"type":"suite","event":"started","test_count":33}
+{"type":"test","event":"ok","name":"worth-relational::worth_relational$merge::request_foundational_lowering::tests::foundational_lowering_preserves_exact_relational_request_truth","exec_time":9.6694208}
+{"type":"test","event":"ok","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_c::unsupported_request_posture_denies_before_history_or_planning_work","exec_time":8.0402721}
+{"type":"test","event":"ok","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_e::proof_packet_deserialization_rejects_forged_retained_truth","exec_time":8.1921572}
+{"type":"test","event":"ok","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_e::retained_merge_proof_packet_preserves_exact_authority_truth","exec_time":8.5442772}
+{"type":"test","event":"ok","name":"worth-relational::worth_relational$tests::history::milestone_7e_phase_f::merge_proof_packet_canonical_basis_localizes_single_field_drift","exec_time":8.5414458}
+{"type":"suite","event":"ok","passed":5,"failed":0,"ignored":19,"measured":0,"filtered_out":2373,"exec_time":42.9875731}
+
+
+{"type": "cargo-result", "exit_code": 0}
+
+End: 2026-11-10T00:28:27.353790+00:00
+Exit code: 0

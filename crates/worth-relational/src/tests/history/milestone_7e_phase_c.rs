@@ -8,67 +8,8 @@ use crate::facade::merge::{
 use crate::facade::runtime::RelationalRuntime;
 use crate::tests::support::{
     create_branch_from_main, create_entity, create_entity_outcome_on_branch,
-    durable_runtime_with_test_schema,
+    runtime_with_test_schema,
 };
-
-#[test]
-fn normalized_merge_request_equivalence_is_exact_across_authoring_lanes() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = merge_ready_runtime(execution);
-    let planning_request = planning_request();
-    let execution_request = execution_request();
-
-    let normalized_from_planning = runtime
-        .merge()
-        .normalize_merge_planning_request(planning_request.clone())
-        .expect("normalized planning request");
-    let normalized_from_execution = runtime
-        .merge()
-        .normalize_merge_request(execution_request.clone())
-        .expect("normalized execution request");
-    let explicit_specialist = NormalizedRelationalMergeRequest::admit_full_branch(
-        BranchId("main".to_string()),
-        BranchId("feature".to_string()),
-        MergeIntent::ReconcileIntoTarget,
-        RelationalMergeCorrespondencePosture::Advisory,
-        RelationalMergeSchemaReconciliationPosture::Participate,
-        RelationalMergeTopologyIntent::PreserveTopologySemantics,
-    )
-    .expect("specialist explicit request");
-
-    assert_eq!(normalized_from_planning, normalized_from_execution);
-    assert_eq!(normalized_from_planning, explicit_specialist);
-    assert_eq!(
-        normalized_from_planning.request_digest(),
-        normalized_from_execution.request_digest()
-    );
-    assert_eq!(
-        normalized_from_planning.request_digest(),
-        explicit_specialist.request_digest()
-    );
-    assert_eq!(
-        normalized_from_planning.family(),
-        RelationalMergeRequestFamily::FullBranchReconciliation
-    );
-    assert_eq!(
-        normalized_from_planning.scope(),
-        RelationalMergeScope::FullBranch
-    );
-    assert_eq!(
-        normalized_from_planning.correspondence_posture(),
-        RelationalMergeCorrespondencePosture::Advisory
-    );
-    assert_eq!(
-        normalized_from_planning.schema_reconciliation_posture(),
-        RelationalMergeSchemaReconciliationPosture::Participate
-    );
-    assert_eq!(
-        normalized_from_planning.topology_intent(),
-        RelationalMergeTopologyIntent::PreserveTopologySemantics
-    );
-}
 
 #[test]
 fn unsupported_request_posture_denies_before_history_or_planning_work() {
@@ -236,7 +177,7 @@ fn normalized_request_deserialization_revalidates_admitted_truth() {
 }
 
 fn merge_ready_runtime(execution: &worth_execution::ExecutionRequest<'_, '_>) -> RelationalRuntime {
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(

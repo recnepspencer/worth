@@ -56,3 +56,10 @@ mod definition_lookup_snapshot;
 mod merge_history_planning;
 mod merge_policy_evidence;
 mod merge_visibility_evidence;
+
+mod merge_basis_journeys;
+mod merge_packet_canonical_journey;
+mod merge_packet_journeys;
+mod merge_proof_journey;
+mod merge_request_journeys;
+mod merge_request_lowering_journey;
