@@ -5,6 +5,7 @@ mod courts;
 pub(super) mod history;
 pub(super) mod multi;
 pub(super) mod producer;
+mod single_round;
 
 impl<S: Scenario> WorthQueryApplicationRequiredOutputSource<S, program::Start>
     for lifecycle::RetireBinding<S>

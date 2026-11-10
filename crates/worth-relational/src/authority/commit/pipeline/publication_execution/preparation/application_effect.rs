@@ -1,5 +1,4 @@
 //! Judge the actual applied body before current-publication bookkeeping.
-use crate::publication::patch::data::RecordStructuralChange;
 use crate::transactions::data::{RecordRef, TransactionCommitError};
 
 pub(super) fn unchanged(
@@ -28,12 +27,7 @@ pub(super) fn unchanged(
             let patches = &envelope.patch.authoritative_record_patches;
             for patch in patches {
                 crate::execution::request_stage::checkpoint(context, 1).map_err(stop)?;
-                if patch.structural_change != RecordStructuralChange::Updated
-                    || patch.contains_opaque_aspect
-                    || !patch.semantic_changes.is_empty()
-                    || patch.authoritative_changed_aspect_keys().next().is_some()
-                    || patch.relation_birth.is_some()
-                {
+                if !patch.preserves_application() {
                     return Ok(false);
                 }
             }

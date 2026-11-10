@@ -18,6 +18,9 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 .replay_continuation_probe(execution)
                 .map_err(Into::into);
         }
+        if matches!(fault, 7..=9) {
+            return self.continued_round_probe(execution, posture, content, batches, fault);
+        }
         if matches!(fault, 5 | 6) {
             let target = if fault == 6 {
                 posture

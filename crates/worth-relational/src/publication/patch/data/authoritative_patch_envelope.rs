@@ -29,7 +29,33 @@ pub struct PublishedAuthoritativeRecordPatch {
     pub relation_birth: Option<PublishedRelationBirth>,
 }
 
+/// One meaning of "this applied record patch left the application unchanged",
+/// shared by the final envelope judgment and a continued candidate round.
+pub(crate) fn preserves_application(
+    structural_change: RecordStructuralChange,
+    contains_opaque_aspect: bool,
+    semantic_changes: &[super::PublishedAuthoritativeAspectChange],
+    authoritative_patch: &PublishedAuthoritativePatch,
+    relation_birth: Option<&PublishedRelationBirth>,
+) -> bool {
+    structural_change == RecordStructuralChange::Updated
+        && !contains_opaque_aspect
+        && semantic_changes.is_empty()
+        && authoritative_patch.changed_aspect_keys().next().is_none()
+        && relation_birth.is_none()
+}
+
 impl PublishedAuthoritativeRecordPatch {
+    pub(crate) fn preserves_application(&self) -> bool {
+        preserves_application(
+            self.structural_change,
+            self.contains_opaque_aspect,
+            &self.semantic_changes,
+            &self.authoritative_patch,
+            self.relation_birth.as_ref(),
+        )
+    }
+
     pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
         (self.semantic_changes.capacity() as u64)
             .saturating_mul(std::mem::size_of::<super::PublishedAuthoritativeAspectChange>() as u64)

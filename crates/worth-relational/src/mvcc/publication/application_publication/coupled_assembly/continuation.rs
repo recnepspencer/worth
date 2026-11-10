@@ -88,6 +88,14 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             })
             .map_err(super::custody::execution_stop)?
             .0?;
+        // The route map's Native half: only an Edit may complete a route by
+        // verification, so only an Edit's owned route may observe it again.
+        if !self.permits_unchanged_output_selection() {
+            return Err(part::reject(
+                Cause::CoupledContinuationRequiresEditSource,
+                meaning.source_scope,
+            ));
+        }
         if part.publication.owned().is_none()
             || self
                 .binding
@@ -107,3 +115,4 @@ impl RelationalAuthoredCoupledCandidate<'_> {
 }
 
 mod corruption;
+mod round;

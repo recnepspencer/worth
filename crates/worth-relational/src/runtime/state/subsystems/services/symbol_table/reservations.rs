@@ -147,6 +147,17 @@ impl PendingSymbolMeanings {
     pub(crate) fn has_reserved_meanings(&self) -> bool {
         !self.reserved.is_empty()
     }
+    /// A later count above an earlier one is a new candidate dictionary effect.
+    pub(crate) fn reserved_meaning_count(&self) -> usize {
+        self.reserved.len()
+    }
+    /// The same dictionary view under separate custody. Whatever a judgment
+    /// reserves or requires in the copy is dropped with it, never published.
+    pub(crate) fn discardable_copy(&self) -> Result<Self, SymbolReservationDenial> {
+        let mut copy = self.owner.begin_pending_meanings();
+        copy.adopt(self)?;
+        Ok(copy)
+    }
 
     pub(crate) fn reserve_revision_reference(
         &mut self,

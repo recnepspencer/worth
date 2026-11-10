@@ -26,6 +26,8 @@ pub enum AuthoredRetirementRefusal {
     ForeignCoupledContinuation,
     StaleCoupledContinuation,
     CoupledContinuationRequiresOwnedRoute,
+    /// An explicit retirement, restoration or selection writer runs exactly once.
+    CoupledContinuationRequiresEditSource,
     /// Only the new atomic continuation entry refuses; existing successor delivery stays available.
     CoupledContinuationProvenancePostponed {
         issue: u16,

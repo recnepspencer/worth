@@ -9,6 +9,7 @@ mod published_authoritative_patch;
 mod record_structural_change;
 mod semantic_change;
 
+pub(crate) use authoritative_patch_envelope::preserves_application;
 pub use authoritative_patch_envelope::{
     CanonicalAuthoritativePatch, PublishedAuthoritativePatchEnvelope,
     PublishedAuthoritativeRecordPatch, PublishedRelationBirth,

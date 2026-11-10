@@ -80,6 +80,27 @@ impl<S> WorthQueryPrimaryGraphApplicationRuntime<S> {
     ) -> WorthQueryCoupledParticipantCorruptionForTest {
         self.arm_fresh_record_corruption(6)
     }
+    /// The actual writer's own complete commands return as a continued round of its route.
+    #[doc(hidden)]
+    pub fn continue_next_coupled_route_with_its_effect_for_test(
+        &self,
+    ) -> WorthQueryCoupledParticipantCorruptionForTest {
+        self.arm_fresh_record_corruption(7)
+    }
+    /// Only the actual writer's in-place patches return, at values D already holds.
+    #[doc(hidden)]
+    pub fn continue_next_coupled_route_unchanged_for_test(
+        &self,
+    ) -> WorthQueryCoupledParticipantCorruptionForTest {
+        self.arm_fresh_record_corruption(8)
+    }
+    /// The actual writer's in-place patches return with each unsigned value moved by one.
+    #[doc(hidden)]
+    pub fn continue_next_coupled_route_with_a_changed_patch_for_test(
+        &self,
+    ) -> WorthQueryCoupledParticipantCorruptionForTest {
+        self.arm_fresh_record_corruption(9)
+    }
     fn arm_fresh_record_corruption(
         &self,
         fault: u8,

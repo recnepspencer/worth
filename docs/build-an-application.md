@@ -4356,6 +4356,21 @@ either limit refuses typed before contacting a handler and rolls back the whole
 edit. A retry of an already committed key resolves the original receipt before
 producer starts. The limits carry no permission and do not change intent identity.
 
+A route publishes one producing run per synchronous edit. Native refuses a
+further in-edit run of the same route that would change anything, with
+`CoupledContinuationProvenancePostponed { issue: 119 }`, before publication;
+a run that applies nothing leaves the edit exactly as it was. No application
+entry requests such a run yet: a route whose output depends on its own effect
+is completed by ordinary delivery after the commit. An explicit retirement,
+restoration or selection writer runs exactly once
+(`CoupledContinuationRequiresEditSource`).
+
+A wide edit is also bounded by host budgets. Each producer an edit starts holds
+an active World observation and a graph-work admission until the edit commits.
+Exhausting either refuses the whole edit typed, with
+`ObservationCapacityExhausted` or `GraphWorkAdmissionUnavailable`, before the
+start limits are reached. Size both budgets for the widest edit you admit.
+
 The edit's receipt describes the source and producer changes in one Native
 commit. Repeating its idempotency key returns the original receipt. Subsequent
 demands reuse the coupled outputs without another producer contact or readiness

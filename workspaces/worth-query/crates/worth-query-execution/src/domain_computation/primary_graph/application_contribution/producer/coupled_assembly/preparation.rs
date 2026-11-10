@@ -133,7 +133,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
             .application_attempt_operation_control
             .take_coupled_participant_corruption(self.writers.borrow().len())
         {
-            fault @ (1..=6) => candidate.append_corrupt_participant_for_test(
+            fault @ (1..=9) => candidate.append_corrupt_participant_for_test(
                 execution,
                 publication,
                 &content,

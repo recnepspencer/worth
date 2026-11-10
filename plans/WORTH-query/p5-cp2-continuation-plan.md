@@ -444,3 +444,44 @@ aggregate locality, revise slice 2's estimate to 900–1,300 production and
 2–3 lane-days and an unmeasured 80–180KiB optimized-text estimate. This is not
 a size exemption or a measured release result. Cancellation/elision remains
 postponed under #119/#100; this increase does not reopen that scope.
+
+## D1483/D1484 slice 1 checkpoint: Native second-effect guard and route map
+
+D1483 postpones the middle-input journey (no-effect, effect, no-effect) with the
+same-route receipt replacement it would need. CP2b covers effect then
+verification only. The journey keeps its typed refusal, courted in
+synchronous_edit/graph/middle_input.rs. M-O2a has nothing to mutate.
+
+Native now judges a continued round at coupled_assembly/continuation/round.rs.
+`verify_producer_round` consumes next-round custody, applies the round's
+commands to a fresh working state over the current pin with a discarded copy of
+the candidate dictionary, and judges the actual outcome with the same per-patch
+predicate as the final envelope (publication/patch/data). Creation, deletion,
+replacement, endpoint change, content and raw client keys are effects without
+application. Any effect refuses CoupledContinuationProvenancePostponed #119
+before publication. An unchanged round writes nothing to the candidate. It
+takes no second posture: the route is the token's own Native part.
+
+The route map's Native half is in next_producer_round: only an Edit source may
+observe a route again. An explicit retirement, restoration or selection writer
+is refused CoupledContinuationRequiresEditSource and runs exactly once.
+
+Courts use the closed Native receiver (probes 7, 8 and 9), re-presenting the
+real writer's own commands after its real part. Runtime mutants, SHA-256
+restored: M-C2 (remove the stop), M-C2-unapplied (accept a patch without
+applying it), M-O1-native (mark an unchanged round effectful), M-B1-native
+(grant an explicit writer custody). A many-route court pins the attempt total
+at its exact boundary; both off-by-one mutants fail it.
+
+Moved to slice 3, because they need real repeat dispatch: the Query disposition
+from applied-rebase facts (rounds/disposition.rs) and M-B1 as first worded
+(NRU as candidate repeat). The candidate has no NRU signal before commit;
+own-effect supersession is decided by the rebase onto the committed snapshot.
+A verification round must reach Native without its receipt, aftermath and
+dispatch-outbox records, which Native counts as effects. Only the receipt has
+a detach door today.
+
+Release measurement of the default total (ruling C): an edit with exactly
+4,096 starts completes in one commit in 171.5 s; the 4,097th start is refused
+before contact. Cost per start rises from 8 ms at 17 starts to 42 ms at 4,096.
+That slope blocks slice 2 until the per-round cost cutover is complete.
