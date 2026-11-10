@@ -14,6 +14,10 @@ pub use worth_query_testkit_execution_primary_graph_application_contribution::do
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::MultiFieldRetentionOperation;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::WrongFieldRetentionOperation;
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcome;
+pub use worth_query_execution::facade::primary_graph::{
+    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
+    WorthQueryPreImageRetentionDenial,
+};
 
 pub fn relational_head(
     phase_custody: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
@@ -29,11 +33,24 @@ pub fn relational_head(
         .expect("fixture has a Relational head")
 }
 
-pub fn assert_retention_denied(outcome: &WorthQueryApplicationCommitOutcome) {
-    assert!(
-        matches!(outcome, WorthQueryApplicationCommitOutcome::Aborted),
-        "unexpected retention-denial outcome: {outcome:?}"
+/// Retention runs before the Native transaction, so every retention denial is
+/// a pre-effect refusal carrying its typed cause (public #122).
+pub fn assert_retention_denied(
+    outcome: &WorthQueryApplicationCommitOutcome,
+    expected: WorthQueryPreImageRetentionDenial,
+) {
+    let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
+        panic!("unexpected retention-denial outcome: {outcome:?}");
+    };
+    assert_eq!(
+        denial.kind(),
+        WorthQueryApplicationCommitDenialKind::ProviderRejected
     );
+    assert_eq!(
+        denial.stage(),
+        WorthQueryApplicationCommitDenialStage::ProviderCommit
+    );
+    assert_eq!(denial.preimage_retention_denial(), Some(expected));
 }
 
 #[test]
@@ -141,20 +158,27 @@ fn right_record_wrong_field_retention_denial_commits_nothing() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     );
 
-    assert_retention_denied(&outcome);
+    // The inverse demands `AccountStatus`; the operation mutates only
+    // `AccountLabel`, so no observed and mutated candidate exists for it.
+    assert_retention_denied(
+        &outcome,
+        WorthQueryPreImageRetentionDenial::MissingDemandedField,
+    );
     let after = world
         .application
         .with_host_advancement(|phase| relational_head(&phase, &world))
         .expect("the fixture read owns its installed host call");
     assert_eq!(after, before, "a refused inverse preimage commits nothing");
+    next_valid_commit_publishes(&world, &before);
 }
 
-#[test]
-fn two_field_same_record_retains_one_exact_prior_truth() {
-    let world = installed_authorization_world(
-        true,
-        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
-    );
+/// Commits the valid same-record operation: the two-field inverse demands
+/// `AccountStatus` and `AccountLabel`, and both are mutated on one record.
+pub fn commit_same_record(
+    world: &AuthorizationWorld,
+    key: u8,
+    intent: u8,
+) -> WorthQueryApplicationCommitOutcome {
     let request = live_scope();
     let principal = world
         .application
@@ -251,11 +275,35 @@ fn two_field_same_record_retains_one_exact_prior_truth() {
             "renamed".to_owned(),
         )
         .unwrap();
-    let outcome = world.application.compare_and_commit_application(
+    world.application.compare_and_commit_application(
         effects.finish().unwrap(),
-        idempotency(75, 76),
+        idempotency(key, intent),
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+}
+
+/// The check the old abort expectation stood in for: after a refused commit
+/// the same application commits a valid operation next, and it publishes.
+pub fn next_valid_commit_publishes(world: &AuthorizationWorld, before: &RelationalCommitReceipt) {
+    let outcome = commit_same_record(world, 91, 92);
+    assert!(
+        matches!(outcome, WorthQueryApplicationCommitOutcome::Committed(_)),
+        "the application commits a valid operation after the refusal: {outcome:?}"
     );
+    let head = world
+        .application
+        .with_host_advancement(|phase| relational_head(&phase, world))
+        .expect("the fixture read owns its installed host call");
+    assert_ne!(&head, before, "the valid operation publishes");
+}
+
+#[test]
+fn two_field_same_record_retains_one_exact_prior_truth() {
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let outcome = commit_same_record(&world, 75, 76);
     let WorthQueryApplicationCommitOutcome::Committed(receipt) = outcome else {
         panic!("same-record inverse must commit: {outcome:?}");
     };

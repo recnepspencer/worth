@@ -150,8 +150,11 @@ pub(in crate::domain_computation::primary_graph) use relational_commit::{
     PreparedRebaseDenial, PreparedSourceFactRebase,
 };
 
-// Typed content/read stops precede the Native transaction. Preserve semantic
-// protocol failures through the existing abort-and-cleanup owner.
+// Every stop here precedes the Native transaction. A read control stop keeps
+// its control posture; every other typed refusal (a content or read rejection,
+// a relation preimage, any preimage retention denial, candidate support) is a
+// pre-effect refusal carrying its cause (public #122). The rest go through the
+// existing abort-and-cleanup owner.
 fn preparation_stop(
     failure: WorthQueryProviderSessionFailure,
 ) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
