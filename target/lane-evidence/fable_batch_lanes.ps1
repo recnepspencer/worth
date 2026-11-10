@@ -9,6 +9,8 @@ param([string[]]$Stages = @("check"), [string]$Tag = "batch1")
 Set-Location "C:\programming\worth worktees\worktrees\m3-host-home"
 Remove-Item Env:\CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER -ErrorAction SilentlyContinue
 $e = "target\lane-evidence"
+# `powershell -File` hands a comma list over as one string.
+$Stages = @($Stages | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 $commands = @{
     "check"      = @("python", "$e\master2_checks.py", "fable-$Tag", "root", "query", "store", "bank")
     "root-t2"    = @("python", "$e\master2-tier2-permitted.py", "--execute", "--only", "root", "--out", "$e\fable-$Tag-tier2-root")
