@@ -211,8 +211,7 @@ impl ValidatedRelationalProposal {
                 _ => None,
             })
             .flat_map(|group| group.parts.iter())
-            .filter(|part| part.publication.producing_meaning() == Some(meaning))
-            .last()?;
+            .rfind(|part| part.publication.producing_meaning() == Some(meaning))?;
         Some(preparation::project_commands(
             self,
             execution,
