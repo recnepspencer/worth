@@ -32,3 +32,8 @@ This ledger lists existing court assertions CP3 changed and any typed-error or s
 - `stages_outside_the_admitted_roster_refuse_without_effect`: an unadmitted stage, a missing stage and a stage after a producer each refuse typed, and C is unchanged.
 - `a_later_stage_cannot_rewrite_a_field_an_earlier_stage_wrote`: refuses with `ConflictingIntent` on the record whose field was rewritten, and C is unchanged.
 - `a_stage_sources_owned_route_is_an_admitted_writer_of_the_envelope`: Native's owner union classifies a route rooted at a later stage's source as surviving (`declared_owner`, which Query consults before running a producer), and its Preserve publishes in the same envelope.
+- `a_stage_relation_is_part_of_the_authored_relation_footprint`: a stage's link appears in the proposal's authored relation footprint, so authored relation preimage capture sees it (kills M-a8).
+
+### Mutants
+
+M-a1..M-a10 are killed (`l1a-mutants.log`, `-a6`, `-a7`, `-r1b`, `-r1c`): out-of-order stage, stage after a producer, missing stage, sources recorded as `Edit`, dropped stage effects, owner union without stage owners, a one-element stage list accepted, stage records dropped from the authored records, a stage projection without its own commands, and no stage projection.

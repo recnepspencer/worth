@@ -188,9 +188,10 @@ L1 as a single landing would combine a stored-format addition with a new generic
   - L1b may not assume:
     - a stage after a producer: refused `UnadmittedAuthoredStage` until L2's qualification;
     - a later stage writing a field an earlier stage wrote on the same record: refused `ConflictingIntent` (courted). Two stages writing disjoint fields of one record go through CP2b's disjoint-field composition, which runs for stages too, but L1a does not court it; the Native fixture has one field. L1b courts it on a two-field Query fixture;
+    - that stage sources are distinct: a later stage may name the prefix's source or an earlier stage's source again (two stages may edit disjoint fields of one source); the recorded list keeps the repeat, and L1b's drift identity covers the stage list;
     - unscoped local client keys: Native scopes each applied part's local keys, so L1b resolves a stage's created references through the stage's applied outcome;
 - **Not in parallel with:** as L1.
-- **Closes when:** the Native stage courts and the Phase 1 regression courts are green, mutants M-a1..M-a7 are killed (`l1a-mutants*.log`), and the review is certified.
+- **Closes when:** the Native stage courts and the Phase 1 regression courts are green, mutants M-a1..M-a10 are killed (`l1a-mutants*.log`), and the review is certified.
 
 ### L1b header
 
