@@ -1,5 +1,125 @@
 # Integration (Fable 5.2 takeover) progress
 
+## HANDOVER TO CODEX (2026-11-10, Claude integration lane ends here)
+
+Worktree `C:/programming/worth worktees/worktrees/m3-host-home`, branch `codex/m3-host-home`, nothing pushed.
+**HEAD `105e888f4e`.** Windows; use PowerShell (Git Bash is very slow). Standing rules: never push, stash,
+reset, `checkout --`, or rewrite history; never touch other worktrees; never run `#[ignore]` tests,
+query-scale, the exhaustive Home oracle or the Store scenario suite; clean cutover, never weaken/delete/ignore a
+test to pass; every commit gets an independent reviewer; check disk >= 25 GB before any build.
+
+### Integration commits since master merge `171d380829` (oldest first; lane commits arrive inside the merges)
+- `54b4fa230d` repair batch for master merge #2 + Ruling 1 (D13 hold-out, 31 courts moved with restore rows) +
+  Ruling 2 (sharing inspection is a checked upper bound) + index_catalog journal readmission fix. Reviewed APPROVE.
+- `2610c94ef3` chore: runner telemetry `scripts/test_cost/slots/**` (data only).
+- `fbd994d981` evidence: Store/Bank ledgers + classifications (subject line has a stray BOM; left, no rewrite).
+- `c7c2ade607` merge P-C `2dce9c178c` (index selections through Complete checkpoints; cures IdentityIndexUnavailable
+  after reopen). Conflicts: semantic readmission -> P-C's `custom_observation` (mirrors production).
+- `8283728aff` merge H8 `1ce3832b78` (durable dispatch custody, stored-text reopen `2d6822abbe`). P-C's Store
+  `query_journal::ApplicationQueryJournal` is the ONE journal transport; H8's `journal_frame_publication` dropped;
+  `query_dispatch` rebuilt over it; `read_frame` returns None only for head+1; Query custody readmission takes
+  obligations + correction material + dispatch; Host admits corrections, obligations, dispatch;
+  `DispatchOutbox | DispatchAttempts => Supported(8)` in P-C's phase model.
+- `32341309d8` merge P-A `e4d3b01c8d` (Native courts ported to court crates; cleanup courts moved out with
+  restore rows). Row-by-row: `fable-merge-pa-resolution.md`. Master had kept Full `region_initialization.rs` /
+  `cell/resident_full.rs` live, so P-A's orphan deletion of those is NOT applied (follow-up for P-A).
+- `4d05497ab0` Windows linker wrapper `scripts/windows_linker.cmd` (`rust-lld -flavor link %* /pdbpagesize:16384`)
+  via `.cargo/config.toml`; court `build.rs` + toml build-dep + lock entries removed (coordinator PDB ruling).
+- `f1dd72fe78` compile fallout (Store owner-admission arm, Stored text arm in a P-A court, StringInterner import,
+  example `SetRetentionInput: Deserialize` - red on P-C's own branch, dead cfg(test) seams, unit-only
+  `TestRecoverySourceRefusal`). Check round `fable-batch1c`: Root/Query/Store/Bank 0 diagnostics.
+- `1e8bd528be` root Cargo.lock sha2 disambiguation (lockfile alignment PASS).
+- `105e888f4e` batch review fixes: layout test expects the wrapper (was BLOCKING), 3 restore rows -> `8283728aff`,
+  stale Full-region spec paragraph, `.gitattributes` `scripts/*.cmd eol=crlf`.
+Batch review (independent, `fable-batch1-review.patch`): resolutions confirmed equivalent on both sides; its
+fixes in `105e888f4e` have NOT had a reviewer re-check.
+
+### Uncommitted / not done
+- `target/lane-evidence/integration-progress.md`, `master2-compile-handoff.md`: pre-existing dirt from the
+  previous owner; never part of a commit.
+- NOT DONE (review SHOULD-FIX 3 remainder): rename the mount `kind_commitment_preimage_tests` back to
+  `full_tests` in `crates/worth-relational/src/storage/residency/region_publication.rs:203-204` (P-A's name for
+  HEAD's file). Deferred so no Rust source changed under the running Tier 2. Then one reviewer re-check of
+  `105e888f4e` + the rename.
+- This progress note itself (commit with `git add -f`).
+
+### Tier 2 running (started 2026-11-10T21:22Z, on clean source at `1e8bd528be`)
+`powershell -File target/lane-evidence/fable_batch_lanes.ps1 -Stages "root-t2,query-t2,fixture-t2,store-t2,bank-t2" -Tag batch1`,
+serial, permitted policy (`master2-tier2-permitted.py`). Per stage: log `target/lane-evidence/fable-batch1-<stage>.log`
+(header: command, HEAD, SOURCE_CLEAN, LINKER_OVERRIDE_CLEARED, C_FREE_GB, START), out dir
+`target/lane-evidence/fable-batch1-tier2-<root|query|fixture|store|bank>/` (`run-*.log` per binary).
+Finished when `fable-batch1-bank-t2.log` ends with `END:` and `EXIT:` lines (each stage writes them; a red stage
+does not stop later ones). Do NOT relaunch a stage whose out dir exists; read it. Read the mixed utf8/utf16 logs
+with NULs stripped (the scratch `logrep.py`/`groups.py` idea: group failures by `thread '...' panicked at <site>`).
+Expected: the Query/Store index-after-reopen reds (Q1, S3) cured by P-C; reclassify everything against the
+families below. Note: `105e888f4e` changed only a Python test, the spec and .gitattributes.
+
+### Linker override (machine finding)
+This machine sets user env `CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER` = rust-lld 1.94.0; env beats config, so the
+committed linker (and before it `rust-lld`) was silently bypassed. `fable_batch_lanes.ps1` runs
+`Remove-Item Env:\CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER` for its own process only (never change the user's
+environment). P-C `765e8ccdb0` makes qualification refuse an inherited `CARGO_TARGET_*_LINKER`; any lane script
+must clear it first. Wrapper verified on a scratch crate (17k-char link via rustc response file, PDB block 16384);
+the 6.57 GB-PDB court `worth-query-court-decl-host-authored-ownership` is first linked by this Tier 2.
+
+### Known red families (before this batch's Tier 2; none claimed fixed)
+Root (`fable-repair-root-families.md`, selected failures 2215 pass / 91 fail):
+- F1 cold checkpoint capture `UnsupportedProvider` (27): FIXTURE - court cold sources implement only legacy reads,
+  owned reads are mandatory. Next: move fixtures onto the testkit durable medium (P-A ports may cover some).
+- F2 hostile-frame reseal composes v5, frames are v8 (12): CLEANUP fixture; helper must compose current commitment.
+- F3 `ColdReconstructionRequired` after checkpoint/catalog restore (10): likely HAPPY; first follow-up after Tier 2.
+- F4 exact accounting/cost courts (24): C2 by Ruling 2 per court (exact equality moves out; bound courts stay).
+- F5 version/tamper fixtures (11): CLEANUP C1/C4 unless refusal order regressed.
+- F6 server durable Query retry `ProviderUnavailable` (5): likely HAPPY (Query Home idempotency reopen).
+- F7 medium fate (2): C1.
+Query (`fable-repair-query-families.md`, T2 7633 pass / 107 fail): Q1 index-after-reopen 64 (P-C cure expected);
+Q2 `ConflictingCreateCorrespondence` 8; Q3 `ReceiptMismatch` 8; Q4 injected unwind 4 (C3); Q5 cold capture 2 (=F1);
+Q6 `DurableBranchPublicationRequired` 2; Q7 other 18; Q8 `authority_cause` 9402-probe sweep ended by hand after
+46 CPU min (not a spin, from master) - named follow-up.
+Store (`fable-repair-store-bank-families.md`, 52 red; Bank GREEN 324/324): S1 Query idempotency
+`ProviderUnavailable` after reopen ~13 (=F6); S2 `OriginalBindingUnavailable` at Host opening incl.
+`partial_released_key_admission_retries_same_home_without_duplicate_retention`; S3 IdentityIndexUnavailable 2 (P-C);
+S4 `UncleanRecoveryUnsupported{Relational}` 10 (4 `world_durable_release` = the D18 gate `d27064d826` question);
+S5 `WorldSectionRequired` 7 (unclassified); S6 exact cost/residency 8 (C2); S7 ColdReconstruction 1 (=F3);
+S8 retired-format refusal text 3 (CLEANUP); S9 phase-eight process timeouts/C8 6 (C1); S10 other 2.
+Classifications (`fable-classifications-2026-11-10.md`): authored_index_writes replay = HAPPY, fixed in
+`54b4fa230d`; 60 s close maintenance deadline = C2 (graceful-close courts must not depend on wall time; never
+retry-until-green or raise the timeout).
+Boundary (`fable-repair-static-gates.md`, boundary-check RED, not re-run after the batch): the court `build.rs`
+finding is now resolved by `4d05497ab0`; 3 source tests rooted on `ExecutionRequest` from the runtime batch
+(`field_authoring_candidate/tests/storage_footprint.rs`, `record_arena/values/tests/optional_output_funding.rs`,
+`commit_semantic_result/validation/tests/proposed_families.rs`) must move to court crates (never grow
+`src-court-baseline.json`); pre-existing BC9002 (~20) and BC7014 debt. Reviewer SHOULD-FIX still open from
+`54b4fa230d`: saturating inventory totals (`record_arena/arena/allocation.rs:37`, `overlay/partition.rs:89-97`,
+`branch/root.rs:304`) - open until accepted as C2. Also open: `unsupported_root_version.rs` uses ExecutionRequest
+without a baseline row (pre-existing); Query `Cargo.toml:89-99` `debug = false` reasons cite the 4 GiB PDB limit
+the wrapper may lift; `scripts/macos_link/test_response.py` 2 Windows temp-path errors (pre-existing).
+Static gates after the batch NOT yet run: boundary-check, agent-context check, fmt.
+
+### Next merge batch (one batch, one Tier 2, reviewer)
+P-C `765e8ccdb0` (partial H6/H7/H9 surfaces gated to typed Directory refusals; lane linker-override refusal;
+stored-text decoders overlap H8 `2d6822abbe` - take identically), then `e235a9b75a`, `10d117085f`; later H8 and P-A
+heads. H5: ONLY after H5 LANDED (then: remove the two retired World `durability/medium.rs` variants; single
+`WORLD_CHECKPOINT_VERSION` 2 with a v1-refused court).
+
+### Open items from `orchestration/m3/prompts/integrate_pending.md`
+- Classify the 4 Store `world_durable_release` killed-child courts vs D18 gate `d27064d826` (S4): move out under
+  the right C phase with restore rows, or fix the gate.
+- `genuine_complete_section_retains_capture...` goes green with P-A's Complete/ACK gate item; don't fix here.
+- P-C follow-up commit migrating five in-source Native `ExecutionRequest` test files (from `2dce9c178c`,
+  `bf01d4d731`) to owner units + court proofs: take with the next P-C batch; baseline must not grow.
+- P-C H9 seams; P-C coherence rows go into `landing2a-coherence-pc.md`.
+- PDB ruling: DONE (`4d05497ab0`) except proving the large court links (this Tier 2).
+
+### Landing 2a prep remaining (do not start the 2a gate before H5 LANDED)
+- Refine `landing2a-coherence.md` with post-batch evidence, folding in `landing2a-coherence-pc.md`.
+- Gate the 4 PARTIAL rows to typed refusals (P-C `765e8ccdb0` does much of this - take it first).
+- Cleanup-court move-out with restore refs (`landing2a-cleanup-moveout-draft.md`).
+- Spec 2a/2b update: P-C seam (durable World retirement -> C2; `AuthoritativeDurableHistory`,
+  `DurableBranchPublicationRequired` as Refused rows), H9 bullet amendment, C2 close-deadline item.
+- Store full permitted Tier 2 plus the 3 bounded cases (the running Tier 2's store stage is the first full one).
+- Follow-ups F3, F6, F1 in that order after the Tier 2 results.
+
 Brief: `C:/programming/worth worktees/orchestration/m3/prompts/fable_integration_takeover.md`.
 Predecessor notes: `integration-progress.md` (ends "Current short handoff 18:05"), `master2-merge-families.md`,
 `master2-store-runtime-families.md`. Re-read this file after any context compaction.
@@ -179,6 +299,18 @@ C2); `4d05497ab0` Windows linker wrapper (`scripts/windows_linker.cmd`, court bu
 Lanes: `fable_batch_lanes.ps1 -Stages check|root-t2|query-t2|fixture-t2|store-t2|bank-t2 -Tag batch1` (clears
 the machine's CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override for its own process). Pending: compile check
 -> fixes -> one Tier 2 -> one reviewer over the merge resolutions + fixes + linker commit.
+
+Batch review (Opus, read-only, `fable-batch1-review.patch`): BLOCK on one item, resolutions otherwise confirmed
+equivalent. Fixed in the working tree (UNCOMMITTED, waiting for Tier 2 to finish so no Rust file changes under
+the running build): (1) BLOCKING `scripts/macos_link/test_layout.py` expects the wrapper path; (2) milestone-3
+restore rows for cold_read_matrix/exhaustive, cold_symbol_read_doors, cold_index_frontier now restore from
+`8283728aff` (HEAD-added assertions); (3) stale Full-region paragraph rewritten; `.gitattributes`
+`scripts/*.cmd text eol=crlf`. STILL TO DO after Tier 2: rename `mod kind_commitment_preimage_tests` back to
+`full_tests` in `storage/residency/region_publication.rs:203-204`, commit, reviewer re-check of the fix diff.
+Pre-existing, not ours: `scripts/macos_link/test_response.py` 2 Windows temp-path errors. Follow-up: Query
+`Cargo.toml:89-99` `debug = false` reasons cite the 4 GiB PDB limit the wrapper may lift.
+Tier 2 running: `fable_batch_lanes.ps1 -Stages "root-t2,query-t2,fixture-t2,store-t2,bank-t2" -Tag batch1`
+at `1e8bd528be` (out `fable-batch1-tier2-<ws>/`, logs `fable-batch1-<stage>.log`).
 
 ## Next: merge batch (coordinator, 2026-11-10)
 
