@@ -158,6 +158,10 @@ def main():
     args=parser.parse_args()
     requested=args.only.split(',')
     assert len(requested)==len(set(requested)) and set(requested)<=set(['root','query','fixture','bank','store'])
+    pause=EVIDENCE/'codex-batch1-pause-before-next-workspace'
+    if args.execute and requested!=['root'] and pause.exists():
+        print('DEFERRED BEFORE PREPARATION: finish and commit Root repair batch; no Cargo or test launched',flush=True)
+        return 75
     plan=source_plan();args.out.mkdir(parents=True,exist_ok=True)
     (args.out/'plan.json').write_text(json.dumps(plan,indent=2)+'\n')
     print(json.dumps({'status':'prepared-not-executed','base':BASE,'workspaces':requested,'direct_changed_packages':len(plan['direct_changed_packages']),'exact_ignored_child_parent_holds':len(HELD)},indent=2))
