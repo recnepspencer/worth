@@ -1,6 +1,3 @@
-mod associated_effects;
-mod associated_effects_discovery;
-mod branch_root_content_binding;
 mod branch_root_schema_binding;
 mod branch_transition;
 mod caller_association;
@@ -15,7 +12,6 @@ mod managed_field_text;
 mod merge_replay_continuity;
 mod native_checkpoint;
 mod record_allocation_recovery;
-mod recorded_component_checkpoint;
 mod rejected_and_parent_closure;
 mod retention_inspection_store;
 mod schema_transition_continuity;

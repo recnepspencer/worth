@@ -36,33 +36,3 @@ pub(crate) fn assert_external_cut_and_lane_busy(
     );
     assert_eq!(after.observation_releases, before.observation_releases);
 }
-
-/// The aggregate must preserve its two original lease tasks on either gate.
-pub(crate) fn assert_recovered_cut_and_lane_busy(
-    task: &mut crate::durability::authority::RelationalRecoveredPublicationRetirement,
-    basis: &AdmittedRelationalBranchBasis,
-    request: &ExecutionRequest<'_, '_>,
-) {
-    let binding = &basis.inner.retention_binding;
-    let owner = binding.owner.upgrade().unwrap();
-    let before = binding.counters();
-    let cut = owner.external_cut.lock().unwrap();
-    assert_eq!(task.advance(request), Progress::Busy);
-    assert_eq!(binding.counters(), before);
-    drop(cut);
-    let lane = binding.lane.state.lock().unwrap();
-    let obligations = lane.obligations.len();
-    let roots = *lane.root_obligations.get(&basis.inner.root.id()).unwrap();
-    assert_eq!(task.advance(request), Progress::Busy);
-    assert_eq!(lane.obligations.len(), obligations);
-    assert_eq!(
-        *lane.root_obligations.get(&basis.inner.root.id()).unwrap(),
-        roots
-    );
-    drop(lane);
-    assert_eq!(task.advance(request), Progress::Advanced);
-    assert_eq!(
-        binding.counters().external_pin_releases,
-        before.external_pin_releases + 1
-    );
-}

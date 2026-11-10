@@ -75,10 +75,6 @@ impl TestDurableJournal {
         self.artifacts.entries.insert(position.0, bytes);
     }
 
-    pub(super) fn remove(&mut self, position: PatchStreamPosition) -> Option<Box<[u8]>> {
-        self.artifacts.entries.remove(&position.0)
-    }
-
     pub(super) fn artifacts_after(
         &self,
         covered: PatchStreamPosition,

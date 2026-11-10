@@ -1,22 +1,26 @@
+//! Journal replay preserves the actual admitted immutable owner content root.
 use super::*;
 use worth_foundational::FoundationalBranchTarget;
-
+use worth_relational::facade::{history::BranchId, runtime::RelationalRuntime};
 #[test]
 fn tail_replay_reconstructs_the_owner_content_root() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = durable_runtime_with_test_schema();
+    let medium = TestDurableMedium::new();
+    let runtime = durable_runtime(&medium);
     create_entity_outcome(execution, &runtime, "tail-content-root-parity");
     let expected = current_main_descriptor(&runtime);
-    let plan = crate::tests::support::recovery_plan_for(
-        execution,
-        &runtime,
-        RecoveryVerificationMode::NormalRecoveryVerification,
-    )
-    .unwrap();
+    let plan = runtime
+        .durability()
+        .recovery_plan_from_source(
+            execution,
+            medium.recovery_source(),
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
 
-    let mut recovered = durable_runtime_with_test_schema();
+    let mut recovered = durable_runtime(&medium);
     recovered
         .durability_recovery()
         .recover(execution, plan)
@@ -27,7 +31,7 @@ fn tail_replay_reconstructs_the_owner_content_root() {
 
 fn current_main_descriptor(
     runtime: &RelationalRuntime,
-) -> crate::branch::RelationalBranchRootDescriptor {
+) -> worth_relational::facade::branch::RelationalBranchRootDescriptor {
     let state = runtime
         .branch_reference_state(&BranchId("main".to_owned()))
         .expect("main branch exists");

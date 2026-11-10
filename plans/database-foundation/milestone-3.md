@@ -21,6 +21,30 @@ each invariant is enforced and where each new type lives.
 
 ### C4 - Injected faults
 
+- Associated-original missing-route and dropped-unrelated-body campaign parts:
+  `associated_effects_refuse_memory_and_absent_settlement_evidence` and
+  `associated_effects_discover_cold_subject_without_reading_unrelated_history`:
+  `restore from 0615dd733c:crates/worth-relational/src/tests/durability/contracts/associated_effects.rs`.
+  Restore the exact route removal / unrelated-artifact deletion and their
+  original refusals or successful selected-body guards with `perform` fixture.
+- `native_custody_correction_enumerates_known_orphan_and_unrelated_association_metadata`,
+  actual three-body deletion followed by successful metadata enumeration:
+  `restore from 0615dd733c:crates/worth-relational/src/tests/durability/contracts/associated_effects_discovery.rs`.
+- `caller_association_survives_embedded_checkpoint_and_refuses_old_semantics`,
+  both original `CHK13`/`CHK14` mutations and exact `UnsupportedLegacySemantics`:
+  `restore from 0615dd733c:crates/worth-relational/src/tests/durability/contracts/caller_association.rs`.
+  The positive actual embedded original association/re-encoding assertion stays
+  as a genuine Memory owner codec unit.
+- `recorded_component_checkpoint_readmits_cold_canonical_predecessor_and_successor`,
+  `recorded_component_checkpoint_readmits_original_empty_predecessor`, and
+  `recorded_original_retirement_preserves_both_leases_across_busy_and_stop`,
+  injected unrelated-artifact deletion parts:
+  `restore from 0615dd733c:crates/worth-relational/src/tests/durability/contracts/recorded_component_checkpoint.rs`.
+  Restore complete same-SHA `original_custody`/original capture/recovery fixtures
+  and successful selected readmission guards, coordinated with C2's physical
+  custody/release portions. Public ordinary readmission is separately retained.
+
+
 - `refused_durable_transition_returns_its_authority_and_moves_nothing` and
   `unresolved_durable_transition_installs_nothing_and_names_its_fate`:
   `restore from e4d3b01c8d:crates/worth-relational/src/durability/authority/checkpoint_transition/tests.rs`.
@@ -195,6 +219,62 @@ each invariant is enforced and where each new type lives.
   weakened fault assertions.
 
 ### C2 - Cost and bounds: backing and work budgets
+
+- Fixture closure for `recorded_original_retirement_preserves_both_leases_across_busy_and_stop`:
+  `restore from 0615dd733c:crates/worth-relational/src/history/retention/lane/retained_release/tests.rs`
+  (`assert_recovered_cut_and_lane_busy`), with its same-SHA exact re-export lines
+  in `history/retention/mod.rs`, `history/retention/lane.rs`, and
+  `history/retention/lane/retained_release.rs`. Its final caller moved to C2;
+  the other external-cut fixture remains live. The original source tests above
+  also reference the same-SHA local-medium `head`, `transition_head`,
+  `drop_artifact` and journal `remove` fixtures. Restore those physical/fault
+  observations through the actual owner/provider, without reviving adapters.
+
+- Associated-original checkpoint metadata/body nonresidency portions:
+  `associated_effects_discover_cold_subject_without_reading_unrelated_history`
+  (`restore from 0615dd733c:crates/worth-relational/src/tests/durability/contracts/associated_effects.rs`)
+  and `native_custody_correction_enumerates_known_orphan_and_unrelated_association_metadata`
+  (`restore from 0615dd733c:crates/worth-relational/src/tests/durability/contracts/associated_effects_discovery.rs`).
+  C2 preserves the exact per-cell before/after resident census, with original
+  same-SHA fixture closure. Actual metadata/semantic-result behavior stays in
+  public `association_checkpoint_journeys.rs`.
+- `caller_association_bounds_and_rebinding_refuse_without_retaining_publication`
+  (pending allocation/route census) and
+  `caller_association_survives_cold_checkpoint_history_and_journal_tail`
+  (selected directory, journal absence and cold-body posture):
+  `restore from 0615dd733c:crates/worth-relational/src/tests/durability/contracts/caller_association.rs`.
+  Restore original `propose`/`publish` fixture closure for those physical claims.
+  Wire/bounds and embedded original codec remain Native value units; all public
+  binding and cold original-frame equality remains in `caller_association_journeys.rs`.
+- `recorded_component_checkpoint_readmits_cold_canonical_predecessor_and_successor`
+  and `recorded_component_checkpoint_readmits_original_empty_predecessor`,
+  private resident/cold-root and full physical-root demand portions;
+  `recorded_component_checkpoint_omits_released_components_and_plain_observations`
+  (whole retained-root census) and
+  `recorded_original_retirement_preserves_both_leases_across_busy_and_stop`
+  (whole private pin/release/stop accounting campaign):
+  `restore from 0615dd733c:crates/worth-relational/src/tests/durability/contracts/recorded_component_checkpoint.rs`.
+  Restore `original_custody`, `Original`, capture/recovery and retirement fixtures
+  at the same SHA. C2 must supply honest public pin/allocation observations;
+  never revive the local provider adapters. The Canonical/Empty original
+  descriptors, readable snapshots after maintenance, semantic result,
+  historical-currentness refusal and no-republication guards stay public in
+  `recorded_original_checkpoint_journeys.rs`. The actual unrelated-body deletion
+  remains a C4 component of this original campaign, as listed below.
+- `a_recovered_runtime_publishes_its_next_commit_at_the_next_position`,
+  original/reopened cold-source allocation pointer identity only:
+  `restore from 0615dd733c:crates/worth-relational/src/tests/durability/medium/recovered_publication.rs`.
+  Public source bytes/limits and actual recovered originals, receipt/coverage,
+  no recovery publication, next ID/parent/position and second reopen remain in
+  `medium_recovered_continuation.rs`.
+- `checkpoint_size_tracks_branch_state_not_covered_transitions`, manifest
+  growth bound and covered resident-log release portions:
+  `restore from 0615dd733c:crates/worth-relational/src/tests/durability/contracts/branch_transition/checkpoint_state.rs`.
+  Restore both exact 32-branch lifecycle scripts, 64/128 counts, captured
+  sequences, empty covered logs and `through_archive_and_pending_deletion <= direct + 32`.
+  The same lifecycle inputs and exact recovered sequence continuation stay
+  public in `checkpoint_transition_continuation.rs`.
+
 
 - `checkpoint_recovery_readmits_shared_root_once_for_sibling_heads`, physical
   single image and exact readmitted Root pointer sharing:

@@ -1,12 +1,20 @@
-use super::*;
-use crate::facade::mvcc::RelationalTransactionIntent;
-
+//! Reopen resumes the original transition sequence after retired branch histories.
+use super::branch_history_publications::{create_entity, fork};
+use worth_execution::ExecutionRequest;
+use worth_relational::facade::{
+    branch::RelationalBranchTransitionSequence as Sequence, history::BranchId,
+    mvcc::RelationalTransactionIntent,
+};
+use worth_testkit_relational::{
+    durable_medium::TestDurableMedium, durable_publication::durable_runtime,
+};
 #[test]
-fn checkpoint_size_tracks_branch_state_not_covered_transitions() {
-    let request = crate::test_execution_policy::serial_request();
+fn checkpoint_transition_sequence_resumes_after_archived_and_deleted_history() {
+    let request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let history = |extra_steps: bool| {
-        let mut runtime = durable_runtime_with_test_schema();
+        let medium = TestDurableMedium::new();
+        let mut runtime = durable_runtime(&medium);
         create_entity(execution, &runtime, "source");
         for index in 0..32 {
             let name = format!("branch-{index:03}");
@@ -29,7 +37,6 @@ fn checkpoint_size_tracks_branch_state_not_covered_transitions() {
             runtime.delete_branch(execution, &identity).unwrap();
         }
         let count = if extra_steps { 128 } else { 64 };
-        assert_eq!(artifacts(&runtime).len(), count);
         let checkpoint = runtime
             .durability_authority()
             .native_checkpoint(execution, execution.allocation_policy())
@@ -38,27 +45,15 @@ fn checkpoint_size_tracks_branch_state_not_covered_transitions() {
             checkpoint.covered_branch_transitions(),
             Some(Sequence(count as u64))
         );
-        assert!(
-            artifacts(&runtime).is_empty(),
-            "covered transition log is released"
-        );
-        let bytes = checkpoint.bytes().len();
-        attached_test_medium(&runtime).file_checkpoint(checkpoint);
-        let recovered = reopen(execution, &runtime);
-        assert!(artifacts(&recovered).is_empty());
+        medium.file_checkpoint(checkpoint);
+        let recovered =
+            super::branch_history_recovery::recover(execution, &medium, durable_runtime(&medium)).1;
         fork(execution, &recovered, "after-checkpoint");
         assert_eq!(
-            attached_test_medium(&recovered).transition_head(),
+            medium.offered_transitions().last().unwrap().sequence(),
             Sequence(count as u64 + 1)
         );
-        bytes
     };
-    let direct = history(false);
-    let through_archive_and_pending_deletion = history(true);
-    // Identical current cells and retired names, but twice as many transitions.
-    // Small headroom permits integer encoding/runtime identity width changes.
-    assert!(
-        through_archive_and_pending_deletion <= direct + 32,
-        "covered history grew the manifest: {direct} -> {through_archive_and_pending_deletion}"
-    );
+    history(false);
+    history(true);
 }

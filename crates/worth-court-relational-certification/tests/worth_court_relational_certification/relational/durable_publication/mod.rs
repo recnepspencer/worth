@@ -117,3 +117,21 @@ mod checkpoint_tail_and_indexes;
 mod checkpoint_successor_authority;
 
 mod checkpoint_source_capture;
+
+mod association_checkpoint_journeys;
+
+mod medium_publication_journeys;
+
+mod medium_member_retention;
+
+mod caller_association_journeys;
+
+mod recorded_original_checkpoint_journeys;
+
+mod checkpoint_protected_history;
+
+mod checkpoint_content_root;
+
+mod checkpoint_transition_continuation;
+
+mod medium_recovered_continuation;

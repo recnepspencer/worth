@@ -5,11 +5,6 @@ use crate::branch::RelationalBranchTransitionSequence;
 use crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifact;
 
 impl TestDurableMedium {
-    /// The last transition sequence this medium made durable, or zero.
-    pub(crate) fn transition_head(&self) -> RelationalBranchTransitionSequence {
-        self.transition_journal().head()
-    }
-
     /// Every transition sequence this medium holds, ascending.
     pub(crate) fn transition_sequences(&self) -> Vec<RelationalBranchTransitionSequence> {
         self.transition_journal().sequences()

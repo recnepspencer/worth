@@ -53,6 +53,13 @@ impl<'runtime> DurabilityAccess<'runtime> {
         self.runtime.durability.log_len()
     }
 
+    /// Whether this runtime currently owns a publication medium binding.
+    /// Forks can retain cold readers and transition history while returning
+    /// false. Operation admission remains with the owning ports.
+    pub fn has_bound_durable_medium(&self) -> bool {
+        self.runtime.durability.medium().is_some()
+    }
+
     #[cfg(test)]
     pub(crate) fn durable_log(
         &self,

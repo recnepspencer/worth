@@ -67,11 +67,6 @@ impl TestDurableMedium {
         Box::new(TestDurableMediumAttachment::new(Arc::clone(self)))
     }
 
-    /// The last position this medium made durable, or zero.
-    pub(crate) fn head(&self) -> PatchStreamPosition {
-        self.journal().head()
-    }
-
     /// Every position this medium holds, ascending.
     pub(crate) fn positions(&self) -> Vec<PatchStreamPosition> {
         self.journal().positions()

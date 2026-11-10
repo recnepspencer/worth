@@ -3,12 +3,16 @@
 Branch codex/m3-p3-reopen; inherited reviewed HEAD e4d3b01c8d.
 Codex is the sole writer again. The completed handoff below is preserved.
 
-Current B2 checkpoint subfamily: 16 public tests and the Native builder-configuration
-unit pass. Exact C2/C4 portions are listed in the spec. Final scoped gates and
-independent review are being recorded before its coherent commit. Detailed
+Current B2 checkpoint subfamily committed as `0615dd733c`, independent APPROVE:
+16 public tests and the Native builder-configuration unit pass. Detailed
 plan and evidence: pa-resume-b2-checkpoint-plan.md and pa-b2-checkpoint-ledger.md.
-The unmounted association_checkpoint_journeys.rs starts the next B2 family; it
-is not part of this checkpoint commit and has not been compiled or qualified.
+
+Next associated-original/medium batch: 17 public courts and three Native units
+pass; scoped Clippy has zero library/new warnings (only two adapter payload
+warnings). Format, caps (24 files), context and function scan pass. Boundary
+still has one owned adapter and eleven routed findings. Source review APPROVE;
+fresh final review precedes commit. Plan/evidence: pa-b2-associated-medium-plan.md,
+pa-b2-associated-ledger.md. No whole-task completion claimed.
 
 A renewed Codex login interrupted the first Native attempt at metadata only.
 Reuse the public 16/0/0 log; the resumed Native result is 1/0/0. No green input

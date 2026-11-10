@@ -37,13 +37,6 @@ impl TestDurableMedium {
         );
     }
 
-    /// Lose the artifact at `position`, leaving a gap in the journal.
-    pub(crate) fn drop_artifact(&self, position: PatchStreamPosition) {
-        self.journal()
-            .remove(position)
-            .unwrap_or_else(|| panic!("medium holds no artifact at {position:?}"));
-    }
-
     /// Rewrite the envelope of the durable commit `commit_id`, wherever the
     /// medium holds it. See [`Self::rewrite_artifact_envelope`].
     pub(crate) fn rewrite_commit_envelope(

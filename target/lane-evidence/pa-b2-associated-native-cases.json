@@ -1,0 +1,5 @@
+[
+  "caller_association_value_transport_rejects_invalid_lengths_and_wire",
+  "caller_association_embedded_checkpoint_codec_preserves_original_bytes",
+  "memory_checkpoint_keeps_replay_reconstructible"
+]

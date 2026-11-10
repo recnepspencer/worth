@@ -1,0 +1,19 @@
+[
+  "associated_memory_refuses_durable_effect_discovery",
+  "checkpoint_associated_subject_readmits_its_original_semantic_result",
+  "checkpoint_metadata_enumerates_known_orphan_and_unrelated_originals",
+  "every_acknowledged_commit_is_the_artifact_the_medium_holds_at_its_position",
+  "a_memory_only_runtime_publishes_without_a_medium",
+  "a_forked_runtime_never_inherits_the_medium",
+  "recovery_moves_the_medium_into_the_rebuilt_runtime",
+  "filed_external_members_survive_checkpoint_replacement_and_obey_read_limits",
+  "caller_association_refuses_rebinding_and_stays_on_the_prepared_candidate",
+  "caller_association_survives_cold_checkpoint_history_and_journal_tail",
+  "recorded_component_checkpoint_readmits_canonical_predecessor_and_successor",
+  "recorded_component_checkpoint_readmits_original_empty_predecessor",
+  "recovery_plan_after_native_capture_keeps_covered_forks",
+  "a_memory_fork_can_replay_its_compacted_durable_source",
+  "tail_replay_reconstructs_the_owner_content_root",
+  "checkpoint_transition_sequence_resumes_after_archived_and_deleted_history",
+  "a_recovered_runtime_publishes_its_next_commit_at_the_next_position"
+]

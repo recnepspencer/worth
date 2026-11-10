@@ -1,0 +1,42 @@
+command: python scripts/application_build.py cargo clippy --manifest-path Cargo.toml --package worth-relational --package worth-court-relational-certification --all-targets
+HEAD: 0615dd733c4949ec0a50804db2660d6b60295d3f
+git_status_short_empty: false
+start_utc: 2026-11-10T23:40:01.843542+00:00
+    Checking worth-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-relational)
+    Checking worth-testkit-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-testkit-relational)
+    Checking worth-court-relational-certification v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-court-relational-certification)
+warning: field `0` is never read
+  --> crates\worth-relational\src\tests\support\durable_medium.rs:56:12
+   |
+56 |     Commit(RelationalCanonicalCommitArtifactFrameRefusal),
+   |     ------ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |     |
+   |     field in this variant
+   |
+   = note: `TestRecoverySourceRefusal` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+   |
+56 -     Commit(RelationalCanonicalCommitArtifactFrameRefusal),
+56 +     Commit(()),
+   |
+
+warning: field `0` is never read
+  --> crates\worth-relational\src\tests\support\durable_medium.rs:57:16
+   |
+57 |     Transition(RelationalBranchTransitionArtifactFrameRefusal),
+   |     ---------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |     |
+   |     field in this variant
+   |
+   = note: `TestRecoverySourceRefusal` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+   |
+57 -     Transition(RelationalBranchTransitionArtifactFrameRefusal),
+57 +     Transition(()),
+   |
+
+warning: `worth-relational` (lib test) generated 2 warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 26s
+end_utc: 2026-11-10T23:42:34.398831+00:00
+exit_code: 0
