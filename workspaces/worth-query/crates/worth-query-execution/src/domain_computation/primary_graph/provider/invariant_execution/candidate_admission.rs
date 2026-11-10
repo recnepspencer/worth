@@ -107,11 +107,9 @@ impl WorthQueryPrimaryGraphProvider {
         let material = self.invariant_candidate_material(session, None)?;
         let candidate = receipts.candidate();
         let work = self.admit_candidate_material(CandidateInvariantJudgment::GroupMember(receipts), &material, || {
-            let mut selected = None;
-            for (_, actual, touches) in candidate.coupled_producer_mutation_touches(execution) {
-                if actual == meaning { selected = Some(touches); }
-            }
-            let touches = selected.ok_or_else(missing_candidate_failure)?
+            // Native projects this writer's own part only; the other parts are theirs.
+            let touches = candidate.coupled_producer_mutation_touches(execution, meaning)
+                .ok_or_else(missing_candidate_failure)?
                 .map_err(super::super::application_touch_admission::TouchAdmissionFailure::Projection)
                 .map_err(super::super::application_touch_admission::TouchAdmissionFailure::into_invariant_failure)?;
             super::super::application_touch_admission::admit_coupled_contribution_touches(

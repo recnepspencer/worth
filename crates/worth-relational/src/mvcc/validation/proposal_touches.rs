@@ -16,6 +16,8 @@ mod intent_projection;
 mod owned_graph;
 #[path = "proposal_touches/preparation.rs"]
 mod preparation;
+#[path = "proposal_touches/work_observation.rs"]
+mod work_observation;
 
 /// One semantic locus touched by an invariant-validated Relational mutation.
 ///
@@ -191,45 +193,32 @@ impl ValidatedRelationalProposal {
         preparation::project_commands(self, execution, true, commands)
     }
 
-    /// Each concrete producer's touches use its own applied command contribution,
+    /// One concrete producer's touches use its own applied command contribution,
     /// under the final proposal's single invariant judgment and request budgets.
+    /// The participant is the part whose producing meaning equals `meaning`
+    /// exactly, implementation and epoch included; only that part is projected.
+    /// O(parts) meaning comparisons, then O(that part's intents).
     pub fn coupled_producer_mutation_touches<'a>(
         &'a self,
-        execution: &'a ExecutionRequest<'_, '_>,
-    ) -> impl Iterator<
-        Item = (
-            &'a str,
-            &'a crate::mvcc::RequiredOutputPublicationMeaning,
-            Result<ValidatedMutationTouches<'a>, ValidatedMutationTouchProjectionError>,
-        ),
-    > + 'a {
-        self.required_output_publication
+        execution: &ExecutionRequest<'_, '_>,
+        meaning: &crate::mvcc::RequiredOutputPublicationMeaning,
+    ) -> Option<Result<ValidatedMutationTouches<'a>, ValidatedMutationTouchProjectionError>> {
+        let part = self
+            .required_output_publication
             .iter()
             .filter_map(|p| match &p.publication {
                 crate::mvcc::RequiredOutputPublication::CoupledAuthored { group } => Some(group),
                 _ => None,
             })
             .flat_map(|group| group.parts.iter())
-            .map(move |part| {
-                let (producer, _) = part
-                    .publication
-                    .lineage_attribution()
-                    .expect("Native admitted producer participant");
-                let meaning = part
-                    .publication
-                    .producing_meaning()
-                    .expect("Native admitted producer participant");
-                (
-                    producer,
-                    meaning,
-                    preparation::project_commands(
-                        self,
-                        execution,
-                        false,
-                        Some(&part.commands.merged_intents),
-                    ),
-                )
-            })
+            .filter(|part| part.publication.producing_meaning() == Some(meaning))
+            .last()?;
+        Some(preparation::project_commands(
+            self,
+            execution,
+            false,
+            Some(&part.commands.merged_intents),
+        ))
     }
 
     /// O(reached intents + prior/supplied fields), plus canonical sorting.

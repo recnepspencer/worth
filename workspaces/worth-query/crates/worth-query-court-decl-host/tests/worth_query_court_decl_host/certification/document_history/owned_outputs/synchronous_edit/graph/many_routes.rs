@@ -1,6 +1,7 @@
 //! One edit starts one producer per discovered source; the attempt ceiling counts each start.
 use super::*;
 pub(super) mod program;
+mod touch_work;
 use std::num::NonZeroUsize;
 use worth_query_host::facade::application_entry::ApplicationProducerRoundLimits;
 use worth_relational::facade::inspection::observe_maintenance_work;
