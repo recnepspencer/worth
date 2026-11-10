@@ -11,6 +11,7 @@ mod cap_edit;
 mod child;
 mod comparison;
 mod courts;
+mod demand_after_shrink;
 mod discovery;
 mod emission;
 mod observation;
