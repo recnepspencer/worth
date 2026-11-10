@@ -4,7 +4,7 @@ mod indexes;
 mod lineage;
 use crate::durability::data::RelationalNativeCheckpointCaptureDenial as Denial;
 pub(super) use dictionary::encode_dictionary;
-pub(super) use indexes::encode_indexes;
+pub(super) use indexes::{encode_indexes, retained_selection};
 pub(super) use lineage::{
     capture_lineage, encode_lineage, encode_lineage_events, OriginalCheckpointLineage,
     OriginalLineageEvent,

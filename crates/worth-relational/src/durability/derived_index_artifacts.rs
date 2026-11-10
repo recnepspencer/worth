@@ -3,7 +3,7 @@ mod checkpoint_delta;
 mod decode_budget;
 mod generation_decode_quote;
 
-pub(crate) use checkpoint_delta::DerivedIndexCheckpointArtifacts;
+pub(crate) use checkpoint_delta::{CompleteIndexCheckpointView, DerivedIndexCheckpointArtifacts};
 
 use crate::history::data::CanonicalCommitEnvelope;
 use crate::indexes::data::DerivedIndexArtifacts;

@@ -303,7 +303,11 @@ fn replay_pin_of_a_cold_partition_is_typed_and_has_no_effect() {
             version_id: cold.runtime.current_version_id(),
             read_policy: SnapshotReadPolicy::ImmutablePinned,
         },
-        basis: SnapshotStateBasis::Exact(VisibilitySnapshotBasis::from_prepared_root(branch, root)),
+        basis: SnapshotStateBasis::Exact(VisibilitySnapshotBasis::from_applied_root(
+            branch,
+            root.commit_receipt().unwrap().version_id,
+            root,
+        )),
         pinned_partitions: BTreeMap::from([(
             PartitionId(1),
             crate::storage::overlay::SnapshotPartitionPins {

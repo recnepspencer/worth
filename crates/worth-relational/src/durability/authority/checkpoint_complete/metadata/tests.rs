@@ -1,5 +1,8 @@
-//! Independent legacy wire twins and actual retained owner lifetime.
+//! Independent owned wire twins and actual retained owner lifetime.
 use super::*;
+use crate::durability::derived_index_artifacts::{
+    CompleteIndexCheckpointView, DerivedIndexCheckpointArtifacts,
+};
 use crate::durability::{
     data::*,
     log::native_checkpoint_codec::member_frame::{self, MemberKind},
@@ -42,7 +45,7 @@ fn controller() -> u64 {
     observed.unwrap()
 }
 #[test]
-fn borrowed_dictionary_and_full_cache_keep_actual_old_wire_and_members() {
+fn borrowed_dictionary_and_selection_cache_match_owned_wire_twins_and_members() {
     let entries = vec![
         (Symbol(1), StoredSymbolText::from("first".to_owned())),
         (
@@ -74,15 +77,35 @@ fn borrowed_dictionary_and_full_cache_keep_actual_old_wire_and_members() {
         entries: DerivedIndexEntries::EntityField(Default::default()),
     };
     let generations = [Arc::new(generation.clone())];
-    let legacy = (
-        DerivedIndexArtifacts::new(vec![generation]),
-        None::<crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts>,
-        0_u16,
+    // One selection sits beside an emitted root; the other root is not retained.
+    let basis = |commit| IndexBasisCheckpoint {
+        branch: generation.source_branch_id.clone(),
+        commit: CommitId(commit),
+        version: VersionId(commit + 2),
+        schema: SchemaVersionId(3),
+        empty: vec![DerivedIndexId(5)],
+        bindings: vec![(DerivedIndexId(2), DerivedIndexGenerationId(7))],
+    };
+    let bases = [basis(11), basis(12)];
+    let retained = |basis: &IndexBasisCheckpoint| basis.commit == CommitId(11);
+    let twin = (
+        DerivedIndexArtifacts::default(),
+        Some(
+            DerivedIndexCheckpointArtifacts::capture(
+                &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+                generations.to_vec(),
+                vec![bases[0].clone()],
+            )
+            .unwrap(),
+        ),
+        DerivedIndexCheckpointArtifacts::FORMAT_VERSION,
     );
-    same_wire(&indexes::view(&generations), &legacy);
     let budget = SerialMemoryBudget::new(Some(1024 * 1024));
     let host = SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
     let request = ExecutionRequest::serial(&host);
+    let checkpoint =
+        CompleteIndexCheckpointView::capture(&generations, &bases, &retained, &request).unwrap();
+    same_wire(&indexes::view(&checkpoint), &twin);
     let dictionary = encode_dictionary(
         entries.len(),
         || entries.iter().map(|(symbol, text)| (*symbol, text)),
@@ -95,17 +118,17 @@ fn borrowed_dictionary_and_full_cache_keep_actual_old_wire_and_members() {
     // This is the pure wire view; Complete emission requires an actual resolved owner.
     let cache = member_frame::encode_for_request(
         MemberKind::DerivedIndex,
-        &indexes::view(&generations),
+        &indexes::view(&checkpoint),
         &request,
     )
     .unwrap();
     assert_eq!(
         cache.1.bytes(),
-        member_frame::encode(MemberKind::DerivedIndex, &legacy)
+        member_frame::encode(MemberKind::DerivedIndex, &twin)
             .unwrap()
             .1
     );
-    drop((dictionary, cache));
+    drop((dictionary, cache, checkpoint));
     assert_eq!(budget.charged_memory_bytes(), 0);
 }
 #[test]
@@ -244,8 +267,15 @@ fn metadata_member_directories_preserve_dictionary_ranges_and_alias_custody() {
         .unwrap()
         .resolve_for_request(&request)
         .unwrap();
-    let output =
-        capture_metadata_members(&dictionary, &lineage, &original, None, &request).unwrap();
+    let output = capture_metadata_members(
+        &dictionary,
+        &lineage,
+        &original,
+        &|_: &IndexBasisCheckpoint| true,
+        None,
+        &request,
+    )
+    .unwrap();
     drop(original);
     let mut recovered = std::collections::BTreeMap::new();
     for page in &output.symbols {

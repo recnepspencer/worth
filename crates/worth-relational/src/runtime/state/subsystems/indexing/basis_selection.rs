@@ -3,6 +3,7 @@ mod admission;
 mod checkpoint;
 mod cold_merge;
 mod empty_basis;
+mod frozen_checkpoint;
 mod payment;
 use super::{IndexingState, IndexingSubsystem};
 use crate::history::data::{BranchId, CommitId};
@@ -11,6 +12,7 @@ use crate::indexes::data::{
     DerivedIndexGeneration, DerivedIndexId, DerivedIndexMaintenanceDenialKind as Denial,
 };
 use crate::schema::data::SchemaVersionId;
+pub(super) use frozen_checkpoint::{FrozenBasisSelections, OriginalCheckpointBases};
 use std::sync::Arc;
 
 type Key = (Option<Arc<BranchId>>, VersionId);
