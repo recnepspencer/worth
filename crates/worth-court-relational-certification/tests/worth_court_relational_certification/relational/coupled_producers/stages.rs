@@ -288,6 +288,15 @@ impl RelationalAuthoredCoupledProducerAssembly for PreserveAfterStage<'_> {
             shape: Shape::Ordered { mixed: false },
         }
         .stage(execution, candidate, self.world.carrier)?;
+        // Query classifies a route through Native's admitted owner set before
+        // running its producer: the stage source's route must be surviving.
+        assert!(
+            matches!(
+                candidate.declared_owner(execution, "owned", self.world.carrier, &[0; 32])?,
+                Some(RelationalDeclaredCoupledOwner::Surviving(_))
+            ),
+            "the stage source's owned route is in the envelope's owner set"
+        );
         let running = self.world.owner.admit_required_output("owned", [4; 32]);
         let admission = self
             .world

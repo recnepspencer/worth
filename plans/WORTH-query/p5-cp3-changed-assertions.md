@@ -30,4 +30,4 @@ This ledger lists existing court assertions CP3 changed and any typed-error or s
   - a cold reopen (mixed case).
 - `stages_outside_the_admitted_roster_refuse_without_effect`: an unadmitted stage, a missing stage and a stage after a producer each refuse typed, and C is unchanged.
 - `a_later_stage_cannot_rewrite_a_record_an_earlier_stage_wrote`: refuses with `ConflictingIntent` on the rewritten record, and C is unchanged.
-- `a_stage_sources_owned_route_is_an_admitted_writer_of_the_envelope`: the Native owner union admits a Preserve of a route rooted at a later stage's source in the same envelope, and it publishes one origin.
+- `a_stage_sources_owned_route_is_an_admitted_writer_of_the_envelope`: Native's owner union classifies a route rooted at a later stage's source as surviving (`declared_owner`, which Query consults before running a producer), and its Preserve publishes in the same envelope.
