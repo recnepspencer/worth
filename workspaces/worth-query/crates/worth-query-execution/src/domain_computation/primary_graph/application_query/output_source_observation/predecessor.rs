@@ -26,8 +26,12 @@ impl<S: ApplicationSchema> SourceQueryReaderAccess<'_, S> {
     ) {
         // First/cold/restoration unavailability is an explicit data posture.
         // A handler may choose full computation, but cannot swallow admission loss.
+        // Each origin kind is named: a new one must be decided here, not
+        // swallowed (CP2b slice 4; court `predecessor/origin_kind.rs`).
+        use worth_relational::facade::mvcc::RelationalPredecessorBasisOrigin as Origin;
         if !matches!(cause, Denial::PredecessorBasisUnavailable | Denial::Native(
-            worth_relational::facade::mvcc::RelationalPredecessorBasisDenial::PredecessorBasisUnavailableForOrigin(_))) {
+            worth_relational::facade::mvcc::RelationalPredecessorBasisDenial::PredecessorBasisUnavailableForOrigin(
+                Origin::HistoricalSelection | Origin::AuthoredRestoration))) {
             self.predecessor_refused.borrow_mut().get_or_insert_with(|| cause.clone());
         }
     }
