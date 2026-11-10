@@ -1,3 +1,0 @@
-{"count": 2, "kind": "leaf"}
-{"binary": "worth-store::bin/physical_store_c8_writer", "slots": 1, "test": "durability_profile::tests::cleanup_rotation_has_distinct_smaller_segments"}
-{"binary": "worth-store::bin/physical_store_c8_writer", "slots": 1, "test": "durability_profile::tests::profiles_are_explicit_and_stable"}
