@@ -17,7 +17,10 @@ pub struct SourceFeature;
 impl Fragment for SourceFeature {
     const NAME: &'static str = "source_feature";
     type Bindings = SourceModelBindings;
-    type Members = (Extend<Source, (Option<SourceFacts>,)>,);
+    type Members = (
+        Extend<Source, (Option<SourceFacts>,)>,
+        Extend<roster::Note, (Option<roster::NoteMark>,)>,
+    );
 }
 pub struct SourceModelBindings;
 impl BindingSet for SourceModelBindings {

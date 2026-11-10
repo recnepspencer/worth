@@ -39,6 +39,10 @@ impl OperationHandler<Schema, DeleteBinding> for Handler {
                 reader.entity(&note, Note::reference())?;
                 reader.field(&note, NoteKey::at("NoteKey"))?;
                 reader.field(&note, NoteValue::at("NoteValue"))?;
+                // Reading the mark observes it present or absent on this note.
+                if self.0 != world::Fault::UnreadNoteMark {
+                    reader.field(&note, Mark::at("Mark"))?;
+                }
                 reader
                     .relations_from(NotedBy::reference(), &note)
                     .map_err(HandlerExecutionDenial::new)?;
@@ -191,6 +195,9 @@ impl OperationHandler<Schema, RestoreBinding> for Handler {
                 )?;
                 writer.initialize_field(&note, NoteKey::at("NoteKey"), row.key.clone())?;
                 writer.initialize_field(&note, NoteValue::at("NoteValue"), row.value)?;
+                if let Some(mark) = input.marks.iter().find(|mark| mark.key == row.key) {
+                    writer.initialize_field(&note, Mark::at("Mark"), mark.value)?;
+                }
                 let link = format!("returned-noted.{}", row.key);
                 writer.link(NotedBy::reference(), link, &note, &owner)?;
                 writer.create_member::<RestoredNotes>(&row.key, &note)?;

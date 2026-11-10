@@ -15,6 +15,7 @@ pub enum Fault {
     ForeignRestoredMember,
     ExtraRestoredMember,
     ChangedRestoredValue,
+    UnreadNoteMark,
 }
 pub struct Configuration {
     pub fault: Fault,

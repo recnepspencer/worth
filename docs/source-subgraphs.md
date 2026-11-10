@@ -68,6 +68,10 @@ retention width is nine bytes, including its scalar tag.
 This qualifies a member edit and its undo. The current recorded-field demand
 requires present mutated fields on one common record. It is not an arbitrary
 multi-record graph snapshot, absent-field retention or a general topology inverse.
+An authored correction's anchors are the one case with an absent pre-image: a
+demanded optional field or aspect that the mutation read on that exact anchor
+and found absent retains nothing, and the inverse restores it by writing
+nothing there. A demanded locus the mutation did not read still refuses.
 Declare a supported inverse for each edit meaning; refuse unsupported meanings
 instead of reconstructing missing prior truth from current state.
 

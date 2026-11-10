@@ -51,6 +51,7 @@ impl ApplicationCorrectionBinding<Schema> for UndoDelete {
                     DeclaredPreImageLocus::from_field(Value::at("MemberValue")),
                     DeclaredPreImageLocus::from_field(NoteKey::at("NoteKey")),
                     DeclaredPreImageLocus::from_field(NoteValue::at("NoteValue")),
+                    DeclaredPreImageLocus::from_field(Mark::at("Mark")),
                 ],
                 1024,
             )
@@ -111,6 +112,26 @@ impl ApplicationCorrectionBinding<Schema> for UndoDelete {
                 DeclaredPreImageLocus::from_field(NoteKey::at("NoteKey")),
                 DeclaredPreImageLocus::from_field(NoteValue::at("NoteValue")),
             )?,
+            // A note the source read without a mark retained none and returns bare.
+            marks: original
+                .notes
+                .iter()
+                .filter_map(|suffix| {
+                    let mark = prior.field_for_family_member(
+                        &DeletedNotes::DESCRIPTOR,
+                        suffix,
+                        &DeclaredPreImageLocus::from_field(Mark::at("Mark")),
+                    )?;
+                    Some(
+                        U64ApplicationValueBinding::decode(mark)
+                            .map(|value| Returned {
+                                key: suffix.clone(),
+                                value,
+                            })
+                            .map_err(|_| InvalidPreImage),
+                    )
+                })
+                .collect::<Result<Vec<_>, ApplicationCorrectionDerivationDenial>>()?,
             // A member that stays retains only the field the source changed.
             revalue: original
                 .revalue
