@@ -1,20 +1,19 @@
-use crate::diagnostics::data::RelationalDiagnosticValue;
-use crate::facade::diagnostics::DiagnosticCode;
-use crate::tests::support::{
-    capture_aspect_truth_bundle, checkpoint_and_recover_with, diagnostic_field,
-    durable_runtime_with_test_schema,
-};
-
-use super::fixtures::execute_feature_into_main_merge;
+//! A published prepared merge survives durable append, checkpoint and recovery unchanged.
+use super::commit_meaning::assert_durable_commit_meaning_eq;
+use super::merge_execution_observation::{capture_aspect_truth_bundle, diagnostic_field};
+use super::merge_execution_recovery::checkpoint_and_recover_durable;
+use super::merge_feature_execution::execute_feature_into_main_merge;
+use worth_relational::facade::diagnostics::{DiagnosticCode, RelationalDiagnosticValue};
+use worth_testkit_relational::durable_publication::durable_runtime;
 
 #[test]
 fn execute_prepared_merge_survives_durability_append_and_recovery() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let (runtime, merge, _main_head_commit_id, _feature_head_commit_id) =
+    let (medium, runtime, merge, _main_head_commit_id, _feature_head_commit_id) =
         execute_feature_into_main_merge(execution);
-    let before_bundle = capture_aspect_truth_bundle(execution, &runtime, &[], &[], &[]);
+    let before_bundle = capture_aspect_truth_bundle(execution, &runtime, &[]);
     let merge_envelope = runtime
         .replay()
         .canonical_commit_envelope(execution, merge.commit.commit.commit_id)
@@ -22,8 +21,8 @@ fn execute_prepared_merge_survives_durability_append_and_recovery() {
         .expect("live merge envelope");
 
     let (_recovery, recovered) =
-        checkpoint_and_recover_with(execution, &runtime, durable_runtime_with_test_schema);
-    let recovered_bundle = capture_aspect_truth_bundle(execution, &recovered, &[], &[], &[]);
+        checkpoint_and_recover_durable(execution, &runtime, &medium, durable_runtime(&medium));
+    let recovered_bundle = capture_aspect_truth_bundle(execution, &recovered, &[]);
     let recovered_envelope = recovered
         .replay()
         .canonical_commit_envelope(execution, merge.commit.commit.commit_id)
@@ -31,11 +30,7 @@ fn execute_prepared_merge_survives_durability_append_and_recovery() {
         .expect("recovered merge envelope");
 
     assert_eq!(before_bundle.visible_truth, recovered_bundle.visible_truth);
-    crate::tests::support::assert_durable_commit_meaning_eq(
-        execution,
-        &merge_envelope,
-        &recovered_envelope,
-    );
+    assert_durable_commit_meaning_eq(&merge_envelope, &recovered_envelope);
     assert!(merge_envelope
         .diagnostics_summary
         .entries

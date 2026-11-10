@@ -1,18 +1,25 @@
-use crate::facade::diagnostics::DiagnosticCode;
-use crate::facade::history::BranchId;
-use crate::tests::support::{
-    create_branch_from_main, create_entity_outcome, create_entity_outcome_on_branch,
-    durable_runtime_with_test_schema,
+//! A prepared merge publishes its ordered multi-parent commit through the canonical envelope.
+use super::branch_history_publications::{create_entity_outcome_on_branch, fork};
+use super::branch_history_recovery::current_head;
+use super::merge_feature_execution::execute_feature_into_main_merge;
+use worth_relational::facade::{
+    config::RelationalRuntimeProfile,
+    diagnostics::{DiagnosticCode, RelationalDiagnosticsProfile},
+    history::BranchId,
+    merge::{MergeExecutionRequest, MergeIntent},
+    runtime::RelationalRuntimeApi,
 };
-
-use super::fixtures::execute_feature_into_main_merge;
+use worth_testkit_relational::{
+    durable_medium::TestDurableMedium,
+    durable_publication::{create_entity_outcome, schema},
+};
 
 #[test]
 fn execute_prepared_merge_publishes_ordered_multi_parent_commit_through_canonical_envelope() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let (runtime, merge, main_head_commit_id, feature_head_commit_id) =
+    let (_medium, runtime, merge, main_head_commit_id, feature_head_commit_id) =
         execute_feature_into_main_merge(execution);
     let replay = runtime.replay();
 
@@ -41,17 +48,13 @@ fn execute_prepared_merge_publishes_ordered_multi_parent_commit_through_canonica
         vec![BranchId("feature".to_string())]
     );
     assert_eq!(
-        runtime
-            .history()
-            .branch_head(&BranchId("main".to_string()))
+        current_head(&runtime, &BranchId("main".to_string()))
             .expect("main branch head")
             .commit_id,
         merge.commit.commit.commit_id
     );
     assert_eq!(
-        runtime
-            .history()
-            .branch_head(&BranchId("feature".to_string()))
+        current_head(&runtime, &BranchId("feature".to_string()))
             .expect("feature branch head")
             .commit_id,
         feature_head_commit_id
@@ -60,13 +63,21 @@ fn execute_prepared_merge_publishes_ordered_multi_parent_commit_through_canonica
 
 #[test]
 fn execute_prepared_merge_preserves_reserved_summary_when_optional_diagnostics_budget_is_zero() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = durable_runtime_with_test_schema();
-    runtime.configure_diagnostics_for_test(|profile| profile.max_entries_per_artifact = 0);
+    let medium = TestDurableMedium::new();
+    let runtime = RelationalRuntimeApi::builder()
+        .profile(RelationalRuntimeProfile::CertificationCore)
+        .diagnostics(RelationalDiagnosticsProfile {
+            max_entries_per_artifact: 0,
+            ..RelationalRuntimeProfile::CertificationCore.default_diagnostics_profile()
+        })
+        .schema_registry(schema())
+        .build_durable(medium.attachment())
+        .unwrap();
     create_entity_outcome(execution, &runtime, "root");
-    create_branch_from_main(&runtime, "feature");
+    fork(execution, &runtime, "feature");
     create_entity_outcome_on_branch(
         execution,
         &runtime,
@@ -77,11 +88,13 @@ fn execute_prepared_merge_preserves_reserved_summary_when_optional_diagnostics_b
     let prepared = runtime
         .prepare_merge_execution(
             execution,
-            crate::facade::merge::MergeExecutionRequest {
-                target_branch: BranchId("main".to_string()),
-                source_branch: BranchId("feature".to_string()),
-                merge_intent: crate::facade::merge::MergeIntent::ReconcileIntoTarget,
-            },
+            runtime
+                .bind_merge_execution_request(MergeExecutionRequest::new(
+                    BranchId("main".to_string()),
+                    BranchId("feature".to_string()),
+                    MergeIntent::ReconcileIntoTarget,
+                ))
+                .unwrap(),
         )
         .expect("prepared merge execution");
 

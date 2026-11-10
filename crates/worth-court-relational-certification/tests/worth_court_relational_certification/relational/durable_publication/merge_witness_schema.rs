@@ -9,10 +9,12 @@ use worth_relational::facade::{
     schema::*,
 };
 use worth_testkit_relational::{aspect_storage::definition, durable_medium::TestDurableMedium};
-fn materialize((binding, contract): definition::DeclaredAspect) -> DeclaredAspectContractBinding {
+pub(super) fn materialize(
+    (binding, contract): definition::DeclaredAspect,
+) -> DeclaredAspectContractBinding {
     DeclaredAspectContractBinding { binding, contract }
 }
-fn entity_field_aspect(
+pub(super) fn entity_field_aspect(
     aspect: worth_foundational::facade::AspectKey,
     field: worth_foundational::facade::FieldKey,
 ) -> DeclaredAspectContractBinding {
@@ -76,11 +78,10 @@ pub(super) fn policy_builder(
         .expect("schema-declared merge policy registry");
     RelationalRuntimeApi::builder().schema_registry(registry)
 }
-pub(super) fn runtime_with_relation_identity_registry(
-    medium: &Arc<TestDurableMedium>,
-) -> RelationalRuntime {
+/// Unnamed entities and label-identified relations with declared endpoints.
+pub(super) fn relation_identity_registry() -> RelationalSchemaRegistry {
     let label_key = aspect_key("label");
-    let registry = RelationalSchemaRegistry::new()
+    RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
             kind_id: KindId(1),
             kind_name: "test.entity".to_string(),
@@ -110,10 +111,13 @@ pub(super) fn runtime_with_relation_identity_registry(
                 relation_integrity: RelationIntegrityDeclarations::default(),
             })
         })
-        .expect("topology identity registry");
-
+        .expect("topology identity registry")
+}
+pub(super) fn runtime_with_relation_identity_registry(
+    medium: &Arc<TestDurableMedium>,
+) -> RelationalRuntime {
     RelationalRuntimeApi::builder()
-        .schema_registry(registry)
+        .schema_registry(relation_identity_registry())
         .build_durable(medium.attachment())
         .expect("valid native runtime configuration")
 }

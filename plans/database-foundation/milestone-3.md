@@ -21,6 +21,26 @@ each invariant is enforced and where each new type lives.
 
 ### C4 - Injected faults
 
+- `compile_execution_ready_merge_plan_rejects_missing_source_record`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7c_phase_a/compilation_denials.rs`.
+- `verify_prepared_merge_execution_rejects_corrupted_compiled_plan`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7c_phase_a/compilation_denials.rs`.
+- `verify_prepared_merge_execution_rejects_schema_semantic_drift`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7c_phase_a/prepared_merge_verification.rs`.
+- `verify_prepared_merge_execution_rejects_merge_base_drift`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7c_phase_a/prepared_merge_verification.rs`.
+- `derive_merge_commit_mutation_plan_does_not_rely_on_raw_lowered_record_arrays`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7c_phase_d.rs`.
+- `authoritative_merge_execution_certification_rejects_metadata_reference_movement`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7c_phase_g/stale_prepared_merge_denials.rs`.
+- `authoritative_merge_execution_certification_rejects_schema_semantic_drift_after_planning`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7c_phase_g/stale_prepared_merge_denials.rs`.
+- `compile_rejects_corrupted_non_executable_resolution_class`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7d_phase_b/executable_admission.rs`.
+- `promoted_deleted_on_both_sides_compiles_to_an_explicit_executable_record_variant`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7d_phase_c.rs`.
+- `promoted_deleted_on_both_sides_derives_zero_mutation_intent_execution_plan`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7d_phase_c.rs`.
+- `promoted_deleted_on_both_sides_executes_through_authoritative_merge_publication`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7d_phase_c.rs`.
+- `deleted_on_both_sides_prepared_merge_rejects_schema_semantic_drift`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7d_phase_d/prepared_merge_denials.rs`.
+  C4 owns the original claim under Landing2a's per-claim disposition.
+  Restore each named root's same-SHA owning fixture/module imports and private
+  control references recorded in `target/lane-evidence/landing2a-history-compiler-claim-disposition.md`.
+  This is relocation with its original guard assertions, not retirement or
+  weakened evidence. Restore with genuine owned inputs, without reviving the
+  removed local provider/discovery adapters.
+
+
 - `retained_merge_strategy_witness_live_authority_denies_internal_forged_strategy_truth`: `restore from 26cc5a58f2:crates/worth-relational/src/tests/history/milestone_7e_phase_i/mod.rs`.
   C4 owns this injected typed-summary/witness or stored-original fault; restore
   the same-SHA `fixtures.rs` beside the root, preserving exact denials.
@@ -56,6 +76,32 @@ each invariant is enforced and where each new type lives.
   weakened fault assertions.
 
 ### C2 - Cost and bounds: backing and work budgets
+
+- Instrumentation half of `execute_prepared_merge_reports_execution_counters_and_structural_summary`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7c_phase_e/execution_counters_diagnostics.rs`.
+- Instrumentation half of `execute_prepared_merge_records_attempt_without_success_on_failure`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7c_phase_e/failure_attempt_diagnostics.rs`.
+- Instrumentation half of `native_merge_touches_only_changed_revision_and_both_index_membership_keys`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7d_phase_d/merge_descriptive_touches.rs`.
+- Instrumentation half of `built_in_monotonic_counter_merge_is_auto_resolved_with_inline_value_and_recovery_parity`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7d_phase_d/monotonic_counter_resolution.rs`.
+- Instrumentation half of `disjoint_rewire_neighborhoods_do_not_escalate_to_topology_region_conflict`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7d_phase_d/topology_local_rewire.rs`.
+- Instrumentation half of `topology_region_conflict_detection_reports_bounded_neighborhood_counters`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7d_phase_d/topology_region.rs`.
+  Each of these roots is split under Landing 2a's per-claim disposition. Its
+  public semantic claim is ported to the certification court
+  (`relational/durable_publication/merge_*`); C2 owns only the exact
+  instrumentation-counter, complexity-delta or private resident-Root assertions
+  named for the root in
+  `target/lane-evidence/landing2a-history-compiler-claim-disposition.md`.
+  Restore the whole original root and its same-SHA fixtures, with genuine owned
+  inputs and without reviving the removed runtime-discovery adapter.
+
+- `verify_prepared_merge_execution_does_not_increment_planning_counters`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7c_phase_a/verification_counters.rs`.
+- `verify_prepared_merge_execution_reports_verification_counters_without_planning_work`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7c_phase_a/verification_counters.rs`.
+- `unrelated_relation_additions_do_not_inflate_topology_region_detection_counters`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/history/milestone_7d_phase_d/topology_local_rewire/neighborhood_detection.rs`.
+  C2 owns the original claim under Landing2a's per-claim disposition.
+  Restore each named root's same-SHA owning fixture/module imports and private
+  control references recorded in `target/lane-evidence/landing2a-history-compiler-claim-disposition.md`.
+  This is relocation with its original guard assertions, not retirement or
+  weakened evidence. Restore with genuine owned inputs, without reviving the
+  removed local provider/discovery adapters.
+
 
 The following adapter-dependent Native performance campaigns move to C2 under
 Landing 2a's cost/growth disposition. Their assertions and durable posture are

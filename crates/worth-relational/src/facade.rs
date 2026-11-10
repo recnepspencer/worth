@@ -72,7 +72,8 @@ pub mod diagnostics {
     pub use crate::diagnostics::data::{
         DeterminismExpectation, DiagnosticCode, DiagnosticObjectFields, DiagnosticsArtifactKind,
         DiagnosticsDeliveryClass, DiagnosticsScope, RelationalArtifactPolicy,
-        RelationalDiagnosticArtifact, RelationalDiagnosticsEntry, RelationalDiagnosticsProfile,
+        RelationalDiagnosticArtifact, RelationalDiagnosticValue, RelationalDiagnosticsEntry,
+        RelationalDiagnosticsProfile,
     };
 }
 

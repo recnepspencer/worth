@@ -5,15 +5,12 @@ use crate::facade::merge::{
     AspectMergePolicyDeclaration, AspectMergePolicyKind, IdentityBasisDeclaration,
     IdentityBasisKind, IdentityBasisScope,
 };
-use crate::facade::runtime::{RelationalRuntime, RelationalRuntimeApi};
 use crate::facade::schema::{
     EntityKindRegistration, KindAspectContractDeclarations, RelationKindRegistration,
     RelationalSchemaRegistry, SchemaId, SchemaVersionId,
 };
 use crate::schema::data::RelationIntegrityDeclarations;
-use crate::tests::support::{
-    entity_field_aspect, CascadeDeletePolicy, CrossContextPolicy, RelationalRuntimeProfile,
-};
+use crate::tests::support::{entity_field_aspect, CascadeDeletePolicy, CrossContextPolicy};
 use worth_foundational::facade::AspectKey;
 
 pub(super) fn prefer_richer_registry() -> RelationalSchemaRegistry {
@@ -59,48 +56,4 @@ pub(super) fn prefer_richer_registry() -> RelationalSchemaRegistry {
             })
         })
         .expect("prefer-richer registry")
-}
-
-pub(super) fn drifted_schema_registry() -> RelationalSchemaRegistry {
-    RelationalSchemaRegistry::new()
-        .register_entity_kind(EntityKindRegistration {
-            kind_id: KindId(1),
-            kind_name: "test.entity".to_string(),
-            schema_id: SchemaId("test".to_string()),
-            schema_version_id: SchemaVersionId(2),
-            aspect_contract_declarations: KindAspectContractDeclarations::new(vec![
-                entity_field_aspect(
-                    crate::tests::support::aspect_key("name"),
-                    crate::tests::support::field_key("name"),
-                ),
-                entity_field_aspect(
-                    crate::tests::support::aspect_key("status"),
-                    crate::tests::support::field_key("status"),
-                ),
-            ]),
-        })
-        .and_then(|registry| {
-            registry.register_relation_kind(RelationKindRegistration {
-                kind_id: KindId(2),
-                kind_name: "test.relation".to_string(),
-                schema_id: SchemaId("test".to_string()),
-                schema_version_id: SchemaVersionId(2),
-                cross_context_policy: CrossContextPolicy::AllowExplicit,
-                cascade_delete_policy: CascadeDeletePolicy::CascadeDeleteRelations,
-                aspect_contract_declarations: KindAspectContractDeclarations::default(),
-                relation_integrity: RelationIntegrityDeclarations::default(),
-            })
-        })
-        .expect("drifted schema registry")
-}
-
-pub(super) fn durable_runtime_with_registry(
-    registry: RelationalSchemaRegistry,
-    medium: std::sync::Arc<crate::tests::support::TestDurableMedium>,
-) -> RelationalRuntime {
-    RelationalRuntimeApi::builder()
-        .profile(RelationalRuntimeProfile::CertificationCore)
-        .schema_registry(registry)
-        .build_durable(medium.attachment())
-        .expect("valid native runtime configuration")
 }

@@ -1,14 +1,17 @@
-use crate::facade::history::BranchId;
-use crate::facade::replay::{RelationalReplayRequest, ReplayExecutionMode, ReplayVerificationMode};
-
-use super::fixtures::execute_feature_into_main_merge;
+//! A published prepared merge leaves merge-ready ancestry, replay parents and basis authority.
+use super::merge_feature_execution::execute_feature_into_main_merge;
+use super::merge_proof_journey::actual_basis;
+use worth_relational::facade::{
+    history::BranchId,
+    replay::{RelationalReplayRequest, ReplayExecutionMode, ReplayVerificationMode},
+};
 
 #[test]
 fn execute_prepared_merge_produces_merge_ready_history_shape() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let (runtime, merge, main_head_commit_id, feature_head_commit_id) =
+    let (_medium, runtime, merge, main_head_commit_id, feature_head_commit_id) =
         execute_feature_into_main_merge(execution);
     let envelope = runtime
         .replay()
@@ -20,20 +23,29 @@ fn execute_prepared_merge_produces_merge_ready_history_shape() {
         .as_ref()
         .expect("published merge execution authority");
 
+    // The owner-observed basis between the actual branch heads after the merge
+    // selects the same common ancestor in either direction.
     assert_eq!(
-        runtime.history().latest_common_ancestor_between_branches(
-            &BranchId("main".to_string()),
-            &BranchId("feature".to_string())
-        ),
-        Some(feature_head_commit_id)
+        actual_basis(&runtime, "main", "feature")
+            .merge_base()
+            .commit()
+            .commit_id,
+        feature_head_commit_id
     );
 
-    let inspection = runtime.history().inspect_merge(
-        &BranchId("feature".to_string()),
-        &BranchId("main".to_string()),
+    // Feature into main again: no source commit remains outside the target's
+    // ancestry, and the merge base is the feature head itself.
+    let postmerge_basis = actual_basis(&runtime, "feature", "main");
+    let target_ancestors = postmerge_basis.merge_base().supporting_left_ancestors();
+    assert!(postmerge_basis
+        .merge_base()
+        .supporting_right_ancestors()
+        .iter()
+        .all(|source_ancestor| target_ancestors.contains(source_ancestor)));
+    assert_eq!(
+        postmerge_basis.merge_base().commit().commit_id,
+        feature_head_commit_id
     );
-    assert!(inspection.source_only_commits.is_empty());
-    assert_eq!(inspection.merge_base, Some(feature_head_commit_id));
     assert_eq!(
         runtime
             .replay_authority()

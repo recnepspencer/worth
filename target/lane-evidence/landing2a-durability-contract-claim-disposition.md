@@ -2,7 +2,7 @@
 
 Source-only review at HEAD 45b6e87a0a. No Rust edits, builds or tests. Main finite scope: all currently mounted src/tests/durability/contracts and src/tests/durability/medium children: **65 files, 191 named roots, 0 missing mounts, 0 unclassified roots**. Existing external/moved court tests are analogues below, not counted as remaining Native roots. Several mounted Memory/value roots are explicitly not adapter-causal.
 
-Main roots: **26 wholly HAPPY, 86 C4, 19 C2, 6 owner units, 54 mixed**. Classification follows assertions and fixture actions. Positive private schema construction is not automatically a fault; physical pin/dictionary/cost claims are C2 even when their inspection API is public. Conversely private semantic fields alone do not make a claim C2. Mixed rows name the exact split.
+Main roots after the latest private-custody/action ruling: **26 wholly HAPPY, 86 C4, 20 C2, 5 owner units, 54 mixed**. Classification follows assertions and fixture actions. Positive private schema construction is not automatically a fault; physical pin/dictionary/cost claims are C2 even when their inspection API is public. Conversely private semantic fields alone do not make a claim C2. Mixed rows name the exact split.
 
 An additional **24 named owner roots** in actual Complete/ACK, checkpoint transition/rebuild and kind-authentication closures are listed separately. That is a bounded owner extension requested for this review, not a claim to have reviewed all other durability/runtime owner tests.
 
@@ -385,7 +385,7 @@ Paths are relative to crates/worth-relational/src/tests/durability/. Lines refer
 
 - **a_forked_runtime_never_inherits_the_medium** (14) — **HAPPY + owner posture**. Actual runtime fork publishes Memory changes without offering to original medium; original positions/offers unchanged. Exact attached_durable_medium(None) becomes owner-local medium presence check, no C2.
 - **recovery_moves_the_medium_into_the_rebuilt_runtime** (32) — **HAPPY**. Actual recover replaces runtime owner identity and next commit publishes position2 into original retained medium. Build receiver with explicit original medium; no late bind/discovery.
-- **an_attachment_the_medium_moved_out_of_publishes_nothing** (60) — **owner binding state (medium required)**. Constructs private RelationalDurableMediumBinding around actual attachment, detach returns Some once/None next, publish refuses MediumMoved and original medium receives no offers. This is legal owner lifecycle unit, not C2 merely private; Memory cannot prove detach-once/no-offer. Requires genuine owner medium or public behavior split, never new local trait bridge.
+- **an_attachment_the_medium_moved_out_of_publishes_nothing** (60) — **C2 private custody/action (latest ruling)**. Constructs private RelationalDurableMediumBinding around actual attachment, detach returns Some once/None next, publish refuses MediumMoved and original medium receives no offers. This exact ownership/action assertion is C2; the ordinary public recover/fork handoff is separate. Memory cannot prove detach-once/no-offer; no new public action/observer or local trait bridge.
 
 ### medium/unresolved_fate.rs
 
@@ -603,4 +603,47 @@ Other private semantics (custom-invariant unsealed flag, strict index serializat
 All 191 main roots and 24 requested owner-extension roots have a claim disposition; **0 unclassified**. This does not establish that every C2/C4/private physical fixture can already compile after adapter deletion. The precise unsatisfied owner selection/detachment inputs above remain review findings. No source mutation, compilation, test run, boundary gate or Complete ACK completion is claimed.
 
 Other directly discovered durability/runtime owner files (checkpoint concurrency, fresh source, native codec inspection/manifest integrity, published snapshot cleanup, symbol reservations and retained export skip tests) are outside this finite contracts/medium + named Complete/ACK extension. They are not silently certified by this artifact.
+
+## Follow-up: immutable source versus actual selection (f9f15bf8c8)
+
+**Feasibility result: InlineCheckpointSource supplies genuine captured DATA/read custody, but cannot supply the original medium selection required by the four exact ACK roots.** No existing Native production replacement selected-writer provider was found in the scoped source search. No provider/bridge or public action/observer is proposed.
+
+### What the production Inline source actually provides
+
+- durability/log/native_checkpoint_codec/member_source.rs:11 is production code (only Arc import/test child is cfg(test)). It owns ExecutionOrderedMap<RelationalDurableMemberLocator, ExecutionImmutableBytes>.
+- checkpoint_decoding.rs:75-135 validates each actual inline member digest/uniqueness, copies bytes through the current request's funded Execution builder, then uses Arc::new(InlineCheckpointSource { members }) when no external source was supplied. This is the genuine Native capture/restore path used by mvcc/validation/merge_history_tests.rs:33-48, not a local trait bridge.
+- checkpoint_read_protection returns selected_checkpoint=true, canonical=0, transitions=0 and an inert () payload. checkpoint_selected_read_protection returns that owned immutable read payload. This flag names the immutable image available to a reader; read_protection.rs explicitly says protected source cut is DATA custody, never publication or Complete authority.
+- read_member_owned validates () protection, live request, locator length, actual stored SHA/length and funds a new owned output. retain_members_for_request issues real source-specific member custody; retirement of this immutable byte-only custody is immediate. read_commit returns SourceUnavailable. It stores no writer, mutable selected attempt, original capture subject, checkpoint-selection receipt, publication binding or ACK phase.
+- The existing unit inline_member_read_funds_output_and_keeps_grant_until_last_clone (member_source/tests.rs:27) proves real output reservation/last-clone ownership. That makes Inline suitable for actual retained-original readmission and funding checks, not proof of a physical writer's selection.
+
+### Where it stops for the exact four roots
+
+1. Native capture uses data/native_checkpoint/publication_binding.rs:13-43. bind_original_publication creates OpaqueCapturedCheckpointSubject and CheckpointPublication **only** when an actual RelationalDurableMediumBinding exists and the captured manifest's source matches binding.cold_source(). An inline source alone is not such a binding.
+2. data/native_checkpoint.rs:183 calls publication.advance or returns CaptureNotBound. from_untrusted_bytes/from_untrusted_bytes_region (:91/:111) explicitly set publication, canonical_publication, manifest_publication and region publications to None; decoding/recovering bytes does not preserve the original in-flight ACK attempt.
+3. medium/binding/checkpoint_selection.rs:94-135 upgrades the original Weak binding, calls medium.checkpoint_selection(&opaque_subject), accepts only Selected and then creates the private ActualCheckpointSelection. observe_checkpoint_selection (:158-171) does not query the ColdSource read-protection flag. NotSelected/Unknown -> SelectionNotKnown; absent/moved binding -> CaptureNotBound.
+4. Existing external TestDurableMedium attachment.rs:34 queries its actual filed opaque subject with same_capture(), then returns generation/manifest hash. That is the genuine available public court route. Its ordinary-build trait type is not the local cfg(test) Native binding type; rewrapping it locally would reintroduce the removed bridge.
+5. NativeJournalSourceEdge (medium/native_journal_source.rs) retains/retire-checks an existing source edge only. RelationalDurableCheckpointSource/RelationalDurableRecoverySource are captured recovery inputs; their constructors do not implement writer selection. Neither supplies the missing original selection query.
+
+Thus these exact claims are not supplied by an Inline substitution:
+- selected_ack_partial_transfer_preserves_later_cells_and_resumes_same_capture: original covered source-placement owners, one actual first-cell transfer, untouched later/postcut cells, no directory completion, same capture on retry.
+- selected_ack_exposes_backed_data_before_retirement_and_releases_holds_only_on_completion: same publication Arc, original selected directory and basis Weak custody, pending versus completed index frontier, later-cell exclusion and release only at final actual ACK.
+- native_custody_correction_delayed_canonical_selection_retains_actual_root_and_interrupted_ack.
+- native_custody_correction_delayed_empty_selection_retains_actual_schema_and_interrupted_ack.
+
+For the latter pair, delayed_selection retains real canonical/Empty basis+root+schema, files the same capture, interrupts after the original execution scope enters, drops one observer and resumes the original remaining alias. Re-encoding the checkpoint, reconstructing a fresh directory/source or restarting a private ACK state would not preserve that original attempt/Weak/cursor/funding evidence. Manually seeding AcknowledgingCheckpoint or caller Selected identity would skip the disputed Captured->actual-selection transition, so it is not a complete replacement for these four roots.
+
+The reusable immutable sub-inputs are concrete: actual source.native_checkpoint bytes/members, decoder-created Inline source, funded member outputs and source-specific member custody. They can support narrower owner read/retirement units. They cannot certify actual selection without the genuine selected writer. The external public Complete/ACK flow remains the existing route for selection; exact private pointer/cursor/capture assertions stay class2 unless an approved input/court cutover preserves them.
+
+### Detach-once under the latest ruling
+
+**an_attachment_the_medium_moved_out_of_publishes_nothing is C2 private custody/action.** It constructs private RelationalDurableMediumBinding, calls detach twice, asserts Some then None, invokes the old binding's publish, requires MediumMoved and asserts no medium offer. This is exact ownership/action state, not a missing public API and not a reason to add detach or a binding observer publicly.
+
+Production detach (medium/binding.rs:230) takes the same Box and HomeProgramPhase under I/O-then-phase lock order. Recovery's move_durable_medium (authority/recovery.rs:206-227) consumes that private transfer and attaches it to the rebuilt runtime. Existing public recover+next publication proves the genuine public handoff, while forked runtime/no original offer proves ordinary source isolation. Neither statement substitutes for the exact class2 detach-twice assertion.
+
+Actual public owner retirement already has a different contract: PreparedRelationalSourceClose::prepare; runtime.into_owned_source_close/into_source_close; RelationalSourceClose::advance/resume/into_retired; explicit retired allocation reclaim (runtime/state/runtime_state/source_close/mod.rs:62/129/164/211/232/245 and progression.rs:18). Its Seal stage calls durability.seal_source_retirement, which preflights the exact source, takes the same original binding Arc and requires Arc::try_unwrap (subsystems/durability/source_retirement.rs:44-66). SealedRelationalMediumBinding then lends the SAME original Box to advance_source_retirement before releasing its source edge (medium/binding/source_retirement.rs:57-105). It does not call detach as a public action, mint a transferable writer or make successful Drop equal physical retirement.
+
+Scoped search of the certification court/testkit found existing recover/publication/ordinary ACK callers, but no direct into_source_close/into_owned_source_close caller; this is a caller-search fact, not a claim that the production retirement capability is absent. Reuse the existing owner retirement contract when that is the requested behavior. Keep this exact detach-once root C2 and do not invent a new public action/observer.
+
+No code/build/test changes in this follow-up. Other adapter consumer work remains independent.
+
 

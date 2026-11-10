@@ -654,3 +654,22 @@ landing2a-original-observation-lanes.md/json. Cumulative0check/7Clippy/13focused
 builds/11selected runs;12boundary/context tool Cargo runs. Continue remaining65
 history/compiler roots, then contract/other consumer closure; remove attachment,
 fix32warning families, qualifyCompleteACK. No ownership/ruling wait is a blocker.
+
+ORIGINAL ATTRIBUTION LANDED f9f15bf8c8 (fresh APPROVE, first-pass1+1).
+Next coherent batch:65remaining history/compiler roots. Boundary review and
+specific plan at landing2a-merge-execution-plan.md; exact65-root machine mapping
+at merge-execution-claims.json. No Rust changes for this next batch yet, no new
+check/build/test. Source-selection ACK feasibility review confirms real inline
+read custody cannot replace the medium's original selected-response/Weak binding;
+private detach-once is C2 custody/action. Continue all other work, no ownership
+or ruling wait. Keep all original restoration references and public counterparts.
+
+Next65-root plan now fresh independent APPROVE (fork none), before Rust edits.
+Review corrected3actualMemory reconstruction labels and the exact-shared custom
+name-only registry. All65/39source entries verified, JSON exact with zero missing
+or duplicate roots. Existing facade::storage already exports the canonical field
+comparison key (facade.rs:364); no new key/encoder/observer door is needed.
+Projection uses existing project_observation/try_project_historical_version and
+request-bearing entity_record_with_projection_scope. Read actual public APIs;
+do not mistake private aliases or partial facade search for missing capability.
+Continue this coherent whole batch before next compile; counts unchanged.

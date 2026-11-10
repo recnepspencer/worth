@@ -1,23 +1,33 @@
-use super::*;
+//! Connected-rewire topology-region conflicts of merge planning, live and recovered.
+use super::branch_history_publications::{delete_relation_on_branch, fork};
+use super::merge_execution_authoring::create_relation_in_partition_on_branch;
+use super::merge_execution_recovery::checkpoint_and_recover_durable;
+use super::merge_execution_schema::durable_runtime_with_topology_identity_registry;
+use super::merge_proof_journey::merge_request;
+use super::merge_witness_authoring::{create_empty_entity, create_relation};
+use worth_relational::facade::history::BranchId;
+use worth_relational::facade::identity::PartitionId;
+use worth_relational::facade::merge::{
+    LoweredMergeBlockedReason, MergeResolutionClass, RelationConflictPropagation,
+    TopologyExecutionClass, TopologyRegionConflictReason,
+};
+use worth_testkit_relational::durable_medium::TestDurableMedium;
 
 #[test]
 fn topology_region_conflict_detection_reports_bounded_neighborhood_counters() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = durable_runtime_with_topology_identity_registry(
-        crate::tests::support::TestDurableMedium::new(),
-    );
-    let source = create_entity(execution, &runtime, "source");
-    let target_a = create_entity(execution, &runtime, "target-a");
-    let target_b = create_entity(execution, &runtime, "target-b");
-    let target_c = create_entity(execution, &runtime, "target-c");
-    let target_d = create_entity(execution, &runtime, "target-d");
-    let relation_a =
-        crate::tests::support::create_relation(execution, &runtime, source, target_a, "edge-a");
-    let relation_b =
-        crate::tests::support::create_relation(execution, &runtime, source, target_b, "edge-b");
-    create_branch_from_main(&runtime, "feature");
+    let medium = TestDurableMedium::new();
+    let runtime = durable_runtime_with_topology_identity_registry(&medium);
+    let source = create_empty_entity(execution, &runtime, "source");
+    let target_a = create_empty_entity(execution, &runtime, "target-a");
+    let target_b = create_empty_entity(execution, &runtime, "target-b");
+    let target_c = create_empty_entity(execution, &runtime, "target-c");
+    let target_d = create_empty_entity(execution, &runtime, "target-d");
+    let relation_a = create_relation(execution, &runtime, source, target_a, "edge-a");
+    let relation_b = create_relation(execution, &runtime, source, target_b, "edge-b");
+    fork(execution, &runtime, "feature");
     delete_relation_on_branch(
         execution,
         &runtime,
@@ -37,7 +47,7 @@ fn topology_region_conflict_detection_reports_bounded_neighborhood_counters() {
         target_c,
         "edge-a",
         "edge-a",
-        crate::facade::identity::PartitionId::main(),
+        PartitionId::main(),
         BranchId("feature".to_string()),
     );
     create_relation_in_partition_on_branch(
@@ -47,21 +57,17 @@ fn topology_region_conflict_detection_reports_bounded_neighborhood_counters() {
         target_d,
         "edge-b",
         "edge-b",
-        crate::facade::identity::PartitionId::main(),
+        PartitionId::main(),
         BranchId("feature".to_string()),
     );
 
-    runtime.performance_access().reset_counters();
     let artifact = runtime
         .merge()
         .inspect_planning_scope(
             execution,
-            MergeExecutionRequest {
-                target_branch: BranchId("main".to_string()),
-                source_branch: BranchId("feature".to_string()),
-                merge_intent: MergeIntent::ReconcileIntoTarget,
-            }
-            .into(),
+            runtime
+                .bind_merge_planning_request(merge_request().into())
+                .unwrap(),
         )
         .expect("topology-region planning artifact");
 
@@ -122,31 +128,23 @@ fn topology_region_conflict_detection_reports_bounded_neighborhood_counters() {
         assert!(topology_record_refs.is_subset(&neighborhood));
         assert_eq!(rewired, topology_record_refs);
     }
-
-    let counters = runtime.performance_access().counters();
-    assert_eq!(counters.merge_topology_relation_candidates_scoped, 4);
-    assert!(counters.merge_topology_endpoint_incidences_scoped >= 8);
-    assert_eq!(counters.merge_topology_region_conflicts_detected, 1);
-    assert_eq!(counters.merge_topology_region_records_escalated, 2);
 }
 
 #[test]
 fn topology_region_conflict_denial_is_stable_across_recovery() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let medium = crate::tests::support::TestDurableMedium::new();
-    let runtime = durable_runtime_with_topology_identity_registry(medium.clone());
-    let source = create_entity(execution, &runtime, "source");
-    let target_a = create_entity(execution, &runtime, "target-a");
-    let target_b = create_entity(execution, &runtime, "target-b");
-    let target_c = create_entity(execution, &runtime, "target-c");
-    let target_d = create_entity(execution, &runtime, "target-d");
-    let relation_a =
-        crate::tests::support::create_relation(execution, &runtime, source, target_a, "edge-a");
-    let relation_b =
-        crate::tests::support::create_relation(execution, &runtime, source, target_b, "edge-b");
-    create_branch_from_main(&runtime, "feature");
+    let medium = TestDurableMedium::new();
+    let runtime = durable_runtime_with_topology_identity_registry(&medium);
+    let source = create_empty_entity(execution, &runtime, "source");
+    let target_a = create_empty_entity(execution, &runtime, "target-a");
+    let target_b = create_empty_entity(execution, &runtime, "target-b");
+    let target_c = create_empty_entity(execution, &runtime, "target-c");
+    let target_d = create_empty_entity(execution, &runtime, "target-d");
+    let relation_a = create_relation(execution, &runtime, source, target_a, "edge-a");
+    let relation_b = create_relation(execution, &runtime, source, target_b, "edge-b");
+    fork(execution, &runtime, "feature");
     delete_relation_on_branch(
         execution,
         &runtime,
@@ -166,7 +164,7 @@ fn topology_region_conflict_denial_is_stable_across_recovery() {
         target_c,
         "edge-a",
         "edge-a",
-        crate::facade::identity::PartitionId::main(),
+        PartitionId::main(),
         BranchId("feature".to_string()),
     );
     create_relation_in_partition_on_branch(
@@ -176,7 +174,7 @@ fn topology_region_conflict_denial_is_stable_across_recovery() {
         target_d,
         "edge-b",
         "edge-b",
-        crate::facade::identity::PartitionId::main(),
+        PartitionId::main(),
         BranchId("feature".to_string()),
     );
 
@@ -184,12 +182,9 @@ fn topology_region_conflict_denial_is_stable_across_recovery() {
         .merge()
         .inspect_planning_scope(
             execution,
-            MergeExecutionRequest {
-                target_branch: BranchId("main".to_string()),
-                source_branch: BranchId("feature".to_string()),
-                merge_intent: MergeIntent::ReconcileIntoTarget,
-            }
-            .into(),
+            runtime
+                .bind_merge_planning_request(merge_request().into())
+                .unwrap(),
         )
         .expect("live topology-region planning artifact");
     let live_topology_records = live_artifact
@@ -232,19 +227,19 @@ fn topology_region_conflict_denial_is_stable_across_recovery() {
         assert_eq!(evidence.topology_neighborhood_rewired_records.len(), 2);
     }
 
-    let (_recovery, recovered) = checkpoint_and_recover_with(execution, &runtime, move || {
-        durable_runtime_with_topology_identity_registry(medium.clone())
-    });
+    let (_recovery, recovered) = checkpoint_and_recover_durable(
+        execution,
+        &runtime,
+        &medium,
+        durable_runtime_with_topology_identity_registry(&medium),
+    );
     let recovered_artifact = recovered
         .merge()
         .inspect_planning_scope(
             execution,
-            MergeExecutionRequest {
-                target_branch: BranchId("main".to_string()),
-                source_branch: BranchId("feature".to_string()),
-                merge_intent: MergeIntent::ReconcileIntoTarget,
-            }
-            .into(),
+            recovered
+                .bind_merge_planning_request(merge_request().into())
+                .unwrap(),
         )
         .expect("recovered topology-region planning artifact");
 

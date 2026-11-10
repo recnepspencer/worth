@@ -1,36 +1,39 @@
-use crate::facade::history::BranchId;
-use crate::facade::merge::{
-    AspectMergePolicyKind, MergeExecutionRequest, MergeIntent, MergeManualResolutionClass,
-    MergePolicyDecisionBoundary, MergePolicyOwnershipSurface, MergePolicyRejectClass,
+//! Lowered merge plans carry the explicit runtime-owned policy proof boundary of each denial.
+use super::branch_history_publications::{
+    create_entity, delete_entity_on_branch, fork, update_entity, update_entity_on_branch,
 };
-use crate::facade::transactions::RecordRef;
-use crate::tests::support::{
-    create_branch_from_main, create_entity, delete_entity_on_branch,
-    durable_runtime_with_test_schema, update_entity, update_entity_on_branch,
+use super::merge_execution_schema::runtime_with_name_merge_policy;
+use super::merge_proof_journey::merge_request;
+use worth_relational::facade::{
+    history::BranchId,
+    merge::{
+        AspectMergePolicyKind, LoweredRecordDecision, MergeManualResolutionClass,
+        MergePolicyDecisionBoundary, MergePolicyOwnershipSurface, MergePolicyRejectClass,
+    },
+    transactions::RecordRef,
 };
-
-use super::fixtures::runtime_with_name_merge_policy;
+use worth_testkit_relational::{
+    durable_medium::TestDurableMedium, durable_publication::durable_runtime,
+};
 
 #[test]
 fn lowered_plan_carries_explicit_manual_resolution_policy_boundary_for_generic_denial() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = durable_runtime_with_test_schema();
+    let medium = TestDurableMedium::new();
+    let runtime = durable_runtime(&medium);
     let entity = create_entity(execution, &runtime, "shared");
-    create_branch_from_main(&runtime, "feature");
+    fork(execution, &runtime, "feature");
     delete_entity_on_branch(execution, &runtime, entity, BranchId("feature".to_string()));
 
     let artifact = runtime
         .merge()
         .inspect_planning_scope(
             execution,
-            MergeExecutionRequest {
-                target_branch: BranchId("main".to_string()),
-                source_branch: BranchId("feature".to_string()),
-                merge_intent: MergeIntent::ReconcileIntoTarget,
-            }
-            .into(),
+            runtime
+                .bind_merge_planning_request(merge_request().into())
+                .unwrap(),
         )
         .expect("planning artifact");
 
@@ -60,12 +63,12 @@ fn lowered_plan_carries_explicit_manual_resolution_policy_boundary_for_generic_d
 
 #[test]
 fn lowered_plan_carries_explicit_hard_reject_policy_boundary_for_fail_on_conflict() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_name_merge_policy(AspectMergePolicyKind::FailOnConflict);
     let entity = create_entity(execution, &runtime, "shared");
-    create_branch_from_main(&runtime, "feature");
+    fork(execution, &runtime, "feature");
     update_entity(execution, &runtime, entity, "main-name");
     update_entity_on_branch(
         execution,
@@ -79,12 +82,9 @@ fn lowered_plan_carries_explicit_hard_reject_policy_boundary_for_fail_on_conflic
         .merge()
         .inspect_planning_scope(
             execution,
-            MergeExecutionRequest {
-                target_branch: BranchId("main".to_string()),
-                source_branch: BranchId("feature".to_string()),
-                merge_intent: MergeIntent::ReconcileIntoTarget,
-            }
-            .into(),
+            runtime
+                .bind_merge_planning_request(merge_request().into())
+                .unwrap(),
         )
         .expect("planning artifact");
 
@@ -112,6 +112,6 @@ fn lowered_plan_carries_explicit_hard_reject_policy_boundary_for_fail_on_conflic
     );
     assert!(matches!(
         lowered.record_decision,
-        crate::facade::merge::LoweredRecordDecision::Reject(_)
+        LoweredRecordDecision::Reject(_)
     ));
 }

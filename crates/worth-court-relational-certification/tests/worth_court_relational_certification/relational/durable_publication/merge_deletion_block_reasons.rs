@@ -1,27 +1,34 @@
-use crate::facade::history::BranchId;
-use crate::facade::merge::{
+//! Lowered merge plans keep the typed block reason of each one-sided deletion.
+use super::branch_history_publications::{
+    create_entity, delete_entity, delete_entity_on_branch, fork, update_entity,
+    update_entity_on_branch,
+};
+use super::merge_proof_journey::merge_request;
+use worth_relational::facade::history::BranchId;
+use worth_relational::facade::identity::EntityId;
+use worth_relational::facade::merge::{
     DeletionExecutionClass, LoweredMergeBlockedReason, LoweredRecordDenialKind,
-    MergeExecutionRequest, MergeIntent, MergeResolutionClass,
+    MergeResolutionClass,
 };
-use crate::facade::transactions::RecordRef;
-use crate::tests::support::{
-    create_branch_from_main, create_entity, delete_entity, delete_entity_on_branch,
-    durable_runtime_with_test_schema, update_entity, update_entity_on_branch,
-};
+use worth_relational::facade::runtime::RelationalRuntime;
+use worth_relational::facade::transactions::RecordRef;
+use worth_testkit_relational::durable_medium::TestDurableMedium;
+use worth_testkit_relational::durable_publication::durable_runtime;
 
 #[test]
 fn lowered_plan_preserves_source_deleted_target_live_block_reason() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = durable_runtime_with_test_schema();
+    let medium = TestDurableMedium::new();
+    let runtime = durable_runtime(&medium);
     let entity = create_entity(execution, &runtime, "shared");
-    create_branch_from_main(&runtime, "feature");
+    fork(execution, &runtime, "feature");
     delete_entity_on_branch(execution, &runtime, entity, BranchId("feature".to_string()));
 
     assert_blocked_deletion_lowering(
         execution,
-        &mut runtime,
+        &runtime,
         entity,
         LoweredMergeBlockedReason::SourceDeletedTargetLive,
         DeletionExecutionClass::SourceDeletedTargetLive,
@@ -31,12 +38,13 @@ fn lowered_plan_preserves_source_deleted_target_live_block_reason() {
 
 #[test]
 fn lowered_plan_preserves_source_live_target_deleted_block_reason() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = durable_runtime_with_test_schema();
+    let medium = TestDurableMedium::new();
+    let runtime = durable_runtime(&medium);
     let entity = create_entity(execution, &runtime, "shared");
-    create_branch_from_main(&runtime, "feature");
+    fork(execution, &runtime, "feature");
     update_entity_on_branch(
         execution,
         &runtime,
@@ -48,7 +56,7 @@ fn lowered_plan_preserves_source_live_target_deleted_block_reason() {
 
     assert_blocked_deletion_lowering(
         execution,
-        &mut runtime,
+        &runtime,
         entity,
         LoweredMergeBlockedReason::SourceLiveTargetDeleted,
         DeletionExecutionClass::SourceLiveTargetDeleted,
@@ -58,18 +66,19 @@ fn lowered_plan_preserves_source_live_target_deleted_block_reason() {
 
 #[test]
 fn lowered_plan_preserves_deleted_vs_modified_block_reason() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = durable_runtime_with_test_schema();
+    let medium = TestDurableMedium::new();
+    let runtime = durable_runtime(&medium);
     let entity = create_entity(execution, &runtime, "shared");
-    create_branch_from_main(&runtime, "feature");
+    fork(execution, &runtime, "feature");
     update_entity(execution, &runtime, entity, "main-modified");
     delete_entity_on_branch(execution, &runtime, entity, BranchId("feature".to_string()));
 
     assert_blocked_deletion_lowering(
         execution,
-        &mut runtime,
+        &runtime,
         entity,
         LoweredMergeBlockedReason::DeletedVsModified,
         DeletionExecutionClass::DeletedVsModified,
@@ -79,8 +88,8 @@ fn lowered_plan_preserves_deleted_vs_modified_block_reason() {
 
 fn assert_blocked_deletion_lowering(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut crate::facade::runtime::RelationalRuntime,
-    entity: crate::facade::identity::EntityId,
+    runtime: &RelationalRuntime,
+    entity: EntityId,
     blocked_reason: LoweredMergeBlockedReason,
     deletion_class: DeletionExecutionClass,
     denial_kind: LoweredRecordDenialKind,
@@ -89,12 +98,9 @@ fn assert_blocked_deletion_lowering(
         .merge()
         .inspect_planning_scope(
             execution,
-            MergeExecutionRequest {
-                target_branch: BranchId("main".to_string()),
-                source_branch: BranchId("feature".to_string()),
-                merge_intent: MergeIntent::ReconcileIntoTarget,
-            }
-            .into(),
+            runtime
+                .bind_merge_planning_request(merge_request().into())
+                .unwrap(),
         )
         .expect("planning artifact");
 

@@ -1,19 +1,25 @@
-use crate::facade::diagnostics::{DiagnosticCode, DiagnosticsArtifactKind};
-use crate::facade::history::BranchId;
-use crate::facade::merge::{MergeExecutionRequest, MergeIntent};
-use crate::tests::support::{
-    create_branch_from_main, create_entity_outcome, create_entity_outcome_on_branch,
-    diagnostic_field_optional, durable_runtime_with_test_schema,
+//! A published prepared merge reports its structural summary and execution diagnostics.
+use super::branch_history_publications::{create_entity_outcome_on_branch, fork};
+use super::merge_execution_observation::diagnostic_field_optional;
+use worth_relational::facade::{
+    diagnostics::{DiagnosticCode, DiagnosticsArtifactKind},
+    history::BranchId,
+    merge::{MergeExecutionRequest, MergeIntent},
+};
+use worth_testkit_relational::{
+    durable_medium::TestDurableMedium,
+    durable_publication::{create_entity_outcome, durable_runtime},
 };
 
 #[test]
 fn execute_prepared_merge_reports_execution_counters_and_structural_summary() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = durable_runtime_with_test_schema();
+    let medium = TestDurableMedium::new();
+    let runtime = durable_runtime(&medium);
     create_entity_outcome(execution, &runtime, "root");
-    create_branch_from_main(&runtime, "feature");
+    fork(execution, &runtime, "feature");
     create_entity_outcome_on_branch(
         execution,
         &runtime,
@@ -24,59 +30,23 @@ fn execute_prepared_merge_reports_execution_counters_and_structural_summary() {
     let prepared = runtime
         .prepare_merge_execution(
             execution,
-            MergeExecutionRequest {
-                target_branch: BranchId("main".to_string()),
-                source_branch: BranchId("feature".to_string()),
-                merge_intent: MergeIntent::ReconcileIntoTarget,
-            },
+            runtime
+                .bind_merge_execution_request(MergeExecutionRequest::new(
+                    BranchId("main".to_string()),
+                    BranchId("feature".to_string()),
+                    MergeIntent::ReconcileIntoTarget,
+                ))
+                .unwrap(),
         )
         .expect("prepared merge execution");
-    runtime.performance_access().reset_counters();
 
     let merge = runtime
         .execute_prepared_merge(execution, prepared)
         .expect("executed prepared merge");
-    let counters = runtime.performance_access().counters();
 
     assert_eq!(merge.structural_summary.executed_record_count, 1);
     assert_eq!(merge.structural_summary.adopted_source_record_count, 1);
     assert_eq!(merge.structural_summary.emitted_mutation_intent_count, 1);
-    assert_eq!(counters.merge_execution_attempts, 1);
-    assert_eq!(counters.merge_execution_requests, 1);
-    assert_eq!(counters.merge_execution_records_admitted, 1);
-    assert_eq!(counters.merge_execution_mutation_intents_emitted, 1);
-    assert_eq!(
-        merge
-            .commit
-            .execution()
-            .complexity_delta
-            .merge_execution_attempts,
-        1
-    );
-    assert_eq!(
-        merge
-            .commit
-            .execution()
-            .complexity_delta
-            .merge_execution_requests,
-        1
-    );
-    assert_eq!(
-        merge
-            .commit
-            .execution()
-            .complexity_delta
-            .merge_execution_records_admitted,
-        1
-    );
-    assert_eq!(
-        merge
-            .commit
-            .execution()
-            .complexity_delta
-            .merge_execution_mutation_intents_emitted,
-        1
-    );
     assert!(merge.commit.diagnostics().iter().any(|artifact| {
         artifact.kind == DiagnosticsArtifactKind::MinimalSummary
             && artifact

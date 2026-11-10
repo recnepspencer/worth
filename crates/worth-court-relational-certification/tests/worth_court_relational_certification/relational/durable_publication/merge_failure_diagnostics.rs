@@ -1,19 +1,24 @@
-use crate::facade::diagnostics::{DiagnosticCode, DiagnosticsArtifactKind, DiagnosticsScope};
-use crate::facade::history::BranchId;
-use crate::facade::merge::{MergeExecutionRequest, MergeIntent};
-use crate::tests::support::{
-    create_branch_from_main, create_entity_outcome, create_entity_outcome_on_branch,
-    durable_runtime_with_test_schema,
+//! A stale prepared merge fails with a typed failure diagnostic and no published execution.
+use super::branch_history_publications::{create_entity_outcome_on_branch, fork};
+use worth_relational::facade::{
+    diagnostics::{DiagnosticCode, DiagnosticsArtifactKind, DiagnosticsScope},
+    history::BranchId,
+    merge::{MergeExecutionError, MergeExecutionRequest, MergeIntent},
+};
+use worth_testkit_relational::{
+    durable_medium::TestDurableMedium,
+    durable_publication::{create_entity_outcome, durable_runtime},
 };
 
 #[test]
 fn execute_prepared_merge_records_attempt_without_success_on_failure() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = durable_runtime_with_test_schema();
+    let medium = TestDurableMedium::new();
+    let runtime = durable_runtime(&medium);
     create_entity_outcome(execution, &runtime, "root");
-    create_branch_from_main(&runtime, "feature");
+    fork(execution, &runtime, "feature");
     create_entity_outcome_on_branch(
         execution,
         &runtime,
@@ -24,29 +29,22 @@ fn execute_prepared_merge_records_attempt_without_success_on_failure() {
     let prepared = runtime
         .prepare_merge_execution(
             execution,
-            MergeExecutionRequest {
-                target_branch: BranchId("main".to_string()),
-                source_branch: BranchId("feature".to_string()),
-                merge_intent: MergeIntent::ReconcileIntoTarget,
-            },
+            runtime
+                .bind_merge_execution_request(MergeExecutionRequest::new(
+                    BranchId("main".to_string()),
+                    BranchId("feature".to_string()),
+                    MergeIntent::ReconcileIntoTarget,
+                ))
+                .unwrap(),
         )
         .expect("prepared merge execution");
     create_entity_outcome(execution, &runtime, "head-drift");
-    runtime.performance_access().reset_counters();
 
     let error = runtime
         .execute_prepared_merge(execution, prepared)
         .expect_err("stale prepared merge should fail");
-    let counters = runtime.performance_access().counters();
 
-    assert!(matches!(
-        error,
-        crate::facade::merge::MergeExecutionError::StaleBranchHead { .. }
-    ));
-    assert_eq!(counters.merge_execution_attempts, 1);
-    assert_eq!(counters.merge_execution_requests, 0);
-    assert_eq!(counters.merge_execution_records_admitted, 0);
-    assert_eq!(counters.merge_execution_mutation_intents_emitted, 0);
+    assert!(matches!(error, MergeExecutionError::StaleBranchHead { .. }));
     assert!(runtime
         .publication()
         .diagnostics()

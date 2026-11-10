@@ -133,8 +133,8 @@ All file paths below are relative to crates/worth-relational/src/tests/history/.
 
 ### milestone_7d_phase_d/last_writer_wins_resolution.rs
 
-- **built_in_last_writer_wins_reject_retained_envelope_is_stable_across_recovery** (line 4) — **HAPPY durable**. Declared LastWriterWins causal conflict rejects with policy reason, no resolved value and Reject record; retained planning envelope/lowered data equal after actual recovery.
-- **built_in_last_writer_wins_auto_resolution_is_stable_across_recovery** (line 120) — **HAPPY durable**. Declared LastWriterWins auto-resolves to SourceVisibleValue, public Execute decision and actual feature-change visible after merge and real recovery; diagnostic summary parity.
+- **built_in_last_writer_wins_reject_retained_envelope_is_stable_across_recovery** (line 4) — **HAPPY Memory reconstruction**. The actual helper builds Memory (.build); declared LastWriterWins causal conflict rejects with policy reason, no resolved value and Reject record; retained planning envelope/lowered data equal after actual retained-log Memory reconstruction.
+- **built_in_last_writer_wins_auto_resolution_is_stable_across_recovery** (line 120) — **HAPPY Memory reconstruction**. The actual helper builds Memory (.build); declared LastWriterWins auto-resolves to SourceVisibleValue, public Execute decision and actual feature-change visible after merge and actual retained-log Memory reconstruction; diagnostic summary parity.
 - **auto_resolved_merge_reads_pinned_visible_value_through_declared_aspect_binding** (line 262) — **HAPPY (Memory policy fixture)**. Different declared display_name aspect/field binding reads actual chosen visible value after execution. Existing policy runtime is Memory. Pinned in name refers to selected materialized value, no pin-count/retention claim.
 
 ### milestone_7d_phase_d/merge_descriptive_touches.rs
@@ -143,7 +143,7 @@ All file paths below are relative to crates/worth-relational/src/tests/history/.
 
 ### milestone_7d_phase_d/monotonic_counter_resolution.rs
 
-- **built_in_monotonic_counter_merge_is_auto_resolved_with_inline_value_and_recovery_parity** (line 4) — **HAPPY durable + C2**. Public: declared counter resolves inline Int64(18), read truth=18 before/after real recovery; diagnostics/digests and semantic execution/patch tags. C2: exact source-state=1, target-state=1, base-state=0, base-patch-authority=1 lookup counters. Split those counters without downgrading genuine durable parity.
+- **built_in_monotonic_counter_merge_is_auto_resolved_with_inline_value_and_recovery_parity** (line 4) — **HAPPY Memory reconstruction + C2**. The actual helper builds Memory (.build). Public: declared counter resolves inline Int64(18), read truth=18 before/after actual retained-log Memory reconstruction; diagnostics/digests and semantic execution/patch tags. C2: exact source-state=1, target-state=1, base-state=0, base-patch-authority=1 lookup counters. Split those counters while retaining the actual Memory reconstruction and its exact schema.
 
 ### milestone_7d_phase_d/prepared_merge_denials.rs
 
@@ -175,7 +175,7 @@ All file paths below are relative to crates/worth-relational/src/tests/history/.
 These are all files in the 39-file mount closure that define non-test functions. Other files contain the named roots above or module mounts/imports; their inherited fixture dependency is not permission to move every assertion wholesale.
 
 - **milestone_7b.rs**: `inspect_recovered_merge_planning_artifact`, `runtime_with_registry`, `snapshot_digest`. Split durable inspect_recovered_merge_planning_artifact from already-Memory runtime_with_registry/snapshot_digest. Durable helper takes explicit medium; exact private hash remains owner value check.
-- **milestone_7c_phase_a/record_plan_compilation.rs**: `assert_pinned_visible_aspect_evidence`. Keep assert_pinned_visible_aspect_evidence with private compiler roots in their current baseline file. Source/exact-shared fixtures can use runtime_with_test_schema; reconcile fixture already uses .build().
+- **milestone_7c_phase_a/record_plan_compilation.rs**: `assert_pinned_visible_aspect_evidence`. Keep assert_pinned_visible_aspect_evidence with private compiler roots in their current baseline file. Only the source-addition fixture replaces its durable constructor with runtime_with_test_schema. Exact-shared and reconcile retain their existing custom registries and .build().
 - **milestone_7c_phase_d.rs**: `test_patch_target`. test_patch_target is a pure declared locator constructor; preserve it with private mutation-plan roots. First source-addition fixture can use runtime_with_test_schema; remaining custom-schema pure roots already Memory. Last corrupted-array root and its controls are C4.
 - **milestone_7c_phase_e/fixtures.rs**: `execute_feature_into_main_merge`. execute_feature_into_main_merge returns runtime/outcome/original heads; public durable version must also retain/pass Arc<TestDurableMedium> (or accept it from caller). Genuine execute creates merge parents. Share value declarations, not a local durable publisher.
 - **milestone_7c_phase_g/certification_cases.rs**: `certify_exact_shared_merge_execution`, `certify_source_only_addition_merge_execution`, `certify_prefer_richer_merge_execution`. Each of three case constructors retains its own actual medium, schema and original commit results. Pass explicit medium to recovery helper. Exact-shared no-op counts, source-addition create counts and prefer-richer chosen values remain semantic public assertions.
@@ -310,3 +310,16 @@ milestone_7d_phase_e.rs
 
 0 unclassified named roots; one precisely scoped missing public DATA observation affects three named roots. This is a source disposition, not compile/behavior verification or Complete ACK.
 
+
+## Plan-review correction before implementation
+
+Fresh independent review of actual constructors found that both LastWriterWins
+recovery cases and the monotonic-counter recovery case use
+runtime_with_aspect_field_merge_policy().build(), with retained-log Memory
+recovery. The prior durable labels and blanket external-medium recipe did not
+match these source inputs. Preserve their exact Memory registry/reconstruction
+through public APIs; do not manufacture a physical medium claim. The exact
+shared-record compiler fixture also builds its own name-only registry; preserve
+that registry (not the richer default test schema). Only the default source-
+addition compiler case swaps its adapter constructor to the matching Native
+Memory default. These corrections change no assertion or Rust source.

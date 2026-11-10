@@ -1,24 +1,38 @@
-use super::*;
+//! Deletion merges: stale mutual-deletion execution and recovered non-executable denial.
+use super::branch_history_publications::{
+    create_entity, delete_entity, delete_entity_on_branch, fork, update_entity,
+};
+use super::merge_execution_observation::diagnostic_field;
+use super::merge_execution_recovery::checkpoint_and_recover_durable;
+use super::merge_proof_journey::merge_request;
+use worth_relational::facade::diagnostics::{DiagnosticCode, RelationalDiagnosticValue};
+use worth_relational::facade::history::BranchId;
+use worth_relational::facade::merge::{
+    DeletionExecutionClass, LoweredMergeBlockedReason, LoweredRecordDenialKind,
+    MergeExecutionError, MergeResolutionClass,
+};
+use worth_relational::facade::transactions::RecordRef;
+use worth_testkit_relational::durable_medium::TestDurableMedium;
+use worth_testkit_relational::durable_publication::durable_runtime;
 
 #[test]
 fn deleted_on_both_sides_prepared_merge_rejects_target_head_drift() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = durable_runtime_with_test_schema();
+    let medium = TestDurableMedium::new();
+    let runtime = durable_runtime(&medium);
     let entity = create_entity(execution, &runtime, "shared");
-    create_branch_from_main(&runtime, "feature");
+    fork(execution, &runtime, "feature");
     delete_entity(execution, &runtime, entity);
     delete_entity_on_branch(execution, &runtime, entity, BranchId("feature".to_string()));
 
     let prepared = runtime
         .prepare_merge_execution(
             execution,
-            MergeExecutionRequest {
-                target_branch: BranchId("main".to_string()),
-                source_branch: BranchId("feature".to_string()),
-                merge_intent: MergeIntent::ReconcileIntoTarget,
-            },
+            runtime
+                .bind_merge_execution_request(merge_request())
+                .unwrap(),
         )
         .expect("prepared merge");
     create_entity(execution, &runtime, "main-advance");
@@ -52,42 +66,14 @@ fn deleted_on_both_sides_prepared_merge_rejects_target_head_drift() {
 }
 
 #[test]
-fn deleted_on_both_sides_prepared_merge_rejects_schema_semantic_drift() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let mut runtime = durable_runtime_with_test_schema();
-    let entity = create_entity(execution, &runtime, "shared");
-    create_branch_from_main(&runtime, "feature");
-    delete_entity(execution, &runtime, entity);
-    delete_entity_on_branch(execution, &runtime, entity, BranchId("feature".to_string()));
-
-    let prepared = runtime
-        .prepare_merge_execution(
-            execution,
-            MergeExecutionRequest {
-                target_branch: BranchId("main".to_string()),
-                source_branch: BranchId("feature".to_string()),
-                merge_intent: MergeIntent::ReconcileIntoTarget,
-            },
-        )
-        .expect("prepared merge");
-    runtime.set_schema_registry_for_test(drifted_schema_registry());
-
-    match runtime.execute_prepared_merge(execution, prepared) {
-        Err(MergeExecutionError::SchemaSemanticDrift { .. }) => {}
-        other => panic!("expected schema semantic drift rejection, got {other:?}"),
-    }
-}
-
-#[test]
 fn non_executable_deletion_denial_is_stable_across_recovery() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = durable_runtime_with_test_schema();
+    let medium = TestDurableMedium::new();
+    let runtime = durable_runtime(&medium);
     let entity = create_entity(execution, &runtime, "shared");
-    create_branch_from_main(&runtime, "feature");
+    fork(execution, &runtime, "feature");
     update_entity(execution, &runtime, entity, "main-modified");
     delete_entity_on_branch(execution, &runtime, entity, BranchId("feature".to_string()));
 
@@ -95,12 +81,9 @@ fn non_executable_deletion_denial_is_stable_across_recovery() {
         .merge()
         .inspect_planning_scope(
             execution,
-            MergeExecutionRequest {
-                target_branch: BranchId("main".to_string()),
-                source_branch: BranchId("feature".to_string()),
-                merge_intent: MergeIntent::ReconcileIntoTarget,
-            }
-            .into(),
+            runtime
+                .bind_merge_planning_request(merge_request().into())
+                .unwrap(),
         )
         .expect("live planning artifact");
     let live_record = live_artifact
@@ -117,17 +100,14 @@ fn non_executable_deletion_denial_is_stable_across_recovery() {
         .expect("live lowered index");
 
     let (_recovery, recovered) =
-        checkpoint_and_recover_with(execution, &runtime, durable_runtime_with_test_schema);
+        checkpoint_and_recover_durable(execution, &runtime, &medium, durable_runtime(&medium));
     let recovered_artifact = recovered
         .merge()
         .inspect_planning_scope(
             execution,
-            MergeExecutionRequest {
-                target_branch: BranchId("main".to_string()),
-                source_branch: BranchId("feature".to_string()),
-                merge_intent: MergeIntent::ReconcileIntoTarget,
-            }
-            .into(),
+            recovered
+                .bind_merge_planning_request(merge_request().into())
+                .unwrap(),
         )
         .expect("recovered planning artifact");
     let recovered_record = recovered_artifact

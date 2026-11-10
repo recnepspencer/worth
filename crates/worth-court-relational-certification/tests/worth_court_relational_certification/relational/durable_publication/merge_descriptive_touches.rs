@@ -1,27 +1,43 @@
-use super::*;
-use crate::facade::indexes::{DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind};
-use crate::history::data::RelationalDescriptiveTouch as Touch;
-use crate::storage::data::AuthoritativeFieldComparisonKey;
+//! A reconciling merge's descriptive touches, index membership keys and built generations.
+use super::branch_history_publications::{fork, transaction};
+use super::branch_history_recovery::current_head;
+use super::merge_execution_authoring::{
+    create_entity_with_aspect_fields, single_string_aspect_field_patch,
+};
+use super::merge_execution_observation::read_entity_aspect_field_display;
+use super::merge_execution_schema::runtime_with_aspect_field_merge_policy;
+use super::merge_proof_journey::merge_request;
+use worth_relational::facade::durability::RelationalCheckpointArtifactPolicy;
+use worth_relational::facade::history::{BranchId, RelationalDescriptiveTouch as Touch};
+use worth_relational::facade::indexes::{
+    DerivedIndexBuildRequest, DerivedIndexDefinition, DerivedIndexEntries, DerivedIndexId,
+    DerivedIndexKind,
+};
+use worth_relational::facade::merge::AspectMergePolicyKind;
+use worth_relational::facade::storage::AuthoritativeFieldComparisonKey;
+use worth_relational::facade::transactions::{
+    EntityMutationIntent, MutationIntent, RecordRef, UpdateEntityFieldsIntent, WorkerIntentBatch,
+};
+use worth_testkit_relational::aspect_storage::definition::{
+    aspect_field_locator, aspect_key, field_key,
+};
+use worth_testkit_relational::aspect_storage::publications::string_aspect_value;
 
 #[test]
 fn native_merge_touches_only_changed_revision_and_both_index_membership_keys() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = runtime_with_aspect_field_merge_policy(
-        AspectKey::new("status").unwrap(),
+    let runtime = runtime_with_aspect_field_merge_policy(
+        aspect_key("status"),
         field_key("status"),
         AspectMergePolicyKind::PreferRicher,
     );
     let entity = create_entity_with_aspect_fields(
         execution,
-        &mut runtime,
+        &runtime,
         "shared",
-        crate::tests::support::single_string_aspect_field_patch(
-            AspectKey::new("status").unwrap(),
-            field_key("status"),
-            "off",
-        ),
+        single_string_aspect_field_patch(aspect_key("status"), field_key("status"), "off"),
     );
     let index = runtime
         .index_authority()
@@ -29,26 +45,20 @@ fn native_merge_touches_only_changed_revision_and_both_index_membership_keys() {
             index_id: DerivedIndexId(0),
             name: "status.merge.touch".to_string(),
             kind: DerivedIndexKind::EntityField {
-                field_locator: crate::tests::support::aspect_field_locator(
-                    AspectKey::new("status").unwrap(),
-                    field_key("status"),
-                ),
+                field_locator: aspect_field_locator(aspect_key("status"), field_key("status")),
             },
             branch_scoped: true,
         })
         .expect("index fixture has identity capacity");
-    create_branch_from_main(&runtime, "feature");
-    let mut source = crate::tests::support::test_owner_begin_transaction_for_branch(
-        &runtime,
-        BranchId("feature".to_string()),
-    );
+    fork(execution, &runtime, "feature");
+    let mut source = transaction(&runtime, &BranchId("feature".to_string()));
     source
         .push_batch(
             WorkerIntentBatch::new("source-status").push(MutationIntent::Entity(
                 EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
                     entity_id: entity,
-                    fields: crate::tests::support::single_string_aspect_field_patch(
-                        AspectKey::new("status").unwrap(),
+                    fields: single_string_aspect_field_patch(
+                        aspect_key("status"),
                         field_key("status"),
                         "active",
                     ),
@@ -64,11 +74,9 @@ fn native_merge_touches_only_changed_revision_and_both_index_membership_keys() {
     let prepared = runtime
         .prepare_merge_execution(
             execution,
-            MergeExecutionRequest {
-                target_branch: BranchId("main".to_string()),
-                source_branch: BranchId("feature".to_string()),
-                merge_intent: MergeIntent::ReconcileIntoTarget,
-            },
+            runtime
+                .bind_merge_execution_request(merge_request())
+                .unwrap(),
         )
         .expect("native merge preparation");
     let merged = runtime
@@ -100,12 +108,8 @@ fn native_merge_touches_only_changed_revision_and_both_index_membership_keys() {
             if aspect.as_str() == "name")),
         "retained A has no new revision: {touches:?}"
     );
-    let old = AuthoritativeFieldComparisonKey::from_aspect_value(
-        &crate::tests::support::string_aspect_value("off"),
-    );
-    let new = AuthoritativeFieldComparisonKey::from_aspect_value(
-        &crate::tests::support::string_aspect_value("active"),
-    );
+    let old = AuthoritativeFieldComparisonKey::from_aspect_value(&string_aspect_value("off"));
+    let new = AuthoritativeFieldComparisonKey::from_aspect_value(&string_aspect_value("active"));
     assert!(
         touches
             .iter()
@@ -118,7 +122,6 @@ fn native_merge_touches_only_changed_revision_and_both_index_membership_keys() {
     let main = BranchId("main".into());
     let feature = BranchId("feature".into());
     let mut generations = Vec::new();
-    let mut original_roots = Vec::new();
     for branch in [&main, &feature] {
         assert_eq!(
             read_entity_aspect_field_display(
@@ -126,19 +129,16 @@ fn native_merge_touches_only_changed_revision_and_both_index_membership_keys() {
                 &runtime,
                 branch,
                 entity,
-                AspectKey::new("status").unwrap(),
+                aspect_key("status"),
                 field_key("status"),
             ),
             "active",
             "the selected target must include the non-first-parent contribution"
         );
-        let head = runtime.history().branch_head(branch).unwrap();
-        let original = runtime.history.branch_cell(branch).unwrap().root().unwrap();
-        assert_eq!(original.commit_id(), Some(head.commit_id));
-        original_roots.push((head.commit_id, original.axes(), original));
+        let head = current_head(&runtime, branch).unwrap();
         let built = runtime.index_authority().build_for_commit(
             execution,
-            crate::indexes::data::DerivedIndexBuildRequest {
+            DerivedIndexBuildRequest {
                 source_commit_id: head.commit_id,
                 branch_id: branch.clone(),
                 index_ids: vec![index.index_id],
@@ -147,8 +147,7 @@ fn native_merge_touches_only_changed_revision_and_both_index_membership_keys() {
         assert!(built.failed_indexes.is_empty(), "{built:?}");
         assert_eq!(built.generations.len(), 1);
         let generation = built.generations.into_iter().next().unwrap();
-        let crate::indexes::data::DerivedIndexEntries::EntityField(entries) = &generation.entries
-        else {
+        let DerivedIndexEntries::EntityField(entries) = &generation.entries else {
             panic!("actual status field generation required")
         };
         assert_eq!(
@@ -164,51 +163,29 @@ fn native_merge_touches_only_changed_revision_and_both_index_membership_keys() {
         generations.push(generation);
     }
 
-    // This independent resident producer exports the actual original Root columns,
-    // including history, revision stamps and peer metadata, before the bare fold.
-    let original = runtime
-        .durability_authority()
-        .native_checkpoint(execution, execution.allocation_policy())
-        .unwrap();
-    let original = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
-        execution,
-        original.bytes(),
-    )
-    .unwrap()
-    .checkpoint;
+    // The Complete all-root checkpoint is read back through the public restore
+    // door: a separate Memory owner of the same declared schema must serve
+    // exactly the generations built above, source axes included.
     let complete = runtime
         .complete_checkpoint_service()
-        .prepare(
-            execution,
-            crate::durability::data::RelationalCheckpointArtifactPolicy::Embedded,
-        )
+        .prepare(execution, RelationalCheckpointArtifactPolicy::Embedded)
         .expect("genuine complete multi-parent reconstruction");
-    let complete = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
-        execution,
-        complete.checkpoint().bytes(),
-    )
-    .unwrap()
-    .checkpoint;
-    for (commit, axes, root) in original_roots {
-        let expected = original
-            .branch_roots
-            .iter()
-            .find(|image| image.commit_id == commit)
-            .expect("original selected Root image");
-        let actual = complete
-            .branch_roots
-            .iter()
-            .find(|image| image.commit_id == commit)
-            .expect("Complete must preserve both current and feature Roots");
-        assert_eq!(actual, expected, "all original Root columns must agree");
-        assert_eq!(root.commit_id(), Some(commit));
-        assert_eq!(root.axes(), axes);
-    }
+    let mut restored = runtime_with_aspect_field_merge_policy(
+        aspect_key("status"),
+        field_key("status"),
+        AspectMergePolicyKind::PreferRicher,
+    );
+    restored
+        .durability_recovery()
+        .restore_native_checkpoint(execution, complete.checkpoint())
+        .expect("the Complete checkpoint restores a separate owner");
+    let preserved = restored
+        .index_access()
+        .read_generations_for_version(execution, merged.commit.commit.version_id)
+        .unwrap();
     for generation in generations {
         assert_eq!(
-            complete
-                .derived_index_artifacts
-                .generations()
+            preserved
                 .iter()
                 .find(|actual| actual.generation_id == generation.generation_id),
             Some(&generation),
