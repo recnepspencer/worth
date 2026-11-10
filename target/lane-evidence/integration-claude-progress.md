@@ -168,6 +168,18 @@ Applied with `git apply`, all exit 0:
   (FIXTURE: court cold sources lack the mandatory owned-read protocol) in `fable-repair-root-families.md`.
 - The coordinator lifted the bank-only rule: continue without ending the turn.
 
+## Merge batch 1 state (2026-11-10)
+
+Commits: `c7c2ade607` P-C 2dce9c178c; `8283728aff` H8 1ce3832b78 (Store: P-C's `query_journal` is the one
+transport, `query_dispatch` rebuilt over it, `journal_frame_publication` dropped; Query custody takes
+obligations+material+dispatch; `DispatchOutbox|DispatchAttempts => Supported(8)`); `32341309d8` P-A e4d3b01c8d
+(`fable-merge-pa-resolution.md`; Full region tests kept on the live producer, resident_full exact-charge courts
+C2); `4d05497ab0` Windows linker wrapper (`scripts/windows_linker.cmd`, court build.rs removed). P-C tip
+`765e8ccdb0` (partial-surface gates + lane linker refusal) HELD for the next batch.
+Lanes: `fable_batch_lanes.ps1 -Stages check|root-t2|query-t2|fixture-t2|store-t2|bank-t2 -Tag batch1` (clears
+the machine's CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override for its own process). Pending: compile check
+-> fixes -> one Tier 2 -> one reviewer over the merge resolutions + fixes + linker commit.
+
 ## Next: merge batch (coordinator, 2026-11-10)
 
 One batch, one Tier 2; H5 NOT landed, do not merge it. In order, a merge commit each:

@@ -28,12 +28,8 @@ pub(crate) use runtime_attachment::{
 pub(crate) use scripted_publication::ScriptedPublication;
 
 use crate::branch::RelationalBranchTransitionSequence;
-use crate::durability::branch_transition_artifact::{
-    RelationalBranchTransitionArtifact, RelationalBranchTransitionArtifactFrameRefusal,
-};
-use crate::durability::canonical_commit_artifact::{
-    RelationalCanonicalCommitArtifact, RelationalCanonicalCommitArtifactFrameRefusal,
-};
+use crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifact;
+use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
 use crate::durability::data::RelationalNativeCheckpoint;
 use crate::durability::medium::{
     DurablePublicationFate, RelationalDurableCheckpointSource, RelationalDurableMedium,
@@ -53,8 +49,8 @@ pub struct TestDurableMedium {
 /// whose frame is damaged refuses at the medium's own read, as a home's does.
 #[derive(Debug)]
 pub(crate) enum TestRecoverySourceRefusal {
-    Commit(RelationalCanonicalCommitArtifactFrameRefusal),
-    Transition(RelationalBranchTransitionArtifactFrameRefusal),
+    Commit,
+    Transition,
 }
 
 impl TestDurableMedium {
@@ -135,13 +131,13 @@ impl TestDurableMedium {
             .artifacts_after(covered)
             .map(|bytes| RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes.to_vec()))
             .collect::<Result<Vec<_>, _>>()
-            .map_err(TestRecoverySourceRefusal::Commit)?;
+            .map_err(|_| TestRecoverySourceRefusal::Commit)?;
         let transitions = self
             .transition_journal()
             .artifacts_after(covered_transitions)
             .map(|bytes| RelationalBranchTransitionArtifact::from_untrusted_bytes(bytes.to_vec()))
             .collect::<Result<Vec<_>, _>>()
-            .map_err(TestRecoverySourceRefusal::Transition)?;
+            .map_err(|_| TestRecoverySourceRefusal::Transition)?;
         Ok(RelationalDurableRecoverySource::new(
             checkpoint,
             tail,

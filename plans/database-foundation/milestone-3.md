@@ -267,6 +267,9 @@ Landing 2a adapter closure (lane P-A, merged at `e4d3b01c8d`) moved these Native
 - `a_tail_that_does_not_continue_from_the_checkpoint_refuses`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/recovery_refusals.rs`.
 - `a_checkpoint_filed_under_the_wrong_position_refuses_as_corrupt`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/recovery_refusals.rs`.
 - `a_damaged_checkpoint_refuses_as_corrupt`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/recovery_refusals.rs`.
+  These refusal courts and the `branch_transition/tampering.rs` courts were the only readers of the frame
+  refusal carried by `TestRecoverySourceRefusal` (`tests/support/durable_medium.rs`); its variants are
+  unit-only now, and a restore re-adds the `Commit`/`Transition` frame-refusal payloads.
 - `a_durable_publisher_waits_for_the_reservation_instead_of_deferring` (also holds a C2 cost/residency assertion): `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/reservation_wait.rs`.
 - `a_cancelled_waiter_stops_before_any_effect` (also holds a C2 cost/residency assertion): `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/reservation_wait.rs`.
 - `an_unresolved_publication_installs_nothing_and_refuses_every_later_commit_alike`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/medium/unresolved_fate.rs`.

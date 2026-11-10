@@ -122,6 +122,7 @@ pub(crate) fn require_no_pending_home_journals(
                     .query_corrections
                     .require_admitted(request)
                     .map_err(ApplicationHomeOwnerAdmissionDenial::QueryCorrections)?;
+            }
             HomeJournalAdmission::QueryDispatch => {
                 context
                     .query_dispatch
