@@ -441,10 +441,10 @@ attributes, generated bindings and unsupported local scopes refuse a proof. The
 guard does not infer reference-free meaning from an innocent type name. Keep the
 owner's forbidden list complete; a primitive string or integer is not permission
 to encode a graph link. In WORTH this runs as part of `boundary-check`. An external
-consumer runs the same checker from its Git root, with its own registry and manifest:
+consumer runs the same checker from its Git and Cargo workspace root, with its own registry:
 
 ```text
-cargo run --manifest-path path/to/worth/tools/boundary-check/Cargo.toml -- --root . --domain-values domain-values.toml --manifest-path app/Cargo.toml
+cargo run --manifest-path path/to/worth/tools/boundary-check/Cargo.toml -- domain-values --root . --registry domain-values.toml
 ```
 
 A repository whose bindings live in a separate consumer workspace can list its actual
@@ -454,7 +454,9 @@ actual library roots and Rust declarations. It does not register generated conte
 workspaces or supply alternate type roots.
 
 
-Both source and registry must be in Git's tracked or unignored source inventory.
+Consumer sources must be in Git's tracked or unignored source inventory. The
+registry path is relative to the consumer root, or absolute. Consumer metadata
+uses `cargo metadata --no-deps --offline`; the checker never compiles consumers.
 Unresolved external opaque types require a source representation the guard can
 inspect; they receive no automatic exemption. Installation independently refuses
 a mismatch between the declared domain posture, carrier and executable binding.
