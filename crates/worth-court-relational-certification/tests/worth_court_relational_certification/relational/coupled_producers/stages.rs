@@ -118,6 +118,24 @@ fn an_authored_stage_reads_the_candidate_and_commits_with_the_prefix_once() {
             .prepare_stages(execution, &[world.carrier], &parts)
             .unwrap();
         assert_eq!(proposal.coupled_participants().count(), usize::from(mixed));
+        // Each stage's invariants are judged on its own commands: the stage
+        // creates an entity and the prefix only writes a field.
+        let creates = |touches: &[ValidatedMutationTouch]| {
+            touches
+                .iter()
+                .any(|touch| matches!(touch, ValidatedMutationTouch::CreateEntity { .. }))
+        };
+        let stage = proposal
+            .authored_stage_mutation_touches(execution, 0)
+            .expect("the envelope's one later stage")
+            .unwrap();
+        assert!(creates(stage.touches()), "{:?}", stage.touches());
+        let prefix = proposal.authored_mutation_touches(execution).unwrap();
+        assert!(!creates(prefix.touches()), "{:?}", prefix.touches());
+        assert!(!prefix.touches().is_empty());
+        assert!(proposal
+            .authored_stage_mutation_touches(execution, 1)
+            .is_none());
         let result = world.publish(execution, proposal);
         // With an owned participant the canonical event records the prefix's
         // and the stage's sources in order; with none, no coupled event exists.
@@ -204,9 +222,9 @@ fn stages_outside_the_admitted_roster_refuse_without_effect() {
 }
 
 #[test]
-fn a_later_stage_cannot_rewrite_a_record_an_earlier_stage_wrote() {
-    // One Native commit carries one intent per record: stages write disjoint
-    // records, and a rewrite refuses typed with nothing published.
+fn a_later_stage_cannot_rewrite_a_field_an_earlier_stage_wrote() {
+    // A later stage writing the same field of a record an earlier stage wrote
+    // conflicts in the one Native commit: it refuses typed, publishing nothing.
     let host = request();
     let execution = &ExecutionRequest::serial(&host);
     let world = World::new(execution, true, true);

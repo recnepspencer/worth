@@ -187,11 +187,11 @@ L1 as a single landing would combine a stored-format addition with a new generic
   - L1b may rely on the entries above and on `CoupledFreshWriter`.
   - L1b may not assume:
     - a stage after a producer: refused `UnadmittedAuthoredStage` until L2's qualification;
-    - a later stage writing a record an earlier stage wrote: one Native commit carries one intent per record, so it is refused `ConflictingIntent`, and stages write disjoint records;
+    - a later stage writing a field an earlier stage wrote on the same record: refused `ConflictingIntent` (courted). Two stages writing disjoint fields of one record go through CP2b's disjoint-field composition, which runs for stages too, but L1a does not court it; the Native fixture has one field. L1b courts it on a two-field Query fixture;
     - unscoped local client keys: Native scopes each applied part's local keys, so L1b resolves a stage's created references through the stage's applied outcome;
 - **Not in parallel with:** as L1.
 - **Closes when:** the Native stage courts and the Phase 1 regression courts are green, mutants M-a1..M-a7 are killed (`l1a-mutants*.log`), and the review is certified.
 
 ### L1b header
 
-L1b is L1's header with the Native items removed. **Constraint (D1594):** authored stages write disjoint records. A later stage that rewrites a record an earlier stage wrote is refused `ConflictingIntent`, because one Native commit carries one intent per record. Phase 8's seal stage must not write records the source steps wrote. It delivers the envelope entry; stage handlers at the candidate pin with C authorization and D data; each stage's reads in the final support check; several roots; the drift identity with D1590's replay courts; the single refusal slot; the DAG; and the capability-index sentence. Rows 1-10 of section 6 are its courts.
+L1b is L1's header with the Native items removed. **Constraint (D1594, wording corrected after the L1a review):** a later stage that writes a field an earlier stage wrote on the same record is refused `ConflictingIntent`; this is courted. Disjoint fields of one record are expected to compose (CP2b's disjoint-field composition) and are courted in L1b. Phase 8's seal stage must not write fields the source steps wrote. It delivers the envelope entry; stage handlers at the candidate pin with C authorization and D data; each stage's reads in the final support check; several roots; the drift identity with D1590's replay courts; the single refusal slot; the DAG; and the capability-index sentence. Rows 1-10 of section 6 are its courts.

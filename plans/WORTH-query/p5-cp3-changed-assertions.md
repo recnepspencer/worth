@@ -27,7 +27,8 @@ This ledger lists existing court assertions CP3 changed and any typed-error or s
   - the rows equal a plain-commit oracle;
   - the recorded `Stages` sources;
   - the authored effects are the prefix's and the stage's only;
+  - each stage's touches project from its own commands (`authored_stage_mutation_touches`; L1a review round 1 blocker);
   - a cold reopen (mixed case).
 - `stages_outside_the_admitted_roster_refuse_without_effect`: an unadmitted stage, a missing stage and a stage after a producer each refuse typed, and C is unchanged.
-- `a_later_stage_cannot_rewrite_a_record_an_earlier_stage_wrote`: refuses with `ConflictingIntent` on the rewritten record, and C is unchanged.
+- `a_later_stage_cannot_rewrite_a_field_an_earlier_stage_wrote`: refuses with `ConflictingIntent` on the record whose field was rewritten, and C is unchanged.
 - `a_stage_sources_owned_route_is_an_admitted_writer_of_the_envelope`: Native's owner union classifies a route rooted at a later stage's source as surviving (`declared_owner`, which Query consults before running a producer), and its Preserve publishes in the same envelope.
