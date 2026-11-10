@@ -24,7 +24,8 @@ mod materialization;
 mod model_ownership;
 mod owner_services;
 pub use model_ownership::{
-    RelationalModelOwnership, RelationalModelOwnershipConflict, RelationalModelOwnershipDenial,
+    observe_candidate_custody_reads, RelationalCandidateCustodyReads, RelationalModelOwnership,
+    RelationalModelOwnershipConflict, RelationalModelOwnershipDenial,
     RelationalModelOwnershipDomain, RelationalOwnedModelEntityBoundary,
     RelationalOwnedModelForeignRelation, RelationalOwnedModelGraphSelection,
     RelationalOwnedModelOutputRoute, RelationalOwnedModelPublicationRead,

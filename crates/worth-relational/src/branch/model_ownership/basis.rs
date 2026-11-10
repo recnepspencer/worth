@@ -89,6 +89,7 @@ pub(super) fn read<R, E: From<RelationalModelOwnershipDenial>>(
         basis: Some(basis),
         root: &basis.inner.root,
         memory: Vec::new(),
+        custody: None,
         state: InvariantStateView::new(
             basis.inner.root.as_ref(),
             crate::identity::data::VersionId(version),
@@ -104,6 +105,9 @@ pub(super) struct BasisRead<'a, 'basis, 'context, 'kernel, 'execution, 'request>
     basis: Option<&'basis AdmittedRelationalBranchBasis>,
     root: &'basis crate::branch::RelationalBranchRoot,
     memory: Vec<worth_execution::ExecutionMemoryReservation>,
+    /// Candidate observations only: each entity's custody, read once.
+    custody:
+        Option<std::collections::BTreeMap<EntityId, std::rc::Rc<custody_read::CustodyIncidence>>>,
 }
 
 impl BasisRead<'_, '_, '_, '_, '_, '_> {
@@ -213,6 +217,7 @@ pub(super) fn read_candidate<R>(
         basis: None,
         root,
         memory: Vec::new(),
+        custody: Some(std::collections::BTreeMap::new()),
         state: InvariantStateView::new(
             root,
             crate::identity::data::VersionId(

@@ -1,5 +1,6 @@
 //! One edit starts one producer per discovered source; the attempt ceiling counts each start.
 use super::*;
+mod ownership_reads;
 pub(super) mod program;
 mod touch_work;
 use std::num::NonZeroUsize;
