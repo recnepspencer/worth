@@ -4302,7 +4302,12 @@ The retained fields are the mutation's own changes: every demanded field of
 each member it retires, and each demanded field it changes on a record that
 stays. Witness a staying member through a Preserve family role and read its
 prior value with `field_for_family_member`; a field the mutation left alone is
-absent.
+absent. A retiring member may lack a demanded optional field or optional
+aspect: read it in the handler, and the observed absence retains nothing, so
+`field_for_family_member` answers `None` and the inverse leaves it unset. A
+demanded field the handler never read on a retiring member refuses with
+`MissingDemandedField`, present or not. This holds for every authored anchor
+and co-anchor, and costs one probe per absence the attempt observed.
 
 Each original Retire role identifies one deleted member. Native's validated
 relation footprint matches its retained family key to exactly one fresh member

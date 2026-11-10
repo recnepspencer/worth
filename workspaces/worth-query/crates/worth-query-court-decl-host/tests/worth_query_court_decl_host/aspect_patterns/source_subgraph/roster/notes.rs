@@ -33,6 +33,25 @@ impl Record<NoteFactsValue> for SourceModelBindings {
 }
 pub type NoteKey = FieldSelection<SourceModel, Note, NoteFacts, String>;
 pub type NoteValue = FieldSelection<SourceModel, Note, NoteFacts, u64>;
+/// A note carries a mark or none; a deleted note returns exactly as it was.
+pub struct NoteMark;
+impl Aspect for NoteMark {
+    const NAME: &'static str = "NoteMark";
+    type Row = NoteMarkValue;
+}
+pub struct NoteMarkValue {
+    pub mark: u64,
+}
+impl Record<NoteMarkValue> for SourceModelBindings {
+    fn record() -> impl Shape<NoteMarkValue, Self> {
+        field("Mark", |row: &NoteMarkValue| row.mark).build(
+            |mark, _: &mut ValueDecodeAdmission<'_>| {
+                Ok::<_, std::convert::Infallible>(NoteMarkValue { mark })
+            },
+        )
+    }
+}
+pub type Mark = FieldSelection<SourceFeature, Note, NoteMark, u64>;
 pub struct NotedBy;
 impl Relation for NotedBy {
     const NAME: &'static str = "NotedBy";

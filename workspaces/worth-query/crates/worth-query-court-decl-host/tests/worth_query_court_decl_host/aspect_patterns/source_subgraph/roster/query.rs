@@ -8,7 +8,7 @@ pub struct Snapshot {
     pub value: u64,
     pub head: Option<String>,
     pub members: Vec<(NativeEntityId, Row)>,
-    pub notes: Vec<(NativeEntityId, String, u64)>,
+    pub notes: Vec<(NativeEntityId, String, u64, Option<u64>)>,
 }
 worth_query_structured_value_binding!(pub SnapshotBinding for Snapshot { identity: "source-subgraph.roster-snapshot.v1" });
 worth_query_structured_value_binding!(pub Parameters for () { identity: "source-subgraph.roster-parameters.v1" });
@@ -23,6 +23,11 @@ slot!(ChildKey, child_key, MemberKey, "MemberKey");
 slot!(ChildValue, child_value, Value, "MemberValue");
 slot!(RemarkKey, remark_key, NoteKey, "NoteKey");
 slot!(RemarkValue, remark_value, NoteValue, "NoteValue");
+pub struct RemarkMark;
+worth_query_portable_type!(RemarkMark => "source-subgraph.roster-note-mark.v1");
+fn remark_mark() -> ApplicationQueryOptionalAspectFieldRef<Query, RemarkMark, Schema, Mark> {
+    ApplicationQueryOptionalAspectFieldRef::new("mark", Mark::at("Mark"))
+}
 pub struct Notes;
 worth_query_portable_type!(Notes => "source-subgraph.roster-notes.v1");
 fn notes() -> ApplicationQueryResultRelationRef<
@@ -141,7 +146,7 @@ pub fn declare(
     .field(root_value())
     .relation(head(), ApplicationQueryResultShapeBuilder::<Schema, Query, Member, Snapshot, SnapshotBinding>::new(Member::reference()).field(head_key()))
     .relation(members(), member_shape)
-    .relation(notes(), ApplicationQueryResultShapeBuilder::<Schema, Query, Note, Snapshot, SnapshotBinding>::new(Note::reference()).field(remark_key()).field(remark_value()))
+    .relation(notes(), ApplicationQueryResultShapeBuilder::<Schema, Query, Note, Snapshot, SnapshotBinding>::new(Note::reference()).field(remark_key()).field(remark_value()).optional_aspect_field(remark_mark()))
     .build();
     schema
         .application_query(
@@ -196,6 +201,7 @@ impl WorthQueryApplicationProjection<Schema, Query> for Snapshot {
                     note.entity_id(),
                     note.field(remark_key())?,
                     note.field(remark_value())?,
+                    note.optional_aspect_field(remark_mark())?,
                 ))
             })
             .collect::<Result<Vec<_>, WorthQueryApplicationProjectionDenial>>()?;

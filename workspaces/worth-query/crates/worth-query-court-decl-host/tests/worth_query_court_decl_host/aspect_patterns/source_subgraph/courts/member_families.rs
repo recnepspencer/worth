@@ -15,20 +15,28 @@ fn selection(members: &[&str], operand: Option<&str>, notes: &[&str]) -> local_m
     }
 }
 /// Notes enter through the ordinary restore action; nothing here is a correction.
-fn note(host: &world::Host, request: &world::Request<'_, '_, '_>, notes: &[(&str, u64)]) {
+fn note(
+    host: &world::Host,
+    request: &world::Request<'_, '_, '_>,
+    notes: &[(&str, u64)],
+    marks: &[(&str, u64)],
+) {
+    let returned = |rows: &[(&str, u64)]| {
+        rows.iter()
+            .map(|(key, value)| local_member::Returned {
+                key: (*key).into(),
+                value: *value,
+            })
+            .collect::<Vec<_>>()
+    };
     let result = request
         .advanced()
         .mutate(local_member::Restore {
             owner: "roster".into(),
             members: Vec::new(),
             operand: None,
-            notes: notes
-                .iter()
-                .map(|(key, value)| local_member::Returned {
-                    key: (*key).into(),
-                    value: *value,
-                })
-                .collect(),
+            notes: returned(notes),
+            marks: returned(marks),
             revalue: None,
         })
         .without_source()
@@ -84,7 +92,7 @@ fn one_member_of_each_of_two_families_returns_through_one_inverse() {
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.runtime().request(&principal, &scope);
     created(&host, &request, local_image());
-    note(&host, &request, &[("note-0", 40), ("note-1", 41)]);
+    note(&host, &request, &[("note-0", 40), ("note-1", 41)], &[]);
     let before = local_snapshot(&request);
     assert_eq!(before.notes.len(), 2);
     let receipt = delete(
@@ -112,6 +120,77 @@ fn one_member_of_each_of_two_families_returns_through_one_inverse() {
         (&after.notes[1].1, after.notes[1].2),
         (&before.notes[1].1, before.notes[1].2)
     );
+}
+
+#[test]
+fn a_deleted_note_returns_with_the_mark_it_carried_and_without_one_it_lacked() {
+    let host = world::install(world::Fault::None, Hashes::default());
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.runtime().request(&principal, &scope);
+    created(&host, &request, local_image());
+    note(
+        &host,
+        &request,
+        &[("note-0", 40), ("note-1", 41)],
+        &[("note-1", 7)],
+    );
+    let before = local_snapshot(&request);
+    assert_eq!(
+        before.notes.iter().map(|note| note.3).collect::<Vec<_>>(),
+        [None, Some(7)]
+    );
+    // The handler reads each note's mark, so the bare note's absence is an
+    // observed fact of the delete and not a missing pre-image.
+    let receipt = delete(
+        &host,
+        &request,
+        selection(&[], None, &["note-0", "note-1"]),
+        "delete-marked-and-bare",
+    );
+    assert!(local_snapshot(&request).notes.is_empty());
+    reverse(&request, &receipt, "restore-marked-and-bare");
+    let after = local_snapshot(&request);
+    assert_eq!(after.members, before.members);
+    assert_eq!(after.notes.len(), 2);
+    for (old, fresh) in before.notes.iter().zip(&after.notes) {
+        assert_ne!(old.0, fresh.0);
+        assert_eq!((&old.1, old.2, old.3), (&fresh.1, fresh.2, fresh.3));
+    }
+}
+
+#[test]
+fn a_demanded_mark_the_delete_never_read_is_not_taken_as_absent() {
+    let host = world::install(world::Fault::UnreadNoteMark, Hashes::default());
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.runtime().request(&principal, &scope);
+    created(&host, &request, local_image());
+    note(&host, &request, &[("note-0", 40)], &[]);
+    let before = local_snapshot(&request);
+    let pinned = request.retain_current_read().unwrap();
+    let result = request
+        .advanced()
+        .mutate(selection(&[], None, &["note-0"]))
+        .without_source()
+        .idempotency(&"delete-unread-mark".to_owned())
+        .execute_in_program(&host, ExecutionAllocationPolicy::SystemAllocation)
+        .unwrap();
+    let WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::Denied(
+        denial,
+    )) = result
+    else {
+        panic!("{result:?}");
+    };
+    assert_eq!(
+        denial.preimage_retention_denial(),
+        Some(WorthQueryPreImageRetentionDenial::MissingDemandedField)
+    );
+    assert_eq!(
+        pinned.selected_commit(),
+        request.retain_current_read().unwrap().selected_commit()
+    );
+    assert_eq!(before, local_snapshot(&request));
 }
 
 #[test]

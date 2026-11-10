@@ -105,7 +105,11 @@ impl CompletedFactProjection {
             if locators.insert(key, ordinal).is_some() {
                 return Err(StoreDenial::ConflictingBody);
             }
-            if let Fact::Field { entity_id, locator, .. } = fact
+            // An observed absence routes with the present fields: an authored
+            // anchor admits a demanded locus only through that observation.
+            if let Fact::Field { entity_id, locator, .. }
+            | Fact::AbsentField { entity_id, locator, .. }
+            | Fact::OptionalAspectAbsent { entity_id, locator, .. } = fact
                 && let Some(worth_query_installation::facade::WorthQueryOperationGraphReadScope::NativeProjection(scope)) = scopes.get(ordinal)
                 && scope.aspect() == locator.aspect().aspect_key()
                 && let Some(field) = crate::domain_computation::application_aftermath::demanded_field_slot(locator.field_path())
