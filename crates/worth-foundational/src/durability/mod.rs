@@ -6,6 +6,8 @@ pub use native_checkpoint_reference::{
     NativeCheckpointBranchObservation, NativeCheckpointBranchReference,
     NativeCheckpointBranchTarget,
 };
+mod dispatch_custody;
+pub use dispatch_custody::DispatchAttemptIdentity;
 mod program_support;
 mod workflow_ending_actor;
 pub use program_support::{

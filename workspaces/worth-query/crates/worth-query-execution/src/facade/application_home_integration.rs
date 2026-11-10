@@ -17,6 +17,11 @@ pub use crate::domain_computation::primary_graph::application_installation::home
 };
 pub use worth_runtime_world::facade::RuntimeWorldOwnerUnavailable;
 
+pub use crate::domain_computation::application_aftermath::dispatch_journal::{
+    QueryDispatchFrame, QueryDispatchJournalDenial, QueryDispatchMedium,
+    QueryDispatchPublicationOutcome, QUERY_DISPATCH_FRAME_MAX_BYTES,
+};
+
 pub use crate::domain_computation::primary_graph::workflow::{
     QueryHomeWorkflowReadmissionDenial, WorkflowAdoptionReadDenial,
 };

@@ -1,6 +1,6 @@
 //! Classify actual physical evidence without converting unknown fate to no-effect.
 use super::*;
-impl QueryObligationPublication {
+impl HomeJournalFramePublication {
     pub(super) fn proven_no_effect(&self, observed: &OrderedJournalPublicationObservation) -> bool {
         let Some(terminal) = observed.terminal() else {
             return false;
@@ -16,8 +16,8 @@ impl QueryObligationPublication {
             | None => false,
         }
     }
-    pub(super) fn outcome(&self) -> Option<QueryObligationNativeProgress> {
-        use QueryObligationNativeProgress as Outcome;
+    pub(super) fn outcome(&self) -> Option<HomeJournalFrameProgress> {
+        use HomeJournalFrameProgress as Outcome;
         let state = self.state();
         if state.invalid {
             return Some(Outcome::Unresolved);

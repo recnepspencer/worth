@@ -7,6 +7,15 @@ pub enum DirectoryFamilySupport {
     RefusedUntil(u8),
 }
 
+/// The phase whose dispatch-custody extension Directory Homes now deliver.
+const DISPATCH_CUSTODY_PHASE: u8 = 8;
+
+/// The families that extension is delivered for: an emission's outbox row and
+/// its attempt journal. No other family gains a phase-8 extension here.
+fn delivers_dispatch_custody(family: DurableStateFamily) -> bool {
+    family == DurableStateFamily::DispatchOutbox || family == DurableStateFamily::DispatchAttempts
+}
+
 /// Base support does not admit later correction/component extensions.
 pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFamilySupport {
     use DurableStateFamily::*;
@@ -30,6 +39,7 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
         | PendingApplicationPublication
         | ApplicationBranchCleanup
         | DispatchOutbox
+        | DispatchAttempts
         | AftermathCausality
         | CorrectionIntent
         | PublicationDiagnosticMaterial => DirectoryFamilySupport::Supported,
@@ -95,8 +105,7 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
         | CapturedExternalInput
         | FixedOperationCustody
         | SignalResourceRequestCustody => DirectoryFamilySupport::RefusedUntil(7),
-        DispatchAttempts
-        | OutstandingDispatch
+        OutstandingDispatch
         | InboundCompletionRows
         | InboundMessageCustody
         | InstalledTransportCompletionCustody
@@ -118,6 +127,12 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
 }
 
 /// Operation intent can require a later extension of an already-supported family.
+///
+/// Phase 8's external dispatch custody is delivered for exactly the outbox
+/// row and the attempt journal. An emission is therefore admitted; a Home
+/// that has dispatched cannot yet close gracefully (its receipt-basis owner
+/// refuses). Inbound completion and recovery claims stay refused through
+/// their own families.
 pub(crate) fn directory_requirement_refusal(
     family: DurableStateFamily,
     required_phase: u8,
@@ -127,7 +142,10 @@ pub(crate) fn directory_requirement_refusal(
         DirectoryFamilySupport::RefusedUntil(phase) => phase,
     };
     let phase = family_phase.max(required_phase);
-    if phase <= 4 {
+    let dispatch_custody = family_phase == 0
+        && required_phase == DISPATCH_CUSTODY_PHASE
+        && delivers_dispatch_custody(family);
+    if phase <= 4 || dispatch_custody {
         None
     } else {
         Some(phase)

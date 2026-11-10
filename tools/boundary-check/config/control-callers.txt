@@ -2222,6 +2222,7 @@ workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/cr
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/native_components/checkpoint.rs
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/native_components/index_catalog.rs
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/native_components/member_scope.rs
+workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/dispatch_journal.rs
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/journal_absence.rs
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/query_publication.rs
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_history.rs

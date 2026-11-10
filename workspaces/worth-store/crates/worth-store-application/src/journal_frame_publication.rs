@@ -1,18 +1,30 @@
-//! The original physical journal endpoint, retained across invoking requests.
-use super::*;
+//! One original opaque-frame publication on a named Home journal, retained
+//! across invoking requests. Only the journal's owner decodes its frames.
 use sha2::{Digest, Sha256};
-use worth_execution::{ExecutionInterruptionView, ExecutionResourceLease};
+use std::sync::Mutex;
+use worth_execution::{
+    ExecutionInterruptionView, ExecutionRequest, ExecutionResourceLease, WorkCeilingDenial,
+};
+use worth_store::physical_runtime::*;
 mod execution;
 mod terminal;
 
-pub(super) enum QueryObligationNativeProgress {
+pub(crate) enum HomeJournalFrameProgress {
     Pending,
     Committed { position: u64, digest: [u8; 32] },
     ProvenNoEffect { position: u64, digest: [u8; 32] },
-    Refused(QueryProgramSupportDenial),
+    Refused(HomeJournalFrameDenial),
     Unresolved,
 }
-pub(super) struct QueryObligationPublication {
+/// Why the physical journal could not start or continue this original frame.
+#[derive(Debug)]
+pub(crate) enum HomeJournalFrameDenial {
+    Execution(WorkCeilingDenial),
+    DeadlineUnavailable,
+    Storage(String),
+}
+pub(crate) struct HomeJournalFramePublication {
+    journal: &'static str,
     position: u64,
     digest: [u8; 32],
     bytes: u64,
@@ -37,38 +49,41 @@ enum Endpoint {
     NoEffect(OrderedJournalPublicationObservation),
     NoEffectBeforeStart,
 }
-impl QueryObligationPublication {
-    pub(super) fn prepare(
+impl HomeJournalFramePublication {
+    pub(crate) fn prepare(
         serving: &ServingPhysicalRuntime,
-        frame: &QueryProgramSupportFrame,
+        journal: &'static str,
+        position: u64,
+        frame: &[u8],
         request: &ExecutionRequest<'_, '_>,
-    ) -> Result<Self, QueryProgramSupportDenial> {
+    ) -> Result<Self, HomeJournalFrameDenial> {
         let capture = |lease: Option<&ExecutionResourceLease<'_>>| {
             request
                 .run_native_with_checkpoint(|context| context.retain_interruption_view(lease))
-                .map_err(QueryProgramSupportDenial::Execution)?
+                .map_err(HomeJournalFrameDenial::Execution)?
                 .0
                 .map_err(storage)
         };
         let view = if request.is_leased() {
             request
                 .in_scope(capture)
-                .map_err(QueryProgramSupportDenial::Execution)??
+                .map_err(HomeJournalFrameDenial::Execution)??
         } else {
             capture(None)?
         };
         let milliseconds = crate::deadline::milliseconds(request, 120_000).map_err(storage)?;
         let payload = OrderedJournalPublication::new(
-            frame.position(),
-            frame.bytes().to_vec(),
+            position,
+            frame.to_vec(),
             crate::open::physical_admission::placement(),
             PhysicalMutationDeadline::after_milliseconds(milliseconds)
-                .ok_or(QueryProgramSupportDenial::SupportUnavailable)?,
+                .ok_or(HomeJournalFrameDenial::DeadlineUnavailable)?,
         );
         Ok(Self {
-            position: frame.position(),
-            digest: Sha256::digest(frame.bytes()).into(),
-            bytes: frame.bytes().len() as u64,
+            journal,
+            position,
+            digest: Sha256::digest(frame).into(),
+            bytes: frame.len() as u64,
             runtime: serving.runtime_identity(),
             physical: Mutex::new(PhysicalPublication {
                 payload: Some(payload),
@@ -80,18 +95,15 @@ impl QueryObligationPublication {
         })
     }
 
-    pub(super) fn matches_frame(&self, frame: &QueryProgramSupportFrame) -> bool {
-        self.position == frame.position()
-            && self.digest == frame.payload_digest()
-            && self.bytes == frame.bytes().len() as u64
+    pub(crate) fn matches_frame(&self, position: u64, frame: &[u8]) -> bool {
+        self.position == position
+            && self.bytes == frame.len() as u64
+            && self.digest == <[u8; 32]>::from(Sha256::digest(frame))
     }
-    pub(super) fn matches_subject(
-        &self,
-        subject: &worth_proof::HomeQueryObligationSubject,
-    ) -> bool {
-        self.position == subject.position() && self.digest == subject.payload_digest()
+    pub(crate) fn matches_subject(&self, position: u64, payload_digest: [u8; 32]) -> bool {
+        self.position == position && self.digest == payload_digest
     }
-    pub(super) fn committed(&self) -> bool {
+    pub(crate) fn committed(&self) -> bool {
         let state = self.state();
         !state.invalid
             && match &state.endpoint {
@@ -106,14 +118,14 @@ impl QueryObligationPublication {
                 | Endpoint::NoEffectBeforeStart => false,
             }
     }
-    pub(super) fn no_effect(&self) -> bool {
+    pub(crate) fn no_effect(&self) -> bool {
         match self.outcome() {
-            Some(QueryObligationNativeProgress::ProvenNoEffect { .. }) => true,
+            Some(HomeJournalFrameProgress::ProvenNoEffect { .. }) => true,
             Some(
-                QueryObligationNativeProgress::Pending
-                | QueryObligationNativeProgress::Committed { .. }
-                | QueryObligationNativeProgress::Refused(_)
-                | QueryObligationNativeProgress::Unresolved,
+                HomeJournalFrameProgress::Pending
+                | HomeJournalFrameProgress::Committed { .. }
+                | HomeJournalFrameProgress::Refused(_)
+                | HomeJournalFrameProgress::Unresolved,
             )
             | None => false,
         }
@@ -125,7 +137,7 @@ impl QueryObligationPublication {
     }
     fn matches(&self, source: OrderedJournalPublicationSource) -> bool {
         source.runtime_identity() == self.runtime
-            && source.journal().as_str() == "query.obligations"
+            && source.journal().as_str() == self.journal
             && source.position() == self.position
             && source.payload_sha256() == self.digest
             && source.payload_bytes() == self.bytes
@@ -215,4 +227,16 @@ impl QueryObligationPublication {
             | Endpoint::NoEffectBeforeStart) => same,
         };
     }
+}
+
+fn storage(cause: impl std::fmt::Debug) -> HomeJournalFrameDenial {
+    HomeJournalFrameDenial::Storage(format!("{cause:?}"))
+}
+fn journal<'serving>(
+    serving: &'serving ServingPhysicalRuntime,
+    name: &'static str,
+) -> Result<OrderedJournal<'serving>, HomeJournalFrameDenial> {
+    serving
+        .ordered_journal(OrderedJournalName::new(name).expect("registered Home journal"))
+        .map_err(storage)
 }

@@ -398,7 +398,7 @@ pub use crate::diagnostics::{
 pub use crate::durability::{
     ApplicationHomeBinding, ApplicationHomeBindingDescriptionDenial, CheckpointAdmissionCut,
     CheckpointAdmissionScope, CheckpointProductBindingIdentity, CompositeAttemptAssociation,
-    CompositeAttemptAssociationOwnerMismatch, DurableArtifactRetention,
+    CompositeAttemptAssociationOwnerMismatch, DispatchAttemptIdentity, DurableArtifactRetention,
     DurableCompositeCommitIdentity, DurableCompositePublicationAttemptIdentity, DurableIdentity,
     DurableOwnerFamily, DurableProductBranchIdentity, DurableProductBranchIncarnation,
     DurableProductBranchNameDenial, DurableProductBranchReference,

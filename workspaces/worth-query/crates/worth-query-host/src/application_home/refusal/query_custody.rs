@@ -2,7 +2,9 @@
 use super::*;
 use std::sync::Arc;
 use worth_proof::{AuthorityMarker, CustodyReadmitted};
-use worth_query_execution::facade::application_home_integration::QueryHomeCustodyReadmissionDenial;
+use worth_query_execution::facade::application_home_integration::{
+    QueryDispatchMedium, QueryHomeCustodyReadmissionDenial,
+};
 use worth_query_execution::facade::program_support::QueryObligationsMedium;
 
 /// Custody from an opening that has not completed D8 service admission.
@@ -31,6 +33,7 @@ use worth_query_execution::facade::program_support::QueryObligationsMedium;
 pub struct UnadmittedHomeQueryService<Schema: ApplicationSchemaComposition, Program> {
     _query: ReadmittedHomeQueryService<Schema, Program>,
     obligations: Arc<dyn QueryObligationsMedium>,
+    dispatch: Arc<dyn QueryDispatchMedium>,
 }
 impl<Schema: ApplicationSchemaComposition, Program: 'static> AuthorityMarker
     for UnadmittedHomeQueryService<Schema, Program>
@@ -59,10 +62,12 @@ impl<Schema: ApplicationSchemaComposition, Program: 'static>
     pub(in crate::application_home) fn retain(
         query: ReadmittedHomeQueryService<Schema, Program>,
         obligations: Arc<dyn QueryObligationsMedium>,
+        dispatch: Arc<dyn QueryDispatchMedium>,
     ) -> Self {
         Self {
             _query: query,
             obligations,
+            dispatch,
         }
     }
 
@@ -75,14 +80,16 @@ impl<Schema: ApplicationSchemaComposition, Program: 'static>
         let Self {
             _query: query,
             obligations,
+            dispatch,
         } = self;
-        match query.readmit_custody(execution, Arc::clone(&obligations)) {
-            Ok(admitted) => Ok(admitted
-                .consume(|query| CustodyReadmitted::from_owner(Self::retain(query, obligations)))),
+        match query.readmit_custody(execution, Arc::clone(&obligations), Arc::clone(&dispatch)) {
+            Ok(admitted) => Ok(admitted.consume(|query| {
+                CustodyReadmitted::from_owner(Self::retain(query, obligations, dispatch))
+            })),
             Err(refused) => {
                 let (query, cause) = refused.into_parts();
                 Err(UnadmittedHomeQueryCustodyRefused {
-                    query: Self::retain(query, obligations),
+                    query: Self::retain(query, obligations, dispatch),
                     cause,
                 })
             }

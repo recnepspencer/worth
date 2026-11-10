@@ -2,6 +2,7 @@
 mod checkpoint;
 mod close;
 mod discard;
+mod dispatch_journal;
 mod failure_close;
 mod maintenance;
 mod opening;

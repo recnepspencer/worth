@@ -185,8 +185,14 @@ pub fn admit_home(
                 descriptor.identity,
                 descriptor.incarnation,
             ));
+        let query_dispatch = Arc::new(crate::query_dispatch::ApplicationHomeDispatchJournal::new(
+            &recovered.serving,
+            descriptor.identity,
+            descriptor.incarnation,
+        ));
         let mut context = HomeContext {
             query_obligations,
+            query_dispatch,
             world_preparation: None,
             opening_observation,
             transition,

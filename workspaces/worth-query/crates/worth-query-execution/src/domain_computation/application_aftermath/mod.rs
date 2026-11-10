@@ -8,6 +8,7 @@ pub(crate) mod causal_fact;
 mod correction_coordinates;
 pub use correction_coordinates::WorthQueryCorrectionSourceCoordinates;
 pub mod derivation_failure;
+pub mod dispatch_journal;
 pub mod external_effect;
 pub mod recovery_handle;
 mod recovery_posture;

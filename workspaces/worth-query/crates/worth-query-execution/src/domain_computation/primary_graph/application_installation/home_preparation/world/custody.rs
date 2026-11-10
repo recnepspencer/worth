@@ -6,6 +6,7 @@ use worth_proof::CustodyReadmitted;
 pub enum QueryHomeCustodyReadmissionDenial {
     ProgramSupport(crate::facade::program_support::QueryProgramSupportDenial),
     Activation(super::QueryHomeProgramActivationDenial),
+    Dispatch(crate::domain_computation::application_aftermath::dispatch_journal::QueryDispatchJournalDenial),
     Execution(worth_execution::WorkCeilingDenial),
     World(RuntimeWorldServiceDenial<RuntimeWorldRecoveryDenial>),
     Recovery(RuntimeWorldRecoveryDenial),
@@ -36,6 +37,9 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         obligations: std::sync::Arc<dyn crate::facade::program_support::QueryObligationsMedium>,
+        dispatch: std::sync::Arc<
+            dyn crate::domain_computation::application_aftermath::dispatch_journal::QueryDispatchMedium,
+        >,
     ) -> Result<CustodyReadmitted<Self>, QueryHomeCustodyReadmissionRefused<Schema, Program>> {
         let owner = self
             .runtime
@@ -119,6 +123,12 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         }
         if let Err(cause) = self.admit_original_custody(execution) {
             return Err(QueryHomeCustodyReadmissionRefused { query: self, cause });
+        }
+        if let Err(cause) = self.admit_dispatch_custody(execution, dispatch) {
+            return Err(QueryHomeCustodyReadmissionRefused {
+                query: self,
+                cause: QueryHomeCustodyReadmissionDenial::Dispatch(cause),
+            });
         }
         Ok(CustodyReadmitted::from_owner(self))
     }

@@ -36,6 +36,8 @@ application-home-checkpoint-maintenance workspaces/worth-query/crates/worth-quer
 application-home-fresh-finalization workspaces/worth-query/crates/worth-query-host/src/application_home/opening/fresh.rs
 application-home-fresh-finalization workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/bootstrap_publication.rs
 application-home-owner-admission workspaces/worth-query/crates/worth-query-host/src/application_home/opening/service.rs
+# Coordinator boundary ruling 2026-11-09 (H8 dispatch doors): standing court-caller ruling.
+application-home-owner-admission workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/dispatch_journal.rs
 application-home-owner-admission workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/journal_absence.rs
 application-home-owner-admission workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_indexes/promotion.rs
 application-home-owner-admission workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/unresolved.rs
@@ -226,3 +228,11 @@ query-obligation-publication workspaces/worth-store/crates/worth-store-applicati
 query-home-obligations workspaces/worth-query/crates/worth-query-host/src/application_home/opening/custody.rs
 query-home-obligations workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/query_publication.rs
 query-home-obligations workspaces/worth-query/crates/worth-query-host/src/application_home/opening/service.rs
+# H8: the Home dispatch journal. Store alone issues publication fates, Query alone admits a
+# decoded prefix, Host is the Home seam. Every line below cites the coordinator boundary
+# ruling 2026-11-09 (H8 dispatch doors); no court mints a fate or a prefix.
+query-dispatch-prefix workspaces/worth-query/crates/worth-query-execution/src/domain_computation/application_aftermath/dispatch_journal/custody.rs
+query-dispatch-publication workspaces/worth-store/crates/worth-store-application/src/query_dispatch/operation.rs
+query-home-dispatch workspaces/worth-query/crates/worth-query-host/src/application_home/opening/custody.rs
+query-home-dispatch workspaces/worth-query/crates/worth-query-host/src/application_home/opening/service.rs
+query-home-dispatch workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/dispatch_journal.rs

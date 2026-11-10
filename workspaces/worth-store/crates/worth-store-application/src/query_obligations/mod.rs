@@ -1,6 +1,7 @@
 //! Opaque Query journal transport over this admitted Home's original serving.
-mod publication;
-use publication::{QueryObligationNativeProgress, QueryObligationPublication};
+use crate::journal_frame_publication::{
+    HomeJournalFrameDenial, HomeJournalFrameProgress, HomeJournalFramePublication,
+};
 use std::sync::{Arc, Mutex, OnceLock, Weak};
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::{HomeIdentity, HomeIncarnation};
@@ -14,7 +15,7 @@ pub(crate) struct ApplicationQueryObligations {
     incarnation: HomeIncarnation,
     owner: HomeQueryObligationsOwner,
     authority: worth_proof::HomeQueryObligationsAuthority,
-    publication: Mutex<Option<Box<QueryObligationPublication>>>,
+    publication: Mutex<Option<Box<HomeJournalFramePublication>>>,
     admitted: OnceLock<AdmittedHomeQueryObligations>,
 }
 impl std::fmt::Debug for ApplicationQueryObligations {
@@ -203,7 +204,10 @@ impl QueryObligationsMedium for ApplicationQueryObligations {
                 return QueryObligationPublicationOutcome::Pending
             }
         };
-        if slot.as_ref().is_some_and(|task| !task.matches_frame(frame)) {
+        if slot
+            .as_ref()
+            .is_some_and(|task| !task.matches_frame(frame.position(), frame.bytes()))
+        {
             if !slot.as_ref().is_some_and(|task| task.committed()) {
                 return QueryObligationPublicationOutcome::Refused(
                     QueryProgramSupportDenial::PublicationPending,
@@ -212,9 +216,17 @@ impl QueryObligationsMedium for ApplicationQueryObligations {
             *slot = None;
         }
         if slot.is_none() {
-            match QueryObligationPublication::prepare(&serving, frame, request) {
+            match HomeJournalFramePublication::prepare(
+                &serving,
+                "query.obligations",
+                frame.position(),
+                frame.bytes(),
+                request,
+            ) {
                 Ok(task) => *slot = Some(Box::new(task)),
-                Err(cause) => return QueryObligationPublicationOutcome::Refused(cause),
+                Err(cause) => {
+                    return QueryObligationPublicationOutcome::Refused(frame_denial(cause))
+                }
             }
         }
         match slot
@@ -222,25 +234,23 @@ impl QueryObligationsMedium for ApplicationQueryObligations {
             .expect("same original task retained")
             .advance(&serving, request)
         {
-            QueryObligationNativeProgress::Pending => QueryObligationPublicationOutcome::Pending,
-            QueryObligationNativeProgress::Committed { position, digest } => {
+            HomeJournalFrameProgress::Pending => QueryObligationPublicationOutcome::Pending,
+            HomeJournalFrameProgress::Committed { position, digest } => {
                 QueryObligationPublicationOutcome::Committed(
                     self.owner
                         .acknowledge_query_obligation_commit(position, digest),
                 )
             }
-            QueryObligationNativeProgress::ProvenNoEffect { position, digest } => {
+            HomeJournalFrameProgress::ProvenNoEffect { position, digest } => {
                 QueryObligationPublicationOutcome::ProvenNoEffect(
                     self.owner
                         .acknowledge_query_obligation_no_effect(position, digest),
                 )
             }
-            QueryObligationNativeProgress::Refused(cause) => {
-                QueryObligationPublicationOutcome::Refused(cause)
+            HomeJournalFrameProgress::Refused(cause) => {
+                QueryObligationPublicationOutcome::Refused(frame_denial(cause))
             }
-            QueryObligationNativeProgress::Unresolved => {
-                QueryObligationPublicationOutcome::Unresolved
-            }
+            HomeJournalFrameProgress::Unresolved => QueryObligationPublicationOutcome::Unresolved,
         }
     }
     fn acknowledge_no_effect(
@@ -268,7 +278,7 @@ impl QueryObligationsMedium for ApplicationQueryObligations {
         let task = slot
             .as_ref()
             .ok_or(QueryProgramSupportDenial::PrefixMismatch)?;
-        if !task.matches_subject(proof.subject()) {
+        if !task.matches_subject(proof.subject().position(), proof.subject().payload_digest()) {
             return Err(QueryProgramSupportDenial::PrefixMismatch);
         }
         if !task.no_effect() {
@@ -289,4 +299,13 @@ fn journal(
 }
 fn storage(cause: impl std::fmt::Debug) -> QueryProgramSupportDenial {
     QueryProgramSupportDenial::Storage(format!("{cause:?}"))
+}
+fn frame_denial(cause: HomeJournalFrameDenial) -> QueryProgramSupportDenial {
+    match cause {
+        HomeJournalFrameDenial::Execution(cause) => QueryProgramSupportDenial::Execution(cause),
+        HomeJournalFrameDenial::DeadlineUnavailable => {
+            QueryProgramSupportDenial::SupportUnavailable
+        }
+        HomeJournalFrameDenial::Storage(detail) => QueryProgramSupportDenial::Storage(detail),
+    }
 }

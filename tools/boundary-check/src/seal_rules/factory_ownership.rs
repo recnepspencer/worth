@@ -69,6 +69,11 @@ pub(super) const FACTORIES: &[&str] = &[
     "admit_query_obligation_prefix",
     "acknowledge_query_obligation_commit",
     "acknowledge_query_obligation_no_effect",
+    "query_dispatch_journal_operation",
+    "admit_query_dispatch",
+    "admit_query_dispatch_prefix",
+    "acknowledge_query_dispatch_commit",
+    "acknowledge_query_dispatch_no_effect",
 ];
 
 pub(super) fn ownership(name: &str) -> (&'static str, &'static str) {
@@ -82,6 +87,21 @@ pub(super) fn ownership(name: &str) -> (&'static str, &'static str) {
     } else if matches!(name, "query_obligations_medium" | "admit_query_obligations") {
         (
             "query-home-obligations",
+            "workspaces/worth-store/crates/worth-store-application/",
+        )
+    } else if matches!(
+        name,
+        "acknowledge_query_dispatch_commit" | "acknowledge_query_dispatch_no_effect"
+    ) {
+        ("query-dispatch-publication", "crates/worth-proof/")
+    } else if name == "admit_query_dispatch_prefix" {
+        ("query-dispatch-prefix", "crates/worth-proof/")
+    } else if matches!(
+        name,
+        "query_dispatch_journal_operation" | "admit_query_dispatch"
+    ) {
+        (
+            "query-home-dispatch",
             "workspaces/worth-store/crates/worth-store-application/",
         )
     } else if name == "WorthQueryInterimCheckpointRestore" {

@@ -79,6 +79,13 @@ fn each_unsupported_journal_entry_refuses_admission_and_returns_the_same_home() 
             .expect("a genuine reserved journal entry must refuse admission");
         if name == "query.obligations" {
             assert!(matches!(refused.reason(), Denial::QueryObligations(worth_query_execution::facade::program_support::QueryProgramSupportDenial::SupportUnavailable)));
+        } else if name == "query.dispatch" {
+            assert!(matches!(
+                refused.reason(),
+                Denial::QueryDispatch(
+                    worth_store_application::ApplicationHomeDispatchJournalDenial::AdmissionUnavailable
+                )
+            ));
         } else {
             assert!(
                 matches!(refused.reason(), Denial::JournalNotEmpty { journal, head } if *journal == name && *head == entry)
