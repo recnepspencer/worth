@@ -23,5 +23,15 @@ a Root Tier 2 over unselected tests has NOT been run after the repair).
 | F6 | Server durable Query retry: `WorthQueryApplicationIdempotencyResolutionDenial { kind: ProviderUnavailable }` | 5 | likely HAPPY (restart returns the original receipt; depends on Query Home idempotency reopen, H7/H8) | `worth-court-server-certification-suite/process/durable_query_retry/*` (4), `phase-eleven/server/compat_http_phase_three/mod.rs:222` (1). Re-run after H8's stored-text reopen repair `2d6822abbe` merges. SECOND follow-up. |
 | F7 | Medium fate courts (refused publication proven no effect; unresolved fate named) | 2 | CLEANUP (C1 faults) | `tests/durability/medium/durable_before_live.rs:86`, `unresolved_fate.rs:55`. |
 
+F1 root cause (read 2026-11-10, after the repair commit): FIXTURE, not product. Checkpoint capture
+(`durability/checkpoint_history/capture.rs:25-36`) now takes the provider's owned read protection
+(`RelationalDurableReadProtection::capture` -> `checkpoint_read_protection`), and master made the owned
+read protocol mandatory ("No legacy read fallback"). The courts' hand-rolled cold sources implement only the
+legacy methods (`retain_members`, `read_member`, `read_commit`): e.g. `ColdCheckpointSource` in
+`cost/relational/cold_checkpoint.rs:58-98`, so every owned method falls to the trait default
+`UnsupportedProvider` (`durability/medium/cold_source.rs:22-128`). Fix: move these fixtures onto the testkit's
+real durable medium (or implement the owned protocol honestly). Per family: the cold-restore cost-law courts
+are C2/C4; the `history_ownership` cold courts need a per-court call before moving.
+
 Track calls marked "likely" or "UNCLASSIFIED" are from the printed cause and the emitting source line only; no
 family was analysed to root cause in this turn.

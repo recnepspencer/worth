@@ -158,12 +158,27 @@ Applied with `git apply`, all exit 0:
   Reviewer also confirmed: all 31 deleted tests listed, all 29 restore paths exist at 171d380829, no dangling
   references, caller lists only shrink, index_catalog fix correct and sufficient on its path.
 
-## Remaining order for this turn (coordinator's bank-only instruction)
+## Commits (2026-11-10)
 
-1. Lanes pass 2 results -> classify Query T2 reds (confirm the two Host journal-replay courts named above).
-2. Fix only small HAPPY reds; everything else = named follow-up with evidence.
-3. Reviewer APPROVE -> commit repair batch (exclude `scripts/test_cost/slots/**` churn) -> separate `chore`
-   telemetry commit -> send the coordinator one line with the sha -> end the turn.
+- `54b4fa230d` repair batch (reviewed APPROVE); sha line sent to the coordinator.
+- `2610c94ef3` chore: runner telemetry under `scripts/test_cost/slots/**` (data only).
+- Evidence commit after it: Store/Bank ledger `fable-repair-store-bank-families.md` (Bank GREEN 324/324;
+  Store 52 red in families S1-S10), classifications `fable-classifications-2026-11-10.md` (authored_index_writes
+  replay = HAPPY fixed in 54b4fa230d; 60 s close maintenance deadline = C2 with an H court rule), F1 root cause
+  (FIXTURE: court cold sources lack the mandatory owned-read protocol) in `fable-repair-root-families.md`.
+- The coordinator lifted the bank-only rule: continue without ending the turn.
+
+## Next: merge batch (coordinator, 2026-11-10)
+
+One batch, one Tier 2; H5 NOT landed, do not merge it. In order, a merge commit each:
+1. `codex/m3-p3-lifecycle` (P-C tip `2dce9c178c`, base `171d380829`): checkpoint index selections.
+2. `fable/m3-h8-dispatch` (tip `1ce3832b78`, includes `2d6822abbe`; base `171d380829`): take H8's bytes for the
+   3 stored-text files (supersedes the copied patch in 54b4fa230d).
+3. `codex/m3-p3-reopen` (P-A tip `e4d3b01c8d`: `780fe3ecfe`, `b0ac2e133e`; base `2a51552fc5`, old: expect
+   conflicts).
+Then: disk check, one compile per workspace, one Tier 2 via `affected_lanes.py` against `54b4fa230d`
+(DO NOT relaunch a stage whose out dir exists), one reviewer on the conflict resolutions, commit, sha line.
+Then reclassify Q1/F3/S1/S2/S3 against the new results, then F3, F6, F1, Landing 2a prep.
 
 ## Follow-ups after the commit (not started)
 
