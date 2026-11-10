@@ -7,6 +7,7 @@ use super::*;
 #[worth_value(crate = "worth_query_decl::facade::application_schema")]
 pub struct Delete {
     pub owner: String,
+    pub owner_value: Option<u64>,
     pub members: Vec<String>,
     pub operand: Option<String>,
     pub notes: Vec<String>,
@@ -22,6 +23,7 @@ pub struct Returned {
 #[worth_value(crate = "worth_query_decl::facade::application_schema")]
 pub struct Restore {
     pub owner: String,
+    pub owner_value: Option<u64>,
     pub members: Vec<Returned>,
     pub operand: Option<String>,
     pub notes: Vec<Returned>,
@@ -31,15 +33,15 @@ pub struct Restore {
 worth_query_structured_value_binding!(pub DeleteInput for Delete { identity: "source-subgraph.member-delete-input.v1" });
 worth_query_structured_value_binding!(pub RestoreInput for Restore { identity: "source-subgraph.member-restore-input.v1" });
 worth_query_operation!(pub DeleteMember for Schema, input DeleteInput; access {
-    read_fields: [SourceKey::at("SourceKey"), MemberKey::at("MemberKey"), Value::at("MemberValue"), NoteKey::at("NoteKey"), NoteValue::at("NoteValue"), Mark::at("Mark")];
+    read_fields: [SourceKey::at("SourceKey"), SourceValue::at("SourceValue"), MemberKey::at("MemberKey"), Value::at("MemberValue"), NoteKey::at("NoteKey"), NoteValue::at("NoteValue"), Mark::at("Mark")];
     read_entities: [Source, Member, Note]; read_relations: [OwnedBy, Head, Operand, NotedBy];
-    writes: [Value::at("MemberValue")];
+    writes: [SourceValue::at("SourceValue"), Value::at("MemberValue")];
     deletes: [Member, Note]; unlinks: [OwnedBy, Head, Operand, NotedBy];
 });
 worth_query_operation!(pub RestoreMember for Schema, input RestoreInput; access {
-    read_fields: [SourceKey::at("SourceKey"), MemberKey::at("MemberKey"), Value::at("MemberValue")];
+    read_fields: [SourceKey::at("SourceKey"), SourceValue::at("SourceValue"), MemberKey::at("MemberKey"), Value::at("MemberValue")];
     read_entities: [Source, Member]; read_relations: [OwnedBy, Head, Operand, NotedBy];
-    writes: [MemberKey::at("MemberKey"), Value::at("MemberValue"), NoteKey::at("NoteKey"), NoteValue::at("NoteValue"), Mark::at("Mark")];
+    writes: [SourceValue::at("SourceValue"), MemberKey::at("MemberKey"), Value::at("MemberValue"), NoteKey::at("NoteKey"), NoteValue::at("NoteValue"), Mark::at("Mark")];
     creates: [Member, Note]; links: [OwnedBy, Head, Operand, NotedBy];
 });
 pub struct Deleted;

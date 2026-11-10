@@ -254,6 +254,7 @@ pub(super) fn delete_one(
 ) -> WorthQueryApplicationCommitReceipt {
     let head = local_member::Delete {
         owner: "roster".into(),
+        owner_value: None,
         members: vec!["part-0".into()],
         operand: Some("part-1".into()),
         notes: Vec::new(),

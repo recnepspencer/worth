@@ -4327,7 +4327,11 @@ retains as empty, so `relation_count` there reports the mutation's own changes.
 A mutation that moves no member commits, and its inverse restores none.
 The retained fields are the mutation's own changes: every demanded field of
 each member it retires, and each demanded field it changes on a record that
-stays. Witness a staying member through a Preserve family role and read its
+stays. The live owner's kind is covered by the declared owner relation in the
+relation demand, so one inverse may also restore changed owner fields beside
+its deleted members. An unrelated kind still requires its own authored anchor;
+a relation absent from the demand cannot cover its owner's fields.
+Witness a staying member through a Preserve family role and read its
 prior value with `field_for_family_member`; a field the mutation left alone is
 absent. A retiring member may lack a demanded optional field or optional
 aspect: read it in the handler, and the observed absence retains nothing, so

@@ -9,6 +9,9 @@ impl OperationHandler<Schema, DeleteBinding> for Handler {
     ) -> HandlerResult<Selection, edit::Denial> {
         let result = (|| {
             let owner = reader.resolve_entity(SourceKey::at("SourceKey"), input.owner.clone())?;
+            if input.owner_value.is_some() {
+                reader.field(&owner, SourceValue::at("SourceValue"))?;
+            }
             reader
                 .relations_from(Head::reference(), &owner)
                 .map_err(HandlerExecutionDenial::new)?;
@@ -78,6 +81,9 @@ impl OperationHandler<Schema, DeleteBinding> for Handler {
     ) -> HandlerResult<edit::Edited, edit::Denial> {
         let result = (|| {
             let owner = writer.projected_entity(&target.owner)?;
+            if let Some(value) = input.owner_value {
+                writer.write_field(&owner, SourceValue::at("SourceValue"), value)?;
+            }
             for (index, (key, member)) in input.members.iter().zip(&target.members).enumerate() {
                 let member = writer.projected_entity(member)?;
                 writer.unlink(OwnedBy::reference(), &member, &owner)?;
@@ -121,6 +127,9 @@ impl OperationHandler<Schema, RestoreBinding> for Handler {
                 &input.owner
             };
             let owner = reader.resolve_entity(SourceKey::at("SourceKey"), owner_key.to_owned())?;
+            if input.owner_value.is_some() {
+                reader.field(&owner, SourceValue::at("SourceValue"))?;
+            }
             let operand = match &input.operand {
                 Some(key) => {
                     let operand = reader.resolve_entity(MemberKey::at("MemberKey"), key.clone())?;
@@ -157,6 +166,9 @@ impl OperationHandler<Schema, RestoreBinding> for Handler {
         use world::Fault::*;
         let result = (|| {
             let owner = writer.projected_entity(&target.owner)?;
+            if let Some(value) = input.owner_value {
+                writer.write_field(&owner, SourceValue::at("SourceValue"), value)?;
+            }
             // A fault corrupts only the first returned member.
             for (index, row) in input.members.iter().enumerate() {
                 let first = index == 0;

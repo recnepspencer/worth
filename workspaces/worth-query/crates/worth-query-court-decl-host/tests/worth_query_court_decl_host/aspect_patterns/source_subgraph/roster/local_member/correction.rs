@@ -47,6 +47,7 @@ impl ApplicationCorrectionBinding<Schema> for UndoDelete {
         DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
             DeclaredPreImageDemand::new(
                 [
+                    DeclaredPreImageLocus::from_field(SourceValue::at("SourceValue")),
                     DeclaredPreImageLocus::from_field(MemberKey::at("MemberKey")),
                     DeclaredPreImageLocus::from_field(Value::at("MemberValue")),
                     DeclaredPreImageLocus::from_field(NoteKey::at("NoteKey")),
@@ -99,6 +100,13 @@ impl ApplicationCorrectionBinding<Schema> for UndoDelete {
         };
         Ok(Restore {
             owner: original.owner.clone(),
+            owner_value: prior
+                .field(&DeclaredPreImageLocus::from_field(SourceValue::at(
+                    "SourceValue",
+                )))
+                .map(U64ApplicationValueBinding::decode)
+                .transpose()
+                .map_err(|_| InvalidPreImage)?,
             members: returned(
                 &Deleted::DESCRIPTOR,
                 &original.members,

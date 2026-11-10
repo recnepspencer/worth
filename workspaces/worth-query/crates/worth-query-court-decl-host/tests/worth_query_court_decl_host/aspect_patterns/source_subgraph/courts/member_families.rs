@@ -4,10 +4,12 @@ use super::owned_members::{created, delete, image, local_image, local_snapshot, 
 use super::*;
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 use worth_relational::facade::transactions::RecordRef;
+mod owner_fields;
 
 fn selection(members: &[&str], operand: Option<&str>, notes: &[&str]) -> local_member::Delete {
     local_member::Delete {
         owner: "roster".into(),
+        owner_value: None,
         members: members.iter().map(|key| (*key).into()).collect(),
         operand: operand.map(Into::into),
         notes: notes.iter().map(|key| (*key).into()).collect(),
@@ -33,6 +35,7 @@ fn note(
         .advanced()
         .mutate(local_member::Restore {
             owner: "roster".into(),
+            owner_value: None,
             members: Vec::new(),
             operand: None,
             notes: returned(notes),
