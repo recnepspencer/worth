@@ -72,11 +72,12 @@ impl InvariantEngine<'_> {
             }
         }
         check_live(*execution)?;
-        // A declared Native refusal must precede dependent Source interpretation.
-        if !prefix.has_blocking_violation() {
+        // The commit-boundary Native prefix admits Source preparation and its readers together.
+        let native_admitted = !prefix.has_blocking_violation();
+        if native_admitted {
             prepare_sources()?;
         }
-        if !prefix.prevents_custom(request.execution_point()) && request.should_execute_anything() {
+        if native_admitted && request.should_execute_anything() {
             let selection = InvariantStage::Custom {
                 packet_offset: prefix.packet_count(),
             };
