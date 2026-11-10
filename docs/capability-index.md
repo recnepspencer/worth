@@ -151,7 +151,9 @@ refusal before installation. See
 Installed graph-obligation, query and authorization identity budgets derive from the
 admitted declaration: 16 times its canonical entries and bytes. Package validation
 owns the shared 64 MiB declaration ceiling and byte-derived entry bound, with
-typed requested/maximum refusal counts. Distinct contracts count once; complete
+typed requested/maximum refusal counts. An installed aftermath identity shares
+that ceiling, so a recorded inverse's demand has no smaller fixed width.
+Distinct contracts count once; complete
 field masks count once per projection. Exact references, partial masks, paths
 and bindings remain committed. See
 [installation limits](build-an-application.md#4-install-the-application-graph).

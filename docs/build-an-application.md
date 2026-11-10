@@ -1891,7 +1891,9 @@ internal allowance of 16 times the admitted declaration's canonical entries and
 bytes. Package validation admits declaration meaning under the shared 64 MiB
 ceiling and byte-derived entry-storage bound; a size refusal occurs there with
 its typed kind and requested/maximum counts. There is no smaller fixed identity
-ceiling for an application resource profile to tune. Distinct aspect contracts
+ceiling for an application resource profile to tune. An operation's installed
+aftermath identity is bounded by that same ceiling, so a recorded inverse may
+demand every field and relation its operation reads. Distinct aspect contracts
 count once, references count per occurrence, and a complete explicit field mask
 counts once per projection. Partial masks, touches and bindings retain exact
 meaning. See the factor proof in the
