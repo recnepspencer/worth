@@ -51,6 +51,11 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
 pub(in crate::domain_computation::primary_graph) trait SourceService:
     Send + Sync
 {
+    fn inspect_pages(
+        &self,
+        payload: &(dyn Any + Send + Sync),
+        inspection: &mut super::super::nodes::pages::inspection::PageInspection,
+    ) -> Result<(), super::super::WorthQueryManagedIndexStop>;
     fn predicate_axis(&self) -> Option<&Arc<crate::domain_computation::primary_graph::application_query::derived_view::SourcePredicateAxis>>;
     fn binding_type(&self) -> std::any::TypeId;
     fn admits_initialization(
@@ -103,6 +108,17 @@ where
     I: ApplicationManagedIndexBinding<S>,
     P: WorthQueryManagedIndexProvider<S, I>,
 {
+    fn inspect_pages(
+        &self,
+        payload: &(dyn Any + Send + Sync),
+        inspection: &mut super::super::nodes::pages::inspection::PageInspection,
+    ) -> Result<(), super::super::WorthQueryManagedIndexStop> {
+        let root = payload
+            .downcast_ref::<ManagedSourceRoot<S, I>>()
+            .filter(|root| root.installed.same_installation(&self.provider.installed))
+            .ok_or(super::super::WorthQueryManagedIndexStop::ForeignSourceSlot)?;
+        root.adapter.inspect_pages(root.nodes.as_ref(), inspection)
+    }
     fn predicate_axis(&self) -> Option<&Arc<crate::domain_computation::primary_graph::application_query::derived_view::SourcePredicateAxis>>{
         self.predicate.as_ref()
     }

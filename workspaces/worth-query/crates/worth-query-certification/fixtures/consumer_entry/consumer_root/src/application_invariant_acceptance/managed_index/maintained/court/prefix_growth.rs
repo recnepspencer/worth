@@ -16,11 +16,7 @@ fn invoice_observing<T>(
     on_context: impl FnOnce(&worth_execution::MapKernelContext<'_, '_>),
     operation: impl FnOnce() -> T,
 ) -> (T, u64) {
-    let original = SerialRequest::from_memory(
-        SerialMemoryBudget::new(None),
-        CancellationSource::new().token(),
-        None,
-    );
+    let original = original_request();
     let (result, report) = ExecutionWorkCeiling::new(None)
         .run_with_checkpoint(None, Some(&original), |context| {
             on_context(context);
@@ -28,6 +24,20 @@ fn invoice_observing<T>(
         })
         .unwrap();
     (result, report.charged_work())
+}
+fn original_request() -> SerialRequest {
+    SerialRequest::from_memory(
+        SerialMemoryBudget::new(None),
+        CancellationSource::new().token(),
+        None,
+    )
+}
+pub(in super::super) fn facade_invoice<T>(operation: impl FnOnce() -> T) -> (T, u64) {
+    worth_query_host::facade::certification::measure_certification_request(
+        &original_request(),
+        operation,
+    )
+    .unwrap()
 }
 #[test]
 fn real_prefix_width_small_batches_and_sparse_queries_preserve_both_roots() {

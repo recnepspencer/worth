@@ -22,6 +22,7 @@ pub(in crate::domain_computation) use runtime_core::WorthQueryApplicationRuntime
 
 mod certification_controls;
 mod certification_cost;
+pub(crate) mod certification_managed_index;
 mod conditional_cleanup;
 mod execution_memory;
 pub(crate) mod external_dispatch_attempt;

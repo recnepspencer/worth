@@ -44,3 +44,13 @@ fn ordered_chain_foreign_node_owner_cannot_enter_a_birth_edit() {
 fn ordered_chain_stronger_graph_laws_still_refuse_an_excess_member() {
     ordered_refusing::stronger_law();
 }
+
+#[test]
+fn managed_index_facade_matches_sdk_invoice_and_counts_shared_retained_pages() {
+    chain::evidence::run();
+}
+
+#[test]
+fn unrelated_retained_index_queries_leave_commit_work_equal() {
+    chain::retained_queries::run();
+}
