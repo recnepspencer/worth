@@ -38,21 +38,8 @@ pub(super) fn validate(
     if identity.member_owner().is_some() {
         return Err(());
     }
-    if let Some(owner) = identity.live_member_owner() {
-        let Member::Field { entity, .. } = identity.parts().logical_key.as_ref() else {
-            return Err(());
-        };
-        if identity.parts().source_posture != Posture::Retire
-            || !identity.co_anchors().is_empty()
-            || owner.from() != entity
-            || !recorded.preimage_demand().relations().contains(owner)
-            || !members.iter().any(|member| matches!(member,
-                Member::Relation { relation, from, to, integrity }
-                if relation == owner.relation() && from == owner.from() && to == owner.to()
-                    && integrity.cardinality.source_min == Some(1) && integrity.cardinality.source_max == Some(1))) {
-            return Err(());
-        }
-    }
+    let live = identity.live_member_owner().is_some();
+    require_live_owner(members, identity, recorded)?;
     let owned_members = identity
         .co_anchors()
         .iter()
@@ -67,8 +54,13 @@ pub(super) fn validate(
         owned_members,
     )?;
     for (index, anchor) in identity.co_anchors().iter().enumerate() {
-        if anchor.live_member_owner().is_some()
-            || (!owned_members && anchor.parts().source_posture != identity.parts().source_posture)
+        // Every family of a live-owner inverse names its own live owner; no
+        // anchor of the declaration is created or retired with its members.
+        if anchor.live_member_owner().is_some() != live
+            || (live && anchor.member_owner().is_some())
+            || (!owned_members
+                && !live
+                && anchor.parts().source_posture != identity.parts().source_posture)
             || !anchor.co_anchors().is_empty()
             || anchor.parts().source_role == identity.parts().source_role
             || anchor.parts().inverse_role == identity.parts().inverse_role
@@ -88,6 +80,7 @@ pub(super) fn validate(
             true,
             owned_members,
         )?;
+        require_live_owner(members, anchor, recorded)?;
         if let Some(owner) = anchor.member_owner() {
             if anchor.is_optional() {
                 return Err(());
@@ -163,7 +156,7 @@ fn validate_identity(
         Posture::Retire => Posture::Create,
         Posture::Preserve => return Err(()),
     };
-    if identity.member_owner().is_some() {
+    if identity.member_owner().is_some() || identity.live_member_owner().is_some() {
         require_family(source, &parts.source_role, entity, parts.source_posture)?;
         require_family(inverse, &parts.inverse_role, entity, inverse_posture)?;
     } else {
@@ -198,6 +191,7 @@ fn validate_identity(
     }
     if parts.source_posture == Posture::Create
         && !(co_anchor && owned_members)
+        && identity.live_member_owner().is_none()
         && !recorded.preimage_demand().loci().is_empty()
     {
         return Err(());
@@ -214,6 +208,29 @@ fn validate_identity(
         }
     }
     Ok(())
+}
+
+/// A live owner's member family is a source of one exactly-one owner relation
+/// whose rows the recorded inverse retains.
+fn require_live_owner(
+    members: &[Member],
+    identity: &worth_query_declaration::facade::application_aftermath::DeclaredAuthoredCorrection,
+    recorded: &worth_query_declaration::facade::application_aftermath::PortableRecordedInverse,
+) -> Result<(), ()> {
+    let Some(owner) = identity.live_member_owner() else {
+        return Ok(());
+    };
+    let Member::Field { entity, .. } = identity.parts().logical_key.as_ref() else {
+        return Err(());
+    };
+    (owner.from() == entity
+        && recorded.preimage_demand().relations().contains(owner)
+        && members.iter().any(|member| matches!(member,
+            Member::Relation { relation, from, to, integrity }
+            if relation == owner.relation() && from == owner.from() && to == owner.to()
+                && integrity.cardinality.source_min == Some(1) && integrity.cardinality.source_max == Some(1))))
+    .then_some(())
+    .ok_or(())
 }
 
 fn require_family(

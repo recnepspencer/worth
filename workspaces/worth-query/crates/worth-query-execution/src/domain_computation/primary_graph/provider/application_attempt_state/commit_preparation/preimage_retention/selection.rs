@@ -62,11 +62,18 @@ pub fn retain_from_attempt<'fact>(
 }
 
 /// Co-anchor declarations select exact records; loci never guess a common entity.
+///
+/// With `own_changes`, a live-owner declaration also keeps every other field
+/// the attempt observed and changed at a demanded locus, so a member that
+/// stays keeps its prior value beside the members that left. That pass is one
+/// mutation-membership probe per field fact the attempt already observed and
+/// one locus match per changed field; it reads no roster.
 pub(super) fn retain_from_authored_anchors<'fact>(
     demand: &InstalledPreImageDemand,
     facts: impl Iterator<Item = &'fact WorthQueryPrimaryGraphApplicationDecisionFact>,
     mutation: &ValidatedMutationFootprint,
     anchors: &[(RecordRef, &str)],
+    own_changes: bool,
 ) -> Result<WorthQueryRetainedPreImageSelection, WorthQueryPreImageRetentionDenial> {
     let candidates = facts
         .filter_map(WorthQueryObservedPreImageCandidate::from_decision_fact)
@@ -90,21 +97,33 @@ pub(super) fn retain_from_authored_anchors<'fact>(
             if matched.next().is_some() {
                 return Err(WorthQueryPreImageRetentionDenial::AmbiguousDemandedField);
             }
-            let encoded_bytes = candidate.value().semantic_byte_width();
-            total = total
-                .checked_add(encoded_bytes)
-                .ok_or(WorthQueryPreImageRetentionDenial::ExceedsByteBound)?;
-            if total > demand.maximum_encoded_bytes() {
-                return Err(WorthQueryPreImageRetentionDenial::ExceedsByteBound);
+            fields.push(seal_field(demand, &mut total, locus, candidate)?);
+        }
+    }
+    if own_changes {
+        let anchored: BTreeSet<&RecordRef> = anchors.iter().map(|(record, _)| record).collect();
+        let mut kept = BTreeSet::new();
+        for candidate in &candidates {
+            let record = candidate.target_record();
+            if anchored.contains(record) || !mutation.mutates_field(record, candidate.locator()) {
+                continue;
             }
-            fields.push(WorthQueryRetainedPreImageFieldSeal {
-                locus: locus.clone(),
-                value: candidate.value().clone(),
-                encoded_bytes,
-                target_record: record.clone(),
-                entity_kind: candidate.entity_kind(),
-                locator: candidate.locator().clone(),
-            });
+            let Some(locus) = demand
+                .loci()
+                .iter()
+                .position(|locus| candidate_matches_locus(candidate, locus))
+            else {
+                continue;
+            };
+            if !kept.insert((record, locus)) {
+                return Err(WorthQueryPreImageRetentionDenial::AmbiguousDemandedField);
+            }
+            fields.push(seal_field(
+                demand,
+                &mut total,
+                &demand.loci()[locus],
+                candidate,
+            )?);
         }
     }
     Ok(WorthQueryRetainedPreImageSelection {
@@ -113,6 +132,30 @@ pub(super) fn retain_from_authored_anchors<'fact>(
             total_encoded_bytes: total,
         }),
         candidates_materialized: candidates.len(),
+    })
+}
+
+/// One retained field under the demand's shared byte bound.
+fn seal_field(
+    demand: &InstalledPreImageDemand,
+    total: &mut usize,
+    locus: &InstalledPreImageLocus,
+    candidate: &WorthQueryObservedPreImageCandidate,
+) -> Result<WorthQueryRetainedPreImageFieldSeal, WorthQueryPreImageRetentionDenial> {
+    let encoded_bytes = candidate.value().semantic_byte_width();
+    *total = total
+        .checked_add(encoded_bytes)
+        .ok_or(WorthQueryPreImageRetentionDenial::ExceedsByteBound)?;
+    if *total > demand.maximum_encoded_bytes() {
+        return Err(WorthQueryPreImageRetentionDenial::ExceedsByteBound);
+    }
+    Ok(WorthQueryRetainedPreImageFieldSeal {
+        locus: locus.clone(),
+        value: candidate.value().clone(),
+        encoded_bytes,
+        target_record: candidate.target_record().clone(),
+        entity_kind: candidate.entity_kind(),
+        locator: candidate.locator().clone(),
     })
 }
 

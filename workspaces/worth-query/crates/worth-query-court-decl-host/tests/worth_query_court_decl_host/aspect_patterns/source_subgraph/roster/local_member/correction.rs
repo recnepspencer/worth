@@ -1,4 +1,4 @@
-//! The inverse uses retained member fields and the original typed local intent.
+//! The inverse returns every retained member and note of the original typed local intent.
 use super::*;
 pub struct UndoDelete;
 impl ApplicationCorrectionBinding<Schema> for UndoDelete {
@@ -26,9 +26,22 @@ impl ApplicationCorrectionBinding<Schema> for UndoDelete {
     ) -> V::Output {
         dispatch.conventional()
     }
+    // Two families under the one owner that stays live; each names its own
+    // owner relation, and either may move no member at all.
     fn authored_identity() -> Option<ApplicationAuthoredCorrection<Schema>> {
-        Some(ApplicationAuthoredCorrection::restore_retired::<Self, MemberFamily, Deleted, Restored>()
-            .owned_member_of(OwnedBy::reference()))
+        Some(
+            ApplicationAuthoredCorrection::live_owner_members::<
+                Self,
+                MemberFamily,
+                Deleted,
+                Restored,
+                _,
+                _,
+            >(OwnedBy::reference())
+            .and_live_owner_members::<Self, NoteFamily, DeletedNotes, RestoredNotes, _, _>(
+                NotedBy::reference(),
+            ),
+        )
     }
     fn mechanism() -> DeclaredCorrectionMechanism<Schema> {
         DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
@@ -36,6 +49,8 @@ impl ApplicationCorrectionBinding<Schema> for UndoDelete {
                 [
                     DeclaredPreImageLocus::from_field(MemberKey::at("MemberKey")),
                     DeclaredPreImageLocus::from_field(Value::at("MemberValue")),
+                    DeclaredPreImageLocus::from_field(NoteKey::at("NoteKey")),
+                    DeclaredPreImageLocus::from_field(NoteValue::at("NoteValue")),
                 ],
                 1024,
             )
@@ -43,6 +58,7 @@ impl ApplicationCorrectionBinding<Schema> for UndoDelete {
                 DeclaredPreImageRelationLocus::from_relation(OwnedBy::reference()),
                 DeclaredPreImageRelationLocus::from_relation(Head::reference()),
                 DeclaredPreImageRelationLocus::from_relation(Operand::reference()),
+                DeclaredPreImageRelationLocus::from_relation(NotedBy::reference()),
             ]),
         )
     }
@@ -54,25 +70,67 @@ impl ApplicationCorrectionBinding<Schema> for UndoDelete {
         let ApplicationCorrectionSourceMaterial::RecordedInverse(prior) = material else {
             return Err(UnsupportedSourceMeaning);
         };
-        let key = StringApplicationValueBinding::decode(
-            prior
-                .field(&DeclaredPreImageLocus::from_field(MemberKey::at(
-                    "MemberKey",
-                )))
-                .ok_or(MissingPreImage)?,
-        )
-        .map_err(|_| InvalidPreImage)?;
-        let value = U64ApplicationValueBinding::decode(
-            prior
-                .field(&DeclaredPreImageLocus::from_field(Value::at("MemberValue")))
-                .ok_or(MissingPreImage)?,
-        )
-        .map_err(|_| InvalidPreImage)?;
+        // The original intent orders the members; every value comes from the
+        // retained pre-image of the exact member its family role names.
+        let returned = |family: &ApplicationMutationOutputRoleFamilyDescriptor,
+                        suffixes: &[String],
+                        key: DeclaredPreImageLocus<Schema>,
+                        value: DeclaredPreImageLocus<Schema>| {
+            suffixes
+                .iter()
+                .map(|suffix| {
+                    Ok(Returned {
+                        key: StringApplicationValueBinding::decode(
+                            prior
+                                .field_for_family_member(family, suffix, &key)
+                                .ok_or(MissingPreImage)?,
+                        )
+                        .map_err(|_| InvalidPreImage)?,
+                        value: U64ApplicationValueBinding::decode(
+                            prior
+                                .field_for_family_member(family, suffix, &value)
+                                .ok_or(MissingPreImage)?,
+                        )
+                        .map_err(|_| InvalidPreImage)?,
+                    })
+                })
+                .collect::<Result<Vec<_>, ApplicationCorrectionDerivationDenial>>()
+        };
         Ok(Restore {
             owner: original.owner.clone(),
-            key,
+            members: returned(
+                &Deleted::DESCRIPTOR,
+                &original.members,
+                DeclaredPreImageLocus::from_field(MemberKey::at("MemberKey")),
+                DeclaredPreImageLocus::from_field(Value::at("MemberValue")),
+            )?,
             operand: original.operand.clone(),
-            value,
+            notes: returned(
+                &DeletedNotes::DESCRIPTOR,
+                &original.notes,
+                DeclaredPreImageLocus::from_field(NoteKey::at("NoteKey")),
+                DeclaredPreImageLocus::from_field(NoteValue::at("NoteValue")),
+            )?,
+            // A member that stays retains only the field the source changed.
+            revalue: original
+                .revalue
+                .as_ref()
+                .map(|row| {
+                    Ok(Returned {
+                        key: row.key.clone(),
+                        value: U64ApplicationValueBinding::decode(
+                            prior
+                                .field_for_family_member(
+                                    &Kept::DESCRIPTOR,
+                                    &row.key,
+                                    &DeclaredPreImageLocus::from_field(Value::at("MemberValue")),
+                                )
+                                .ok_or(MissingPreImage)?,
+                        )
+                        .map_err(|_| InvalidPreImage)?,
+                    })
+                })
+                .transpose()?,
         })
     }
 }

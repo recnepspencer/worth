@@ -59,16 +59,10 @@ impl WorthQueryPreparedCorrectionSource {
                     .ok_or_else(missing)
             })
             .collect::<Result<_, _>>()?;
-        let member = self.member_inverse(retained, layout, execution)?;
-        let selectors = member.as_ref().map(|member| [member.selector()]);
+        let members = self.member_inverses(retained, layout, execution)?;
+        let selectors = members.selectors();
         let inverse = candidate
-            .relation_mutation_footprint(
-                execution,
-                &kinds,
-                selectors
-                    .as_ref()
-                    .map_or(&[], |selectors| selectors.as_slice()),
-            )
+            .relation_mutation_footprint(execution, &kinds, &selectors, members.kinds())
             .map_err(|cause| {
                 base("inverse relation mutation projection refused")
                     .with_native_preparation_error(cause)

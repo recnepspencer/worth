@@ -8,6 +8,7 @@ pub struct Snapshot {
     pub value: u64,
     pub head: Option<String>,
     pub members: Vec<(NativeEntityId, Row)>,
+    pub notes: Vec<(NativeEntityId, String, u64)>,
 }
 worth_query_structured_value_binding!(pub SnapshotBinding for Snapshot { identity: "source-subgraph.roster-snapshot.v1" });
 worth_query_structured_value_binding!(pub Parameters for () { identity: "source-subgraph.roster-parameters.v1" });
@@ -20,6 +21,22 @@ slot!(RootKey, root_key, SourceKey, "SourceKey");
 slot!(RootValue, root_value, SourceValue, "SourceValue");
 slot!(ChildKey, child_key, MemberKey, "MemberKey");
 slot!(ChildValue, child_value, Value, "MemberValue");
+slot!(RemarkKey, remark_key, NoteKey, "NoteKey");
+slot!(RemarkValue, remark_value, NoteValue, "NoteValue");
+pub struct Notes;
+worth_query_portable_type!(Notes => "source-subgraph.roster-notes.v1");
+fn notes() -> ApplicationQueryResultRelationRef<
+    Query,
+    Notes,
+    Schema,
+    NotedBy,
+    Note,
+    Source,
+    ReverseResultTraversal,
+    ManyResults,
+> {
+    ApplicationQueryResultRelationRef::reverse_many("notes", NotedBy::reference())
+}
 pub struct NextKey;
 worth_query_portable_type!(NextKey => "source-subgraph.roster-next-key.v1");
 fn next_key() -> ApplicationQueryResultFieldRef<Query, NextKey, Schema, MemberKey> {
@@ -124,6 +141,7 @@ pub fn declare(
     .field(root_value())
     .relation(head(), ApplicationQueryResultShapeBuilder::<Schema, Query, Member, Snapshot, SnapshotBinding>::new(Member::reference()).field(head_key()))
     .relation(members(), member_shape)
+    .relation(notes(), ApplicationQueryResultShapeBuilder::<Schema, Query, Note, Snapshot, SnapshotBinding>::new(Note::reference()).field(remark_key()).field(remark_value()))
     .build();
     schema
         .application_query(
@@ -170,6 +188,18 @@ impl WorthQueryApplicationProjection<Schema, Query> for Snapshot {
             })
             .collect::<Result<Vec<_>, WorthQueryApplicationProjectionDenial>>()?;
         members.sort_by(|a, b| a.1.key.cmp(&b.1.key));
+        let mut notes = row
+            .many(notes())?
+            .iter()
+            .map(|note| {
+                Ok((
+                    note.entity_id(),
+                    note.field(remark_key())?,
+                    note.field(remark_value())?,
+                ))
+            })
+            .collect::<Result<Vec<_>, WorthQueryApplicationProjectionDenial>>()?;
+        notes.sort_by(|a, b| a.1.cmp(&b.1));
         Ok(Self {
             id: row.entity_id(),
             key: row.field(root_key())?,
@@ -181,6 +211,7 @@ impl WorthQueryApplicationProjection<Schema, Query> for Snapshot {
                 .map(|head| head.field(head_key()))
                 .transpose()?,
             members,
+            notes,
         })
     }
 }

@@ -75,8 +75,14 @@ pub(super) fn retain_attempt_preimage(
                 "preimage projection capacity exhausted"),
         })?;
     let examined = candidates.examined();
-    let selected = if let Some(anchors) = authored_anchors::select(attempt)? {
-        selection::retain_from_authored_anchors(demand, candidates.iter(), &footprint, &anchors)
+    let selected = if let Some(selection) = authored_anchors::select(attempt)? {
+        selection::retain_from_authored_anchors(
+            demand,
+            candidates.iter(),
+            &footprint,
+            &selection.anchors,
+            selection.own_changes,
+        )
     } else {
         selection::retain_from_attempt(demand, candidates.iter(), &footprint)
     };

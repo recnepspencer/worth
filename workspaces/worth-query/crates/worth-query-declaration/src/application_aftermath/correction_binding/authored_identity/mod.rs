@@ -48,7 +48,8 @@ impl DeclaredAuthoredCorrection {
             live_owner: None,
         }
     }
-    /// A single deleted member returns to this same live owner.
+    /// Zero to many members of this role family stay under this live owner;
+    /// the roles are family prefixes, as for a member of an authored anchor.
     pub fn live_member_owner(
         &self,
     ) -> Option<&crate::application_aftermath::PortablePreImageRelationLocus> {
@@ -82,7 +83,7 @@ impl DeclaredAuthoredCorrection {
         entity: &str,
         inverse: bool,
     ) -> Option<&'a str> {
-        self.member_owner()?;
+        self.member_owner().or(self.live_member_owner())?;
         let ApplicationSchemaMember::Field {
             entity: declared_entity,
             ..

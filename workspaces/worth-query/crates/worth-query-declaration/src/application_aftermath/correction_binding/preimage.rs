@@ -35,6 +35,8 @@ pub trait ApplicationCorrectionPreImage<Schema> {
 
     /// Complete original lifecycle material for a declared relation kind.
     /// None means the locus was not retained; Some(0) is authenticated empty material.
+    /// Under live-owner member families the rows are the mutation's own changes
+    /// of that kind, so Some(0) there means it changed none.
     fn relation_count(
         &self,
         _locus: &super::super::DeclaredPreImageRelationLocus<Schema>,

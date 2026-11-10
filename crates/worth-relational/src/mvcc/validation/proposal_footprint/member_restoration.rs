@@ -26,11 +26,14 @@ pub enum RecordedMemberRestorationRefusal {
 impl ValidatedRelationalProposal {
     /// Called once per actual entity birth by the relation footprint owner.
     /// Work is bounded by the declared restored members and their retained fields.
+    /// A birth of a declared member kind that no recorded member claims is extra,
+    /// also when the source recorded no member of that kind.
     pub(super) fn project_restored_member(
         &self,
         actual: EntityId,
         kind: KindId,
         members: &[RecordedMemberRestoration<'_>],
+        member_kinds: &[KindId],
         restored: &mut Vec<(EntityId, EntityId)>,
         refusal: &mut Option<RecordedMemberRestorationRefusal>,
         context: &mut worth_execution::MapKernelContext<'_, '_>,
@@ -86,7 +89,8 @@ impl ValidatedRelationalProposal {
             }
             return Ok(());
         }
-        if in_family {
+        checkpoint(context, member_kinds.len() as u64).map_err(stop)?;
+        if in_family || member_kinds.contains(&kind) {
             *refusal = Some(RecordedMemberRestorationRefusal::Extra(actual));
         }
         Ok(())

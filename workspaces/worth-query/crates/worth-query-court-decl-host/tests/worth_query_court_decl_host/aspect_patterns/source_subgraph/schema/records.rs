@@ -4,7 +4,14 @@ pub struct SourceModel;
 impl Fragment for SourceModel {
     const NAME: &'static str = "source_model";
     type Bindings = SourceModelBindings;
-    type Members = (Mapping, Principal, Source, Generated, roster::Member);
+    type Members = (
+        Mapping,
+        Principal,
+        Source,
+        Generated,
+        roster::Member,
+        roster::Note,
+    );
 }
 pub struct SourceFeature;
 impl Fragment for SourceFeature {

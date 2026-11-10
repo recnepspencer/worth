@@ -62,11 +62,20 @@ impl ValidatedRelationMutationFootprint {
 }
 impl ValidatedRelationalProposal {
     /// Optional relation projection. The field-only footprint does no additional work.
+    ///
+    /// `members` are the recorded members an inverse must restore under owners
+    /// that stay live, and `member_kinds` the entity kinds its declared member
+    /// families own: every birth of such a kind must be one recorded member.
+    /// The member pass runs only when either is non-empty. It costs one
+    /// correspondence probe per birth across the recorded members and their
+    /// retained fields, then one owner-edge probe per recorded member; it
+    /// never reads a roster or a thread.
     pub fn relation_mutation_footprint(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         kinds: &[KindId],
         members: &[RecordedMemberRestoration<'_>],
+        member_kinds: &[KindId],
     ) -> Result<ValidatedRelationMutationFootprint, TransactionCommitError> {
         let fragments = &self
             .proposed_mutation
@@ -138,12 +147,12 @@ impl ValidatedRelationalProposal {
             }
             for fragment in fragments {
                 checkpoint(context, 1).map_err(stop)?;
-                if !members.is_empty()
+                if !(members.is_empty() && member_kinds.is_empty())
                     && let RecordRef::Entity(entity) = fragment.target
                     && fragment.structural_change == crate::publication::patch::data::RecordStructuralChange::Created {
                     let partition = self.proposed_mutation.state.get_current_partition(entity.partition_id);
                     if let Some(kind) = partition.as_ref().and_then(|partition| partition.entity_arena().get(&entity)).filter(|row| row.is_live()).and_then(|row| row.kind_id()) {
-                        self.project_restored_member(entity, kind, members, &mut restored_entities, &mut member_refusal, context)?;
+                        self.project_restored_member(entity, kind, members, member_kinds, &mut restored_entities, &mut member_refusal, context)?;
                     }
                 }
                 let RecordRef::Relation(relation) = fragment.target else { continue; };
