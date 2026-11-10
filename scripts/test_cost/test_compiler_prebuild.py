@@ -3,11 +3,26 @@ import tempfile
 import unittest
 
 from compiler_audiences import group, sources
-from compiler_prebuild import environments, normalized_source_key, recipe_identity, unit_inputs
+from compiler_prebuild import environments, normalized_source_key, recipe_identity, select_fixture_sources, unit_inputs
 from workspace import repository_root
 
 
 class CompilerPrebuildInputTests(unittest.TestCase):
+    def test_source_roots_keep_exact_audiences_and_refuse_empty_selection(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            packages = group([
+                {'dependencies': {'owner': {'version': '1'}},
+                 'sources': [root / 'court/a.rs', root / 'court-neighbor/b.rs']},
+                {'dependencies': {}, 'sources': [root / 'other/c.rs']}])
+            rows = {'production': dict(identity='production', profile='dev', packages=packages)}
+            selected = select_fixture_sources(rows, [root / 'court'])['production']
+            self.assertEqual(sources(selected), [root / 'court/a.rs'])
+            self.assertEqual(selected['packages'][0]['dependencies'], {'owner': {'version': '1'}})
+            self.assertEqual(len(sources(rows['production'])), 3)
+            with self.assertRaisesRegex(ValueError, 'no fixtures'):
+                select_fixture_sources(rows, [root / 'absent'])
+
     def test_unit_world_preserves_real_private_and_wrong_reason_compiler_inputs(self):
         with tempfile.TemporaryDirectory() as temporary:
             root, environment = unit_inputs(temporary)

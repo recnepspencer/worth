@@ -47,11 +47,26 @@ def main():
     parser.add_argument('--workspace', choices=WORKSPACES, required=True)
     parser.add_argument('--output', type=Path)
     parser.add_argument('--native-build', type=Path, help='native build directory; required for Store')
+    parser.add_argument('--compiler-only', action='store_true',
+                        help='prepare compiler fixtures without unrelated executable or proof prerequisites')
+    parser.add_argument('--source-root', action='append', type=Path, default=[],
+                        help='narrow compiler-only fixture sources to this directory')
     args = parser.parse_args()
+    if args.compiler_only and args.workspace not in ('root', 'query'):
+        parser.error('--compiler-only is supported for root and query')
+    if args.source_root and not args.compiler_only:
+        parser.error('--source-root requires --compiler-only')
     root = repository_root(Path.cwd())
     output = args.output or root / 'target/test-cost' / args.workspace / 'prebuilt'
-    environment = prepare(root, args.workspace, output, CargoRunner(root, inherited()),
-                          native_build=args.native_build)
+    runner = CargoRunner(root, inherited())
+    if args.compiler_only:
+        from compiler_prebuild import CompilerScope, prepare as compiler
+        environment = compiler(root, args.workspace, output / 'compiler', runner,
+                               CompilerScope.FIXTURES, source_roots=args.source_root)
+        output.mkdir(parents=True, exist_ok=True)
+        (output / 'environment.json').write_text(json.dumps(environment, indent=2) + '\n', encoding='utf-8')
+    else:
+        environment = prepare(root, args.workspace, output, runner, native_build=args.native_build)
     print(json.dumps(environment, indent=2))
 
 
