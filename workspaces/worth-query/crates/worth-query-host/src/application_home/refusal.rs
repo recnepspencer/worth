@@ -144,6 +144,8 @@ pub enum WorthQueryApplicationHomeOpenRefused<Schema: ApplicationSchemaCompositi
 #[derive(Debug)]
 pub enum HomeCustodyReadmissionDenial {
     Query(QueryHomeCustodyReadmissionDenial),
+    /// The Home refused Query's decoded dispatch prefix as its actual journal head.
+    DispatchJournal(ApplicationHomeDispatchJournalDenial),
 }
 
 impl<Schema: ApplicationSchemaComposition, Program> std::fmt::Debug

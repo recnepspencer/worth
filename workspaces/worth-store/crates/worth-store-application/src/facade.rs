@@ -42,6 +42,10 @@ pub use crate::opening_control::{
     ApplicationHomeOpeningEdge, ApplicationHomeOpeningObservation, ApplicationHomeOpeningStage,
     ApplicationHomePhysicalControlDenial, ApplicationHomePhysicalControlForTest,
 };
+pub use crate::query_dispatch::{
+    ApplicationHomeDispatchJournalDenial, ApplicationHomeDispatchJournalOperation,
+    ApplicationHomeDispatchPublication,
+};
 pub use crate::relational_preparation::{
     attach_relational, ApplicationHomeInitializationDenial, ApplicationHomeInitializationRefused,
     ApplicationHomeNativeSchemaPreparation, ApplicationHomeNativeSchemaPreparationDenial,

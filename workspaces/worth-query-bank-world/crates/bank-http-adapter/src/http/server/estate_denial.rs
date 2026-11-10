@@ -202,6 +202,7 @@ fn dispatch_owner_read_denial(read: BankCommittedDispatchOutboxReadDenial) -> Ba
 }
 
 fn dispatch_attempt_denial(attempt: BankExternalDispatchAttemptDenial) -> BankHttpDenial {
+    use bank_server::BankDurableDispatchRecordDenial as Record;
     use BankExternalDispatchAttemptDenial as Attempt;
     use BankHttpDenialKind as Denial;
     use BankHttpNextAction as Next;
@@ -212,6 +213,18 @@ fn dispatch_attempt_denial(attempt: BankExternalDispatchAttemptDenial) -> BankHt
         Attempt::OriginalPublicationPending | Attempt::InFlightCapacityExhausted => {
             (Denial::Unavailable, Next::Retry)
         }
+        // Nothing was sent. An earlier send is still being observed, the
+        // request stopped, or the record was proven unwritten: the same
+        // request records and sends once that clears.
+        Attempt::DurableAttemptRecordDenied(
+            Record::AttemptAwaitingObservation
+            | Record::RequestStopped
+            | Record::PublicationNoEffect,
+        ) => (Denial::Unavailable, Next::Retry),
+        // The record's fate, or the journal itself, needs the Home reopened.
+        Attempt::DurableAttemptRecordDenied(
+            Record::PublicationUnresolved | Record::JournalRefused,
+        ) => (Denial::Unavailable, Next::ContactOperator),
         // No physical attempt identity remains on this runtime.
         Attempt::AttemptIdentityExhausted => (Denial::Unavailable, Next::ContactOperator),
         // A restored legacy row lacks the slot its completion needs, so no

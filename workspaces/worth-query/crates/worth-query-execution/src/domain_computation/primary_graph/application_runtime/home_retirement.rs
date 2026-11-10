@@ -17,7 +17,6 @@ pub enum WorthQueryHomeRetirementOwner {
     InstalledProducers,
     InstalledConditionals,
     InboundVerifiers,
-    ExternalTransport,
     SigningOwners,
     RelationalSource,
     GraphProvider,
@@ -46,6 +45,10 @@ pub enum WorthQueryHomeRetirementDenial {
     CanonicalSubscription(worth_relational::facade::mvcc::PublicationCompanionRetirementDenial),
     Bridge(worth_runtime_bridge::facade::BridgeHomeRetirementDenial),
     Publication(worth_runtime_world::facade::ConsumedPublicationRetirementDenial),
+    /// The dispatch journal still holds an executing attempt or an unsettled record.
+    DispatchCustody(
+        crate::domain_computation::application_aftermath::dispatch_journal::QueryDispatchJournalDenial,
+    ),
     Execution(worth_execution::WorkCeilingDenial),
 }
 
@@ -82,6 +85,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .preflight_home_retirement(request)?;
         self.installed_producers.preflight_home_retirement()?;
         self.installed_conditionals.preflight_home_retirement()?;
+        // Every recorded attempt owns its one durable observation before close.
+        self.runtime
+            .dispatch_journal
+            .settle_for_close(request)
+            .map_err(WorthQueryHomeRetirementDenial::DispatchCustody)?;
         self.preflight_supplied_home_owners()?;
         self.runtime
             .primary_graph_authority
@@ -133,9 +141,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         if !verifiers.is_empty() {
             return Err(Unsupported(Owner::InboundVerifiers));
         }
-        if self.runtime.external_effect_transport.get().is_some() {
-            return Err(Unsupported(Owner::ExternalTransport));
-        }
+        // The supplied transport holds no Home custody. Exclusive retirement
+        // access means no contact is executing, and the dispatch journal has
+        // just settled: every recorded attempt owns its durable observation.
+        // The transport therefore follows this original runtime into inert
+        // retirement custody; a reopened Home is given its transport afresh.
         // The intact signer registry follows this original runtime into inert
         // retirement custody. Its final supplier destruction belongs to reclaim,
         // not budgeted close; external authentication owners are not revoked.

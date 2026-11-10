@@ -180,6 +180,7 @@ where
             inbound_custody: std::sync::Arc::new(std::sync::Mutex::new(Default::default())),
             transport_completion_custody: std::sync::Mutex::new(Default::default()),
             inbound_maintenance_turn: std::sync::atomic::AtomicU64::new(0),
+            dispatch_journal: crate::domain_computation::application_aftermath::dispatch_journal::WorthQueryDispatchJournal::process_local(),
             recovery_handles,
             output_producer_routes,
             output_readiness_routes,

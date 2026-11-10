@@ -17,6 +17,7 @@ mod open;
 mod opening_control;
 mod query_corrections;
 mod query_journal;
+mod query_dispatch;
 mod query_obligations;
 mod registry;
 mod relational_preparation;

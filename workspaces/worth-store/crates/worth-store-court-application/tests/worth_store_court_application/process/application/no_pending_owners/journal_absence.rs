@@ -82,6 +82,13 @@ fn each_unadmitted_journal_entry_refuses_admission_and_returns_the_same_home() {
         } else if name == "query.corrections" {
             assert!(matches!(refused.reason(), Denial::QueryCorrections(
                 worth_query_execution::facade::correction_material::QueryCorrectionMaterialDenial::AdmissionRequired)));
+        } else if name == "query.dispatch" {
+            assert!(matches!(
+                refused.reason(),
+                Denial::QueryDispatch(
+                    worth_store_application::ApplicationHomeDispatchJournalDenial::AdmissionUnavailable
+                )
+            ));
         } else {
             assert!(
                 matches!(refused.reason(), Denial::JournalNotEmpty { journal, head } if *journal == name && *head == entry)

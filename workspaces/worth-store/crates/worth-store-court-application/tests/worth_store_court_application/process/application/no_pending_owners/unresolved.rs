@@ -9,7 +9,7 @@ use worth_store_application::{
 
 #[test]
 fn an_unresolved_first_journal_publication_refuses_even_with_an_empty_durable_head() {
-    for name in ["home.transitions", "query.obligations"] {
+    for name in ["home.transitions", "query.obligations", "query.dispatch"] {
         let directory = tempfile::tempdir().unwrap();
         let request = crate::workload::serial_request();
         let execution = ExecutionRequest::serial(&request);
@@ -51,6 +51,13 @@ fn an_unresolved_first_journal_publication_refuses_even_with_an_empty_durable_he
             .expect("the exact owner gate must refuse unresolved position one");
         if name == "query.obligations" {
             assert!(matches!(refused.reason(), Denial::QueryObligations(worth_query_execution::facade::program_support::QueryProgramSupportDenial::PublicationUnresolved)));
+        } else if name == "query.dispatch" {
+            assert!(matches!(
+                refused.reason(),
+                Denial::QueryDispatch(
+                    worth_store_application::ApplicationHomeDispatchJournalDenial::PublicationUnresolved
+                )
+            ));
         } else {
             assert!(matches!(
                 refused.reason(),

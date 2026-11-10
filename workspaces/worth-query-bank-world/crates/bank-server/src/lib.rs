@@ -89,7 +89,7 @@ pub use authentication_boundary::BankAuthenticationBoundary;
 pub use bank_projection::{BankInvariantAggregateDenialKind, BankProjectionDenial};
 pub use committed_dispatch_outbox::{
     BankCommittedDispatchOutboxObservation, BankCommittedDispatchOutboxReadDenial,
-    BankExternalDispatchAttemptDenial,
+    BankDurableDispatchRecordDenial, BankExternalDispatchAttemptDenial,
 };
 pub use error::{
     BankAuthenticationBoundaryBuildError, BankIdentityRuntimeBuildError,

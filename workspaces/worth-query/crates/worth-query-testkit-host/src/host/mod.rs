@@ -23,6 +23,7 @@ pub mod conditional_authoring_surface;
 #[allow(dead_code, unused_imports)]
 #[path = "temporal_conditional_operation/contract.rs"]
 pub mod contract;
+pub mod dispatch_home;
 #[allow(dead_code, unused_imports)]
 #[path = "installed_contract_inspection.rs"]
 pub mod installed_contract_inspection;

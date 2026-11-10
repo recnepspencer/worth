@@ -69,6 +69,7 @@ impl AuthorityMarker for ReadmittedApplicationHome {}
 pub(crate) struct HomeContext {
     pub(crate) query_corrections: Arc<crate::query_corrections::ApplicationQueryCorrections>,
     pub(crate) query_obligations: Arc<crate::query_obligations::ApplicationQueryObligations>,
+    pub(crate) query_dispatch: Arc<crate::query_dispatch::ApplicationHomeDispatchJournal>,
     pub(crate) world_preparation:
         Option<crate::world_section::native_selection::HomeWorldPreparation>,
     pub(crate) opening_observation: crate::ApplicationHomeOpeningObservation,

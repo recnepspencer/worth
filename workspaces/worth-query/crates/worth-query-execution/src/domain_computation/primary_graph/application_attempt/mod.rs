@@ -181,8 +181,9 @@ pub(in crate::domain_computation) use provider_execution::{
     WorthQueryRegisteredProviderAttempt,
 };
 pub use provider_execution::{
-    WorthQueryExternalDispatchAttemptDenial, WorthQueryExternalDispatchPreparationDenial,
-    WorthQueryExternalRedispatchDenial, WorthQueryExternalTransportInstallationDenial,
+    WorthQueryDurableDispatchRecordDenial, WorthQueryExternalDispatchAttemptDenial,
+    WorthQueryExternalDispatchPreparationDenial, WorthQueryExternalRedispatchDenial,
+    WorthQueryExternalTransportInstallationDenial,
 };
 pub use provider_recomparison::WorthQueryMutationPreconditionComparisonEvidence;
 pub use read_phase::{WorthQueryOrdinaryApplicationRead, WorthQueryProjectedApplicationMutation};

@@ -18,6 +18,11 @@ pub use home_query_corrections::{
     AdmittedHomeQueryCorrections, CommittedHomeQueryCorrection, HomeQueryCorrectionSubject,
     HomeQueryCorrectionsAuthority, HomeQueryCorrectionsOwner, NoEffectHomeQueryCorrection,
 };
+mod home_query_dispatch;
+pub use home_query_dispatch::{
+    AdmittedHomeQueryDispatch, CommittedHomeQueryDispatch, HomeQueryDispatchAuthority,
+    HomeQueryDispatchOwner, HomeQueryDispatchSubject, NoEffectHomeQueryDispatch,
+};
 mod home_query_obligations;
 pub use home_query_obligations::{
     AdmittedHomeQueryObligations, CommittedHomeQueryObligation, HomeQueryObligationSubject,

@@ -6,6 +6,7 @@ use super::*;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime;
 use worth_runtime_world::facade::*;
 mod custody;
+mod dispatch_custody;
 pub use crate::domain_computation::primary_graph::bootstrap::branch_activation_history::QueryHomeProgramActivationDenial;
 pub use custody::{QueryHomeCustodyReadmissionDenial, QueryHomeCustodyReadmissionRefused};
 #[cfg(test)]
@@ -16,6 +17,7 @@ pub struct ReadmittedHomeQueryService<Schema, Program> {
     runtime: WorthQueryProgramApplicationRuntime<Schema, Program>,
     program_support_admission: std::sync::OnceLock<worth_proof::AdmittedHomeQueryObligations>,
     correction_material_admission: std::sync::OnceLock<worth_proof::AdmittedHomeQueryCorrections>,
+    dispatch_custody_admission: std::sync::OnceLock<worth_proof::AdmittedHomeQueryDispatch>,
 }
 impl<Schema: 'static, Program: 'static> worth_proof::AuthorityMarker
     for ReadmittedHomeQueryService<Schema, Program>
@@ -29,6 +31,9 @@ impl<Schema, Program> ReadmittedHomeQueryService<Schema, Program> {
     }
     pub fn program_support_admission(&self) -> Option<worth_proof::AdmittedHomeQueryObligations> {
         self.program_support_admission.get().cloned()
+    }
+    pub fn dispatch_custody_admission(&self) -> Option<worth_proof::AdmittedHomeQueryDispatch> {
+        self.dispatch_custody_admission.get().cloned()
     }
     pub fn into_home_program_runtime(self) -> WorthQueryProgramApplicationRuntime<Schema, Program> {
         self.runtime
@@ -250,6 +255,7 @@ where
                 runtime,
                 program_support_admission: std::sync::OnceLock::new(),
                 correction_material_admission: std::sync::OnceLock::new(),
+                dispatch_custody_admission: std::sync::OnceLock::new(),
             })
         })
         .map_err(|refused| QueryHomeWorldAttachmentRefused {

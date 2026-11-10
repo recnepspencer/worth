@@ -102,6 +102,10 @@ impl ApplicationQueryJournal {
                 .map_err(storage)?
                 .map_or(0, |row| row.position());
             if position > head {
+                // `None` proves only the unwritten successor of the durable head.
+                if position.checked_sub(1) != Some(head) {
+                    return Err(QueryJournalDenial::PrefixMismatch);
+                }
                 return match journal.resolve(position, [0; 32]).map_err(storage)? {
                     OrderedJournalResolution::NotCommitted { head: actual } if actual == head => {
                         Ok(None)

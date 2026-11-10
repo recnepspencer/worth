@@ -52,6 +52,7 @@ pub enum ApplicationHomeOwnerAdmissionDenial {
     QueryCorrections(
         worth_query_execution::facade::correction_material::QueryCorrectionMaterialDenial,
     ),
+    QueryDispatch(crate::query_dispatch::ApplicationHomeDispatchJournalDenial),
     Execution(worth_execution::WorkCeilingDenial),
     NativeRecoveryRequired,
     NativeCodecTransitionPending,
@@ -121,6 +122,11 @@ pub(crate) fn require_no_pending_home_journals(
                     .query_corrections
                     .require_admitted(request)
                     .map_err(ApplicationHomeOwnerAdmissionDenial::QueryCorrections)?;
+            HomeJournalAdmission::QueryDispatch => {
+                context
+                    .query_dispatch
+                    .require_admitted(request)
+                    .map_err(ApplicationHomeOwnerAdmissionDenial::QueryDispatch)?;
             }
             HomeJournalAdmission::RequireAbsent => {
                 require_empty_journal(context, journal.name, request)?;
