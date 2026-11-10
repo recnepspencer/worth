@@ -48,8 +48,16 @@ pub(super) enum HistoryOutputRegistration {
 impl WorthQueryHistoryOutputProfile {
     pub(in crate::domain_computation::primary_graph) fn discovery_recipe_tree_identity(
         &self,
-    ) -> (std::any::TypeId, std::any::TypeId, std::any::TypeId) {
-        (self.program_type, self.root, self.recipe)
+    ) -> (
+        crate::equality_type_id::EqualityTypeId,
+        crate::equality_type_id::EqualityTypeId,
+        crate::equality_type_id::EqualityTypeId,
+    ) {
+        (
+            self.program_type.into(),
+            self.root.into(),
+            self.recipe.into(),
+        )
     }
 
     pub fn uses_owned_model_graph(&self) -> bool {

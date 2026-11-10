@@ -27,7 +27,7 @@ impl<'fact> ObservedAbsence<'fact> {
             return None;
         };
         let read_scope = read_scope.as_ref();
-        projection_admits(read_scope, locator).then(|| Self {
+        projection_admits(read_scope, locator).then_some(Self {
             read_scope,
             target_record: RecordRef::Entity(*entity_id),
             locator,

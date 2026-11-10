@@ -123,3 +123,4 @@ mod non_leaf_program;
 mod recipe_refusal;
 
 mod ordinary_recipe;
+mod type_equality;
