@@ -1,4 +1,5 @@
 //! Discover actual binding roots, including aliases of the declaration macro.
+use super::canonical_claims::canonical_binding;
 use proc_macro2::{TokenStream, TokenTree};
 use syn::{
     parse::{Parse, ParseStream},
@@ -38,7 +39,15 @@ impl Parse for Declaration {
 
 fn marked(tokens: TokenStream) -> bool {
     tokens.into_iter().any(|token| match token {
-        TokenTree::Ident(id) => id == "binary" || id == "domain_value" || id == "DOMAIN_VALUE",
+        TokenTree::Ident(id) => [
+            "binary",
+            "domain_value",
+            "DOMAIN_VALUE",
+            "ApplicationCanonicalValueContract",
+            "canonical_contract",
+        ]
+        .iter()
+        .any(|name| id == name),
         TokenTree::Group(group) => marked(group.stream()),
         _ => false,
     })
@@ -128,18 +137,18 @@ impl<'ast> Visit<'ast> for Discovery<'_> {
             self.refusal = Some(format!("{}: internal domain declaration arms are unsupported; use the public domain_value declaration", self.source));
             return;
         }
-        if let Ok(declaration) = syn::parse2::<Declaration>(mac.tokens.clone()) {
-            if marked(declaration.body) {
-                self.push(
-                    declaration.binding,
-                    declaration.value,
-                    Some(mac.path.clone()),
-                );
-            }
+        if let Ok(declaration) = syn::parse2::<Declaration>(mac.tokens.clone())
+            && marked(declaration.body)
+        {
+            self.push(
+                declaration.binding,
+                declaration.value,
+                Some(mac.path.clone()),
+            );
         }
     }
     fn visit_item_impl(&mut self, item: &'ast ItemImpl) {
-        let claim = item.items.iter().any(|member| match member {
+        let claim = canonical_binding(item) || item.items.iter().any(|member| match member {
             syn::ImplItem::Const(value) if value.ident == "DOMAIN_VALUE" =>
                 !matches!(&value.expr, syn::Expr::Lit(value) if matches!(value.lit, syn::Lit::Bool(ref value) if !value.value)),
             _ => false,

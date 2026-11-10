@@ -5,29 +5,41 @@ workspace_manifests = ["workspaces/worth-query/crates/worth-query-certification/
 [[binding]]
 source = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/domain_values/binding.rs"
 binding = "RatioBinding"
+posture = "domain"
+reason = "Reference-free domain value exercised by binding admission courts."
 forbidden_types = []
 
 [[binding]]
 source = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/domain_values/binding.rs"
 binding = "SpanBinding"
+posture = "domain"
+reason = "Reference-free domain value exercised by binding admission courts."
 forbidden_types = []
 
 [[binding]]
 source = "workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/domain_binding.rs"
 binding = "InlineCounterBinding"
+posture = "domain"
+reason = "Reference-free domain value exercised by binding admission courts."
 forbidden_types = []
 
 [[binding]]
 source = "workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/write_admission/binary.rs"
 binding = "BrokenBinaryBinding"
+posture = "domain"
+reason = "Reference-free domain value exercised by binding admission courts."
 forbidden_types = []
 
 [[binding]]
 source = "workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/write_admission/canonical.rs"
 binding = "CanonicalBinding"
+posture = "domain"
+reason = "Reference-free domain value exercised by binding admission courts."
 forbidden_types = []
 
 [[binding]]
 source = "workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/write_admission/canonical.rs"
 binding = "DelegatedBinding"
+posture = "domain"
+reason = "Reference-free domain value exercised by binding admission courts."
 forbidden_types = []

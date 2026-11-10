@@ -1,7 +1,9 @@
 //! Per-binding source guard for explicit domain-atom contracts.
 mod attributes;
+mod canonical_claims;
 mod claims;
 mod closure;
+mod config;
 mod macro_origin;
 mod modules;
 mod type_resolution;
@@ -12,11 +14,8 @@ use crate::{
 use quote::ToTokens;
 use std::collections::{BTreeMap, BTreeSet};
 
-struct Registration {
-    source: String,
-    binding: String,
-    forbidden: Vec<String>,
-}
+pub use config::workspace_manifests;
+use config::{registrations, Posture};
 const REGISTRY: &str = "domain-values.toml";
 
 pub fn check(input: &Inputs) -> Vec<Diagnostic> {
@@ -71,95 +70,6 @@ fn roots(input: &Inputs) -> Result<BTreeMap<String, String>, Vec<String>> {
     Ok(roots)
 }
 
-fn registry_table(files: &Files, path: &str) -> Result<toml::Table, String> {
-    let text = files
-        .get(path)
-        .ok_or_else(|| format!("required domain registry missing: {path}"))?;
-    let value: toml::Value = toml::from_str(text).map_err(|error| error.to_string())?;
-    let table = value.as_table().ok_or("domain registry must be a table")?;
-    if table
-        .keys()
-        .any(|key| !["binding", "workspace_manifests"].contains(&key.as_str()))
-    {
-        return Err("domain registry accepts only binding entries and workspace_manifests".into());
-    }
-    Ok(table.clone())
-}
-
-/// Actual Cargo manifests augment the shared metadata inventory, never type roots.
-pub fn workspace_manifests(files: &Files, path: &str) -> Result<Vec<String>, String> {
-    let table = registry_table(files, path)?;
-    let Some(value) = table.get("workspace_manifests") else {
-        return Ok(Vec::new());
-    };
-    let array = value
-        .as_array()
-        .ok_or("workspace_manifests must be an array")?;
-    array
-        .iter()
-        .map(|value| {
-            let path = value
-                .as_str()
-                .ok_or("workspace manifest must be a literal path")?;
-            if !path.ends_with("Cargo.toml") || !files.contains_key(path) {
-                return Err(format!(
-                    "domain workspace manifest is outside Git inputs: {path}"
-                ));
-            }
-            Ok(path.to_owned())
-        })
-        .collect()
-}
-
-fn registrations(files: &Files, path: &str) -> Result<Vec<Registration>, String> {
-    let table = registry_table(files, path)?;
-    workspace_manifests(files, path)?;
-    let entries = table
-        .get("binding")
-        .and_then(toml::Value::as_array)
-        .ok_or("domain registry needs binding array")?;
-    let mut result = Vec::new();
-    let mut seen = BTreeSet::new();
-    for entry in entries {
-        let entry = entry.as_table().ok_or("binding entry must be a table")?;
-        if entry.len() != 3 {
-            return Err("binding requires exactly source, binding, forbidden_types".into());
-        }
-        let text = |key| {
-            entry
-                .get(key)
-                .and_then(toml::Value::as_str)
-                .filter(|value| !value.is_empty())
-                .map(str::to_owned)
-                .ok_or_else(|| format!("missing/nonliteral {key}"))
-        };
-        let source = text("source")?;
-        let binding = text("binding")?;
-        let forbidden = entry
-            .get("forbidden_types")
-            .and_then(toml::Value::as_array)
-            .ok_or("forbidden_types must be explicit")?
-            .iter()
-            .map(|value| {
-                value
-                    .as_str()
-                    .filter(|value| !value.is_empty())
-                    .map(str::to_owned)
-                    .ok_or("invalid forbidden type")
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-        if !seen.insert((source.clone(), binding.clone())) {
-            return Err("duplicate domain binding registration".into());
-        }
-        result.push(Registration {
-            source,
-            binding,
-            forbidden,
-        });
-    }
-    Ok(result)
-}
-
 fn check_sources(
     files: &Files,
     roots: BTreeMap<String, String>,
@@ -171,9 +81,16 @@ fn check_sources(
     let mut errors = Vec::new();
     for (source, text) in files {
         if source.ends_with(".rs")
-            && ["binary", "domain_value", "DOMAIN_VALUE", "domain"]
-                .iter()
-                .any(|marker| text.contains(marker))
+            && [
+                "binary",
+                "domain_value",
+                "DOMAIN_VALUE",
+                "domain",
+                "ApplicationCanonicalValueContract",
+                "canonical_contract",
+            ]
+            .iter()
+            .any(|marker| text.contains(marker))
         {
             match claims::discover(source, text) {
                 Ok(found) => claims.extend(found),
@@ -216,7 +133,11 @@ fn check_sources(
             if let Some(origin) = &claim.origin {
                 sources.macro_origin(&context, origin, 0)?;
             }
-            closure::check(&sources, &context, &claim.value, &registration.forbidden)
+            if matches!(registration.posture, Posture::Diagnostic) {
+                Ok(Vec::new())
+            } else {
+                closure::check(&sources, &context, &claim.value, &registration.forbidden)
+            }
         });
         if let Err(error) = result {
             errors.push(format!("{}::{binding}: {error}", claim.source));

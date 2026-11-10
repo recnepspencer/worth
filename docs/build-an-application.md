@@ -416,6 +416,8 @@ canonical and manual bindings. Register its actual Rust source, binding name
 source = "app/src/value_binding.rs"
 binding = "RatioBinding"
 forbidden_types = ["app::graph::NodeKey", "app::names::StableName"]
+posture = "domain"
+reason = "Reference-free numerical ratio with a canonical representation."
 ```
 
 The guard follows Cargo library roots, actual modules, explicit imports, aliases,
@@ -441,6 +443,13 @@ workspaces or supply alternate type roots.
 Consumer sources must be in Git's tracked or unignored source inventory. The
 registry path is relative to the consumer root, or absolute. Consumer metadata
 uses `cargo metadata --no-deps --offline`; the checker never compiles consumers.
+Manual bindings returning `ApplicationCanonicalValueContract::of` or `delegated`
+also require registration. The guard walks their actual associated `Value`, not
+the constructor's codec or grammar type. Every entry requires a `posture` and a
+nonempty `reason`: `domain` and `exception` both receive the reference walk;
+`diagnostic` exempts owner diagnostic payloads from that walk. Diagnostics still
+require a real, uniquely registered source binding. Unmarked structured artifact
+macros retain their existing separate protocol posture.
 Unresolved external opaque types require a source representation the guard can
 inspect; they receive no automatic exemption. Installation independently refuses
 a mismatch between the declared domain posture, carrier and executable binding.

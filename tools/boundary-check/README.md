@@ -30,6 +30,11 @@ Registry paths may be absolute or relative to `--root`; registered source paths
 are root-relative. Additional consumer workspaces use `workspace_manifests` in
 the registry. Missing registrations and forbidden references report
 `BC9019_DOMAIN_VALUE_REFERENCE`, including the binding and offending type path.
+Manual canonical `of`/`delegated` bindings also require registration. Entries
+must specify `posture = "domain"`, `"exception"` or `"diagnostic"` and a nonempty
+`reason`. Domain values and exceptions receive the same actual-Value closure
+walk. Diagnostic entries skip that walk while retaining source/registration
+checks. Codec grammar types never replace the binding's associated `Value`.
 
 Run the in-memory suite with:
 
