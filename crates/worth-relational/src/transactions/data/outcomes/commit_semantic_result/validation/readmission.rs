@@ -12,7 +12,9 @@ impl RelationalInvariantExecutionMeaning {
             .iter()
             .zip(&self.decisions)
             .all(|(check, decision)| {
-                check.execution_point == self.metadata.execution_point
+                self.metadata
+                    .execution_point
+                    .includes(check.execution_point)
                     && super::production::references::is_canonical(&check.verdict)
                     && check.execution_point == decision.execution_point
                     && check.failure_effect == decision.failure_effect
@@ -25,9 +27,25 @@ impl RelationalInvariantExecutionMeaning {
                     && check.custom_provenance.as_ref().is_none_or(|custom| {
                         // Custom enforcement can name the proposed version while
                         // aggregate metadata retains the original request version.
-                        custom.observation_kind == self.metadata.observation_kind
+                        custom.observation_kind == self.custom_observation(check.execution_point)
                             && custom.current_version == self.metadata.current_version
                     })
             })
+    }
+}
+
+impl RelationalInvariantExecutionMeaning {
+    fn custom_observation(&self, point: InvariantExecutionPoint) -> InvariantObservationKind {
+        // The proposed-state aggregate retains each registration's actual read view,
+        // just as PreparationPlanningContext::for_registration specializes its proof.
+        if self.metadata.execution_point == InvariantExecutionPoint::ProposedState {
+            if point == InvariantExecutionPoint::CommitBoundary {
+                InvariantObservationKind::Committed
+            } else {
+                InvariantObservationKind::Speculative
+            }
+        } else {
+            self.metadata.observation_kind
+        }
     }
 }

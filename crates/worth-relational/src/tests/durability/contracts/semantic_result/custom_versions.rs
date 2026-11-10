@@ -57,7 +57,7 @@ impl CustomInvariantRule for OnePlannedEntity {
     }
 }
 #[test]
-fn semantic_result_preserves_custom_enforcement_version_distinct_from_aggregate_request() {
+fn semantic_result_preserves_original_callback_provenance_inside_the_proposed_aggregate() {
     let host = crate::test_execution_policy::serial_request();
     let execution = &ExecutionRequest::serial(&host);
     let observed = Arc::new(Mutex::new(Vec::new()));
@@ -97,9 +97,17 @@ fn semantic_result_preserves_custom_enforcement_version_distinct_from_aggregate_
                 })
         })
         .unwrap();
-    assert_eq!(execution_meaning.metadata.version, predecessor);
+    assert_eq!(
+        execution_meaning.metadata.execution_point,
+        InvariantExecutionPoint::ProposedState
+    );
+    assert_eq!(
+        execution_meaning.metadata.version,
+        committed.commit.version_id
+    );
+    assert_eq!(execution_meaning.metadata.current_version, predecessor);
     assert_eq!(custom.version, committed.commit.version_id);
-    assert_ne!(custom.version, execution_meaning.metadata.version, "the aggregate request describes the predecessor; the real custom callback checked the proposed effect");
+    assert_ne!(custom.version, execution_meaning.metadata.current_version, "the actual custom callback checked the proposed effect while retaining its predecessor basis");
     assert!(callback.contains(&(
         custom.observation_kind,
         custom.version,
