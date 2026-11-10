@@ -1768,3 +1768,15 @@ originals and exposes per-record target/source contributing `CommitId` iterators
 alongside the existing artifact. Bind the request with
 `runtime.bind_merge_planning_request`; this observation grants no merge-parent
 transaction admission or publication authority.
+
+### Native original input attribution
+
+Platform owners may borrow `CanonicalCommitEnvelope::original_input_observation`
+through `worth_relational::facade::history`. It exposes the actual original
+prestate/result schema carriers, cascade/adjacency/cross-context policies and
+optional introduced-schema observation. Whole-observation equality includes
+the complete introduced schema; digest equality alone is insufficient. The
+view borrows its immutable envelope, performs no loading or schema copying,
+and grants no currentness, schema installation or readmission authority.
+Its schema view exposes stored carrier/root/descriptor metadata without a wire
+constructor. Applications continue through Query's two audience facades.

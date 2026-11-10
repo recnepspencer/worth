@@ -28,6 +28,9 @@ pub(crate) use index_catalog::CanonicalIndexDefinitionDelta;
 mod descriptive_decode;
 mod original_inputs;
 pub(crate) use live_managed_source_history::LiveManagedSourceHistory;
+pub use original_inputs::{
+    RelationalIntroducedSchemaObservation, RelationalOriginalInputObservation,
+};
 mod authoritative_artifact_encoding;
 mod authoritative_payload;
 mod control_allocation;

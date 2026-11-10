@@ -623,3 +623,34 @@ Next: remaininghistory65/compiler family, thencontract/otherfullclosure
 fromcompleteclaimdispositions; originalinputreadonlyobservationdesignAPPROVE
 (privatewiretypesremainprivate). Allgateitemsstillactive:runtimeattachment,
 32warningfamilies,CompleteACK. NoOwnershipblocker/noForbiddenbody/push/merge.
+
+Original-attribution capabilityprecursor implementing approvedclass3design,
+privatewiretypeskeptprivate. Source-reviewP2exhaustiveRecordedCanonicalInputs
+patternfixed beforeCargo (MutationConfigalsoexhaustive). Newvalueunit+physical
+two-schemahistorycheckpoint/receivercourt, independentfullMsgPackDATAprojection
+withonlyoriginal2exclusions. Actualscopeplanoriginal-input-observation-plan.md.
+No check/build/test after559e5da598yet; coherentbatch/sourceQA pendingbeforecompile.
+
+FreshindependentsourceQA(forknone)APPROVE originalobservationimplementation
+andphysicalschemahistorycourt. CompleteRecordedInputs+MutationConfigpatterns
+exhaustive; privatewiretypesunchanged. Addedbyte-onlydecodedcounterpartmust
+observeNone(noattributionmint), whileactualprotectedsourceoriginalSome. First
+coherentnewcapabilityproofpacket next; allremaining65historyportsstillactive.
+
+Precompileboundarycorrection: removedtheNEWunrunbyte-onlySerdeextraassertion,
+notanoriginaltest/claim. Descriptive_decode.rsexplicitlyadmitsSystemtextonly;
+Managedtextmayrefusebeforeattribution. Acceptingthatrefusalwouldnotprove
+attribution'scaptureboundary. No observerwiretraits/constructorswereadded;
+existingD12byte-onlycaptureproofcourtsremainunchanged. ActualSomeoriginal/
+restoredfullDATAandpredecessornegativearetheplannednewpublicproof.
+
+Original-attribution precursor complete: public1/0/0 and owner1/0/0, first pass.
+Fresh independent review APPROVE(fork none). Fmt/context/caps10 pass; one cohesive
+function advisory; Clippy only the queued32/23 and boundary same12 with none in
+this candidate. New public views keep private wire types private, both input
+struct projections exhaustive, whole introduced image Eq and no authority door.
+Full public DATA comparator preserves all original fields/exclusions. Evidence:
+landing2a-original-observation-lanes.md/json. Cumulative0check/7Clippy/13focused
+builds/11selected runs;12boundary/context tool Cargo runs. Continue remaining65
+history/compiler roots, then contract/other consumer closure; remove attachment,
+fix32warning families, qualifyCompleteACK. No ownership/ruling wait is a blocker.

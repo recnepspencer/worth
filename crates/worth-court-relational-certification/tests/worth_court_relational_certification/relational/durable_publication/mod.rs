@@ -71,3 +71,6 @@ mod merge_strategy_witness_journey;
 mod merge_support_witness_journey;
 mod merge_witness_authoring;
 mod merge_witness_schema;
+
+mod commit_meaning;
+mod original_input_observation;

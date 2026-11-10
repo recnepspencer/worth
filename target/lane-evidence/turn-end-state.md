@@ -1,76 +1,40 @@
-# IN PROGRESS ? Landing2a gate
+# IN PROGRESS: Landing2a gate
 
-The merge-parent ruling is implemented in this reviewed source slice. Both
-replacement halves1/0/0; original faultmatrix exactC4restore9addca7179. Two cold
-adapters removed; no public merge-parent transaction-creation door.
+Branch codex/m3-p3-reopen. Reviewed work is committed in coherent slices; there
+is no WIP branch or discarded prior work. This state is updated before the
+original-attribution commit; its parent is559e5da598.
 
-Evidence: landing2a-merge-owner-lanes.md/json and final-review.md (APPROVE).
-Current Clippy exit0 same32lib/23duplicateunitwarnings, fmt/context/caps11pass,
-functions3cohesiveadvisories, boundary12(1ownedremaining+11routed others), none
-in this completed slice. All earlier accepted source/evidence remains onbranch.
+Green this turn:
+- Shipping cold merge contribution plus exact owner conflict proof:2selected.
+- Public branch/aspect/endpoint/schema-history ports:8selected;12adapter-causal
+  cost campaign roots preserved inC2 with exact restoration references.
+- Public planner DATA ports:6selected with all29assertions retained.
+- Merge request/basis/packet split:11public+14owner selected.
+- Witness split:8public+12owner selected,4fault roots preserved inC4.
+- Original-attribution API/complete public DATA comparison:1public+1owner.
+Each completed source slice has a fresh approving review. Full logs, exact
+commands/HEAD/dirty status/times/exits and counts are in its lane ledger.
 
-HAPPY active queue, not ownership-blocked:
-1. Runtime attachment consumer cutover. Corrected224directfiles/460declaredtests
-   includes memory siblings/ignoredcost/helpers, not460durable scenarios. Read
-   landing2a-attachment-review-correction.md and consumer-revised.json. Actual
-   remainingclaims get public ports/C2private/C4fault classification individually;
-   no replacement local publisher, runtime discovery or late binding.
-2. Delete/wire32production warnings. Both read-onlyowner reviews identify closed
-   orphan families; live ordinarycommit/replay/Complete owners remain untouched.
-3. Complete/ACK namedpublicqualification and owner claim disposition. Boundary
-   audit found no concrete productdefect; finalnamedlane still unrunthisturn.
-4. Allocationrefusal movedC2 already acceptedb736be6f47; restore2a51552fc5.
+Active HAPPY gate queue, not handed off:
+1. Finish runtime_attachment consumer decomposition. Boundary has one remaining
+   owned adapter finding; cold_source and protected_reads adapters are removed.
+   Complete inventories/dispositions cover the remaining65history roots,
+   191contract/medium roots+24owner roots, and170other/indirect fixture roots.
+   These include Memory/value siblings and mixed claims, not that many distinct
+   durable tests. Use the exact per-claim maps, never a whole-file label.
+2. Delete/wire32production warning families at their actual owners. Read the
+   dead-code boundary review; no missing production caller was established.
+3. Qualify Complete/ACK through the named Host/Store public flows. Narrow
+   selected-cell/pin/accounting claims retain their exactC2 restoration path.
+4. Allocation-refusal court already movedC2 under the coordinator ruling;
+   restoration reference2a51552fc5. Do not weaken/retire it.
 
-CLEANUP: exactprivate resident/dictionary/pin/allocation claims C2; original
-merge-history injectedfaultmatrix C4. No assertion retired/weakened/noignoredbody
-executed. Original gracefulmergeconflict now publiccold+exactownerunit proof.
+Boundary last result:12findings, one active owned attachment and11routed sites.
+No new finding in reviewed slices. Clippy exits0 with32library/23duplicate unit
+warnings, still owned next gate. Context/fmt/dirty caps pass for every slice.
+No ignored body, exhaustive oracle, query-scale or Store scenario suite ran.
+No push, branch switch/merge, other-worktree edit or cache cleanup this turn.
 
-Merge seams thisslice: merge/access/materialization new immutable observation,
-merge/facade exports, validation ownerunit mount, specMovedcourts entry and
-exact originalExecutionRequest baseline placement transfer (net-3rows).
-No merge, push, otherworktreeedit, queryscale, scenario or exhaustiveoracle.
-Counts thisturn sofar:0cargo check,1Clippy,4focusedbuilds,3selectedtestruns.
-
-
-## Next reviewed slice: public history and cost preservation
-
-Eight publicports8/0/0,47cost/sourcefiles(12roots+descendants+measurementhelper)
-C2 withrestoreee7aef9014 and partialhelperrefs;13non-adaptercostcampaignsremain.
-Puredefinitionlookupunitkeptowner. FreshfinalreviewAPPROVE; ledger
-landing2a-attachment-history-lanes.md/json. Newfixturewarningsallremoved,
-RootClippyonlysame32/23,fmt/context/caps15pass,7cohesivefunctionadvisories,
-boundary12nonechanged. Runtimeattachmentremainsowned; directclosure194files
-fromexactscopedsearch. The eight-case original Nativecopiesremovedonlyafterpass.
-Counts thisturn:0check/3Clippy/6focusedbuilds/4selectedruns. Activequeue unchanged.
-
-
-## Shipping merge DATA reviewed slice
-
-Sixpublicports6/0/0firstbuild/run,29assertionsunchanged. FreshreviewAPPROVE.
-ledger landing2a-merge-data-lanes.md/json;fmt/context/caps6pass,5cohesiveadvisories,
-Clippy32/23only,boundary12nonechanged. No newproductAPI. Originalfile/mount and
-baseline row removed afterpass. Currentnext46-rootproof/witnessclassification
-atlanding2a-history-proof-claim-disposition.md:18HAPPY/15owner/5C4/8mixed,
-noC2claimmerelyfromprivateAPI. Memoryownerunitsmustnotclaimdurablereopen.
-All threegateitemsremainactive(runtimeattachment,32warnings,CompleteACK).
-Cumulativecounts0check/4Clippy/7focusedbuilds/5selectedtestruns.
-
-
-Proof/request slice complete:11public+14ownerfirstbuild/run, each0fail/0ignored.
-Fmt/context/caps16green,8cohesiveadvisories,Clippyonly32/23,boundarysame12
-nonechanged. Ledgerlanding2a-merge-proof-lanes.md/json. Baseline-2; onlynew
-productionseam existingbasisfacadeexport, statelessmapperunitmount. ExactC4
-restores45b6e87a0a. FreshindependentreviewAPPROVE. Activegatequeuecontinues:
-remainingruntimeattachmentconsumers,32warningfamilies,Complete/ACKpubliclane.
-Cumulative0check/5Clippy/9focusedbuilds/7selectedruns, noforbiddenbodyrun.
-
-
-Witnessslicecomplete8public+12ownerfirstpass,4exactC4refs26cc5a58f2.
-FreshindependentreviewAPPROVE;ledgerlanding2a-merge-witness-lanes.md/json.
-Fmt/context/caps17pass,16cohesiveadvisories,Clippyonly32/23,boundarysame12
-nonechanged. No productionAPIchange/budgetraise/localadapter. Cumulative
-0check/6Clippy/11focusedbuilds/9selectedruns,10toolCargo(boundary/context).
-Next: remaininghistory65/compiler family, thencontract/otherfullclosure
-fromcompleteclaimdispositions; originalinputreadonlyobservationdesignAPPROVE
-(privatewiretypesremainprivate). Allgateitemsstillactive:runtimeattachment,
-32warningfamilies,CompleteACK. NoOwnershipblocker/noForbiddenbody/push/merge.
+Validation count this turn:0cargo check,7Clippy,13focused builds,11selected test
+runs;12boundary/context Cargo tool runs separately. The last observed free space
+was77,207,724,032bytes, above25GiB. Check again before the next build batch.

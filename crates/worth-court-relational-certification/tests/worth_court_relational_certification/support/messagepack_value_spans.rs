@@ -51,3 +51,29 @@ pub(crate) fn field<'a>(bytes: &'a [u8], name: &str) -> &'a [u8] {
     assert_eq!(at, bytes.len(), "no ignored trailing DATA");
     found.unwrap_or_else(|| panic!("required field {name}"))
 }
+
+/// Complete named field DATA, retaining structured values and rejecting duplicates.
+pub(crate) fn fields(bytes: &[u8]) -> std::collections::BTreeMap<String, &[u8]> {
+    let (count, mut at) = match bytes[0] {
+        marker @ 0x80..=0x8f => ((marker & 15) as usize, 1),
+        0xde => (
+            u16::from_be_bytes(bytes[1..3].try_into().unwrap()) as usize,
+            3,
+        ),
+        0xdf => (
+            u32::from_be_bytes(bytes[1..5].try_into().unwrap()) as usize,
+            5,
+        ),
+        marker => panic!("expected named map, got {marker:#x}"),
+    };
+    let mut fields = std::collections::BTreeMap::new();
+    for _ in 0..count {
+        let key: String = rmp_serde::from_slice(value(bytes, &mut at)).unwrap();
+        assert!(
+            fields.insert(key, value(bytes, &mut at)).is_none(),
+            "unique named fields"
+        );
+    }
+    assert_eq!(at, bytes.len(), "no ignored trailing DATA");
+    fields
+}

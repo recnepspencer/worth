@@ -97,7 +97,8 @@ pub mod history {
         LineageAspectResolutionDigest, MergeBasisAncestors, MergeConflictRecord, MergeInspection,
         OrderedParentList, RelationalCommitReceipt, RelationalDescriptiveTouch,
         RelationalDescriptiveTouchGraph, RelationalDescriptiveTouchPrecision,
-        RelationalMergeBranchBasis, RelationalMergeBranchBasisDenial,
+        RelationalIntroducedSchemaObservation, RelationalMergeBranchBasis,
+        RelationalMergeBranchBasisDenial, RelationalOriginalInputObservation,
         RelationalReplayRetentionDenial, RelationalTouchAdjacencyDirection,
         SharedCanonicalCommitEnvelope, VersionGraphPolicy,
     };
