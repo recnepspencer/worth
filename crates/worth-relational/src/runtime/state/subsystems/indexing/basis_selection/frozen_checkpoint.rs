@@ -29,19 +29,26 @@ impl OriginalCheckpointBases {
 }
 
 impl BasisSelections {
-    /// A global lookup is re-derived from its branch selection when a reader installs it.
+    /// Branch selections in ascending `(branch, version)` order. A global lookup is
+    /// re-derived from its branch selection when a reader installs it.
+    fn branch_selections(&self) -> impl Iterator<Item = &Arc<PreparedIndexBasisSelection>> {
+        self.entries
+            .iter()
+            .filter(|(key, _)| key.0.is_some())
+            .map(|(_, basis)| basis)
+    }
     pub(in crate::runtime::state::subsystems::indexing) fn freeze_for_request(
         &self,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<FrozenBasisSelections, Denial> {
         let mut count = 0_usize;
-        for key in self.entries.keys() {
+        for _ in self.branch_selections() {
             consult(request)?;
-            count += usize::from(key.0.is_some());
+            count += 1;
         }
         let mut frozen =
             ExecutionRequestArrayBuilder::allocate(*request, count).map_err(array_capture_stop)?;
-        for (_, basis) in self.entries.iter().filter(|(key, _)| key.0.is_some()) {
+        for basis in self.branch_selections() {
             consult(request)?;
             frozen.push(Arc::clone(basis)).map_err(array_capture_stop)?;
         }
@@ -57,16 +64,14 @@ impl FrozenBasisSelections {
     pub(in crate::runtime::state::subsystems::indexing) fn bound(
         &self,
     ) -> impl Iterator<Item = &Arc<DerivedIndexGeneration>> {
-        self.0.iter().flat_map(|basis| basis.state.entries.values())
+        bound(&self.0)
     }
     /// Whether `roster`, ascending by `(index, generation)`, carries every bound payload.
     pub(in crate::runtime::state::subsystems::indexing) fn rostered(
         &self,
         roster: &[Arc<DerivedIndexGeneration>],
     ) -> bool {
-        self.bound().all(|generation| {
-            require_rostered(roster, generation.index_id, generation.generation_id).is_ok()
-        })
+        rostered(&self.0, roster)
     }
     /// `image` is the validated roster of a prior image this owner never admitted.
     /// A live selection keeps its own bindings; the image fills only what it lacks.
@@ -87,8 +92,12 @@ impl FrozenBasisSelections {
             ExecutionRequestArrayBuilder::allocate(*request, count).map_err(array_capture_stop)?;
         for (live, image) in Paired::new(&self.0, image) {
             consult(request)?;
-            let (row, funding) = portable(live, image, roster, request)?;
-            rows.push(row).map_err(array_capture_stop)?;
+            let image = admitted_image(live, image);
+            let funding = request
+                .reserve_retained_memory(row_bytes(live, image)?)
+                .map_err(|cause| Denial::Request(cause.into()))?;
+            rows.push(portable(live, image, roster)?)
+                .map_err(array_capture_stop)?;
             heap.push(funding).map_err(array_capture_stop)?;
         }
         Ok(OriginalCheckpointBases {
@@ -141,44 +150,79 @@ impl<'a> Iterator for Paired<'a> {
     }
 }
 
-fn portable(
+fn bound(
+    live: &[Arc<PreparedIndexBasisSelection>],
+) -> impl Iterator<Item = &Arc<DerivedIndexGeneration>> {
+    live.iter().flat_map(|basis| basis.state.entries.values())
+}
+fn rostered(
+    live: &[Arc<PreparedIndexBasisSelection>],
+    roster: &[Arc<DerivedIndexGeneration>],
+) -> bool {
+    bound(live).all(|generation| {
+        require_rostered(roster, generation.index_id, generation.generation_id).is_ok()
+    })
+}
+/// The live owner decides its key: an image row for another commit or schema is stale.
+fn admitted_image<'a>(
+    live: Option<&PreparedIndexBasisSelection>,
+    image: Option<&'a IndexBasisCheckpoint>,
+) -> Option<&'a IndexBasisCheckpoint> {
+    image.filter(|image| {
+        live.is_none_or(|live| live.commit == image.commit && live.schema == image.schema)
+    })
+}
+/// The binding and empty-selection capacities a row is built with.
+fn capacities(
     live: Option<&PreparedIndexBasisSelection>,
     image: Option<&IndexBasisCheckpoint>,
-    roster: &[Arc<DerivedIndexGeneration>],
-    request: &ExecutionRequest<'_, '_>,
-) -> Result<(IndexBasisCheckpoint, Option<ExecutionMemoryReservation>), Denial> {
-    // The live owner decides its key: an image row for another commit or schema is stale.
-    let image = image.filter(|image| {
-        live.is_none_or(|live| live.commit == image.commit && live.schema == image.schema)
-    });
-    let (branch, commit, version, schema) = live
-        .map(|live| (&live.branch, live.commit, live.version, live.schema))
-        .or_else(|| image.map(|image| (&image.branch, image.commit, image.version, image.schema)))
-        .ok_or(Denial::OriginalAuthorityUnavailable)?;
+) -> Result<(usize, usize), Denial> {
     let (entries, selected_empty) = live.map_or((0, 0), |live| {
         (live.state.entries.len(), live.state.empty.len())
     });
-    let binding_capacity = entries
-        .checked_add(image.map_or(0, |image| image.bindings.len()))
-        .ok_or_else(overflow)?;
-    let empty_capacity = selected_empty
-        .checked_add(image.map_or(0, |image| image.empty.len()))
-        .ok_or_else(overflow)?;
-    let bytes = Layout::array::<(DerivedIndexId, DerivedIndexGenerationId)>(binding_capacity)
+    Ok((
+        entries
+            .checked_add(image.map_or(0, |image| image.bindings.len()))
+            .ok_or_else(overflow)?,
+        selected_empty
+            .checked_add(image.map_or(0, |image| image.empty.len()))
+            .ok_or_else(overflow)?,
+    ))
+}
+/// The retained heap of one portable row, quoted before it is built.
+fn row_bytes(
+    live: Option<&PreparedIndexBasisSelection>,
+    image: Option<&IndexBasisCheckpoint>,
+) -> Result<u64, Denial> {
+    let branch = live
+        .map(|live| &live.branch)
+        .or_else(|| image.map(|image| &image.branch))
+        .ok_or(Denial::OriginalAuthorityUnavailable)?;
+    let (binding_capacity, empty_capacity) = capacities(live, image)?;
+    Layout::array::<(DerivedIndexId, DerivedIndexGenerationId)>(binding_capacity)
         .ok()
         .zip(Layout::array::<DerivedIndexId>(empty_capacity).ok())
         .and_then(|(bindings, empty)| bindings.size().checked_add(empty.size()))
         .and_then(|bytes| bytes.checked_add(branch.0.len()))
         .and_then(|bytes| u64::try_from(bytes).ok())
-        .ok_or_else(overflow)?;
-    let funding = request
-        .reserve_retained_memory(bytes)
-        .map_err(|cause| Denial::Request(cause.into()))?;
+        .ok_or_else(overflow)
+}
+/// One exact-root row: live bindings win per index, the admitted image fills the rest.
+fn portable(
+    live: Option<&PreparedIndexBasisSelection>,
+    image: Option<&IndexBasisCheckpoint>,
+    roster: &[Arc<DerivedIndexGeneration>],
+) -> Result<IndexBasisCheckpoint, Denial> {
+    let (branch, commit, version, schema) = live
+        .map(|live| (&live.branch, live.commit, live.version, live.schema))
+        .or_else(|| image.map(|image| (&image.branch, image.commit, image.version, image.schema)))
+        .ok_or(Denial::OriginalAuthorityUnavailable)?;
+    // Exactly the capacities `row_bytes` funded: the row never grows past them.
+    let (binding_capacity, empty_capacity) = capacities(live, image)?;
     let mut bindings = Vec::with_capacity(binding_capacity);
     let mut empty = Vec::with_capacity(empty_capacity);
     if let Some(live) = live {
         for (index, generation) in &live.state.entries {
-            consult(request)?;
             require_rostered(roster, *index, generation.generation_id)?;
             bindings.push((*index, generation.generation_id));
         }
@@ -191,7 +235,6 @@ fn portable(
             })
         };
         for (index, generation) in image.bindings.iter().filter(|(index, _)| !selected(index)) {
-            consult(request)?;
             require_rostered(roster, *index, *generation)?;
             bindings.push((*index, *generation));
         }
@@ -199,17 +242,14 @@ fn portable(
     }
     bindings.sort_unstable_by_key(|(index, _)| *index);
     empty.sort_unstable();
-    Ok((
-        IndexBasisCheckpoint {
-            branch: branch.clone(),
-            commit,
-            version,
-            schema,
-            empty,
-            bindings,
-        },
-        funding,
-    ))
+    Ok(IndexBasisCheckpoint {
+        branch: branch.clone(),
+        commit,
+        version,
+        schema,
+        empty,
+        bindings,
+    })
 }
 
 /// A binding whose payload is not emitted would make the written image unreadable.

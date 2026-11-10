@@ -150,6 +150,7 @@ native-fresh-initialization crates/worth-testkit-relational/src/initial_input_so
 native-fresh-initialization workspaces/worth-store/crates/worth-store-relational/src/section/unshared.rs
 native-fresh-source-affinity crates/worth-runtime-world/src/lifecycle/builder/home_readmission/fresh_source.rs
 native-home-attachment workspaces/worth-store/crates/worth-store-application/src/relational_preparation/attachment.rs
+native-home-complete-checkpoint crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/incremental_indexes/complete_carry.rs
 native-home-complete-checkpoint crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/capture_cost.rs
 native-home-complete-checkpoint crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/index_decode_stops.rs
 native-home-complete-checkpoint crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/initial_tail.rs

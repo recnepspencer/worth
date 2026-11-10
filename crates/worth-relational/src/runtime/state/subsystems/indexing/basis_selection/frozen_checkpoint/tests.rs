@@ -65,6 +65,17 @@ fn image(
     }
 }
 
+/// The pure row fold `resolve` performs after it funds each row.
+fn rows(
+    live: &[Arc<PreparedIndexBasisSelection>],
+    carried: &[IndexBasisCheckpoint],
+    roster: &[Arc<DerivedIndexGeneration>],
+) -> Result<Vec<IndexBasisCheckpoint>, Denial> {
+    Paired::new(live, carried)
+        .map(|(live, image)| portable(live, admitted_image(live, image), roster))
+        .collect()
+}
+
 #[test]
 fn frozen_selections_keep_live_bindings_and_fill_only_what_a_deferred_image_carried() {
     let (old, other, new) = (
@@ -85,50 +96,59 @@ fn frozen_selections_keep_live_bindings_and_fill_only_what_a_deferred_image_carr
         // Another commit at a live key is stale and contributes nothing.
         image(6, 60, &[(1, 1)], &[3]),
     ];
-    let host = crate::test_execution_policy::serial_request();
-    let request = ExecutionRequest::serial(&host);
-    let frozen = selections.freeze_for_request(&request).unwrap();
-    assert_eq!(frozen.0.len(), 2);
-    assert!(frozen.rostered(&roster));
-    assert!(!frozen.rostered(&roster[..1]));
-    let resolved = frozen.resolve(&carried, &roster, &request).unwrap();
+    // The global lookup the index-1 selection installed is never frozen.
+    let frozen: Vec<_> = selections.branch_selections().cloned().collect();
+    assert_eq!(frozen.len(), 2);
+    assert!(rostered(&frozen, &roster));
+    assert!(!rostered(&frozen, &roster[..1]));
     assert_eq!(
-        resolved.rows(),
-        &[
+        rows(&frozen, &carried, &roster).unwrap(),
+        [
             image(2, 2, &[(1, 1), (2, 2)], &[]),
             image(5, 5, &[(1, 3), (2, 2)], &[3]),
             image(6, 6, &[], &[2]),
         ]
     );
     // Without an image the live selections travel unchanged.
-    let alone = selections
-        .freeze_for_request(&request)
-        .unwrap()
-        .resolve(&[], &roster, &request)
-        .unwrap();
     assert_eq!(
-        alone.rows(),
-        &[image(5, 5, &[(1, 3)], &[]), image(6, 6, &[], &[2])]
+        rows(&frozen, &[], &roster).unwrap(),
+        [image(5, 5, &[(1, 3)], &[]), image(6, 6, &[], &[2])]
     );
+    // Each row is funded, before it is built, for exactly the capacity it is built with.
+    let binding = std::mem::size_of::<(DerivedIndexId, DerivedIndexGenerationId)>() as u64;
+    let selected = std::mem::size_of::<DerivedIndexId>() as u64;
+    let funded: Vec<_> = Paired::new(&frozen, &carried)
+        .map(|(live, carried)| row_bytes(live, admitted_image(live, carried)).unwrap())
+        .collect();
+    let branch = "main".len() as u64;
+    assert_eq!(
+        funded,
+        [
+            2 * binding + branch,
+            3 * binding + selected + branch,
+            selected + branch
+        ]
+    );
+    for (live, carried) in Paired::new(&frozen, &carried) {
+        let carried = admitted_image(live, carried);
+        let row = portable(live, carried, &roster).unwrap();
+        let (bindings, empty) = capacities(live, carried).unwrap();
+        assert!(row.bindings.capacity() == bindings && row.empty.capacity() == empty);
+    }
 }
 
 #[test]
 fn a_selection_whose_generation_is_not_emitted_refuses_capture() {
     let roster = [generation(1, 1, 2)];
-    let host = crate::test_execution_policy::serial_request();
-    let request = ExecutionRequest::serial(&host);
     let mut selections = BasisSelections::default();
     selections.install(live(5, 5, &[&generation(1, 3, 5)], &[]));
-    for (selections, carried) in [
-        (selections, vec![]),
-        (
-            BasisSelections::default(),
-            vec![image(2, 2, &[(1, 9)], &[])],
-        ),
+    let frozen: Vec<_> = selections.branch_selections().cloned().collect();
+    for (live, carried) in [
+        (frozen.as_slice(), vec![]),
+        (&[][..], vec![image(2, 2, &[(1, 9)], &[])]),
     ] {
-        let frozen = selections.freeze_for_request(&request).unwrap();
         assert!(matches!(
-            frozen.resolve(&carried, &roster, &request),
+            rows(live, &carried, &roster),
             Err(Denial::OriginalAuthorityUnavailable)
         ));
     }

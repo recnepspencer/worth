@@ -11,7 +11,7 @@ use worth_relational::facade::{
     durability::{
         RecoveryVerificationMode, RelationalCheckpointArtifactPolicy, RelationalCheckpointMember,
         RelationalDurableCheckpointSource, RelationalDurableMemberLocator,
-        RelationalDurableRecoverySource,
+        RelationalDurableRecoverySource, RelationalNativeCheckpoint,
     },
     identity::EntityId,
     runtime::RelationalRuntime,
@@ -77,9 +77,38 @@ pub fn recovered_with_history(
             },
         )
         .unwrap();
+    let source = immutable_source(&native, &medium);
+    drop(producer);
+    let runtime = recover(request, native, source.clone(), durable_runtime(&medium));
+    ColdRecoveryFixture {
+        runtime,
+        medium,
+        source,
+        entity,
+    }
+}
+
+/// A first checkpoint's own members plus every canonical artifact the medium
+/// holds, read through the external Native port with per-locator read counters.
+pub fn immutable_source(
+    checkpoint: &RelationalNativeCheckpoint,
+    medium: &TestDurableMedium,
+) -> Arc<ImmutableCheckpointMemberSource> {
     let artifacts = medium.offered();
-    let source = Arc::new(ImmutableCheckpointMemberSource {
-        members: native
+    let canonical_members: std::collections::BTreeMap<_, _> = artifacts
+        .iter()
+        .map(|artifact| {
+            (
+                RelationalDurableMemberLocator {
+                    sha256: Sha256::digest(artifact.as_bytes()).into(),
+                    length: artifact.as_bytes().len() as u64,
+                },
+                artifact.position(),
+            )
+        })
+        .collect();
+    Arc::new(ImmutableCheckpointMemberSource {
+        members: checkpoint
             .members()
             .iter()
             .map(|member| match member {
@@ -91,18 +120,7 @@ pub fn recovered_with_history(
             .iter()
             .map(|artifact| (artifact.position(), artifact.as_bytes().to_vec()))
             .collect(),
-        canonical_members: artifacts
-            .iter()
-            .map(|artifact| {
-                (
-                    RelationalDurableMemberLocator {
-                        sha256: Sha256::digest(artifact.as_bytes()).into(),
-                        length: artifact.as_bytes().len() as u64,
-                    },
-                    artifact.position(),
-                )
-            })
-            .collect(),
+        canonical_members,
         damaged: AtomicBool::new(false),
         reads: Default::default(),
         canonical_member_reads: Default::default(),
@@ -112,16 +130,26 @@ pub fn recovered_with_history(
         commits_damaged: Default::default(),
         failed_member: Default::default(),
         failures: Default::default(),
-    });
-    let checkpoint = RelationalDurableCheckpointSource::new(
-        native.covered_position().unwrap(),
-        native.covered_branch_transitions().unwrap(),
-        native,
+    })
+}
+
+/// Recover `runtime` from exactly this checkpoint and source, with no tail.
+pub fn recover(
+    request: &ExecutionRequest<'_, '_>,
+    checkpoint: RelationalNativeCheckpoint,
+    source: Arc<ImmutableCheckpointMemberSource>,
+    mut runtime: RelationalRuntime,
+) -> RelationalRuntime {
+    let input = RelationalDurableRecoverySource::new(
+        Some(RelationalDurableCheckpointSource::new(
+            checkpoint.covered_position().unwrap(),
+            checkpoint.covered_branch_transitions().unwrap(),
+            checkpoint,
+        )),
+        vec![],
+        vec![],
+        source,
     );
-    let input =
-        RelationalDurableRecoverySource::new(Some(checkpoint), vec![], vec![], source.clone());
-    drop(producer);
-    let mut runtime = durable_runtime(&medium);
     let plan = runtime
         .durability()
         .recovery_plan_from_source(
@@ -134,10 +162,5 @@ pub fn recovered_with_history(
         .durability_recovery()
         .recover(request, plan)
         .unwrap();
-    ColdRecoveryFixture {
-        runtime,
-        medium,
-        source,
-        entity,
-    }
+    runtime
 }
