@@ -63,6 +63,7 @@ enum QueryRetirementStage {
     Granular,
     ProductSource,
     ServingGraph,
+    InstalledConditionals,
     Bridge,
     Complete,
 }
@@ -79,7 +80,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         self.conditional_cleanup
             .preflight_home_retirement(request)?;
         self.installed_producers.preflight_home_retirement()?;
-        self.installed_conditionals.preflight_home_retirement()?;
+        self.installed_conditionals
+            .preflight_home_retirement(self.runtime.bridge.conditional_owner())?;
         self.preflight_supplied_home_owners()?;
         self.runtime
             .primary_graph_authority
@@ -240,6 +242,15 @@ impl<Schema: ApplicationSchema> RetiringPrimaryGraphRuntime<Schema> {
                 .primary_graph_mut()
                 .expect("same original serving graph")
                 .advance_home_retirement(request, native)?,
+            // A durable Home's authored definitions are captured at the quiesced
+            // close; release their installed bindings before the owners close.
+            QueryRetirementStage::InstalledConditionals => {
+                request
+                    .consult()
+                    .map_err(WorthQueryHomeRetirementDenial::Execution)?;
+                self.runtime.installed_conditionals = Default::default();
+                Progress::Complete
+            }
             QueryRetirementStage::Bridge => self.runtime.runtime.bridge.advance_home_retirement(
                 request,
                 native,
@@ -255,7 +266,8 @@ impl<Schema: ApplicationSchema> RetiringPrimaryGraphRuntime<Schema> {
                 QueryRetirementStage::Projection => QueryRetirementStage::Granular,
                 QueryRetirementStage::Granular => QueryRetirementStage::ProductSource,
                 QueryRetirementStage::ProductSource => QueryRetirementStage::ServingGraph,
-                QueryRetirementStage::ServingGraph => QueryRetirementStage::Bridge,
+                QueryRetirementStage::ServingGraph => QueryRetirementStage::InstalledConditionals,
+                QueryRetirementStage::InstalledConditionals => QueryRetirementStage::Bridge,
                 QueryRetirementStage::Bridge => QueryRetirementStage::Complete,
                 QueryRetirementStage::Complete => QueryRetirementStage::Complete,
             };

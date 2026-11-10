@@ -4,9 +4,11 @@ mod authoritative_delivery_view;
 pub use authored_section::{
     BridgeAuthoredBranchDenial, BridgeAuthoredBranchView, BridgeAuthoredDependencyDescription,
     BridgeAuthoredInstallationBindings, BridgeAuthoredReadmissionDenial, BridgeAuthoredSection,
-    BridgeAuthoredSectionDenial, BridgeDurableDefinitionPublicationDenial,
-    BridgeDurableForkPublicationDenial, BridgeReadmittedAuthoredAssembly,
-    BRIDGE_AUTHORED_SECTION_PROTOCOL, BRIDGE_AUTHORED_SECTION_VERSION,
+    BridgeAuthoredSectionDenial, BridgeDurableDefinitionCompletion,
+    BridgeDurableDefinitionCompletionDenial, BridgeDurableDefinitionPublicationDenial,
+    BridgeDurableForkPublicationDenial, BridgePreparedAuthoredDefinitionPublication,
+    BridgeReadmittedAuthoredAssembly, BRIDGE_AUTHORED_SECTION_PROTOCOL,
+    BRIDGE_AUTHORED_SECTION_VERSION,
 };
 mod authored_declaration;
 mod authored_provider;

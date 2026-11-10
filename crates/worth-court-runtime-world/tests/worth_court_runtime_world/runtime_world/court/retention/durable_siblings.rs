@@ -170,6 +170,7 @@ fn mixed_fork_siblings_reopen_both_actual_owner_originals() {
     family_reopen(true, true);
 }
 
+mod close_custody;
 mod original_continuation;
 
 #[test]

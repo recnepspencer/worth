@@ -44,8 +44,9 @@ pub(crate) struct WorldOpenAttemptRecord {
     pub(crate) expected: DurableWorldHead,
     pub(crate) program_revision: [u8; 32],
 }
+/// Which owners an original open attempt declared it would change.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) enum WorldOpenComponentIntent {
+pub enum WorldOpenComponentIntent {
     RelationalOnly,
     SignalOnly,
     RelationalAndSignal,

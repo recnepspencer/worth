@@ -146,6 +146,7 @@ fn world_no_effect(
         | NoEffectCause::CurrentReadDependency(_)
         | NoEffectCause::StaleIncarnation
         | NoEffectCause::CorrespondenceRebindRequired
+        | NoEffectCause::CorrespondenceAdmissionDenied(_)
         | NoEffectCause::ReferenceGenerationExhausted
         | NoEffectCause::CapacityExhausted
         | NoEffectCause::OwnerUnavailable
@@ -242,14 +243,27 @@ impl WorthQueryCommittedApplicationSession {
 mod index_preparation_tests;
 
 // These three governed producer calls stay in this exact registered module.
+mod durable_components;
+use durable_components::{QueryBoundWorldPreparation, QueryPreparedWorldPublication};
 fn prepare_query_open(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     product: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
     control: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationRequestControl,
+    with_signal: bool,
 ) -> Result<
     worth_runtime_world::facade::WorldPendingOpenAttempt,
     worth_runtime_world::facade::WorldOpenAttemptRefusal,
 > {
+    if with_signal {
+        return product.publication().prepare_query_publication_with_signal(
+            execution,
+            product.observation().clone(),
+            product.admitted_program_source()?,
+            Some(worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary()),
+            control.cancellation(),
+            control.deadline(),
+        );
+    }
     product
         .publication()
         .prepare_query_publication_without_signal(
@@ -264,24 +278,42 @@ fn prepare_query_open(
 fn bind_query_proposal(
     opened: worth_runtime_world::facade::WorldOpenedPublicationAttempt,
     proposal: worth_relational::facade::mvcc::ValidatedRelationalProposal,
+    with_signal: bool,
 ) -> Result<
     (
-        worth_runtime_world::facade::WorldQueryNativePreparation,
+        QueryBoundWorldPreparation,
         worth_relational::facade::mvcc::ValidatedRelationalProposal,
     ),
     worth_runtime_world::facade::WorldNativePreparationRefusal,
 > {
-    opened.bind_query_native_proposal(proposal)
+    if with_signal {
+        opened
+            .bind_query_signal_proposal(proposal)
+            .map(|(prepared, proposal)| {
+                (QueryBoundWorldPreparation::WithSignal(prepared), proposal)
+            })
+    } else {
+        opened
+            .bind_query_native_proposal(proposal)
+            .map(|(prepared, proposal)| {
+                (QueryBoundWorldPreparation::Relational(prepared), proposal)
+            })
+    }
 }
 fn complete_query_candidate(
-    preparation: worth_runtime_world::facade::WorldQueryNativePreparation,
+    preparation: QueryBoundWorldPreparation,
     candidate: worth_relational::facade::mvcc::PreparedRelationalCommitCandidate,
     request: &worth_execution::ExecutionRequest<'_, '_>,
-) -> Result<
-    worth_runtime_world::facade::WorldPreparedPublicationWithoutSignal,
-    worth_runtime_world::facade::WorldNativePreparationRefusal,
-> {
-    preparation.complete_query_native_preparation(candidate, request)
+) -> Result<QueryPreparedWorldPublication, worth_runtime_world::facade::WorldNativePreparationRefusal>
+{
+    match preparation {
+        QueryBoundWorldPreparation::Relational(preparation) => preparation
+            .complete_query_native_preparation(candidate, request)
+            .map(QueryPreparedWorldPublication::Relational),
+        QueryBoundWorldPreparation::WithSignal(preparation) => preparation
+            .complete_query_native_preparation(candidate, request)
+            .map(QueryPreparedWorldPublication::WithSignal),
+    }
 }
 #[cfg(test)]
 #[path = "commit_execution_inline_type_budget.rs"]

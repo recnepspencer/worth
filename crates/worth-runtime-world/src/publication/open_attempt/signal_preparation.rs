@@ -14,6 +14,9 @@ pub struct WorldPreparedPublicationWithSignal {
     pub(crate) prepared: PreparedCompositePublicationWithSignal,
 }
 impl WorldPreparedPublicationWithSignal {
+    pub fn planned_successor(&self) -> &crate::publication::PlannedProductReferenceSuccessor {
+        self.prepared.planned_successor()
+    }
     pub fn expected_head(&self) -> &crate::branch::ProductBranchObservation {
         self.prepared.expected_head()
     }
@@ -45,6 +48,13 @@ impl WorldQuerySignalPreparation {
     }
 }
 impl WorldOpenedPublicationAttempt {
+    /// Signal-only execution retains Native's exact predecessor without borrowing its runtime.
+    pub fn prepare_signal_only(
+        self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorldPreparedPublicationWithSignal, WorldNativePreparationRefusal> {
+        self.complete_signal_preparation(None, request)
+    }
     pub fn bind_query_signal_proposal(
         self,
         proposal: ValidatedRelationalProposal,

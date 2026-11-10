@@ -1,4 +1,7 @@
 #![cfg_attr(test, allow(clippy::disallowed_methods))]
+// A Signal-backed Home carries Signal's persistent (NodeId, NodeId) chunks; their
+// deep Sync proof needs the same compiler depth as the oracle testkit.
+#![recursion_limit = "256"]
 #[allow(dead_code, unused_imports)]
 #[path = "worth_store_court_application/support/batches/mod.rs"]
 pub(crate) mod batches;

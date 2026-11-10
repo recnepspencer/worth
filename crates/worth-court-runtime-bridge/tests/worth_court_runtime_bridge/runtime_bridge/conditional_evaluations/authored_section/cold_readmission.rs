@@ -1,6 +1,7 @@
 //! Readmission rebuilds every Bridge branch against actual cold Signal contracts.
 use super::*;
 use worth_signal::facade::durability::*;
+mod correspondence_postures;
 mod home_stop;
 mod recorded_cut;
 mod semantic_claims;

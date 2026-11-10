@@ -31,7 +31,18 @@ pub(super) fn finish(
         else {
             unreachable!()
         };
-        let committed = into_managed(retained).complete_live(performed, None);
+        let generation = retained.authored_completion.as_ref().map(|completion| {
+            let output = performed
+                .component_results()
+                .signal()
+                .durable_advance_output()
+                .expect("the authored intent performed with its original Signal output");
+            completion
+                .installed_lowering(output)
+                .expect("World admitted the original projection before movement")
+                .signal_definition_generation()
+        });
+        let committed = into_managed(retained).complete_live(performed, generation);
         reservation.release();
         return Ok(committed);
     }
@@ -90,7 +101,16 @@ fn into_managed(retained: RetainedQueryDurablePreparation) -> ManagedUnpublished
     let query = retained.query;
     ManagedUnpublishedAttempt {
         _completion: query.completion,
-        publication_mode: managed_unpublished::ManagedUnpublishedPublicationMode::Ordinary,
+        publication_mode: if query
+            .attempt
+            .idempotency()
+            .conditional_definition_identity()
+            .is_some()
+        {
+            managed_unpublished::ManagedUnpublishedPublicationMode::ConditionalDefinition
+        } else {
+            managed_unpublished::ManagedUnpublishedPublicationMode::Ordinary
+        },
         attempt: query.attempt,
         predicate: query.predicate,
         work: query.work,

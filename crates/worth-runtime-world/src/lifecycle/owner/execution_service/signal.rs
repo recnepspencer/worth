@@ -17,6 +17,13 @@ pub(super) struct SignalExecutionFailure {
 /// carries the caller's own mutation body unboxed, so the execution seam never
 /// erases the closure it was handed.
 pub(super) enum SignalExecutionRequest<'a, Ctx, F, H> {
+    PublishAuthoredDefinition {
+        publication:
+            std::sync::Arc<crate::publication::AuthoredConditionalDefinitionAttemptCustody>,
+        runtime_ctx: &'a mut Ctx,
+        apply: F,
+        admit_activation: H,
+    },
     RetainExact,
     AdvanceExact {
         runtime_ctx: &'a mut Ctx,
@@ -89,6 +96,10 @@ where
                             admit_activation,
                             ..
                         } => admit_activation,
+                        SignalExecutionRequest::PublishAuthoredDefinition {
+                            admit_activation,
+                            ..
+                        } => admit_activation,
                         SignalExecutionRequest::RetainExact => {
                             unreachable!("conditional adoption has an activation continuation")
                         }
@@ -117,6 +128,7 @@ where
                         runtime_cancellation,
                         apply,
                         admit_activation,
+                        None,
                     );
                 }
                 // SPEC-P4-005: the Signal owner is handed the token embedded in
@@ -217,6 +229,30 @@ where
                         unreachable!("missing owner result carries an unwind")
                     }
                 }
+            }
+            (
+                SignalComponentPlanPosture::AdvanceExact,
+                SignalExecutionRequest::PublishAuthoredDefinition {
+                    publication,
+                    runtime_ctx,
+                    apply,
+                    admit_activation,
+                },
+            ) => {
+                let Some(attachment) = self.state.signal.authored() else {
+                    return Err(activation_failure(progress.signal().retained_image()));
+                };
+                self.execute_durable_signal(
+                    execution,
+                    attempt,
+                    progress,
+                    attachment,
+                    runtime_ctx,
+                    runtime_cancellation,
+                    apply,
+                    admit_activation,
+                    Some(publication),
+                )
             }
             // An advancing plan reached the seam without the caller's Signal
             // borrow. The plan and the borrow are chosen together at the

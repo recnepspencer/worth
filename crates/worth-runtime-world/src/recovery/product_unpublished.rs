@@ -128,7 +128,9 @@ impl ProductUnpublishedOwnerEffects {
         let retained = std::mem::size_of::<ProductUnpublishedOwnerEffectsRecord>();
         let active = crate::publication::ActiveAttemptRecord::metadata_charge_hint();
         let live = (if active > retained { active } else { retained })
-            + std::mem::size_of::<crate::publication::ConditionalDefinitionAttemptCustody>();
+            + std::mem::size_of::<crate::publication::ConditionalDefinitionAttemptCustody>()
+            + crate::publication::AuthoredConditionalDefinitionAttemptCustody::metadata_charge_hint(
+            );
         let recovered = std::mem::size_of::<super::RecoveredWorldPublicationRecord>()
             + std::mem::size_of::<
                 worth_proof::RelationalPublicationReadmitted<

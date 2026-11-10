@@ -14,10 +14,10 @@ pub use crate::durability::{
     WorldCheckpointOriginRetirementDenial, WorldCheckpointPort, WorldCheckpointReadSource,
     WorldCheckpointReadView, WorldCheckpointSelection, WorldCheckpointSubject,
     WorldDurableArtifact, WorldDurableFrameDenial, WorldDurableHomeBinding,
-    WorldDurableMediumDenial, WorldHomeProgramLineage, WorldPublicationCompletion,
-    WorldPublicationObservation, WorldPublicationTaskPosture, WorldReadmissionDenial,
-    WORLD_ARTIFACT_PROTOCOL, WORLD_ARTIFACT_VERSION, WORLD_CHECKPOINT_PROTOCOL,
-    WORLD_CHECKPOINT_VERSION,
+    WorldDurableMediumDenial, WorldHomeProgramLineage, WorldOpenComponentIntent,
+    WorldPublicationCompletion, WorldPublicationObservation, WorldPublicationTaskPosture,
+    WorldReadmissionDenial, WORLD_ARTIFACT_PROTOCOL, WORLD_ARTIFACT_VERSION,
+    WORLD_CHECKPOINT_PROTOCOL, WORLD_CHECKPOINT_VERSION,
 };
 
 // Public signatures below name the already-issued component owner bundles and

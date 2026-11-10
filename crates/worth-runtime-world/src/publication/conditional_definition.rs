@@ -24,7 +24,7 @@ pub struct RuntimeWorldUnpublishedConditionalDefinition {
 }
 
 impl RuntimeWorldUnpublishedConditionalDefinition {
-    pub(crate) fn new(effects: ProductUnpublishedOwnerEffects) -> Self {
+    pub(crate) fn from_effects(effects: ProductUnpublishedOwnerEffects) -> Self {
         Self { effects }
     }
 

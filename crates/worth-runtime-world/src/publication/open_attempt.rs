@@ -59,6 +59,18 @@ impl WorldOpenAttemptOriginal {
     }
 }
 impl WorldPendingOpenAttempt {
+    /// Keep this same submitted original; no owner effect or physical fate is inferred.
+    pub fn retain(self) -> crate::recovery::ProductUnpublishedOwnerEffects {
+        self.original.custody.retain_open()
+    }
+    /// Keep this same conditional-definition original as its typed unpublished outcome.
+    pub fn retain_conditional_definition(
+        self,
+    ) -> crate::publication::RuntimeWorldUnpublishedConditionalDefinition {
+        crate::publication::RuntimeWorldUnpublishedConditionalDefinition::from_effects(
+            self.retain(),
+        )
+    }
     pub fn unpublished_recovery_handle(&self) -> crate::recovery::ProductUnpublishedRecoveryHandle {
         self.original.custody.unpublished_recovery_handle()
     }

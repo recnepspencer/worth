@@ -53,7 +53,7 @@ fn pending_creation_keeps_its_original_seat_with_zero_owner_effects_and_resumes_
     let actual = f
         .signal
         .source_port()
-        .inspect_associated_advances(&request, |effect| {
+        .inspect_associated_advances(&request, |effect, _| {
             std::ops::ControlFlow::Break(
                 effect
                     .association()

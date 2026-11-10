@@ -9,7 +9,7 @@ mod tests;
 pub enum RelationalRuntimeCloseDenial {
     NotOwner,
     OperationsInFlight,
-    PublicationCustodyRetained,
+    PublicationCustodyRetained(super::RelationalPublicationCustodyHolders),
     ReadCustodyRetained(RelationalReadCustodyHolders),
 }
 
@@ -83,9 +83,13 @@ impl RelationalRuntime {
             Some(close) => {
                 if !close.stop_if_quiescent() {
                     Some(RelationalRuntimeCloseDenial::OperationsInFlight)
-                } else if self.state.publication_owner.has_live_publication_custody() {
+                } else if let Some(holders) =
+                    self.state.publication_owner.live_publication_custody()
+                {
                     close.resume_admission();
-                    Some(RelationalRuntimeCloseDenial::PublicationCustodyRetained)
+                    Some(RelationalRuntimeCloseDenial::PublicationCustodyRetained(
+                        holders,
+                    ))
                 } else if self.state.visibility.active_snapshot_count() != 0
                     || self.state.history.has_detached_retention_obligations()
                 {

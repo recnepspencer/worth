@@ -7,6 +7,7 @@ use std::sync::{
     Arc,
 };
 mod script;
+mod signal;
 
 #[test]
 fn graceful_home_oracle_seed_zero_preserves_relational_and_world_prefixes() {

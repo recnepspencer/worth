@@ -19,7 +19,12 @@ mod preparation_home_contracts;
 mod preparation_round;
 mod preparation_runtime;
 mod prepared_close;
+mod publication_close_custody;
 mod publication_lifecycle;
+pub use publication_close_custody::{
+    RelationalPublicationCompanionCustody, RelationalPublicationCustodyHolders,
+    RelationalPublicationRegistryCustody,
+};
 mod publication_settlement_registry;
 mod tenure;
 #[cfg(test)]

@@ -39,12 +39,13 @@ mod root_readmission;
 pub(crate) use artifact::{
     DurableWorldHead, PreparedWorldArtifact, WorldArtifactInput, WorldBranchCreatedRecord,
     WorldCreatedBranchOwnerEvidence, WorldCreationIntentInput, WorldHeadInput,
-    WorldOpenAttemptInput, WorldOpenAttemptRecord, WorldOpenComponentIntent, WorldRecord,
+    WorldOpenAttemptInput, WorldOpenAttemptRecord, WorldRecord,
     WorldRecordedRelationalCreationPlan, WorldRelationalCreationInput, WorldRelationalEvidence,
     WorldRelationalForkEvidence,
 };
 pub use artifact::{
-    WorldDurableArtifact, WorldDurableFrameDenial, WORLD_ARTIFACT_PROTOCOL, WORLD_ARTIFACT_VERSION,
+    WorldDurableArtifact, WorldDurableFrameDenial, WorldOpenComponentIntent,
+    WORLD_ARTIFACT_PROTOCOL, WORLD_ARTIFACT_VERSION,
 };
 pub(crate) use association::is_world_association;
 pub(crate) use association::{

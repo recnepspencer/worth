@@ -1,4 +1,6 @@
 use std::sync::{Arc, Mutex};
+mod authored;
+pub(crate) use authored::AuthoredConditionalDefinitionAttemptCustody;
 
 use worth_runtime_bridge::facade::BridgeAppliedConditionalInstallationExtension;
 use worth_runtime_bridge::facade::BridgePreparedConditionalInstallationExtension;
@@ -12,6 +14,7 @@ use super::ActiveAttemptCustody;
 /// catalog record. Its caller lease never holds a World lock across Bridge work.
 #[derive(Default)]
 pub(crate) struct ConditionalDefinitionAttemptCustody {
+    authored: Mutex<Option<Arc<AuthoredConditionalDefinitionAttemptCustody>>>,
     prepared: Mutex<Option<BridgePreparedConditionalInstallationExtension>>,
     publication: Mutex<Option<AdmittedSignalConditionalDefinitionPublication>>,
     binding: Mutex<Option<SignalConditionalDefinitionAdvanceBinding>>,
@@ -185,10 +188,15 @@ impl ConditionalDefinitionAttemptCustody {
     }
 
     pub(crate) fn retains_definition(&self) -> bool {
-        self.prepared
+        self.authored
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .is_some()
+            || self
+                .prepared
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .is_some()
             || self
                 .applied
                 .lock()

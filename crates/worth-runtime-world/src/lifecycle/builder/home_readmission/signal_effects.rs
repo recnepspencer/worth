@@ -9,19 +9,35 @@ use worth_foundational::facade::{
 };
 use worth_signal::facade::durability::SignalDurableBranchSourcePort;
 
+#[derive(Default)]
+pub(super) struct ReadmittedSignalEffects {
+    points: worth_execution::ExecutionOrderedMap<
+        worth_foundational::facade::DurableCompositePublicationAttemptIdentity,
+        std::sync::Arc<worth_signal::facade::durability::SignalReadmittedSourcePoint>,
+    >,
+}
+impl ReadmittedSignalEffects {
+    pub(super) fn get(
+        &self,
+        attempt: &worth_foundational::facade::DurableCompositePublicationAttemptIdentity,
+    ) -> Option<std::sync::Arc<worth_signal::facade::durability::SignalReadmittedSourcePoint>> {
+        self.points.get(attempt).cloned()
+    }
+}
 pub(super) fn readmit<Dm, I, T>(
     signal: &SignalDurableBranchSourcePort<Dm, I, T>,
     recovered: &WorldRecoveredJournalState,
     binding: &WorldDurableHomeBinding,
     request: &worth_execution::ExecutionRequest<'_, '_>,
-) -> Result<(), D>
+) -> Result<ReadmittedSignalEffects, D>
 where
     Dm: Copy + Ord + std::fmt::Debug + 'static,
     I: Copy + Ord + 'static,
     T: Copy + Ord + 'static,
 {
+    let mut effects = ReadmittedSignalEffects::default();
     let result = signal
-        .inspect_associated_advances(request, |effect| {
+        .inspect_associated_advances(request, |effect, point| {
             let association = effect.association().expect("associated original visitor");
             let unclean = || {
                 D::UncleanRecoveryUnsupported(UncleanRecoveryUnsupported {
@@ -88,13 +104,25 @@ where
                 None if !recovered.dispositions.contains_key(&association.attempt()) => {
                     return ControlFlow::Break(unclean())
                 }
-                None => {}
+                None => {
+                    let actual=match signal.readmit_source_point(point, request) {
+                        Ok(actual) => std::sync::Arc::new(actual),
+                        Err(cause) => return ControlFlow::Break(D::SignalSource(Box::new(cause))),
+                    };
+                    if effects.points.contains_key(&association.attempt()) {
+                        return ControlFlow::Break(D::OccurrenceEvidenceMismatch);
+                    }
+                    if let Err(cause)=effects.points.insert_cloned_native_for_request(
+                        &association.attempt(), &actual, *request) {
+                        return ControlFlow::Break(D::Medium(crate::durability::WorldDurableMediumDenial::Ordered(cause)));
+                    }
+                }
             }
             ControlFlow::Continue(())
         })
         .map_err(|cause| D::SignalDiscovery(Box::new(cause)))?;
     match result {
-        ControlFlow::Continue(()) => Ok(()),
+        ControlFlow::Continue(()) => Ok(effects),
         ControlFlow::Break(cause) => Err(cause),
     }
 }

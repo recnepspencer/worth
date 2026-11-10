@@ -1809,3 +1809,5 @@ crates/worth-runtime-bridge/ workspaces/worth-query/crates/worth-query/src/domai
 # Read-only original Work settlement recording; no request or publication authority.
 
 crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/bulk_work_account.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/process/host/home_seed.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/host_oracle/graceful/signal/operations.rs

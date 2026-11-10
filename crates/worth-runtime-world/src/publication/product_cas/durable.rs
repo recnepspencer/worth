@@ -11,6 +11,12 @@ use std::sync::Arc;
 
 #[derive(Debug)]
 pub enum WorldDurablePublicationDenial {
+    ConditionalDefinitionRequired,
+    ConditionalDefinitionExpectedProduct,
+    BridgeDefinitionOwnerRequired,
+    BridgeDefinitionPreparation(
+        Box<worth_runtime_bridge::facade::BridgeDurableDefinitionPublicationDenial>,
+    ),
     OwnerUnavailable,
     ForeignOwner,
     StaleIncarnation,

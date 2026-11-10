@@ -29,6 +29,11 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryProductCondition
     ProductActivation(WorthQueryProductActivationDenial),
     WorldPreparation(NoEffectCompositePublication),
     BridgePreparation(BridgeConditionalDenial),
+    AuthoredBridgePreparation(
+        worth_runtime_bridge::facade::BridgeDurableDefinitionPublicationDenial,
+    ),
+    DurableOpen(worth_runtime_world::facade::WorldOpenAttemptRefusal),
+    DurablePreparation(worth_runtime_world::facade::WorldNativePreparationRefusal),
 }
 
 impl From<WorthQueryProductActivationDenial> for WorthQueryProductConditionalPublicationDenial {
@@ -37,6 +42,7 @@ impl From<WorthQueryProductActivationDenial> for WorthQueryProductConditionalPub
     }
 }
 
+mod authored;
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,
@@ -56,6 +62,10 @@ where
         let identity = product.branch_identity();
         let gate = self.runtime.product_runtime.activations.gate(identity)?;
         gate.publish(|| {
+            let owner=self.runtime.bridge.conditional();
+            if let crate::domain_computation::primary_graph::managed_bridge::conditional_execution::ConditionalExecutionOwner::Authored(bridge)=&owner {
+                return authored::publish(self,phase,product,bridge,predecessor,request,cancellation);
+            }
             let publication = self.runtime.product_runtime.owner.publication_port();
             let prepared_world = match prepare_conditional_publication(&publication, product.observation().clone(), CompositePublicationIntent::with_signal(None), cancellation, None) {
                 Ok(prepared) => prepared,

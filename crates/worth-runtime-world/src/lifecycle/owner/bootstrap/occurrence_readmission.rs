@@ -2,8 +2,6 @@
 use super::*;
 use crate::durability::{AdmittedWorldOccurrence, WorldReadmissionDenial as Denial};
 use crate::history::{ReadmittedPublicationRecord, RecoveredWorldOwnerEvidence};
-use worth_proof::RelationalPublicationReadmitted;
-use worth_relational::facade::durability::RelationalRecoveredPublicationCustody;
 
 impl<D, I, E, Ctx, T> RuntimeWorldOwnerRoot<D, I, E, Ctx, T>
 where
@@ -95,72 +93,5 @@ where
             .map_err(|_| Denial::BranchLineage)?;
         cell.observe(&self.state.history, &self.state.retention)
             .map_err(|_| Denial::RecoveryCapacity)
-    }
-
-    pub(crate) fn prepare_original_recovered_image(
-        &self,
-        before: &ProductBranchObservation,
-        admitted_open: &crate::durability::AdmittedWorldOpenAttempt,
-        native: &RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>,
-        identity: worth_relational::facade::history::RelationalCommitIdentity,
-    ) -> Result<
-        (
-            ProductBranchReferenceSnapshot,
-            crate::identity::CompositePublicationAttemptIdentity,
-        ),
-        Denial,
-    > {
-        let open = admitted_open.open();
-        let owner = self.owner_identity();
-        (|| {
-            if native.custody().predecessor().admission_identity()
-                != before.basis().relational_basis().admission_identity()
-            {
-                return Err(Denial::OccurrenceEvidenceMismatch);
-            }
-            let commit = crate::identity::readmission::readmit_commit(owner, open.commit)
-                .ok_or(Denial::ForeignOwner)?;
-            let attempt =
-                crate::identity::readmission::readmit_attempt(owner, open.association.attempt())
-                    .ok_or(Denial::ForeignOwner)?;
-            let basis = crate::basis::admit_validated(
-                &self
-                    .state
-                    .identities
-                    .lock()
-                    .unwrap_or_else(|e| e.into_inner()),
-                native.custody().successor().clone(),
-                before.basis().signal_basis().clone(),
-                before.basis().correspondence_basis().clone(),
-            );
-            let results = crate::publication::CompositeOwnerExecutionResults::retained()
-                .with_relational_settled_receipt(
-                    identity,
-                    basis.relational_basis().clone(),
-                    native.custody().effect().subject().receipt().clone(),
-                );
-            let commit = CompositeRuntimeWorldCommit::from_ordinary_publication(
-                commit,
-                before.snapshot().commit(),
-                basis,
-                attempt.clone(),
-                &results,
-                None,
-            )
-            .map_err(|_| Denial::OccurrenceEvidenceMismatch)?;
-            let generation = before
-                .reference_generation()
-                .advance()
-                .map_err(Denial::IdentityExhaustion)?;
-            let after = ProductBranchReferenceSnapshot::owner_issued(
-                owner,
-                before.branch_identity().clone(),
-                before.lifecycle_incarnation(),
-                generation,
-                std::sync::Arc::new(commit),
-            )
-            .map_err(|_| Denial::BranchLineage)?;
-            Ok((after, attempt))
-        })()
     }
 }

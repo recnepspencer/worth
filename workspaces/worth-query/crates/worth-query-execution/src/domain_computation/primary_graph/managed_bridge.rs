@@ -85,7 +85,9 @@ impl WorthQueryInstalledApplicationBridge {
             .ordinary()
             .expect("retired Query exposes no ordinary Bridge")
     }
-    fn conditional_owner(&self) -> Option<&conditional_owner::ConditionalOwner> {
+    pub(in crate::domain_computation::primary_graph) fn conditional_owner(
+        &self,
+    ) -> Option<&conditional_owner::ConditionalOwner> {
         self.custody
             .as_ref()
             .and_then(InstalledBridgeCustody::conditional)

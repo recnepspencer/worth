@@ -14,7 +14,10 @@ where
     pub(crate) fn inspect_associated_advances<R>(
         &self,
         execution: &ExecutionRequest<'_, '_>,
-        mut inspect: impl FnMut(&SignalBranchAdvanceArtifact) -> ControlFlow<R>,
+        mut inspect: impl FnMut(
+            &SignalBranchAdvanceArtifact,
+            &crate::durability::SignalRecordedSourcePoint,
+        ) -> ControlFlow<R>,
     ) -> Result<ControlFlow<R>, D> {
         match self.medium.publication_task_posture() {
             crate::durability::SignalPublicationTaskPosture::Terminal => {}
@@ -52,7 +55,7 @@ where
                 return Err(D::SourcePointMismatch(artifact.reference()));
             }
             if artifact.association().is_some() {
-                if let ControlFlow::Break(value) = inspect(&artifact) {
+                if let ControlFlow::Break(value) = inspect(&artifact, &point) {
                     return Ok(ControlFlow::Break(value));
                 }
             }

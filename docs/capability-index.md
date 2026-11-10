@@ -602,6 +602,7 @@ Choose a task and follow its guide for the exact calls and result handling.
 | Supply trusted authorization time to a Home | `WorthQueryApplicationHomeRequest::with_authorization_time_source(source)` carries the same trusted clock contract through MemoryOnly, fresh Directory and Directory reopen. Opening does not sample it; capability decisions preserve `TrustedTimeUnavailable`. | [Host trusted time](../workspaces/worth-query/crates/worth-query-host/README.md#relational-only-directory-installation) |
 | Prepare an issued provider-session grant on its receiving application | `runtime.prepare_provider_session_grant(&phase, grant, receiver)` supplies the installed provider and actual Home witness. Stale and foreign grants refuse before the lazy receiver constructs any run, reads or supplier work. A current receiver must carry the exact original plan and provider. | [Host session preparation](../workspaces/worth-query/crates/worth-query-host/README.md#writer-contention-and-incarnation) |
 | Work on a branch or move it to a new program under its declared capability | `runtime.branches().fork(runtime.current_world()).components(..).create(&phase)`; `request(..).on_branch(branch)`; `.programs()` then `compare(&target)`, `adopt(&requirements)?.prepare(max)`, `programs.publish(prepared)` | [Branches](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#application-product-branches-host), [Build Â§7](build-an-application.md#7-adopt-a-new-program-on-a-branch) |
+| Discover the product branches admitted by the current Home | Inside `runtime.with_host_advancement`, call `runtime.branches().inventory(&phase)` and iterate the returned `WorthQueryProductBranchInventory`. It retains the actual request-funded World membership observation and supplies fresh selectors after reopen. Select a branch normally for later domain work; drop the inventory before closing the Home. A foreign phase returns `WorthQueryProductBranchInventoryDenial::ForeignPhase`. | [Derived recovery](build-an-application.md#current-durable-home-composition-boundary), [Branch inventory](../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/branches/inventory.rs) |
 | Run isolated transaction steps on a fork | `runtime.branches().fork(head).components(..).create(&phase)`, then `request(..).on_branch(fork)`. The application's model-state owner selects the branch for subsequent requests; `runtime.on_branch(discarded).close(&phase)` retires discarded branches. The fork retains its parent's history for corrections. | [Branches](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#application-product-branches-host), [Fork transaction example](../workspaces/worth-query/crates/worth-query-testkit-certification-correction/src/certification/application_graph/correction/model/fork_head_adoption.rs) |
 | Retry retired application product cleanup under a fresh admitted request | Keep the `WorthQueryApplicationProductBranchCleanup` from `OwnerCleanupPending`. Inside the original runtime's `with_application_advancement(scope, \|phase\| ...)`, call `cleanup.retry_in_advancement(&phase)`. Foreign or interrupted phases return the same cleanup owner; retained readers may still refuse. Release those readers and retry that owner. Keep the actual completed receipt even if the outer request later stops. | [Build: retired cleanup](build-an-application.md#register-attempts-on-a-stable-product), [Compiled control and release court](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/proposal_acceptance/courts/acceptance/disposal.rs) |
 | Fork the exact source already selected by the application | Pass the owned selection to `runtime.branches().fork_expected(selected)`, choose components, then `create(&phase)`. Keep the returned candidate and use `candidate.branch()` for ordinary requests. Adopt with `candidate.adopt(&mut model.head, &phase)` while the exact source remains current, or discard with `candidate.close(&phase)`. Refusals retain the candidate and typed denial. Close the previous branch separately after adoption. | [Fork from an admitted selection](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#fork-from-an-admitted-selection) |
@@ -1535,32 +1536,43 @@ signal_basis)` validates the actual current Signal owner and supplies the same
 private Bridge's baseline. Its retained bootstrap can be advanced through
 `advance_durable_bootstrap_root(request)`. The existing bootstrap state keeps the
 original pre-install history, pins and branch cell across pending calls. World
-artifact v3 requires Native's explicit recorded component, Signal's owner-proven
-InitialEmpty recipe, Bridge's versioned registered-source baseline and the actual
-program revision; v1/v2 and missing seed fields refuse. General authored Signal
-or installed Bridge state refuses before this narrow bootstrap. Root installation follows the actual
+artifacts require Native's explicit recorded component, Signal's owner-admitted
+authored source, Bridge's versioned registered-source baseline and the selected
+branch's actual program revision. Unsupported versions and missing owner fields
+refuse with typed reasons. Root installation follows the actual
 sealed journal acknowledgement. The filesystem Home court covers this bootstrap,
 ordinary Relational-only publication and exact World-owned result snapshot
 cleanup. Undelivered publication refuses Home close before teardown; recover
 its original delivery through `recovery_port().recover_performed` and consume it
 before retrying. Independent Native reads retain their own close obligations.
 
-Signal's [standalone authored owner readmission](../crates/worth-signal/README.md#standalone-authored-owner-readmission)
-now restores several branches through its Store-backed port and leaves derived
-values cold, including under a changed build. This platform owner entry is not
-yet wired into Directory Home admission. Platform composition can also capture
-and readmit Bridge conditional program definitions through Signal transitions
-using `BridgeConditionalRuntimeBuilder` and fresh `BridgeAuthoredInstallationBindings`.
-The [Bridge owner entry](../crates/worth-runtime-bridge/README.md#authored-conditional-definition-recovery)
-rebuilds per-branch indexes, exact slots, lowering registry and retention ledger.
-The returned assembly also publishes conditional successors through the original
-Signal definition/branch journal task and exposes typed branch-projection posture.
-Writeback diagnostic history uses owner-issued weak retention references with
-typed absence reasons; diagnostic records supply no durable effect authority.
-Authored Home bootstrap, durable forks and mixed World publication remain pending;
-the InitialEmpty Directory
-restriction above still applies. Applications continue through Query's declaration
-and Host facades.
+Directory Homes admit Signal's [authored owner](../crates/worth-signal/README.md#standalone-authored-owner-readmission)
+before reconciling every World branch. The selected Complete image retains
+definitions, topology, branch generations and issuance bounds. Query serves
+the actual durable owner and per-branch fresh Bridge projections. Derived
+values start cold under both the same and a changed build.
+Known gap (H5 open): graceful close after a program-lane mixed operation that
+advances an authored conditional definition refuses with
+`PublicationCustodyRetained`.
+
+Conditional definitions retain complete provider protocols, versions and
+parameters in Signal transitions. Fresh `BridgeAuthoredInstallationBindings`
+rebuild executable providers, branch-local indexes, lowering registry and
+retention ledger. `bind_conditional_definition` installs authored membership
+without temporal runtime custody. Signal-only and mixed publications consume
+their original `WithSignal` preparation; their occurrences retain exactly the
+owners that acted. Public durable sibling creation inherits the source's exact
+Native root and authored Signal state, with its original fork association.
+
+Graceful close/reopen and a quiescent kill preserve published authored state
+and committed receipts without executing either effect again. Foreign owners
+and unknown codec versions refuse with typed reasons. Unresolved live
+unpublished custody refuses close; an unclean tail with an associated owner
+effect but no occurrence or disposition refuses reopen with
+`UncleanRecoveryUnsupported` (D18). Original crash continuation, pending
+settlement and resource/temporal runtime recovery retain their later boundaries.
+Writeback diagnostics remain process-local and never substitute for durable
+owner evidence. See [derived recovery and Home composition](build-an-application.md#current-durable-home-composition-boundary).
 
 World's durable open retains its original identities and one Native preparation,
 and its prepared wrapper executes through `execute_durable_without_signal`.
@@ -1574,10 +1586,10 @@ heads exist. This presence check grants no World proof from empty streams;
 already-accepted checkpoint recovery still settles and actually acknowledges
 its original task before Native close admission.
 
-Cold readmission supports one initial product branch and its ordinary
-Relational-only occurrence chain. Each occurrence admits its exact original
-Native predecessor and successor from actual recovery; later Native advancement
-does not replace either historical root. World validates the actual journal
+Cold readmission prepares every recovered World branch and its ordered
+occurrence chain. Each occurrence admits its exact original owners; Signal-only
+history inherits Native's predecessor, and mixed history retains both actual
+successors. Later advancement does not replace either historical source. World validates the actual journal
 positions, payload digests, association and recorded Native evidence, restores
 the original durable identities and head generations, and issues fresh local
 owner custody. `observation_port().readmitted_publication` takes a Foundational

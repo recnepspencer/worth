@@ -1,4 +1,5 @@
-//! Declared authored seeds refuse at preparation, before a physical Home exists.
+//! Producer seeds refuse at preparation until producer custody can close a Home;
+//! the temporal runtime remains a later family after authored definitions open.
 use worth_foundational::facade::DurableStateFamily;
 use worth_query_decl::facade::application_program::ApplicationProgramAuthoring;
 use worth_query_host::facade::{
@@ -43,15 +44,15 @@ fn directory_producer_seed_refuses_before_initialization_or_owner_effect() {
     )
     .unwrap()
     .err()
-    .expect("declared producers need authored Signal recovery");
+    .expect("declared producers need producer custody before a Home can close");
     assert!(
         matches!(
             refused,
             WorthQueryApplicationHomeOpenRefused::Preparation(
                 WorthQueryApplicationPreparationDenial::UnsupportedSeed(
                     WorthQueryDurableStateAdmissionDenial::Unsupported {
-                        family: DurableStateFamily::SignalNodeDefinitions,
-                        supported_from_phase: 5,
+                        family: DurableStateFamily::ProducerCleanupCustody,
+                        supported_from_phase: 7,
                     }
                 )
             )
@@ -66,7 +67,7 @@ fn directory_producer_seed_refuses_before_initialization_or_owner_effect() {
 }
 
 #[test]
-fn directory_conditional_seed_refuses_before_initialization_or_owner_effect() {
+fn directory_temporal_seed_refuses_before_initialization_or_execution() {
     use worth_query_testkit_host::facade::host::temporal_conditional_operation::contribution_installation::*;
     let directory = application_home::location();
     assert!(!directory.exists());
@@ -104,24 +105,15 @@ fn directory_conditional_seed_refuses_before_initialization_or_owner_effect() {
     )
     .unwrap()
     .err()
-    .expect("declared conditionals need authored Bridge recovery");
-    assert!(
-        matches!(
-            refused,
-            WorthQueryApplicationHomeOpenRefused::Preparation(
-                WorthQueryApplicationPreparationDenial::UnsupportedSeed(
-                    WorthQueryDurableStateAdmissionDenial::Unsupported {
-                        family: DurableStateFamily::BridgeConditionalDefinitions,
-                        supported_from_phase: 5,
-                    }
-                )
-            )
-        ),
-        "exact conditional seed refusal: {refused:?}"
-    );
+    .expect("actual temporal runtime custody requires its later recovery phase");
+    match &refused {
+        WorthQueryApplicationHomeOpenRefused::SignalProgramPreparation {query,..}=>assert!(matches!(
+            query.reason(),worth_query_host::facade::QueryHomeSignalProgramPreparationDenial::TemporalFamilyNotReadmitted)),
+        other=>panic!("the actual temporal family remains unsupported: {other:?}"),
+    }
     assert_eq!(contacts.snapshot(), (0, 0, 0, 0));
-    assert!(
-        !directory.exists(),
-        "no descriptor, journal or bootstrap may be created"
-    );
+    let closed = refused
+        .close(&worth_execution::ExecutionRequest::leased(&lease))
+        .unwrap_or_else(|cause| panic!("the unserved original Home closes: {cause:?}"));
+    closed.reclaim();
 }

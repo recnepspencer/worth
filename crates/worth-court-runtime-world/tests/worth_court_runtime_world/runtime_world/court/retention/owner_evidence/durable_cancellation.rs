@@ -106,7 +106,7 @@ fn durable_candidate_cancelled_while_waiting_never_runs_its_body() {
     });
     assert!(matches!(
         source
-            .inspect_associated_advances(&request, |_| std::ops::ControlFlow::Break(()))
+            .inspect_associated_advances(&request, |_, _| std::ops::ControlFlow::Break(()))
             .unwrap(),
         std::ops::ControlFlow::Continue(())
     ));
@@ -126,6 +126,12 @@ fn durable_candidate_cancelled_while_waiting_never_runs_its_body() {
         .inspect_recovered_effects(page.rows()[0].handle())
         .unwrap();
     assert_eq!(custody.native_receipt(), None);
+    assert_eq!(custody.owner_effect_count(), 0);
+    assert_eq!(
+        custody.live_obligation_count(),
+        1 + 2 + 1,
+        "the recovery seat and exact expected component/history observation remain held"
+    );
     assert!(matches!(
         recovery.release_recovered_effects(&request, custody),
         WorldRecoveredReleaseOutcome::Released(_)

@@ -156,6 +156,16 @@ impl WorthQueryProductBranchLease {
         self.relational_basis().descriptor()
     }
 
+    /// Read-only Signal generation of this selection; grants no admission.
+    pub fn signal_generation_for_test(&self) -> u64 {
+        self.signal_basis().observation().generation().get()
+    }
+
+    /// Read-only World reference generation of this selection; grants no admission.
+    pub fn world_reference_generation_for_test(&self) -> u64 {
+        self.observation().reference_generation().get()
+    }
+
     #[doc(hidden)]
     pub fn bridge_snapshot_identity(&self) -> &worth_runtime_bridge::facade::TruthSnapshotIdentity {
         self.bridge_source.snapshot_identity()

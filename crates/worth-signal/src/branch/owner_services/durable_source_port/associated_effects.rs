@@ -15,7 +15,10 @@ where
     pub fn inspect_associated_advances<R>(
         &self,
         execution: &ExecutionRequest<'_, '_>,
-        inspect: impl FnMut(&SignalBranchAdvanceArtifact) -> ControlFlow<R>,
+        inspect: impl FnMut(
+            &SignalBranchAdvanceArtifact,
+            &crate::durability::SignalRecordedSourcePoint,
+        ) -> ControlFlow<R>,
     ) -> Result<ControlFlow<R>, D> {
         let owner = self.owner().map_err(D::Source)?;
         let _admission = owner

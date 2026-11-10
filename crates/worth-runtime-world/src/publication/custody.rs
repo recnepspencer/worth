@@ -9,7 +9,9 @@ mod creation_reactivation;
 mod durable_creation;
 mod durable_creation_install;
 mod durable_publication;
-pub(crate) use conditional_definition::ConditionalDefinitionAttemptCustody;
+pub(crate) use conditional_definition::{
+    AuthoredConditionalDefinitionAttemptCustody, ConditionalDefinitionAttemptCustody,
+};
 pub(crate) use creation_reactivation::ReactivatedCreationFacts;
 #[cfg(test)]
 mod creation_rehearsal;

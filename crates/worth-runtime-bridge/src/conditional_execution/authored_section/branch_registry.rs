@@ -65,7 +65,9 @@ impl BranchRegistry {
             .copied()
             .ok_or_else(refusal)?;
         let projection = self.projection(branch).map_err(|_| refusal())?;
-        let serving = projection.serving(branch).map_err(|_| refusal())?;
+        let serving = projection
+            .installed_for_correspondence(branch)
+            .map_err(|_| refusal())?;
         Ok(inspect(&serving._dependencies))
     }
     pub(in crate::conditional_execution) fn projection(

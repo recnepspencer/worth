@@ -176,6 +176,9 @@ fn original_directory_receipt_preserves_cancellation_at_every_consult() {
     };
     receipt_fields::assert_live_agrees(original, &recorded);
     assert_eq!(contacts.load(Ordering::SeqCst), 1);
+    // This independent read follows the whole injection loop; its request must
+    // not reuse the baseline request's elapsed deadline.
+    let (_, live) = scope();
     assert_eq!(balance(home.runtime(), &live), 8);
     drop(fresh);
     drop(home);

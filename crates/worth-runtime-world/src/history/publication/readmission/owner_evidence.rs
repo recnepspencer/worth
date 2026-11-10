@@ -9,16 +9,22 @@ use worth_signal::facade::durability::SignalReadmittedSourcePoint;
 #[derive(Debug)]
 pub(crate) enum RecoveredWorldOwnerEvidence {
     RelationalOnly(RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>),
-    SignalOnly(SignalReadmittedSourcePoint),
+    SignalOnly(Arc<SignalReadmittedSourcePoint>),
     RelationalAndSignal {
         relational: RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>,
-        signal: SignalReadmittedSourcePoint,
+        signal: Arc<SignalReadmittedSourcePoint>,
     },
 }
 impl RecoveredWorldOwnerEvidence {
     pub(crate) fn from_admitted_components(
         relational: Option<RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>>,
         signal: Option<SignalReadmittedSourcePoint>,
+    ) -> Option<Self> {
+        Self::from_original_components(relational, signal.map(Arc::new))
+    }
+    pub(crate) fn from_original_components(
+        relational: Option<RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>>,
+        signal: Option<Arc<SignalReadmittedSourcePoint>>,
     ) -> Option<Self> {
         match (relational, signal) {
             (Some(relational), None) => Some(Self::RelationalOnly(relational)),
@@ -52,11 +58,11 @@ impl RecoveredWorldOwnerEvidence {
             };
         match self {
             Self::RelationalOnly(value) => ReadmittedOwnerMeaning::RelationalOnly(native(value)),
-            Self::SignalOnly(value) => ReadmittedOwnerMeaning::SignalOnly(Arc::new(value)),
+            Self::SignalOnly(value) => ReadmittedOwnerMeaning::SignalOnly(value),
             Self::RelationalAndSignal { relational, signal } => {
                 ReadmittedOwnerMeaning::RelationalAndSignal {
                     relational: native(relational),
-                    signal: Arc::new(signal),
+                    signal,
                 }
             }
         }

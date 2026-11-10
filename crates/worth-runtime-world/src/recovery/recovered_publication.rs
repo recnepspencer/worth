@@ -15,6 +15,7 @@ use worth_relational::facade::durability::{
 };
 
 pub(crate) mod continuation;
+mod observation;
 mod release;
 mod release_preparation;
 pub(crate) use continuation::PreparedRecoveredPublication;
@@ -45,9 +46,9 @@ pub(crate) enum RecoveredNativeObservation {
     Prepared(Arc<crate::history::PreparedReadmittedPublicationRecord>),
 }
 impl RecoveredNativeObservation {
-    fn effect(&self) -> &ReadmittedRelationalAssociatedEffect {
+    fn effect(&self) -> Option<&ReadmittedRelationalAssociatedEffect> {
         match self {
-            Self::Original(native) => native.custody().effect(),
+            Self::Original(native) => Some(native.custody().effect()),
             Self::Prepared(record) => record.effect(),
         }
     }
@@ -61,6 +62,7 @@ pub(crate) struct RecoveredWorldPublicationRecord {
     pub(crate) open: AdmittedWorldOpenAttempt,
     pub(crate) continued: Option<crate::durability::AdmittedWorldDisposition>,
     pub(crate) native_identity: Option<worth_relational::facade::history::RelationalCommitIdentity>,
+    pub(crate) signal: Option<Arc<worth_signal::facade::durability::SignalReadmittedSourcePoint>>,
     pub(crate) expected: ProductBranchObservation,
     pub(crate) binding: Arc<WorldDurableMediumBinding>,
     pub(crate) native: Mutex<RecoveredNativeCustody>,
@@ -137,7 +139,7 @@ impl WorldRecoveredUnpublishedEffects {
             .is_some()
         {
             &[Action::Inspect, Action::ReleaseObligations]
-        } else if self.native_effect().is_none() {
+        } else if self.native_effect().is_none() && self.record.signal.is_none() {
             &[
                 Action::Inspect,
                 Action::ReleaseObligations,
@@ -211,7 +213,9 @@ impl WorldRecoveredUnpublishedEffects {
     }
     /// Borrow the original source admission; this never manufactures a live result.
     pub fn native_effect(&self) -> Option<&ReadmittedRelationalAssociatedEffect> {
-        self.source.as_ref().map(RecoveredNativeObservation::effect)
+        self.source
+            .as_ref()
+            .and_then(RecoveredNativeObservation::effect)
     }
     pub(crate) fn refresh_source(&mut self) {
         self.source = match &*self.record.native.lock().unwrap_or_else(|e| e.into_inner()) {
@@ -258,6 +262,7 @@ pub(crate) struct RecoveredWorldPublicationInputs {
     pub(crate) open: AdmittedWorldOpenAttempt,
     pub(crate) continued: Option<crate::durability::AdmittedWorldDisposition>,
     pub(crate) native_identity: Option<worth_relational::facade::history::RelationalCommitIdentity>,
+    pub(crate) signal: Option<Arc<worth_signal::facade::durability::SignalReadmittedSourcePoint>>,
     pub(crate) expected: ProductBranchObservation,
     pub(crate) binding: Arc<WorldDurableMediumBinding>,
     pub(crate) native:
@@ -273,6 +278,7 @@ impl RecoveredWorldPublicationRecord {
             open: input.open,
             continued: input.continued,
             native_identity: input.native_identity,
+            signal: input.signal,
             expected: input.expected,
             binding: input.binding,
             native: Mutex::new(

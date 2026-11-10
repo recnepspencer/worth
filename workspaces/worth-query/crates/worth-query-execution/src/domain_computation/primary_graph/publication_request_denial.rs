@@ -14,6 +14,7 @@ pub fn publication(
         | NoEffectCause::CurrentReadDependency(_)
         | NoEffectCause::StaleIncarnation
         | NoEffectCause::CorrespondenceRebindRequired
+        | NoEffectCause::CorrespondenceAdmissionDenied(_)
         | NoEffectCause::ReferenceGenerationExhausted
         | NoEffectCause::CapacityExhausted
         | NoEffectCause::OwnerUnavailable

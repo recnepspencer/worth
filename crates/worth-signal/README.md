@@ -251,8 +251,8 @@ owned byte backing. The maximum frame size is 64 MiB.
 branch basis, lowering capability or publication permission. Installed condition
 and comparator roles carry no graph-instance identity. Their operational bindings
 must be reconstructed by owner admission with the installed program and Bridge's
-definition section. This graph section alone does not enable authored Home reopen;
-the attached-Home seed contract above still applies.
+definition section. The Home composition below admits that complete authored
+owner before World history can become serving state.
 
 `SignalGraph::readmit_authored_image` consumes the fresh installation graph and
 returns a cold graph plus freshly installed conditional contracts. It reconstructs
@@ -300,8 +300,9 @@ capture releases that gate. `SignalAuthoredHomeImage` retains its funded byte
 region and supplies a checkpoint prefix joined to one protected journal tail;
 the source contribution preserves issued identity gaps across readmission.
 Store attachment retains the supplied image with its original serving input,
-including on refusal. The Home composer must capture at its quiesced close;
-these owner APIs alone do not enable Home checkpoint selection or bootstrap.
+including on refusal. Home captures this Signal section only at quiesced close
+and includes it in its selected Complete image. Reopen joins that protected
+prefix to the ordered journal tail before admitting World history.
 
 Each medium exposes one stable, funded `SignalDurableOwnerAdmissionRegistry`.
 Readmission acquires its exclusive claim before journal replay and transfers the
@@ -325,7 +326,9 @@ conditional source, graceful reopen and quiescent process termination. Values
 recompute on first demand after both same-build and changed-build readmission.
 Durable forks inherit authored state through the actual reserved source and
 publish their original Created record before installing the sibling. Authored
-Home bootstrap and mixed World publication remain separate integration work.
+Home bootstrap admits the authored source, and mixed World publication retains
+the original Native and Signal evidence in one occurrence. Signal-only
+occurrences keep the exact predecessor Native source and carry no Native effect.
 Bridge's authored section now has its own cold readmission
 entry. `begin_definition_publication` prepares a conditional successor with the
 actual lowering owner and installed contract, then retains it in the original
@@ -351,8 +354,10 @@ owner claim across pending or refused observations. A refusal names the journal
 step, so a refused branch step never erases its already committed definition.
 Only `SignalPublishedInitialSource`, obtained after the original branch ACK,
 can transfer that same claim into cold owner readmission. No initialization
-effect is executed by readmission. Home must retain this original before driving
-it; these owner-level entries do not themselves enable Home or Host admission.
+effect is executed by readmission. Home retains this original before driving
+it. Its `SignalReadmitted` stage precedes World reconciliation, and Query serves
+the same `BridgeReadmittedAuthoredAssembly`; a Directory Home creates no empty
+companion Signal graph.
 After a proven-no-effect step, initialization retains a concrete
 `ProvenNoEffectPublication<SignalNoEffectOriginal>` tied to the actual live
 registry, journal and frame digest. It requests an explicit physical retry of

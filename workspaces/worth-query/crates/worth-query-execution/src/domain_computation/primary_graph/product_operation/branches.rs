@@ -10,6 +10,8 @@ use worth_runtime_world::facade::{
 
 use super::WorthQueryApplicationProductBranchCleanup;
 mod expected_basis;
+mod inventory;
+pub use inventory::{WorthQueryProductBranchInventory, WorthQueryProductBranchInventoryDenial};
 mod expected_source;
 mod owned_head;
 use super::{

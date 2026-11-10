@@ -221,7 +221,7 @@ impl Fixture {
         match self
             .signal
             .source_port()
-            .inspect_associated_advances(request, |effect| {
+            .inspect_associated_advances(request, |effect, _| {
                 std::ops::ControlFlow::Break(effect.digest())
             })
             .unwrap()

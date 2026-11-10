@@ -46,7 +46,7 @@ where
     ) -> Result<RuntimeWorldOwner<D, I, E, Ctx, T>, crate::durability::WorldReadmissionDenial> {
         let binding = prepared.binding();
         let recovered = prepared.recovered();
-        super::signal_effects::readmit(
+        let signal_effects = super::signal_effects::readmit(
             &self.signal.source_port(),
             recovered,
             binding.binding(),
@@ -79,6 +79,7 @@ where
             native,
             native_recovery,
             effects,
+            signal_effects,
             request,
         )?;
         Ok(RuntimeWorldOwner::from_root(root))

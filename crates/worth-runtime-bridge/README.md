@@ -363,10 +363,10 @@ Signal owner and exposes authored definition inspection. Cold multi-branch and
 changed-build courts cover this intrinsic entry. Store-backed owner courts also
 cover graceful reopen and a kill after all publications are terminal, comparing
 three branches with the memory-only authored program and demanding derived
-values anew under the same or a changed build. These courts use source-free
-conditional definitions; they do not claim mixed owner effects. Home admission
-and mixed publication remain pending.
-Conditional execution and managed services retain their later phase boundaries.
+values anew under the same or a changed build. Home admits this same assembly
+before World reconciliation and restores a fresh projection for every recovered
+branch. Durable sibling creation inherits the source branch's authored section.
+Resource and temporal runtime custody retain their later recovery boundaries.
 
 `BridgeReadmittedAuthoredAssembly::begin_conditional_definition_publication`
 prepares the successor through Signal's original durable task. It preserves
@@ -384,6 +384,19 @@ original retains its grant across a disposed request observation; resume it with
 `resume_composite_original`. The Signal advance records the attempt association.
 A foreign grant refuses before the callback, and callback refusal restores the
 predecessor projection. The standalone entry refuses after composite attachment.
+
+For a mixed World publication, `prepare_conditional_definition_publication`
+reserves the actual Bridge successor without running a Signal effect. The
+linear `WithSignal` route checks that preparation against its admitted source,
+settles Native first, then transfers it to Signal's existing original task.
+`BridgeDurableDefinitionCompletion` accepts only that original's committed
+Signal output and installed projection. Query publishes the generation obtained
+from this completion. An accepted World open stays retained across refusal;
+canceling it never invents a no-effect answer. Unresolved live publication
+custody refuses Home close. Track H reopens published authored state; an unclean
+tail with an associated effect but no occurrence or disposition refuses with
+`UncleanRecoveryUnsupported` (D18). Crash continuation of the retained original
+owner evidence belongs to track C.
 
 Writeback execution records and replay-comparison records are process-local
 diagnostics. Current enumeration returns retained entries; historical reads take

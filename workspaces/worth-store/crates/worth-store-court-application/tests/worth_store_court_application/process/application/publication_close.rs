@@ -2,7 +2,10 @@
 use worth_execution::{ExecutionAllocationPolicy, ExecutionRequest};
 use worth_relational::facade::{
     mvcc::{RelationalPublicationOutcome, RelationalTransactionIntent},
-    runtime::RelationalRuntimeCloseDenial,
+    runtime::{
+        RelationalPublicationCompanionCustody, RelationalPublicationCustodyHolders,
+        RelationalPublicationRegistryCustody, RelationalRuntimeCloseDenial,
+    },
 };
 use worth_store_application::{
     ApplicationHomeCloseDenial, ApplicationHomeCloseOutcome, ApplicationHomeClosePosture,
@@ -46,11 +49,21 @@ fn performed_publication_custody_refuses_close_until_its_real_settlement() {
             reason:
                 ApplicationHomeCloseDenial::Relational(
                     worth_store_relational::RelationalSectionCloseDenial::Native(
-                        RelationalRuntimeCloseDenial::PublicationCustodyRetained,
+                        RelationalRuntimeCloseDenial::PublicationCustodyRetained(
+                            RelationalPublicationCustodyHolders {
+                                candidates: RelationalPublicationRegistryCustody::Empty,
+                                settlements:
+                                    RelationalPublicationRegistryCustody::Registered {
+                                        count: 1,
+                                        first_identity,
+                                    },
+                                companion: RelationalPublicationCompanionCustody::Released,
+                            },
+                        ),
                     ),
                 ),
             posture: ApplicationHomeClosePosture::Serving(home),
-        } => home,
+        } if first_identity == identity.0 => home,
         ApplicationHomeCloseOutcome::Closed { .. }
         | ApplicationHomeCloseOutcome::CloseRefused { .. } => {
             panic!("unsettled performed custody must preserve the serving home")

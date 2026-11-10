@@ -94,16 +94,24 @@ impl<Schema> Default for WorthQueryInstalledApplicationConditionalRegistry<Schem
 }
 
 impl<Schema> WorthQueryInstalledApplicationConditionalRegistry<Schema> {
+    /// Nonempty definitions retire only through their actual readmitted owner.
+    /// Its installation admitted authored definitions without temporal bindings.
     pub(in crate::domain_computation::primary_graph) fn preflight_home_retirement(
         &self,
+        owner: Option<&super::super::managed_bridge::conditional_owner::ConditionalOwner>,
     ) -> Result<(), super::super::WorthQueryHomeRetirementDenial> {
+        use super::super::managed_bridge::conditional_owner::ConditionalOwner;
         use super::super::{
             WorthQueryHomeRetirementDenial as Denial, WorthQueryHomeRetirementOwner as Owner,
         };
         if self.entries.is_empty() {
-            Ok(())
-        } else {
-            Err(Denial::Unsupported(Owner::InstalledConditionals))
+            return Ok(());
+        }
+        match owner {
+            Some(ConditionalOwner::Authored(_)) => Ok(()),
+            Some(ConditionalOwner::Memory(_)) | Some(ConditionalOwner::Stopped) | None => {
+                Err(Denial::Unsupported(Owner::InstalledConditionals))
+            }
         }
     }
 }

@@ -33,7 +33,15 @@ pub(super) fn authored() -> ApplicationWorldDefinition<(), (), (), (), ()> {
 pub(super) fn authored_with_history_limit(
     limit: u64,
 ) -> ApplicationWorldDefinition<(), (), (), (), ()> {
-    let signal = Box::new(SignalRuntime::build_for::<()>(SignalGraph::new()));
+    authored_with_signal(
+        limit,
+        Box::new(SignalRuntime::build_for::<()>(SignalGraph::new())),
+    )
+}
+pub(super) fn authored_with_signal(
+    limit: u64,
+    signal: Box<SignalRuntime<(), (), (), (), ()>>,
+) -> ApplicationWorldDefinition<(), (), (), (), ()> {
     let bridge = RuntimeBridgeBuilder::new()
         .with_signal_sink(UnboundDelivery)
         .register_mapping(BridgeMappingRegistration::new(

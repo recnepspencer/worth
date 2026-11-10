@@ -26,7 +26,15 @@ fn inherited_directory_key_refuses_a_sibling_product_affinity() {
                 .create(&phase)
         })
         .unwrap()
-        .expect("the actual directory World creates the exact sibling");
+        .unwrap_or_else(|cause| match cause {
+            worth_query_host::facade::product::WorthQueryProductBranchCreateError::ProductUnpublished(
+                recovery,
+            ) => panic!(
+                "the actual directory World creates the exact sibling; retained original: {:?}",
+                recovery.inspect()
+            ),
+            other => panic!("the actual directory World creates the exact sibling: {other:?}"),
+        });
     let principal =
         identity::inspection_authentication::authenticate(application.installed_schema(), &live);
     let retry = home

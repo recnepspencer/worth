@@ -1,6 +1,7 @@
 //! Advance the same actual World phases under the original request ceiling.
 use super::super::durable_custody::{QueryDurableOwnerCall as Call, QueryNativeCustody as Native};
 use super::*;
+mod authored_definition;
 mod native_binding;
 mod native_completion;
 mod native_preparation;

@@ -19,7 +19,12 @@ pub(super) fn advance(
     ) else {
         unreachable!()
     };
-    match bind_query_proposal(opened, proposal) {
+    let with_signal = guard
+        .preparation_mut()
+        .query
+        .attempt
+        .has_conditional_definition();
+    match bind_query_proposal(opened, proposal, with_signal) {
         Ok((preparation, proposal)) => {
             guard.preparation_mut().world = World::NativePreparation(preparation);
             guard.preparation_mut().query.native = Native::Proposal(proposal);

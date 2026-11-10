@@ -1,4 +1,8 @@
 pub use runtime_state::CompleteRelationalCheckpointPreparation;
+pub use runtime_state::{
+    RelationalPublicationCompanionCustody, RelationalPublicationCustodyHolders,
+    RelationalPublicationRegistryCustody,
+};
 pub(crate) use subsystems::{
     MutationRecordAllocations, MutationSymbolMeanings, OriginalBranchSchemaInputs,
     OriginalBranchSchemaInputsDenial, OriginalEmptySchemaInstallation,

@@ -26,6 +26,7 @@ pub(super) fn reconcile<D, I, E, Ctx, T>(
     native: &worth_relational::facade::runtime::RelationalRuntime,
     authority: &RecoveredRelationalRuntimeAuthority,
     effects: super::native_effects::ReadmittedNativeEffects,
+    signal_effects: super::signal_effects::ReadmittedSignalEffects,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<(), Denial>
 where
@@ -203,6 +204,7 @@ where
             native,
             authority,
             &effects,
+            &signal_effects,
             &descriptors,
             &observations,
             &mut custody,

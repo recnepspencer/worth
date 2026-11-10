@@ -30,8 +30,7 @@ pub enum WorthQueryApplicationConditionalDefinitionAdmissionDenial {
     BridgePreparation(worth_runtime_bridge::facade::BridgeConditionalDenial),
 }
 
-/// Why publishing a conditional definition was refused before publication.
-/// Nothing was published.
+/// Why definition publication stopped. Durable preparation retains its original open.
 #[derive(Debug)]
 pub enum WorthQueryConditionalDefinitionPublicationDenial {
     /// The host call was refused admission to its execution request.
@@ -41,11 +40,18 @@ pub enum WorthQueryConditionalDefinitionPublicationDenial {
     ForeignConditionalOperation,
     /// The product's active program refused the definition; the detail says
     /// why.
-    ProductActivation { detail: String },
+    ProductActivation {
+        detail: String,
+    },
     /// The product world refused to prepare the publication.
     WorldPreparation(NoEffectCompositePublication),
     /// The bridge refused the conditional signal basis of the selected product.
     BridgePreparation(worth_runtime_bridge::facade::BridgeConditionalDenial),
+    AuthoredBridgePreparation(
+        worth_runtime_bridge::facade::BridgeDurableDefinitionPublicationDenial,
+    ),
+    DurableOpen(worth_runtime_world::facade::WorldOpenAttemptRefusal),
+    DurablePreparation(worth_runtime_world::facade::WorldNativePreparationRefusal),
 }
 
 impl From<super::super::product_activation::WorthQueryProductConditionalPublicationDenial>
@@ -62,6 +68,9 @@ impl From<super::super::product_activation::WorthQueryProductConditionalPublicat
             },
             D::WorldPreparation(no_effect) => Self::WorldPreparation(no_effect),
             D::BridgePreparation(denial) => Self::BridgePreparation(denial),
+            D::AuthoredBridgePreparation(cause) => Self::AuthoredBridgePreparation(cause),
+            D::DurableOpen(cause) => Self::DurableOpen(cause),
+            D::DurablePreparation(cause) => Self::DurablePreparation(cause),
         }
     }
 }

@@ -52,11 +52,10 @@ where
     state
         .recovery
         .try_close_recovered_count(state.durable.is_some(), request)?;
-    if state
+    let unresolved = state
         .custody
-        .try_has_close_custody()
-        .map_err(|_| Denial::Busy)?
-    {
+        .try_unresolved_close_custody(state.durable.is_some(), &state.branches);
+    if unresolved.map_err(|_| Denial::Busy)? {
         return Err(Denial::UnresolvedBusinessCustody);
     }
     if let Some(binding) = &state.durable {

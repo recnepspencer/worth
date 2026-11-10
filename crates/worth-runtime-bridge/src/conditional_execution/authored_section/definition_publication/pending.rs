@@ -14,6 +14,7 @@ use worth_signal::facade::durability::{
 
 pub(super) struct Pending {
     reservation: Reservation,
+    completion: Arc<super::completion::DefinitionCompletionSlot>,
     program: Arc<Program>,
     predecessor: Arc<BridgeInstalledConditionalLowering>,
     location: Option<BridgeConditionalLocation>,
@@ -42,9 +43,11 @@ impl Pending {
         backing: Arc<Backing>,
         preparation: Option<worth_execution::ExecutionMemoryReservation>,
         refusal: Arc<Mutex<Option<D>>>,
+        completion: Arc<super::completion::DefinitionCompletionSlot>,
     ) -> Self {
         Self {
             reservation,
+            completion,
             program,
             predecessor,
             location: Some(location),
@@ -57,6 +60,14 @@ impl Pending {
             refusal,
             prepared: None,
         }
+    }
+    pub(super) fn completion(&self) -> BridgeDurableDefinitionCompletion {
+        BridgeDurableDefinitionCompletion::new(Arc::clone(&self.completion))
+    }
+    pub(super) fn predecessor_contract(
+        &self,
+    ) -> &worth_signal::facade::InstalledSignalConditionalContract {
+        self.predecessor.signal_contract()
     }
     pub(super) fn claimant(&self) -> worth_signal::facade::SignalAspectLoweringOwner {
         self.program.bridge.signal_aspect_lowering_owner.clone()
@@ -242,10 +253,20 @@ impl worth_signal::facade::durability::SignalDurableProjectionPublication for Pe
             .lowerings
             .write()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .install(lowering.registry_key.clone(), lowering);
+            .install(lowering.registry_key.clone(), Arc::clone(&lowering));
         projection.section = section;
         projection.posture = BranchPosture::Serving;
         self.reservation.phase = ReservationPhase::Installed;
+        *self
+            .completion
+            .installed
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) =
+            Some(super::completion::InstalledDefinition {
+                original,
+                point: branch.source_point().clone(),
+                lowering,
+            });
         drop(projection);
         drop(old);
     }

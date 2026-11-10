@@ -71,6 +71,9 @@ impl CompositeHistoryCatalog {
                 None
             }
             Some(crate::history::PublicationEvidence::Readmitted(_)) => None,
+            // A creation head (fork or exact reuse) carries no Native publication,
+            // so it owns no Native result snapshot to clean.
+            None if entry.commit().relational_publication_identity().is_none() => None,
             Some(crate::history::PublicationEvidence::Live(envelope)) => envelope
                 .facts()
                 .ok_or(Denial::InconsistentSealedCatalog)?

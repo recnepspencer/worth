@@ -38,7 +38,8 @@ mod custody;
 pub(crate) use custody::AttemptProductMovementFailure;
 pub(crate) use custody::{
     ActiveAttemptCustody, ActiveAttemptRecord, ActiveAttemptResources,
-    ConditionalDefinitionAttemptCustody, ReactivatedCreationFacts, RetainedCommitDisposition,
+    AuthoredConditionalDefinitionAttemptCustody, ConditionalDefinitionAttemptCustody,
+    ReactivatedCreationFacts, RetainedCommitDisposition,
 };
 mod intent;
 mod no_effect;

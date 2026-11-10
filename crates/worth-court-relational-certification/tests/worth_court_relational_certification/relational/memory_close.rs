@@ -8,7 +8,10 @@ use worth_relational::facade::{
     },
     mvcc::RelationalPublicationOutcome,
     runtime::{
-        RelationalRuntimeApi, RelationalRuntimeCloseDenial as Denial, RelationalRuntimeConfig,
+        RelationalPublicationCompanionCustody as Companion,
+        RelationalPublicationCustodyHolders as Holders,
+        RelationalPublicationRegistryCustody as Registry, RelationalRuntimeApi,
+        RelationalRuntimeCloseDenial as Denial, RelationalRuntimeConfig,
     },
 };
 use worth_testkit_relational::{
@@ -215,7 +218,11 @@ fn memory_terminal_close_refuses_actual_expired_candidate_until_owner_discards_i
         .unwrap();
     assert!(matches!(
         close.advance(request),
-        O::Refused(Denial::PublicationCustodyRetained)
+        O::Refused(Denial::PublicationCustodyRetained(Holders {
+            candidates: Registry::Registered { count: 1, first_identity },
+            settlements: Registry::Empty,
+            companion: Companion::Released,
+        })) if first_identity > 0
     ));
     assert!(
         port.observe_branch(&identity).is_ok(),
@@ -253,7 +260,11 @@ fn memory_terminal_close_preserves_pending_settlement_and_explicit_snapshot_repa
         .unwrap();
     assert!(matches!(
         close.advance(request),
-        O::Refused(Denial::PublicationCustodyRetained)
+        O::Refused(Denial::PublicationCustodyRetained(Holders {
+            candidates: Registry::Empty,
+            settlements: Registry::Registered { count: 1, first_identity },
+            companion: Companion::Released,
+        })) if first_identity > 0
     ));
     let handle = close.into_refused_handle().unwrap(); // Explicit unbudgeted preseal restoration.
     let result =

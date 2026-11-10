@@ -13,6 +13,10 @@ pub enum NoEffectCause {
     CurrentReadDependency(super::CurrentProductReadDependencyDenial),
     StaleIncarnation,
     CorrespondenceRebindRequired,
+    /// Bridge refused the predecessor's exact correspondence before any effect.
+    CorrespondenceAdmissionDenied(
+        worth_runtime_bridge::facade::RuntimeWorldCorrespondenceAdmissionDenial,
+    ),
     ReferenceGenerationExhausted,
     CapacityExhausted,
     OwnerUnavailable,

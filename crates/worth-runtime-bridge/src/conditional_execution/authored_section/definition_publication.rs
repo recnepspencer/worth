@@ -15,7 +15,11 @@ use worth_foundational::facade::DurableSignalBranchIdentity;
 use worth_signal::facade::durability::{
     SignalDurableAdvanceDenial, SignalDurableAdvanceTask, SignalDurableBranchHandle,
 };
+mod completion;
 mod pending;
+mod prepared;
+pub use completion::{BridgeDurableDefinitionCompletion, BridgeDurableDefinitionCompletionDenial};
+pub use prepared::BridgePreparedAuthoredDefinitionPublication;
 
 #[derive(Debug)]
 pub enum BridgeDurableDefinitionPublicationDenial {
@@ -25,6 +29,7 @@ pub enum BridgeDurableDefinitionPublicationDenial {
         node: worth_signal::facade::NodeId,
     },
     IdentityOrCorrespondenceChanged,
+    SourceBasisMismatch,
     ProjectionSlotOccupied {
         branch: DurableSignalBranchIdentity,
         node: worth_signal::facade::NodeId,
@@ -87,6 +92,26 @@ mod preparation;
 use preparation::PreparedDefinition;
 
 impl BridgeReadmittedAuthoredAssembly {
+    /// Reserve the actual Bridge successor before either composite owner executes.
+    /// Signal receives it only after Native has completed and settled.
+    pub fn prepare_conditional_definition_publication(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        branch: DurableSignalBranchIdentity,
+        predecessor: &Arc<BridgeInstalledConditionalLowering>,
+        request: BridgeOwnedConditionalInstallationRequest,
+    ) -> Result<BridgePreparedAuthoredDefinitionPublication, D> {
+        let source = self.signal.source_port();
+        let descriptor = source
+            .observe(branch)
+            .map_err(|cause| D::Signal(Box::new(SignalDurableAdvanceDenial::Source(cause))))?;
+        let expected = source
+            .readmit_descriptor(&descriptor)
+            .map_err(|cause| D::Signal(Box::new(SignalDurableAdvanceDenial::Source(cause))))?;
+        let prepared =
+            self.prepare_definition_publication(execution, branch, predecessor, request)?;
+        Ok(BridgePreparedAuthoredDefinitionPublication { prepared, expected })
+    }
     pub fn begin_conditional_definition_publication(
         &self,
         execution: &ExecutionRequest<'_, '_>,

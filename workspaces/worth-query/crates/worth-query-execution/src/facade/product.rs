@@ -44,6 +44,7 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryExpectedProductBranchCloseFailure, WorthQueryExpectedProductBranchFork,
     WorthQueryOwnedProductHead, WorthQueryOwnedProductHeadCloseFailure,
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrincipalResolutionMode,
+    WorthQueryProductBranchInventory, WorthQueryProductBranchInventoryDenial,
     WorthQueryProductEntry, WorthQueryProductHistory, WorthQueryProductHistoryEntry,
     WorthQueryProductQueryControls, WorthQueryProductTransaction,
     WorthQueryProductTransactionCommitError, WorthQuerySelectedProductOperation,

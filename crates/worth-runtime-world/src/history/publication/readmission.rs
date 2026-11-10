@@ -31,13 +31,13 @@ pub(crate) struct ReadmittedPublicationRecord {
 #[derive(Debug)]
 pub(crate) struct PreparedReadmittedPublicationRecord {
     record: Arc<ReadmittedPublicationRecord>,
-    native: Arc<NativePublicationMeaning>,
+    native: Option<Arc<NativePublicationMeaning>>,
 }
 impl PreparedReadmittedPublicationRecord {
     pub(crate) fn effect(
         &self,
-    ) -> &worth_relational::facade::durability::ReadmittedRelationalAssociatedEffect {
-        self.native.effect()
+    ) -> Option<&worth_relational::facade::durability::ReadmittedRelationalAssociatedEffect> {
+        self.native.as_ref().map(|native| native.effect())
     }
     pub(crate) fn into_retirement(self: Arc<Self>) -> ReadmittedPublicationRetirement {
         let original =
@@ -59,13 +59,11 @@ impl ReadmittedPublicationRecord {
         after: ProductBranchReferenceSnapshot,
         attempt: CompositePublicationAttemptIdentity,
         incarnation: worth_foundational::facade::HomeIncarnation,
-        native: RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>,
+        owners: RecoveredWorldOwnerEvidence,
     ) -> Arc<PreparedReadmittedPublicationRecord> {
-        let native = Arc::new(NativePublicationMeaning::Recovered(
-            native.consume(|native| native),
-        ));
+        let owners = owners.into_meaning();
         Arc::new(PreparedReadmittedPublicationRecord {
-            native: native.clone(),
+            native: owners.native().cloned(),
             record: Arc::new(Self {
                 before,
                 after,
@@ -73,7 +71,7 @@ impl ReadmittedPublicationRecord {
                 incarnation,
                 location: OnceLock::new(),
                 _memory: backing.memory,
-                owners: Some(ReadmittedOwnerMeaning::RelationalOnly(native)),
+                owners: Some(owners),
             }),
         })
     }

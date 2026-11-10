@@ -10,6 +10,7 @@ use crate::conditional_execution::{
 use std::sync::{Arc, Mutex, MutexGuard, TryLockError};
 use worth_foundational::facade::{DurableSignalBranchIdentity, SignalBranchAdvanceIdentity};
 use worth_signal::facade::NodeId;
+mod correspondence_posture;
 
 pub struct BridgeReadmittedAuthoredAssembly {
     pub(in crate::conditional_execution) home_retirement: Mutex<
@@ -166,6 +167,24 @@ impl BranchProjection {
                 Err(BridgeAuthoredBranchDenial::Pending { branch, original })
             }
         }
+    }
+}
+impl BranchProjection {
+    /// The installed dependencies a correspondence admission compares with. A
+    /// prepared definition successor changes them only when it completes, so
+    /// they stay current while that successor is Preparing.
+    pub(in crate::conditional_execution) fn installed_for_correspondence(
+        &self,
+        branch: DurableSignalBranchIdentity,
+    ) -> Result<MutexGuard<'_, Box<ReadmittedBranch>>, BridgeAuthoredBranchDenial> {
+        let guard = self.state.try_lock().map_err(|denial| match denial {
+            TryLockError::WouldBlock => {
+                BridgeAuthoredBranchDenial::ProjectionContactHeld { branch }
+            }
+            TryLockError::Poisoned(_) => BridgeAuthoredBranchDenial::Poisoned { branch },
+        })?;
+        guard.posture.require_installed_correspondence(branch)?;
+        Ok(guard)
     }
 }
 impl BridgeAuthoredBranchView<'_> {

@@ -98,6 +98,7 @@ impl BridgeReadmittedAuthoredAssembly {
         )
         .map_err(|cause| D::Conditional(Box::new(cause)))?;
         let refusal = Arc::new(Mutex::new(None));
+        let completion = super::completion::DefinitionCompletionSlot::reserve(execution)?;
         let pending = Box::new(pending::Pending::new(
             reservation,
             program,
@@ -110,6 +111,7 @@ impl BridgeReadmittedAuthoredAssembly {
             backing,
             preparation,
             Arc::clone(&refusal),
+            completion,
         ));
         Ok(PreparedDefinition {
             pending,

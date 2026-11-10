@@ -43,8 +43,10 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
         | BridgeConditionalDefinitions
         | BridgeSemanticRegistrations
         | BridgeCorrespondenceAllocation
-        | BridgeOwnedAsyncDefinitions
-        | BridgeDiagnosticRetention => DirectoryFamilySupport::RefusedUntil(5),
+        | BridgeDiagnosticRetention => DirectoryFamilySupport::Supported,
+        // Resource pools serve owned-async definitions only with Phase 7 custody;
+        // H5 proves no Directory readmission of them, so they stay refused.
+        BridgeOwnedAsyncDefinitions => DirectoryFamilySupport::RefusedUntil(7),
         ProgramSupportLifecycle
         | BranchAdoptionRecovery
         | StoppedBranchSetAdoption
@@ -127,7 +129,7 @@ pub(crate) fn directory_requirement_refusal(
         DirectoryFamilySupport::RefusedUntil(phase) => phase,
     };
     let phase = family_phase.max(required_phase);
-    if phase <= 4 {
+    if phase <= 5 {
         None
     } else {
         Some(phase)

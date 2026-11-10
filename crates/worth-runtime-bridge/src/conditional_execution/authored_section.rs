@@ -21,7 +21,10 @@ pub use branch_projection::{
     BridgeAuthoredBranchDenial, BridgeAuthoredBranchView, BridgeReadmittedAuthoredAssembly,
 };
 pub(super) use definition::BridgeReadmittedDefinitionSource;
-pub use definition_publication::BridgeDurableDefinitionPublicationDenial;
+pub use definition_publication::{
+    BridgeDurableDefinitionCompletion, BridgeDurableDefinitionCompletionDenial,
+    BridgeDurableDefinitionPublicationDenial, BridgePreparedAuthoredDefinitionPublication,
+};
 pub use dependency::BridgeAuthoredDependencyDescription;
 pub use fork_publication::BridgeDurableForkPublicationDenial;
 pub use readmission::{BridgeAuthoredInstallationBindings, BridgeAuthoredReadmissionDenial};

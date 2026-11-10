@@ -254,9 +254,10 @@ pub mod runtime {
     };
     pub use crate::runtime::{
         PreparedRelationalRuntimeClose, PreparedRelationalSourceClose,
-        RelationalRuntimeCloseDenial, RelationalRuntimeCloseRefused, RelationalSourceClose,
-        RelationalSourceCloseDenial, RelationalSourceCloseProgress,
-        RetiredSourceRelationalAllocation,
+        RelationalPublicationCompanionCustody, RelationalPublicationCustodyHolders,
+        RelationalPublicationRegistryCustody, RelationalRuntimeCloseDenial,
+        RelationalRuntimeCloseRefused, RelationalSourceClose, RelationalSourceCloseDenial,
+        RelationalSourceCloseProgress, RetiredSourceRelationalAllocation,
     };
     pub use crate::storage::data::{
         ChunkVisibilitySummary, ChunkedStorageSummary, EntityReadRecord, PartitionStorageStats,

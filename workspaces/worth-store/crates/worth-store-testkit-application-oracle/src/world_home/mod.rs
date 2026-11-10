@@ -1,5 +1,7 @@
 //! Actual Native/Bridge/Signal/World composition for filesystem Home courts.
 mod definition;
+mod derived_signal;
+pub use derived_signal::{open_with_derived_signal, reference_signal_value};
 mod publication;
 use worth_execution::{ExecutionRequest, WorkCeilingDenial};
 use worth_store_application::{

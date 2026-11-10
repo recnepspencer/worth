@@ -24,6 +24,9 @@ where
         cancellation: &crate::publication::RuntimeWorldCancellationToken,
         apply: F,
         admit_activation: H,
+        definition: Option<
+            std::sync::Arc<crate::publication::AuthoredConditionalDefinitionAttemptCustody>,
+        >,
     ) -> Result<(), SignalExecutionFailure>
     where
         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
@@ -44,21 +47,35 @@ where
         let backing = WorldDurableSignalBacking::reserve(&execution).map_err(|_| failure())?;
         let grant = attachment.issuer.admit_original(binding.commitment());
         attempt.counters_mut().record_signal_owner_contact();
-        let task = mutation
-            .begin_composite_advance(
-                execution,
-                binding,
-                grant,
-                runtime_ctx,
-                cancellation.signal_token(),
-                apply,
-            )
-            .map_err(|denial| match denial {
-                worth_signal::facade::durability::SignalDurableAdvanceDenial::Mutation(cause) => {
-                    super::signal::advance_failure(&cause)
-                }
-                _ => failure(),
-            })?;
+        let task = match &definition {
+            Some(definition) => definition
+                .take_prepared()
+                .begin_composite(
+                    &mutation,
+                    execution,
+                    binding,
+                    grant,
+                    runtime_ctx,
+                    cancellation.signal_token(),
+                    apply,
+                )
+                .map_err(|_| failure())?,
+            None => mutation
+                .begin_composite_advance(
+                    execution,
+                    binding,
+                    grant,
+                    runtime_ctx,
+                    cancellation.signal_token(),
+                    apply,
+                )
+                .map_err(|denial| match denial {
+                    worth_signal::facade::durability::SignalDurableAdvanceDenial::Mutation(
+                        cause,
+                    ) => super::signal::advance_failure(&cause),
+                    _ => failure(),
+                })?,
+        };
         let retained = backing.retain(task);
         // Before the first durable drive, publish the exact task into original custody.
         progress.set_signal(SignalAttemptProgress::unresolved(std::sync::Arc::clone(
@@ -67,9 +84,12 @@ where
         attempt.record_progress(progress);
         match retained.drive(&execution) {
             WorldDurableSignalProgress::Committed(output) => {
+                let projection_refused = definition
+                    .as_ref()
+                    .is_some_and(|definition| definition.complete(&output.output).is_err());
                 progress.set_signal(SignalAttemptProgress::durable(output));
                 attempt.record_progress(progress);
-                if admit_activation(None).is_err() {
+                if projection_refused || admit_activation(None).is_err() {
                     return Err(SignalExecutionFailure {
                         partial: progress.signal().retained_image(),
                         ..failure()

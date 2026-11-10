@@ -14,6 +14,7 @@ pub(super) fn install<D, I, E, Ctx, T>(
     native: &RelationalRuntime,
     authority: &RecoveredRelationalRuntimeAuthority,
     effects: &super::super::native_effects::ReadmittedNativeEffects,
+    signal_effects: &super::super::signal_effects::ReadmittedSignalEffects,
     descriptors: &ExecutionOrderedMap<
         worth_foundational::facade::DurableCompositeCommitIdentity,
         RecordedRelationalComponentReference,
@@ -70,7 +71,9 @@ where
         };
         let index = custody.publications.len();
         custody.publications.push(admitted);
+        let signal = signal_effects.get(&open.association.attempt());
         if custody.publications[index].is_none()
+            && signal.is_none()
             && matches!(
                 disposition.map(|row| row.disposition()),
                 Some(RecoveredCustodyDisposition::Continued)
@@ -113,6 +116,7 @@ where
                 binding: binding.clone(),
                 native_identity,
                 native: custody.publications[index].take(),
+                signal,
             });
     }
     Ok(())
