@@ -21,6 +21,19 @@ each invariant is enforced and where each new type lives.
 
 ### C4 - Injected faults
 
+- `retained_merge_strategy_witness_live_authority_denies_internal_forged_strategy_truth`: `restore from 26cc5a58f2:crates/worth-relational/src/tests/history/milestone_7e_phase_i/mod.rs`.
+  C4 owns this injected typed-summary/witness or stored-original fault; restore
+  the same-SHA `fixtures.rs` beside the root, preserving exact denials.
+- `merge_support_inspection_witness_denies_inconsistent_retained_proof_authority`: `restore from 26cc5a58f2:crates/worth-relational/src/tests/history/milestone_7e_phase_l/mod.rs`.
+  C4 owns this injected typed-summary/witness or stored-original fault; restore
+  the same-SHA `fixtures.rs` beside the root, preserving exact denials.
+- `merge_collaboration_truth_denies_cross_family_witness_mismatch`: `restore from 26cc5a58f2:crates/worth-relational/src/tests/history/milestone_7e_phase_m/mod.rs`.
+  C4 owns this injected typed-summary/witness or stored-original fault; restore
+  the same-SHA `fixtures.rs` and `drift_support.rs` beside the root, preserving exact denials.
+- `merge_collaboration_truth_denies_summary_only_and_planner_shortcuts`: `restore from 26cc5a58f2:crates/worth-relational/src/tests/history/milestone_7e_phase_m/mod.rs`.
+  C4 owns this injected typed-summary/witness or stored-original fault; restore
+  the same-SHA `fixtures.rs` and `drift_support.rs` beside the root, preserving exact denials.
+
 - Disconnected-graph half of `merge_branch_basis_denial_happens_before_planning_for_missing_or_disconnected_branches`:
   `restore from 45b6e87a0a:crates/worth-relational/src/tests/history/milestone_7e_phase_a.rs`.
   Restore `graft_disconnected_branch_head` from that file. C4 owns its forged

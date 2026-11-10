@@ -1,10 +1,9 @@
 use crate::facade::history::{BranchId, CommitId};
 use crate::facade::identity::KindId;
-use crate::facade::inspection::RelationalMergeSupportInspectionWitness;
 use crate::facade::merge::{
     AspectMergePolicyDeclaration, AspectMergePolicyKind, IdentityBasisDeclaration,
     IdentityBasisKind, IdentityBasisScope, MergeExecutionOutcome, MergeExecutionRequest,
-    MergeIntent, RelationalMergeProofPacketCanonicalBasis,
+    MergeIntent,
 };
 use crate::facade::runtime::{RelationalRuntime, RelationalRuntimeApi};
 use crate::facade::schema::{
@@ -16,14 +15,7 @@ use crate::tests::support::{
     aspect_key, create_branch_from_main, create_entity, entity_field_aspect, field_key,
     string_aspect_field_patch, CascadeDeletePolicy, CrossContextPolicy,
 };
-use crate::transactions::data::{MergeExecutionSummary, PublishedMergeExecutionAuthority};
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(super) struct CollaborationTruthSnapshot {
-    pub authority: PublishedMergeExecutionAuthority,
-    pub support: RelationalMergeSupportInspectionWitness,
-    pub canonical_basis: RelationalMergeProofPacketCanonicalBasis,
-}
+use crate::transactions::data::PublishedMergeExecutionAuthority;
 
 pub(super) fn runtime_with_collaboration_merge_history() -> RelationalRuntime {
     let name_key = aspect_key("name");
@@ -65,7 +57,7 @@ pub(super) fn runtime_with_collaboration_merge_history() -> RelationalRuntime {
         .expect("phase 13 schema registry");
     RelationalRuntimeApi::builder()
         .schema_registry(registry)
-        .build_durable(crate::tests::support::TestDurableMedium::new().attachment())
+        .build()
         .expect("valid native runtime configuration")
 }
 
@@ -117,58 +109,6 @@ pub(super) fn published_merge_authority(
         .unwrap()
         .and_then(|envelope| envelope.merge_execution_authority.clone())
         .expect("published merge authority")
-}
-
-pub(super) fn snapshot_from_summary(
-    runtime: &RelationalRuntime,
-    summary: &MergeExecutionSummary,
-) -> CollaborationTruthSnapshot {
-    let authority = PublishedMergeExecutionAuthority {
-        execution_summary: summary.clone(),
-        structural_summary: crate::transactions::data::MergeExecutionStructuralSummary {
-            executed_record_count: summary.executed_record_count,
-            adopted_source_record_count: summary.adopted_source_record_count,
-            preserved_shared_record_count: summary.preserved_shared_record_count,
-            reconciled_record_count: summary.reconciled_record_count,
-            converged_deleted_on_both_sides_count: summary.converged_deleted_on_both_sides_count,
-            deleted_on_both_sides_lineage_unchanged_count: summary
-                .deleted_on_both_sides_lineage_unchanged_count,
-            emitted_mutation_intent_count: summary.emitted_mutation_intent_count,
-            emitted_entity_create_count: 0,
-            emitted_relation_create_count: 0,
-            emitted_entity_update_count: 0,
-        },
-    };
-    snapshot_from_authority(runtime, authority)
-}
-
-pub(super) fn snapshot_from_authority(
-    runtime: &RelationalRuntime,
-    authority: PublishedMergeExecutionAuthority,
-) -> CollaborationTruthSnapshot {
-    let support = runtime
-        .inspect_what_happened()
-        .prepare_published_merge_support_inspection_witness(&authority)
-        .expect("support inspection witness");
-    let canonical_basis = lower_packet(runtime, authority.execution_summary.proof_packet());
-    CollaborationTruthSnapshot {
-        authority,
-        support,
-        canonical_basis,
-    }
-}
-
-fn lower_packet(
-    runtime: &RelationalRuntime,
-    packet: &crate::facade::merge::RelationalMergeProofPacket,
-) -> RelationalMergeProofPacketCanonicalBasis {
-    let outcome = runtime
-        .merge()
-        .lower_merge_proof_packet_to_foundational_canonical_basis(packet);
-    let worth_proof::TransitionOutcome::Success(basis) = outcome else {
-        panic!("phase 13 canonical lowering must succeed for retained merge proof packet");
-    };
-    basis
 }
 
 fn install_merge_scenario(

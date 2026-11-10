@@ -1,0 +1,10 @@
+# Fresh independent design review
+
+Reviewer /root/original_input_observation_design_review. ReviseddesignAPPROVE,
+no edits/builds/tests. InitialP1privateMutationConfig/schemaimagetypeexposure
+corrected toborrowedsemanticviews, no ownedwire/constructor promotion. P2cost
+wording corrected: O1projection/getters, O(schemaDATA)optionalwholeimageEq;
+nonCopyAdjacencyPolicyborrowed. Exhaustive3policyprojectionandtwoDigestIDs plus
+actualwholeimageEqpreserveoriginalattribution. No remainingauthoritydefect;
+bodySerializeexhaustive, keeporiginal2normalizations. Debugsemanticmetadataonly.
+Implementation/affectedphysicalrecoveryqualificationstillpending.

@@ -63,3 +63,11 @@ mod merge_packet_journeys;
 mod merge_proof_journey;
 mod merge_request_journeys;
 mod merge_request_lowering_journey;
+
+mod merge_collaboration_witness_journeys;
+mod merge_correspondence_journeys;
+mod merge_schema_witness_journeys;
+mod merge_strategy_witness_journey;
+mod merge_support_witness_journey;
+mod merge_witness_authoring;
+mod merge_witness_schema;
