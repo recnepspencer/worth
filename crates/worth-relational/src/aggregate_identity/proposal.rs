@@ -1,4 +1,5 @@
 //! Proposal-lived initialization, retained read custody and single write consumption.
+mod pin_read;
 mod symbol_admission;
 use super::changes::AggregateChanges;
 use super::preparation::{PreparedAggregateArtifact, PreparedConsequences};
@@ -30,6 +31,8 @@ enum ArtifactState {
     Uninitialized,
     Ready(PreparedAggregateArtifact),
     Consumed(Arc<AggregateProjection>),
+    /// A pin read prepared the projection only; a commit prepares again.
+    Projected(Arc<AggregateProjection>),
     Failed(TransactionCommitError),
 }
 
@@ -118,7 +121,7 @@ impl AggregateProposal {
             ArtifactState::Ready(artifact) => return Ok(Arc::clone(&artifact.projection)),
             ArtifactState::Consumed(projection) => return Ok(Arc::clone(projection)),
             ArtifactState::Failed(error) => return Err(error.clone()),
-            ArtifactState::Uninitialized => {}
+            ArtifactState::Uninitialized | ArtifactState::Projected(_) => {}
         }
         let changes = self
             .changes
@@ -130,7 +133,7 @@ impl AggregateProposal {
             &self.authority,
             selected,
             after,
-            business,
+            super::preparation::BusinessPlan::Commands(business),
             changes,
             self.identity.proposed_version_id(),
             self.identity.commit_id(),
@@ -181,21 +184,6 @@ impl<'a> AggregateProposalBorrow<'a> {
             source: self,
             business,
         }
-    }
-
-    pub(crate) fn candidate_read(
-        self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        business: &MergedCommitPlan,
-    ) -> Result<super::AggregateCandidateRead, TransactionCommitError> {
-        let projection =
-            self.owner
-                .projection(execution, None, &self.selected, self.after, business)?;
-        Ok(super::AggregateCandidateRead::new(
-            projection,
-            Arc::clone(self.owner.selected.state().root()),
-            self.owner.selected.version_id(),
-        ))
     }
 
     pub(crate) fn ensure_prepared(

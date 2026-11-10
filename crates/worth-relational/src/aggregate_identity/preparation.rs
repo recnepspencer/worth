@@ -5,7 +5,9 @@ use crate::branch::{RelationalBranchRootSchemaAuthority, SelectedRelationalBranc
 use crate::history::data::CommitId;
 use crate::identity::data::VersionId;
 use crate::storage::overlay::{OverlayStateView, WorkingState};
-use crate::transactions::data::{AuthoritativeApplyPlan, MergedCommitPlan, TransactionCommitError};
+use crate::transactions::data::{
+    AuthoritativeApplyPlan, MergedCommitPlan, MutationIntent, TransactionCommitError, TransactionId,
+};
 use crate::validation::engine::state_view::InvariantStateView;
 use worth_foundational::facade::AggregateDefinitionIdentity;
 
@@ -15,6 +17,31 @@ use super::projection::{AggregateProjection, DefinitionProjection, ProjectionDat
 use super::{cohorts, consequence_plan};
 use std::sync::Arc;
 pub(super) mod derived_laws;
+
+/// What preparation reads of the business commands.
+#[derive(Clone, Copy)]
+pub(super) enum BusinessPlan<'a> {
+    /// A commit's whole business plan; its consequence admission copies it.
+    Commands(&'a MergedCommitPlan),
+    /// A candidate pin read. The projection comes from the applied effect and
+    /// depends on the commands only through this transaction id. The caller
+    /// keeps the projection and never the consequence plan built from it.
+    Transaction(TransactionId),
+}
+impl BusinessPlan<'_> {
+    fn transaction_id(self) -> TransactionId {
+        match self {
+            Self::Commands(plan) => plan.transaction_id,
+            Self::Transaction(id) => id,
+        }
+    }
+    fn intents(&self) -> &[MutationIntent] {
+        match self {
+            Self::Commands(plan) => &plan.merged_intents,
+            Self::Transaction(_) => &[],
+        }
+    }
+}
 
 pub(crate) struct AggregateAdmission {
     pub(crate) plan: MergedCommitPlan,
@@ -66,7 +93,7 @@ pub(super) fn prepare(
     authority: &RelationalBranchRootSchemaAuthority,
     selected: &SelectedRelationalBranchRead<'_>,
     working: &WorkingState,
-    business: &MergedCommitPlan,
+    business: BusinessPlan<'_>,
     effect: &AggregateChanges,
     version: VersionId,
     occurrence: CommitId,
@@ -137,7 +164,7 @@ pub(super) fn prepare(
         if plan.intents.is_empty() {
             return Ok(PreparedValue {
                 apply: AuthoritativeApplyPlan {
-                    transaction_id: business.transaction_id,
+                    transaction_id: business.transaction_id(),
                     version_id: version,
                     merged_intents: Vec::new(),
                 },
@@ -146,13 +173,13 @@ pub(super) fn prepare(
                 source_bytes,
                 controls,
                 admission: MergedCommitPlan {
-                    transaction_id: business.transaction_id,
+                    transaction_id: business.transaction_id(),
                     merged_intents: Vec::new(),
                 },
             });
         }
         let count = business
-            .merged_intents
+            .intents()
             .len()
             .checked_add(plan.intents.len())
             .ok_or(worth_execution::MapKernelFailure::ResultCapacityExceeded)?;
@@ -164,14 +191,14 @@ pub(super) fn prepare(
                 .ok_or(worth_execution::MapKernelFailure::ResultCapacityExceeded)?,
         )?;
         let mut admission = MergedCommitPlan {
-            transaction_id: business.transaction_id,
+            transaction_id: business.transaction_id(),
             merged_intents: Vec::new(),
         };
         admission
             .merged_intents
             .try_reserve_exact(count)
             .map_err(|_| worth_execution::MapKernelFailure::ResultCapacityExceeded)?;
-        for intent in &business.merged_intents {
+        for intent in business.intents() {
             let bytes = intent.owned_allocation_capacity_bytes();
             work.checkpoint(bytes.saturating_add(1))?;
             work.retain(bytes)?;
@@ -183,7 +210,7 @@ pub(super) fn prepare(
         }
         Ok(PreparedValue {
             apply: AuthoritativeApplyPlan {
-                transaction_id: business.transaction_id,
+                transaction_id: business.transaction_id(),
                 version_id: version,
                 merged_intents: plan.intents,
             },
