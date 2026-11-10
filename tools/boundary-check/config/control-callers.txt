@@ -1856,3 +1856,5 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 
 # Recorded creation inverse courts inspect actual Native aggregate membership rows.
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/coupled/creation_inverse.rs
+# The edit-envelope header court re-validates its own genuine recorded commit.
+crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/coupled_producers/stages.rs

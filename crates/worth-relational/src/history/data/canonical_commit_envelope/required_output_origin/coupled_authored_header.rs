@@ -103,5 +103,4 @@ impl CanonicalCommitEnvelope {
     }
 }
 
-#[cfg(test)]
-mod tests;
+mod court_door;
