@@ -69,6 +69,12 @@ fn publish_retained(
     let mut members = std::mem::take(&mut committed.members);
     for member in &mut members {
         let mut session = committed.take_member_session(member);
+        if provider
+            .application_attempt_operation_control
+            .take_withheld_output_witness()
+        {
+            session.prepared_output_witness = None;
+        }
         let evidence =
             super::super::evidence_seal::seal_on_runtime(execution, runtime, &mut session);
         let mut pending = prepare_pending(provider, runtime, session, evidence);

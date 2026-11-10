@@ -82,6 +82,13 @@ impl CoupledAdoption {
                 posture: CompletionPosture::OwnEffectContinuation,
             }));
         }
+        // Only the Current route reads the witness. A completion that keeps
+        // facts without it cannot answer, so it is not adopted here and the
+        // ordinary path runs the producer (public #126). The born-stale branch
+        // above never reads the witness and keeps its successor chain.
+        if candidate.retains_facts_without_witness() {
+            return Ok(None);
+        }
         match selected.require_current_output_receipts(phase, [&receipt]) {
             Ok(()) => Ok(Some(Self {
                 candidate,

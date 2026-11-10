@@ -3,8 +3,8 @@ use super::*;
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 use worth_relational::facade::inspection::observe_maintenance_work;
 
-type NamedRows = Vec<(String, u64, Vec<(String, u64)>, Vec<(String, u64)>)>;
-fn named(snapshot: &snapshot::Snapshot) -> NamedRows {
+pub(super) type NamedRows = Vec<(String, u64, Vec<(String, u64)>, Vec<(String, u64)>)>;
+pub(super) fn named(snapshot: &snapshot::Snapshot) -> NamedRows {
     snapshot
         .rows
         .iter()

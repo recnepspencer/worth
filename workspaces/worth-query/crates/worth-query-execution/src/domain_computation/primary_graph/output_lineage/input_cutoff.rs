@@ -139,6 +139,13 @@ impl RetainedInputCutoffCandidate {
         &self.recorded().consumed_outputs
     }
 
+    /// See `RecordedOutput::retains_facts_without_witness`.
+    pub(in crate::domain_computation::primary_graph) fn retains_facts_without_witness(
+        &self,
+    ) -> bool {
+        self.recorded().retains_facts_without_witness()
+    }
+
     /// The original performed run, not its rebased postconditions, decides this.
     pub(in crate::domain_computation::primary_graph) fn requires_own_effect_continuation(
         &self,

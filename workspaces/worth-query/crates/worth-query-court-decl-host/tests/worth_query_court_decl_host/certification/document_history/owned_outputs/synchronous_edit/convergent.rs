@@ -105,7 +105,7 @@ fn worker_only_a_convergent_owned_two_effect_route_keeps_the_real_successor() {
     deferred(true);
 }
 
-fn synchronous(worker: bool) {
+fn synchronous(worker: bool, withheld: bool) {
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
     let host = world::install_program::<program::Synchronous>(limits(worker));
     let scope = request_scope();
@@ -114,6 +114,8 @@ fn synchronous(worker: bool) {
     settle(&host, &request);
     let original = row(&request);
     let contacts = host.producer_contacts_on_this_thread_for_test();
+    // Public #126: the route's record keeps facts without a sealed output witness.
+    let withheld = withheld.then(|| host.withhold_next_coupled_output_witness_for_test());
     let (outcome, work) = observe_maintenance_work(16, || {
         request
             .advanced()
@@ -132,6 +134,12 @@ fn synchronous(worker: bool) {
     let WorthQueryApplicationPerformedMutationOutcome::Performed(done) = outcome else {
         panic!("the first effectful run must co-commit without refusing its real successor");
     };
+    if let Some(withheld) = &withheld {
+        assert!(
+            withheld.taken_for_test(),
+            "the route's witness was withheld"
+        );
+    }
     assert_eq!(
         host.producer_contacts_on_this_thread_for_test() - contacts,
         1
@@ -174,9 +182,19 @@ fn synchronous(worker: bool) {
 }
 #[test]
 fn a_synchronous_owned_two_effect_route_keeps_its_delivery_successor() {
-    synchronous(false);
+    synchronous(false, false);
 }
 #[test]
 fn worker_only_synchronous_owned_two_effect_route_keeps_its_delivery_successor() {
-    synchronous(true);
+    synchronous(true, false);
+}
+/// A born-stale record is never read for currentness, so it keeps its own-effect
+/// successor whether or not its output witness was sealed.
+#[test]
+fn a_born_stale_route_without_its_output_witness_keeps_its_delivery_successor() {
+    synchronous(false, true);
+}
+#[test]
+fn worker_only_born_stale_route_without_its_output_witness_keeps_its_delivery_successor() {
+    synchronous(true, true);
 }

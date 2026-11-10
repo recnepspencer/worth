@@ -123,6 +123,22 @@ impl RecordedOutput {
         }
     }
 
+    /// A record that keeps comparable facts is checked for currentness against
+    /// its completed computation's sealed Native output witness. Without that
+    /// witness the check cannot answer (public #126), and the record is not
+    /// adoptable as current: the ordinary path runs the producer, as every
+    /// other reader does for a record with no witness. The facts condition is
+    /// the one the currentness read uses; a factless record is answered by its
+    /// own commit and is never this.
+    pub(super) fn retains_facts_without_witness(&self) -> bool {
+        self.observed_source_facts()
+            .and_then(|facts| facts.for_comparison())
+            .is_some_and(|facts| !facts.is_empty())
+            && self
+                .completed_computation_record()
+                .is_some_and(|completed| completed.native_output_witness().is_none())
+    }
+
     pub(super) fn native_output_witness(&self) -> Option<&super::SealedNativeOutputWitness> {
         self.native_output_witness_cell()?.get()
     }
@@ -221,4 +237,5 @@ impl RecordedOutput {
 #[cfg(test)]
 mod span_tests;
 
+mod adoption_basis_for_test;
 mod court_doors_for_test;

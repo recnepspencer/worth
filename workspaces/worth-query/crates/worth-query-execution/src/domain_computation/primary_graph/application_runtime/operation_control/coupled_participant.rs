@@ -17,15 +17,39 @@ impl Drop for WorthQueryCoupledParticipantCorruptionForTest {
         self.arm.store(0, Ordering::Release);
     }
 }
+const WITHHELD_OUTPUT_WITNESS: u8 = 10;
+impl WorthQueryCoupledParticipantCorruptionForTest {
+    /// Whether a writer has taken the armed fault.
+    #[doc(hidden)]
+    pub fn taken_for_test(&self) -> bool {
+        self.arm.load(Ordering::Acquire) == 0
+    }
+}
 impl WorthQueryApplicationAttemptOperationControl {
     pub(in crate::domain_computation::primary_graph) fn take_coupled_participant_corruption(
         &self,
         prepared_writers: usize,
     ) -> u8 {
-        if self.coupled_participant_fault.load(Ordering::Acquire) == 5 && prepared_writers < 2 {
-            return 0;
+        match self.coupled_participant_fault.load(Ordering::Acquire) {
+            5 if prepared_writers < 2 => return 0,
+            // Taken after the commit, by the first writer whose witness is sealed.
+            WITHHELD_OUTPUT_WITNESS => return 0,
+            _ => {}
         }
         self.coupled_participant_fault.swap(0, Ordering::AcqRel)
+    }
+    /// True once, for the first coupled writer sealed after the fault is armed.
+    pub(in crate::domain_computation::primary_graph) fn take_withheld_output_witness(
+        &self,
+    ) -> bool {
+        self.coupled_participant_fault
+            .compare_exchange(
+                WITHHELD_OUTPUT_WITNESS,
+                0,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            )
+            .is_ok()
     }
 }
 impl<S> WorthQueryPrimaryGraphApplicationRuntime<S> {
@@ -100,6 +124,14 @@ impl<S> WorthQueryPrimaryGraphApplicationRuntime<S> {
         &self,
     ) -> WorthQueryCoupledParticipantCorruptionForTest {
         self.arm_fresh_record_corruption(9)
+    }
+    /// The next coupled writer commits without a sealed Native output witness,
+    /// as when the witness cannot prove one of its roles (public #126).
+    #[doc(hidden)]
+    pub fn withhold_next_coupled_output_witness_for_test(
+        &self,
+    ) -> WorthQueryCoupledParticipantCorruptionForTest {
+        self.arm_fresh_record_corruption(WITHHELD_OUTPUT_WITNESS)
     }
     fn arm_fresh_record_corruption(
         &self,
