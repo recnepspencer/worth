@@ -3,7 +3,7 @@ use super::super::correction_courts::{install_program, reverse};
 use super::*;
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 use worth_query_testkit_document_retention::facade::document_retention_model::operator_identity::*;
-type S = Model<72, Optional>;
+type S = Model<73, Optional>;
 #[test]
 fn reversing_a_creation_without_its_optional_body_retires_the_primary_anchor_alone() {
     let host = install_program::<S>();
