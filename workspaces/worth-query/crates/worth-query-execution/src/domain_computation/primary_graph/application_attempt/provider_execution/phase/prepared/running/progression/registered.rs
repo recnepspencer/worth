@@ -228,8 +228,12 @@ impl<'run> WorthQueryRegisteredProviderAttempt<'run> {
             Ok(candidate) => candidate,
             Err(outcome) => {
                 assembly.abort_writers(execution);
+                // A break that kept no subject is refused as the custody fault
+                // it is; any other uncommitted outcome carries its own subject.
+                let lost = assembly.broke_without_subject();
                 return assembly.finish_abort(match assembly.take_denial() {
                     Some(denial) => WorthQueryProviderProgressionOutcome::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::coupled_producer(denial)),
+                    None if lost => WorthQueryProviderProgressionOutcome::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::coupled_refusal_without_subject()),
                     None => outcome,
                 });
             },

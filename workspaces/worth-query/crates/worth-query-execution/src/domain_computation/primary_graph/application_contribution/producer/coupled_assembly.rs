@@ -35,6 +35,8 @@ pub(in crate::domain_computation::primary_graph) struct DeclaredProducerAssembly
     writers: RefCell<Vec<CoupledWriter<'run, S>>>,
     denial: RefCell<Option<WorthQueryOutputDemandDenial>>,
     abort_failures: RefCell<Vec<crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted>>,
+    /// The last assembly round ended the edit (`Break`).
+    broke: std::cell::Cell<bool>,
 }
 struct CoupledWriter<'run, S> {
     producer: std::sync::Arc<registry::InstalledProducerProvider<S>>,
@@ -79,6 +81,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
             writers: RefCell::new(Vec::new()),
             denial: RefCell::new(None),
             abort_failures: RefCell::new(Vec::new()),
+            broke: std::cell::Cell::new(false),
         }
     }
     pub(super) fn retain_discovery_support(
@@ -127,6 +130,13 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
         &self,
     ) -> Option<WorthQueryOutputDemandDenial> {
         self.denial.borrow_mut().take()
+    }
+    /// The last round ended the edit and left neither a refusing subject nor
+    /// an abort failure for the caller: the refusal was lost.
+    pub(in crate::domain_computation::primary_graph) fn broke_without_subject(&self) -> bool {
+        self.broke.get()
+            && self.denial.borrow().is_none()
+            && self.abort_failures.borrow().is_empty()
     }
     pub(in crate::domain_computation::primary_graph) fn settle_writers(
         &self, execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -220,10 +230,22 @@ impl<S: ApplicationSchema> RelationalAuthoredCoupledProducerAssembly
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
     ) -> Result<ControlFlow<()>, RelationalCoupledAssemblyFailure> {
+        self.broke.set(false);
         if !self.abort_writers(execution) {
+            self.broke.set(true);
             return Ok(ControlFlow::Break(()));
         }
         self.denial.borrow_mut().take();
+        if self
+            .application
+            .runtime
+            .primary_provider
+            .application_attempt_operation_control
+            .take_break_without_subject()
+        {
+            self.broke.set(true);
+            return Ok(ControlFlow::Break(()));
+        }
         let prepared = self
             .application
             .runtime
@@ -240,6 +262,7 @@ impl<S: ApplicationSchema> RelationalAuthoredCoupledProducerAssembly
             Err(CoupledSourceReadStop::Native(cause)) => Err(cause),
             Err(CoupledSourceReadStop::Query(cause)) => {
                 *self.denial.borrow_mut() = Some(cause.into_output_denial());
+                self.broke.set(true);
                 Ok(ControlFlow::Break(()))
             }
         }

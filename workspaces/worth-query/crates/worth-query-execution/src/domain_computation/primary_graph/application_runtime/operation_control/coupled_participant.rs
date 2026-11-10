@@ -18,6 +18,7 @@ impl Drop for WorthQueryCoupledParticipantCorruptionForTest {
     }
 }
 const WITHHELD_OUTPUT_WITNESS: u8 = 10;
+const BREAK_WITHOUT_SUBJECT: u8 = 11;
 impl WorthQueryCoupledParticipantCorruptionForTest {
     /// Whether a writer has taken the armed fault.
     #[doc(hidden)]
@@ -33,10 +34,21 @@ impl WorthQueryApplicationAttemptOperationControl {
         match self.coupled_participant_fault.load(Ordering::Acquire) {
             5 if prepared_writers < 2 => return 0,
             // Taken after the commit, by the first writer whose witness is sealed.
-            WITHHELD_OUTPUT_WITNESS => return 0,
+            WITHHELD_OUTPUT_WITNESS | BREAK_WITHOUT_SUBJECT => return 0,
             _ => {}
         }
         self.coupled_participant_fault.swap(0, Ordering::AcqRel)
+    }
+    /// True once, for the next coupled assembly after the fault is armed.
+    pub(in crate::domain_computation::primary_graph) fn take_break_without_subject(&self) -> bool {
+        self.coupled_participant_fault
+            .compare_exchange(
+                BREAK_WITHOUT_SUBJECT,
+                0,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            )
+            .is_ok()
     }
     /// True once, for the first coupled writer sealed after the fault is armed.
     pub(in crate::domain_computation::primary_graph) fn take_withheld_output_witness(
@@ -132,6 +144,14 @@ impl<S> WorthQueryPrimaryGraphApplicationRuntime<S> {
         &self,
     ) -> WorthQueryCoupledParticipantCorruptionForTest {
         self.arm_fresh_record_corruption(WITHHELD_OUTPUT_WITNESS)
+    }
+    /// The next coupled assembly ends the edit without recording any refusing
+    /// subject, as a lost refusal would.
+    #[doc(hidden)]
+    pub fn break_next_coupled_assembly_without_a_subject_for_test(
+        &self,
+    ) -> WorthQueryCoupledParticipantCorruptionForTest {
+        self.arm_fresh_record_corruption(BREAK_WITHOUT_SUBJECT)
     }
     fn arm_fresh_record_corruption(
         &self,

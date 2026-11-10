@@ -96,6 +96,7 @@ mod corruption;
 mod courts;
 mod failure;
 mod initial;
+mod lost_refusal;
 mod publication_count;
 pub(super) mod reconciliation;
 mod round_budget;

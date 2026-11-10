@@ -204,6 +204,7 @@ pub fn classify_kind(kind: Kind) -> Outcome {
         | Kind::MutationBindingMismatch
         | Kind::MutationInputMismatch
         | Kind::OperationBodyExecutionRequired
+        | Kind::CoupledRefusalWithoutSubject
         | Kind::SignedCreationAuthentication { .. }
         | Kind::SignedEntityImmutable
         | Kind::SigningLifecycleForgery

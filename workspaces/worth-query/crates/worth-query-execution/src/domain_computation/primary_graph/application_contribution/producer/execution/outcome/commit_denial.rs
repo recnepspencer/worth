@@ -70,6 +70,7 @@ pub(super) fn stopped(
             | Kind::IdempotencyReceiptNotRetained { .. }
             | Kind::IdempotencyIntentUnverifiable
             | Kind::OperationBodyExecutionRequired
+            | Kind::CoupledRefusalWithoutSubject
             | Kind::SignedCreationAuthentication { .. }
             | Kind::SignedEntityImmutable
             | Kind::SigningLifecycleForgery
