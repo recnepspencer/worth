@@ -194,4 +194,4 @@ L1 as a single landing would combine a stored-format addition with a new generic
 
 ### L1b header
 
-L1b is L1's header with the Native items removed. It delivers the envelope entry; stage handlers at the candidate pin with C authorization and D data; each stage's reads in the final support check; several roots; the drift identity with D1590's replay courts; the single refusal slot; the DAG; and the capability-index sentence. Rows 1-10 of section 6 are its courts.
+L1b is L1's header with the Native items removed. **Constraint (D1594):** authored stages write disjoint records. A later stage that rewrites a record an earlier stage wrote is refused `ConflictingIntent`, because one Native commit carries one intent per record. Phase 8's seal stage must not write records the source steps wrote. It delivers the envelope entry; stage handlers at the candidate pin with C authorization and D data; each stage's reads in the final support check; several roots; the drift identity with D1590's replay courts; the single refusal slot; the DAG; and the capability-index sentence. Rows 1-10 of section 6 are its courts.
