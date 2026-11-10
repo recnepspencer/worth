@@ -18,8 +18,9 @@ thread_local! {
     static SLOT: RefCell<Option<PublishedEffect>> = const { RefCell::new(None) };
 }
 
-/// One advancement's marker, shared with the member computes it lends to
-/// descendant workers.
+/// One advancement's marker. World publications run on the advancement's
+/// opening thread: lent member computes do not publish (876 publications across
+/// the synchronous-edit courts, none in lent work; `d132-thread-probe.log`).
 #[derive(Clone)]
 pub(crate) struct PublishedEffect(Arc<AtomicBool>);
 
@@ -28,12 +29,6 @@ impl PublishedEffect {
     /// body's publication can leak into it.
     pub(crate) fn fresh() -> Self {
         Self(Arc::new(AtomicBool::new(false)))
-    }
-
-    /// The marker installed on this thread, captured by lent work so that a
-    /// publication on a descendant worker still reaches its advancement.
-    pub(crate) fn current() -> Option<Self> {
-        SLOT.with(|slot| slot.borrow().clone())
     }
 
     /// Install `marker` on this thread until the scope drops, also on unwind.
@@ -52,9 +47,15 @@ impl PublishedEffect {
 
 /// Called only where Query maps World's publication outcome, for `Performed`
 /// and `ProductUnpublished`. Outside an advancement there is no marker and
-/// nothing to record.
+/// nothing to record. A publication inside lent work (a member compute or its
+/// descendant workers) would have no marker and reopen #132 silently, so
+/// courts refuse it loudly.
 pub(crate) fn record() {
     SLOT.with(|slot| {
+        debug_assert!(
+            slot.borrow().is_some() || !worth_execution::ExecutionOwnerContext::is_active(),
+            "a World publication inside lent work has no advancement marker (public #132)"
+        );
         if let Some(marker) = slot.borrow().as_ref() {
             marker.0.store(true, Ordering::Release);
         }
