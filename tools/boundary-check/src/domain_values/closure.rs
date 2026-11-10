@@ -159,12 +159,16 @@ impl Walk<'_> {
                     Definition::Builtin(name) => {
                         let kind = builtin_name(&name).ok_or("unknown builtin")?.to_owned();
                         if arguments.len()
-                            != usize::from(matches!(kind.as_str(), "Vec" | "Box" | "Option"))
+                            != usize::from(matches!(
+                                kind.as_str(),
+                                "Vec" | "Box" | "Option" | "PhantomData"
+                            ))
                         {
                             return Err(format!("wrong generic arity for {name}"));
                         }
                         Ok(Term::Builtin(kind, arguments))
                     }
+                    Definition::Module(_) => Err("a module cannot be a value type".into()),
                     Definition::Item(item, owner) => {
                         let name = match item.as_ref() {
                             Item::Struct(value) => value.ident.to_string(),
@@ -177,7 +181,13 @@ impl Walk<'_> {
                             }
                         };
                         let full = format!("{}::{name}", owner.join("::"));
-                        self.deny(&full, &name)?;
+                        let mut semantic_owner = owner.clone();
+                        if let Some(root) = semantic_owner.first_mut()
+                            && let Some((name, _)) = root.split_once('[')
+                        {
+                            *root = name.to_owned();
+                        }
+                        self.deny(&format!("{}::{name}", semantic_owner.join("::")), &name)?;
                         Ok(Term::Definition {
                             name: full,
                             owner,
