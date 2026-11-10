@@ -42,3 +42,25 @@ where
             .map_err(|_| RuntimeWorldBranchAdmissionDenial::IdentityExhausted)
     }
 }
+
+impl<D, I, E, Ctx, T> crate::lifecycle::RuntimeWorldPublicationPort<D, I, E, Ctx, T>
+where
+    D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
+    I: Copy + Ord + Send + Sync + 'static,
+    E: Send + Sync + 'static,
+    Ctx: Send + Sync + 'static,
+    T: Copy + Ord + Send + Sync + 'static,
+{
+    /// Read-only diagnostic of the same owner's next name/incarnation coordinate.
+    pub fn creation_name_frontier_for_test(
+        &self,
+    ) -> Result<u64, crate::lifecycle::RuntimeWorldOwnerUnavailable> {
+        let owner = self.service()?;
+        let identities = owner
+            .state
+            .identities
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        Ok(identities.branch_incarnation_frontier())
+    }
+}

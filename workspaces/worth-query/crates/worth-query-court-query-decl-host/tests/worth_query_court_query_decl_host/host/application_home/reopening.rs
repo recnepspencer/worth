@@ -59,7 +59,9 @@ fn same_directory_reopens_reads_and_commits_without_replaying_initializer_or_old
         )
     })
     .unwrap();
+    let (_, live) = scope();
     assert_eq!(balance(home.runtime(), &live), 8);
+    let (_, live) = scope();
     match set(home.runtime(), &live, 0x771, 8).unwrap() {
         WorthQueryApplicationMutationOutcome::RecoveredCommitted(observed) => {
             assert_eq!(observed.commit_reference().commit_id, original_commit);
@@ -67,11 +69,26 @@ fn same_directory_reopens_reads_and_commits_without_replaying_initializer_or_old
         other => panic!("old key must return its exact original durable receipt: {other:?}"),
     }
     assert_eq!(contacts.load(Ordering::SeqCst), 1);
+    let (_, live) = scope();
     assert_eq!(balance(home.runtime(), &live), 8);
-    assert!(matches!(
-        set(home.runtime(), &live, 0x772, 9).unwrap(),
-        WorthQueryApplicationMutationOutcome::Committed { result: 9, .. }
-    ));
+    let (_, live) = scope();
+    let next = set(home.runtime(), &live, 0x772, 9).unwrap();
+    if let WorthQueryApplicationMutationOutcome::Commit(
+        worth_query_host::facade::primary_graph::WorthQueryApplicationUncommitted::ProductUnpublished(original)
+    ) = &next {
+        panic!("new request's retained original cause: {:?}", original.cause());
+    }
+
+    assert!(
+        matches!(
+            next,
+            WorthQueryApplicationMutationOutcome::Committed { result: 9, .. }
+        ),
+        "new request after reopen: {next:?}"
+    );
+    // The committed receipt retains publication custody until it is dropped.
+    drop(next);
+    let (_, live) = scope();
     assert_eq!(balance(home.runtime(), &live), 9);
     assert_eq!(initialized.load(Ordering::SeqCst), 1);
     assert_eq!(contacts.load(Ordering::SeqCst), 2);
@@ -114,10 +131,12 @@ fn flushed_and_pending_multibatch_homes_readmit_their_completed_publication() {
         .unwrap_or_else(|refused| opening_failed("multibatch readmission", &refused));
         let (_, live) = scope();
         assert_eq!(balance(home.runtime(), &live), 7);
+        let (_, live) = scope();
         match set(home.runtime(), &live, 0x773, 8).unwrap() {
             WorthQueryApplicationMutationOutcome::Committed { result: 8, .. } => {}
             other => panic!("mutation after multibatch reopen (flushed={flush_final}): {other:?}"),
         }
+        let (_, live) = scope();
         assert_eq!(balance(home.runtime(), &live), 8);
         assert_eq!(contacts.load(Ordering::SeqCst), 1);
         home.close(&execution)

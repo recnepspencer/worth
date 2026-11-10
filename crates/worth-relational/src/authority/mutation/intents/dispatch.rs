@@ -18,50 +18,50 @@ pub(crate) fn dispatch_intent<'a>(
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
 ) -> Result<MutationOutcome, TransactionCommitError> {
     match intent {
-        MutationIntent::Create(CreateIntent::Entity(spec)) => create_entity::apply(spec, workspace),
+        MutationIntent::Create(CreateIntent::Entity(spec)) => {
+            workspace.run_owned_mutation(|workspace| create_entity::apply(spec, workspace))
+        }
         MutationIntent::Create(CreateIntent::EntityAspects(spec)) => {
-            create_entity_aspects::apply(spec, workspace)
+            workspace.run_owned_mutation(|workspace| create_entity_aspects::apply(spec, workspace))
         }
         MutationIntent::Create(CreateIntent::BulkEntities(spec)) => {
             bulk_create_entities::apply(spec, workspace, lease)
         }
         MutationIntent::Entity(EntityMutationIntent::UpdateFields(spec)) => {
-            update_entity_fields::apply(spec, workspace)
+            workspace.run_owned_mutation(|workspace| update_entity_fields::apply(spec, workspace))
         }
-        MutationIntent::Entity(EntityMutationIntent::ApplyAspectPatch(spec)) => {
-            apply_entity_aspect_patch::apply(spec, workspace)
-        }
+        MutationIntent::Entity(EntityMutationIntent::ApplyAspectPatch(spec)) => workspace
+            .run_owned_mutation(|workspace| apply_entity_aspect_patch::apply(spec, workspace)),
         MutationIntent::Entity(EntityMutationIntent::Replace(spec)) => {
-            replace_entity::apply(spec, workspace)
+            workspace.run_owned_mutation(|workspace| replace_entity::apply(spec, workspace))
         }
         MutationIntent::Entity(EntityMutationIntent::Delete(spec)) => {
-            delete_entity::apply(spec, workspace)
+            workspace.run_owned_mutation(|workspace| delete_entity::apply(spec, workspace))
         }
         MutationIntent::Entity(EntityMutationIntent::Revalidate(spec)) => {
-            revalidate_entity::apply(spec, workspace)
+            workspace.run_owned_mutation(|workspace| revalidate_entity::apply(spec, workspace))
         }
         MutationIntent::Create(CreateIntent::Relation(spec)) => {
-            create_relation::apply(spec, workspace)
+            workspace.run_owned_mutation(|workspace| create_relation::apply(spec, workspace))
         }
-        MutationIntent::Create(CreateIntent::RelationAspects(spec)) => {
-            create_relation_aspects::apply(spec, workspace)
-        }
+        MutationIntent::Create(CreateIntent::RelationAspects(spec)) => workspace
+            .run_owned_mutation(|workspace| create_relation_aspects::apply(spec, workspace)),
         MutationIntent::Create(CreateIntent::BulkRelations(spec)) => {
             bulk_create_relations::apply(spec, workspace, lease)
         }
-        MutationIntent::Relation(RelationMutationIntent::UpdateEndpoints(spec)) => {
-            update_relation_endpoints::apply(spec, workspace)
-        }
-        MutationIntent::Relation(RelationMutationIntent::ApplyAspectPatch(spec)) => {
-            apply_relation_aspect_patch::apply(spec, workspace)
-        }
+        MutationIntent::Relation(RelationMutationIntent::UpdateEndpoints(spec)) => workspace
+            .run_owned_mutation(|workspace| update_relation_endpoints::apply(spec, workspace)),
+        MutationIntent::Relation(RelationMutationIntent::ApplyAspectPatch(spec)) => workspace
+            .run_owned_mutation(|workspace| apply_relation_aspect_patch::apply(spec, workspace)),
         MutationIntent::Relation(RelationMutationIntent::Revalidate(spec)) => {
-            revalidate_relation::apply(spec, workspace)
+            workspace.run_owned_mutation(|workspace| revalidate_relation::apply(spec, workspace))
         }
         MutationIntent::Relation(RelationMutationIntent::Delete(spec)) => {
-            delete_relation::apply(spec, workspace)
+            workspace.run_owned_mutation(|workspace| delete_relation::apply(spec, workspace))
         }
-        MutationIntent::Materialization(intent) => materialization::apply(intent, workspace),
+        MutationIntent::Materialization(intent) => {
+            workspace.run_owned_mutation(|workspace| materialization::apply(intent, workspace))
+        }
     }
 }
 

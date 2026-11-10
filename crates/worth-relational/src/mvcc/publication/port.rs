@@ -78,6 +78,17 @@ impl RelationalPublicationPort {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         candidate: PreparedRelationalCommitCandidate,
     ) -> RelationalPublicationOutcome {
+        worth_execution::run_with_execution_stack(move || {
+            self.compare_and_publish_on_execution_stack(execution, candidate)
+        })
+    }
+
+    #[inline(never)]
+    fn compare_and_publish_on_execution_stack(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        candidate: PreparedRelationalCommitCandidate,
+    ) -> RelationalPublicationOutcome {
         self.compare_and_publish_with_codec_admission(execution, candidate, None)
     }
 

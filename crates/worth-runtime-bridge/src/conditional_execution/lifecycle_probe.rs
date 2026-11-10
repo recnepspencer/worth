@@ -104,6 +104,13 @@ impl BridgeOwnedSignalRuntime {
 
     /// Releases conditional resources while Runtime World retains the sealed owner.
     pub fn close_conditional_resources(&mut self) {
+        worth_execution::run_with_execution_stack(|| {
+            self.close_conditional_resources_on_execution_stack()
+        })
+    }
+
+    #[inline(never)]
+    fn close_conditional_resources_on_execution_stack(&mut self) {
         self.retention.close();
         let mut lowerings = self
             .conditional_lowerings

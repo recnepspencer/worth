@@ -10,12 +10,7 @@ fn map_cow_owns_only_actual_nodes_and_unique_replacement_refunds_nothing_early()
     for key in 0..128 {
         current.insert_for_request(key, key + 1, &request).unwrap();
     }
-    let bill = std::alloc::Layout::new::<[usize; 2]>()
-        .extend(std::alloc::Layout::new::<MapNode<u64, u64>>())
-        .unwrap()
-        .0
-        .pad_to_align()
-        .size() as u64;
+    let bill = Arc::<MapNode<u64, u64>>::layout_bytes();
     assert_eq!(budget.charged_memory_bytes(), 128 * bill);
     let retained = current.clone();
     current.insert_for_request(64, 999, &request).unwrap();

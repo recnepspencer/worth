@@ -55,20 +55,8 @@ pub(super) fn normalize(
     );
     // The internal source sentinel is never a public request refusal. Concrete
     // original stops win; only its nested sentinel may yield to the first cause.
-    let result = match result {
-        Err(crate::execution::RelationalExecutionDenialCause::NestedStopped) => {
-            let cause = match first_stop.get() {
-                Some(cause) => cause,
-                None => crate::execution::RelationalExecutionDenialCause::NestedStopped,
-            };
-            return Err(RegionContentFailure::Execution(cause));
-        }
-        Err(cause) => return Err(RegionContentFailure::Execution(cause)),
-        Ok(value) => value,
-    };
-    if let Some(cause) = first_stop.get() {
-        return Err(RegionContentFailure::Execution(cause));
-    }
+    let result = preserve_original_stop(result, first_stop.get())
+        .map_err(RegionContentFailure::Execution)?;
     let commitment = result.map_err(|cause| {
         RegionContentFailure::Storage(crate::storage::data::RelationalStorageUnavailable {
             subject: crate::storage::data::RelationalStorageSubject::Region(partition.partition_id),
@@ -77,6 +65,22 @@ pub(super) fn normalize(
     })?;
     partition.clear_runtime_pin_counters();
     Ok(commitment)
+}
+
+/// The opaque SDK sentinel cannot replace the first concrete owner refusal.
+fn preserve_original_stop<T>(
+    result: Result<T, crate::execution::RelationalExecutionDenialCause>,
+    first: Option<crate::execution::RelationalExecutionDenialCause>,
+) -> Result<T, crate::execution::RelationalExecutionDenialCause> {
+    use crate::execution::RelationalExecutionDenialCause as Stop;
+    match result {
+        Err(Stop::NestedStopped) => Err(first.unwrap_or(Stop::NestedStopped)),
+        Err(cause) => Err(cause),
+        Ok(value) => match first {
+            Some(cause) => Err(cause),
+            None => Ok(value),
+        },
+    }
 }
 
 /// One reconstruction engine over owned values. The driver supplies admission.

@@ -195,25 +195,33 @@ pub(super) fn prepare_publication_phase(
                 "codec retirement cannot also mint a producer completion",
             ));
         }
-        let output_positions = if let Some(custody) = recovered_codec_publication_custody {
-            Some(custody.install_retirements(
-                execution,
-                &mut canonical_commit_envelope,
-                &branch_basis,
-            )?)
-        } else if let Some(admission) = required_output_publication {
-            Some(canonical_commit_envelope.install_required_output_origin(
-                execution,
-                runtime,
-                &branch_basis,
-                created_entities,
-                created_relations,
-                &working_state,
-                admission,
-            )?)
-        } else {
-            None
-        };
+        let output_positions = crate::execution::transaction_stage(
+            execution,
+            runtime.commit_work_budget.as_ref(),
+            || {
+                Ok::<_, TransactionCommitError>(
+                    if let Some(custody) = recovered_codec_publication_custody {
+                        Some(custody.install_retirements(
+                            execution,
+                            &mut canonical_commit_envelope,
+                            &branch_basis,
+                        )?)
+                    } else if let Some(admission) = required_output_publication {
+                        Some(canonical_commit_envelope.install_required_output_origin(
+                            execution,
+                            runtime,
+                            &branch_basis,
+                            created_entities,
+                            created_relations,
+                            &working_state,
+                            admission,
+                        )?)
+                    } else {
+                        None
+                    },
+                )
+            },
+        )?;
         canonical_commit_envelope.caller_association = caller_association;
         let semantic_result = super::super::semantic_result::prepare_semantic_result(
             runtime,
@@ -233,8 +241,14 @@ pub(super) fn prepare_publication_phase(
                 .map_err(|refusal| {
                     crate::mvcc::origin_denial(format!("semantic envelope seal: {refusal:?}"))
                 })?;
-        let canonical_commit_envelope = canonical_commit_envelope
-            .freeze_with_managed_source_history(source_interpretation, *execution)?;
+        let canonical_commit_envelope = crate::execution::transaction_stage(
+            execution,
+            runtime.commit_work_budget.as_ref(),
+            || {
+                canonical_commit_envelope
+                    .freeze_with_managed_source_history(source_interpretation, *execution)
+            },
+        )?;
         let clone_mode = working_state.clone_mode();
         let committed_partitions = working_state.into_partition_commits().1;
         runtime
@@ -310,19 +324,28 @@ pub(super) fn prepare_publication_phase(
         }
         .map_err(|error| error.with_commit_log(commit_log.clone()))?;
 
-        let mirror_publication = runtime
-            .mirror_residency
-            .prepare_publication(
-                execution,
-                &runtime.services.symbols,
-                &branch_id,
-                prepared_history.root(),
-                clone_mode,
-                committed_partitions,
-            )
-            .map_err(|failure| {
-                crate::authority::commit::preparation::storage_read_denial(&branch_basis, failure)
-            })?;
+        let mirror_publication = crate::execution::transaction_stage(
+            execution,
+            runtime.commit_work_budget.as_ref(),
+            || {
+                runtime
+                    .mirror_residency
+                    .prepare_publication(
+                        execution,
+                        &runtime.services.symbols,
+                        &branch_id,
+                        prepared_history.root(),
+                        clone_mode,
+                        committed_partitions,
+                    )
+                    .map_err(|failure| {
+                        crate::authority::commit::preparation::storage_read_denial(
+                            &branch_basis,
+                            failure,
+                        )
+                    })
+            },
+        )?;
         let symbol_meanings = mutation_identities
             .symbols
             .seal_for_publication(&canonical_commit_envelope.symbol_texts)

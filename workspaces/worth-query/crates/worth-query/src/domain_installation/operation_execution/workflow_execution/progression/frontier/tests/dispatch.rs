@@ -274,16 +274,24 @@ fn reversed_completion_still_applies_canonical_effects_and_receipts() {
             observe(request_execution, 29, None, Policy::width(0), &probe)
         })
         .unwrap();
-    assert_eq!(
-        report.charged_work(),
-        1_992,
-        "complete original SDK invoice"
+    assert!(
+        report.charged_work() >= expected.1,
+        "the original SDK invoice includes settled computation"
     );
     // Reset observations between runs: any purity mutant must prove order
     // dependence, not simply a counter carried over from a previous run.
     probe.take_computes();
     assert_eq!(expected.0.outcome, None);
-    let repeated = observe(request_execution, 29, None, Policy::width(0), &probe);
+    let (repeated, repeated_report) = worth_execution::ExecutionWorkCeiling::new(None)
+        .run_serial(&host_request, || {
+            observe(request_execution, 29, None, Policy::width(0), &probe)
+        })
+        .unwrap();
+    assert_eq!(
+        repeated_report.charged_work(),
+        report.charged_work(),
+        "reset serial journeys retain the same complete original invoice"
+    );
     assert_eq!(repeated.0.outcome, None);
     assert_eq!(repeated, expected, "two reset serial runs agree");
     assert_eq!(

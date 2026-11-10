@@ -1,0 +1,3504 @@
+{
+  "index_head": "592aaaae2f5e852a6bb2c7e7d8626e2f30921e85",
+  "note": "Each source HEAD and dirty bit is the actual raw-log header. This is mixed-HEAD evidence, not certification at final HEAD. Incomplete campaigns are non-successes, ignored counts metadata only. Focused source-equivalence and repair evidence supplement the frozen census.",
+  "lanes": [
+    {
+      "workspace": "root",
+      "log": "target/lane-evidence/pc-merge-root-tier2/test-cost/root/documentation/doctests.log",
+      "counts": {
+        "ok": 139
+      },
+      "exit": 0,
+      "header": {
+        "Command": "[\"cargo\", \"test\", \"--workspace\", \"--doc\", \"--profile\", \"dev\", \"--no-fail-fast\", \"--locked\", \"--manifest-path\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\Cargo.toml\", \"--message-format=json\", \"--\", \"--format\", \"pretty\"]",
+        "HEAD": "fbbdf5edffbdd01b96009af19df4971cb285ad12",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T07:35:00.244800+00:00"
+      }
+    },
+    {
+      "workspace": "root",
+      "log": "target/lane-evidence/pc-merge-root-tier2/test-cost/root/run-execution.log",
+      "counts": {
+        "ok": 392
+      },
+      "exit": 0,
+      "header": {
+        "Command": "[\"cargo\", \"nextest\", \"run\", \"--cargo-metadata\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-root-tier2\\\\test-cost\\\\root\\\\build\\\\cargo-metadata.json\", \"--binaries-metadata\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-root-tier2\\\\test-cost\\\\root\\\\build\\\\binaries.json\", \"--profile\", \"ci\", \"--config-file\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-root-tier2\\\\test-cost\\\\root\\\\nextest.toml\", \"--ignore-default-filter\", \"--no-fail-fast\", \"--no-tests=fail\", \"--message-format\", \"libtest-json\", \"-E\", \"((binary_id(=worth-court-execution::worth_court_execution) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + (binary_id(=worth-execution) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/))\"]",
+        "HEAD": "fbbdf5edffbdd01b96009af19df4971cb285ad12",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T06:55:08.253964+00:00"
+      }
+    },
+    {
+      "workspace": "root",
+      "log": "target/lane-evidence/pc-merge-root-tier2/test-cost/root/run-relational-branch_local_mvcc-main.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "header": {
+        "Command": "[\"C:\\\\Users\\\\shepworth\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python314\\\\python.exe\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\scripts\\\\test_cost\\\\account.py\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\debug\\\\examples\\\\branch_local_mvcc-897cff8f15f40d0a.exe\"]",
+        "HEAD": "fbbdf5edffbdd01b96009af19df4971cb285ad12",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T06:26:29.989207+00:00"
+      }
+    },
+    {
+      "workspace": "root",
+      "log": "target/lane-evidence/pc-merge-root-tier2/test-cost/root/run-relational.log",
+      "counts": {
+        "ignored": 34,
+        "ok": 2774,
+        "failed": 24
+      },
+      "exit": 100,
+      "header": {
+        "Command": "[\"cargo\", \"nextest\", \"run\", \"--cargo-metadata\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-root-tier2\\\\test-cost\\\\root\\\\build\\\\cargo-metadata.json\", \"--binaries-metadata\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-root-tier2\\\\test-cost\\\\root\\\\build\\\\binaries.json\", \"--profile\", \"ci\", \"--config-file\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-root-tier2\\\\test-cost\\\\root\\\\nextest.toml\", \"--ignore-default-filter\", \"--no-fail-fast\", \"--no-tests=pass\", \"--message-format\", \"libtest-json\", \"-E\", \"((binary_id(=worth-court-relational-branch-reference-compile-time::worth_court_relational_branch_reference_compile_time) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-relational-certification::worth_court_relational_certification) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + (binary_id(=worth-relational) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/))\"]",
+        "HEAD": "fbbdf5edffbdd01b96009af19df4971cb285ad12",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T05:53:00.459692+00:00"
+      }
+    },
+    {
+      "workspace": "root",
+      "log": "target/lane-evidence/pc-merge-root-tier2/test-cost/root/run-root-compile-fail.log",
+      "counts": {
+        "ok": 52,
+        "ignored": 3
+      },
+      "exit": 0,
+      "header": {
+        "Command": "[\"cargo\", \"nextest\", \"run\", \"--cargo-metadata\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-root-tier2\\\\test-cost\\\\root\\\\build\\\\cargo-metadata.json\", \"--binaries-metadata\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-root-tier2\\\\test-cost\\\\root\\\\build\\\\binaries.json\", \"--profile\", \"ci\", \"--config-file\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-root-tier2\\\\test-cost\\\\root\\\\nextest.toml\", \"--ignore-default-filter\", \"--no-fail-fast\", \"--no-tests=fail\", \"--message-format\", \"libtest-json\", \"-E\", \"((binary_id(=worth-court-execution::worth_court_execution) & test(/^compile_fail::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-foundational-certification-boundary-artifacts::worth_court_foundational_certification_boundary_artifacts) & test(/^compile_fail::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-foundational-expressions::worth_court_foundational_expressions) & test(/^compile_fail::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-proof::worth_court_proof) & test(/^compile_fail::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-relational-branch-reference-compile-time::worth_court_relational_branch_reference_compile_time) & test(/^compile_fail::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-runtime-bridge::worth_court_runtime_bridge) & test(/^compile_fail::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-runtime-world::worth_court_runtime_world) & test(/^compile_fail::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-server-certification-suite::worth_court_server_certification_suite) & test(/^compile_fail::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-server-product-operation-phase-thirteen-shared-read::worth_court_server_product_operation_phase_thirteen_shared_read) & test(/^compile_fail::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-signal-branch-retention-contract::worth_court_signal_branch_retention_contract) & test(/^compile_fail::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-signal-owner-services::worth_court_signal_owner_services) & test(/^compile_fail::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-signal-wasm::worth_court_signal_wasm) & test(/^compile_fail::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/))\"]",
+        "HEAD": "fbbdf5edffbdd01b96009af19df4971cb285ad12",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T07:34:20.153530+00:00"
+      }
+    },
+    {
+      "workspace": "root",
+      "log": "target/lane-evidence/pc-merge-root-tier2/test-cost/root/run-root-cost.log",
+      "counts": {
+        "ignored": 3,
+        "ok": 34,
+        "failed": 5
+      },
+      "exit": 100,
+      "header": {
+        "Command": "[\"cargo\", \"nextest\", \"run\", \"--cargo-metadata\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-root-tier2\\\\test-cost\\\\root\\\\build\\\\cargo-metadata.json\", \"--binaries-metadata\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-root-tier2\\\\test-cost\\\\root\\\\build\\\\binaries.json\", \"--profile\", \"ci\", \"--config-file\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-root-tier2\\\\test-cost\\\\root\\\\nextest.toml\", \"--ignore-default-filter\", \"--no-fail-fast\", \"--no-tests=fail\", \"--message-format\", \"libtest-json\", \"-E\", \"((binary_id(=worth-court-relational-branch-reference-compile-time::worth_court_relational_branch_reference_compile_time) & test(/^cost::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-relational-certification::worth_court_relational_certification) & test(/^cost::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-runtime-world::worth_court_runtime_world) & test(/^cost::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-signal-owner-services::worth_court_signal_owner_services) & test(/^cost::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/))\"]",
+        "HEAD": "fbbdf5edffbdd01b96009af19df4971cb285ad12",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T07:33:09.541736+00:00"
+      }
+    },
+    {
+      "workspace": "root",
+      "log": "target/lane-evidence/pc-merge-root-tier2/test-cost/root/run-root-determinism.log",
+      "counts": {
+        "ignored": 3,
+        "ok": 14
+      },
+      "exit": 0,
+      "header": {
+        "Command": "[\"cargo\", \"nextest\", \"run\", \"--cargo-metadata\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-root-tier2\\\\test-cost\\\\root\\\\build\\\\cargo-metadata.json\", \"--binaries-metadata\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-root-tier2\\\\test-cost\\\\root\\\\build\\\\binaries.json\", \"--profile\", \"ci\", \"--config-file\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-root-tier2\\\\test-cost\\\\root\\\\nextest.toml\", \"--ignore-default-filter\", \"--no-fail-fast\", \"--no-tests=fail\", \"--message-format\", \"libtest-json\", \"-E\", \"((binary_id(=worth-court-foundational-expressions::worth_court_foundational_expressions) & test(/^determinism::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-relational-branch-reference-compile-time::worth_court_relational_branch_reference_compile_time) & test(/^determinism::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-relational-certification::worth_court_relational_certification) & test(/^determinism::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/))\"]",
+        "HEAD": "fbbdf5edffbdd01b96009af19df4971cb285ad12",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T07:34:09.384118+00:00"
+      }
+    },
+    {
+      "workspace": "root",
+      "log": "target/lane-evidence/pc-merge-root-tier2/test-cost/root/run-root-process.log",
+      "counts": {
+        "ok": 154,
+        "ignored": 1,
+        "failed": 1
+      },
+      "exit": 100,
+      "header": {
+        "Command": "[\"cargo\", \"nextest\", \"run\", \"--cargo-metadata\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-root-tier2\\\\test-cost\\\\root\\\\build\\\\cargo-metadata.json\", \"--binaries-metadata\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-root-tier2\\\\test-cost\\\\root\\\\build\\\\binaries.json\", \"--profile\", \"ci\", \"--config-file\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-root-tier2\\\\test-cost\\\\root\\\\nextest.toml\", \"--ignore-default-filter\", \"--no-fail-fast\", \"--no-tests=fail\", \"--message-format\", \"libtest-json\", \"-E\", \"((binary_id(=worth-court-execution::worth_court_execution) & test(/^process::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-foundational-expressions::worth_court_foundational_expressions) & test(/^process::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-proof::worth_court_proof) & test(/^process::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-relational-branch-reference-compile-time::worth_court_relational_branch_reference_compile_time) & test(/^process::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-relational-certification::worth_court_relational_certification) & test(/^process::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-runtime-bridge::worth_court_runtime_bridge) & test(/^process::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-server-certification-suite::worth_court_server_certification_suite) & test(/^process::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-server-product-operation-phase-eleven::worth_court_server_product_operation_phase_eleven) & test(/^process::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-server-product-operation-phase-thirteen-shared-read::worth_court_server_product_operation_phase_thirteen_shared_read) & test(/^process::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-signal-owner-services::worth_court_signal_owner_services) & test(/^process::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/))\"]",
+        "HEAD": "fbbdf5edffbdd01b96009af19df4971cb285ad12",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T07:31:11.663703+00:00"
+      }
+    },
+    {
+      "workspace": "root",
+      "log": "target/lane-evidence/pc-merge-root-tier2/test-cost/root/run-root-rest-runtime_world_publication-main.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "header": {
+        "Command": "[\"C:\\\\Users\\\\shepworth\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python314\\\\python.exe\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\scripts\\\\test_cost\\\\account.py\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\debug\\\\examples\\\\runtime_world_publication-a403d2dfc3bd3dbe.exe\"]",
+        "HEAD": "fbbdf5edffbdd01b96009af19df4971cb285ad12",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T07:31:10.128495+00:00"
+      }
+    },
+    {
+      "workspace": "root",
+      "log": "target/lane-evidence/pc-merge-root-tier2/test-cost/root/run-root-rest.log",
+      "counts": {
+        "ok": 2807,
+        "ignored": 3
+      },
+      "exit": 0,
+      "header": {
+        "Command": "[\"cargo\", \"nextest\", \"run\", \"--cargo-metadata\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-root-tier2\\\\test-cost\\\\root\\\\build\\\\cargo-metadata.json\", \"--binaries-metadata\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-root-tier2\\\\test-cost\\\\root\\\\build\\\\binaries.json\", \"--profile\", \"ci\", \"--config-file\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-root-tier2\\\\test-cost\\\\root\\\\nextest.toml\", \"--ignore-default-filter\", \"--no-fail-fast\", \"--no-tests=pass\", \"--message-format\", \"libtest-json\", \"-E\", \"((binary_id(=worth-court-foundational-certification-boundary-artifacts::worth_court_foundational_certification_boundary_artifacts) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-foundational-certification-boundary-evidence::worth_court_foundational_certification_boundary_evidence) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-foundational-expressions::worth_court_foundational_expressions) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-proof::worth_court_proof) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-runtime-bridge::worth_court_runtime_bridge) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-runtime-world::worth_court_runtime_world) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-server-certification-suite::worth_court_server_certification_suite) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-server-product-operation-phase-eleven::worth_court_server_product_operation_phase_eleven) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-server-product-operation-phase-thirteen-shared-read::worth_court_server_product_operation_phase_thirteen_shared_read) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + (binary_id(=worth-foundational) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + (binary_id(=worth-harness) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + (binary_id(=worth-proof) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + (binary_id(=worth-runtime-bridge) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + (binary_id(=worth-runtime-world) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + (binary_id(=worth-server) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + (binary_id(=worth-server-client-generation) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + (binary_id(=worth-testkit-compiler) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + (binary_id(=worth-testkit-server) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/))\"]",
+        "HEAD": "fbbdf5edffbdd01b96009af19df4971cb285ad12",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T06:59:44.115958+00:00"
+      }
+    },
+    {
+      "workspace": "root",
+      "log": "target/lane-evidence/pc-merge-root-tier2/test-cost/root/run-signal.log",
+      "counts": {
+        "ok": 2409,
+        "ignored": 18
+      },
+      "exit": 0,
+      "header": {
+        "Command": "[\"cargo\", \"nextest\", \"run\", \"--cargo-metadata\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-root-tier2\\\\test-cost\\\\root\\\\build\\\\cargo-metadata.json\", \"--binaries-metadata\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-root-tier2\\\\test-cost\\\\root\\\\build\\\\binaries.json\", \"--profile\", \"ci\", \"--config-file\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-root-tier2\\\\test-cost\\\\root\\\\nextest.toml\", \"--ignore-default-filter\", \"--no-fail-fast\", \"--no-tests=fail\", \"--message-format\", \"libtest-json\", \"-E\", \"((binary_id(=worth-court-signal-branch-retention-contract::worth_court_signal_branch_retention_contract) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-signal-owner-services::worth_court_signal_owner_services) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-court-signal-wasm::worth_court_signal_wasm) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + (binary_id(=worth-signal) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + (binary_id(=worth-signal-wasm) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/))\"]",
+        "HEAD": "fbbdf5edffbdd01b96009af19df4971cb285ad12",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T06:26:31.659770+00:00"
+      }
+    },
+    {
+      "workspace": "query",
+      "log": "target/lane-evidence/pc-merge-query-tier2/test-cost/query/documentation/doctests.log",
+      "counts": {
+        "ok": 546
+      },
+      "exit": 0,
+      "header": {
+        "Command": "[\"cargo\", \"test\", \"--workspace\", \"--doc\", \"--profile\", \"dev\", \"--no-fail-fast\", \"--locked\", \"--manifest-path\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\workspaces\\\\worth-query\\\\Cargo.toml\", \"--message-format=json\", \"--\", \"--format\", \"pretty\"]",
+        "HEAD": "e787b51b3ec261df01fcb55fe76352e489f60dad",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T10:15:26.271108+00:00"
+      }
+    },
+    {
+      "workspace": "query",
+      "log": "target/lane-evidence/pc-merge-query-tier2/test-cost/query/run-query-cost.log",
+      "counts": {
+        "ok": 38,
+        "ignored": 4
+      },
+      "exit": 0,
+      "header": {
+        "Command": "[\"cargo\", \"nextest\", \"run\", \"--cargo-metadata\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-query-tier2\\\\test-cost\\\\query\\\\build\\\\cargo-metadata.json\", \"--binaries-metadata\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-query-tier2\\\\test-cost\\\\query\\\\build\\\\binaries.json\", \"--profile\", \"ci\", \"--config-file\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-query-tier2\\\\test-cost\\\\query\\\\nextest.toml\", \"--ignore-default-filter\", \"--no-fail-fast\", \"--no-tests=fail\", \"--message-format\", \"libtest-json\", \"-E\", \"((binary_id(=worth-query-court-decl-host-package-archive-replay-application-graph::worth_query_court_decl_host_package_archive_replay_application_graph) & test(/^cost::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-decl-host::worth_query_court_decl_host) & test(/^cost::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-installation::worth_query_court_installation) & test(/^cost::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-query-decl-host::worth_query_court_query_decl_host) & test(/^cost::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-query-installed-operating-world::worth_query_court_query_installed_operating_world) & test(/^cost::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-query-installed-operations::worth_query_court_query_installed_operations) & test(/^cost::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/))\"]",
+        "HEAD": "e787b51b3ec261df01fcb55fe76352e489f60dad",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T10:13:52.084204+00:00"
+      }
+    },
+    {
+      "workspace": "query",
+      "log": "target/lane-evidence/pc-merge-query-tier2/test-cost/query/run-query-determinism.log",
+      "counts": {
+        "ok": 28
+      },
+      "exit": 0,
+      "header": {
+        "Command": "[\"cargo\", \"nextest\", \"run\", \"--cargo-metadata\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-query-tier2\\\\test-cost\\\\query\\\\build\\\\cargo-metadata.json\", \"--binaries-metadata\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-query-tier2\\\\test-cost\\\\query\\\\build\\\\binaries.json\", \"--profile\", \"ci\", \"--config-file\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-query-tier2\\\\test-cost\\\\query\\\\nextest.toml\", \"--ignore-default-filter\", \"--no-fail-fast\", \"--no-tests=fail\", \"--message-format\", \"libtest-json\", \"-E\", \"((binary_id(=worth-query-court-decl-host::worth_query_court_decl_host) & test(/^determinism::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-package-archive::worth_query_court_package_archive) & test(/^determinism::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-query-installed-operating-world::worth_query_court_query_installed_operating_world) & test(/^determinism::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-query-installed-operations::worth_query_court_query_installed_operations) & test(/^determinism::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/))\"]",
+        "HEAD": "e787b51b3ec261df01fcb55fe76352e489f60dad",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T10:15:04.059617+00:00"
+      }
+    },
+    {
+      "workspace": "query",
+      "log": "target/lane-evidence/pc-merge-query-tier2/test-cost/query/run-query-execution.log",
+      "counts": {
+        "ok": 585
+      },
+      "exit": 0,
+      "header": {
+        "Command": "[\"cargo\", \"nextest\", \"run\", \"--cargo-metadata\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-query-tier2\\\\test-cost\\\\query\\\\build\\\\cargo-metadata.json\", \"--binaries-metadata\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-query-tier2\\\\test-cost\\\\query\\\\build\\\\binaries.json\", \"--profile\", \"ci\", \"--config-file\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-query-tier2\\\\test-cost\\\\query\\\\nextest.toml\", \"--ignore-default-filter\", \"--no-fail-fast\", \"--no-tests=fail\", \"--message-format\", \"libtest-json\", \"-E\", \"(binary_id(=worth-query-execution) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/))\"]",
+        "HEAD": "e787b51b3ec261df01fcb55fe76352e489f60dad",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T08:14:01.842922+00:00"
+      }
+    },
+    {
+      "workspace": "query",
+      "log": "target/lane-evidence/pc-merge-query-tier2/test-cost/query/run-query-process.log",
+      "counts": {
+        "ok": 84,
+        "ignored": 4,
+        "failed": 3
+      },
+      "exit": 100,
+      "header": {
+        "Command": "[\"cargo\", \"nextest\", \"run\", \"--cargo-metadata\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-query-tier2\\\\test-cost\\\\query\\\\build\\\\cargo-metadata.json\", \"--binaries-metadata\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-query-tier2\\\\test-cost\\\\query\\\\build\\\\binaries.json\", \"--profile\", \"ci\", \"--config-file\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-query-tier2\\\\test-cost\\\\query\\\\nextest.toml\", \"--ignore-default-filter\", \"--no-fail-fast\", \"--no-tests=fail\", \"--message-format\", \"libtest-json\", \"-E\", \"((binary_id(=worth-query-court-decl-host-package-archive-replay-application-graph::worth_query_court_decl_host_package_archive_replay_application_graph) & test(/^process::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-decl-host-package-archive-replay-workflow-approval::worth_query_court_decl_host_package_archive_replay_workflow_approval) & test(/^process::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-execution-convergence-epoch-fixture::worth_query_court_execution_convergence_epoch_fixture) & test(/^process::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-execution-managed-run-provider-contract-violation::worth_query_court_execution_managed_run_provider_contract_violation) & test(/^process::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-execution-package-archive::worth_query_court_execution_package_archive) & test(/^process::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-execution-primary-graph-application-attempt::worth_query_court_execution_primary_graph_application_attempt) & test(/^process::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-execution-primary-graph-application-contribution::worth_query_court_execution_primary_graph_application_contribution) & test(/^process::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-execution-primary-graph-application-output-demand::worth_query_court_execution_primary_graph_application_output_demand) & test(/^process::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-execution-primary-graph-application-query::worth_query_court_execution_primary_graph_application_query) & test(/^process::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-execution-primary-graph::worth_query_court_execution_primary_graph) & test(/^process::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-host-replay::worth_query_court_host_replay) & test(/^process::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-query-decl-host::worth_query_court_query_decl_host) & test(/^process::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-source::worth_query_court_source) & test(/^process::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/))\"]",
+        "HEAD": "e787b51b3ec261df01fcb55fe76352e489f60dad",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T10:01:46.703162+00:00"
+      }
+    },
+    {
+      "workspace": "query",
+      "log": "target/lane-evidence/pc-merge-query-tier2/test-cost/query/run-query-rest-advanced_product_branching-main.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "header": {
+        "Command": "[\"C:\\\\Users\\\\shepworth\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python314\\\\python.exe\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\scripts\\\\test_cost\\\\account.py\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\workspaces\\\\worth-query\\\\target\\\\debug\\\\examples\\\\advanced_product_branching-a2e942b10adb73b4.exe\"]",
+        "HEAD": "e787b51b3ec261df01fcb55fe76352e489f60dad",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T10:00:43.722045+00:00"
+      }
+    },
+    {
+      "workspace": "query",
+      "log": "target/lane-evidence/pc-merge-query-tier2/test-cost/query/run-query-rest-application_correction-main.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "header": {
+        "Command": "[\"C:\\\\Users\\\\shepworth\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python314\\\\python.exe\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\scripts\\\\test_cost\\\\account.py\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\workspaces\\\\worth-query\\\\target\\\\debug\\\\examples\\\\application_correction-dd41d7c94e430437.exe\"]",
+        "HEAD": "e787b51b3ec261df01fcb55fe76352e489f60dad",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T10:00:46.200857+00:00"
+      }
+    },
+    {
+      "workspace": "query",
+      "log": "target/lane-evidence/pc-merge-query-tier2/test-cost/query/run-query-rest-authored_workflow-main.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "header": {
+        "Command": "[\"C:\\\\Users\\\\shepworth\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python314\\\\python.exe\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\scripts\\\\test_cost\\\\account.py\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\workspaces\\\\worth-query\\\\target\\\\debug\\\\examples\\\\authored_workflow-9892a5159d2f73ff.exe\"]",
+        "HEAD": "e787b51b3ec261df01fcb55fe76352e489f60dad",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T10:01:25.893100+00:00"
+      }
+    },
+    {
+      "workspace": "query",
+      "log": "target/lane-evidence/pc-merge-query-tier2/test-cost/query/run-query-rest-observable_workflow-main.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "header": {
+        "Command": "[\"C:\\\\Users\\\\shepworth\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python314\\\\python.exe\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\scripts\\\\test_cost\\\\account.py\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\workspaces\\\\worth-query\\\\target\\\\debug\\\\examples\\\\observable_workflow-b4e61ccec9b18d60.exe\"]",
+        "HEAD": "e787b51b3ec261df01fcb55fe76352e489f60dad",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T10:01:31.754806+00:00"
+      }
+    },
+    {
+      "workspace": "query",
+      "log": "target/lane-evidence/pc-merge-query-tier2/test-cost/query/run-query-rest-ordinary_product_workflow-main.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "header": {
+        "Command": "[\"C:\\\\Users\\\\shepworth\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python314\\\\python.exe\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\scripts\\\\test_cost\\\\account.py\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\workspaces\\\\worth-query\\\\target\\\\debug\\\\examples\\\\ordinary_product_workflow-dac3f03e55904777.exe\"]",
+        "HEAD": "e787b51b3ec261df01fcb55fe76352e489f60dad",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T10:01:41.897054+00:00"
+      }
+    },
+    {
+      "workspace": "query",
+      "log": "target/lane-evidence/pc-merge-query-tier2/test-cost/query/run-query-rest.log",
+      "counts": {
+        "ok": 6967,
+        "failed": 17,
+        "ignored": 13
+      },
+      "exit": 100,
+      "header": {
+        "Command": "[\"cargo\", \"nextest\", \"run\", \"--cargo-metadata\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-query-tier2\\\\test-cost\\\\query\\\\build\\\\cargo-metadata.json\", \"--binaries-metadata\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-query-tier2\\\\test-cost\\\\query\\\\build\\\\binaries.json\", \"--profile\", \"ci\", \"--config-file\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-query-tier2\\\\test-cost\\\\query\\\\nextest.toml\", \"--ignore-default-filter\", \"--no-fail-fast\", \"--no-tests=pass\", \"--message-format\", \"libtest-json\", \"-E\", \"(binary_id(=worth-query) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + (binary_id(=worth-query-admission) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-decl-execution-package-archive::worth_query_court_decl_execution_package_archive) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-decl-execution::worth_query_court_decl_execution) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-decl-host-package-archive-replay-application-graph::worth_query_court_decl_host_package_archive_replay_application_graph) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-decl-host-package-archive-replay-workflow-approval::worth_query_court_decl_host_package_archive_replay_workflow_approval) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-decl-host::worth_query_court_decl_host) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-decl::worth_query_court_decl) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-execution-convergence-epoch-fixture::worth_query_court_execution_convergence_epoch_fixture) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-execution-managed-run-provider-contract-violation::worth_query_court_execution_managed_run_provider_contract_violation) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-execution-package-archive::worth_query_court_execution_package_archive) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-execution-primary-graph-application-attempt::worth_query_court_execution_primary_graph_application_attempt) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-execution-primary-graph-application-contribution::worth_query_court_execution_primary_graph_application_contribution) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-execution-primary-graph-application-output-demand::worth_query_court_execution_primary_graph_application_output_demand) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-execution-primary-graph-application-query::worth_query_court_execution_primary_graph_application_query) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-execution-primary-graph-authorization::worth_query_court_execution_primary_graph_authorization) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-execution-primary-graph::worth_query_court_execution_primary_graph) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-execution::worth_query_court_execution) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-installation::worth_query_court_installation) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-package-archive::worth_query_court_package_archive) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-publication::worth_query_court_publication) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-query-decl-host::worth_query_court_query_decl_host) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-query-installed-operating-world::worth_query_court_query_installed_operating_world) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-query-installed-operations::worth_query_court_query_installed_operations) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-court-query::worth_query_court_query) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + (binary_id(=worth-query-decl) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + (binary_id(=worth-query-declaration) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + (binary_id(=worth-query-installation) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + (binary_id(=worth-query-package-archive) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + (binary_id(=worth-query-publication) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + (binary_id(=worth-query-testkit-installed-operation-fixture) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/))\"]",
+        "HEAD": "e787b51b3ec261df01fcb55fe76352e489f60dad",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T08:21:38.383803+00:00"
+      }
+    },
+    {
+      "workspace": "bank",
+      "log": "target/lane-evidence/pc-merge-bank-tier2/test-cost/bank/documentation/doctests.log",
+      "counts": {
+        "ok": 74,
+        "ignored": 7
+      },
+      "exit": 0,
+      "header": {
+        "Command": "[\"cargo\", \"test\", \"--workspace\", \"--doc\", \"--profile\", \"dev\", \"--no-fail-fast\", \"--locked\", \"--manifest-path\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\workspaces\\\\worth-query-bank-world\\\\Cargo.toml\", \"--message-format=json\", \"--\", \"--format\", \"pretty\"]",
+        "HEAD": "e787b51b3ec261df01fcb55fe76352e489f60dad",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T10:48:29.035280+00:00"
+      }
+    },
+    {
+      "workspace": "bank",
+      "log": "target/lane-evidence/pc-merge-bank-tier2/test-cost/bank/run-bank-cost.log",
+      "counts": {
+        "ignored": 1,
+        "ok": 4,
+        "failed": 3
+      },
+      "exit": 100,
+      "header": {
+        "Command": "[\"cargo\", \"nextest\", \"run\", \"--cargo-metadata\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-bank-tier2\\\\test-cost\\\\bank\\\\build\\\\cargo-metadata.json\", \"--binaries-metadata\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-bank-tier2\\\\test-cost\\\\bank\\\\build\\\\binaries.json\", \"--profile\", \"ci\", \"--config-file\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-bank-tier2\\\\test-cost\\\\bank\\\\nextest.toml\", \"--ignore-default-filter\", \"--no-fail-fast\", \"--no-tests=fail\", \"--message-format\", \"libtest-json\", \"-E\", \"((binary_id(=worth-query-bank-court-external-rail-server::worth_query_bank_court_external_rail_server) & test(/^cost::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/))\"]",
+        "HEAD": "e787b51b3ec261df01fcb55fe76352e489f60dad",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T10:47:58.878722+00:00"
+      }
+    },
+    {
+      "workspace": "bank",
+      "log": "target/lane-evidence/pc-merge-bank-tier2/test-cost/bank/run-bank-inbound_completion-main.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "header": {
+        "Command": "[\"C:\\\\Users\\\\shepworth\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python314\\\\python.exe\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\scripts\\\\test_cost\\\\account.py\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\workspaces\\\\worth-query-bank-world\\\\target\\\\debug\\\\examples\\\\inbound_completion-a8e185dbc87bae4e.exe\"]",
+        "HEAD": "e787b51b3ec261df01fcb55fe76352e489f60dad",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T10:46:47.445095+00:00"
+      }
+    },
+    {
+      "workspace": "bank",
+      "log": "target/lane-evidence/pc-merge-bank-tier2/test-cost/bank/run-bank-process.log",
+      "counts": {
+        "ok": 73,
+        "ignored": 1
+      },
+      "exit": 0,
+      "header": {
+        "Command": "[\"cargo\", \"nextest\", \"run\", \"--cargo-metadata\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-bank-tier2\\\\test-cost\\\\bank\\\\build\\\\cargo-metadata.json\", \"--binaries-metadata\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-bank-tier2\\\\test-cost\\\\bank\\\\build\\\\binaries.json\", \"--profile\", \"ci\", \"--config-file\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-bank-tier2\\\\test-cost\\\\bank\\\\nextest.toml\", \"--ignore-default-filter\", \"--no-fail-fast\", \"--no-tests=fail\", \"--message-format\", \"libtest-json\", \"-E\", \"((binary_id(=worth-query-bank-court-external-rail-server::worth_query_bank_court_external_rail_server) & test(/^process::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-bank-court-external-rail::worth_query_bank_court_external_rail) & test(/^process::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-bank-court-server::worth_query_bank_court_server) & test(/^process::/)) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/))\"]",
+        "HEAD": "e787b51b3ec261df01fcb55fe76352e489f60dad",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T10:46:53.253371+00:00"
+      }
+    },
+    {
+      "workspace": "bank",
+      "log": "target/lane-evidence/pc-merge-bank-tier2/test-cost/bank/run-bank.log",
+      "counts": {
+        "ok": 484,
+        "ignored": 1,
+        "failed": 1
+      },
+      "exit": 100,
+      "header": {
+        "Command": "[\"cargo\", \"nextest\", \"run\", \"--cargo-metadata\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-bank-tier2\\\\test-cost\\\\bank\\\\build\\\\cargo-metadata.json\", \"--binaries-metadata\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-bank-tier2\\\\test-cost\\\\bank\\\\build\\\\binaries.json\", \"--profile\", \"ci\", \"--config-file\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-bank-tier2\\\\test-cost\\\\bank\\\\nextest.toml\", \"--ignore-default-filter\", \"--no-fail-fast\", \"--no-tests=pass\", \"--message-format\", \"libtest-json\", \"-E\", \"(binary_id(=bank-domain) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + (binary_id(=bank-external-rail) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + (binary_id(=bank-http-adapter) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + (binary_id(=bank-server) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + (binary_id(=bank-user-node) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-bank-court-domain::worth_query_bank_court_domain) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-bank-court-external-rail-server::worth_query_bank_court_external_rail_server) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-bank-court-external-rail::worth_query_bank_court_external_rail) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-bank-court-http-adapter::worth_query_bank_court_http_adapter) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-bank-court-server::worth_query_bank_court_server) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-bank-court-source::worth_query_bank_court_source) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + ((binary_id(=worth-query-bank-court-user-node::worth_query_bank_court_user_node) & not (test(/^process::/) + test(/^oracle::/) + test(/^cost::/) + test(/^determinism::/) + test(/^compile_fail::/))) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/)) + (binary_id(=worth-query-bank-testkit-server) & not test(/(^|::)(exhaustive|scale)::/) & not test(/(^|::)(refused_maintenance_drops_every_owner_without_panicking|cleanup_child_rejects_a_missing_probe_environment)$/))\"]",
+        "HEAD": "e787b51b3ec261df01fcb55fe76352e489f60dad",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T10:40:19.371112+00:00"
+      }
+    },
+    {
+      "workspace": "store",
+      "log": "target/lane-evidence/pc-merge-store-tier2/run-selected-native.log",
+      "counts": {
+        "ok": 4046,
+        "failed": 27,
+        "ignored": 30
+      },
+      "exit": 100,
+      "header": {
+        "Command": "[\"cargo\", \"nextest\", \"run\", \"--cargo-metadata\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-store-tier2\\\\build\\\\cargo-metadata.json\", \"--binaries-metadata\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-store-tier2\\\\build\\\\binaries.json\", \"--profile\", \"ci\", \"--config-file\", \"C:\\\\programming\\\\worth worktees\\\\worktrees\\\\m3-host-home\\\\target\\\\lane-evidence\\\\pc-merge-store-tier2\\\\nextest.toml\", \"--ignore-default-filter\", \"--no-fail-fast\", \"--no-tests=fail\", \"--message-format\", \"libtest-json\", \"-E\", \"not test(/(^|::)(exhaustive|scale|scenario|scenarios)::/) & not test(/(^|::)relational_home::(media_sweep|process_kill|recovery_interruption|residency_media|residency_process)::/) & not test(/(^|::)relational_home::incarnation::(media|process)::/) & not test(/(^|::)relational_home::oracle::/)\"]",
+        "HEAD": "e787b51b3ec261df01fcb55fe76352e489f60dad",
+        "Git status --short empty": "False",
+        "Start": "2026-11-08T11:39:55.259482+00:00"
+      }
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-000.log",
+      "counts": {
+        "ok": 2,
+        "FAILED": 1
+      },
+      "exit": 101,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-001.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-002.log",
+      "counts": {
+        "FAILED": 1
+      },
+      "exit": 101,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-003.log",
+      "counts": {
+        "ok": 3
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-004.log",
+      "counts": {
+        "ok": 148,
+        "FAILED": 1
+      },
+      "exit": 4294967295,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-005.log",
+      "counts": {
+        "ok": 119,
+        "FAILED": 3
+      },
+      "exit": 101,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-006.log",
+      "counts": {
+        "ok": 18
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-007.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-008.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-009.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-010.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-011.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-012.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-013.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-014.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-015.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-016.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-017.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-018.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-019.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-020.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-021.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-022.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-023.log",
+      "counts": {
+        "FAILED": 1
+      },
+      "exit": 101,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-024.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-025.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-026.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-027.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-028.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-029.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-030.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-031.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-032.log",
+      "counts": {
+        "FAILED": 1
+      },
+      "exit": 101,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-033.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-034.log",
+      "counts": {
+        "FAILED": 1
+      },
+      "exit": 101,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-035.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-036.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-037.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-038.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-039.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-040.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-041.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-042.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-043.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-044.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-045.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-046.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-047.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-048.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-049.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-050.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-051.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-052.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-053.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-054.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-055.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-056.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-057.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-058.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-059.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-060.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-061.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-062.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-063.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-064.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-065.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-066.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-067.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-068.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-069.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-070.log",
+      "counts": {
+        "FAILED": 1
+      },
+      "exit": 101,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-071.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-072.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-073.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-074.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-075.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-076.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-077.log",
+      "counts": {
+        "FAILED": 1
+      },
+      "exit": 101,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-078.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-079.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-080.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-081.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-082.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-083.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-084.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-085.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-086.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-087.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-088.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-089.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-090.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-091.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-092.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-093.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-094.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-095.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-096.log",
+      "counts": {
+        "FAILED": 1
+      },
+      "exit": 101,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-097.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-098.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-099.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-100.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-101.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-102.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-103.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-104.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-105.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-106.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-107.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-108.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-109.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-110.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-111.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-112.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-113.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-114.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-115.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-116.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-117.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-118.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-119.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-120.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-121.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-122.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-123.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-124.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-125.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-126.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-127.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-128.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-129.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-130.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-131.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-132.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-133.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-134.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-135.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-136.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-137.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-138.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-139.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-140.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-141.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-142.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-143.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-144.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-145.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-146.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-147.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-148.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-149.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-150.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-151.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-152.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-153.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-154.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-155.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-156.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-157.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-158.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-159.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-160.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-161.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-162.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-163.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-164.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-165.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-166.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-167.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-168.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-169.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-170.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-171.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-172.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-173.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-174.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-175.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-176.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-177.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-178.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-179.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-180.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-181.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-182.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-183.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-184.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-185.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-186.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-187.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-188.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-189.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-190.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-191.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-192.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-193.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-194.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-195.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-196.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-197.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-198.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-199.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-200.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-201.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-202.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-203.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-204.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-205.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-206.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-207.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-208.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-209.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-210.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-211.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-212.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-213.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-214.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-215.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-216.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-217.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-218.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-219.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-220.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-221.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-222.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-223.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-224.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-225.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-226.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-227.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-228.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-229.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-230.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-231.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-232.log",
+      "counts": {
+        "FAILED": 1
+      },
+      "exit": 101,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-233.log",
+      "counts": {
+        "FAILED": 1
+      },
+      "exit": 101,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-234.log",
+      "counts": {
+        "FAILED": 1
+      },
+      "exit": 101,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-235.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-236.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-237.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-238.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-239.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-240.log",
+      "counts": {
+        "FAILED": 1
+      },
+      "exit": 101,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-241.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-242.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-243.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-244.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-245.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-246.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-247.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-248.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-249.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-250.log",
+      "counts": {
+        "FAILED": 1
+      },
+      "exit": 101,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-251.log",
+      "counts": {
+        "FAILED": 1
+      },
+      "exit": 101,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-252.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-253.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-254.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-255.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-256.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-257.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-258.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-259.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-260.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-261.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-262.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-263.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-264.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-265.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-266.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-267.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-268.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-269.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-270.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-271.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-272.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-273.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-274.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-275.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-276.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-277.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-278.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-279.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-280.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-281.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-282.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-283.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-284.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-285.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-286.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-287.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-288.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-289.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-290.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-291.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-292.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-293.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-294.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-295.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-296.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-297.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-298.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-299.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-300.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-301.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-302.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-303.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-304.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-305.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-306.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    },
+    {
+      "workspace": "fixture",
+      "log": "target/lane-evidence/pc-merge-fixture-tier2/fixture-chunk-307.log",
+      "counts": {
+        "ok": 1
+      },
+      "exit": 0,
+      "parent_log": "target/lane-evidence/pc-merge-fixture-tier2-driver.log",
+      "header": {}
+    }
+  ]
+}

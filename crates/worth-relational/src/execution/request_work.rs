@@ -96,7 +96,6 @@ impl RequestWorkBudget {
         let remaining = ceiling.map(|ceiling| ceiling.saturating_sub(*charged));
         let outcome = run(remaining);
         if let Some(report) = report(&outcome).filter(|report| report.has_accounting()) {
-            #[cfg(test)]
             observation::record(report.charged_work());
             *charged = charged.saturating_add(report.charged_work());
         }
@@ -114,7 +113,6 @@ pub(crate) fn run_with_remaining_request_work<R>(
         Some(budget) => budget.run(lease, run, report),
         None => {
             let outcome = run(lease);
-            #[cfg(test)]
             observation::record(report(&outcome).charged_work());
             outcome
         }
@@ -124,5 +122,35 @@ pub(crate) fn run_with_remaining_request_work<R>(
 #[cfg(test)]
 mod tests;
 
-#[cfg(test)]
-pub(crate) mod observation;
+mod observation;
+pub use observation::RelationalWorkAccountRecorderForTest;
+
+/// A complete non-packet transaction stage uses the SAME original account.
+/// Packet dispatches keep their own settlement and must not enter this wrapper.
+pub(crate) fn transaction_stage<T, E>(
+    execution: &ExecutionRequest<'_, '_>,
+    budget: Option<&RequestWorkBudget>,
+    stage: impl FnOnce() -> Result<T, E>,
+) -> Result<T, E>
+where
+    E: From<crate::transactions::data::TransactionCommitError>,
+{
+    use crate::transactions::data::TransactionCommitError;
+    let Some(budget) = budget.filter(|_| execution.is_leased()) else {
+        return stage();
+    };
+    let mut result = None;
+    let handoff = budget.run_stage(*execution, || result = Some(stage()));
+    match (handoff, result) {
+        (Ok(()), Some(result)) => result,
+        (
+            Err(WorkCeilingDenial::Stopped(worth_execution::MapKernelStop::NestedStopped)),
+            Some(Err(inner)),
+        ) => Err(inner),
+        (Err(cause), _) => Err(TransactionCommitError::execution(
+            crate::execution::RelationalExecutionDenialCause::from(cause).into(),
+        )
+        .into()),
+        (Ok(()), None) => unreachable!("the completed original stage invoked its body"),
+    }
+}

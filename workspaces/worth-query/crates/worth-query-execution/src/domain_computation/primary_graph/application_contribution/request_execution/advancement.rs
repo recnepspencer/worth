@@ -175,6 +175,16 @@ pub fn with_bootstrap_advancement<R>(
     policy: worth_foundational::ExecutionRequestPolicy,
     body: impl for<'scope> FnOnce(WorthQueryBootstrapAdvancementPhase<'scope>) -> R,
 ) -> Result<R, WorthQueryAdvancementDenial> {
+    worth_execution::run_with_execution_stack(move || {
+        with_bootstrap_advancement_on_execution_stack(policy, body)
+    })
+}
+
+#[inline(never)]
+fn with_bootstrap_advancement_on_execution_stack<R>(
+    policy: worth_foundational::ExecutionRequestPolicy,
+    body: impl for<'scope> FnOnce(WorthQueryBootstrapAdvancementPhase<'scope>) -> R,
+) -> Result<R, WorthQueryAdvancementDenial> {
     with_owned_bootstrap_advancement(policy, |phase| {
         body(WorthQueryBootstrapAdvancementPhase::new(
             phase

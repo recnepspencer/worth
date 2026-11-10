@@ -12,7 +12,9 @@ mod tracked_packets;
 pub(crate) use packet_memory::{PacketMemory, SharedPacketScratch};
 mod request_work;
 
-pub(crate) use request_work::{run_with_remaining_request_work, RequestWorkBudget};
+pub(crate) use request_work::{
+    run_with_remaining_request_work, transaction_stage, RequestWorkBudget,
+};
 mod packet_preparation;
 
 pub(crate) use packet_preparation::{
@@ -31,5 +33,4 @@ pub(crate) use unleased_read_only_packets::execute_unleased_read_only_packets;
 
 mod request_custody;
 pub(crate) use request_custody::check_request;
-#[cfg(test)]
-pub(crate) use request_work::observation as work_observation;
+pub use request_work::RelationalWorkAccountRecorderForTest;

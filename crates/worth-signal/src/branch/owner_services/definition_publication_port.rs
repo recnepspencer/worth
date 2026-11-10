@@ -64,6 +64,35 @@ where
     where
         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
     {
+        worth_execution::run_with_execution_stack(move || {
+            self.advance_exact_with_completion_on_execution_stack(
+                execution,
+                admitted,
+                expected,
+                runtime_ctx,
+                cancellation,
+                apply,
+            )
+        })
+    }
+
+    #[inline(never)]
+    fn advance_exact_with_completion_on_execution_stack<F>(
+        &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+
+        admitted: AdmittedSignalConditionalDefinitionPublication,
+        expected: &AdmittedSignalBranchBasis,
+        runtime_ctx: &mut Ctx,
+        cancellation: &SignalOwnerCancellationToken,
+        apply: F,
+    ) -> (
+        SignalBranchAdvanceCompletion,
+        Option<AdmittedSignalConditionalDefinitionPublication>,
+    )
+    where
+        F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
+    {
         let mut operation = Some(admitted.operation);
         let completion = self
             .mutation

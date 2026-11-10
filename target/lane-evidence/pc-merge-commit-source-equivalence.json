@@ -1,0 +1,7 @@
+{
+  "committed_head": "e787b51b3ec261df01fcb55fe76352e489f60dad",
+  "evidence_head": "fbbdf5edffbdd01b96009af19df4971cb285ad12 + dirty resolved P-C merge",
+  "rust_paths_checked": 344,
+  "mismatches": [],
+  "provenance": "All frozen compiler/test Rust inputs equal committed blobs after Git LF normalization. No recompilation needed for commit-only change."
+}

@@ -759,7 +759,6 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution-package-archive/tests/worth_query_court_execution_package_archive/process/serial/domain_computation/primary_graph/tests/application_attempt/predecode_admission/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/domain_computation/managed_run/workflow_yield/corruption_tests/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/domain_computation/primary_graph/application_attempt/authority_read_stops/mod.rs
-workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/domain_computation/primary_graph/application_attempt/compare_and_commit/commit_outcome/denial/execution/authority_cause/tests/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/domain_computation/primary_graph/application_attempt/denial/allocation_error_source_tests/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/domain_computation/primary_graph/application_attempt/denial/native_query_cause/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/domain_computation/primary_graph/application_attempt/denial/native_storage_tests/mod.rs
@@ -1804,3 +1803,9 @@ crates/worth-signal/ crates/worth-runtime-bridge/src/conditional_execution/autho
 crates/worth-runtime-bridge/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/managed_bridge/conditional_execution.rs
 
 crates/worth-signal/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/managed_bridge/conditional_execution.rs
+
+crates/worth-runtime-bridge/ workspaces/worth-query/crates/worth-query/src/domain_installation/operation_execution/workflow_execution/progression/frontier/tests/dispatch/reservation.rs
+
+# Read-only original Work settlement recording; no request or publication authority.
+
+crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/bulk_work_account.rs

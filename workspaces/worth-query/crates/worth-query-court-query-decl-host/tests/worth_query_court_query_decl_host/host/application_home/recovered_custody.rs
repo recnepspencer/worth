@@ -20,6 +20,26 @@ fn recovered_original_custody_reaches_service_and_release_stays_released() {
 fn continued_recovered_custody_closes_cooperatively_and_resumes_after_reopen() {
     journey(true, true);
 }
+// Defined before the journey modules so `durable!` is textually in scope there.
+/// The Home-scoped projection of a World identity that survives reopen. A reopened
+/// owner is a new process instance under a later Home fence, so only the durable
+/// Home owner and the owner-issued ordinal persist.
+fn durable_identity<Owner: std::fmt::Debug + PartialEq>(
+    owner: Option<Owner>,
+    ordinal: u64,
+) -> (Option<Owner>, u64) {
+    assert!(
+        owner.is_some(),
+        "a durable Home issues Home-scoped identities"
+    );
+    (owner, ordinal)
+}
+macro_rules! durable {
+    ($identity:expr) => {{
+        let identity = $identity;
+        durable_identity(identity.owner_identity().durable(), identity.ordinal())
+    }};
+}
 mod disposition;
 mod original;
 mod released;

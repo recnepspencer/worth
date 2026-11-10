@@ -15,7 +15,7 @@ fn real_sibling_denial_is_inspectable_releasable_and_leaves_no_recovery_orphan()
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
-    let (recovery, occupied_branch) = crate::domain_computation::primary_graph::tests::product_branch_creation_recovery::fork_failure::create(&world, request_execution);
+    let (recovery, occupied_branch, relational) = crate::domain_computation::primary_graph::tests::product_branch_creation_recovery::fork_failure::create(&world, request_execution);
     let inspection = recovery
         .inspect()
         .expect("the retained owner effects remain inspectable");
@@ -66,7 +66,7 @@ fn real_sibling_denial_is_inspectable_releasable_and_leaves_no_recovery_orphan()
     let active_transaction = integration.with_runtime(request_execution, |runtime| {
         let identity = runtime
             .branch_identity(&worth_relational::facade::history::BranchId(
-                "query-product-1-relational".to_owned(),
+                relational.clone(),
             ))
             .expect("the performed Relational fork remains installed");
         let (_, basis) = runtime.observe_branch(&identity).unwrap();

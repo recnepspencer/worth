@@ -57,8 +57,9 @@ fn run(
         }
     }).collect();
     let callback = std::sync::Mutex::new(None);
-    let (outcome, charges) = crate::execution::work_observation::capture(|| {
-        execute_read_only_packets(
+    let (outcome, charges) = crate::execution::RelationalWorkAccountRecorderForTest::new()
+        .record_for_test(|| {
+            execute_read_only_packets(
             packets,
             &lease,
             |packet, context| {
@@ -80,7 +81,7 @@ fn run(
             },
             crate::validation::execution::InvariantWorkerEnvelope::owned_allocation_capacity_bytes,
         )
-    });
+        });
     let outcome = outcome.map(|envelopes| {
         assert!(!envelopes.is_empty(), "the genuine rule must execute");
         assert!(envelopes

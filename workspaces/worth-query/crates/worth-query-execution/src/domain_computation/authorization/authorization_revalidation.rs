@@ -102,6 +102,7 @@ where
         >,
         WorthQueryOperationAuthorizationDenial,
     > {
+        let _read = self.runtime.product_runtime.enter_authority_revalidation();
         if !self.refresh_admitted_capability_authorization(execution, admission)? {
             self.readmit_admitted_non_capability_authorization(execution, admission)?;
         }
@@ -146,6 +147,7 @@ where
         >,
         WorthQueryOperationAuthorizationDenial,
     > {
+        let _read = self.runtime.product_runtime.enter_authority_revalidation();
         self.validate_admitted_authorization(execution, admission)?;
         let product = admission.graph_work().mutation_product().ok_or_else(|| {
             WorthQueryOperationAuthorizationDenial::inconsistent(admission.operation())
@@ -189,6 +191,7 @@ where
         >,
         WorthQueryOperationAuthorizationDenial,
     > {
+        let _read = self.runtime.product_runtime.enter_authority_revalidation();
         if self.runtime.authority_identity() != admission.runtime_authority() {
             return Err(foreign_runtime());
         }

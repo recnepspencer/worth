@@ -8,6 +8,16 @@ impl<Schema: ApplicationSchema, Program: 'static>
         self,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<WorthQueryApplicationHomeClosed, Self> {
+        worth_execution::run_with_execution_stack(move || {
+            self.try_close_on_execution_stack(request)
+        })
+    }
+
+    #[inline(never)]
+    fn try_close_on_execution_stack(
+        self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryApplicationHomeClosed, Self> {
         match self.custody {
             CloseCustody::MemoryLifecycleRequired(home) => home.close(request),
             CloseCustody::WorldAdmission {

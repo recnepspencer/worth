@@ -315,13 +315,18 @@ fn checkpoint_restore_rejects_incomplete_field_revision_column() {
     );
 
     let mut recovered = runtime_with_test_schema();
+    let initial_cells = recovered.history.branch_cells_snapshot();
     let error = recovered
         .durability_recovery()
         .recover(execution, recovery)
         .unwrap_err();
     let error = crate::tests::support::expect_durability_failure(error);
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
-    assert!(error.detail.contains("field revision length"), "{error:?}");
+    // The arena-wide shape check rejects this one truncated revision column
+    // before its narrower projection validator. The typed corruption and the
+    // unchanged receiving state are the contract, independent of wording.
+    assert_eq!(recovered.history().immutable_commit_count(), 0);
+    assert_eq!(recovered.history.branch_cells_snapshot(), initial_cells);
     release_test_commit_snapshot(&runtime, &created);
 }
 

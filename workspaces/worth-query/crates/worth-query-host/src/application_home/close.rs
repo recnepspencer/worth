@@ -113,6 +113,17 @@ impl<Schema: ApplicationSchema, Program: 'static> WorthQueryApplicationHome<Sche
         WorthQueryApplicationHomeClosed,
         WorthQueryApplicationHomeCloseRefused<Schema, Program>,
     > {
+        worth_execution::run_with_execution_stack(move || self.close_on_execution_stack(request))
+    }
+
+    #[inline(never)]
+    fn close_on_execution_stack(
+        self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<
+        WorthQueryApplicationHomeClosed,
+        WorthQueryApplicationHomeCloseRefused<Schema, Program>,
+    > {
         let Self {
             query,
             directory,

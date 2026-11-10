@@ -78,3 +78,10 @@ impl PartialEq for LoweringBodyStorage {
     }
 }
 impl Eq for LoweringBodyStorage {}
+
+impl LoweredBridgeAsyncSourceDeclaration {
+    /// Read-only owner quote used to fund the real immutable body, not a peak sample.
+    pub fn original_storage_bytes_for_test() -> Result<u64, WorkCeilingDenial> {
+        OriginalLoweringStorage::bytes()
+    }
+}

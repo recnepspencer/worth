@@ -64,6 +64,7 @@ pub fn prepare_query_home_source(
             execution_authority,
         } = definition;
         let result = request.consult().map_err(D::Execution).and_then(|()| {
+            crate::open::readmission::unclean::admit(&home, request)?;
             super::super::attachment::attach_bridge(&home.relational, bridge, graph_role)
         });
         match result {

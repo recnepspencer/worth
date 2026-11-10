@@ -184,15 +184,16 @@ fn validate_world_source(plan: &RecoveryPlan) -> Result<(), DurabilityError> {
         .original_source
         .as_ref()
         .and_then(|source| source.world_selection.as_ref());
-    if let Some(selected) = selected {
-        if !plan
+    if let Some(selected) = selected
+        && !plan
             .home_world_selection
             .as_ref()
             .is_some_and(|actual| actual.require_original_source(selected).is_ok())
-        {
-            return Err(DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint,
-                "original World source eligibility belongs to a different or missing Home admission"));
-        }
+    {
+        return Err(DurabilityError::new(
+            RecoveryFailureClass::CorruptCheckpoint,
+            "original World source eligibility belongs to a different or missing Home admission",
+        ));
     }
     Ok(())
 }

@@ -37,6 +37,7 @@ mod frame;
 mod frame_refusal;
 pub(crate) mod input_commitment;
 mod memory_publication;
+pub(crate) use memory_publication::MemoryFramePreparationDenial;
 mod prepared_payload;
 pub(crate) use prepared_payload::PreparedOriginalCanonicalPayload;
 mod payload_digest;

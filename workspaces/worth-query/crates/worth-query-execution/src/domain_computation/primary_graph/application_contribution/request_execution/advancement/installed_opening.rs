@@ -6,6 +6,16 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         &self,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
+        worth_execution::run_with_execution_stack(move || {
+            self.with_host_advancement_on_execution_stack(body)
+        })
+    }
+
+    #[inline(never)]
+    fn with_host_advancement_on_execution_stack<R>(
+        &self,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial> {
         let _custody = OpeningCustody::enter()?;
         self.runtime
             .product_runtime
@@ -29,6 +39,17 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
+        worth_execution::run_with_execution_stack(move || {
+            self.with_funded_host_advancement_on_execution_stack(allocation_policy, body)
+        })
+    }
+
+    #[inline(never)]
+    fn with_funded_host_advancement_on_execution_stack<R>(
+        &self,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial> {
         self.open_funded(
             allocation_policy,
             worth_execution::CancellationToken::new(),
@@ -42,6 +63,22 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     /// the caller's allocation policy opens through this, so `Execution(lease)`
     /// is the call's one budget rather than a second one inside the World's.
     pub fn with_funded_application_advancement<R>(
+        &self,
+        request: &WorthQueryRequestScope,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial> {
+        worth_execution::run_with_execution_stack(move || {
+            self.with_funded_application_advancement_on_execution_stack(
+                request,
+                allocation_policy,
+                body,
+            )
+        })
+    }
+
+    #[inline(never)]
+    fn with_funded_application_advancement_on_execution_stack<R>(
         &self,
         request: &WorthQueryRequestScope,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
@@ -102,6 +139,17 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         request: &WorthQueryRequestScope,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
+        worth_execution::run_with_execution_stack(move || {
+            self.with_application_advancement_on_execution_stack(request, body)
+        })
+    }
+
+    #[inline(never)]
+    fn with_application_advancement_on_execution_stack<R>(
+        &self,
+        request: &WorthQueryRequestScope,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial> {
         let _custody = OpeningCustody::enter()?;
         self.runtime
             .product_runtime
@@ -121,12 +169,33 @@ impl crate::domain_computation::execution_runtime::product_world::WorthQueryProd
         &self,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
+        worth_execution::run_with_execution_stack(move || {
+            self.with_advancement_on_execution_stack(body)
+        })
+    }
+
+    #[inline(never)]
+    fn with_advancement_on_execution_stack<R>(
+        &self,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial> {
         self.open_host_advancement(worth_execution::CancellationToken::new(), None, body)
     }
 
     /// Runs a scoped host call under this installed World's policy and the
     /// caller's cancellation and deadline, lending only its branded phase.
     pub fn with_request_advancement<R>(
+        &self,
+        request: &WorthQueryRequestScope,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial> {
+        worth_execution::run_with_execution_stack(move || {
+            self.with_request_advancement_on_execution_stack(request, body)
+        })
+    }
+
+    #[inline(never)]
+    fn with_request_advancement_on_execution_stack<R>(
         &self,
         request: &WorthQueryRequestScope,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,

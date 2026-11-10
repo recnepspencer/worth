@@ -1,0 +1,13 @@
+Command: ["C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\target\\debug\\examples\\required_feature.exe"]
+Working directory: C:\programming\worth worktees\worktrees\m3-host-home\workspaces\worth-query\crates\worth-query-certification\fixtures\consumer_entry
+HEAD: 592aaaae2f5e852a6bb2c7e7d8626e2f30921e85
+Git status --short empty: False
+Start: 2026-11-08T14:39:34.650156+00:00
+
+{"type": "cargo-invocation", "command": ["C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\target\\debug\\examples\\required_feature.exe"], "cwd": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry", "capture": "separate", "mode": "build", "target_dir": null, "cargo_profile": null}
+
+
+{"type": "cargo-result", "exit_code": 0}
+
+End: 2026-11-08T14:39:35.547232+00:00
+Exit code: 0

@@ -38,13 +38,7 @@ fn extra(request: &ExecutionRequest<'_, '_>, value: &str) -> EntityExtra {
     EntityExtra::apply_payload(request, None, &patch(value).1).unwrap()
 }
 fn expected(extra: &EntityExtra) -> u64 {
-    let fixed = std::alloc::Layout::new::<[usize; 2]>()
-        .extend(std::alloc::Layout::new::<EntityExtra>())
-        .unwrap()
-        .0
-        .pad_to_align()
-        .size();
-    fixed as u64
+    StorageAllocation::<EntityExtra>::layout_bytes()
         + extra
             .authoritative_aspect_state()
             .map_or(0, |state| state.owned_allocation_capacity_bytes() as u64)

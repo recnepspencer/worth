@@ -131,6 +131,11 @@ fn world_unwind_retains_and_releases_the_exact_query_idempotency_slot() {
         before_retry_inspections,
         "ordinary idempotency resolution must not inspect World recovery",
     );
+    let handle = row.handle().clone();
+    assert!(
+        (*(*world.application.runtime_for_test()).primary_provider_for_test())
+            .retains_unpublished_recovery_for_test(&handle)
+    );
     let receipt = world
         .application
         .release_product_publication_recovery(recovery, 0)
@@ -139,21 +144,26 @@ fn world_unwind_retains_and_releases_the_exact_query_idempotency_slot() {
     assert_eq!(
         (*(*world.application.runtime_for_test()).primary_provider_for_test())
             .unpublished_idempotency_count(),
-        0,
-        "cleanup releases Query's exact recovery-indexed slot",
+        1,
+        "effect-bearing release preserves the terminal key and original semantic result",
     );
 
+    assert!(
+        !(*(*world.application.runtime_for_test()).primary_provider_for_test())
+            .retains_unpublished_recovery_for_test(&handle)
+    );
     let after = world.application.compare_and_commit_application(
         retry_after_cleanup,
         idempotency(0xD1, 0xD1),
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     );
     let WorthQueryApplicationCommitOutcome::Denied(denial) = after else {
-        panic!("the unpublished Relational movement leaves the product basis stale: {after:?}")
+        panic!("the released original must refuse before fresh execution: {after:?}")
     };
-    assert_ne!(
+    assert_eq!(
         denial.stage(),
         WorthQueryApplicationCommitDenialStage::Idempotency,
-        "cleanup removes the retained idempotency denial before fresh admission",
+        "release keeps the original key terminal before fresh admission",
     );
+    assert_eq!(denial.kind(), worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialKind::OriginalEffectReleased);
 }

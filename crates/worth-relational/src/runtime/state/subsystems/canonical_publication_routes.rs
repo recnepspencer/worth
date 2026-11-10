@@ -104,9 +104,7 @@ pub(crate) enum CanonicalPublicationRecordError {
     /// reservation; it was assigned nothing.
     ReservationWaitStopped(worth_execution::WorkCeilingDenial),
     PositionCapacityExhausted,
-    MemoryFrame(
-        crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial,
-    ),
+    MemoryFrame(crate::durability::canonical_commit_artifact::MemoryFramePreparationDenial),
     /// A caller narrowed the memory cutover and its deadline elapsed before
     /// canonical assignment. No position or owner effect was produced.
     CutoverDeadlineElapsed,

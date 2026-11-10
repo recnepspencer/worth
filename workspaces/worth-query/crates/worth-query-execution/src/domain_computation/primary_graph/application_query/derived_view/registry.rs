@@ -207,6 +207,11 @@ impl ManagedDerivedViewRegistry {
     }
 
     pub(in crate::domain_computation::primary_graph) fn dispose(&self) {
+        worth_execution::run_with_execution_stack(|| self.dispose_on_execution_stack())
+    }
+
+    #[inline(never)]
+    fn dispose_on_execution_stack(&self) {
         let (views, native_counts, indexes, source_branches) = {
             let mut state = self
                 .state

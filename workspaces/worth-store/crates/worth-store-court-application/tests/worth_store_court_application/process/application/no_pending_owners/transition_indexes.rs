@@ -3,6 +3,7 @@ use worth_execution::ExecutionRequest;
 mod promotion;
 mod publication;
 mod target;
+mod work_account;
 
 enum Journey {
     Publish,

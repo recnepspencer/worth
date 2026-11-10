@@ -15,3 +15,5 @@ mod derived_relation_changes;
 mod compound_publication;
 
 mod validated_proposal_memory;
+
+mod bulk_work_account;

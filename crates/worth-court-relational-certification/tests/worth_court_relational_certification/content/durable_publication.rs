@@ -178,6 +178,7 @@ fn content_durable_artifact_memory_refuses_before_the_medium_and_selected_commit
         before.descriptor()
     );
     drop(refusal);
+    drop(before);
     drop(runtime);
     assert_eq!(budget.charged_memory_bytes(), 0);
 }
@@ -251,6 +252,7 @@ fn content_durable_artifact_cancellation_after_original_allocation_never_calls_m
         before.descriptor()
     );
     drop(refusal);
+    drop(before);
     drop(runtime);
     assert_eq!(budget.charged_memory_bytes(), 0);
 }
@@ -312,6 +314,7 @@ fn content_durable_artifact_original_work_exhaustion_is_exact_and_pre_effect() {
         before.descriptor()
     );
     drop(refusal);
+    drop(before);
     drop(runtime);
     assert_eq!(
         request.memory().unwrap().available_memory_bytes(),

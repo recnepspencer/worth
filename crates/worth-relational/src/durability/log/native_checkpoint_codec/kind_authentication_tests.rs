@@ -4,10 +4,7 @@ use crate::durability::data::*;
 use crate::durability::medium::*;
 use crate::identity::data::PartitionId;
 use crate::tests::support::*;
-use std::sync::{
-    atomic::{AtomicUsize, Ordering},
-    Arc,
-};
+use std::sync::{Arc, Mutex};
 
 #[test]
 fn checkpoint_readmission_refuses_retired_integer_array_digest_before_restore() {
@@ -52,7 +49,7 @@ fn checkpoint_readmission_refuses_retired_integer_array_digest_before_restore() 
 }
 
 #[test]
-fn forged_cross_region_kind_commitment_is_refused_before_member_reads() {
+fn forged_cross_region_kind_commitment_is_refused_before_region_payload_reads() {
     let host = crate::test_execution_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let runtime = durable_runtime_with_test_schema();
@@ -80,7 +77,7 @@ fn forged_cross_region_kind_commitment_is_refused_before_member_reads() {
     let mut wire: checkpoint_wire::CheckpointWire<'_> =
         rmp_serde::from_slice(native.bytes().strip_prefix(CHECKPOINT_MAGIC).unwrap()).unwrap();
     // Keep every copy of this leaf consistent; only canonical root authority
-    // can reject the forgery. No member is needed to perform that check.
+    // can reject the forgery. Canonical authority may be read; region payload may not.
     let mut manifest = wire.manifest.ordinary_owned_draft();
     let mut roots = Vec::with_capacity(manifest.roots.len());
     for original in &manifest.roots {
@@ -111,6 +108,13 @@ fn forged_cross_region_kind_commitment_is_refused_before_member_reads() {
     wire.manifest = manifest.seal_ordinary();
     let mut bytes = CHECKPOINT_MAGIC.to_vec();
     bytes.extend(rmp_serde::to_vec_named(&wire).unwrap());
+    let canonical_members = wire
+        .manifest
+        .canonical_members
+        .entries()
+        .iter()
+        .map(|row| row.member)
+        .collect::<Vec<_>>();
     let source = Arc::new(ForgedKindSource {
         members: member_source::InlineCheckpointSource {
             members: {
@@ -127,7 +131,7 @@ fn forged_cross_region_kind_commitment_is_refused_before_member_reads() {
             },
         },
         journal: attached_durable_medium(&runtime).expect("fixture owns its actual durable medium"),
-        reads: AtomicUsize::new(0),
+        reads: Mutex::new(Vec::new()),
     });
     let recovery = RelationalDurableRecoverySource::new(
         Some(RelationalDurableCheckpointSource::new(
@@ -152,7 +156,17 @@ fn forged_cross_region_kind_commitment_is_refused_before_member_reads() {
         .durability_recovery()
         .recover(&execution, plan)
         .unwrap_err();
-    assert_eq!(source.reads.load(Ordering::SeqCst), 0);
+    let reads = source.reads.lock().unwrap();
+    assert!(
+        !reads.is_empty(),
+        "the untrusted checkpoint must obtain canonical authority"
+    );
+    assert!(
+        reads
+            .iter()
+            .all(|locator| canonical_members.contains(locator)),
+        "only canonical authority acquisition may precede kind refusal: {reads:?}"
+    );
     assert!(matches!(failure, RelationalRecoveryStop::Durability(error)
         if error.class == RecoveryFailureClass::CorruptCheckpoint && error.detail.contains("StorageContentMismatch")));
 }
@@ -161,7 +175,7 @@ fn forged_cross_region_kind_commitment_is_refused_before_member_reads() {
 struct ForgedKindSource {
     members: member_source::InlineCheckpointSource,
     journal: Arc<dyn RelationalDurableColdSource>,
-    reads: AtomicUsize,
+    reads: Mutex<Vec<RelationalDurableMemberLocator>>,
 }
 impl RelationalDurableColdSource for ForgedKindSource {
     fn checkpoint_read_protection(
@@ -195,7 +209,7 @@ impl RelationalDurableColdSource for ForgedKindSource {
         locator: RelationalDurableMemberLocator,
         limit: u64,
     ) -> Result<worth_execution::ExecutionImmutableBytes, RelationalDurableOwnedReadRefusal> {
-        self.reads.fetch_add(1, Ordering::SeqCst);
+        self.reads.lock().unwrap().push(locator);
         self.members
             .read_member_owned(request, original, locator, limit)
     }
@@ -213,7 +227,7 @@ impl RelationalDurableColdSource for ForgedKindSource {
         locator: RelationalDurableMemberLocator,
         limit: u64,
     ) -> Result<Vec<u8>, crate::storage::data::RelationalStorageUnavailableCause> {
-        self.reads.fetch_add(1, Ordering::SeqCst);
+        self.reads.lock().unwrap().push(locator);
         self.members.read_member(locator, limit)
     }
     fn read_commit(

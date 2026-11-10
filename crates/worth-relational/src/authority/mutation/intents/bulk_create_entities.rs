@@ -54,24 +54,26 @@ pub(super) fn apply<'a>(
         },
     )?;
     let staged_rows = stage_bulk_entity_rows(intent, workspace, lease)?;
-    let entity_aspect_plans = stage_bulk_entity_aspect_plans(intent, workspace, &staged_rows)?;
-    for ((client_key, _fields), aspect_plan) in intent
-        .client_keys
-        .iter()
-        .zip(staged_rows)
-        .zip(entity_aspect_plans)
-    {
-        apply_prepared_row(
-            intent,
-            workspace,
-            &mut outcome,
-            version_id,
-            client_key,
-            aspect_plan,
-        )?;
-    }
-    outcome.set_last_event_count(intent.field_patches.len());
-    Ok(outcome)
+    workspace.run_owned_mutation(|workspace| {
+        let entity_aspect_plans = stage_bulk_entity_aspect_plans(intent, workspace, &staged_rows)?;
+        for ((client_key, _fields), aspect_plan) in intent
+            .client_keys
+            .iter()
+            .zip(staged_rows)
+            .zip(entity_aspect_plans)
+        {
+            apply_prepared_row(
+                intent,
+                workspace,
+                &mut outcome,
+                version_id,
+                client_key,
+                aspect_plan,
+            )?;
+        }
+        outcome.set_last_event_count(intent.field_patches.len());
+        Ok(outcome)
+    })
 }
 
 fn stage_bulk_entity_aspect_plans(

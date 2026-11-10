@@ -37,8 +37,13 @@ fn memory_original_frame_survives_export_checkpoint_and_last_alias() {
         };
         bytes.clone()
     };
-    let bill = original.len() as u64;
-    assert_eq!(original.charged_payload_bytes(), Some(bill));
+    let payload_bill = original.len() as u64;
+    assert_eq!(original.charged_payload_bytes(), Some(payload_bill));
+    let bill = retained_byte_bill(original.bytes());
+    assert!(
+        bill > payload_bill,
+        "the original byte owner also retains its controller"
+    );
     let positioned = cell.demand_positioned(&execution, 1 << 30).unwrap();
     // Independent existing encoder is a fixture reference, outside the export claim.
     let reference = RelationalCanonicalCommitArtifact::from_positioned(
@@ -137,36 +142,59 @@ fn memory_frame_quota_and_cancel_refuse_before_position_or_head() {
     assert!(bill > controller);
     let counters = runtime.patch_position_reservation_counters();
     let before_head = runtime.history.latest_recorded_patch_position();
-    let limited = SerialMemoryBudget::new(Some(controller.checked_add(bill).unwrap() - 1));
-    let host = SerialRequest::from_memory(limited.clone(), CancellationSource::new().token(), None);
-    let original = ExecutionRequest::serial(&host);
-    let outcome = runtime
-        .publication_port()
-        .compare_and_publish(&original, candidate);
-    let crate::mvcc::RelationalPublicationOutcome::RequestStopped(
-        worth_execution::WorkCeilingDenial::Admission(
-            worth_execution::LeaseDenial::MemoryExhausted(
-                worth_execution::MemoryLimitDenial::Capacity { requested, .. },
+    let retained_bill = retained_byte_bill(&vec![0; bill as usize]);
+    assert!(retained_bill > bill);
+    drop(candidate);
+    for (available, refused_bill) in [(bill - 1, bill), (retained_bill - 1, retained_bill - bill)] {
+        // The first request cannot retain the payload; the second retains the
+        // entire payload but cannot retain its actual immutable controller.
+        let mut transaction = test_owner_begin_transaction_for_main(&runtime);
+        transaction
+            .push_batch(
+                batch_create("quota-memory-frame"),
+                setup_request.allocation_policy(),
+            )
+            .unwrap();
+        let proposal = transaction.validate(&setup_request, &runtime).unwrap();
+        let candidate = runtime
+            .prepare_validated_proposal(&setup_request, proposal)
+            .unwrap();
+        let limited = SerialMemoryBudget::new(Some(controller.checked_add(available).unwrap()));
+        let host =
+            SerialRequest::from_memory(limited.clone(), CancellationSource::new().token(), None);
+        let original = ExecutionRequest::serial(&host);
+        let outcome = runtime
+            .publication_port()
+            .compare_and_publish(&original, candidate);
+        let crate::mvcc::RelationalPublicationOutcome::RequestStopped(
+            worth_execution::WorkCeilingDenial::Admission(
+                worth_execution::LeaseDenial::MemoryExhausted(
+                    worth_execution::MemoryLimitDenial::Capacity { requested, .. },
+                ),
             ),
-        ),
-    ) = outcome
-    else {
-        panic!("the actual frame reservation must refuse")
-    };
-    assert_eq!(
-        requested, bill,
-        "independent reference frame bytes, not the controller or preparation"
-    );
-    assert_eq!(
-        runtime.patch_position_reservation_counters().assignments,
-        counters.assignments
-    );
-    assert_eq!(
-        runtime.history.latest_recorded_patch_position(),
-        before_head
-    );
-    runtime.compare_current_exact(&basis).unwrap();
-    assert_eq!(limited.charged_memory_bytes(), 0);
+        ) = outcome
+        else {
+            panic!("the actual retained frame owner must refuse")
+        };
+        assert_eq!(
+            requested, refused_bill,
+            "the refusing allocation is reported by its real owner"
+        );
+        assert_eq!(
+            runtime.patch_position_reservation_counters().assignments,
+            counters.assignments
+        );
+        assert_eq!(
+            runtime.history.latest_recorded_patch_position(),
+            before_head
+        );
+        runtime.compare_current_exact(&basis).unwrap();
+        assert_eq!(
+            limited.charged_memory_bytes(),
+            0,
+            "both frame reservations are refunded"
+        );
+    }
     drop(next);
     drop(basis);
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
@@ -345,4 +373,22 @@ fn journal_publication_keeps_journal_placement_without_memory_frame() {
         &runtime.durability.cold_source().unwrap()
     ));
     release_test_commit_snapshot(&runtime, &result);
+}
+
+// Quote the existing SDK byte owner, independently of Native framing. No
+// retained layout or peak is duplicated in this owner court.
+fn retained_byte_bill(payload: &[u8]) -> u64 {
+    let budget = SerialMemoryBudget::new(Some(8 << 20));
+    let host = SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
+    let request = ExecutionRequest::serial(&host);
+    let mut builder =
+        worth_execution::ExecutionRequestArrayBuilder::<u8>::allocate(request, payload.len())
+            .unwrap();
+    builder.extend_from_slice(payload).unwrap();
+    let bytes = builder.seal_immutable_bytes().unwrap();
+    assert_eq!(bytes.charged_payload_bytes(), Some(payload.len() as u64));
+    let bill = budget.charged_memory_bytes();
+    drop(bytes);
+    assert_eq!(budget.charged_memory_bytes(), 0);
+    bill
 }

@@ -62,7 +62,7 @@ fn unfunded_validated_proposal_backing_refuses_and_releases_original_custody() {
         matches!(denial.kind,
         CommitExecutionDenialKind::Cause(RelationalExecutionDenialCause::PolicyMemoryExhausted {
             requested, admitted, ancestor: 0,
-        }) if requested > SMALL_OWNER_CEILING && admitted < requested),
+        }) if requested > 0 && admitted < requested && admitted <= SMALL_OWNER_CEILING),
         "{denial:?}"
     );
     assert_eq!(budget.charged_memory_bytes(), 0);

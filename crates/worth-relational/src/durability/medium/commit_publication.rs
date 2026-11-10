@@ -27,7 +27,7 @@ impl RelationalCommitPublication {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         Option<crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact>,
-        crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial,
+        crate::durability::canonical_commit_artifact::MemoryFramePreparationDenial,
     > {
         if medium.is_some() {
             return Ok(None);

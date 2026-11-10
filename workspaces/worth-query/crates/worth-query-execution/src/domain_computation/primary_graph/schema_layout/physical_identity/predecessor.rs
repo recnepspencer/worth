@@ -96,13 +96,12 @@ pub(in crate::domain_computation::primary_graph::schema_layout) fn private_entit
             .entity_registration(kind.kind_id)
             .map_err(relational_schema_denial)?;
         for binding in &registration.aspect_contract_declarations.aspects {
-            if binding.contract.key().as_str() == aspect {
-                if selected
+            if binding.contract.key().as_str() == aspect
+                && selected
                     .replace((kind.kind_id, binding.contract.identity()))
                     .is_some()
-                {
-                    return Err(invalid_member("ambiguous original platform role"));
-                }
+            {
+                return Err(invalid_member("ambiguous original platform role"));
             }
         }
     }

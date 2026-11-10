@@ -195,3 +195,44 @@ fn digest_work_refusal_keeps_the_exact_value_checkpoint_cause() {
     // No graph traversal precedes the one-byte empty MessagePack digest write.
     assert_eq!(calls, vec![(0, 65_536), (1, 0)]);
 }
+
+#[test]
+fn historical_kind_reconstruction_preserves_original_work_stop_and_releases_scratch() {
+    use crate::execution::RelationalExecutionDenialCause as Stop;
+    let budget = SerialMemoryBudget::new(Some(1 << 20));
+    let mut partition = peer_partition();
+    let before = kind_projection::canonical_history(&partition).unwrap();
+    let first = std::cell::Cell::new(None);
+    let mut scratch = None;
+    let result = kind_admission::normalize_value(
+        &mut partition,
+        &mut |units, bytes| {
+            if units > 0 {
+                first.set(Some(Stop::WorkExhausted));
+                return Err(Cause::SourceUnavailable);
+            }
+            scratch = Some(budget.reserve(bytes).unwrap());
+            Ok(())
+        },
+        &mut |_, _| panic!("refused traversal may not acquire retained result custody"),
+    );
+    assert_eq!(result, Err(Cause::SourceUnavailable));
+    assert!(matches!(
+        kind_admission::preserve_original_stop::<()>(Err(Stop::NestedStopped), first.get()),
+        Err(Stop::WorkExhausted)
+    ));
+    assert!(matches!(
+        kind_admission::preserve_original_stop(Ok(result), first.get()),
+        Err(Stop::WorkExhausted)
+    ));
+    assert_eq!(
+        kind_projection::canonical_history(&partition).unwrap(),
+        before
+    );
+    assert!(
+        budget.charged_memory_bytes() > 0,
+        "the real scratch reservation was admitted before work refused"
+    );
+    drop(scratch);
+    assert_eq!(budget.charged_memory_bytes(), 0);
+}

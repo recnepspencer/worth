@@ -76,18 +76,22 @@ fn writer() {
     })
     .unwrap()
     .unwrap_or_else(|refused| panic!("writer Home: {refused:?}"));
-    let (_, live) = scope();
     let mut maximum = 0;
     let mut last_commit = None;
     for ordinal in 0..8 {
+        let (_, live) = scope();
         match set(home.runtime(), &live, 0x8800 + ordinal, 8).unwrap() {
             WorthQueryApplicationMutationOutcome::Committed { receipt, result: 8 } => {
                 maximum = maximum.max(receipt.outcome_identity().unwrap().get());
                 last_commit = Some(receipt.commit_reference().commit_id);
             }
+            WorthQueryApplicationMutationOutcome::Commit(
+                worth_query_host::facade::primary_graph::WorthQueryApplicationUncommitted::ProductUnpublished(original)
+            ) => panic!("writer original owner cause: {:?}", original.cause()),
             other => panic!("writer must publish: {other:?}"),
         }
     }
+    let (_, live) = scope();
     assert_eq!(balance(home.runtime(), &live), 8);
     assert_eq!(contacts.load(Ordering::SeqCst), 8);
     assert_eq!(initialized.load(Ordering::SeqCst), 1);
@@ -113,6 +117,7 @@ fn reader() {
     .unwrap_or_else(|refused| opening_failed("reader Home", &refused));
     let (_, live) = scope();
     assert_eq!(balance(home.runtime(), &live), 8);
+    let (_, live) = scope();
     match set(home.runtime(), &live, 0x8807, 8).unwrap() {
         WorthQueryApplicationMutationOutcome::RecoveredCommitted(observed) => {
             println!(
@@ -123,7 +128,9 @@ fn reader() {
         other => panic!("old key must preserve only its historical fact: {other:?}"),
     }
     assert_eq!(contacts.load(Ordering::SeqCst), 0);
+    let (_, live) = scope();
     assert_eq!(balance(home.runtime(), &live), 8);
+    let (_, live) = scope();
     match set(home.runtime(), &live, 0x9000, 9).unwrap() {
         WorthQueryApplicationMutationOutcome::Committed { receipt, result: 9 } => println!(
             "HOME_READER_NEW_OUTCOME={}",
@@ -132,6 +139,7 @@ fn reader() {
         other => panic!("new key must publish: {other:?}"),
     }
     assert_eq!(contacts.load(Ordering::SeqCst), 1);
+    let (_, live) = scope();
     assert_eq!(balance(home.runtime(), &live), 9);
     home.close(&execution)
         .unwrap_or_else(|refused| panic!("reader close: {refused:?}"));

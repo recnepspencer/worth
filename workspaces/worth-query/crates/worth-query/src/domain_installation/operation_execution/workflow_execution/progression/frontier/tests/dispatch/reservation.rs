@@ -34,7 +34,7 @@ pub(super) fn start_reservation(
         .with_advancement(|phase| {
             let request = phase.checked_execution_request_for(&owner).unwrap();
             let (scope, map) = scoped_map_reservation(request, declaration);
-            root + scope + map
+            root + scope + map + lowering_storage()
         })
         .unwrap()
 }
@@ -92,4 +92,8 @@ pub(super) fn framework(lease: &worth_execution::ExecutionResourceLease<'_>, cou
     )
     .unwrap()
         - ExecutionMap::<(), ()>::declared_memory_requirement::<(), ()>(count, 0, 0, 0, 0).unwrap()
+}
+
+pub(super) fn lowering_storage() -> u64 {
+    worth_runtime_bridge::facade::LoweredBridgeAsyncSourceDeclaration::original_storage_bytes_for_test().unwrap()
 }

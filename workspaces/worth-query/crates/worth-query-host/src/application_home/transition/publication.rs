@@ -36,7 +36,7 @@ pub(super) fn publish<
         let intent = match (&schema_transition, position == target_position) {
             (Some((schema, policy)), true) => {
                 worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary()
-                    .with_schema_transition(schema.clone(), policy.clone())
+                    .with_schema_transition(schema.clone(), *policy)
             }
             (Some(_), false) | (None, true) | (None, false) => {
                 worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary()

@@ -1,0 +1,18 @@
+[
+  {
+    "file": "workspaces/worth-query/crates/worth-query-host/src/application_home/opening.rs",
+    "name": "open_in_advancement",
+    "attributes_nearby": [
+      "#[inline(never)]"
+    ],
+    "prefix": "plicationContributionTuple, WorthQueryBootstrapAdvancementPhase,\n    },\n    application_home_integration::*,\n    application_installation::*,\n};\nuse worth_store_application::*;\n\nimpl<'authoring, Schema, Program> WorthQueryApplicationHomeRequest<'authoring, Schema, Program>\nwhere\n    Schema: ApplicationSchemaComposition,\n    Program: ApplicationProgramDefinition<Schema> + 'static,\n    Program::Outputs:\n        ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,\n    Program::Contributions: WorthQueryApplicationContributionTuple<Schema>,\n{\n    #[inline(never)]\n    "
+  },
+  {
+    "file": "workspaces/worth-query/crates/worth-query-host/src/application_home/transition/opening.rs",
+    "name": "open_in_advancement",
+    "attributes_nearby": [
+      "#[inline(never)]"
+    ],
+    "prefix": "plicationContributionTuple<A>,\n    B: ApplicationSchemaComposition,\n    BP: ApplicationProgramDefinition<B> + 'static,\n    BP::Outputs: ApplicationProgramOutputsShape<B> + WorthQueryApplicationProgramRoots<B>,\n    BP::Contributions: WorthQueryApplicationContributionTuple<B>,\n    Author: FnOnce(\n        &WorthQueryHomeProgramTransitionReadSource<'_, '_>,\n        &WorthQueryHomeProgramTransitionTarget<'_>,\n    ) -> Result<\n        WorthQueryHomeProgramTransitionPlan,\n        worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenial,\n    >,\n{\n    #[inline(never)]\n    "
+  }
+]

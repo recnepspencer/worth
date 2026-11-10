@@ -51,22 +51,30 @@ impl RelationalPreparationRuntime {
             crate::authority::commit::preparation::storage_read_denial(&basis, failure)
         })?;
         if let Ok(prepared) = &answer {
-            self.mirror_residency
-                .demand_head(
-                    execution,
-                    &self.services.symbols,
-                    basis.identity().branch_id(),
-                    prepared
-                        .value()
-                        .prepared
-                        .structural_summary
-                        .touched_partitions
-                        .iter()
-                        .copied(),
-                )
-                .map_err(|failure| {
-                    crate::authority::commit::preparation::storage_read_denial(&basis, failure)
-                })?;
+            crate::execution::transaction_stage(
+                execution,
+                self.commit_work_budget.as_ref(),
+                || {
+                    self.mirror_residency
+                        .demand_head(
+                            execution,
+                            &self.services.symbols,
+                            basis.identity().branch_id(),
+                            prepared
+                                .value()
+                                .prepared
+                                .structural_summary
+                                .touched_partitions
+                                .iter()
+                                .copied(),
+                        )
+                        .map_err(|failure| {
+                            crate::authority::commit::preparation::storage_read_denial(
+                                &basis, failure,
+                            )
+                        })
+                },
+            )?;
         }
         self.settle_preparation_round(&round);
         answer
