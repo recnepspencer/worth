@@ -44,7 +44,7 @@ pub(super) fn retained_recovery_plan(
         .map(|entry| entry.envelope().commit.commit_id)
         .collect();
 
-    Ok(RecoveryPlan::new(
+    let mut plan = RecoveryPlan::new(
         runtime.runtime_config().clone(),
         checkpoint,
         tail_log,
@@ -55,7 +55,31 @@ pub(super) fn retained_recovery_plan(
         restore_authoritative_envelope_commit_ids,
         runtime.durability.cold_source(),
     )
-    .with_commit_strategy_executors(runtime.commit_strategy_executor_registry().clone()))
+    .with_commit_strategy_executors(runtime.commit_strategy_executor_registry().clone());
+    if covered.0 > 0 && runtime.durability.transition_history().is_none() {
+        plan.retained_transition_prefix = Some(std::sync::Arc::new(
+            runtime
+                .history
+                .capture_original_branch_schema_inputs(execution)
+                .map_err(|cause| match cause {
+                    crate::runtime::OriginalBranchSchemaInputsDenial::Request(cause) => {
+                        crate::durability::data::RelationalRecoveryStop::Request(cause.into())
+                    }
+                    crate::runtime::OriginalBranchSchemaInputsDenial::SizeOverflow => {
+                        crate::durability::data::RelationalRecoveryStop::Request(
+                            crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow,
+                        )
+                    }
+                    crate::runtime::OriginalBranchSchemaInputsDenial::OriginalPrefixMismatch => {
+                        crate::durability::checkpoints::region_directory::corrupt(
+                            "retained Memory transition capture mismatch",
+                        )
+                        .into()
+                    }
+                })?,
+        ));
+    }
+    Ok(plan)
 }
 
 fn tail_log_after_in_memory_checkpoint(
