@@ -256,15 +256,18 @@ fn structural_identity_historical_scope_does_not_leak_reused_slot_sidecars() {
 }
 
 #[test]
-fn inspection_truth_bundle_recovery_parity_holds_for_current_and_historical_surfaces() {
+fn memory_inspection_truth_bundle_recovery_parity_holds_for_current_and_historical_surfaces() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     let created = create_entity_outcome(execution, &runtime, "bundle");
     let entity = changed_entities(&created)[0];
     let _relation = create_relation(execution, &runtime, entity, entity, "self");
-    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
 
     let expected = capture_inspection_truth_bundle(
         execution,
@@ -273,13 +276,11 @@ fn inspection_truth_bundle_recovery_parity_holds_for_current_and_historical_surf
         entity,
         created.version_id,
     );
-    let plan = crate::tests::support::recovery_plan_for(
-        execution,
-        &runtime,
-        RecoveryMode::NormalRecoveryVerification,
-    )
-    .unwrap();
-    let mut recovered = durable_runtime_with_test_schema();
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
+    let mut recovered = runtime_with_test_schema();
     recovered
         .durability_recovery()
         .recover(execution, plan)

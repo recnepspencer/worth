@@ -1,11 +1,11 @@
 use super::*;
 
 #[test]
-fn derived_index_contract_relation_field_equals_persisted_recovery_preserves_parity() {
+fn derived_index_contract_relation_field_equals_memory_recovery_preserves_parity() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = durable_runtime_with_index_field_aspects();
+    let runtime = runtime_with_index_field_aspects();
     let source = create_entity_outcome(execution, &runtime, "source");
     let target = create_entity_outcome(execution, &runtime, "target");
     let relation = create_relation_outcome(
@@ -73,11 +73,22 @@ fn derived_index_contract_relation_field_equals_persisted_recovery_preserves_par
         .expect("request remains live")
         .expect("original outcome");
 
-    let (_recovery, recovered) = checkpoint_and_recover_with(
-        execution,
-        &runtime,
-        durable_runtime_with_index_field_aspects,
-    );
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let plan = runtime
+        .durability()
+        .recovery_plan(
+            execution,
+            crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
+    let mut recovered = runtime_with_index_field_aspects();
+    recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
     let recovered_snapshot = recovered
         .visibility_authority()
         .snapshot()
@@ -113,11 +124,11 @@ fn derived_index_contract_relation_field_equals_persisted_recovery_preserves_par
 }
 
 #[test]
-fn derived_index_contract_persisted_recovery_preserves_entity_field_equals_parity() {
+fn derived_index_contract_memory_recovery_preserves_entity_field_equals_parity() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = durable_runtime_with_index_field_aspects();
+    let runtime = runtime_with_index_field_aspects();
     let alpha = create_entity_outcome(execution, &runtime, "alpha");
     let index = runtime
         .index_authority()
@@ -174,11 +185,22 @@ fn derived_index_contract_persisted_recovery_preserves_entity_field_equals_parit
         .expect("request remains live")
         .expect("original outcome");
 
-    let (_recovery, recovered) = checkpoint_and_recover_with(
-        execution,
-        &runtime,
-        durable_runtime_with_index_field_aspects,
-    );
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let plan = runtime
+        .durability()
+        .recovery_plan(
+            execution,
+            crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
+    let mut recovered = runtime_with_index_field_aspects();
+    recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
     let recovered_snapshot = recovered
         .visibility_authority()
         .snapshot()
