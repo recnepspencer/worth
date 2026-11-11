@@ -1,3 +1,0 @@
-{"count": 2, "kind": "leaf"}
-{"binary": "worth-runtime-world", "slots": 1, "test": "lifecycle::owner::tests::close_report::close_reports_a_pre_movement_loser_as_its_pin_pair_plus_its_recovery_slot"}
-{"binary": "worth-testkit-compiler", "slots": 1, "test": "tests::recursive_or_character_class_globs_require_explicit_expansion"}
