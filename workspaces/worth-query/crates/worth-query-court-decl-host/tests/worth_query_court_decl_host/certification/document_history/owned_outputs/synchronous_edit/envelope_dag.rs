@@ -2,7 +2,15 @@
 use super::envelope_fixture as fixture;
 use super::*;
 use worth_query_host::facade::{
-    application_entry::WorthQueryEditEnvelopeOutcome as Outcome, runtime::ExecutionAllocationPolicy,
+    application_entry::{
+        DeclaredEditDependency, DeclaredEditParticipant as Participant,
+        DeclaredEditReadScope as ReadScope, DeclaredEditScopeCycle, DeclaredEditStage,
+        WorthQueryEditEnvelopeOutcome as Outcome,
+    },
+    domain::{
+        WorthQueryOperationGraphReadScope as GraphRead, WorthQueryOperationTouchScope as Touch,
+    },
+    runtime::ExecutionAllocationPolicy,
 };
 use worth_relational::facade::inspection::observe_maintenance_work;
 fn host(worker: bool) -> WorthQueryProgramApplicationRuntime<Schema, fixture::Program> {
@@ -112,10 +120,28 @@ fn mixed_cycle(worker: bool) {
     let Outcome::CyclicStages(cycle) = outcome else {
         panic!("authored/producer cycle was not refused at admission")
     };
-    assert_eq!(cycle.stages.len(), 1);
-    assert_eq!(cycle.stages[0].binding, fixture::cyclic::Binding::IDENTITY);
-    assert_eq!(cycle.stages[0].identity.ordinal(), 0);
-    assert_eq!(cycle.overlaps.len(), 2);
+    let DeclaredEditScopeCycle { stages, overlaps } = cycle;
+    assert_eq!(stages.len(), 1);
+    let DeclaredEditStage { binding, identity } = &stages[0];
+    assert_eq!(*binding, fixture::cyclic::Binding::IDENTITY);
+    assert_eq!(identity.ordinal(), 0);
+    assert_eq!(overlaps.len(), 2);
+    for dependency in overlaps {
+        let entity = match dependency.writer {
+            Participant::Stage(stage) => {
+                assert_eq!(stage.binding, fixture::cyclic::Binding::IDENTITY);
+                "Model"
+            }
+            Participant::Producer { family, .. } => {
+                assert_eq!(family, first::Family::IDENTITY);
+                "FirstOutput"
+            }
+        };
+        let ReadScope::Graph(GraphRead::NativeProjection(read)) = dependency.read_scope else {
+            panic!("the cycle must retain its declared field-read scope")
+        };
+        assert_eq!(read.entity().semantic_key(), entity);
+    }
     assert_eq!(writes.published_rows.len() + writes.omitted_publications, 0);
     assert_eq!(host.producer_contacts_on_this_thread_for_test(), 0);
     assert_eq!(courts::native_head(&host), before);
@@ -129,6 +155,91 @@ fn mixed_cycle(worker: bool) {
         2
     );
 }
+// This integration crate names every refusal type through the supported host facade.
+fn assert_after_producer(dependency: &DeclaredEditDependency) {
+    let Participant::Stage(stage) = &dependency.reader else {
+        panic!("the refused reader must be the authored stage")
+    };
+    assert_eq!(stage.binding, fixture::after_producer::Binding::IDENTITY);
+    assert_eq!(stage.identity.ordinal(), 0);
+    let Participant::Producer {
+        family,
+        implementations,
+    } = &dependency.writer
+    else {
+        panic!("the required writer must be the producer family")
+    };
+    assert_eq!(family, first::Family::IDENTITY);
+    let mut implementations = implementations.clone();
+    implementations.sort();
+    assert_eq!(
+        implementations,
+        [
+            "owned-outputs.first.initial",
+            "owned-outputs.first.preserve"
+        ]
+    );
+    let ReadScope::Graph(GraphRead::NativeProjection(read)) = &dependency.read_scope else {
+        panic!("the overlap must name the declared FirstOutput field read")
+    };
+    assert_eq!(read.entity().semantic_key(), "FirstOutput");
+    let paths = read
+        .projection()
+        .mask()
+        .paths()
+        .iter()
+        .map(|path| {
+            path.fields()
+                .iter()
+                .map(|field| field.as_str())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(paths, [["FirstKey"], ["FirstValue"]]);
+    let Touch::CreateEntity(write) = &dependency.write_scope else {
+        panic!("creating FirstOutput overlaps its declared field read")
+    };
+    assert_eq!(write.entity(), "FirstOutput");
+    assert_eq!(write.schema(), read.entity().schema());
+}
+fn stage_after_producer(worker: bool) {
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    let host = host(worker);
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
+    let before = courts::native_head(&host);
+    let (outcome, writes) = observe_maintenance_work(8, || {
+        request
+            .edit_envelope()
+            .stage::<fixture::AfterProducerTree, _>(fixture::after_producer::Intent {
+                key: "envelope-cap".into(),
+                value: 3,
+                key_derived_target: false,
+            })
+            .idempotency("stage-after-producer".to_owned())
+            .execute_performed::<fixture::Program>(
+                &host,
+                ExecutionAllocationPolicy::SystemAllocation,
+            )
+    });
+    let Ok(Outcome::StageAfterProducer(dependency)) = outcome else {
+        panic!("a stage requiring a producer output must refuse before execution")
+    };
+    assert_after_producer(&dependency);
+    assert_eq!(host.producer_contacts_on_this_thread_for_test(), 0);
+    assert_eq!(writes.published_rows.len() + writes.omitted_publications, 0);
+    assert_eq!(courts::native_head(&host), before);
+}
+#[test]
+fn stage_after_producer_names_the_declared_dependency_before_execution() {
+    stage_after_producer(false);
+}
+#[test]
+fn stage_after_producer_names_the_declared_dependency_before_execution_worker() {
+    stage_after_producer(true);
+}
+
 fn lost_subject(worker: bool) {
     let host = host(worker);
     let scope = request_scope();

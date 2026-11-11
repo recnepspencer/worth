@@ -365,6 +365,10 @@ fn first_cold_refusal(worker: bool) {
         panic!("the first cold-attempt refusal was replaced")
     };
     termination::assert_refusal_stops(&writes);
+    assert!(
+        placement.page_reads_for_test() > 0,
+        "the refusing attempt must read a genuine cold symbol page"
+    );
     assert_eq!(denial.binding(), fixture::member::Binding::IDENTITY);
     assert_eq!(denial.identity().ordinal(), 1);
     assert_eq!(denial.denial(&token).unwrap(), &Denial::ValueOutOfRange);

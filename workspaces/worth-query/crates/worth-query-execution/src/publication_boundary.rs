@@ -209,7 +209,7 @@ pub mod authored_edit {
         order_authored_stages, stage_admission_refusal, AuthoredEditStageAdmission,
         AuthoredEditStageContext, AuthoredStageDomainDenial, AuthoredStageExecutionCause,
         AuthoredStageExecutionDenial, CapturedAuthoredEditStage, DeclaredEditDependency,
-        DeclaredEditOrderRefusal, DeclaredEditScopeCycle, DeclaredEditStage,
-        RetainedAuthoredStageResult,
+        DeclaredEditOrderRefusal, DeclaredEditParticipant, DeclaredEditReadScope,
+        DeclaredEditScopeCycle, DeclaredEditStage, DeclaredQueryRead, RetainedAuthoredStageResult,
     };
 }

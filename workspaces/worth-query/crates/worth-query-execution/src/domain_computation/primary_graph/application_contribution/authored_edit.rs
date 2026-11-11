@@ -27,7 +27,7 @@ pub(in crate::domain_computation::primary_graph) use capture::AuthoredEditStageE
 pub use capture::{AuthoredEditStageAdmission, CapturedAuthoredEditStage};
 pub use dag::{
     order_authored_stages, DeclaredEditDependency, DeclaredEditOrderRefusal,
-    DeclaredEditScopeCycle, DeclaredEditStage,
+    DeclaredEditParticipant, DeclaredEditReadScope, DeclaredEditScopeCycle, DeclaredEditStage,
 };
 pub use results::{
     AuthoredStageDomainDenial, AuthoredStageExecutionCause, AuthoredStageExecutionDenial,

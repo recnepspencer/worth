@@ -97,11 +97,12 @@ part!(
 );
 part!(dependent, PatchEnvelopeDependent, "owned-outputs.edit-envelope.dependent.v1", Member, MemberKey, "MemberKey", MemberValue, "MemberValue", reads ModelKey at "ModelKey", ModelValue at "ModelValue", lookup "a");
 part!(cyclic, PatchEnvelopeCyclic, "owned-outputs.edit-envelope.cyclic.v1", Model, ModelKey, "ModelKey", ModelValue, "ModelValue", reads FirstKey at "FirstKey", FirstValue at "FirstValue", lookup "first:a");
+part!(after_producer, PatchEnvelopeAfterProducer, "owned-outputs.edit-envelope.after-producer.v1", Cap, CapKey, "CapKey", CapValue, "CapValue", reads FirstKey at "FirstKey", FirstValue at "FirstValue", lookup "first:a");
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    cyclic::declare(dependent::declare(calibration::declare(cap::declare(
-        member::declare(model::declare(schema)),
+    after_producer::declare(cyclic::declare(dependent::declare(calibration::declare(
+        cap::declare(member::declare(model::declare(schema))),
     ))))
 }
 pub fn install(
@@ -112,7 +113,8 @@ pub fn install(
     setup.handler::<cap::Binding, _>(cap::Handler)?;
     setup.handler::<calibration::Binding, _>(calibration::Handler)?;
     setup.handler::<dependent::Binding, _>(dependent::Handler)?;
-    setup.handler::<cyclic::Binding, _>(cyclic::Handler)
+    setup.handler::<cyclic::Binding, _>(cyclic::Handler)?;
+    setup.handler::<after_producer::Binding, _>(after_producer::Handler)
 }
 macro_rules! root {
     ($module:ident, $connection:ident, $tree:ident, $family:ident, $port:ident) => {
@@ -142,6 +144,13 @@ root!(
 );
 root!(dependent, DependentRoot, DependentTree, second, ChildInput);
 root!(cyclic, CyclicRoot, CyclicTree, first, RestrictedInput);
+root!(
+    after_producer,
+    AfterProducerRoot,
+    AfterProducerTree,
+    first,
+    FromFirstInput
+);
 pub struct RestoreRoot;
 impl ApplicationConnectionIdentity for RestoreRoot {
     const IDENTITY: &'static str = "owned-outputs.edit-envelope.restore-root";
@@ -208,7 +217,13 @@ impl ApplicationProgramDefinition<Schema> for Program {
             MemberTree,
             (
                 CapTree,
-                (CalibrationTree, (DependentTree, (CyclicTree, RestoreTree))),
+                (
+                    CalibrationTree,
+                    (
+                        DependentTree,
+                        (CyclicTree, (RestoreTree, AfterProducerTree)),
+                    ),
+                ),
             ),
         ),
     )>;
@@ -226,6 +241,7 @@ impl ApplicationProgramDefinition<Schema> for Program {
             Delivery<CalibrationTree>,
             Delivery<DependentTree>,
             Delivery<CyclicTree>,
+            Delivery<AfterProducerTree>,
             Delivery<RestoreTree>,
         >();
         specs

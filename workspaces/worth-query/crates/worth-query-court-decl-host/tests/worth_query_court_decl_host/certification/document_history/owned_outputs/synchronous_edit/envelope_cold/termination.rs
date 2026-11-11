@@ -9,6 +9,10 @@ pub(super) fn assert_refusal_stops(observation: &MaintenanceWorkObservation) {
         .iter()
         .position(|event| *event == Event::AssemblerBreak)
         .expect("the actual Native assembler observed a real Break");
+    assert!(
+        events[..stopped].contains(&Event::ColdBucketRetry),
+        "the refusal journey must cross a real cold-symbol retry"
+    );
     assert!(events[..stopped].contains(&Event::AssemblerCallback));
     let after = &events[stopped + 1..];
     assert_eq!(

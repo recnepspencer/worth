@@ -303,11 +303,18 @@ pub(super) fn entry_spec_with_envelope_deliveries<
     CalibrationPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::calibration::Binding>,
     DependentPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::dependent::Binding>,
     CyclicPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::cyclic::Binding>,
+    AfterProducerPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::after_producer::Binding>,
     RestorePart: ApplicationActionDelivery<Schema, authored_member::restore::Binding>,
 >() -> ApplicationFeatureSpec {
-    envelope_actions::<ModelPart, MemberPart, CapPart, CalibrationPart, DependentPart, CyclicPart>(
-        entry_builder::<Delivery, MemberDelivery, RestorePart>(),
-    )
+    envelope_actions::<
+        ModelPart,
+        MemberPart,
+        CapPart,
+        CalibrationPart,
+        DependentPart,
+        CyclicPart,
+        AfterProducerPart,
+    >(entry_builder::<Delivery, MemberDelivery, RestorePart>())
     .finish()
 }
 // Every program in this fixture installs one complete schema and handler
@@ -315,9 +322,15 @@ pub(super) fn entry_spec_with_envelope_deliveries<
 pub(super) fn with_envelope_completion_actions(
     entry: ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry>,
 ) -> ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry> {
-    envelope_actions::<Completion, Completion, Completion, Completion, Completion, Completion>(
-        entry,
-    )
+    envelope_actions::<
+        Completion,
+        Completion,
+        Completion,
+        Completion,
+        Completion,
+        Completion,
+        Completion,
+    >(entry)
 }
 fn envelope_actions<
     ModelPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::model::Binding>,
@@ -326,6 +339,7 @@ fn envelope_actions<
     CalibrationPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::calibration::Binding>,
     DependentPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::dependent::Binding>,
     CyclicPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::cyclic::Binding>,
+    AfterProducerPart: ApplicationActionDelivery<Schema, synchronous_edit::envelope_fixture::after_producer::Binding>,
 >(
     entry: ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry>,
 ) -> ApplicationFeatureSpecBuilder<Schema, ApplicationRootComposition, Entry> {
@@ -341,5 +355,7 @@ fn envelope_actions<
         .action::<synchronous_edit::envelope_fixture::dependent::Binding, DependentPart>()
         .finish_action()
         .action::<synchronous_edit::envelope_fixture::cyclic::Binding, CyclicPart>()
+        .finish_action()
+        .action::<synchronous_edit::envelope_fixture::after_producer::Binding, AfterProducerPart>()
         .finish_action()
 }
