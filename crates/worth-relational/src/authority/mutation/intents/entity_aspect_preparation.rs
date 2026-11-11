@@ -126,25 +126,25 @@ fn current(
     state: &impl CurrentPartitionAccess,
 ) -> Result<(KindId, Option<AuthoritativeRecordAspectState>), CommitConflict> {
     let slot = entity_id.slot_index();
-    let result = {
+    {
         ensure_entity_target_is_current(state, entity_id)?;
         let partition = state
             .get_current_partition(entity_id.partition_id)
             .ok_or_else(|| {
                 CommitConflict::new(ConflictClass::EntityFieldUpdateStateInconsistency {
-                    entity_id: entity_id,
+                    entity_id,
                     missing: EntityFieldUpdateMissingState::Partition,
                 })
             })?;
         let slot_view = partition.entity_arena().get_slot(slot).ok_or_else(|| {
             CommitConflict::new(ConflictClass::EntityFieldUpdateStateInconsistency {
-                entity_id: entity_id,
+                entity_id,
                 missing: EntityFieldUpdateMissingState::Slot,
             })
         })?;
         let kind_id = slot_view.kind_id().ok_or_else(|| {
             CommitConflict::new(ConflictClass::EntityFieldUpdateStateInconsistency {
-                entity_id: entity_id,
+                entity_id,
                 missing: EntityFieldUpdateMissingState::KindId,
             })
         })?;
@@ -152,6 +152,5 @@ fn current(
             kind_id,
             slot_view.extra().authoritative_aspect_state.clone(),
         ))
-    };
-    result
+    }
 }

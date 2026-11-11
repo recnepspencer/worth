@@ -82,24 +82,24 @@ impl CreatorCustody {
                         }
                         _ => continue,
                     };
-                    if let Some((creator, owner)) = self.records.get(&target) {
-                        if *creator != writer {
-                            let mut error = PublicationError::authored_retirement(
-                                Cause::ForeignFreshCoupledRecord {
-                                    creator: *creator,
-                                    writer,
-                                    owner: *owner,
-                                    source,
-                                },
-                                target.clone(),
-                            );
-                            error.context = error.context.with_records(vec![
-                                target,
-                                RecordRef::Entity(*owner),
-                                RecordRef::Entity(source),
-                            ]);
-                            return Err(TransactionCommitError::publication(error));
-                        }
+                    if let Some((creator, owner)) = self.records.get(&target)
+                        && *creator != writer
+                    {
+                        let mut error = PublicationError::authored_retirement(
+                            Cause::ForeignFreshCoupledRecord {
+                                creator: *creator,
+                                writer,
+                                owner: *owner,
+                                source,
+                            },
+                            target.clone(),
+                        );
+                        error.context = error.context.with_records(vec![
+                            target,
+                            RecordRef::Entity(*owner),
+                            RecordRef::Entity(source),
+                        ]);
+                        return Err(TransactionCommitError::publication(error));
                     }
                 }
                 Ok(())
