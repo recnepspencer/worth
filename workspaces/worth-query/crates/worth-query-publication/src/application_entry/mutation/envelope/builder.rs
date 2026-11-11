@@ -86,26 +86,79 @@ where
             WorthQueryEditEnvelopeExecutionDenial::envelope(Program::IDENTITY.as_str(), cause)
         };
         let context = self.envelope.context;
-        context.application.with_funded_application_advancement(context.scope, allocation, |phase| {
-            let key = Arc::new(ApplicationEditEnvelopeKey::encode(Program::IDENTITY.as_str(), self.key).map_err(|cause| crate::application_entry::WorthQueryPerformedMutationExecutionDenial::Mutation(WorthQueryApplicationRequestMutationDenial::Identity(ApplicationMutationIdentityDenial::Key(cause)))).map_err(envelope_failure)?);
-            let mut entries = Vec::new();
-            self.envelope.stages.capture(&context, program, &key, &mut entries)?;
-            if entries.is_empty() { return Ok(WorthQueryEditEnvelopeOutcome::Empty); }
-            let intents = entries.iter().map(|entry| entry.intent()).collect::<Vec<_>>();
-            let intent = key.intent(&intents).map_err(|cause| crate::application_entry::WorthQueryPerformedMutationExecutionDenial::Mutation(WorthQueryApplicationRequestMutationDenial::Identity(ApplicationMutationIdentityDenial::Input(cause)))).map_err(envelope_failure)?;
-            let values = entries.iter().map(|_| Arc::new(Mutex::new(None))).collect::<Vec<StageValue>>();
-            let mut captured = Vec::new();
-            for (ordinal, entry) in entries.iter().enumerate() {
-                captured.push(entry.secondary(&context, program, &phase, &key, ordinal, values[ordinal].clone()).map_err(|cause| WorthQueryEditEnvelopeExecutionDenial::stage(ordinal, entry.binding(), cause))?);
-            }
-            if let Some(stage) = captured.iter().skip(1).find(|stage| !stage.same_admitted_basis(&captured[0])) {
-                return Ok(WorthQueryEditEnvelopeOutcome::AdmissionBasisChanged(stage.subject()));
-            }
-            let order = worth_query_execution::publication_boundary::authored_edit::order_authored_stages(&phase.checked_execution_request_for(context.application.product_runtime()).map_err(|cause| crate::application_entry::WorthQueryPerformedMutationExecutionDenial::Mutation(WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause))).map_err(envelope_failure)?, &captured);
-            let order = match order { Ok(order) => order, Err(DeclaredEditOrderRefusal::Execution(cause)) => return Err(envelope_failure(crate::application_entry::WorthQueryPerformedMutationExecutionDenial::Mutation(WorthQueryApplicationRequestMutationDenial::Handler(MutationHandlerExecutionDenial::Attempt(cause))))), Err(DeclaredEditOrderRefusal::Cycle(cycle)) => return Ok(WorthQueryEditEnvelopeOutcome::CyclicStages(cycle)), Err(DeclaredEditOrderRefusal::StageAfterProducer(dependency)) => return Ok(WorthQueryEditEnvelopeOutcome::StageAfterProducer(dependency)) };
-            let prefix = order[0];
-            let secondary = order.iter().map(|ordinal| captured[*ordinal].clone()).collect();
-            entries[prefix].execute_prefix(&context, program, &phase, &key, prefix, intent, secondary, values, self.envelope.brand).map_err(|cause| WorthQueryEditEnvelopeExecutionDenial::stage(prefix, entries[prefix].binding(), cause))
-        }).unwrap_or_else(|cause| Err(envelope_failure(crate::application_entry::WorthQueryPerformedMutationExecutionDenial::Mutation(WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)))))
+        context.application.with_funded_application_advancement(
+            context.scope,
+            allocation,
+            |phase| {
+                let key = Arc::new(
+                    ApplicationEditEnvelopeKey::encode(Program::IDENTITY.as_str(), self.key)
+                        .map_err(|cause| crate::application_entry::WorthQueryPerformedMutationExecutionDenial::Mutation(
+                            WorthQueryApplicationRequestMutationDenial::Identity(
+                                ApplicationMutationIdentityDenial::Key(cause),
+                            ),
+                        ))
+                        .map_err(envelope_failure)?,
+                );
+                let mut entries = Vec::new();
+                self.envelope.stages.capture(&context, program, &key, &mut entries)?;
+                if entries.is_empty() {
+                    return Ok(WorthQueryEditEnvelopeOutcome::Empty);
+                }
+                let intents = entries.iter().map(|entry| entry.intent()).collect::<Vec<_>>();
+                let intent = key.intent(&intents)
+                    .map_err(|cause| crate::application_entry::WorthQueryPerformedMutationExecutionDenial::Mutation(
+                        WorthQueryApplicationRequestMutationDenial::Identity(
+                            ApplicationMutationIdentityDenial::Input(cause),
+                        ),
+                    ))
+                    .map_err(envelope_failure)?;
+                let values = entries.iter().map(|_| Arc::new(Mutex::new(None))).collect::<Vec<StageValue>>();
+                let mut captured = Vec::new();
+                for (ordinal, entry) in entries.iter().enumerate() {
+                    captured.push(
+                        entry.secondary(&context, program, &phase, &key, ordinal, values[ordinal].clone())
+                            .map_err(|cause| WorthQueryEditEnvelopeExecutionDenial::stage(
+                                ordinal, entry.binding(), cause,
+                            ))?,
+                    );
+                }
+                if let Some(stage) = captured.iter().skip(1)
+                    .find(|stage| !stage.same_admitted_basis(&captured[0]))
+                {
+                    return Ok(WorthQueryEditEnvelopeOutcome::AdmissionBasisChanged(stage.subject()));
+                }
+                let order = worth_query_execution::publication_boundary::authored_edit::order_authored_stages(
+                    &phase.checked_execution_request_for(context.application.product_runtime())
+                        .map_err(|cause| crate::application_entry::WorthQueryPerformedMutationExecutionDenial::Mutation(
+                            WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause),
+                        ))
+                        .map_err(envelope_failure)?,
+                    &captured,
+                );
+                let order = match order {
+                    Ok(order) => order,
+                    Err(DeclaredEditOrderRefusal::Execution(cause)) => return Err(envelope_failure(
+                        crate::application_entry::WorthQueryPerformedMutationExecutionDenial::Mutation(
+                            WorthQueryApplicationRequestMutationDenial::Handler(
+                                MutationHandlerExecutionDenial::Attempt(cause),
+                            ),
+                        ),
+                    )),
+                    Err(DeclaredEditOrderRefusal::Cycle(cycle)) => return Ok(WorthQueryEditEnvelopeOutcome::CyclicStages(cycle)),
+                    Err(DeclaredEditOrderRefusal::StageAfterProducer(dependency)) => return Ok(WorthQueryEditEnvelopeOutcome::StageAfterProducer(dependency)),
+                };
+                let prefix = order[0];
+                let secondary = order.iter().map(|ordinal| captured[*ordinal].clone()).collect();
+                entries[prefix].execute_prefix(
+                    &context, program, &phase, &key, prefix, intent, secondary, values, self.envelope.brand,
+                ).map_err(|cause| WorthQueryEditEnvelopeExecutionDenial::stage(
+                    prefix, entries[prefix].binding(), cause,
+                ))
+            },
+        ).unwrap_or_else(|cause| Err(envelope_failure(
+            crate::application_entry::WorthQueryPerformedMutationExecutionDenial::Mutation(
+                WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause),
+            ),
+        )))
     }
 }

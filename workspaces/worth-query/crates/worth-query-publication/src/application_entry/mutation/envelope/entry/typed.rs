@@ -31,7 +31,14 @@ where Prev: CaptureEditStages<S, P, K>,
 {
     fn capture(&self, context: &EnvelopeContext<'_, S>, program: &WorthQueryProgramApplicationRuntime<S, P>, key: &Arc<ApplicationEditEnvelopeKey<K>>, entries: &mut Vec<Box<dyn EditEntry<S, P, K>>>) -> Result<(), WorthQueryEditEnvelopeExecutionDenial> {
         self.previous.capture(context, program, key, entries)?;
-        let input = ApplicationEncodedInput::encode(self.intent.input().clone()).map_err(|cause| WorthQueryEditEnvelopeExecutionDenial::stage(self.previous.len(), I::Binding::IDENTITY, Failure::Mutation(WorthQueryApplicationRequestMutationDenial::Identity(ApplicationMutationIdentityDenial::Input(cause)))))?;
+        let input = ApplicationEncodedInput::encode(self.intent.input().clone())
+            .map_err(|cause| WorthQueryEditEnvelopeExecutionDenial::stage(
+                self.previous.len(),
+                I::Binding::IDENTITY,
+                Failure::Mutation(WorthQueryApplicationRequestMutationDenial::Identity(
+                    ApplicationMutationIdentityDenial::Input(cause),
+                )),
+            ))?;
         entries.push(Box::new(TypedEntry::<I, R, InputBinding<S, I>> { intent: self.intent.clone(), input, marker: PhantomData }));
         Ok(())
     }
@@ -92,7 +99,18 @@ where
             value,
         ).and_then(|stage| stage.with_required_output_dependencies::<I::Binding, Demand<S, R>, R::Dependents>(context.application)).map_err(|cause| Failure::Mutation(WorthQueryApplicationRequestMutationDenial::Handler(MutationHandlerExecutionDenial::Handler(HandlerExecutionDenial::new(cause)))))
     }
-    fn execute_prefix(&self, context: &EnvelopeContext<'_, S>, program: &WorthQueryProgramApplicationRuntime<S, P>, phase: &WorthQueryAdvancementPhase<'_>, key: &Arc<ApplicationEditEnvelopeKey<K>>, ordinal: usize, envelope_intent: ApplicationEditIntentIdentity, stages: Vec<CapturedAuthoredEditStage<S>>, values: Vec<StageValue>, brand: Arc<()>) -> Result<WorthQueryEditEnvelopeOutcome, Failure> {
+    fn execute_prefix(
+        &self,
+        context: &EnvelopeContext<'_, S>,
+        program: &WorthQueryProgramApplicationRuntime<S, P>,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        key: &Arc<ApplicationEditEnvelopeKey<K>>,
+        ordinal: usize,
+        envelope_intent: ApplicationEditIntentIdentity,
+        stages: Vec<CapturedAuthoredEditStage<S>>,
+        values: Vec<StageValue>,
+        brand: Arc<()>,
+    ) -> Result<WorthQueryEditEnvelopeOutcome, Failure> {
         let mut request = WorthQueryApplicationMutationRequest::new(context.application, context.principal, context.scope, context.branch, self.intent.clone()).without_source().idempotency(key.key());
         let (selected, owner) = request.select_performed_owner::<P, R>(phase, program)?;
         let identities = key.stage_with_encoded_input::<S, I::Binding>(&self.input, ordinal).map_err(|cause| Failure::Mutation(WorthQueryApplicationRequestMutationDenial::Identity(cause)))?;
