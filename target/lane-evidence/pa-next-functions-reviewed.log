@@ -1,0 +1,14 @@
+command: python scripts/quality/scrutinize_rust_functions.py --dirty .
+HEAD: 5b18804fbd34c814d69aefd527653b11e3d2da59
+git_status_short_empty: false
+start_utc: 2026-11-11T02:47:04.485797+00:00
+crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/canonical_publication_touches.rs:7: fresh_scalar_commit_seals_exact_native_lifecycle_and_field_touches: 68 lines, 0 parameters [long-function]
+crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/checkpoint_custom_versions.rs:69: semantic_result_preserves_custom_enforcement_version_distinct_from_aggregate_request: 61 lines, 0 parameters [long-function]
+crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/checkpoint_funded_capture.rs:33: original_capture_request_refusals_and_escaped_output_preserve_editable_truth: 80 lines, 0 parameters [long-function]
+crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/checkpoint_lineage_issuance.rs:57: published_lineage_identities_stay_spent_after_image_embedded_and_cold_recovery: 74 lines, 0 parameters [long-function]
+crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/checkpoint_lineage_issuance.rs:132: inflight_lineage_tail_recovery_keeps_every_published_identity_spent: 78 lines, 0 parameters [long-function]
+crates/worth-relational/src/durability/data/record_identity_image.rs:32: current_with_memory: 16 lines, 5 parameters [many-parameters]
+crates/worth-relational/src/tests/durability/contracts/checkpoint_recovery.rs:5: memory_checkpoint_preserves_lineage_artifact_and_original_authority: 108 lines, 0 parameters [long-function]
+scrutinized 16 Rust files; 7 candidate functions; 0 scan errors
+end_utc: 2026-11-11T02:47:07.765500+00:00
+exit_code: 0

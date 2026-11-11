@@ -6,7 +6,7 @@ use crate::tests::support::*;
 fn checkpoint_readmission_refuses_retired_integer_array_digest_before_restore() {
     let host = crate::test_execution_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     create_entity(&execution, &runtime, "binary-digest-checkpoint");
     let native = runtime
         .durability_authority()

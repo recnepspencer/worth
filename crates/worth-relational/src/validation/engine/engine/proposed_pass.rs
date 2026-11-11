@@ -47,21 +47,21 @@ impl InvariantEngine<'_> {
             ExecutionResourceLease::resolved_posture,
         );
         let mut prefix = ReducedInvariantPrefix::new();
-        if request.should_execute_anything() {
-            if let Some(stage) = super::super::stage_execution::execute_stage(
+        if request.should_execute_anything()
+            && let Some(stage) = super::super::stage_execution::execute_stage(
                 &runtime,
                 *execution,
                 &request,
                 lease,
                 InvariantStage::Native,
-            )? {
-                prefix = prefix.absorb_in_request(
-                    stage,
-                    *execution,
-                    lease,
-                    self.runtime.commit_work_budget.as_ref(),
-                )?;
-            }
+            )?
+        {
+            prefix = prefix.absorb_in_request(
+                stage,
+                *execution,
+                lease,
+                self.runtime.commit_work_budget.as_ref(),
+            )?;
         }
         check_live(*execution)?;
         if !prefix.prevents_custom(request.execution_point()) && request.should_execute_anything() {

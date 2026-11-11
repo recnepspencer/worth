@@ -88,7 +88,7 @@ pub(crate) fn capture_region_members(
                 )?,
                 history_kind_projection: history.kind_projection.clone(),
                 partition: image,
-                history_frontiers: history_frontiers,
+                history_frontiers,
                 adjacency_kinds: capture_kinds(
                     lane,
                     &partition.adjacency,

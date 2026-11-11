@@ -135,18 +135,17 @@ impl super::owner::IndexMaintenanceOwner<'_> {
                 work.note_seeded_generations(1);
                 continue;
             }
-            if let (Some(prior), Some(basis)) = (&prior, &basis) {
-                if basis.generation(index_id).is_some() {
-                    work.grow_vec(&mut reused)?;
-                    work.prepare(
-                        1,
-                        (prior.source_branch_id.0.len() + prior.applicability.branch_id.0.len())
-                            as u64,
-                    )?;
-                    reused.push(prior.as_ref().clone());
-                    work.note_reused_generations(1);
-                    continue;
-                }
+            if let (Some(prior), Some(basis)) = (&prior, &basis)
+                && basis.generation(index_id).is_some()
+            {
+                work.grow_vec(&mut reused)?;
+                work.prepare(
+                    1,
+                    (prior.source_branch_id.0.len() + prior.applicability.branch_id.0.len()) as u64,
+                )?;
+                reused.push(prior.as_ref().clone());
+                work.note_reused_generations(1);
+                continue;
             }
             let empty_before = inherited
                 .as_ref()

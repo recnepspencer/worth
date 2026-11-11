@@ -123,7 +123,7 @@ fn derive_canonical_digest_admitted(
     let (input, _proofs, _basis) = ready.into_parts().into_parts();
     debug_assert!(input.algorithm().id().is_sha256());
     let algorithm = admitted_algorithm_clone(input.algorithm(), admission.as_deref_mut())?;
-    let input_id = digest_input_id(input.evidence(), admission.as_deref_mut())?;
+    let input_id = digest_input_id(input.evidence(), admission)?;
     let value = CanonicalDigestValue::new(input.digest());
     let metadata = CanonicalDigestMetadata::new(
         algorithm,

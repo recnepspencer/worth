@@ -19,12 +19,13 @@ fn fixture() -> (RelationalRuntime, Vec<u8>) {
     for name in ["replay-first", "replay-second", "replay-third"] {
         create_entity(&ExecutionRequest::serial(&host), &source, name);
     }
-    let plan = crate::tests::support::recovery_plan_for(
-        execution,
-        &source,
-        RecoveryVerificationMode::NormalRecoveryVerification,
-    )
-    .unwrap();
+    let plan = source
+        .durability()
+        .recovery_plan(
+            execution,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
     assert_eq!(plan.tail_log.len(), 3);
     let persisted: Vec<_> = plan
         .tail_log
@@ -42,12 +43,13 @@ fn plan_from_bytes(source: &RelationalRuntime, bytes: &[u8]) -> RecoveryPlan {
     let host = crate::test_execution_policy::serial_request();
     let execution = &ExecutionRequest::serial(&host);
     let persisted: Vec<Vec<u8>> = rmp_serde::from_slice(bytes).unwrap();
-    let mut plan = crate::tests::support::recovery_plan_for(
-        execution,
-        source,
-        RecoveryVerificationMode::NormalRecoveryVerification,
-    )
-    .unwrap();
+    let mut plan = source
+        .durability()
+        .recovery_plan(
+            execution,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
     plan.tail_log = persisted
         .into_iter()
         .map(|record| crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::readmit(&record, execution).unwrap())

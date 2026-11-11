@@ -1,0 +1,11 @@
+{
+  "worth-court-relational-certification::worth_court_relational_certification\nrelational::durable_publication::checkpoint_branch_targets::checkpoint_recovery_readmits_shared_root_once_for_sibling_heads": 3,
+  "worth-court-relational-certification::worth_court_relational_certification\nrelational::durable_publication::checkpoint_branch_targets::tail_recovery_resolves_the_checkpoint_target_root_not_the_fork_source_head": 3,
+  "worth-court-relational-certification::worth_court_relational_certification\nrelational::durable_publication::checkpoint_custom_versions::semantic_result_preserves_independent_original_execution_and_enforcement_versions": 3,
+  "worth-court-relational-certification::worth_court_relational_certification\nrelational::durable_publication::checkpoint_generation_identity::restored_catalog_allocates_fresh_identities_and_preserves_old_observations": 3,
+  "worth-court-relational-certification::worth_court_relational_certification\nrelational::durable_publication::checkpoint_index_lagging::retained_inherited_and_own_stream_generations_survive_native_maintenance_and_checkpoint_reopen": 3,
+  "worth-court-relational-certification::worth_court_relational_certification\nrelational::durable_publication::checkpoint_managed_text::native_field_text_checkpoint_then_tail_recovers_exact_json_after_original_owners_drop": 3,
+  "worth-court-relational-certification::worth_court_relational_certification\nrelational::relational_certification::history_ownership::graph_persistence::graph_selection_with_an_attached_medium_refuses_before_any_medium_contact": 3,
+  "worth-court-relational-certification::worth_court_relational_certification\nrelational::relational_certification::owner_service_completion::current_read_publication::scoped_cutover::attached_medium_refuses_scoped_cutover_before_callback_or_medium_access": 3,
+  "worth-court-relational-certification::worth_court_relational_certification\nrelational::relational_certification::owner_service_completion::retained_entity_selection::persistence::attached_medium_refuses_selection_before_any_medium_access": 3
+}

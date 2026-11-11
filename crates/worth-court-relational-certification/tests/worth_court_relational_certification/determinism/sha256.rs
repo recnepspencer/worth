@@ -6,7 +6,7 @@ fn sha256_backend_preserves_bytes_across_padding_chunking_and_corpus() {
     // A different package version keeps force-soft from unifying onto the
     // production dependency. This oracle cannot disable production hardware.
     use sha2_software::Digest as SoftwareDigest;
-    let mut state = 0x5eed_95_u64;
+    let mut state = 0x005e_ed95_u64;
     for length in [
         0, 1, 7, 31, 55, 56, 63, 64, 65, 111, 112, 127, 128, 129, 511, 512, 4096, 16383,
     ] {

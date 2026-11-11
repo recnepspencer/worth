@@ -5,7 +5,7 @@ use crate::tests::support::*;
 fn shared_members_with_inconsistent_leaf_facts_refuse_the_manifest() {
     let host = crate::test_execution_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     create_entity_in_partition(
         &execution,
         &runtime,

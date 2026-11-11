@@ -1,11 +1,8 @@
 //! Prepared merge verification accepts a fresh preparation and refuses instance or head drift.
 use super::branch_history_publications::{create_entity, create_entity_outcome_on_branch};
-use super::merge_proof_journey::{merge_ready_runtime, merge_request};
-use worth_relational::facade::{
-    history::BranchId,
-    merge::{MergeExecutionError, PreparedMergeExecution},
-    runtime::RelationalRuntime,
-};
+use super::merge_feature_execution::prepare_feature_merge;
+use super::merge_proof_journey::merge_ready_runtime;
+use worth_relational::facade::{history::BranchId, merge::MergeExecutionError};
 use worth_testkit_relational::durable_medium::TestDurableMedium;
 
 #[test]
@@ -93,19 +90,4 @@ fn verify_prepared_merge_execution_rejects_source_head_drift() {
         }
         other => panic!("expected source stale-head rejection, got {other:?}"),
     }
-}
-
-/// The runtime-surface preparation of the fixture's feature-into-main merge.
-pub(super) fn prepare_feature_merge(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
-) -> PreparedMergeExecution {
-    runtime
-        .prepare_merge_execution(
-            execution,
-            runtime
-                .bind_merge_execution_request(merge_request())
-                .unwrap(),
-        )
-        .expect("prepared merge")
 }

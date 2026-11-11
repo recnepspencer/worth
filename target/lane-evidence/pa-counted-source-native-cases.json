@@ -1,0 +1,5 @@
+[
+  "an_owned_head_promotes_without_a_checkpoint_and_keeps_its_old_observation",
+  "owned_head_base_damage_is_sticky_and_never_invalidates_an_accepted_view",
+  "head_content_inspection_hashes_its_suffix_without_loading_the_base_or_trusting_a_cached_digest"
+]

@@ -11,7 +11,7 @@ pub(super) fn poll(
     Ok(())
 }
 pub(super) fn build_sorted(
-    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+    _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     entries: &[(u128, [u8; 32])],
     request: Option<&worth_execution::ExecutionRequest<'_, '_>>,
 ) -> Result<Arc<Node>, DigestIndexError> {
@@ -31,8 +31,8 @@ pub(super) fn build_sorted(
     let node = Node::branch(
         bit,
         [
-            build_sorted(lane, &entries[..split], request)?,
-            build_sorted(lane, &entries[split..], request)?,
+            build_sorted(_lane, &entries[..split], request)?,
+            build_sorted(_lane, &entries[split..], request)?,
         ],
     )
     .allocate(request)?;

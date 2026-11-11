@@ -1,0 +1,11 @@
+command: powershell -NoProfile -File target/lane-evidence/pa-root-remove-inactive-check-caches.ps1
+HEAD: 5d37a209ee227fdef639cbec2c438d82396a7209
+git_status_short_empty: false
+start_utc: 2026-11-11T02:54:02.723469+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+free_before_bytes=27425964032
+removing_inactive_check_cache=C:\programming\worth worktees\worktrees\m3-p3-reopen\target\debug\incremental\worth_relational-1ggk801mgdyyz bytes=994445252
+removing_inactive_check_cache=C:\programming\worth worktees\worktrees\m3-p3-reopen\target\debug\incremental\worth_relational-2lcvep6evxcsc bytes=989679684
+free_after_bytes=29352407040
+end_utc: 2026-11-11T02:54:04.058671+00:00
+exit_code: 0

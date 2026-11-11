@@ -1,9 +1,7 @@
 //! The test medium's durable contents and its position rule.
 
-use std::collections::VecDeque;
 use worth_testkit_relational::durable_medium::bytes::ByteJournal;
 
-use super::ScriptedPublication;
 use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
 use crate::durability::medium::{DurablePublicationFate, RelationalDurableCheckpointSource};
 use crate::publication::patch::data::PatchStreamPosition;
@@ -16,7 +14,6 @@ pub(super) struct TestDurableJournal {
     pub(super) artifacts: ByteJournal,
     pub(super) checkpoint_members: worth_testkit_relational::durable_medium::bytes::MemberBytes,
     pub(super) checkpoint: Option<RelationalDurableCheckpointSource>,
-    pub(super) scripted: VecDeque<ScriptedPublication>,
     pub(super) offered: Vec<RelationalCanonicalCommitArtifact>,
 }
 
@@ -58,25 +55,8 @@ impl TestDurableJournal {
         )
     }
 
-    pub(super) fn positions(&self) -> Vec<PatchStreamPosition> {
-        self.artifacts
-            .entries
-            .keys()
-            .copied()
-            .map(PatchStreamPosition)
-            .collect()
-    }
-
     pub(super) fn bytes_at(&self, position: PatchStreamPosition) -> Option<&[u8]> {
         self.artifacts.entries.get(&position.0).map(AsRef::as_ref)
-    }
-
-    pub(super) fn replace(&mut self, position: PatchStreamPosition, bytes: Box<[u8]>) {
-        self.artifacts.entries.insert(position.0, bytes);
-    }
-
-    pub(super) fn remove(&mut self, position: PatchStreamPosition) -> Option<Box<[u8]>> {
-        self.artifacts.entries.remove(&position.0)
     }
 
     pub(super) fn artifacts_after(
@@ -107,15 +87,5 @@ impl TestDurableJournal {
                 self.head().0 + 1
             ),
         }
-    }
-
-    pub(super) fn is_next(&self, position: PatchStreamPosition) -> bool {
-        position.0 == self.head().0 + 1
-    }
-
-    pub(super) fn store(&mut self, artifact: &RelationalCanonicalCommitArtifact) {
-        self.artifacts
-            .entries
-            .insert(artifact.position().0, Box::from(artifact.as_bytes()));
     }
 }

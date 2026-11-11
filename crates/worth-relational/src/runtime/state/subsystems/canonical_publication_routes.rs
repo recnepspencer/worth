@@ -20,9 +20,6 @@ mod branch_transition_stream;
 mod checkpoint_admission;
 #[path = "canonical_publication_routes/fork_frontiers.rs"]
 mod fork_frontiers;
-#[cfg(test)]
-#[path = "canonical_publication_routes/lifecycle_order_control.rs"]
-mod lifecycle_order_control;
 #[path = "canonical_publication_routes/patch_position_reservation.rs"]
 mod patch_position_reservation;
 #[path = "canonical_publication_routes/pending_settlement.rs"]
@@ -68,8 +65,6 @@ pub(crate) struct RelationalCanonicalPublicationRoutes {
     settlement_route_visits: AtomicU64,
     branch_transitions: Arc<BranchTransitionStream>,
     lifecycle: RwLock<()>,
-    #[cfg(test)]
-    lifecycle_order: lifecycle_order_control::LifecycleOrderControl,
 }
 
 impl std::fmt::Debug for RelationalCanonicalPublicationRoutes {
@@ -136,8 +131,6 @@ impl Default for RelationalCanonicalPublicationRoutes {
             settlement_route_visits: AtomicU64::new(0),
             branch_transitions: Arc::default(),
             lifecycle: RwLock::new(()),
-            #[cfg(test)]
-            lifecycle_order: Default::default(),
         }
     }
 }

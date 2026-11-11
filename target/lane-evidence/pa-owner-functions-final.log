@@ -1,0 +1,18 @@
+command: python scripts/quality/scrutinize_rust_functions.py --dirty .
+HEAD: 0dadb5c0ba823ea04fe14e0433d0369de182576b
+git_status_short_empty: false
+start_utc: 2026-11-11T01:37:28.839463+00:00
+crates/worth-relational/src/branch/root_authoritative_payload_tests.rs:13: content_old_retained_contract_cannot_hide_a_reference_after_current_binding_is_removed: 135 lines, 0 parameters [long-function]
+crates/worth-relational/src/branch/root_authoritative_payload_tests.rs:224: schema_transition_descriptors_are_each_bound_into_the_committed_root: 68 lines, 0 parameters [long-function]
+crates/worth-relational/src/branch/root_authoritative_payload_tests.rs:316: assert_axis_mutation_rejected: 22 lines, 5 parameters [many-parameters]
+crates/worth-relational/src/branch/root_tests.rs:86: visibility_commitment_binds_every_visible_tuple_axis: 115 lines, 0 parameters [long-function]
+crates/worth-relational/src/commit_strategies/facade.rs:52: lower_execution: 14 lines, 6 parameters [many-parameters]
+crates/worth-relational/src/commit_strategies/facade.rs:67: lower_execution_with_input: 13 lines, 5 parameters [many-parameters]
+crates/worth-relational/src/durability/data/checkpoint_images.rs:241: branch_root_image_digest: 23 lines, 5 parameters [many-parameters]
+crates/worth-relational/src/durability/log/native_checkpoint_codec/manifest_integrity_tests.rs:5: shared_members_with_inconsistent_leaf_facts_refuse_the_manifest: 68 lines, 0 parameters [long-function]
+crates/worth-relational/src/durability/log/native_checkpoint_codec/manifest_validation/components/tests.rs:59: recorded_component_checkpoint_header_tamper_refuses_without_defaults_or_foreign_binding: 85 lines, 0 parameters [long-function]
+crates/worth-relational/src/durability/log/native_checkpoint_codec/tests.rs:10: member_directory_preserves_divergent_sibling_roots_and_pinned_reader: 136 lines, 0 parameters [long-function]
+crates/worth-relational/src/durability/log/native_checkpoint_codec/tests.rs:236: native_capture_sections_count_current_directory_values: 78 lines, 0 parameters [long-function]
+scrutinized 13 Rust files; 11 candidate functions; 0 scan errors
+end_utc: 2026-11-11T01:37:32.676731+00:00
+exit_code: 0

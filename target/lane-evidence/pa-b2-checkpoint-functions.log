@@ -1,0 +1,11 @@
+command: python scripts/quality/scrutinize_rust_functions.py --dirty .
+HEAD: e4d3b01c8d32ae3135a4dc40aadd322f8e3906e1
+git_status_short_empty: false
+start_utc: 2026-11-10T22:35:02.876435+00:00
+crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/checkpoint_branch_lifecycle.rs:88: lifecycle_postures_and_retired_names_survive_checkpoints_and_crashes: 63 lines, 0 parameters [long-function]
+crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/checkpoint_successor_authority.rs:105: foreign_recovery_and_foreign_candidate_are_refused_before_effects: 61 lines, 0 parameters [long-function]
+crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/native_checkpoint_reopen.rs:98: native_checkpoint_round_trip_restores_current_relation_adjacency: 91 lines, 0 parameters [long-function]
+crates/worth-relational/src/tests/durability/contracts/checkpoint_recovery.rs:5: durability_contract_checkpoint_recovers_lineage_authority: 107 lines, 0 parameters [long-function]
+scrutinized 14 Rust files; 4 candidate functions; 0 scan errors
+end_utc: 2026-11-10T22:35:13.410168+00:00
+exit_code: 0

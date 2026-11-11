@@ -1,0 +1,11 @@
+[
+  "semantic_result_preserves_independent_original_execution_and_enforcement_versions",
+  "restored_catalog_allocates_fresh_identities_and_preserves_old_observations",
+  "retained_inherited_and_own_stream_generations_survive_native_maintenance_and_checkpoint_reopen",
+  "checkpoint_recovery_readmits_shared_root_once_for_sibling_heads",
+  "tail_recovery_resolves_the_checkpoint_target_root_not_the_fork_source_head",
+  "graph_selection_with_an_attached_medium_refuses_before_any_medium_contact",
+  "attached_medium_refuses_selection_before_any_medium_access",
+  "attached_medium_refuses_scoped_cutover_before_callback_or_medium_access",
+  "native_field_text_checkpoint_then_tail_recovers_exact_json_after_original_owners_drop"
+]

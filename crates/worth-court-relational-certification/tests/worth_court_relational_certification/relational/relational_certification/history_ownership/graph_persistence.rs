@@ -1,10 +1,9 @@
 //! History's memory profile refuses unsupported journal replay before any effect.
+use super::super::unaccessed_medium;
 use super::*;
 use worth_relational::facade::mvcc::{
     RelationalOwnedGraphSelectionPreparationError as Error, RelationalPublicationOutcome,
 };
-#[path = "../owner_service_completion/unaccessed_medium.rs"]
-mod unaccessed_medium;
 
 #[test]
 fn graph_selection_with_an_attached_medium_refuses_before_any_medium_contact() {

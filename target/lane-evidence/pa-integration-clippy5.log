@@ -1,0 +1,107 @@
+command: cargo clippy -p worth-relational -p worth-court-relational-certification --all-targets
+HEAD: ef95a160b2e86cc653fda0f1801dd2d3349a9fba
+git_status_short_empty: false
+start_utc: 2026-11-11T04:35:32.036920+00:00
+    Checking worth-court-relational-certification v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-court-relational-certification)
+    Checking worth-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-relational)
+error: manual implementation of `.is_multiple_of()`
+   --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\cost\relational\global_laws\equality\mixed\edits.rs:131:20
+    |
+131 |         let s = if rng.next() % 2 == 0 {
+    |                    ^^^^^^^^^^^^^^^^^^^ help: replace with: `rng.next().is_multiple_of(2)`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#manual_is_multiple_of
+    = note: `-D clippy::manual-is-multiple-of` implied by `-D clippy::all`
+    = help: to override `-D clippy::all` add `#[allow(clippy::manual_is_multiple_of)]`
+
+error: manual implementation of `.is_multiple_of()`
+   --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\cost\relational\global_laws\equality\mixed\edits.rs:166:23
+    |
+166 |         let kind = if rng.next() % 3 == 0 { 10 } else { 9 };
+    |                       ^^^^^^^^^^^^^^^^^^^ help: replace with: `rng.next().is_multiple_of(3)`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#manual_is_multiple_of
+
+error: manual implementation of `.is_multiple_of()`
+   --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\cost\relational\global_laws\equality\mixed\edits.rs:194:23
+    |
+194 |         let replace = rng.next() % 2 == 0;
+    |                       ^^^^^^^^^^^^^^^^^^^ help: replace with: `rng.next().is_multiple_of(2)`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#manual_is_multiple_of
+
+error: this expression creates a reference which is immediately dereferenced by the compiler
+   --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\relational_certification\history_ownership\publication_fixture.rs:153:59
+    |
+153 |         .readmit_required_output_route_absence(execution, &installed, &basis, &meaning)
+    |                                                           ^^^^^^^^^^ help: change this to: `installed`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#needless_borrow
+    = note: `-D clippy::needless-borrow` implied by `-D clippy::all`
+    = help: to override `-D clippy::all` add `#[allow(clippy::needless_borrow)]`
+
+error: this expression creates a reference which is immediately dereferenced by the compiler
+   --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\relational_certification\history_ownership\publication_fixture.rs:153:79
+    |
+153 |         .readmit_required_output_route_absence(execution, &installed, &basis, &meaning)
+    |                                                                               ^^^^^^^^ help: change this to: `meaning`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#needless_borrow
+
+error: could not compile `worth-court-relational-certification` (test "worth_court_relational_certification") due to 5 previous errors
+warning: build failed, waiting for other jobs to finish...
+error: items after a test module
+  --> crates\worth-relational\src\runtime\state\subsystems\visibility\snapshot_handles\version_counts.rs:10:1
+   |
+10 | mod tests {
+   | ^^^^^^^^^
+...
+88 | impl<V: Ord> VersionCounts<V> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#items_after_test_module
+   = note: `-D clippy::items-after-test-module` implied by `-D clippy::all`
+   = help: to override `-D clippy::all` add `#[allow(clippy::items_after_test_module)]`
+
+error: this expression creates a reference which is immediately dereferenced by the compiler
+   --> crates\worth-relational\src\storage\residency\region_fixture.rs:215:62
+    |
+215 |         live_counts: super::LiveRecordCounts::from_partition(&partition),
+    |                                                              ^^^^^^^^^^ help: change this to: `partition`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#needless_borrow
+    = note: `-D clippy::needless-borrow` implied by `-D clippy::all`
+    = help: to override `-D clippy::all` add `#[allow(clippy::needless_borrow)]`
+
+error: items after a test module
+   --> crates\worth-relational\src\visibility\snapshot_states\resident_basis.rs:128:1
+    |
+128 | mod tests {
+    | ^^^^^^^^^
+...
+147 | impl crate::storage::overlay::CurrentPartitionAccess for ResidentVisibilitySnapshotBasis {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#items_after_test_module
+    = help: move the items to before the test module was defined
+
+error: returning the result of a `let` binding from a block
+   --> crates\worth-relational\src\tests\support\history.rs:117:13
+    |
+116 |             let value = value.as_str().to_owned();
+    |             -------------------------------------- unnecessary `let` binding
+117 |             value
+    |             ^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#let_and_return
+    = note: `-D clippy::let-and-return` implied by `-D clippy::all`
+    = help: to override `-D clippy::all` add `#[allow(clippy::let_and_return)]`
+help: return the expression directly
+    |
+116 ~             
+117 ~             value.as_str().to_owned()
+    |
+
+error: could not compile `worth-relational` (lib test) due to 4 previous errors
+end_utc: 2026-11-11T04:37:29.033400+00:00
+exit_code: 101

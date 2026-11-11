@@ -10,7 +10,6 @@ mod entity_field_pages;
 mod entity_field_selection_cardinality;
 mod exact_observation;
 mod fork_observation_currency;
-mod generation_identity_recovery;
 mod generation_routing;
 mod generation_selection_locality;
 mod historical_relation_field_lookup;

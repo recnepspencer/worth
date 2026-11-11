@@ -47,7 +47,7 @@ pub(super) fn runtime_with_aspect_field_merge_policy(
     memory_runtime(registry)
 }
 
-pub(super) fn register_aspect_field_merge_policy(
+fn register_aspect_field_merge_policy(
     aspect_key: AspectKey,
     field_key: FieldKey,
     merge_policy: AspectMergePolicyKind,

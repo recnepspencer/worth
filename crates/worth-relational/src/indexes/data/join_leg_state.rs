@@ -75,17 +75,17 @@ impl JoinLegState {
         if self.coordinate(relation) == coordinate {
             return;
         }
-        if let Some((shared, external)) = self.relations.remove(&relation) {
-            if let Some(rows) = self.shared.get_mut(&shared) {
-                if let Some(relations) = rows.get_mut(&external) {
-                    relations.remove(&relation);
-                    if relations.is_empty() {
-                        rows.remove(&external);
-                    }
+        if let Some((shared, external)) = self.relations.remove(&relation)
+            && let Some(rows) = self.shared.get_mut(&shared)
+        {
+            if let Some(relations) = rows.get_mut(&external) {
+                relations.remove(&relation);
+                if relations.is_empty() {
+                    rows.remove(&external);
                 }
-                if rows.is_empty() {
-                    self.shared.remove(&shared);
-                }
+            }
+            if rows.is_empty() {
+                self.shared.remove(&shared);
             }
         }
         if let Some((shared, external)) = coordinate {

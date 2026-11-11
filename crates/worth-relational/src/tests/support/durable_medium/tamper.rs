@@ -1,13 +1,8 @@
 //! Damage the test medium's durable contents, standing in for storage that
 //! returns bytes Relational did not write.
 
-use std::sync::Arc;
-
 use super::TestDurableMedium;
-use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
 use crate::durability::data::RelationalNativeCheckpoint;
-use crate::history::data::{CanonicalCommitEnvelopeBody, PositionedCanonicalCommit};
-use crate::publication::patch::data::PatchStreamPosition;
 
 impl TestDurableMedium {
     /// Flip every bit of one byte of the filed checkpoint, keeping the
@@ -35,59 +30,5 @@ impl TestDurableMedium {
         self.flip_checkpoint_byte(
             crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC.len(),
         );
-    }
-
-    /// Lose the artifact at `position`, leaving a gap in the journal.
-    pub(crate) fn drop_artifact(&self, position: PatchStreamPosition) {
-        self.journal()
-            .remove(position)
-            .unwrap_or_else(|| panic!("medium holds no artifact at {position:?}"));
-    }
-
-    /// Rewrite the envelope of the durable commit `commit_id`, wherever the
-    /// medium holds it. See [`Self::rewrite_artifact_envelope`].
-    pub(crate) fn rewrite_commit_envelope(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        commit_id: crate::history::data::CommitId,
-        edit: impl FnOnce(&mut CanonicalCommitEnvelopeBody),
-    ) {
-        let position = self
-            .positions()
-            .into_iter()
-            .find(|position| {
-                let bytes = self.artifact_bytes(*position).expect("held position");
-                RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes)
-                    .is_ok_and(|artifact| artifact.commit_id() == commit_id)
-            })
-            .unwrap_or_else(|| panic!("medium holds no artifact for {commit_id:?}"));
-        self.rewrite_artifact_envelope(execution, position, edit);
-    }
-
-    /// Replace the artifact at `position` with a well-formed artifact whose
-    /// envelope `edit` has rewritten: storage that kept a valid frame around
-    /// commit meaning Relational never published.
-    pub(crate) fn rewrite_artifact_envelope(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        position: PatchStreamPosition,
-        edit: impl FnOnce(&mut CanonicalCommitEnvelopeBody),
-    ) {
-        let mut journal = self.journal();
-        let readmitted = RelationalCanonicalCommitArtifact::readmit(
-            journal
-                .bytes_at(position)
-                .unwrap_or_else(|| panic!("medium holds no artifact at {position:?}")),
-            execution,
-        )
-        .expect("the medium's own artifact readmits before it is rewritten");
-        let mut envelope = readmitted.envelope().copy_original_for_test(execution);
-        edit(envelope.body_mut_for_test());
-        let rewritten = RelationalCanonicalCommitArtifact::from_positioned(
-            &PositionedCanonicalCommit::for_test(position, Arc::new(envelope)),
-            execution.allocation_policy(),
-        )
-        .expect("a rewritten envelope still encodes");
-        journal.replace(position, Box::from(rewritten.as_bytes()));
     }
 }

@@ -257,7 +257,6 @@ impl AdjacencySet {
     }
 
     /// Borrow memberships one at a time; the receiver owns admission per item.
-
     pub(crate) fn historical_kind_ids(&self, kind_id: KindId) -> AdjacencyIds<'_> {
         AdjacencyIds::new(
             self.entries()

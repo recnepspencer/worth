@@ -1,0 +1,8 @@
+command: cargo clippy -p worth-court-relational-certification --all-targets
+HEAD: 14b6075657193d0f74ce944beab6124b5dec7b3c
+git_status_short_empty: false
+start_utc: 2026-11-11T03:08:11.042699+00:00
+    Checking worth-court-relational-certification v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-court-relational-certification)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4.32s
+end_utc: 2026-11-11T03:08:15.738372+00:00
+exit_code: 0

@@ -15,7 +15,6 @@
 
 mod journal;
 mod runtime_attachment;
-mod scripted_publication;
 mod tamper;
 mod transition_contents;
 mod transition_journal;
@@ -25,7 +24,6 @@ use std::sync::{Arc, Mutex, MutexGuard};
 pub(crate) use runtime_attachment::{
     attached_durable_medium, attached_test_medium, bind_durable_medium, TestDurableMediumAttachment,
 };
-pub(crate) use scripted_publication::ScriptedPublication;
 
 use crate::branch::RelationalBranchTransitionSequence;
 use crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifact;
@@ -61,21 +59,6 @@ impl TestDurableMedium {
     /// A medium publishing to these durable contents, for one runtime to own.
     pub(crate) fn attachment(self: &Arc<Self>) -> Box<dyn RelationalDurableMedium> {
         Box::new(TestDurableMediumAttachment::new(Arc::clone(self)))
-    }
-
-    /// The last position this medium made durable, or zero.
-    pub(crate) fn head(&self) -> PatchStreamPosition {
-        self.journal().head()
-    }
-
-    /// Every position this medium holds, ascending.
-    pub(crate) fn positions(&self) -> Vec<PatchStreamPosition> {
-        self.journal().positions()
-    }
-
-    /// The exact bytes held at `position`.
-    pub(crate) fn artifact_bytes(&self, position: PatchStreamPosition) -> Option<Box<[u8]>> {
-        self.journal().bytes_at(position).map(Box::from)
     }
 
     /// Every artifact a publication offered, in the order offered, whatever
@@ -146,11 +129,6 @@ impl TestDurableMedium {
         ))
     }
 
-    /// Answer the next commit publication as scripted instead of by position.
-    pub(crate) fn script_next_publication(&self, answer: ScriptedPublication) {
-        self.journal().scripted.push_back(answer);
-    }
-
     fn journal(&self) -> MutexGuard<'_, TestDurableJournal> {
         self.journal
             .lock()
@@ -163,20 +141,17 @@ impl TestDurableMedium {
             .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 
-    /// Answer one commit publication: as scripted, otherwise by position.
+    /// Answer one commit publication by the ordinary position rule.
     fn publish(
         &self,
         artifact: &RelationalCanonicalCommitArtifact,
     ) -> DurablePublicationFate<String> {
         let mut journal = self.journal();
         journal.offered.push(artifact.clone());
-        match journal.scripted.pop_front() {
-            Some(answer) => answer.answer(&mut journal, artifact),
-            None => journal.publish_at_head(artifact),
-        }
+        journal.publish_at_head(artifact)
     }
 
-    /// Answer one transition publication: as scripted, otherwise by sequence.
+    /// Answer one transition publication by the ordinary sequence rule.
     fn publish_transition(
         &self,
         artifact: &RelationalBranchTransitionArtifact,

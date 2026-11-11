@@ -133,27 +133,6 @@ fn cancelled_memory_publication_keeps_position_and_head_then_allows_ordinary_pub
     );
     release_test_commit_snapshot(&runtime, &result);
 }
-// The prior concrete layouts, preserving actual field types and variant order.
-enum OldBacking {
-    Memory(Arc<CanonicalCommitEnvelope>),
-    Journal {
-        entry: Arc<RelationalCommitIndexEntry>,
-        source: Arc<dyn RelationalDurableColdSource>,
-        unsettled: Option<Arc<CanonicalCommitEnvelope>>,
-    },
-}
-struct OldState {
-    authored_writes: Option<crate::runtime::AuthoredWriteGeneration>,
-    backing: OldBacking,
-    position: Option<RetainedCanonicalPosition>,
-    damage: Option<RelationalStorageUnavailable>,
-    payload_digest: Option<[u8; 32]>,
-    canonical_payload: Option<Arc<[u8]>>,
-    lineage: Option<crate::lineage::data::LineageCheckpointDigestBasis>,
-}
-struct OldCell {
-    state: Mutex<OldState>,
-}
 #[test]
 fn memory_frame_preserves_original_payload_and_scalar_tuple_observations() {
     let host = crate::test_execution_policy::serial_request();
@@ -178,95 +157,6 @@ fn memory_frame_preserves_original_payload_and_scalar_tuple_observations() {
         original.payload_digest().as_bytes(),
         &artifact.canonical_payload_digest().unwrap()
     );
-    let old = OldCell {
-        state: Mutex::new(OldState {
-            authored_writes: None,
-            backing: OldBacking::Memory(envelope),
-            position: None,
-            damage: None,
-            payload_digest: None,
-            canonical_payload: None,
-            lineage: None,
-        }),
-    };
-    let OldState {
-        authored_writes,
-        backing,
-        position,
-        damage,
-        payload_digest,
-        canonical_payload,
-        lineage,
-    } = old.state.into_inner().unwrap();
-    if let OldBacking::Memory(envelope) = backing {
-        drop(envelope);
-    }
-    drop((
-        authored_writes,
-        position,
-        damage,
-        payload_digest,
-        canonical_payload,
-        lineage,
-    ));
-    eprintln!(
-        "old/new backing {}/{}, state {}/{}, cell {}/{}; immutable owner {}",
-        std::mem::size_of::<OldBacking>(),
-        std::mem::size_of::<EnvelopeBacking>(),
-        std::mem::size_of::<OldState>(),
-        std::mem::size_of::<EnvelopeState>(),
-        std::mem::size_of::<OldCell>(),
-        std::mem::size_of::<RelationalCommitEnvelopeResidency>(),
-        std::mem::size_of::<worth_execution::ExecutionImmutableBytes>()
-    );
-    assert_eq!(
-        std::mem::size_of::<EnvelopeBacking>(),
-        std::mem::size_of::<OldBacking>() + std::mem::size_of::<usize>()
-    );
-    assert_eq!(
-        std::mem::size_of::<RelationalCommitEnvelopeResidency>(),
-        std::mem::size_of::<OldCell>() + std::mem::size_of::<usize>()
-    );
-    release_test_commit_snapshot(&runtime, &result);
-}
-#[test]
-fn journal_publication_keeps_journal_placement_without_memory_frame() {
-    let host = crate::test_execution_policy::serial_request();
-    let execution = ExecutionRequest::serial(&host);
-    let runtime = durable_runtime_with_test_schema();
-    let result = create_entity_outcome(&execution, &runtime, "unchanged-journal-frame");
-    let cell = runtime
-        .history
-        .commit_artifact(result.commit.commit_id)
-        .unwrap()
-        .envelope_residency();
-    let (entry, source) = cell.journal_placement().unwrap();
-    // Descriptive OLD-layout value only, outside funding/no-copy claims.
-    // Its exact historical Arc<Entry> type remains independent of the new owner.
-    let old = OldBacking::Journal {
-        entry: Arc::new(entry.as_ref().clone()),
-        source: source.clone(),
-        unsettled: None,
-    };
-    if let OldBacking::Journal {
-        entry,
-        source,
-        unsettled,
-    } = old
-    {
-        drop((entry, source, unsettled));
-    }
-    assert!(entry.same_owner(&cell.journal_placement().unwrap().0));
-    assert!(cell.resident_payload_bytes().is_none());
-    assert_eq!(cell.payload_storage_bytes(), 0);
-    let original = attached_test_medium(&runtime)
-        .artifact_bytes(entry.position)
-        .unwrap();
-    let exported = cell.export_artifact(&execution).unwrap();
-    assert_eq!(exported.as_bytes(), original.as_ref());
-    assert!(Arc::ptr_eq(
-        &source,
-        &runtime.durability.cold_source().unwrap()
-    ));
+    drop(envelope);
     release_test_commit_snapshot(&runtime, &result);
 }

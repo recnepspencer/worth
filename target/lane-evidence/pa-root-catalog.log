@@ -1,0 +1,26 @@
+command: python target/lane-evidence/claude_lane_tests.py root pa-root-catalog target/lane-evidence/pa-root-public-cases.json recovered_main_and_sibling_reexport_the_original_canonical_subjects_and_envelopes
+HEAD: 5d37a209ee227fdef639cbec2c438d82396a7209
+git_status_short_empty: false
+start_utc: 2026-11-11T02:57:15.154823+00:00
+prebuild: cargo metadata --offline --format-version 1 --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml"
+prebuild: cargo test --message-format=json --no-run --package worth-court-relational-certification --test worth_court_relational_certification --profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml" --unit-graph -Z unstable-options
+prebuild: cargo nextest list --cargo-message-format=json --package worth-court-relational-certification --test worth_court_relational_certification --cargo-profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml" --list-type binaries-only --message-format json
+   Compiling worth-court-relational-certification v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-court-relational-certification)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 20.22s
+prebuild: cargo nextest list --cargo-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\pa-root-catalog\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\pa-root-catalog\build\binaries.json" --message-format json --ignore-default-filter -E test(recovered_main_and_sibling_reexport_the_original_canonical_subjects_and_envelopes)
+prebuild: cargo nextest run --cargo-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\pa-root-catalog\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\pa-root-catalog\build\binaries.json" --profile ci --config-file "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\pa-root-catalog\nextest.toml" --ignore-default-filter --no-fail-fast --no-tests=fail --message-format libtest-json -E test(=relational::durable_publication::checkpoint_catalog_originals::recovered_main_and_sibling_reexport_the_original_canonical_subjects_and_envelopes)
+FAILED_CASE: worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::checkpoint_catalog_originals::recovered_main_and_sibling_reexport_the_original_canonical_subjects_and_envelopes
+
+thread 'relational::durable_publication::checkpoint_catalog_originals::recovered_main_and_sibling_reexport_the_original_canonical_subjects_and_envelopes' (27548) panicked at crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\durable_publication\checkpoint_catalog_originals.rs:69:14:
+called `Result::unwrap()` on an `Err` value: RefusedRelationalRecordedComponent { cause: MissingRecoveredImage, acquired: None }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-pa-root-catalog-build-cargo-metadata.log-5d37a209ee22-202611110257167683020000-25e55434f681.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-pa-root-catalog-build-binaries-build-unit-plan.log-5d37a209ee22-202611110257179100910000-3062c441e98c.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-pa-root-catalog-build-binaries-build.log-5d37a209ee22-202611110257191909640000-0cc8fd49d1c6.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-pa-root-catalog-selection.log-5d37a209ee22-202611110257450387590000-78fe2131a2ff.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-pa-root-catalog-run.log-5d37a209ee22-202611110257467040020000-83bf2c48c343.log
+FAILED_NAMES: ["worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::checkpoint_catalog_originals::recovered_main_and_sibling_reexport_the_original_canonical_subjects_and_envelopes"]
+EVIDENCE_TEST_COUNTS: 0,1,0
+end_utc: 2026-11-11T02:57:48.414008+00:00
+exit_code: 100

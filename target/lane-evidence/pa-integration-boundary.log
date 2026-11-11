@@ -1,0 +1,73 @@
+command: cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .
+HEAD: ef95a160b2e86cc653fda0f1801dd2d3349a9fba
+git_status_short_empty: false
+start_utc: 2026-11-11T04:28:28.579560+00:00
+   Compiling serde_core v1.0.229
+   Compiling proc-macro2 v1.0.107
+   Compiling zmij v1.0.23
+   Compiling quote v1.0.47
+   Compiling unicode-ident v1.0.27
+   Compiling winnow v1.0.4
+   Compiling serde_json v1.0.154
+   Compiling serde v1.0.229
+   Compiling itoa v1.0.18
+   Compiling memchr v2.8.3
+   Compiling toml_parser v1.1.5+spec-1.1.0
+   Compiling serde_spanned v1.1.2
+   Compiling toml_datetime v1.1.2+spec-1.1.0
+   Compiling toml v1.1.8+spec-1.1.0
+   Compiling syn v2.0.119
+   Compiling boundary-check v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\tools\boundary-check)
+    Finished `dev` profile [unoptimized] target(s) in 2m 21s
+     Running `tools\boundary-check\target\debug\boundary-check.exe --root .`
+BC9002_TEST_TOPOLOGY crates/worth-relational/src/authority/mutation/intents/field_authoring_candidate/tests/storage_footprint.rs::file: {"source":"crates/worth-relational/src/authority/mutation/intents/field_authoring_candidate/tests/storage_footprint.rs","module":"file","roots":["ExecutionRequest"]}
+belongs: docs/coding-guidelines/iteration_laws.md; plans/database-foundation/test-convention.md; tools/boundary-check/config/test-workspaces.txt; src-court-baseline.json records existing source courts
+BC9002_TEST_TOPOLOGY crates/worth-relational/src/branch/root_completeness.rs::tests: {"source":"crates/worth-relational/src/branch/root_completeness.rs","module":"tests","roots":["ExecutionRequest"]}
+belongs: docs/coding-guidelines/iteration_laws.md; plans/database-foundation/test-convention.md; tools/boundary-check/config/test-workspaces.txt; src-court-baseline.json records existing source courts
+BC9002_TEST_TOPOLOGY crates/worth-relational/src/branch/root_schema/readmission/tests.rs::file: {"source":"crates/worth-relational/src/branch/root_schema/readmission/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]}
+belongs: docs/coding-guidelines/iteration_laws.md; plans/database-foundation/test-convention.md; tools/boundary-check/config/test-workspaces.txt; src-court-baseline.json records existing source courts
+BC9002_TEST_TOPOLOGY crates/worth-relational/src/content/schema/retention_tests.rs::file: {"source":"crates/worth-relational/src/content/schema/retention_tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]}
+belongs: docs/coding-guidelines/iteration_laws.md; plans/database-foundation/test-convention.md; tools/boundary-check/config/test-workspaces.txt; src-court-baseline.json records existing source courts
+BC9002_TEST_TOPOLOGY crates/worth-relational/src/durability/authority/recovery/codec_transition/tests/stale_codec_revision.rs::file: {"source":"crates/worth-relational/src/durability/authority/recovery/codec_transition/tests/stale_codec_revision.rs","module":"file","roots":["ExecutionRequest"]}
+belongs: docs/coding-guidelines/iteration_laws.md; plans/database-foundation/test-convention.md; tools/boundary-check/config/test-workspaces.txt; src-court-baseline.json records existing source courts
+BC9002_TEST_TOPOLOGY crates/worth-relational/src/durability/derived_index_artifacts/captured_decode/tests.rs::file: {"source":"crates/worth-relational/src/durability/derived_index_artifacts/captured_decode/tests.rs","module":"file","roots":["ExecutionRequest"]}
+belongs: docs/coding-guidelines/iteration_laws.md; plans/database-foundation/test-convention.md; tools/boundary-check/config/test-workspaces.txt; src-court-baseline.json records existing source courts
+BC9002_TEST_TOPOLOGY crates/worth-relational/src/durability/derived_index_artifacts/checkpoint_delta/complete_view/tests.rs::file: {"source":"crates/worth-relational/src/durability/derived_index_artifacts/checkpoint_delta/complete_view/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]}
+belongs: docs/coding-guidelines/iteration_laws.md; plans/database-foundation/test-convention.md; tools/boundary-check/config/test-workspaces.txt; src-court-baseline.json records existing source courts
+BC9002_TEST_TOPOLOGY crates/worth-relational/src/history/data/canonical_commit_envelope/payload_encoding_tests/transition_source.rs::file: {"source":"crates/worth-relational/src/history/data/canonical_commit_envelope/payload_encoding_tests/transition_source.rs","module":"file","roots":["ExecutionRequest"]}
+belongs: docs/coding-guidelines/iteration_laws.md; plans/database-foundation/test-convention.md; tools/boundary-check/config/test-workspaces.txt; src-court-baseline.json records existing source courts
+BC9002_TEST_TOPOLOGY crates/worth-relational/src/history/data/codec_retirement_closure/payload_reconstruction/tests/storage_footprint.rs::file: {"source":"crates/worth-relational/src/history/data/codec_retirement_closure/payload_reconstruction/tests/storage_footprint.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]}
+belongs: docs/coding-guidelines/iteration_laws.md; plans/database-foundation/test-convention.md; tools/boundary-check/config/test-workspaces.txt; src-court-baseline.json records existing source courts
+BC9002_TEST_TOPOLOGY crates/worth-relational/src/history/data/publication_relations/creation/tests/creation_probe.rs::file: {"source":"crates/worth-relational/src/history/data/publication_relations/creation/tests/creation_probe.rs","module":"file","roots":["ExecutionRequest"]}
+belongs: docs/coding-guidelines/iteration_laws.md; plans/database-foundation/test-convention.md; tools/boundary-check/config/test-workspaces.txt; src-court-baseline.json records existing source courts
+BC9002_TEST_TOPOLOGY crates/worth-relational/src/runtime/state/subsystems/indexing/basis_selection/frozen_checkpoint/tests.rs::file: {"source":"crates/worth-relational/src/runtime/state/subsystems/indexing/basis_selection/frozen_checkpoint/tests.rs","module":"file","roots":["ExecutionRequest"]}
+belongs: docs/coding-guidelines/iteration_laws.md; plans/database-foundation/test-convention.md; tools/boundary-check/config/test-workspaces.txt; src-court-baseline.json records existing source courts
+BC9002_TEST_TOPOLOGY crates/worth-relational/src/runtime/state/subsystems/services/symbol_residency/tests/region_admission_tests.rs::file: {"source":"crates/worth-relational/src/runtime/state/subsystems/services/symbol_residency/tests/region_admission_tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]}
+belongs: docs/coding-guidelines/iteration_laws.md; plans/database-foundation/test-convention.md; tools/boundary-check/config/test-workspaces.txt; src-court-baseline.json records existing source courts
+BC9002_TEST_TOPOLOGY crates/worth-relational/src/storage/overlay/working_state/consequence_courts.rs::file: {"source":"crates/worth-relational/src/storage/overlay/working_state/consequence_courts.rs","module":"file","roots":["ExecutionRequest"]}
+belongs: docs/coding-guidelines/iteration_laws.md; plans/database-foundation/test-convention.md; tools/boundary-check/config/test-workspaces.txt; src-court-baseline.json records existing source courts
+BC9002_TEST_TOPOLOGY crates/worth-relational/src/storage/residency/kind_incremental/tests.rs::file: {"source":"crates/worth-relational/src/storage/residency/kind_incremental/tests.rs","module":"file","roots":["ExecutionRequest"]}
+belongs: docs/coding-guidelines/iteration_laws.md; plans/database-foundation/test-convention.md; tools/boundary-check/config/test-workspaces.txt; src-court-baseline.json records existing source courts
+BC9002_TEST_TOPOLOGY crates/worth-relational/src/storage/residency/kind_incremental/tests/cost.rs::file: {"source":"crates/worth-relational/src/storage/residency/kind_incremental/tests/cost.rs","module":"file","roots":["ExecutionRequest"]}
+belongs: docs/coding-guidelines/iteration_laws.md; plans/database-foundation/test-convention.md; tools/boundary-check/config/test-workspaces.txt; src-court-baseline.json records existing source courts
+BC9002_TEST_TOPOLOGY crates/worth-relational/src/storage/residency/kind_incremental/tests/fixture.rs::file: {"source":"crates/worth-relational/src/storage/residency/kind_incremental/tests/fixture.rs","module":"file","roots":["ExecutionRequest"]}
+belongs: docs/coding-guidelines/iteration_laws.md; plans/database-foundation/test-convention.md; tools/boundary-check/config/test-workspaces.txt; src-court-baseline.json records existing source courts
+BC9002_TEST_TOPOLOGY crates/worth-relational/src/storage/residency/resident_history_tests/symbol_inheritance.rs::file: {"source":"crates/worth-relational/src/storage/residency/resident_history_tests/symbol_inheritance.rs","module":"file","roots":["ExecutionRequest"]}
+belongs: docs/coding-guidelines/iteration_laws.md; plans/database-foundation/test-convention.md; tools/boundary-check/config/test-workspaces.txt; src-court-baseline.json records existing source courts
+BC9002_TEST_TOPOLOGY crates/worth-relational/src/storage/substrate/digest_index/funding_tests.rs::file: {"source":"crates/worth-relational/src/storage/substrate/digest_index/funding_tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]}
+belongs: docs/coding-guidelines/iteration_laws.md; plans/database-foundation/test-convention.md; tools/boundary-check/config/test-workspaces.txt; src-court-baseline.json records existing source courts
+BC9002_TEST_TOPOLOGY crates/worth-relational/src/storage/substrate/record_arena/arena/historical_selection/tests.rs::file: {"source":"crates/worth-relational/src/storage/substrate/record_arena/arena/historical_selection/tests.rs","module":"file","roots":["ExecutionRequest"]}
+belongs: docs/coding-guidelines/iteration_laws.md; plans/database-foundation/test-convention.md; tools/boundary-check/config/test-workspaces.txt; src-court-baseline.json records existing source courts
+BC9002_TEST_TOPOLOGY crates/worth-relational/src/storage/substrate/record_arena/values/tests/historical_selection_funding.rs::file: {"source":"crates/worth-relational/src/storage/substrate/record_arena/values/tests/historical_selection_funding.rs","module":"file","roots":["ExecutionRequest"]}
+belongs: docs/coding-guidelines/iteration_laws.md; plans/database-foundation/test-convention.md; tools/boundary-check/config/test-workspaces.txt; src-court-baseline.json records existing source courts
+BC9002_TEST_TOPOLOGY crates/worth-relational/src/storage/substrate/record_arena/values/tests/optional_output_funding.rs::file: {"source":"crates/worth-relational/src/storage/substrate/record_arena/values/tests/optional_output_funding.rs","module":"file","roots":["ExecutionRequest"]}
+belongs: docs/coding-guidelines/iteration_laws.md; plans/database-foundation/test-convention.md; tools/boundary-check/config/test-workspaces.txt; src-court-baseline.json records existing source courts
+BC9002_TEST_TOPOLOGY crates/worth-relational/src/tests/support/durable_medium/runtime_attachment.rs::file: {"source":"crates/worth-relational/src/tests/support/durable_medium/runtime_attachment.rs","module":"file","roots":["ExecutionRequest","RelationalRuntime"]}
+belongs: docs/coding-guidelines/iteration_laws.md; plans/database-foundation/test-convention.md; tools/boundary-check/config/test-workspaces.txt; src-court-baseline.json records existing source courts
+BC9002_TEST_TOPOLOGY crates/worth-relational/src/transactions/data/outcomes/commit_semantic_result/validation/tests/proposed_families.rs::file: {"source":"crates/worth-relational/src/transactions/data/outcomes/commit_semantic_result/validation/tests/proposed_families.rs","module":"file","roots":["ExecutionRequest"]}
+belongs: docs/coding-guidelines/iteration_laws.md; plans/database-foundation/test-convention.md; tools/boundary-check/config/test-workspaces.txt; src-court-baseline.json records existing source courts
+BC9002_TEST_TOPOLOGY workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/invariant_projection/operation_reader/decision_reads/expected_keys/historical_retention_tests.rs::file: {"source":"workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/invariant_projection/operation_reader/decision_reads/expected_keys/historical_retention_tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]}
+belongs: docs/coding-guidelines/iteration_laws.md; plans/database-foundation/test-convention.md; tools/boundary-check/config/test-workspaces.txt; src-court-baseline.json records existing source courts
+error: process didn't exit successfully: `tools\boundary-check\target\debug\boundary-check.exe --root .` (exit code: 1)
+end_utc: 2026-11-11T04:31:36.194421+00:00
+exit_code: 1

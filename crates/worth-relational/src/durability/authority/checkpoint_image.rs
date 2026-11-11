@@ -191,8 +191,7 @@ fn branch_root_images(
                 })?,
             );
             let partition_images = partitions
-                .iter()
-                .cloned()
+                .into_iter()
                 .map(|partition| {
                     crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| partition_to_image_with_contracts(lane,
                         partition,

@@ -1,0 +1,7 @@
+[
+  "complete_refuses_recovered_empty_without_original_birth_authority",
+  "fresh_source_refuses_foreign_and_nonempty_actual_sources_without_rebuild",
+  "fresh_receipt_refuses_actual_movement_and_preserves_original_cancellation",
+  "fresh_source_refuses_real_selected_empty_checkpoint",
+  "fresh_source_keeps_original_installation_receipts_and_unused_constraints_in_complete"
+]

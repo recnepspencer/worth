@@ -1,5 +1,8 @@
 //! Successor dictionary coverage equals independently collected values.
-use super::*;
+use crate::tests::support::{
+    aspect_field_patch_from_values, aspect_key, create_entity, release_test_commit_snapshot,
+    runtime_with_test_schema,
+};
 #[test]
 fn actual_successor_supplements_equal_independent_head_and_full_closure_differences() {
     use crate::transactions::data::*;

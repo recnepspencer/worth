@@ -54,16 +54,15 @@ impl<Level> RelationalResidencyLease<Level> {
     ) -> Result<(), RelationalResidencyDemandFailure> {
         let inheritance = self.cell().symbol_inheritance.get();
         let certificate = inheritance.and_then(|basis| basis.certificate.as_ref());
-        if let Some(certificate) = certificate {
-            if (!matches!(scope, SymbolScope::Full) || certificate.full_at_birth)
-                && symbols.admit_region_from_publication(
-                    execution,
-                    identity.clone(),
-                    &certificate.publication,
-                )?
-            {
-                return Ok(());
-            }
+        if let Some(certificate) = certificate
+            && (!matches!(scope, SymbolScope::Full) || certificate.full_at_birth)
+            && symbols.admit_region_from_publication(
+                execution,
+                identity.clone(),
+                &certificate.publication,
+            )?
+        {
+            return Ok(());
         }
         // A mirror's projected delta is relative to the canonical root, not
         // its independently retained history. Only the accepted scope covers it.

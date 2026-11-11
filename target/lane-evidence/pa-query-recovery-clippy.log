@@ -1,0 +1,131 @@
+command: cargo clippy -p worth-court-relational-certification --all-targets
+HEAD: 85c38c5475ce82c568d4585c46544cd2c9846d98
+git_status_short_empty: false
+start_utc: 2026-11-11T03:34:51.652643+00:00
+    Checking worth-court-relational-certification v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-court-relational-certification)
+error[E0599]: no method named `execute_query_plan_with_index_parity` found for struct `worth_relational::indexes::access::pinning::IndexAccess<'runtime>` in the current scope
+   --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\durable_publication\checkpoint_query_parity.rs:105:10
+    |
+103 |       let original = runtime
+    |  ____________________-
+104 | |         .index_access()
+105 | |         .execute_query_plan_with_index_parity(
+    | |         -^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ method not found in `worth_relational::indexes::access::pinning::IndexAccess<'_>`
+    | |_________|
+    |
+
+error[E0599]: no method named `execute_query_plan_with_index_parity` found for struct `worth_relational::indexes::access::pinning::IndexAccess<'runtime>` in the current scope
+   --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\durable_publication\checkpoint_query_parity.rs:127:10
+    |
+125 |       let recovered_outcome = recovered
+    |  _____________________________-
+126 | |         .index_access()
+127 | |         .execute_query_plan_with_index_parity(
+    | |         -^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ method not found in `worth_relational::indexes::access::pinning::IndexAccess<'_>`
+    | |_________|
+    |
+
+error[E0599]: no method named `execute_query_plan_with_index_parity` found for struct `worth_relational::indexes::access::pinning::IndexAccess<'runtime>` in the current scope
+   --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\durable_publication\checkpoint_query_parity.rs:201:10
+    |
+199 |       let original = runtime
+    |  ____________________-
+200 | |         .index_access()
+201 | |         .execute_query_plan_with_index_parity(
+    | |         -^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ method not found in `worth_relational::indexes::access::pinning::IndexAccess<'_>`
+    | |_________|
+    |
+
+error[E0599]: no method named `execute_query_plan_with_index_parity` found for struct `worth_relational::indexes::access::pinning::IndexAccess<'runtime>` in the current scope
+   --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\durable_publication\checkpoint_query_parity.rs:223:10
+    |
+221 |       let recovered_outcome = recovered
+    |  _____________________________-
+222 | |         .index_access()
+223 | |         .execute_query_plan_with_index_parity(
+    | |         -^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ method not found in `worth_relational::indexes::access::pinning::IndexAccess<'_>`
+    | |_________|
+    |
+
+error[E0624]: method `lineage_access` is private
+  --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\durable_publication\checkpoint_topology_reidentification.rs:23:10
+   |
+23 |         .lineage_access()
+   |          ^^^^^^^^^^^^^^ private method
+   |
+  ::: crates\worth-relational\src\lineage\access\mod.rs:23:5
+   |
+23 |     pub(crate) fn lineage_access(&self) -> LineageAccess<'_> {
+   |     -------------------------------------------------------- private method defined here
+
+error[E0624]: method `lineage_access` is private
+  --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\durable_publication\checkpoint_topology_reidentification.rs:39:10
+   |
+39 |         .lineage_access()
+   |          ^^^^^^^^^^^^^^ private method
+   |
+  ::: crates\worth-relational\src\lineage\access\mod.rs:23:5
+   |
+23 |     pub(crate) fn lineage_access(&self) -> LineageAccess<'_> {
+   |     -------------------------------------------------------- private method defined here
+
+error[E0624]: method `lineage_access` is private
+  --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\durable_publication\checkpoint_topology_reidentification.rs:45:10
+   |
+45 |         .lineage_access()
+   |          ^^^^^^^^^^^^^^ private method
+   |
+  ::: crates\worth-relational\src\lineage\access\mod.rs:23:5
+   |
+23 |     pub(crate) fn lineage_access(&self) -> LineageAccess<'_> {
+   |     -------------------------------------------------------- private method defined here
+
+error[E0624]: method `lineage_access` is private
+  --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\durable_publication\checkpoint_topology_reidentification.rs:65:10
+   |
+65 |         .lineage_access()
+   |          ^^^^^^^^^^^^^^ private method
+   |
+  ::: crates\worth-relational\src\lineage\access\mod.rs:23:5
+   |
+23 |     pub(crate) fn lineage_access(&self) -> LineageAccess<'_> {
+   |     -------------------------------------------------------- private method defined here
+
+error[E0624]: method `lineage_access` is private
+  --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\durable_publication\checkpoint_topology_reidentification.rs:83:10
+   |
+83 |         .lineage_access()
+   |          ^^^^^^^^^^^^^^ private method
+   |
+  ::: crates\worth-relational\src\lineage\access\mod.rs:23:5
+   |
+23 |     pub(crate) fn lineage_access(&self) -> LineageAccess<'_> {
+   |     -------------------------------------------------------- private method defined here
+
+error[E0624]: method `lineage_access` is private
+  --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\durable_publication\checkpoint_truth_equivalence.rs:50:18
+   |
+50 |                 .lineage_access()
+   |                  ^^^^^^^^^^^^^^ private method
+   |
+  ::: crates\worth-relational\src\lineage\access\mod.rs:23:5
+   |
+23 |     pub(crate) fn lineage_access(&self) -> LineageAccess<'_> {
+   |     -------------------------------------------------------- private method defined here
+
+error[E0624]: method `lineage_access` is private
+  --> crates\worth-court-relational-certification\tests\worth_court_relational_certification\relational\durable_publication\checkpoint_truth_equivalence.rs:55:18
+   |
+55 |                 .lineage_access()
+   |                  ^^^^^^^^^^^^^^ private method
+   |
+  ::: crates\worth-relational\src\lineage\access\mod.rs:23:5
+   |
+23 |     pub(crate) fn lineage_access(&self) -> LineageAccess<'_> {
+   |     -------------------------------------------------------- private method defined here
+
+Some errors have detailed explanations: E0599, E0624.
+For more information about an error, try `rustc --explain E0599`.
+error: could not compile `worth-court-relational-certification` (test "worth_court_relational_certification") due to 11 previous errors
+end_utc: 2026-11-11T03:35:02.586024+00:00
+exit_code: 101

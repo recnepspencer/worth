@@ -159,14 +159,14 @@ impl CanonicalCommitEnvelopeBody {
         self.validate_cascade_header(context)?;
         // Group validators certify their complete origin rosters. A standalone
         // publication has no component validator to establish that fact.
-        if self.producer_cascade_retirement.is_none() {
-            if let Some(origin) = &self.required_output_origin {
-                super::super::super::codec_retirement_closure::charge(
-                    context,
-                    origin.members.len() + 1,
-                )?;
-                self.validate_output_origin_header(origin)?;
-            }
+        if self.producer_cascade_retirement.is_none()
+            && let Some(origin) = &self.required_output_origin
+        {
+            super::super::super::codec_retirement_closure::charge(
+                context,
+                origin.members.len() + 1,
+            )?;
+            self.validate_output_origin_header(origin)?;
         }
         Ok(ValidatedOutputOrigins { envelope: self })
     }

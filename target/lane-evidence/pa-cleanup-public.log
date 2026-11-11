@@ -1,0 +1,22 @@
+command: python target/lane-evidence/claude_lane_tests.py root pa-cleanup-public target/lane-evidence/pa-remaining-cleanup-public-cases.json
+HEAD: 86e84dc5cd738882bf50fced389fc7deaa31567f
+git_status_short_empty: false
+start_utc: 2026-11-11T01:17:25.795969+00:00
+prebuild: cargo metadata --offline --format-version 1 --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml"
+prebuild: cargo test --message-format=json --no-run --package worth-court-relational-certification --test worth_court_relational_certification --profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml" --unit-graph -Z unstable-options
+prebuild: cargo nextest list --cargo-message-format=json --package worth-court-relational-certification --test worth_court_relational_certification --cargo-profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml" --list-type binaries-only --message-format json
+   Compiling worth-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-relational)
+   Compiling worth-testkit-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-testkit-relational)
+   Compiling worth-court-relational-certification v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-court-relational-certification)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1m 02s
+prebuild: cargo nextest list --cargo-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\pa-cleanup-public\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\pa-cleanup-public\build\binaries.json" --message-format json --ignore-default-filter -E test(source_only_merge_emits_one_new_entity_with_an_independent_identity)
+prebuild: cargo nextest run --cargo-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\pa-cleanup-public\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\pa-cleanup-public\build\binaries.json" --profile ci --config-file "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\pa-cleanup-public\nextest.toml" --ignore-default-filter --no-fail-fast --no-tests=fail --message-format libtest-json -E test(=relational::durable_publication::merge_source_copy_identity::source_only_merge_emits_one_new_entity_with_an_independent_identity)
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-pa-cleanup-public-build-cargo-metadata.log-86e84dc5cd73-202611110117317420310000-02a8dc2aba76.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-pa-cleanup-public-build-binaries-build-unit-plan.log-86e84dc5cd73-202611110117386596460000-159e43fe5609.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-pa-cleanup-public-build-binaries-build.log-86e84dc5cd73-202611110117394508050000-474e1b77ee84.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-pa-cleanup-public-selection.log-86e84dc5cd73-202611110118509039900000-98e4a5ab754c.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-pa-cleanup-public-run.log-86e84dc5cd73-202611110118522548240000-04ac54cb0657.log
+FAILED_NAMES: []
+EVIDENCE_TEST_COUNTS: 1,0,0
+end_utc: 2026-11-11T01:18:54.946177+00:00
+exit_code: 0

@@ -150,7 +150,7 @@ fn publish_records(
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
     let absence = runtime
-        .readmit_required_output_route_absence(execution, &installed, &basis, &meaning)
+        .readmit_required_output_route_absence(execution, installed, &basis, meaning)
         .unwrap();
     let proposal = tx
         .validate(execution, runtime)

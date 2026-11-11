@@ -86,3 +86,7 @@ fn complete_source_recovery_restores_original_inputs_for_another_complete_captur
         )
         .is_ok());
 }
+
+mod fresh_admission;
+
+mod fresh_schema;

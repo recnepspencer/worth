@@ -130,7 +130,10 @@ fn audit_replay_uses_checkpoint_owner_basis_when_tail_is_absent() {
 
     let runtime = runtime_with_test_schema();
     let created = create_entity_outcome(execution, &runtime, "checkpoint-basis");
-    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     assert!(runtime
         .durability_authority()
         .remove_durable_envelope_for_test(created.commit.commit_id));

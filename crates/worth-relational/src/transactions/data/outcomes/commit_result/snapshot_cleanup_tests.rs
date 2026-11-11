@@ -14,7 +14,7 @@ fn result_snapshot_cleanup_refuses_an_actual_admitted_runtime_copy() {
     };
     let host = crate::test_execution_policy::serial_request();
     let execution = &ExecutionRequest::serial(&host);
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     let result = std::sync::Arc::new(create_entity_outcome(
         execution,
         &runtime,
@@ -61,7 +61,7 @@ fn result_snapshot_cleanup_refuses_an_actual_admitted_runtime_copy() {
 fn native_custody_correction_result_cleanup_is_explicit_idempotent_and_keeps_external_read() {
     let host = crate::test_execution_policy::serial_request();
     let execution = &ExecutionRequest::serial(&host);
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     let result = std::sync::Arc::new(create_entity_outcome(execution, &runtime, "owned-result"));
     let cloned = result.clone();
     let service = runtime.owner_component_services().basis_port();
@@ -109,7 +109,7 @@ fn native_custody_correction_result_cleanup_is_explicit_idempotent_and_keeps_ext
 fn native_custody_correction_result_release_cell_tracks_public_release_closeout_and_transfer() {
     let host = crate::test_execution_policy::serial_request();
     let execution = &ExecutionRequest::serial(&host);
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     let service = runtime.owner_component_services().basis_port();
     let normal = create_entity_outcome(execution, &runtime, "normal-explicit-release");
     runtime
@@ -152,8 +152,8 @@ fn native_custody_correction_result_release_cell_tracks_public_release_closeout_
 fn native_custody_correction_result_cleanup_refuses_foreign_and_private_altered_pairing() {
     let host = crate::test_execution_policy::serial_request();
     let execution = &ExecutionRequest::serial(&host);
-    let runtime = durable_runtime_with_test_schema();
-    let foreign = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
+    let foreign = runtime_with_test_schema();
     let result = create_entity_outcome(execution, &runtime, "original-registration");
     assert!(matches!(
         foreign

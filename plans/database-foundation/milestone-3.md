@@ -203,6 +203,119 @@ Landing 2a adapter closure (lane P-A, merged at `e4d3b01c8d`) moved these Native
 
 #### C4 - Injected faults
 
+Integration protocol restoration refresh (same per-claim disposition; no retired campaign is remounted):
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore/reuse_tests.rs`
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/durability/log/native_checkpoint_codec/kind_authentication_tests.rs`
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/history/commit/envelope_residency_tests.rs`
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/storage/residency/cross_region_forgery_tests.rs`
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/tests/durability/contracts/derived_index_checkpoint/artifact_affinity.rs`
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/tests/durability/contracts/semantic_result/custom_versions.rs`
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/tests/support/durability/canonical_commit_frame.rs`
+Restore the complete same-SHA `crates/worth-relational/src` tree, including original parent mounts, fixture/control/support/producer and reconstruction-lane dependencies. Preserve every original assertion/input/contrast and genuinely owned source boundary when migrating the campaign; never revive runtime_attachment discovery. These references retain integration revisions to the already moved private cost/fault families. Ordinary source functionality remains in the public counterparts.
+
+
+Custom enforcement decision corruption retains its full original campaign:
+- C4 full original semantic_result_preserves_custom_enforcement_version_distinct_from_aggregate_request, including callback tuple indices, exact decision rewrite, outer reseal and ValidationMismatch refusal: `f9a53a5d17e01562d503b39b4627252bb63d8639:crates/worth-relational/src/tests/durability/contracts/semantic_result/custom_versions.rs`, with OnePlannedEntity in that file, original semantic_result.rs/contracts/mod.rs parents and `f9a53a5d17e01562d503b39b4627252bb63d8639:crates/worth-relational/src/tests/support/durability/canonical_commit_frame.rs`.
+
+Each restore includes the complete immutable shared fixture/control trees `f9a53a5d17e01562d503b39b4627252bb63d8639:crates/worth-relational/src/tests/support.rs`, `f9a53a5d17e01562d503b39b4627252bb63d8639:crates/worth-relational/src/tests/support`, plus direct owner/canonical/control ancestors from `f9a53a5d17e01562d503b39b4627252bb63d8639:crates/worth-relational/src`. Preserve complete original claims/arming/observations when restoring through genuinely owned source boundaries; never revive the runtime-discovery adapter. Copy these exact entries into the spec before removing original roots.
+
+
+The original rewrite/reseal setup in
+`durability_contract_replays_merge_from_typed_authority_when_diagnostics_are_absent`
+retains its complete callback and all original guards: restore from
+`622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src/tests/durability/contracts/merge_replay_continuity.rs`,
+with the same-SHA `tests/support.rs`, complete `tests/support` tree and exact
+`history/data/canonical_commit_envelope` owner/control closure recorded in C2.
+Its actual ordinary source readmission/typed-authority/whole-DATA counterpart is
+`durable_publication/checkpoint_merge_continuity.rs`. Never revive the retired
+runtime-discovery adapter to restore the original rewritten source campaign.
+
+
+Additional orphan control closure for the moved transition/publication campaigns:
+restore `86e84dc5cd:crates/worth-relational/src/branch/transition/publication_pause_for_test.rs`
+with its fields, initialization, arming door and pause call in same-SHA
+`branch/transition/durable_step.rs`. Restore the complete local scripted-answer
+fixture from same-SHA `tests/support/durable_medium.rs` and
+`tests/support/durable_medium/{scripted_publication,journal,transition_journal,transition_contents}.rs`.
+These controls lost every arming caller with the moved C4 roots. Their complete
+original behavior remains required on restoration through genuine owned media;
+the ordinary next-position/sequence and identical-retry rules stay live unchanged.
+
+
+Remaining pure cleanup roots (per-claim Landing 2a disposition):
+
+- C4: `branch_root_image_versions_refuse_before_restoration_and_current_recovers`,
+  introduced on the authorized integration base: restore the complete unsupported
+  version mutation/refusal/current-format control from
+  `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/tests/durability/contracts/branch_root_checkpoint/unsupported_root_version.rs`,
+  its same-SHA `branch_root_checkpoint.rs` parent and complete
+  `crates/worth-relational/src` fixture/codec/authority closure. This is the original
+  private malformed-plan campaign; ordinary current-format public recovery
+  remains mounted in `checkpoint_branch_targets.rs`.
+
+
+- `durability_contract_failure_missing_authoritative_parent_closure_is_explicit`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/durability/contracts/rejected_and_parent_closure.rs`.
+- `durable_fork_and_source_commit_complete_without_deferral` (also retains its original C2 cost/custody guards): `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/durability/medium/branch_transition_races.rs`.
+- `durable_fork_and_source_archive_complete_in_lock_order` (also retains its original C2 cost/custody guards): `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/durability/medium/branch_transition_races.rs`.
+- `durable_fork_waits_for_another_branch_commit` (also retains its original C2 cost/custody guards): `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/durability/medium/branch_transition_races.rs`.
+- `memory_commit_waits_behind_a_transition_without_consuming_its_candidate` (also retains its original C2 cost/custody guards): `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/durability/medium/branch_transition_races.rs`.
+- `divergent_mirror_partition_rebuilds_cross_partition_adjacency_after_reuse` (also retains its original C2 cost/custody guards): `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore_tests.rs`.
+- `equal_image_cannot_bypass_global_contract_readmission`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore_tests.rs`.
+- `forged_cross_region_kind_commitment_is_refused_before_member_reads`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/durability/log/native_checkpoint_codec/kind_authentication_tests.rs`.
+- `an_indexed_envelope_storage_failure_is_typed_and_sticky`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/envelope_residency_tests.rs`.
+- `replay_commit_reports_strategy_executor_unavailable_when_recovered_runtime_lacks_executor`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/commit_strategies/facade_tests/replay_recovery_failures.rs`.
+- `replay_commit_reports_strategy_execution_failure_when_recovered_executor_rejects`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/commit_strategies/facade_tests/replay_recovery_failures.rs`.
+- `restore_refuses_unknown_fields_before_publishing_any_model_state`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/durability/log/native_checkpoint_codec/inspection/tests.rs`.
+- `rehashed_cross_region_kind_forgery_is_refused_by_the_canonical_root`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/storage/residency/cross_region_forgery_tests.rs`.
+- `refused_durable_publication_leaves_no_replacement_lineage_behind`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/lineage/resolution.rs`.
+- `managed_fork_refusal_and_success_drop_lookup_outside_native_coordination` (also retains its original C2 cost/custody guards): `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/branch/coordination/managed_fork_cleanup.rs`.
+- `fintech_recovery_refuses_a_damaged_checkpoint_instead_of_losing_truth`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/domains/fintech/workflows/persistence/checkpoint_fallback.rs`.
+  Restore each root's complete same-SHA parent/descendant fixture and control
+  closure, including its original local medium script and owner units; migrate
+  the source boundary through genuine owned media without reviving the retired
+  runtime-discovery adapter. All original guards remain required.
+
+  The inert lock-order control is deleted completely. Restore its full arming,
+  observations, fields and call sites from `f9f15bf8c8:crates/worth-relational/src/runtime/state/subsystems/canonical_publication_routes/lifecycle_order_control.rs`,
+  with the same-SHA `canonical_publication_routes.rs` owner and its
+  `canonical_publication_routes/{branch_transition_stream,checkpoint_admission}.rs`
+  call sites when restoring the original lock-order campaigns.
+
+
+- Associated-original missing-route and dropped-unrelated-body campaign parts:
+  `associated_effects_refuse_memory_and_absent_settlement_evidence` and
+  `associated_effects_discover_cold_subject_without_reading_unrelated_history`:
+  `restore from 0615dd733c:crates/worth-relational/src/tests/durability/contracts/associated_effects.rs`.
+  Restore the exact route removal / unrelated-artifact deletion and their
+  original refusals or successful selected-body guards with `perform` fixture.
+- `native_custody_correction_enumerates_known_orphan_and_unrelated_association_metadata`,
+  actual three-body deletion followed by successful metadata enumeration:
+  `restore from 0615dd733c:crates/worth-relational/src/tests/durability/contracts/associated_effects_discovery.rs`.
+- `caller_association_survives_embedded_checkpoint_and_refuses_old_semantics`,
+  both original `CHK13`/`CHK14` mutations and exact `UnsupportedLegacySemantics`:
+  `restore from 0615dd733c:crates/worth-relational/src/tests/durability/contracts/caller_association.rs`.
+  The positive actual embedded original association/re-encoding assertion stays
+  as a genuine Memory owner codec unit.
+- `recorded_component_checkpoint_readmits_cold_canonical_predecessor_and_successor`,
+  `recorded_component_checkpoint_readmits_original_empty_predecessor`, and
+  `recorded_original_retirement_preserves_both_leases_across_busy_and_stop`,
+  injected unrelated-artifact deletion parts:
+  `restore from 0615dd733c:crates/worth-relational/src/tests/durability/contracts/recorded_component_checkpoint.rs`.
+  Restore complete same-SHA `original_custody`/original capture/recovery fixtures
+  and successful selected readmission guards, coordinated with C2's physical
+  custody/release portions. Public ordinary readmission is separately retained.
+
+
+- `refused_durable_transition_returns_its_authority_and_moves_nothing` and
+  `unresolved_durable_transition_installs_nothing_and_names_its_fate`:
+  `restore from e4d3b01c8d:crates/worth-relational/src/durability/authority/checkpoint_transition/tests.rs`.
+  C4 retains the actual ProvenNoEffect/Indeterminate scripts, exact original
+  offered fate, authority return/retry and no-effect guards with the same-SHA
+  `recovered_world`, `candidate`, `main_basis` fixtures. Restore without the
+  deleted local provider/discovery adapters. Ordinary transition ownership
+  remains covered through `checkpoint_successor_authority.rs` public courts.
+
+
 - `checkpoint_recovery_rejects_foreign_branch_target_substitution`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_checkpoint/foreign_targets.rs`.
 - `tail_recovery_rejects_foreign_branch_target_substitution`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_checkpoint/foreign_targets.rs`.
 - `checkpoint_recovery_rejects_missing_exact_branch_root_artifact`: `restore from f9f15bf8c8:crates/worth-relational/src/tests/durability/contracts/branch_root_checkpoint.rs`.
@@ -370,6 +483,194 @@ Landing 2a adapter closure (lane P-A, merged at `e4d3b01c8d`) moved these Native
   weakened fault assertions.
 
 #### C2 - Cost and bounds: backing and work budgets
+
+Integration protocol restoration refresh (same per-claim disposition; no retired campaign is remounted):
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore_tests.rs`
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore/reuse_tests.rs`
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/history/commit/artifact_tests.rs`
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/history/commit/envelope_residency_tests.rs`
+- `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/runtime/state/subsystems/services/symbol_table/reservations/tests.rs`
+Restore the complete same-SHA `crates/worth-relational/src` tree, including original parent mounts, fixture/control/support/producer and reconstruction-lane dependencies. Preserve every original assertion/input/contrast and genuinely owned source boundary when migrating the campaign; never revive runtime_attachment discovery. These references retain integration revisions to the already moved private cost/fault families. Ordinary source functionality remains in the public counterparts.
+
+
+Generation selection private counter remainder:
+Generation case retains original two pre-recovery and two post-recovery definitions, nonreuse identity/generation inequalities, pinned old vs new field values, exact observed generation and candidate entity ids. Only exact generation_payload_reads delta1 and history_inventory_entries delta0 leave the functional case for C2; no public cost proxy. Complete immutable original at `14b6075657193d0f74ce944beab6124b5dec7b3c:crates/worth-relational/src/tests/query/indexes/generation_identity_recovery.rs`, plus same-SHA indexes/mod.rs, tests/support.rs, complete tests/support tree and complete `crates/worth-relational/src` implementation/control closure, preserving original counters/arming/input contrasts when restored through genuine owned source infrastructure; never restore runtime_attachment.
+
+
+Fresh admission private source/root/schema custody remainder:
+Full original fresh_source_keeps_actual_runtime_root_and_installed_schema_for_complete including source_plan, all root/schema/source Arc identities, retained-empty/schema registry assertions, unused constraints and wrong receipts at `5d37a209ee227fdef639cbec2c438d82396a7209:crates/worth-relational/src/durability/authority/fresh_source/tests.rs`; restore same-SHA fresh_source.rs/directory, tests/support.rs and complete tests/support tree, direct durability/runtime/schema control/source ancestors. Preserve original arming/observations; never restore runtime_attachment discovery. This is a C2 split under the coordinator per-claim ruling.
+
+
+Pinned-reader restoration private remainders:
+
+Full original native_restore_work_counts_revised_history_sibling_roots_and_partition_images and divergent_sibling_is_not_reused_as_the_storage_mirror including shares_first_generation/shares_partition_generation: `5b18804fbd34c814d69aefd527653b11e3d2da59:crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore_tests.rs`. Restore the same-SHA runtime_rebuild.rs and runtime_rebuild directory, `crates/worth-relational/src/tests/support.rs`, complete tests/support tree, and direct durability/history/runtime source/control ancestors. Preserve every section/work/directory/partition and pointer comparison, complete original arming/observations. Restore through genuinely source-owned infrastructure; never resurrect runtime_attachment discovery.
+
+
+Capture, dictionary and lineage private remainders:
+
+All these original roots and fixtures are unchanged at f9a53a5d17e01562d503b39b4627252bb63d8639:
+
+- C2 full original native_checkpoint_retains_all_admitted_capture_owners_and_restores_editable_truth, including zero/cancel/retained-grant pressure and every owner/charge/pointer/section assertion: `f9a53a5d17e01562d503b39b4627252bb63d8639:crates/worth-relational/src/tests/durability/contracts/native_checkpoint/allocation.rs` with request() in that file and its original native_checkpoint.rs/contracts/mod.rs parents.
+- C2 full original unpublished_client_keys_leave_checkpoint_dictionary_equal_and_published_keys_restore, including before/after symbol and record frontiers, all image equality/normalization and actual symbol demand/membership: `f9a53a5d17e01562d503b39b4627252bb63d8639:crates/worth-relational/src/tests/durability/contracts/native_checkpoint/speculative_symbols.rs`, same original parents.
+- C2 full original checkpoint_restore_protects_published_lineage_identities_in_each_lane and inflight_tail_replay_resumes_after_the_largest_durable_lineage_values, including RestoreLane/discard_after_a_durable_anchor, exact live/discarded/recovered frontiers, cold directory/empty nodes, and tail_log.len()==1: `f9a53a5d17e01562d503b39b4627252bb63d8639:crates/worth-relational/src/tests/durability/medium/lineage_frontiers.rs` and original medium/mod.rs parent.
+
+Each restore includes the complete immutable shared fixture/control trees `f9a53a5d17e01562d503b39b4627252bb63d8639:crates/worth-relational/src/tests/support.rs`, `f9a53a5d17e01562d503b39b4627252bb63d8639:crates/worth-relational/src/tests/support`, plus direct owner/canonical/control ancestors from `f9a53a5d17e01562d503b39b4627252bb63d8639:crates/worth-relational/src`. Preserve complete original claims/arming/observations when restoring through genuinely owned source boundaries; never revive the runtime-discovery adapter. Copy these exact entries into the spec before removing original roots.
+
+Index, merge, bulk and empty-head private remainders:
+
+All original nine roots are unchanged at622f101e99a3bda26132bebf19c2f3c318a7b6f3. Use that immutable revision for every referenced tree; no moving HEAD is a restore authority.
+
+- C2, `checkpoint_index_artifact_survives_tail_replay_without_envelope_caches`: exact `derived_index_artifacts.is_empty()` and `derived_index_checkpoint_format == 2`, restore from `622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src/tests/durability/contracts/derived_index_checkpoint.rs`. Fixture closure is its original name_index/build/build_on_branch definitions in that same file, its original `contracts/mod.rs` parent, and the immutable support tree below.
+- C2/C4, `durability_contract_replays_merge_from_typed_authority_when_diagnostics_are_absent`: exact populated-versus-omitted authoritative_nested_bytes comparison and original rewrite_commit_envelope callback/resealed frame, restore from `622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src/tests/durability/contracts/merge_replay_continuity.rs`. Fixture closure is the original `contracts/mod.rs` parent, support tree below (especially durable_medium/tamper.rs), and `622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src/history/data/canonical_commit_envelope/control_allocation.rs` with its same-SHA parent module. Restore the complete callback, including authority take/restore and empty-diagnostic assertion, rather than a no-op or count proxy.
+- C2, `semantic_result_bulk_entities_and_relations_seal_and_readmit_original_bindings`: actual readmitted envelope symbol_texts dictionary contains bulk-input-00 under original PreferInterned producer, restore from `622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src/tests/durability/contracts/semantic_result/bulk.rs`. Fixture closure includes publication() in that file, `622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src/tests/durability/contracts/semantic_result.rs`, its original parent and immutable support tree below.
+- C2, `durability_contract_empty_checkpoint_restores_a_live_retained_head`: exact head_installs == 1, restore from `622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src/tests/durability/contracts/checkpoint_recovery/empty_head.rs`. Fixture closure is `622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src/tests/durability/contracts/checkpoint_recovery.rs`, its original parent and immutable support tree below.
+
+Shared exact fixture/control trees: `622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src/tests/durability/contracts/mod.rs`, `622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src/tests/support.rs`, and `622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src/tests/support` (complete runtime/schema/records/aspect/history/owner-input/durability/local-medium descendants). All production owner controls and direct parents come from the same immutable `622f101e99a3bda26132bebf19c2f3c318a7b6f3:crates/worth-relational/src` tree. On restoration migrate source boundaries through genuine owned media, preserving every original assertion and arming/observation/control closure; never revive runtime-discovery adapter authority. These original private claims remain required at their restoration courts; their nine public functional counterparts stay mounted.
+
+
+- Exact old-layout portion of `memory_frame_preserves_original_payload_and_scalar_tuple_observations`:
+  `restore from 86e84dc5cd:crates/worth-relational/src/history/commit/envelope_residency/memory_publication_tests.rs`.
+  Restore the original complete OldBacking (both variants and order), OldState,
+  OldCell, original Memory construction/drop diagnostic and both exact size
+  assertions with the same-SHA parent type imports. The functional original
+  Memory payload length, digest, real backing and full-frame/payload distinction
+  remain in the mounted genuine owner unit. Never delete the Journal variant
+  to fit a smaller layout oracle; this physical comparison belongs to C2.
+
+
+Remaining pure cleanup roots (per-claim Landing 2a disposition):
+
+- C4: `branch_root_image_versions_refuse_before_restoration_and_current_recovers`,
+  introduced on the authorized integration base: restore the complete unsupported
+  version mutation/refusal/current-format control from
+  `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/tests/durability/contracts/branch_root_checkpoint/unsupported_root_version.rs`,
+  its same-SHA `branch_root_checkpoint.rs` parent and complete
+  `crates/worth-relational/src` fixture/codec/authority closure. This is the original
+  private malformed-plan campaign; ordinary current-format public recovery
+  remains mounted in `checkpoint_branch_targets.rs`.
+
+
+- `positioned_agreement_uses_original_work_budget_and_preserves_authoritative_digest`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/durability/contracts/canonical_commit_artifact.rs`.
+- `native_custody_correction_last_actual_capture_abandonment_releases_shared_root_custody`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/durability/data/native_checkpoint/component_custody/tests.rs`.
+- `equal_exact_root_reuses_the_readmitted_partition_substrate`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore_tests.rs`.
+- `native_custody_correction_cross_lane_acquire_release_has_one_actual_capture_cut`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/retention/component_cut_tests.rs`.
+- `native_custody_correction_current_lane_inventory_is_collected_inside_actual_cut`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/retention/component_cut_tests.rs`.
+- `an_indexed_envelope_remains_cold_until_explicit_readmission_and_loads_once`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/envelope_residency_tests.rs`.
+- `relinking_other_envelopes_preserves_an_index_even_while_its_body_is_in_flight`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/envelope_residency_tests.rs`.
+- `settlement_releases_a_journal_flight_but_preserves_memory_history_and_position`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/envelope_residency_tests.rs`.
+- `positioned_demand_owns_its_result_across_journal_settlement`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/envelope_residency_tests.rs`.
+- `journal_publication_keeps_journal_placement_without_memory_frame`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/envelope_residency/memory_publication_tests.rs`.
+- `canonical_artifact_accounting_excludes_nested_diagnostic_perturbation`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/artifact_tests.rs`.
+- `populated_derived_index_artifacts_only_change_the_optional_cache_lane`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/artifact_tests.rs`.
+- `strategy_input_clone_retains_only_its_original_decoded_bytes_grant`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/artifact_tests/strategy_readmission.rs`.
+- `strategy_descriptor_clone_retains_only_its_original_decoded_locator_grant`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/artifact_tests/strategy_readmission.rs`.
+- `shared_readmitted_envelope_clones_keep_the_original_allocation_and_grant_until_last_drop`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/artifact_tests/shared_readmission.rs`.
+- `actual_weak_position_retains_only_the_fixed_original_control_bill_until_last_drop`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/artifact_tests/shared_readmission.rs`.
+- `embedded_checkpoint_preserves_ignored_unknown_nested_fields_without_retaining_their_heaps`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/history/commit/artifact_tests/shared_readmission.rs`.
+- `result_snapshot_cleanup_registry_contention_preserves_exact_cell_and_competing_task`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/runtime/state/subsystems/visibility/snapshot_handles/published_registry/original_cleanup/tests.rs`.
+- `checkpoint_recovery_preserves_abandoned_symbol_identity_frontiers`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/runtime/state/subsystems/services/symbol_table/reservations/tests.rs`.
+- `seeking_past_an_acknowledged_index_prefix_never_demands_its_journal_bodies`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/durability/canonical_commit_artifact/retained_export/skip_tests.rs`.
+- `structural_identity_recovery_preserves_current_evidence_and_queries`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/inspection/structural_identity.rs`.
+- `complexity_budget_schema_transition_classification_is_changed_atom_bounded`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/complexity/contracts/commit_budgets/schema_continuity_boundaries.rs`.
+- `complexity_budget_subscriber_resume_continuity_is_boundary_local`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/complexity/contracts/commit_budgets/schema_continuity_boundaries.rs`.
+- `complexity_budget_milestone5_closeout_keeps_schema_cdc_and_recovery_boundary_local`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/complexity/contracts/commit_budgets/schema_continuity_boundaries.rs`.
+- `complexity_budget_merge_planning_reports_request_shaped_work`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/complexity/contracts/merge_budgets.rs`.
+- `complexity_budget_merge_execution_reports_admitted_records_and_emitted_mutations`: `restore from 86e84dc5cd738882bf50fced389fc7deaa31567f:crates/worth-relational/src/tests/complexity/contracts/merge_budgets.rs`.
+  Restore each root's complete same-SHA parent/descendant fixture and control
+  closure, including its original local medium script and owner units; migrate
+  the source boundary through genuine owned media without reviving the retired
+  runtime-discovery adapter. All original guards remain required.
+
+  The merge execution root's four public semantic assertions remain in
+  `merge_source_copy_identity.rs::source_only_merge_emits_one_new_entity_with_an_independent_identity`.
+  C2 restores its full original cost/contract campaign and fixture closure.
+
+
+B2 schema/history consumer split (coordinator per-claim Landing 2a ruling):
+
+- `durability_contract_recovery_rebuilds_branch_head_root_obligations` — restore from `df2420390ecdbf870bbc47384ba45bddee5c5359:crates/worth-relational/src/tests/durability/contracts/retention_inspection_store.rs`: exact active-snapshot and branch pin census.
+- `durability_contract_recovery_preserves_inspection_truth_bundle` — restore from `df2420390ecdbf870bbc47384ba45bddee5c5359:crates/worth-relational/src/tests/durability/contracts/retention_inspection_store.rs`: retention_summary and record_retention fields of the complete original bundle; keep all original producer and inspection helpers.
+- `tail_replay_consumes_canonical_reused_record_allocation` — restore from `df2420390ecdbf870bbc47384ba45bddee5c5359:crates/worth-relational/src/tests/durability/contracts/record_allocation_recovery.rs`: exact reclaim limit, one reusable slot, same local slot and incremented generation; public current/historical truth is ported.
+- `durability_certification_recovery_authority_continuity_is_explained_and_counted` — restore from `df2420390ecdbf870bbc47384ba45bddee5c5359:crates/worth-relational/src/tests/durability/contracts/descriptor_continuity.rs`: exact digest-parity and mismatch counters, alongside original diagnostic producer.
+- `durable_recovery_and_schema_mismatch_test` — restore from `df2420390ecdbf870bbc47384ba45bddee5c5359:crates/worth-relational/src/tests/durability/contracts/schema_transition_continuity.rs`: actual recovered digest-parity work counter; all semantic descriptor and refusal assertions stay public.
+- `native_field_text_checkpoint_then_tail_recovers_exact_json_after_original_owners_drop` — restore from `df2420390ecdbf870bbc47384ba45bddee5c5359:crates/worth-relational/src/tests/durability/contracts/managed_field_text.rs`: exact Symbol representation, charged managed payload and System client-key custody; retain read_exact and original request policy closure.
+
+- Fixture closure for `recorded_original_retirement_preserves_both_leases_across_busy_and_stop`:
+  `restore from 0615dd733c:crates/worth-relational/src/history/retention/lane/retained_release/tests.rs`
+  (`assert_recovered_cut_and_lane_busy`), with its same-SHA exact re-export lines
+  in `history/retention/mod.rs`, `history/retention/lane.rs`, and
+  `history/retention/lane/retained_release.rs`. Its final caller moved to C2;
+  the other external-cut fixture remains live. The original source tests above
+  also reference the same-SHA local-medium `head`, `transition_head`,
+  `drop_artifact` and journal `remove` fixtures. Restore those physical/fault
+  observations through the actual owner/provider, without reviving adapters.
+
+- Associated-original checkpoint metadata/body nonresidency portions:
+  `associated_effects_discover_cold_subject_without_reading_unrelated_history`
+  (`restore from 0615dd733c:crates/worth-relational/src/tests/durability/contracts/associated_effects.rs`)
+  and `native_custody_correction_enumerates_known_orphan_and_unrelated_association_metadata`
+  (`restore from 0615dd733c:crates/worth-relational/src/tests/durability/contracts/associated_effects_discovery.rs`).
+  C2 preserves the exact per-cell before/after resident census, with original
+  same-SHA fixture closure. Actual metadata/semantic-result behavior stays in
+  public `association_checkpoint_journeys.rs`.
+- `caller_association_bounds_and_rebinding_refuse_without_retaining_publication`
+  (pending allocation/route census) and
+  `caller_association_survives_cold_checkpoint_history_and_journal_tail`
+  (selected directory, journal absence and cold-body posture):
+  `restore from 0615dd733c:crates/worth-relational/src/tests/durability/contracts/caller_association.rs`.
+  Restore original `propose`/`publish` fixture closure for those physical claims.
+  Wire/bounds and embedded original codec remain Native value units; all public
+  binding and cold original-frame equality remains in `caller_association_journeys.rs`.
+- `recorded_component_checkpoint_readmits_cold_canonical_predecessor_and_successor`
+  and `recorded_component_checkpoint_readmits_original_empty_predecessor`,
+  private resident/cold-root and full physical-root demand portions;
+  `recorded_component_checkpoint_omits_released_components_and_plain_observations`
+  (whole retained-root census) and
+  `recorded_original_retirement_preserves_both_leases_across_busy_and_stop`
+  (whole private pin/release/stop accounting campaign):
+  `restore from 0615dd733c:crates/worth-relational/src/tests/durability/contracts/recorded_component_checkpoint.rs`.
+  Restore `original_custody`, `Original`, capture/recovery and retirement fixtures
+  at the same SHA. C2 must supply honest public pin/allocation observations;
+  never revive the local provider adapters. The Canonical/Empty original
+  descriptors, readable snapshots after maintenance, semantic result,
+  historical-currentness refusal and no-republication guards stay public in
+  `recorded_original_checkpoint_journeys.rs`. The actual unrelated-body deletion
+  remains a C4 component of this original campaign, as listed below.
+- `a_recovered_runtime_publishes_its_next_commit_at_the_next_position`,
+  original/reopened cold-source allocation pointer identity only:
+  `restore from 0615dd733c:crates/worth-relational/src/tests/durability/medium/recovered_publication.rs`.
+  Public source bytes/limits and actual recovered originals, receipt/coverage,
+  no recovery publication, next ID/parent/position and second reopen remain in
+  `medium_recovered_continuation.rs`.
+- `checkpoint_size_tracks_branch_state_not_covered_transitions`, manifest
+  growth bound and covered resident-log release portions:
+  `restore from 0615dd733c:crates/worth-relational/src/tests/durability/contracts/branch_transition/checkpoint_state.rs`.
+  Restore both exact 32-branch lifecycle scripts, 64/128 counts, captured
+  sequences, empty covered logs and `through_archive_and_pending_deletion <= direct + 32`.
+  The same lifecycle inputs and exact recovered sequence continuation stay
+  public in `checkpoint_transition_continuation.rs`.
+
+
+- `checkpoint_recovery_readmits_shared_root_once_for_sibling_heads`, physical
+  single image and exact readmitted Root pointer sharing:
+  `restore from e4d3b01c8d:crates/worth-relational/src/tests/durability/contracts/branch_root_checkpoint.rs`.
+  C2 restores the original fixture closure; the two readable branch contents
+  and equal admitted targets remain public in `checkpoint_branch_targets.rs`.
+- `durability_contract_checkpoint_tail_recovery_preserves_post_checkpoint_commits`,
+  exact retained envelope census and original partition-image backing pointer:
+  `restore from e4d3b01c8d:crates/worth-relational/src/tests/durability/contracts/checkpoint_recovery.rs`.
+  C2 restores these original allocation assertions; exact checkpoint/tail
+  coverage, receipts and old envelope readability remain in public
+  `checkpoint_tail_and_indexes.rs`.
+- `acknowledged_transition_admits_only_its_exact_successor_and_releases_snapshot`,
+  `foreign_recovery_and_foreign_candidate_are_refused_before_effects`, and
+  `moved_source_and_stale_candidate_cannot_extend_recovery_lineage`, private
+  published/preparation snapshot-handle census portions only:
+  `restore from e4d3b01c8d:crates/worth-relational/src/durability/authority/checkpoint_transition/tests.rs`.
+  Restore the original same-SHA fixture closure for C2 allocation/custody
+  observation. All exact public authority admission/refusal/retry and unchanged
+  descriptors/counts remain in `checkpoint_successor_authority.rs`.
+
 
 - `controlled_resident_cell_keeps_exact_charge_until_last_real_weak` and
   `controlled_resident_cell_refuses_exact_control_before_any_new_arc`:

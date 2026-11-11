@@ -214,6 +214,11 @@ The existing owner funds Full materialization from that request; an unavailable
 retained basis returns `HistoricalVisibilityDenial` rather than inferred absence.
 Exact owner-issued observations remain readable through `read_observation`.
 
+Native platform diagnostics inspect publication-medium ownership through
+`runtime.durability().has_bound_durable_medium()`. A fork can return false while
+retaining its original cold readers and transition history. This immutable
+observation leaves operation admission with the owning ports.
+
 Native index DATA inspection uses the projection's request-aware
 `bounded_index_relations_for_frontier`. It includes audit-retained edges under
 the same visibility rule as index maintenance; ordinary frontier queries retain

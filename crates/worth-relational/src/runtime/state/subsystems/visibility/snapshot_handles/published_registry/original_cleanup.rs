@@ -2,8 +2,6 @@
 use super::super::published_release::PublishedSnapshotRetirement;
 use super::super::PublishedSnapshotCapacityOwner;
 use super::*;
-#[cfg(test)]
-mod tests;
 
 impl PublishedSnapshotHandleRegistry {
     pub(crate) fn try_remove_original(

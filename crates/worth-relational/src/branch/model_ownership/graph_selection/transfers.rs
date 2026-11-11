@@ -62,15 +62,15 @@ pub(super) fn prepare(
                 .current_entities()
                 .difference(entities.selected_entities())
             {
-                if read.kind(entity)?.is_some() {
-                    if let Some(owner) = installed.owner(read, entity)? {
-                        read.retain()?;
-                        selected.insert(entity);
-                        read.retain()?;
-                        transferred.insert(entity, owner);
-                        read.retain()?;
-                        participants.insert(entity);
-                    }
+                if read.kind(entity)?.is_some()
+                    && let Some(owner) = installed.owner(read, entity)?
+                {
+                    read.retain()?;
+                    selected.insert(entity);
+                    read.retain()?;
+                    transferred.insert(entity, owner);
+                    read.retain()?;
+                    participants.insert(entity);
                 }
             }
             for (&entity, before) in &current_edges {
@@ -104,16 +104,18 @@ pub(super) fn prepare(
                         read.retain()?;
                         selected.insert(entity);
                     }
-                    if !entities.selected_entities().contains(&entity) {
-                        if let Some(owner) = installed.owner(read, entity)? {
-                            if !transferred.contains_key(&entity) {
-                                read.retain()?;
-                                transferred.insert(entity, owner);
-                            }
-                            if !participants.contains(&entity) {
-                                read.retain()?;
-                                participants.insert(entity);
-                            }
+                    if !entities.selected_entities().contains(&entity)
+                        && let Some(owner) = installed.owner(read, entity)?
+                    {
+                        if let std::collections::btree_map::Entry::Vacant(entry) =
+                            transferred.entry(entity)
+                        {
+                            read.retain()?;
+                            entry.insert(owner);
+                        }
+                        if !participants.contains(&entity) {
+                            read.retain()?;
+                            participants.insert(entity);
                         }
                     }
                 }

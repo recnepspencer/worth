@@ -83,7 +83,7 @@ impl PreparationInvariantAuthority<'_> {
     ) -> Result<InvariantExecutionResult, TransactionCommitError> {
         let result = self.execute(
             InvariantRequestProfile::ProposedState,
-            &selected,
+            selected,
             working,
             pending,
             Some(created_entities),
