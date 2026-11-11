@@ -1,7 +1,0 @@
-{
-  "path": "\\\\?\\C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\workspaces\\worth-query\\crates\\worth-query-execution\\src\\domain_computation\\primary_graph\\application_checkpoint\\capture.rs",
-  "original_sha256": "65c4f37ad4efe0a2c2118ce51812e8c021cd0901d979cfa14380cf144c371303",
-  "diagnostic_sha256": "d97c90b24f8a254d2a352072cc5cad09f10aac10b01fa634f04d7aee7f11e54f",
-  "restore": "exact saved bytes; no operational observer or provider added",
-  "restored_sha256": "65c4f37ad4efe0a2c2118ce51812e8c021cd0901d979cfa14380cf144c371303"
-}

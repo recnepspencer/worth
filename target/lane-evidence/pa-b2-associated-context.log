@@ -1,8 +1,0 @@
-command: python scripts/application_build.py cargo run --manifest-path tools/agent-context/Cargo.toml -- check
-HEAD: 0615dd733c4949ec0a50804db2660d6b60295d3f
-git_status_short_empty: false
-start_utc: 2026-11-10T23:49:47.355974+00:00
-    Finished `dev` profile [optimized + debuginfo] target(s) in 0.06s
-     Running `tools\agent-context\target\debug\agent-context.exe check`
-end_utc: 2026-11-10T23:49:52.296078+00:00
-exit_code: 0

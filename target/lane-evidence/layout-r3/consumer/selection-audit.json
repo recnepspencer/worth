@@ -1,8 +1,0 @@
-[
-  {
-    "binary": "worth-query-consumer-root::bin/worth-query-consumer-root",
-    "test": "inline_type_sizes::application_carriers_stay_within_declared_inline_ceilings",
-    "ignored": false,
-    "selected": true
-  }
-]

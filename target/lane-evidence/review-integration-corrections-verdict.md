@@ -1,3 +1,0 @@
-1. **No material findings.** The scoped corrections preserve short-circuit effects, typed refusals, receiver-scoped TLS, reconstruction authority, Vec ownership/order, assertions, RNG behavior, and test contents. The medium move matches the index after Git newline normalization; one mount serves all three updated callers.
-
-**APPROVE — source only.** Existing clippy6 evidence records exit code 0. Runtime qualification remains pending. No builds, Cargo, tests, edits, or subagents were run.

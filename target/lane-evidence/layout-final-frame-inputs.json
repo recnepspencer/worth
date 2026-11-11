@@ -1,9 +1,0 @@
-{
-  "invariant_reads": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\target\\debug\\examples\\invariant_reads.exe",
-  "required_feature": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\target\\debug\\examples\\required_feature.exe",
-  "shared_execution": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\target\\debug\\examples\\shared_execution.exe",
-  "worth-query-consumer-root": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\target\\debug\\worth-query-consumer-root.exe",
-  "query-court": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\target\\debug\\deps\\worth_query_court_query_decl_host-fc76d5d87671959d.exe",
-  "bank": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query-bank-world\\target\\debug\\deps\\worth_query_bank_court_external_rail_server-345a21da29cfa8db.exe",
-  "root-court": "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\target\\debug\\deps\\worth_court_runtime_bridge-768a82338d8fbe94.exe"
-}

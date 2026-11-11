@@ -1,7 +1,0 @@
-fix(query): rebind original outbox contracts from installed meaning
-
-Keep persisted outbox DATA separate from its installed inbound contract. Match the original validated operation definition against the genuine installation catalog, retain typed rebind failures without hiding original fields, and require actual absence before returning no inbound contract.
-
-Use the installation testkit for the closed genuine contract profiles. Preserve raw decoder assertions and prove response-loss retries retain original meaning without another handler or rail call. This is the H8 rebinding prerequisite, not durable dispatch completion.
-
-Co-Authored-By: GPT-6.1 Sol <noreply@openai.com>

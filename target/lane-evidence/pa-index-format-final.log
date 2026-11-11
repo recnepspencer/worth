@@ -1,6 +1,0 @@
-command: cargo fmt -p worth-relational -p worth-court-relational-certification
-HEAD: 622f101e99a3bda26132bebf19c2f3c318a7b6f3
-git_status_short_empty: false
-start_utc: 2026-11-11T01:51:24.911565+00:00
-end_utc: 2026-11-11T01:51:36.216915+00:00
-exit_code: 0

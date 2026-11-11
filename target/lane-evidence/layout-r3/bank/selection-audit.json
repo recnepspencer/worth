@@ -1,8 +1,0 @@
-[
-  {
-    "binary": "worth-query-bank-court-external-rail-server::worth_query_bank_court_external_rail_server",
-    "test": "cost::inline_type_sizes::bank_workflow_carriers_stay_within_declared_inline_ceilings",
-    "ignored": false,
-    "selected": true
-  }
-]

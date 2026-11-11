@@ -1,8 +1,0 @@
-COMMAND: ["cargo", "fmt", "--manifest-path", "Cargo.toml", "-p", "worth-relational", "--", "--check"]
-HEAD: dbe3280daa804f95a9ec6375f85ae78d1cbcc6dd
-CLEAN: false
-START: 2026-11-08T19:52:48.410160+00:00
-ENV: removed stale external linker override; RUST_MIN_STACK unset in parent
-
-END: 2026-11-08T19:52:56.595792+00:00
-EXIT: 0

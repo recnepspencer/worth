@@ -1,9 +1,0 @@
---- a/crates/worth-court-relational-branch-reference-compile-time/tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/change_source_pass/selected_commit_mints_receipt.rs
-+++ b/crates/worth-court-relational-branch-reference-compile-time/tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/change_source_pass/selected_commit_mints_receipt.rs
-@@ -16,5 +16 @@
--    Some(
--        runtime
--            .mint_change_receipt(execution, selected, None)
--            .ok()?,
--    )
-+    runtime.mint_change_receipt(execution, selected, None).ok()

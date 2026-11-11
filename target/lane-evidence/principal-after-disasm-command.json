@@ -1,6 +1,0 @@
-[
-  "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/dumpbin.exe",
-  "/disasm:nobytes",
-  "/range:0x150FB5FD0,0x150FB6110",
-  "C:\\programming\\worth worktees\\worktrees\\m3-host-home\\workspaces\\worth-query\\crates\\worth-query-certification\\fixtures\\consumer_entry\\target\\debug\\deps\\worth_query_topology_entry-66cad83484de97d5.exe"
-]

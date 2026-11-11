@@ -1,6 +1,0 @@
-command: cargo fmt --package worth-relational --package worth-court-relational-certification
-HEAD: e4d3b01c8d32ae3135a4dc40aadd322f8e3906e1
-git_status_short_empty: false
-start_utc: 2026-11-10T22:36:13.624859+00:00
-end_utc: 2026-11-10T22:36:26.949884+00:00
-exit_code: 0

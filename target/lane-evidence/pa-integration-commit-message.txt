@@ -1,7 +1,0 @@
-Merge authorized M3 integration at 22e638d638
-
-Preserve funded cold-member reads alongside original custody retirement, public court assertions, and pinned C2/C4 restore closures. Correct the merged compiler and test-module seams without adding a public door or boundary allowance.
-
-Native regression packet: 58 pass, 0 fail. Public courts: 9 pass, 0 fail. Native and certification court all-target Clippy: zero warnings. Formatting, line caps and generated context pass. Remaining consumer and topology closure continues in this lane.
-
-Co-Authored-By: GPT-6.1 Sol <noreply@openai.com>

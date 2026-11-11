@@ -1,9 +1,0 @@
-{
-  "baseline": "deferred-geometry-native-round2-check.log",
-  "final": "h8-outbox-query-round4-check.log",
-  "baseline_distinct": 32,
-  "final_distinct": 32,
-  "added": [],
-  "removed": [],
-  "normalization": "checkout absolute/relative file paths and directory separators only"
-}

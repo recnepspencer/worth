@@ -1,8 +1,0 @@
-{
- "crates/worth-foundational/src/canonicalization/digest_slots/derived.rs": [
-  [
-   126,
-   "error: derefed type is same as origin"
-  ]
- ]
-}

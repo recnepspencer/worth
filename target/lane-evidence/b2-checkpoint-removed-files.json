@@ -1,5 +1,0 @@
-[
-  "crates/worth-relational/src/tests/durability/contracts/branch_root_checkpoint.rs",
-  "crates/worth-relational/src/tests/durability/contracts/branch_transition/recovery.rs",
-  "crates/worth-relational/src/durability/authority/checkpoint_transition/tests.rs"
-]
