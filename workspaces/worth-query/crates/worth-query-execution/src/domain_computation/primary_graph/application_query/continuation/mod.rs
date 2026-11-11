@@ -188,8 +188,7 @@ fn map_authorized_read_denial(
             WorthQueryApplicationContinuationDenialKind::StalePrincipal,
             subject.to_string(),
         ),
-        WorthQueryAuthorizedApplicationReadDenial::StaleScope
-        | WorthQueryAuthorizedApplicationReadDenial::StaleBasisScope => (
+        WorthQueryAuthorizedApplicationReadDenial::ScopeFreshness(_) => (
             WorthQueryApplicationContinuationDenialKind::StaleScope,
             subject.to_string(),
         ),

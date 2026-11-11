@@ -200,7 +200,8 @@ pub use super::application_query::{
     WorthQueryManagedIndexWatch, WorthQueryManagedIndexWatchOutcome,
     WorthQueryManagedIndexWatchUpdate, WorthQueryManagedIndexWorkDenial,
     WorthQueryObservedResultSet, WorthQueryObservedSource, WorthQueryPendingSourceExpectation,
-    WorthQueryPrimaryGraphApplicationReadinessSnapshot, WorthQuerySourceExpectationDenial,
+    WorthQueryPrimaryGraphApplicationReadinessSnapshot, WorthQueryScopeFreshnessCheck,
+    WorthQueryScopeFreshnessDiagnostic, WorthQuerySourceExpectationDenial,
     WorthQuerySourceExpectationDenialKind,
 };
 pub use super::application_runtime::{

@@ -296,6 +296,7 @@ fn original_binding_denial(
         | Source::SnapshotIdentityExhausted
         | Source::RecordedIntentUnverifiable
         | Source::ExecutionDenied(_)
-        | Source::Unavailable => Denial::OriginalBindingUnavailable,
+        | Source::Unavailable
+        | Source::NativeKeyLookup { .. } => Denial::OriginalBindingUnavailable,
     }
 }

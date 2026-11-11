@@ -214,9 +214,7 @@ where
 
         match denial {
             Denial::StalePrincipal => self.terminate_delivery_outcome(Outcome::StalePrincipal),
-            Denial::StaleScope | Denial::StaleBasisScope => {
-                self.terminate_delivery_outcome(Outcome::StaleScope)
-            }
+            Denial::ScopeFreshness(_) => self.terminate_delivery_outcome(Outcome::StaleScope),
             Denial::Authorization(authorization) => {
                 self.delivery_authorization_denial(authorization)
             }

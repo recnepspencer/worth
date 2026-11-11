@@ -34,7 +34,8 @@ pub(super) fn validate_current_read_at_basis<S: ApplicationSchema, Q, P, R, A, I
         .map_err(|denial| {
             freshness_denial(
                 denial,
-                WorthQueryAuthorizedApplicationReadDenial::StaleBasisScope,
+                super::super::WorthQueryScopeFreshnessCheck::SelectedTruth,
+                plan.basis.snapshot_handle(),
             )
         })?;
     Ok(authorization_work)
