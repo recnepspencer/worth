@@ -18,6 +18,7 @@ use worth_query_testkit_document_retention::facade::document_retention_model::{
 };
 mod correction;
 mod courts;
+mod directory_refusal;
 mod handlers;
 mod operations;
 mod query;

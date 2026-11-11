@@ -23,6 +23,11 @@ pub(in crate::http::server) fn correction_denial(
         D::SourceOperation(WorthQueryOperationConstructionDenial::OutputSource(cause)) => query(
             WorthQueryApplicationRequestQueryDenial::OutputSettlement(cause),
         ),
+        D::SourceOperation(WorthQueryOperationConstructionDenial::DurableStateAdmission(cause)) => {
+            mutation_application::request_mutation_denial(
+                WorthQueryApplicationRequestMutationDenialKind::DurableStateAdmission(cause),
+            )
+        }
         D::SourceOperation(_) => unavailable(),
         D::SourceBindingUnavailable
         | D::RecordedOutcomeUnavailable
@@ -100,6 +105,9 @@ fn derivation(cause: WorthQueryCorrectionDerivationDenial) -> BankHttpDenial {
         | D::ProgramMeaningChanged(_)
         | D::Domain(_) => stale(),
         D::Material(_) | D::Idempotency(_) => unavailable(),
+        D::DurableStateAdmission(cause) => mutation_application::request_mutation_denial(
+            worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind::DurableStateAdmission(cause),
+        ),
         D::UnsupportedSourceMeaning
         | D::ReapplicationUnavailable
         | D::MissingPreImage

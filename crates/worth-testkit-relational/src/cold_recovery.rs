@@ -11,7 +11,7 @@ use worth_relational::facade::{
     durability::{
         RecoveryVerificationMode, RelationalCheckpointArtifactPolicy, RelationalCheckpointMember,
         RelationalDurableCheckpointSource, RelationalDurableMemberLocator,
-        RelationalDurableRecoverySource,
+        RelationalDurableRecoverySource, RelationalNativeCheckpoint,
     },
     identity::EntityId,
     runtime::RelationalRuntime,
@@ -125,8 +125,53 @@ pub fn capture_source(
         producer.history().latest_patch_stream_position(),
         "source recipe uses the actual producer's committed medium"
     );
-    let source = Arc::new(ImmutableCheckpointMemberSource {
-        members: native
+    let source = immutable_source(&native, &medium);
+    let checkpoint = RelationalDurableCheckpointSource::new(
+        native.covered_position().unwrap(),
+        native.covered_branch_transitions().unwrap(),
+        native,
+    );
+    let tail = artifacts
+        .into_iter()
+        .filter(|artifact| artifact.position() > covered)
+        .collect();
+    let input =
+        RelationalDurableRecoverySource::new(Some(checkpoint), tail, vec![], source.clone());
+    ColdRecoverySourceFixture {
+        input,
+        medium,
+        source,
+        entity,
+    }
+}
+
+pub fn recovered_with_history(
+    request: &ExecutionRequest<'_, '_>,
+    updates: usize,
+) -> ColdRecoveryFixture {
+    let ColdRecoverySourceFixture {
+        input,
+        medium,
+        source,
+        entity,
+    } = source_with_history(request, updates, false);
+    let runtime = recover_source(request, input, durable_runtime(&medium));
+    ColdRecoveryFixture {
+        runtime,
+        medium,
+        source,
+        entity,
+    }
+}
+
+/// The checkpoint members and canonical artifacts actually committed by its medium.
+pub fn immutable_source(
+    checkpoint: &RelationalNativeCheckpoint,
+    medium: &TestDurableMedium,
+) -> Arc<ImmutableCheckpointMemberSource> {
+    let artifacts = medium.committed_artifacts().unwrap();
+    Arc::new(ImmutableCheckpointMemberSource {
+        members: checkpoint
             .members()
             .iter()
             .map(|member| match member {
@@ -159,37 +204,34 @@ pub fn capture_source(
         commits_damaged: Default::default(),
         failed_member: Default::default(),
         failures: Default::default(),
-    });
-    let checkpoint = RelationalDurableCheckpointSource::new(
-        native.covered_position().unwrap(),
-        native.covered_branch_transitions().unwrap(),
-        native,
-    );
-    let tail = artifacts
-        .into_iter()
-        .filter(|artifact| artifact.position() > covered)
-        .collect();
-    let input =
-        RelationalDurableRecoverySource::new(Some(checkpoint), tail, vec![], source.clone());
-    ColdRecoverySourceFixture {
-        input,
-        medium,
-        source,
-        entity,
-    }
+    })
 }
 
-pub fn recovered_with_history(
+/// Recover `runtime` from exactly this checkpoint and source, with no tail.
+pub fn recover(
     request: &ExecutionRequest<'_, '_>,
-    updates: usize,
-) -> ColdRecoveryFixture {
-    let ColdRecoverySourceFixture {
-        input,
-        medium,
+    checkpoint: RelationalNativeCheckpoint,
+    source: Arc<ImmutableCheckpointMemberSource>,
+    runtime: RelationalRuntime,
+) -> RelationalRuntime {
+    let input = RelationalDurableRecoverySource::new(
+        Some(RelationalDurableCheckpointSource::new(
+            checkpoint.covered_position().unwrap(),
+            checkpoint.covered_branch_transitions().unwrap(),
+            checkpoint,
+        )),
+        vec![],
+        vec![],
         source,
-        entity,
-    } = source_with_history(request, updates, false);
-    let mut runtime = durable_runtime(&medium);
+    );
+    recover_source(request, input, runtime)
+}
+
+fn recover_source(
+    request: &ExecutionRequest<'_, '_>,
+    input: RelationalDurableRecoverySource,
+    mut runtime: RelationalRuntime,
+) -> RelationalRuntime {
     let plan = runtime
         .durability()
         .recovery_plan_from_source(
@@ -202,10 +244,5 @@ pub fn recovered_with_history(
         .durability_recovery()
         .recover(request, plan)
         .unwrap();
-    ColdRecoveryFixture {
-        runtime,
-        medium,
-        source,
-        entity,
-    }
+    runtime
 }

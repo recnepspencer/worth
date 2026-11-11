@@ -1,18 +1,15 @@
 //! Bounded allocation-free MessagePack value traversal.
+use super::PayloadCheckpoint;
 use super::{malformed, Refusal};
-use worth_execution::ExecutionRequest;
 
-pub(crate) struct Cursor<'a, 'request, 'authority> {
+pub(crate) struct Cursor<'a, 'request> {
     bytes: &'a [u8],
     next: usize,
-    execution: Option<&'request ExecutionRequest<'request, 'authority>>,
+    execution: Option<&'request dyn PayloadCheckpoint>,
 }
 
-impl<'a, 'request, 'authority> Cursor<'a, 'request, 'authority> {
-    pub(crate) fn new(
-        bytes: &'a [u8],
-        execution: &'request ExecutionRequest<'request, 'authority>,
-    ) -> Self {
+impl<'a, 'request> Cursor<'a, 'request> {
+    pub(crate) fn new(bytes: &'a [u8], execution: &'request dyn PayloadCheckpoint) -> Self {
         Self {
             bytes,
             next: 0,
@@ -28,9 +25,7 @@ impl<'a, 'request, 'authority> Cursor<'a, 'request, 'authority> {
     }
     pub(crate) fn check_live(&self) -> Result<(), Refusal> {
         if let Some(execution) = self.execution {
-            execution
-                .check_live()
-                .map_err(|stop| Refusal::Request(stop.into()))?;
+            execution.check_payload().map_err(Refusal::Request)?;
         }
         Ok(())
     }

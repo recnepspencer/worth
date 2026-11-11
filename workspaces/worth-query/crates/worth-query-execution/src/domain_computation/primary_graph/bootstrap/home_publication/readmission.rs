@@ -163,13 +163,9 @@ fn decode_optional_selected_row(
     if numeric_field(fields, &layout.fields[0])? != 2 {
         return Err(denial("Home bootstrap completion format is unsupported"));
     }
-    // Text read back from a reopened Home is stored text; both spell the same value.
-    let Some(binding) = (match required_field(fields, &layout.fields[1])? {
-        AspectValue::String(text) => text.raw_text(),
-        _ => None,
-    }) else {
-        return Err(denial("Home completion binding has foreign shape"));
-    };
+    let binding = required_field(fields, &layout.fields[1])?
+        .raw_text()
+        .ok_or_else(|| denial("Home completion binding has foreign shape"))?;
     let count = |index| {
         usize::try_from(numeric_field(fields, &layout.fields[index])?)
             .map_err(|_| denial("Home completion count exceeds this host"))

@@ -47,6 +47,7 @@ pub enum WorthQueryBranchAdoptionActivationDenial {
 /// Why a branch adoption could not be prepared. Nothing was published.
 #[derive(Debug)]
 pub enum WorthQueryBranchAdoptionPreparationDenial {
+    DurableStateAdmission(crate::domain_computation::execution_runtime::product_world::WorthQueryDurableStateAdmissionDenial),
     Authorization(super::authorization::WorthQueryProgramAdoptionAuthorizationDenial),
     /// The caller's read request stopped.
     ReadExecution(

@@ -1,5 +1,7 @@
 //! One genuine Home composition of the existing label schema and handler.
 use super::*;
+mod capability_handlers;
+pub(super) use capability_handlers::LabelPolicy;
 use label::{schema_declaration::IdentityExecutionContribution, IdentityExecutionSchema};
 use worth_query_decl::facade::{application_program::*, application_schema::*};
 use worth_query_host::facade::{
@@ -20,12 +22,12 @@ impl ApplicationSchemaContribution<IdentityExecutionSchema> for LabelSurface {
     >>::Members;
 }
 impl WorthQueryApplicationContribution<IdentityExecutionSchema> for LabelSurface {
-    type Configuration = ();
+    type Configuration = (LabelPolicy, Arc<AtomicUsize>);
     fn configure(
-        _: (),
+        (policy, contacts): Self::Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, IdentityExecutionSchema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        setup.handler::<LabelBinding, _>(LabelHandler)?;
+        capability_handlers::install(setup, policy, contacts)?;
         setup.handler::<label::program_required_binding::ProgramRequiredMutationBinding, _>(
             label::program_required_binding::ProgramRequiredHandler,
         )?;
@@ -37,11 +39,23 @@ impl WorthQueryApplicationContribution<IdentityExecutionSchema> for LabelSurface
         )
     }
 }
-struct LabelFeature;
+pub(super) struct LabelFeature;
 impl ApplicationFeature<IdentityExecutionSchema> for LabelFeature {
     type Inputs = ApplicationFeatureInputLeaf;
     const IDENTITY: &'static str = "worth.query.home.label.feature.v1";
 }
+pub(super) struct LabelDelivery;
+impl ApplicationActionDelivery<IdentityExecutionSchema, LabelBinding> for LabelDelivery {
+    type Mode = ApplicationSourceCompletion;
+    const IDENTITY: &'static str = "worth.query.home.label.completion.v1";
+}
+pub(super) type LabelAction = ApplicationActionReference<
+    IdentityExecutionSchema,
+    ApplicationRootComposition,
+    LabelFeature,
+    LabelBinding,
+    LabelDelivery,
+>;
 impl ApplicationProgramDefinition<IdentityExecutionSchema> for HomeLabelProgram {
     type Contributions = (LabelSurface,);
     type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
@@ -51,7 +65,7 @@ impl ApplicationProgramDefinition<IdentityExecutionSchema> for HomeLabelProgram 
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![
             ApplicationFeatureSpec::root::<IdentityExecutionSchema, LabelFeature>()
-                .native_action::<LabelBinding>()
+                .action::<LabelBinding, LabelDelivery>()
                 .finish_action()
                 .native_action::<label::program_required_binding::ProgramRequiredMutationBinding>()
                 .finish_action()
@@ -64,6 +78,17 @@ pub(super) type Home =
 pub(super) fn request(
     location: std::path::PathBuf,
 ) -> WorthQueryApplicationHomeRequest<'static, IdentityExecutionSchema, HomeLabelProgram> {
+    request_with_policy(
+        location,
+        LabelPolicy::Original,
+        Arc::new(AtomicUsize::new(0)),
+    )
+}
+pub(super) fn request_with_policy(
+    location: std::path::PathBuf,
+    policy: LabelPolicy,
+    contacts: Arc<AtomicUsize>,
+) -> WorthQueryApplicationHomeRequest<'static, IdentityExecutionSchema, HomeLabelProgram> {
     let declaration = IdentityExecutionSchema::declaration().unwrap();
     WorthQueryApplicationHomeRequest::new(
         WorthQueryApplicationHomeLocation::Directory(location),
@@ -73,7 +98,7 @@ pub(super) fn request(
             .unwrap(),
         WorthQueryApplicationProgramRoster::new(),
         declaration,
-        ((),),
+        ((policy, contacts),),
         ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap(),
         WorthQueryApplicationLimits::new(
             identity::world_resources(),

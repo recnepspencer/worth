@@ -20,7 +20,7 @@ pub fn publish_owner_workflow_with_projection() -> (
         >::begin()
         .validated_program()
         .unwrap();
-    let roster = super::auxiliary_programs::include(
+    let roster = super::with_lifecycle_programs(
         WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
         program.identity(),
         program.revision(),

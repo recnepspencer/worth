@@ -16,7 +16,7 @@ def validate(environment):
     }
     overrides = sorted(name for name in environment if
         name.upper() in compiler_inputs or name.upper().startswith('CARGO_PROFILE_') or
-        (name.upper().startswith('CARGO_TARGET_') and name.upper().endswith('_RUSTFLAGS')))
+        (name.upper().startswith('CARGO_TARGET_') and name.upper().endswith(('_RUSTFLAGS', '_LINKER'))))
     if overrides:
         raise LaneEnvironmentRefusal(
             'qualification requires committed Cargo profiles/configuration and the checkout compiler; '

@@ -23,6 +23,7 @@ use worth_query_declaration::facade::{
 /// A source-disclosure, semantic-comparison or inverse-derivation refusal.
 /// Current principal, execution and resource causes remain typed in their original owner.
 pub enum WorthQueryCorrectionDerivationDenial {
+    DurableStateAdmission(crate::domain_computation::execution_runtime::product_world::WorthQueryDurableStateAdmissionDenial),
     Idempotency(crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial),
     Material(crate::facade::correction_material::QueryCorrectionMaterialDenial),
     ForeignPhase,

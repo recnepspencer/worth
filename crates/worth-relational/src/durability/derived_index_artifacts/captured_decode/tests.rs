@@ -1,4 +1,5 @@
 //! Value-only full and delta tuples preserve every index entry family.
+use super::super::funding::with_budget;
 use super::*;
 use crate::history::data::{BranchId, CommitId};
 use crate::identity::data::{EntityId, PartitionId, RelationId, VersionId};
@@ -6,6 +7,7 @@ use crate::indexes::data::*;
 use crate::schema::data::SchemaVersionId;
 use crate::storage::data::AuthoritativeFieldComparisonKey;
 use std::collections::{BTreeMap, BTreeSet};
+use worth_execution::SerialMemoryBudget;
 use worth_foundational::facade::AspectValue;
 
 fn generations() -> Vec<DerivedIndexGeneration> {
@@ -144,10 +146,9 @@ fn funded_decode_admits_every_entry_family_in_both_tuples() {
         ))
         .unwrap(),
     ];
-    let host = crate::test_execution_policy::serial_request();
-    let request = ExecutionRequest::serial(&host);
+    let budget = SerialMemoryBudget::new(Some(16 * 1024 * 1024));
     for payload in payloads {
-        let decoded = decode(&lane, &payload, &request).unwrap();
+        let decoded = with_budget(&budget, |work| decode_funded(&lane, &payload, work)).unwrap();
         assert_eq!(
             decoded
                 .generations
@@ -156,6 +157,9 @@ fn funded_decode_admits_every_entry_family_in_both_tuples() {
                 .collect::<Vec<_>>(),
             expected
         );
+        assert!(budget.charged_memory_bytes() > 0);
+        drop(decoded);
+        assert_eq!(budget.charged_memory_bytes(), 0);
     }
 }
 
@@ -185,14 +189,17 @@ fn join_leg_state_is_priced_per_decoded_container() {
         leg(),
         leg(),
     ));
-    let host = crate::test_execution_policy::serial_request();
-    let request = ExecutionRequest::serial(&host);
+    let budget = SerialMemoryBudget::new(Some(16 * 1024 * 1024));
     let quote = |index: RelationJoinIndex| {
         let wire = rmp_serde::to_vec_named(&DerivedIndexEntries::RelationJoin(index)).unwrap();
-        super::super::generation_decode_quote::entries_quote(
-            crate::durability::canonical_commit_artifact::borrowed_payload::BorrowedPayload(&wire),
-            &request,
-        )
+        with_budget(&budget, |work| {
+            super::super::generation_decode_quote::entries_quote(
+                crate::durability::canonical_commit_artifact::borrowed_payload::BorrowedPayload(
+                    &wire,
+                ),
+                work,
+            )
+        })
         .unwrap()
     };
     // Per side: 40 outer entries, 40 inner maps and 40 relation sets, each at

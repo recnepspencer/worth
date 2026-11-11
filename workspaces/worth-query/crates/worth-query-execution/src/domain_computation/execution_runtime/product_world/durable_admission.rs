@@ -1,10 +1,17 @@
 //! Directory capability admission uses Host's one exhaustive support policy.
+mod correction_shape;
 use super::WorthQueryProductRuntime;
 use worth_foundational::facade::DurableStateFamily;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryDurableStateAdmissionDenial {
     PolicyUnavailable,
+    UnsupportedCorrectionRelationPreimage,
+    UnsupportedCorrectionCoupledOutputs,
+    UnsupportedCorrectionCompensation,
+    UnsupportedCorrectionOutputMaterial,
+    UnsupportedCorrectionReapplication,
+    UnsupportedDivergentCorrection,
     UndeclaredSupplierCapabilities,
     Unsupported {
         family: DurableStateFamily,
@@ -19,6 +26,16 @@ impl std::fmt::Display for WorthQueryDurableStateAdmissionDenial {
 impl std::error::Error for WorthQueryDurableStateAdmissionDenial {}
 
 impl WorthQueryProductRuntime {
+    /// Admit retention of an original operation under this actual Home owner.
+    /// Removed with the graceful original-owner readmission cutover in H9.
+    pub fn admit_retained_original_operation_owner(
+        &self,
+    ) -> Result<(), WorthQueryDurableStateAdmissionDenial> {
+        self.admit_directory_capability(
+            crate::domain_computation::primary_graph::WorthQueryOperationDurableCapability::RetainedOriginalOperationOwner,
+        )
+    }
+
     pub(in crate::domain_computation) fn admit_directory_family(
         &self,
         family: DurableStateFamily,

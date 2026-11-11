@@ -1,5 +1,6 @@
 //! Concrete retained and simultaneous decode storage for index generations.
 mod entries;
+use crate::durability::canonical_commit_artifact::borrowed_payload::PayloadCheckpoint;
 use crate::durability::canonical_commit_artifact::{
     borrowed_payload::{malformed, BorrowedPayload},
     RelationalCanonicalCommitArtifactRefusal as Refusal,
@@ -7,7 +8,6 @@ use crate::durability::canonical_commit_artifact::{
 use crate::indexes::data::DerivedIndexGeneration;
 pub(super) use entries::quote as entries_quote;
 use std::alloc::Layout;
-use worth_execution::ExecutionRequest;
 
 pub(super) fn add(total: &mut u64, bytes: u64) -> Result<(), Refusal> {
     *total = total.checked_add(bytes).ok_or_else(malformed)?;
@@ -47,7 +47,7 @@ pub(super) fn roster(count: usize) -> Result<u64, Refusal> {
 }
 pub(super) fn full(
     value: BorrowedPayload<'_>,
-    request: &ExecutionRequest<'_, '_>,
+    request: &dyn PayloadCheckpoint,
 ) -> Result<u64, Refusal> {
     let mut bytes = 0;
     let count = value.elements(request, |generation| {

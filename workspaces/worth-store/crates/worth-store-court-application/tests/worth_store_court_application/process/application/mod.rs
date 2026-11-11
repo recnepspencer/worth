@@ -8,6 +8,7 @@ mod no_pending_owners;
 mod publication_close;
 mod query_correction_transport;
 mod query_readmission;
+mod world_branch_retirement;
 mod world_durable_release;
 mod world_home;
 mod world_occurrence_readmission;

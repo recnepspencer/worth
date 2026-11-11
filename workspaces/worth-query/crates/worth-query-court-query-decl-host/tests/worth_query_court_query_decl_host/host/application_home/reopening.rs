@@ -5,6 +5,7 @@ use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOu
 mod checkpoint_funding;
 mod checkpoint_restart;
 mod checkpoint_state;
+mod reclose;
 mod refusals;
 mod separate_process;
 

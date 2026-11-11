@@ -1,12 +1,10 @@
 //! Request-funded format-3 emission over original generation owners, never a delta.
+use super::super::funding::{IndexArray, IndexCheckpointWork};
 use super::*;
-use crate::durability::artifact_payload_emission::request::encode_named;
 use crate::durability::data::RelationalRecoveryStop as Stop;
 use crate::indexes::data::IndexBasisCheckpoint;
 use serde::ser::{SerializeSeq, SerializeStruct, Serializer};
-use worth_execution::{
-    ExecutionArray, ExecutionImmutableBytes, ExecutionRequest, ExecutionRequestArrayBuilder,
-};
+use worth_execution::ExecutionRequest;
 
 /// The Complete writer's borrowed wire twin of [`DerivedIndexCheckpointArtifacts`].
 ///
@@ -14,7 +12,7 @@ use worth_execution::{
 /// row is emitted only when the writer retains the root image that proves it.
 pub(crate) struct CompleteIndexCheckpointView<'a> {
     generations: &'a [Arc<DerivedIndexGeneration>],
-    encoded: ExecutionArray<(ExecutionImmutableBytes, [u8; 32])>,
+    encoded: IndexArray<(IndexArray<u8>, [u8; 32])>,
     bases: &'a [IndexBasisCheckpoint],
     retained: &'a dyn Fn(&IndexBasisCheckpoint) -> bool,
     retained_count: usize,
@@ -27,45 +25,41 @@ impl<'a> CompleteIndexCheckpointView<'a> {
         retained: &'a dyn Fn(&IndexBasisCheckpoint) -> bool,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, Stop> {
-        let mut encoded = ExecutionRequestArrayBuilder::allocate(*request, generations.len())
-            .map_err(array_stop)?;
+        IndexCheckpointWork::with_request(request, |work| {
+            Self::capture_funded(generations, bases, retained, work)
+        })
+    }
+    fn capture_funded(
+        generations: &'a [Arc<DerivedIndexGeneration>],
+        bases: &'a [IndexBasisCheckpoint],
+        retained: &'a dyn Fn(&IndexBasisCheckpoint) -> bool,
+        work: &IndexCheckpointWork<'_>,
+    ) -> Result<Self, Stop> {
+        let mut encoded = work.array(generations.len())?;
         for generation in generations {
-            let entries = encode_named(&[], &generation.entries, request)?;
-            let header = encode_named(
-                &[],
-                &CheckpointDigestHeader::from_generation(generation),
-                request,
-            )?;
-            for _ in entries.bytes().chunks(64 * 1024) {
-                consult(request)?;
+            let entries = work.encode_named(&generation.entries)?;
+            let header = work.encode_named(&CheckpointDigestHeader::from_generation(generation))?;
+            for _ in entries.chunks(64 * 1024) {
+                work.consult()?;
             }
-            let digest = digest_bytes(header.bytes(), entries.bytes())?;
-            encoded.push((entries, digest)).map_err(array_stop)?;
+            let digest = digest_bytes(&header, &entries)?;
+            encoded.push((entries, digest))?;
         }
         let mut retained_count = 0_usize;
         for basis in bases {
-            consult(request)?;
+            work.consult()?;
             if retained(basis) {
                 retained_count += 1;
             }
         }
         Ok(Self {
             generations,
-            encoded: encoded.seal().map_err(array_stop)?,
+            encoded: encoded.seal()?,
             bases,
             retained,
             retained_count,
         })
     }
-}
-
-fn consult(request: &ExecutionRequest<'_, '_>) -> Result<(), Stop> {
-    request
-        .consult()
-        .map_err(|cause| Stop::Request(cause.into()))
-}
-fn array_stop(cause: worth_execution::ExecutionRequestArrayDenial) -> Stop {
-    super::super::decode_budget::array_stop(cause)
 }
 
 impl Serialize for CompleteIndexCheckpointView<'_> {
@@ -95,7 +89,7 @@ impl Serialize for Rows<'_, '_> {
         serializer.collect_seq(self.0.generations.iter().zip(self.0.encoded.iter()).map(
             |(generation, (entries, digest))| Row {
                 generation,
-                entries: entries.bytes(),
+                entries,
                 digest,
             },
         ))

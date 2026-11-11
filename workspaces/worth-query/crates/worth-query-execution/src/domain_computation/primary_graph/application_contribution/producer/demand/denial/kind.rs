@@ -5,6 +5,7 @@
 /// again can succeed.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryOutputDemandDenialKind {
+    DurableStateAdmission(crate::domain_computation::execution_runtime::product_world::WorthQueryDurableStateAdmissionDenial),
     /// The original unpublished record refused its native recovery visit.
     WorldRecovery(worth_runtime_world::facade::RuntimeWorldRecoveryDenial),
     /// The original settled effect could not publish its World successor.

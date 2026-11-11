@@ -2,6 +2,12 @@
 use super::*;
 pub struct Handler;
 impl OperationHandler<Schema, SpawnBinding> for Handler {
+    fn declared_durable_capabilities() -> Option<&'static [WorthQueryOperationDurableCapability]> {
+        Some(&[
+            WorthQueryOperationDurableCapability::RelationalMutation,
+            WorthQueryOperationDurableCapability::RetainedCorrectionMaterial,
+        ])
+    }
     fn decide(
         &self,
         _: &Spawn,
@@ -64,6 +70,9 @@ impl OperationHandler<Schema, SpawnBinding> for Handler {
     }
 }
 impl OperationHandler<Schema, DespawnBinding> for Handler {
+    fn declared_durable_capabilities() -> Option<&'static [WorthQueryOperationDurableCapability]> {
+        Some(&[WorthQueryOperationDurableCapability::RelationalMutation])
+    }
     fn decide(
         &self,
         input: &Despawn,

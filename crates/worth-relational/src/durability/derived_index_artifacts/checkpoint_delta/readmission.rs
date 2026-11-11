@@ -21,7 +21,7 @@ impl DerivedIndexCheckpointArtifacts {
     pub(in super::super) fn readmit_controlled(
         &self,
         _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
-        budget: &mut IndexDecodeBudget<'_, '_>,
+        budget: &mut IndexDecodeBudget<'_>,
     ) -> Result<Vec<DerivedIndexGeneration>, Stop> {
         if self.format_version != Self::FORMAT_VERSION {
             return Err(corrupt("unsupported derived index checkpoint format"));
@@ -90,10 +90,15 @@ impl DerivedIndexCheckpointArtifacts {
                 }
                 None => return Err(corrupt("unbased derived index checkpoint delta")),
             };
-            if let Some(request) = budget.request() {
-                budget.reserve(super::super::generation_decode_quote::entries_quote(
-                    crate::durability::canonical_commit_artifact::borrowed_payload::BorrowedPayload(&entries_bytes), &request
-                ).map_err(super::super::decode_budget::wire_stop)?)?;
+            if let Some(work) = budget.work() {
+                let bytes = super::super::generation_decode_quote::entries_quote(
+                    crate::durability::canonical_commit_artifact::borrowed_payload::BorrowedPayload(
+                        &entries_bytes,
+                    ),
+                    work,
+                )
+                .map_err(super::super::decode_budget::wire_stop)?;
+                budget.reserve(bytes)?;
             }
             let entries: DerivedIndexEntries = rmp_serde::from_slice(&entries_bytes)
                 .map_err(|error| corrupt(format!("index entries decoding failed: {error}")))?;
@@ -136,22 +141,18 @@ fn corrupt(detail: impl Into<String>) -> Stop {
     super::corrupt(detail).into()
 }
 fn controlled_digest(
-    budget: &IndexDecodeBudget<'_, '_>,
+    budget: &IndexDecodeBudget<'_>,
     header: &CheckpointDigestHeader<'_>,
     entries: &[u8],
 ) -> Result<[u8; 32], Stop> {
-    match budget.request() {
+    match budget.work() {
         None => super::digest(header, entries).map_err(Into::into),
-        Some(request) => {
-            let header = crate::durability::artifact_payload_emission::request::encode_named(
-                &[],
-                header,
-                &request,
-            )?;
+        Some(work) => {
+            let header = work.encode_named(header)?;
             for _ in entries.chunks(64 * 1024) {
                 budget.consult()?;
             }
-            super::digest_bytes(header.bytes(), entries).map_err(Into::into)
+            super::digest_bytes(&header, entries).map_err(Into::into)
         }
     }
 }

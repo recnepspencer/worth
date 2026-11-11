@@ -4,7 +4,8 @@ use worth_query_host::facade::declaration::application_program::{
     ApplicationProgramIdentity, ApplicationProgramRevision,
 };
 
-pub(super) fn include<'host>(
+/// Include the same isolated lifecycle coverage as ordinary host publication.
+pub fn with_lifecycle_programs<'host>(
     roster: WorthQueryApplicationProgramRoster<'host, DocumentRetentionSchema>,
     initial_identity: &ApplicationProgramIdentity,
     initial_revision: &ApplicationProgramRevision,

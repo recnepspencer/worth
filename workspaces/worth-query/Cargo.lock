@@ -1716,6 +1716,7 @@ dependencies = [
  "worth-query-testkit-host",
  "worth-relational",
  "worth-runtime-bridge",
+ "worth-runtime-world",
 ]
 
 [[package]]

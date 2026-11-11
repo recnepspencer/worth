@@ -18,12 +18,11 @@ pub(in crate::domain_computation::primary_graph::provider) fn read(
             locator.field_path().fields().first()?,
         )
     };
-    let text = |locator: &AspectFieldLocator| match value(locator) {
-        Some(AspectValue::String(value)) => value
-            .raw_text()
+    let text = |locator: &AspectFieldLocator| {
+        value(locator)
+            .and_then(AspectValue::raw_text)
             .map(str::to_owned)
-            .ok_or(Denial::Unavailable),
-        _ => Err(Denial::Unavailable),
+            .ok_or(Denial::Unavailable)
     };
     let number = |locator: &AspectFieldLocator| match value(locator) {
         Some(AspectValue::UInt64(value)) => Ok(*value),
