@@ -3,39 +3,41 @@
 //! another version label — refuses before service; after a durable schema
 //! transition only the transition's target is accepted. Both hold whether
 //! the head is replayed from the journal or restored from a checkpoint.
+use super::checkpoint_recovery_observation::failure as expect_durability_failure;
+use super::checkpoint_schema_versions::registry;
+use super::checkpoint_source_capture::capture_durably;
+use worth_relational::facade::config::RelationalRuntimeProfile;
+use worth_relational::facade::durability::RecoveryAuthorityContinuityMismatch;
+use worth_relational::facade::durability::RecoveryFailureClass;
+use worth_relational::facade::durability::RecoveryVerificationMode as RecoveryMode;
+use worth_relational::facade::durability::RelationalRecoveryStop;
+use worth_relational::facade::runtime::RelationalRuntime;
+use worth_relational::facade::runtime::RelationalRuntimeApi;
+use worth_relational::facade::schema::SchemaVersionId;
+use worth_testkit_relational::durable_medium::TestDurableMedium;
+use worth_testkit_relational::durable_publication::create_entity_outcome;
 
-use super::*;
-use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
-
-fn registry(version: u32) -> RelationalSchemaRegistry {
-    AspectSchemaFixture {
-        schema_version_id: SchemaVersionId(version),
-        ..AspectSchemaFixture::with_default_declared_aspects(
-            CascadeDeletePolicy::CascadeDeleteRelations,
-        )
-    }
-    .build_registry()
-}
-
-fn durable_runtime_declaring(version: u32) -> RelationalRuntime {
+fn durable_runtime_declaring(
+    medium: &std::sync::Arc<TestDurableMedium>,
+    version: u32,
+) -> RelationalRuntime {
     RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(registry(version))
-        .build_durable(TestDurableMedium::new().attachment())
+        .build_durable(medium.attachment())
         .expect("valid native runtime configuration")
 }
 
 /// Reopen `source`'s medium in a runtime declaring schema `version`.
 fn reopen_declaring(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    source: &RelationalRuntime,
+    medium: &std::sync::Arc<TestDurableMedium>,
     version: u32,
-) -> Result<RelationalRuntime, crate::durability::data::RelationalRecoveryStop> {
-    let mut recovered = durable_runtime_declaring(version);
-    let plan = medium_recovery_plan(
+) -> Result<RelationalRuntime, RelationalRecoveryStop> {
+    let mut recovered = durable_runtime_declaring(medium, version);
+    let plan = recovered.durability().recovery_plan_from_source(
         execution,
-        source,
-        &mut recovered,
+        medium.recovery_source(),
         RecoveryMode::NormalRecoveryVerification,
     )?;
     recovered.durability_recovery().recover(execution, plan)?;
@@ -43,7 +45,7 @@ fn reopen_declaring(
 }
 
 fn assert_refused_as_declared_schema(
-    refused: Result<RelationalRuntime, crate::durability::data::RelationalRecoveryStop>,
+    refused: Result<RelationalRuntime, RelationalRecoveryStop>,
     recorded: u32,
     declared: u32,
     case: &str,
@@ -72,17 +74,18 @@ fn assert_refused_as_declared_schema(
 
 #[test]
 fn another_label_with_identical_contracts_refuses_before_service() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-    let source = durable_runtime_declaring(1);
+    let medium = TestDurableMedium::new();
+    let source = durable_runtime_declaring(&medium, 1);
     create_entity_outcome(execution, &source, "recorded-under-v1");
     for checkpointed in [false, true] {
         if checkpointed {
-            checkpoint_durably(execution, &source).expect("the checkpoint captures");
+            capture_durably(execution, &source, &medium).expect("the checkpoint captures");
         }
         let case = format!("checkpointed {checkpointed}");
-        assert_refused_as_declared_schema(reopen_declaring(execution, &source, 7), 1, 7, &case);
-        let reopened = reopen_declaring(execution, &source, 1)
+        assert_refused_as_declared_schema(reopen_declaring(execution, &medium, 7), 1, 7, &case);
+        let reopened = reopen_declaring(execution, &medium, 1)
             .unwrap_or_else(|stop| panic!("{case}: the recorded schema reopens: {stop:?}"));
         create_entity_outcome(execution, &reopened, "served-under-v1");
     }
@@ -90,47 +93,20 @@ fn another_label_with_identical_contracts_refuses_before_service() {
 
 #[test]
 fn after_a_durable_transition_only_its_target_is_served() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-    let mut source = durable_runtime_declaring(1);
+    let medium = TestDurableMedium::new();
+    let source = durable_runtime_declaring(&medium, 1);
     create_entity_outcome(execution, &source, "before-transition");
-    transition_main(execution, &mut source, 2);
+    super::checkpoint_schema_versions::transition_main(execution, &source, 2, "transitioned");
     for checkpointed in [false, true] {
         if checkpointed {
-            checkpoint_durably(execution, &source).expect("the checkpoint captures");
+            capture_durably(execution, &source, &medium).expect("the checkpoint captures");
         }
         let case = format!("checkpointed {checkpointed}");
-        assert_refused_as_declared_schema(reopen_declaring(execution, &source, 1), 2, 1, &case);
-        let reopened = reopen_declaring(execution, &source, 2)
+        assert_refused_as_declared_schema(reopen_declaring(execution, &medium, 1), 2, 1, &case);
+        let reopened = reopen_declaring(execution, &medium, 2)
             .unwrap_or_else(|stop| panic!("{case}: the transition target reopens: {stop:?}"));
         create_entity_outcome(execution, &reopened, "served-under-v2");
     }
-}
-
-fn transition_main(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
-    target: u32,
-) {
-    runtime.set_schema_registry_for_test(registry(target));
-    let input = test_owner_transaction_validation_input_for_main(runtime).with_schema_transition(
-        schema_transition_for_subscriber_impact(
-            SchemaVersionId(target),
-            SchemaSubscriberImpact::ConsumableSurfaceChanged,
-        ),
-        Some(SchemaReconciliationPolicy::PreserveInformation),
-    );
-    let mut transaction = runtime
-        .begin_branch_transaction(input.basis(), input.intent().clone())
-        .expect("owner-admitted transaction");
-    transaction
-        .push_batch(
-            batch_create("transitioned"),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("the batch stages");
-    let transitioned = transaction
-        .commit(execution, runtime)
-        .expect("the schema transition commits");
-    assert!(transitioned.envelope().schema_transition.is_some());
 }

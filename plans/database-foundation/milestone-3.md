@@ -220,6 +220,15 @@ each invariant is enforced and where each new type lives.
 
 ### C2 - Cost and bounds: backing and work budgets
 
+B2 schema/history consumer split (coordinator per-claim Landing 2a ruling):
+
+- `durability_contract_recovery_rebuilds_branch_head_root_obligations` — restore from `df2420390ecdbf870bbc47384ba45bddee5c5359:crates/worth-relational/src/tests/durability/contracts/retention_inspection_store.rs`: exact active-snapshot and branch pin census.
+- `durability_contract_recovery_preserves_inspection_truth_bundle` — restore from `df2420390ecdbf870bbc47384ba45bddee5c5359:crates/worth-relational/src/tests/durability/contracts/retention_inspection_store.rs`: retention_summary and record_retention fields of the complete original bundle; keep all original producer and inspection helpers.
+- `tail_replay_consumes_canonical_reused_record_allocation` — restore from `df2420390ecdbf870bbc47384ba45bddee5c5359:crates/worth-relational/src/tests/durability/contracts/record_allocation_recovery.rs`: exact reclaim limit, one reusable slot, same local slot and incremented generation; public current/historical truth is ported.
+- `durability_certification_recovery_authority_continuity_is_explained_and_counted` — restore from `df2420390ecdbf870bbc47384ba45bddee5c5359:crates/worth-relational/src/tests/durability/contracts/descriptor_continuity.rs`: exact digest-parity and mismatch counters, alongside original diagnostic producer.
+- `durable_recovery_and_schema_mismatch_test` — restore from `df2420390ecdbf870bbc47384ba45bddee5c5359:crates/worth-relational/src/tests/durability/contracts/schema_transition_continuity.rs`: actual recovered digest-parity work counter; all semantic descriptor and refusal assertions stay public.
+- `native_field_text_checkpoint_then_tail_recovers_exact_json_after_original_owners_drop` — restore from `df2420390ecdbf870bbc47384ba45bddee5c5359:crates/worth-relational/src/tests/durability/contracts/managed_field_text.rs`: exact Symbol representation, charged managed payload and System client-key custody; retain read_exact and original request policy closure.
+
 - Fixture closure for `recorded_original_retirement_preserves_both_leases_across_busy_and_stop`:
   `restore from 0615dd733c:crates/worth-relational/src/history/retention/lane/retained_release/tests.rs`
   (`assert_recovered_cut_and_lane_busy`), with its same-SHA exact re-export lines

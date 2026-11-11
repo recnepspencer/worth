@@ -1,10 +1,15 @@
-//! D11: a canonical commit artifact's bytes depend only on durable history.
-//! Two independently built memory-only runtimes, which hold different
-//! process-local runtime identities, run one script — commits on main, a fork
-//! and commits on it, an executed merge and a schema transition — and must
-//! produce byte-identical artifacts at every position.
-
-use super::*;
+use super::branch_history_publications::create_entity_outcome_on_branch;
+use super::branch_history_publications::fork;
+use super::branch_history_publications::update_entity_on_branch;
+use super::checkpoint_source_capture::capture_durably;
+use worth_relational::facade::history::BranchId;
+use worth_relational::facade::merge::MergeExecutionRequest;
+use worth_relational::facade::merge::MergeIntent;
+use worth_relational::facade::runtime::RelationalRuntime;
+use worth_testkit_relational::durable_medium::TestDurableMedium;
+use worth_testkit_relational::durable_publication::create_entity_outcome;
+use worth_testkit_relational::durable_publication::durable_runtime;
+use worth_testkit_relational::durable_publication::memory_runtime;
 
 const MAIN: &str = "main";
 const FEATURE: &str = "feature";
@@ -25,17 +30,17 @@ fn run_script(
 fn script_opening(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
-) -> crate::facade::identity::EntityId {
+) -> worth_relational::facade::identity::EntityId {
     let created = create_entity_outcome(execution, runtime, "main-a");
     let entity = created
         .changed_records
         .iter()
         .find_map(|record| match record {
-            crate::facade::transactions::RecordRef::Entity(entity) => Some(*entity),
-            _ => None,
+            worth_relational::facade::transactions::RecordRef::Entity(entity) => Some(*entity),
+            worth_relational::facade::transactions::RecordRef::Relation(_) => None,
         })
         .expect("the create changes one entity");
-    create_branch_from_main(runtime, FEATURE);
+    fork(execution, runtime, FEATURE);
     create_entity_outcome_on_branch(execution, runtime, "feature-a", branch(FEATURE));
     create_entity_outcome(execution, runtime, "main-b");
     entity
@@ -45,16 +50,18 @@ fn script_opening(
 fn script_close(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
-    entity: crate::facade::identity::EntityId,
+    entity: worth_relational::facade::identity::EntityId,
 ) {
     let prepared = runtime
         .prepare_merge_execution(
             execution,
-            MergeExecutionRequest {
-                target_branch: branch(MAIN),
-                source_branch: branch(FEATURE),
-                merge_intent: MergeIntent::ReconcileIntoTarget,
-            },
+            runtime
+                .bind_merge_execution_request(MergeExecutionRequest::new(
+                    branch(MAIN),
+                    branch(FEATURE),
+                    MergeIntent::ReconcileIntoTarget,
+                ))
+                .unwrap(),
         )
         .expect("the merge prepares");
     runtime
@@ -68,35 +75,7 @@ fn transition_main_to_v2(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
 ) {
-    runtime.set_schema_registry_for_test(
-        AspectSchemaFixture {
-            schema_version_id: SchemaVersionId(2),
-            ..AspectSchemaFixture::with_default_declared_aspects(
-                CascadeDeletePolicy::CascadeDeleteRelations,
-            )
-        }
-        .build_registry(),
-    );
-    let input = test_owner_transaction_validation_input_for_main(runtime).with_schema_transition(
-        schema_transition_for_subscriber_impact(
-            SchemaVersionId(2),
-            SchemaSubscriberImpact::ConsumableSurfaceChanged,
-        ),
-        Some(SchemaReconciliationPolicy::PreserveInformation),
-    );
-    let mut transaction = runtime
-        .begin_branch_transaction(input.basis(), input.intent().clone())
-        .expect("owner-admitted transaction");
-    transaction
-        .push_batch(
-            batch_create("main-v2"),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("the batch stages");
-    let transitioned = transaction
-        .commit(execution, runtime)
-        .expect("the schema transition commits");
-    assert!(transitioned.envelope().schema_transition.is_some());
+    super::checkpoint_schema_versions::transition_main(execution, runtime, 2, "main-v2");
 }
 
 fn artifacts(
@@ -119,12 +98,14 @@ fn artifacts(
 /// differently, to name the field that carries process-local identity when
 /// the claim fails.
 fn first_difference(left: &[u8], right: &[u8]) -> String {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let render = |bytes: &[u8]| {
-        crate::facade::durability::RelationalCanonicalCommitArtifact::readmit(bytes, execution)
-            .map(|readmitted| format!("{:#?}", readmitted.envelope()))
-            .unwrap_or_else(|refusal| format!("{refusal:?}"))
+        worth_relational::facade::durability::RelationalCanonicalCommitArtifact::readmit(
+            bytes, execution,
+        )
+        .map(|readmitted| format!("{:#?}", readmitted.envelope()))
+        .unwrap_or_else(|refusal| format!("{refusal:?}"))
     };
     let (left, right) = (render(left), render(right));
     let lines = left.lines().collect::<Vec<_>>();
@@ -160,10 +141,10 @@ fn enclosing_fields(lines: &[&str], line: usize) -> String {
 
 #[test]
 fn independent_runtimes_publish_byte_identical_canonical_artifacts() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-    let mut first = runtime_with_test_schema();
-    let mut second = runtime_with_test_schema();
+    let mut first = memory_runtime();
+    let mut second = memory_runtime();
     assert_ne!(first.runtime_instance_id(), second.runtime_instance_id());
     run_script(execution, &mut first);
     run_script(execution, &mut second);
@@ -175,18 +156,19 @@ fn independent_runtimes_publish_byte_identical_canonical_artifacts() {
 /// after it — and finishes the script publishes the reference's artifacts.
 #[test]
 fn a_recovered_runtime_continues_with_the_reference_artifacts() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-    let mut reference = runtime_with_test_schema();
+    let mut reference = memory_runtime();
     run_script(execution, &mut reference);
     for checkpointed in [false, true] {
-        let mut stopped = durable_runtime_with_test_schema();
+        let medium = TestDurableMedium::new();
+        let mut stopped = durable_runtime(&medium);
         let entity = script_opening(execution, &mut stopped);
         if checkpointed {
-            checkpoint_durably(execution, &stopped).expect("the checkpoint captures");
+            capture_durably(execution, &stopped, &medium).expect("the checkpoint captures");
         }
         let (_, mut recovered) =
-            recover_with(execution, &stopped, durable_runtime_with_test_schema);
+            super::branch_history_recovery::recover(execution, &medium, durable_runtime(&medium));
         drop(stopped);
         script_close(execution, &mut recovered, entity);
         let case = if checkpointed {

@@ -135,3 +135,25 @@ mod checkpoint_content_root;
 mod checkpoint_transition_continuation;
 
 mod medium_recovered_continuation;
+
+mod checkpoint_sparse_lineage;
+
+mod checkpoint_descriptor_continuity;
+
+mod checkpoint_schema_versions;
+
+mod checkpoint_declared_schema;
+
+mod checkpoint_inspection_observation;
+
+mod checkpoint_inspection_journeys;
+
+mod checkpoint_record_replacement;
+
+mod checkpoint_transition_descriptors;
+
+mod checkpoint_schema_plan_refusals;
+
+mod checkpoint_canonical_neutrality;
+
+mod checkpoint_managed_text;

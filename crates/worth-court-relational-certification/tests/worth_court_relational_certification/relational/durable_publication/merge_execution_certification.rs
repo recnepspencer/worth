@@ -13,8 +13,7 @@ use worth_relational::facade::history::{BranchId, CommitId};
 use worth_relational::facade::replay::{
     RelationalReplayRequest, ReplayExecutionMode, ReplayVerificationMode,
 };
-use worth_relational::facade::runtime::{EntityReadRecord, RelationalRuntime};
-use worth_testkit_relational::aspect_storage::definition::aspect_key;
+use worth_relational::facade::runtime::RelationalRuntime;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct MergeExecutionCertificationArtifacts {
@@ -95,7 +94,7 @@ fn certify_merge_execution_with_recovery(
         .unwrap()
         .expect("canonical merge envelope");
     let truth_bundle = capture_aspect_truth_bundle(execution, runtime, &[]);
-    let (visible_entity_count, visible_relation_count) = visible_named_counts(execution, runtime);
+    let (visible_entity_count, visible_relation_count) = truth_bundle.visible_truth.counts();
     let replay = runtime
         .replay_authority()
         .replay_commit(
@@ -158,41 +157,4 @@ fn branch_head_commit_ids(runtime: &RelationalRuntime) -> (Option<CommitId>, Opt
         current_head(runtime, &BranchId(branch.to_string())).map(|head| head.commit_id)
     };
     (head("main"), head("feature"))
-}
-
-/// How many named entities, and relations between named entities, the actual
-/// main head shows: the sizes of the visible truth compared across recovery.
-fn visible_named_counts(
-    execution: &ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
-) -> (usize, usize) {
-    let version_id = current_head(runtime, &BranchId("main".to_string()))
-        .expect("branch head")
-        .version_id;
-    let read = runtime
-        .read_truth()
-        .try_read_version(execution, version_id)
-        .expect("read request remains live")
-        .expect("the actual branch head remains retained");
-    let named = |record: &EntityReadRecord| {
-        record
-            .authoritative_aspect_state
-            .as_ref()
-            .is_some_and(|state| state.get(&aspect_key("name")).is_some())
-    };
-    let entities = read
-        .entities()
-        .iter()
-        .filter(|entity| named(entity))
-        .count();
-    let relations = read
-        .relations()
-        .iter()
-        .filter(|relation| {
-            [relation.source, relation.target]
-                .into_iter()
-                .all(|endpoint| read.get_entity(endpoint).is_some_and(named))
-        })
-        .count();
-    (entities, relations)
 }

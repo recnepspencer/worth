@@ -120,3 +120,31 @@ line caps 1. No ignored body, query-scale, oracle or scenario suite ran. No push
 - Port-agent brief pattern that worked (four parallel subagents, no compile,
   disjoint files, then one clippy round): see the slice A helper modules
   durable_publication/merge_execution_{observation,recovery,schema,authoring}.rs.
+
+## T3 continuation 2026-11-10 (sole writer)
+
+Current HEAD df2420390e. Schema/history source review through review_cli.sh:
+review-schema-history-source-verdict.md REJECT (nonexistent schema imports,
+private version reads, old-schema recovery plan, latest-commit proxy); all four
+fixed together and source2 verdict APPROVE. No native subagents used.
+
+Public packet pa-schema-minors-public (27 cases: schema16 + deferred minor11)
+is building. Native packet planned pa-schema-counted-native (3 existing resident
+history regressions + 2 retained Native schema/configuration units). CountedSource
+now supplies request-funded source-bound custody and funded owned member copies;
+separate reviewed fixture commit planned. Deferred minors corrected: shared
+truth counts (already in schema batch), accurate three test names, move
+prepare_feature_merge to its semantic fixture owner, narrow two functions.
+
+Validation this continuation: 0 check/Clippy, 1 focused build running, 0 test
+runs; fmt passed. Extra compile budget if needed: public+Native build/run and
+mandatory scoped Clippy cross two separately selected binaries; no broad lane.
+No integration merge: brief requires coordinator-provided SHA, none received.
+No ignored/query-scale/exhaustive oracle/scenario/push.
+
+Next after this batch: remaining B2/C consumer closure. Pure cleanup candidate
+inventory at pa-remaining-cleanup-plan.json requires excluding the four restored
+Memory roots explicitly retained by the coordinator (canonical refusal3 and
+descriptor-semantics refusal). Do not apply that inventory blindly.
+Additional public verification round: the reviewed schema batch's first runtime packet was 26/1/0; the sole setup failure authored name/label on intentionally aspect-free kind declarations. Corrected only that court to the original empty-field setup, and rerun only its name. Original typed contract-family/expected-found assertions unchanged. No green body rerun.
+Counted fixture causal expansion before its commit: the same missing request-funded protocol exists in HistoryUnavailable, RetryAfterFailure and CustodySource. Traced cell::raw_head -> region_load::load_head -> history_custody::capture, so their wrapped probes/retry/suffix claims would still fail before the intended behavior. Added actual funded custody forwarding plus owned reads preserving each wrapper's failure/active-owner semantics. Additional focused Native build/run selects46 dependent fixture tests, excluding the three already-green regressions. This is the recorded extra verification round for the shared fixture closure, with no production change or assertion edits. Counts before it:0check,2Clippy,4focused builds,3selected runs; tools boundary2/context1.
