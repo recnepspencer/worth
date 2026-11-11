@@ -15,7 +15,7 @@ fn complete_preserves_partial_update_without_demanding_untouched_aspect_referenc
         None,
     );
     let execution = ExecutionRequest::serial(&host);
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     let plan = runtime.entity_aspect_plan(KindId(1)).unwrap();
     assert!(plan.executable_bindings.len() >= 2);
     let untouched = plan

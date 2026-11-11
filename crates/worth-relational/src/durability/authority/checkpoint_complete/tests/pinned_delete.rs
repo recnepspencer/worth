@@ -13,7 +13,7 @@ fn complete_fold_matches_original_relation_delete_with_snapshot_and_replay_pins(
         None,
     );
     let execution = ExecutionRequest::serial(&host);
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     let source = create_entity(&execution, &runtime, "complete-pin-left");
     let target = create_entity(&execution, &runtime, "complete-pin-right");
     let created =
