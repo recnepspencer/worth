@@ -14,6 +14,11 @@ pub struct WorthQueryPerformedInboundCompletion {
 }
 
 impl WorthQueryPerformedInboundCompletion {
+    pub(in crate::domain_computation) fn publication_mut(
+        &mut self,
+    ) -> &mut WorthQueryProductPublicationReceipt {
+        &mut self.publication
+    }
     pub(in crate::domain_computation::primary_graph::application_runtime) fn new(
         accepted: Arc<WorthQueryAcceptedInboundOccurrence>,
         original_incarnation: ProductBranchIncarnation,

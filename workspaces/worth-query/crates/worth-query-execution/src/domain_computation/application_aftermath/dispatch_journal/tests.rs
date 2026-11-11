@@ -1,5 +1,7 @@
 //! Pure frame and ledger laws; the custody owner's court drives real requests.
+mod inbound;
 mod source_controls;
+mod transport_binding;
 use super::*;
 use sha2::Digest;
 use QueryDispatchJournalDenial as Denial;
@@ -83,8 +85,10 @@ fn every_observation_survives_its_frame_and_decides_the_next_attempt() {
             observation,
         };
         let frame = ledger.prepare(intent, &mut generations).unwrap();
-        assert!(frame.bytes().len() as u64 <= QUERY_DISPATCH_FRAME_MAX_BYTES);
-        let decoded = QueryDispatchFrame::readmit(frame.bytes()).unwrap();
+        assert!(frame.bytes().len() as u64 <= QUERY_DISPATCH_FIXED_RECORD_MAX_BYTES);
+        let decoded =
+            QueryDispatchFrame::readmit(frame.bytes(), QUERY_DISPATCH_FIXED_RECORD_MAX_BYTES)
+                .unwrap();
         assert_eq!(decoded, frame, "{observation:?}");
         ledger.readmit(decoded).unwrap();
         let custody = ledger.custody(&effect(1)).unwrap();
@@ -125,7 +129,7 @@ fn an_attempt_awaits_exactly_one_observation() {
         attempt,
         observation: Observation::Acknowledged,
     };
-    let frame = ledger.prepare(observed, &mut generations).unwrap();
+    let frame = ledger.prepare(observed.clone(), &mut generations).unwrap();
     ledger.readmit(frame).unwrap();
     assert_eq!(
         ledger.prepare(observed, &mut generations).map(drop),
@@ -154,13 +158,17 @@ fn frames_refuse_corruption_foreign_homes_and_broken_prefixes() {
     let frame = ledger.prepare(attempt, &mut generations).unwrap();
     assert_eq!(
         frame.bytes().len() as u64,
-        QUERY_DISPATCH_FRAME_MAX_BYTES,
+        QUERY_DISPATCH_FIXED_RECORD_MAX_BYTES,
         "an attempt is the largest version-one frame"
     );
     let mut corrupt = frame.bytes().to_vec();
     corrupt[80] ^= 1;
-    assert_eq!(QueryDispatchFrame::readmit(&corrupt), Err(Denial::Checksum));
-    let decoded = QueryDispatchFrame::readmit(frame.bytes()).unwrap();
+    assert_eq!(
+        QueryDispatchFrame::readmit(&corrupt, QUERY_DISPATCH_FIXED_RECORD_MAX_BYTES),
+        Err(Denial::Checksum)
+    );
+    let decoded =
+        QueryDispatchFrame::readmit(frame.bytes(), QUERY_DISPATCH_FIXED_RECORD_MAX_BYTES).unwrap();
     assert_eq!(decoded, frame);
     assert_eq!(
         QueryDispatchLedger::empty(home(2)).readmit(decoded.clone()),
@@ -183,7 +191,10 @@ fn intact_frames_of_another_shape_or_version_name_their_own_refusal() {
     for length in 0..frame.bytes().len() {
         assert!(
             matches!(
-                QueryDispatchFrame::readmit(&frame.bytes()[..length]),
+                QueryDispatchFrame::readmit(
+                    &frame.bytes()[..length],
+                    QUERY_DISPATCH_FIXED_RECORD_MAX_BYTES
+                ),
                 Err(Denial::MalformedFrame | Denial::Checksum)
             ),
             "a {length}-byte prefix is never a frame"
@@ -192,28 +203,37 @@ fn intact_frames_of_another_shape_or_version_name_their_own_refusal() {
     let mut trailing = payload.to_vec();
     trailing.push(0);
     assert_eq!(
-        QueryDispatchFrame::readmit(&resealed(trailing)),
+        QueryDispatchFrame::readmit(&resealed(trailing), QUERY_DISPATCH_FIXED_RECORD_MAX_BYTES),
         Err(Denial::MalformedFrame),
         "this version's size law refuses one byte more"
     );
     let mut foreign_magic = payload.to_vec();
     foreign_magic[0] ^= 1;
     assert_eq!(
-        QueryDispatchFrame::readmit(&resealed(foreign_magic)),
+        QueryDispatchFrame::readmit(
+            &resealed(foreign_magic),
+            QUERY_DISPATCH_FIXED_RECORD_MAX_BYTES
+        ),
         Err(Denial::MalformedFrame)
     );
     let mut later_version = payload.to_vec();
     later_version[8..12].copy_from_slice(&2u32.to_le_bytes());
     later_version.extend_from_slice(&[0; 64]);
     assert_eq!(
-        QueryDispatchFrame::readmit(&resealed(later_version)),
+        QueryDispatchFrame::readmit(
+            &resealed(later_version),
+            QUERY_DISPATCH_FIXED_RECORD_MAX_BYTES
+        ),
         Err(Denial::UnsupportedVersion(2)),
         "an intact later version reports itself, whatever its size"
     );
     let mut unknown_record = payload[..76].to_vec();
     unknown_record.push(7);
     assert_eq!(
-        QueryDispatchFrame::readmit(&resealed(unknown_record)),
+        QueryDispatchFrame::readmit(
+            &resealed(unknown_record),
+            QUERY_DISPATCH_FIXED_RECORD_MAX_BYTES
+        ),
         Err(Denial::MalformedFrame)
     );
     let mut unknown_observation = payload[..76].to_vec();
@@ -221,7 +241,10 @@ fn intact_frames_of_another_shape_or_version_name_their_own_refusal() {
     unknown_observation.extend_from_slice(&1u64.to_le_bytes());
     unknown_observation.extend_from_slice(&[9, 0]);
     assert_eq!(
-        QueryDispatchFrame::readmit(&resealed(unknown_observation)),
+        QueryDispatchFrame::readmit(
+            &resealed(unknown_observation),
+            QUERY_DISPATCH_FIXED_RECORD_MAX_BYTES
+        ),
         Err(Denial::MalformedFrame)
     );
 }

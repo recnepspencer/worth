@@ -17,6 +17,8 @@ pub(crate) struct PrimaryProviderCustody {
     dispatch_custody: QueryDispatchCloseCustody,
 }
 enum ProviderRetirementStage {
+    OutstandingSources,
+    TerminalSources,
     ReceiptBases,
     Publications,
     CorrectionMaterial,
@@ -37,7 +39,7 @@ impl PrimaryProviderCustody {
         Self {
             serving: Some(provider),
             retiring: None,
-            stage: ProviderRetirementStage::ReceiptBases,
+            stage: ProviderRetirementStage::OutstandingSources,
             dispatch_custody: QueryDispatchCloseCustody::ProcessLocal,
         }
     }
@@ -45,12 +47,13 @@ impl PrimaryProviderCustody {
         &mut self,
         request: &ExecutionRequest<'_, '_>,
         dispatch_custody: QueryDispatchCloseCustody,
+        transport: &crate::domain_computation::primary_graph::application_runtime::inbound_publication::InstalledTransportCloseCustody,
     ) -> Result<(), Denial> {
         self.dispatch_custody = QueryDispatchCloseCustody::ProcessLocal;
         self.serving
             .as_ref()
             .expect("only serving provider preflights")
-            .preflight_home_retirement(request, &dispatch_custody)?;
+            .preflight_home_retirement(request, &dispatch_custody, transport)?;
         self.dispatch_custody = dispatch_custody;
         Ok(())
     }
@@ -78,6 +81,26 @@ impl PrimaryProviderCustody {
             .as_mut()
             .expect("same original provider remains owned");
         match self.stage {
+            ProviderRetirementStage::OutstandingSources => {
+                if provider
+                    .outstanding_dispatch
+                    .advance_source_retirement(request)?
+                    == Progress::Complete
+                {
+                    self.stage = ProviderRetirementStage::TerminalSources;
+                }
+                Ok(Progress::Advanced)
+            }
+            ProviderRetirementStage::TerminalSources => {
+                if provider
+                    .inbound_terminal_index
+                    .advance_source_retirement(request)?
+                    == Progress::Complete
+                {
+                    self.stage = ProviderRetirementStage::ReceiptBases;
+                }
+                Ok(Progress::Advanced)
+            }
             ProviderRetirementStage::ReceiptBases => {
                 let progress = provider
                     .receipt_basis_retention
@@ -137,6 +160,7 @@ impl WorthQueryPrimaryGraphProvider {
         &self,
         request: &ExecutionRequest<'_, '_>,
         dispatch_custody: &QueryDispatchCloseCustody,
+        transport: &crate::domain_computation::primary_graph::application_runtime::inbound_publication::InstalledTransportCloseCustody,
     ) -> Result<(), Denial> {
         request.consult().map_err(Denial::Execution)?;
         let attempts = self
@@ -167,7 +191,8 @@ impl WorthQueryPrimaryGraphProvider {
             .try_lock()
             .map_err(|_| Denial::Busy(Owner::PublicationReceipts))?
             .preflight_home_retirement(request)?;
-        self.outstanding_dispatch.preflight_home_retirement()?;
+        self.outstanding_dispatch
+            .preflight_home_retirement(dispatch_custody, transport)?;
         self.receipt_basis_retention
             .try_lock()
             .map_err(|_| Denial::Busy(Owner::ReceiptBases))?

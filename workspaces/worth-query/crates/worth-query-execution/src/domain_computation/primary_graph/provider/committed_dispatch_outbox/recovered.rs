@@ -127,6 +127,23 @@ impl WorthQueryPrimaryGraphProvider {
         let Some(selector) = selector else {
             return Ok(None);
         };
+        self.read_recovered_dispatch_source(execution, &selector, observation, inspection)
+            .map(|(owner, _source)| Some(owner))
+    }
+
+    pub(in crate::domain_computation::primary_graph::provider) fn read_recovered_dispatch_source(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        selector: &RecoveredDispatchSelector,
+        observation: &RuntimeWorldObservationPort,
+        inspection: &RuntimeWorldInspectionPort,
+    ) -> Result<
+        (
+            WorthQueryCommittedDispatchOutboxObservation,
+            WorldReadmittedPublication,
+        ),
+        Denial,
+    > {
         self.graph.with_runtime(execution, |runtime| {
             let native = runtime
                 .durability_authority()
@@ -141,8 +158,8 @@ impl WorthQueryPrimaryGraphProvider {
             if record != selector.record {
                 return Err(Denial::RecordMismatch);
             }
-            self.read_recovered_with_original(execution, runtime, &selector, &original, description)
-                .map(Some)
+            self.read_recovered_with_original(execution, runtime, selector, &original, description)
+                .map(|owner| (owner, original))
         })
     }
 
@@ -254,7 +271,7 @@ fn describe(
     WorthQueryCommittedProductPublication::from_readmitted(original, commit)
 }
 
-fn idempotency_denial(
+pub(in crate::domain_computation::primary_graph::provider) fn idempotency_denial(
     cause: super::super::WorthQueryProviderIdempotencyResolutionDenial,
 ) -> Denial {
     use super::super::WorthQueryProviderIdempotencyResolutionDenial as Source;
@@ -271,10 +288,12 @@ fn idempotency_denial(
     }
 }
 
-fn native_denial(cause: RelationalAssociatedEffectRefusal) -> Denial {
+pub(in crate::domain_computation::primary_graph::provider) fn native_denial(
+    cause: RelationalAssociatedEffectRefusal,
+) -> Denial {
     idempotency_denial(super::super::idempotency::snapshot_resolution::source_denial::native(cause))
 }
-fn world_denial(
+pub(in crate::domain_computation::primary_graph::provider) fn world_denial(
     cause: worth_runtime_world::facade::RuntimeWorldServiceDenial<
         worth_runtime_world::facade::WorldReadmittedPublicationDenial,
     >,

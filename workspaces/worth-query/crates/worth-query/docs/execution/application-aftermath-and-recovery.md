@@ -761,10 +761,9 @@ committed outbox record carries
 data: it grants no dispatch authority. A memory-only Home returns `None`,
 because its dispatch custody is process-local.
 
-A Directory Home retains dispatch custody across graceful close and reopen
-for operations that declare neither inbound completion nor recoverable aftermath.
-Installed contracts that require either family refuse before effects, and
-recovery-claim minting independently checks Directory support. Close settles every retained observation before releasing the
+A Directory Home retains dispatch and inbound-completion custody across graceful
+close and reopen. Recovery claims retain their separate support check. Close
+settles every retained observation before releasing the
 dispatch's local receipt-basis lease. Reopen readmits those same attempt
 identities and observations from `query.dispatch`; it never contacts the
 transport or reexecutes the mutation handler. The reopened Home receives a
@@ -784,8 +783,40 @@ while a contact is still in flight.
 Process death before an observation is recorded is not yet certified. A Home
 whose journal ends in an attempt with no recorded observation refuses to open,
 and `unclean_recovery_unsupported()` names the `Dispatch` owner and that
-effect. Inbound completion and recovery claims are not yet durable on a
-Directory Home.
+effect. Recovery claims retain their own Directory admission requirement.
+
+## Durable inbound custody on a Directory Home
+
+Install a fresh verifier and transport after opening the Home. An authentic
+callback for an original dispatch can then enter through
+`runtime.inbound_occurrences().receive(source, bytes, scope).execute()`.
+Query records the accepted message's exact identity, meaning, audience and
+original dispatch before reporting acceptance. Accepted pending work survives
+graceful close, including a caller leaving before publication. A new verifier's
+audience does not rewrite an already accepted audience.
+
+The terminal comes from the original Native completion row and its actual World
+publication. Duplicate messages retain their original result across repeated
+reopens; a reused message identity with different authenticated meaning is a
+typed permanent conflict. Query records terminal acknowledgement before making
+the message eligible for expiry. An ACK that proves no effect remains owned
+maintenance work, including when a transport completion wins the publication
+race. `maintain_inbound_occurrences` progresses this work without requiring the
+callback caller to return. `cleanup_completed_inbound_occurrences` expires exact
+acknowledged message identities under the trusted clock while preserving
+canonical completion truth.
+
+A recorded completed transport observation survives reopen without a live
+dispatch object. Its original operation and audience binding survives too. An
+originally absent audience may acquire its first binding before completion;
+an already selected audience cannot be replaced. Maintenance continues the
+recorded observation through World publication without another transport
+contact. An unpublished internal completion retains its actual original World
+recovery obligation and continues that occurrence.
+
+These are graceful-close and quiescent-reopen guarantees. Crash recovery remains
+uncertified, and Query makes no remote exactly-once claim beyond the external
+owner's admitted contract.
 
 ## Recovery lifetime and scope
 
@@ -809,3 +840,12 @@ For live `next`, cancellation or expiration already present when the call opens
 its request is an `ExecutionRequest(Interrupted)` refusal. If it arrives after
 the opening, the live lease returns its terminal delivery outcome; hosts handle
 both forms.
+
+A completion with a live durable `ProductUnpublished` original requires Home
+reopen. Owning close can refuse while preserving the same serving Home; end
+that Home's ownership and open the directory through Host. Readmission retains
+the actual original Native effect. Advance its maintenance across physical
+pending steps; it neither contacts the transport again nor grants live release
+or continuation to the old recovery handle. A new mutation may answer
+`ProductBasisStale` until the original completion is recovered. This is the
+specified `ReopenRequired` route, not a crash-recovery certification.

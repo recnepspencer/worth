@@ -3,8 +3,11 @@
 use super::*;
 use std::sync::{Arc, Mutex, OnceLock};
 use worth_execution::ExecutionRequest;
+mod inbound_admission;
 mod settlement;
 mod source_controls;
+mod transport;
+pub(in crate::domain_computation) use inbound_admission::QueryInboundJournalAdmission;
 use settlement::DispatchJournalDriver;
 pub(in crate::domain_computation) use source_controls::QueryInboundSourceControlObservation;
 
@@ -20,6 +23,7 @@ pub struct WorthQueryDispatchJournal {
 }
 
 struct DispatchJournalState {
+    limits: super::read_limits::QueryDispatchReadLimits,
     ledger: QueryDispatchLedger,
     generations: QueryDispatchPublicationGenerations,
     /// The one original frame whose physical fate is not yet folded.
@@ -73,6 +77,7 @@ impl WorthQueryDispatchJournal {
         &self,
         medium: Arc<dyn QueryDispatchMedium>,
         request: &ExecutionRequest<'_, '_>,
+        catalog: &worth_query_installation::facade::InstalledOperationCatalog,
     ) -> Result<worth_proof::AdmittedHomeQueryDispatch, QueryDispatchJournalDenial> {
         use QueryDispatchJournalDenial as Denial;
         let driver = DispatchJournalDriver::lock(self, request)?;
@@ -83,6 +88,7 @@ impl WorthQueryDispatchJournal {
                 .map_err(incarnation_denial)?;
             Arc::clone(installed)
         } else {
+            let limits = super::read_limits::QueryDispatchReadLimits::from_catalog(catalog);
             let mut ledger = QueryDispatchLedger::empty(medium.home());
             while let Some(bytes) = medium.read_frame(
                 request,
@@ -90,9 +96,12 @@ impl WorthQueryDispatchJournal {
                     .position()
                     .checked_add(1)
                     .ok_or(Denial::IdentityExhausted)?,
+                limits.maximum_frame_bytes(),
             )? {
                 request.consult().map_err(Denial::Execution)?;
-                ledger.readmit(QueryDispatchFrame::readmit(&bytes)?)?;
+                let frame = super::codec::decode(&bytes, limits.maximum_frame_bytes())?;
+                limits.validate(&frame)?;
+                ledger.readmit(frame)?;
             }
             if let Some(unobserved) = ledger.first_unobserved() {
                 return Err(unobserved);
@@ -102,6 +111,7 @@ impl WorthQueryDispatchJournal {
                 .set(Arc::clone(&medium))
                 .map_err(|_| Denial::OwnerUnavailable)?;
             *state = Some(DispatchJournalState {
+                limits,
                 generations: QueryDispatchPublicationGenerations::from_journal(&ledger),
                 ledger,
                 pending: None,
@@ -139,7 +149,9 @@ impl WorthQueryDispatchJournal {
             request,
         )? {
             QueryDispatchRecord::Attempt(attempt) => Ok(attempt.identity),
-            QueryDispatchRecord::Observation { .. } | QueryDispatchRecord::SourceControl { .. } => {
+            QueryDispatchRecord::Observation { .. }
+            | QueryDispatchRecord::SourceControl { .. }
+            | QueryDispatchRecord::Inbound(_) => {
                 unreachable!("an attempt intent encodes an attempt record")
             }
         }

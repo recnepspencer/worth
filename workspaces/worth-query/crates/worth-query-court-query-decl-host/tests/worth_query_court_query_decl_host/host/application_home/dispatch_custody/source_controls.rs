@@ -30,7 +30,7 @@ impl Verifier {
             signed_meaning_digest: [0; 32],
             issued_at_unix_seconds: issued,
             expires_at_unix_seconds: issued.checked_add(30).unwrap(),
-            protocol_identity: sources::PROTOCOL,
+            protocol_identity: sources::protocol_identity(),
             protocol_version: BoundaryProtocolVersion::new(1),
             correlation_family: dispatch::notify::CORRELATION_FAMILY.to_owned(),
             correlation_token: [0x51; 32],
@@ -94,7 +94,7 @@ impl WorthQueryInboundOccurrenceVerifier for Verifier {
         Ok(self.claims.clone())
     }
 }
-fn signed_meaning(body: &str) -> [u8; 32] {
+pub(super) fn signed_meaning(body: &str) -> [u8; 32] {
     use worth_foundational::facade::*;
     let domain = CanonicalBasisDomain::Future("worth-query.test.inbound-source-probe");
     let prepared = prepare_canonical_basis_sequence(

@@ -102,28 +102,7 @@ fn completion_patch_values(
             return Err(Denial::Malformed);
         }
     }
-    let locators = [
-        &layout.correlation,
-        &layout.family,
-        &layout.operation,
-        &layout.audience,
-        &layout.source,
-        &layout.expires_at,
-        &layout.key_epoch,
-        &layout.message,
-        &layout.protocol,
-        &layout.version,
-        &layout.meaning_digest,
-        &layout.payload,
-        &layout.original_commit,
-        &layout.original_branch,
-        &layout.original_entity,
-        &layout.original_incarnation,
-        &layout.terminal,
-        &layout.provenance_kind,
-        &layout.transport_attempt,
-        &layout.transport_observation,
-    ];
+    let locators = super::read::completion_locators(layout);
     locators
         .iter()
         .map(|locator| {

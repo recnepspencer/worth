@@ -29,6 +29,13 @@ where
     ) -> Result<WorthQueryCorrelatedInboundOccurrence<'a, Schema>, WorthQueryInboundAdmissionDenial>
     {
         use WorthQueryInboundAdmissionDenial as Denial;
+        let driver = self
+            .runtime
+            .dispatch_journal
+            .begin_inbound_admission(execution)
+            .map_err(|_| Denial::RetryBeforeAcceptance)?;
+        self.synchronize_durable_inbound(&driver, execution)?;
+        drop(driver);
         let operation = authenticated.operation.as_str();
         let claims = &authenticated.claims;
         let envelope = authenticated.envelope;
@@ -91,10 +98,9 @@ where
                 } else {
                     WorthQueryInboundReceiptPosture::AlreadyCompleted
                 };
-                let completed_claims = claims.clone();
                 return Ok(WorthQueryCorrelatedInboundOccurrence {
                     authenticated,
-                    decision: CorrelationDecision::Completed(completed_claims, posture),
+                    decision: CorrelationDecision::Completed(posture),
                 });
             }
             Ok(None) => {}
@@ -148,6 +154,7 @@ where
 
     pub(super) fn accept_correlated_inbound<'a>(
         &'a self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         correlated: WorthQueryCorrelatedInboundOccurrence<'a, Schema>,
     ) -> Result<WorthQueryAdmittedInboundOccurrence<'a, Schema>, WorthQueryInboundAdmissionDenial>
     {
@@ -156,14 +163,48 @@ where
             authenticated,
             decision,
         } = correlated;
-        let WorthQueryAuthenticatedInboundOccurrence {
-            runtime,
-            operation,
-            installed,
-            envelope,
-            claims,
-        } = authenticated;
-        // A caller may hold either public phase beyond the signed cutoff.
+        let driver = self
+            .runtime
+            .dispatch_journal
+            .begin_inbound_admission(execution)
+            .map_err(|_| Denial::RetryBeforeAcceptance)?;
+        self.synchronize_durable_inbound(&driver, execution)?;
+        self.validate_inbound_acceptance_cutoff(&authenticated.claims)?;
+        let admission = match decision {
+            CorrelationDecision::Completed(posture) => {
+                self.accept_completed_inbound(execution, &driver, &authenticated, posture)
+            }
+            CorrelationDecision::ExistingCustody(existing) => {
+                let mut custody = self
+                    .runtime
+                    .inbound_custody
+                    .lock()
+                    .unwrap_or_else(|p| p.into_inner());
+                map_custody(&mut custody, existing)
+            }
+            CorrelationDecision::Original(owner) => {
+                self.accept_original_inbound(execution, &driver, &authenticated, owner)
+            }
+        }
+        .map_err(|denial| {
+            authenticated_owner_conflict(
+                denial,
+                authenticated.claims.message_identity,
+                authenticated.envelope,
+            )
+        })?;
+        Ok(WorthQueryAdmittedInboundOccurrence {
+            runtime: authenticated.runtime,
+            envelope: authenticated.envelope,
+            admission: Some(admission),
+        })
+    }
+
+    fn validate_inbound_acceptance_cutoff(
+        &self,
+        claims: &WorthQueryInboundOccurrenceClaims,
+    ) -> Result<(), WorthQueryInboundAdmissionDenial> {
+        use WorthQueryInboundAdmissionDenial as Denial;
         let sample = self
             .runtime
             .authorization_clock
@@ -175,56 +216,11 @@ where
         if claims.expires_at_unix_seconds < *now {
             return Err(Denial::Expired);
         }
-        let admission = match decision {
-            CorrelationDecision::Completed(claims, posture) => {
-                WorthQueryInboundAdmission::Completed(claims, posture)
-            }
-            CorrelationDecision::ExistingCustody(existing) => {
-                let mut custody = self
-                    .runtime
-                    .inbound_custody
-                    .lock()
-                    .unwrap_or_else(|poisoned| poisoned.into_inner());
-                map_custody(&mut custody, existing).map_err(|denial| {
-                    authenticated_owner_conflict(denial, claims.message_identity, envelope)
-                })?
-            }
-            CorrelationDecision::Original(owner) => {
-                // Recheck the source gate at the actual custody cutover.
-                match installed.source_posture() {
-                    WorthQueryInboundSourcePosture::Active => {}
-                    WorthQueryInboundSourcePosture::Retired => return Err(Denial::SourceRetired),
-                    WorthQueryInboundSourcePosture::Revoked => return Err(Denial::SourceRevoked),
-                    WorthQueryInboundSourcePosture::ControlPending => {
-                        return Err(Denial::RetryBeforeAcceptance)
-                    }
-                }
-                let mut custody = self
-                    .runtime
-                    .inbound_custody
-                    .lock()
-                    .unwrap_or_else(|poisoned| poisoned.into_inner());
-                installed
-                    .cost
-                    .custody_key_probes
-                    .fetch_add(1, Ordering::Relaxed);
-                let message_identity = claims.message_identity;
-                let admission =
-                    custody.accept(&operation, &installed.contract, claims, envelope, owner);
-                map_custody(&mut custody, admission).map_err(|denial| {
-                    authenticated_owner_conflict(denial, message_identity, envelope)
-                })?
-            }
-        };
-        Ok(WorthQueryAdmittedInboundOccurrence {
-            runtime,
-            envelope,
-            admission: Some(admission),
-        })
+        Ok(())
     }
 }
 
-fn authenticated_owner_conflict(
+pub(super) fn authenticated_owner_conflict(
     denial: WorthQueryInboundAdmissionDenial,
     message_identity: [u8; 32],
     envelope: &[u8],
@@ -276,7 +272,7 @@ fn map_owner_read(
 #[path = "admit/owner_read_tests.rs"]
 mod owner_read_tests;
 
-fn map_custody(
+pub(super) fn map_custody(
     custody: &mut crate::domain_computation::application_aftermath::WorthQueryInboundCustody,
     admission: WorthQueryInboundCustodyAdmission,
 ) -> Result<WorthQueryInboundAdmission, WorthQueryInboundAdmissionDenial> {

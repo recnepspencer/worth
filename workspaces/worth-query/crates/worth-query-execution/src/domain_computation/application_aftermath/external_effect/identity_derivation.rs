@@ -85,9 +85,17 @@ pub(super) fn emission_identity(
     correlation: &ExternalEffectCorrelationIdentity,
     outcome_identity: u64,
 ) -> Result<DerivedEventIdentity, WorthQueryAftermathDerivationFailure> {
+    emission_digest(predecessor.digest(), correlation, outcome_identity)
+}
+
+pub(super) fn emission_digest(
+    predecessor: &CanonicalDigestId,
+    correlation: &ExternalEffectCorrelationIdentity,
+    outcome_identity: u64,
+) -> Result<DerivedEventIdentity, WorthQueryAftermathDerivationFailure> {
     derive(vec![
         text_entry("stage", "co-committed-application-emission"),
-        digest_entry("predecessor", predecessor.digest()),
+        digest_entry("predecessor", predecessor),
         digest_entry("correlation", correlation.digest()),
         integer_entry("outcome", outcome_identity),
     ])
@@ -98,26 +106,47 @@ pub(super) fn attempt_identity(
     correlation: &ExternalEffectCorrelationIdentity,
     coordinate: &super::dispatch_admission::DispatchAttemptCoordinate<'_>,
 ) -> Result<DerivedEventIdentity, WorthQueryAftermathDerivationFailure> {
-    let mut entries = vec![
-        text_entry("stage", "dispatch-attempt"),
-        digest_entry("predecessor", predecessor.digest()),
-        digest_entry("correlation", correlation.digest()),
-    ];
     match coordinate {
         super::dispatch_admission::DispatchAttemptCoordinate::Memory(ordinal) => {
+            let mut entries = attempt_entries(predecessor.digest(), correlation);
             entries.push(text_entry("attempt-scope", "memory"));
             entries.push(integer_entry("attempt-ordinal", ordinal.value()));
+            derive(entries)
         }
         super::dispatch_admission::DispatchAttemptCoordinate::Recorded(contact) => {
-            let recorded = contact.recorded_attempt();
-            entries.push(text_entry("attempt-scope", "home-journal"));
-            append_home(&mut entries, recorded.home());
-            entries.push(integer_entry(
-                "attempt-position",
-                recorded.attempt_position().get(),
-            ));
+            recorded_attempt_digest(
+                predecessor.digest(),
+                correlation,
+                contact.recorded_attempt(),
+            )
         }
     }
+}
+
+fn attempt_entries(
+    predecessor: &CanonicalDigestId,
+    correlation: &ExternalEffectCorrelationIdentity,
+) -> Vec<CanonicalBasisEntry> {
+    vec![
+        text_entry("stage", "dispatch-attempt"),
+        digest_entry("predecessor", predecessor),
+        digest_entry("correlation", correlation.digest()),
+    ]
+}
+
+/// Descriptive naming shares the grammar but cannot create a live causal phase.
+pub(super) fn recorded_attempt_digest(
+    predecessor: &CanonicalDigestId,
+    correlation: &ExternalEffectCorrelationIdentity,
+    recorded: worth_foundational::facade::DispatchAttemptIdentity,
+) -> Result<DerivedEventIdentity, WorthQueryAftermathDerivationFailure> {
+    let mut entries = attempt_entries(predecessor, correlation);
+    entries.push(text_entry("attempt-scope", "home-journal"));
+    append_home(&mut entries, recorded.home());
+    entries.push(integer_entry(
+        "attempt-position",
+        recorded.attempt_position().get(),
+    ));
     derive(entries)
 }
 
@@ -141,9 +170,17 @@ pub(super) fn observation_identity(
     correlation: &ExternalEffectCorrelationIdentity,
     observation: &'static str,
 ) -> Result<DerivedEventIdentity, WorthQueryAftermathDerivationFailure> {
+    observation_digest(predecessor.digest(), correlation, observation)
+}
+
+pub(super) fn observation_digest(
+    predecessor: &CanonicalDigestId,
+    correlation: &ExternalEffectCorrelationIdentity,
+    observation: &'static str,
+) -> Result<DerivedEventIdentity, WorthQueryAftermathDerivationFailure> {
     derive(vec![
         text_entry("stage", "external-owner-observation"),
-        digest_entry("predecessor", predecessor.digest()),
+        digest_entry("predecessor", predecessor),
         digest_entry("correlation", correlation.digest()),
         text_entry("observation", observation),
     ])

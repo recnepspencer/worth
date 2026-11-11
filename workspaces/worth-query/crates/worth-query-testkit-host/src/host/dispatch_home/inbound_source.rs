@@ -1,8 +1,10 @@
 //! Declared source slots for Home security-fact readmission courts.
-use super::notify::{BalanceNoticeEffect, BalanceValueBinding, CORRELATION_FAMILY};
+use super::notify::{
+    BalanceNoticeBinding, BalanceNoticeEffect, BalanceValueBinding, CORRELATION_FAMILY,
+};
 use super::schema::DispatchHomeSchema;
 use std::num::NonZeroU64;
-use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
+use worth_foundational::facade::BoundaryProtocolIdentity;
 use worth_query_decl::facade::{
     application_schema::{
         fragment::{Fragment, NoBindings, Registration},
@@ -13,13 +15,17 @@ use worth_query_decl::facade::{
 
 pub const SOURCE: &str = "dispatch-home-inbound-source";
 pub const OTHER_SOURCE: &str = "dispatch-home-other-inbound-source";
-pub const PROTOCOL: BoundaryProtocolIdentity =
-    BoundaryProtocolIdentity::new("worth.query.host.dispatch-home.inbound");
+pub fn protocol_identity() -> BoundaryProtocolIdentity {
+    BalanceNoticeBinding::PROTOCOL.identity().clone()
+}
 
 fn inbound(source: &str) -> ApplicationInboundOccurrenceBinding<BalanceNoticeEffect> {
     let n = |value| NonZeroU64::new(value).unwrap();
     ApplicationInboundOccurrenceBinding::new(
-        ApplicationInboundOccurrenceProtocol::new(PROTOCOL, BoundaryProtocolVersion::new(1)),
+        ApplicationInboundOccurrenceProtocol::new(
+            protocol_identity(),
+            BalanceNoticeBinding::PROTOCOL.version(),
+        ),
         source,
         ApplicationInboundOccurrenceLimits {
             maximum_envelope_bytes: n(1024),
@@ -121,5 +127,10 @@ pub struct InboundSourceSlots;
 impl Fragment for InboundSourceSlots {
     const NAME: &'static str = "InboundSourceSlots";
     type Bindings = NoBindings;
-    type Members = (InboundNotice, InboundSibling, OtherSourceNotice);
+    type Members = (
+        InboundNotice,
+        InboundSibling,
+        OtherSourceNotice,
+        super::inbound_action::InboundNoticeBinding,
+    );
 }

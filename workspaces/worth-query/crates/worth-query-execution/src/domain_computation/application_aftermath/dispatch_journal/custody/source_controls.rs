@@ -92,7 +92,9 @@ impl WorthQueryDispatchJournal {
             request,
         )? {
             QueryDispatchRecord::SourceControl { .. } => Ok(()),
-            QueryDispatchRecord::Attempt(_) | QueryDispatchRecord::Observation { .. } => {
+            QueryDispatchRecord::Attempt(_)
+            | QueryDispatchRecord::Observation { .. }
+            | QueryDispatchRecord::Inbound(_) => {
                 unreachable!("a source control intent records only a source control")
             }
         }
@@ -121,6 +123,7 @@ mod tests {
             .unwrap();
         // DATA-only owner state: no medium, fate witness or Home service is constructed.
         *journal.state() = Some(DispatchJournalState {
+            limits: Default::default(),
             ledger,
             generations,
             pending: Some(pending),

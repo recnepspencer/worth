@@ -4,6 +4,17 @@ use super::*;
 use crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity;
 
 impl WorthQueryCompletedCommitEvidenceStore {
+    pub(in crate::domain_computation::primary_graph::provider) fn next_recovered_dispatch(
+        &self,
+        after: Option<&ExternalEffectCorrelationIdentity>,
+    ) -> Option<(ExternalEffectCorrelationIdentity, RecoveredDispatchSelector)> {
+        use std::ops::Bound::{Excluded, Unbounded};
+        let lower = after.map_or(Unbounded, Excluded);
+        self.recovered_dispatch
+            .range((lower, Unbounded))
+            .next()
+            .map(|(correlation, source)| (*correlation, source.clone()))
+    }
     pub(in crate::domain_computation::primary_graph::provider) fn readmit_dispatch_correlations(
         &mut self,
         sources: BTreeMap<ExternalEffectCorrelationIdentity, RecoveredDispatchSelector>,

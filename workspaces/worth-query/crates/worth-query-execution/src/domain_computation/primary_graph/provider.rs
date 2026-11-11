@@ -59,7 +59,7 @@ pub(in crate::domain_computation::primary_graph) mod managed_cleanup_control;
 pub(in crate::domain_computation::primary_graph) mod publication_fault_control;
 pub(in crate::domain_computation::primary_graph) use inbound_completion::WorthQueryCanonicalCompletionRow;
 pub(in crate::domain_computation::primary_graph) use inbound_completion::WorthQueryInboundCompletionPreparationDenial;
-pub(in crate::domain_computation::primary_graph) use inbound_completion::WorthQueryInboundCompletionReadDenial;
+pub use inbound_completion::WorthQueryInboundCompletionReadDenial;
 pub(crate) mod inbound_terminal_index;
 pub(in crate::domain_computation) use inbound_terminal_index::WorthQueryCanonicalInboundCompletion;
 pub(in crate::domain_computation) use inbound_terminal_index::WorthQueryInboundTerminalIndexDenial;

@@ -63,13 +63,14 @@ impl WorthQueryPrimaryGraphProvider {
         if binding.record().correlation() != correlation {
             return Err(Denial::RecordMismatch);
         }
-        let owner = self.observe_expected(
+        let publication = committed.committed_product_publication().clone();
+        let owner = self.observe_held_original(
             execution,
             &binding,
             committed.commit_reference(),
             committed.runtime_instance_id(),
+            &publication,
         )?;
-        let publication = committed.committed_product_publication().clone();
         if owner.commit_reference() != publication.relational_commit() {
             return Err(Denial::CommitMismatch);
         }

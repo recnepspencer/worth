@@ -2,19 +2,16 @@
 
 use std::num::NonZeroUsize;
 
-use worth_runtime_world::facade::{CompositeComponentChangePosture, RuntimeWorldPublicationRow};
-
 use super::reconstruct::pair_world_history;
 use super::{WorthQueryInboundVerifierHandle, WorthQueryPrimaryGraphApplicationRuntime};
 use crate::domain_computation::primary_graph::provider::{
-    WorthQueryCanonicalInboundCompletion, WorthQueryInboundCompletionReadDenial,
-    WorthQueryInboundTerminalIndexDenial as Denial,
+    inbound_terminal_index::InboundTerminalSource, WorthQueryCanonicalInboundCompletion,
+    WorthQueryInboundCompletionReadDenial, WorthQueryInboundTerminalIndexDenial as Denial,
 };
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Spend one bounded World page and at most `maximum_changed_records` on
-    /// each Relational commit in it. `Ok(false)` means a resumable cursor is
-    /// retained and ordinary lookups remain unavailable until `Ok(true)`.
+impl<Schema: worth_query_installation::facade::ApplicationSchema>
+    WorthQueryPrimaryGraphApplicationRuntime<Schema>
+{
     pub(in crate::domain_computation) fn rebuild_completed_inbound_index(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -22,35 +19,25 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         maximum_changed_records: NonZeroUsize,
         maximum_ancestry_commits: NonZeroUsize,
     ) -> Result<bool, Denial> {
-        let (cursor, generation) = self
+        let page = self
             .runtime
             .primary_provider
-            .inbound_reconstruction_cursor();
-        let inspection = self.runtime.product_runtime.owner.inspection_port();
-        let page = inspection
-            .performed_publication_page(cursor.as_ref(), maximum_world_slots)
-            .map_err(|_| {
-                self.runtime
-                    .primary_provider
-                    .abandon_inbound_reconstruction();
-                Denial::IndexUnavailable
-            })?;
-        if page.pending() {
-            self.runtime
-                .primary_provider
-                .abandon_inbound_reconstruction();
-            return Err(Denial::IndexUnavailable);
-        }
+            .inbound_reconstruction_page(maximum_world_slots)?;
         let mut entries = Vec::new();
-        for world in page.rows() {
-            match self.rebuild_one_terminal(
+        for (correlation, source) in page.sources {
+            match self.rebuild_terminal_from_source(
                 execution,
-                world,
+                &source,
                 maximum_changed_records,
                 maximum_ancestry_commits,
             ) {
-                Ok(Some(entry)) => entries.push(entry),
-                Ok(None) => {}
+                Ok(entry) if entry.correlation() == &correlation => entries.push(entry),
+                Ok(_) => {
+                    self.runtime
+                        .primary_provider
+                        .abandon_inbound_reconstruction();
+                    return Err(Denial::WorldPairMismatch);
+                }
                 Err(denial) => {
                     self.runtime
                         .primary_provider
@@ -59,88 +46,107 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
                 }
             }
         }
-        if page.next_after().is_none()
-            && !inspection
-                .publication_frontier_is_current(page.frontier())
-                .map_err(|_| Denial::IndexUnavailable)?
-        {
-            self.runtime
-                .primary_provider
-                .abandon_inbound_reconstruction();
-            return Err(Denial::IndexUnavailable);
-        }
         self.runtime
             .primary_provider
-            .advance_inbound_reconstruction(
-                generation,
-                page.frontier(),
-                page.next_after().cloned(),
-                entries,
-            )
+            .advance_inbound_reconstruction(page.generation, page.next, entries)
     }
 
-    fn rebuild_one_terminal(
+    pub(in crate::domain_computation::primary_graph::application_runtime) fn rebuild_terminal_from_source(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        world: &RuntimeWorldPublicationRow,
+        source: &InboundTerminalSource,
         maximum_changed_records: NonZeroUsize,
         maximum_ancestry_commits: NonZeroUsize,
-    ) -> Result<Option<WorthQueryCanonicalInboundCompletion>, Denial> {
-        let Some(relational) = world.commit().relational_publication_identity() else {
-            return Ok(None);
+    ) -> Result<WorthQueryCanonicalInboundCompletion, Denial> {
+        let inspection = self.runtime.product_runtime.owner.inspection_port();
+        let history = inspection
+            .trace_ancestry(source.commit_identity().clone(), maximum_ancestry_commits)
+            .map_err(|_| Denial::IndexUnavailable)?;
+        let commit = history.commits().next().ok_or(Denial::WorldPairMismatch)?;
+        let row = match source {
+            InboundTerminalSource::Performed { .. } => {
+                let relational = commit
+                    .relational_publication_identity()
+                    .ok_or(Denial::WorldPairMismatch)?;
+                self.runtime
+                    .primary_provider
+                    .completion_row_from_commit_patch(
+                        execution,
+                        relational,
+                        maximum_changed_records,
+                    )
+                    .map_err(completion_read_denial)?
+                    .ok_or(Denial::WorldPairMismatch)?
+            }
+            InboundTerminalSource::Readmitted { world, entity } => self
+                .runtime
+                .primary_provider
+                .completion_row_from_readmitted_source(execution, world, *entity)
+                .map_err(completion_read_denial)?,
         };
-        let row = self
-            .runtime
-            .primary_provider
-            .completion_row_from_commit_patch(execution, relational, maximum_changed_records)
-            .map_err(|denial| match denial {
-                WorthQueryInboundCompletionReadDenial::ReadRequest(cause) => {
-                    Denial::ReadRequest(cause)
-                }
-                WorthQueryInboundCompletionReadDenial::ReconstructionWorkExhausted => {
-                    Denial::ReconstructionWorkExhausted
-                }
-                _ => Denial::IndexUnavailable,
-            })?;
-        let Some(row) = row else {
-            return Ok(None);
-        };
-        if row.original_incarnation_ordinal != world.product_incarnation().ordinal()
-            || world.commit().relational_change() != CompositeComponentChangePosture::Published
-            || world
-                .component_results()
-                .relational_commit_result()
-                .is_none()
-            || world.component_results().relational_settlement() != Some(&row.completion_commit)
+        let (original, completion, attempt) = pair_world_history(&history, &row)?;
+        if &completion != source.commit_identity()
+            || row.original_incarnation_ordinal != source.incarnation().ordinal()
         {
             return Err(Denial::WorldPairMismatch);
         }
-        let history = self
-            .runtime
-            .product_runtime
-            .owner
-            .inspection_port()
-            .trace_ancestry(world.commit().identity().clone(), maximum_ancestry_commits)
-            .map_err(|_| Denial::IndexUnavailable)?;
-        let (original, completion, attempt) = pair_world_history(&history, &row)?;
-        if &completion != world.commit().identity() || &attempt != world.publication_attempt() {
+        if commit.relational_change()
+            != worth_runtime_world::facade::CompositeComponentChangePosture::Published
+        {
             return Err(Denial::WorldPairMismatch);
         }
-        Ok(Some(
-            WorthQueryCanonicalInboundCompletion::from_verified_row(
-                row,
-                world.product_incarnation(),
-                original,
-                completion,
-                attempt,
-            ),
-        ))
+        let record = self
+            .runtime
+            .primary_provider
+            .completion_original_outbox(
+                execution,
+                &row,
+                &original,
+                source.incarnation(),
+                &self.runtime.product_runtime.owner.observation_port(),
+                maximum_changed_records,
+            )
+            .map_err(completion_read_denial)?;
+        let original_receipt = row.original_commit.clone();
+        let original_world = original.clone();
+        let sealed = WorthQueryCanonicalInboundCompletion::from_verified_row(
+            row,
+            source.incarnation(),
+            original,
+            completion,
+            attempt,
+        );
+        if !sealed.matches_original_dispatch(
+            &record,
+            &original_receipt,
+            &original_world,
+            source.incarnation(),
+        ) {
+            return Err(Denial::WorldPairMismatch);
+        }
+        Ok(sealed)
+    }
+}
+
+pub(super) fn completion_read_denial(denial: WorthQueryInboundCompletionReadDenial) -> Denial {
+    match denial {
+        WorthQueryInboundCompletionReadDenial::SourceRead(cause) => Denial::SourceRead(cause),
+        WorthQueryInboundCompletionReadDenial::ReadRequest(cause) => Denial::ReadRequest(cause),
+        WorthQueryInboundCompletionReadDenial::ReconstructionWorkExhausted => {
+            Denial::ReconstructionWorkExhausted
+        }
+        WorthQueryInboundCompletionReadDenial::AmbiguousCorrelation
+        | WorthQueryInboundCompletionReadDenial::Malformed
+        | WorthQueryInboundCompletionReadDenial::CommitUnavailable => Denial::IndexUnavailable,
     }
 }
 
 /// Explicit repair result; ordinary exact lookup never invokes this lane.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInboundIndexRepairDenial {
+    SourceRead(
+        crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxReadDenial,
+    ),
     ExecutionDenied(
         Result<
             crate::domain_computation::WorthQueryProviderSessionDenialKind,
@@ -190,6 +196,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             maximum_ancestry_commits_per_completion,
         )
         .map_err(|denial| match denial {
+            Denial::SourceRead(cause) => WorthQueryInboundIndexRepairDenial::SourceRead(cause),
             Denial::ReadRequest(cause) => WorthQueryInboundIndexRepairDenial::ExecutionDenied(
                 crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_kind(cause, None),
             ),

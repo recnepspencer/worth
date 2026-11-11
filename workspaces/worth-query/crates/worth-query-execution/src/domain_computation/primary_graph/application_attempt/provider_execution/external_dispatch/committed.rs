@@ -52,6 +52,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .begin_external_dispatch_in_flight(&completion_owner)
             .map_err(denial::from_in_flight)?;
         // Durable before contact: a refused record returns before the transport.
+        self.record_original_transport_binding(execution, &completion_owner)
+            .map_err(durable_attempt::attempt_record_denial)?;
         let contact = self.begin_durable_dispatch_contact(execution, completion_owner.record())?;
         let admitted = if contact.is_recorded() {
             prepared

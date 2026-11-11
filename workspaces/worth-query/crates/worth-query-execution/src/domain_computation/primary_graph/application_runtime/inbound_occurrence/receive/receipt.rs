@@ -56,9 +56,19 @@ pub struct WorthQueryInboundReceipt {
     posture: WorthQueryInboundReceiptPosture,
     pending_reason: Option<WorthQueryInboundPendingReason>,
     requires_maintenance_cue: bool,
+    preparation_denial:
+        Option<std::sync::Arc<worth_runtime_world::facade::WorldNativePreparationDenial>>,
 }
 
 impl WorthQueryInboundReceipt {
+    /// Exact refusal that left the actual durable open retained before Native effects.
+    /// Diagnostic data grants neither publication nor retry authority.
+    pub fn preparation_denial(
+        &self,
+    ) -> Option<&worth_runtime_world::facade::WorldNativePreparationDenial> {
+        self.preparation_denial.as_deref()
+    }
+
     pub const fn message_identity(&self) -> &[u8; 32] {
         &self.message_identity
     }
@@ -92,6 +102,7 @@ impl WorthQueryInboundReceipt {
             posture,
             pending_reason: None,
             requires_maintenance_cue: true,
+            preparation_denial: accepted.preparation_denial(),
         }
     }
 
@@ -106,6 +117,7 @@ impl WorthQueryInboundReceipt {
             posture,
             pending_reason: None,
             requires_maintenance_cue: false,
+            preparation_denial: None,
         }
     }
 

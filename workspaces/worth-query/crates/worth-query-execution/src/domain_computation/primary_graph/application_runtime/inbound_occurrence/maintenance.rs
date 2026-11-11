@@ -90,6 +90,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 .execution_request_for(&self.runtime.product_runtime)
                 .map_err(|cause| Denial::advancement(cause.into()))?;
             let execution = &phase_request;
+            {
+                let driver = self
+                    .runtime
+                    .dispatch_journal
+                    .begin_inbound_admission(execution)
+                    .map_err(|_| Denial::RetryBeforeAcceptance)?;
+                self.synchronize_durable_inbound(&driver, execution)?;
+            }
             let installed = self
                 .installed_inbound_verifier(handle)
                 .ok_or(Denial::ForeignVerifier)?;
@@ -232,7 +240,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     ) => report.blocked += 1,
                 }
             }
-            match self.cleanup_completed_inbound_occurrences(
+            match self.cleanup_completed_inbound_in_request(
+                execution,
                 handle,
                 NonZeroUsize::new(work).expect("installed discovery limit is nonzero"),
             ) {

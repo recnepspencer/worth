@@ -16,6 +16,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         use InstalledTransportPendingReason as Pending;
         use InstalledTransportResumeOutcome as Resume;
         enum Work {
+            Recorded(
+                Arc<InstalledTransportCompletion>,
+                super::super::recovered::RecordedCompletionContinuation,
+            ),
             Publish(Arc<InstalledTransportCompletion>),
             Recover(
                 Arc<InstalledTransportCompletion>,
@@ -33,6 +37,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 return Resume::Pending(Pending::UnknownCompletion);
             };
             match &mut entry.state {
+                RetainedCompletion::Recorded(evidence, continuation) => {
+                    let work = Work::Recorded(Arc::clone(evidence), continuation.clone());
+                    entry.state = RetainedCompletion::Recovering;
+                    work
+                }
                 RetainedCompletion::Publishing | RetainedCompletion::Recovering => {
                     return Resume::Pending(Pending::ConcurrentContinuation);
                 }
@@ -75,6 +84,65 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             }
         };
         match work {
+            Work::Recorded(evidence, mut continuation) => {
+                let progress = continuation.advance(self, execution, &mut retirements);
+                if matches!(
+                    progress,
+                    Ok(super::super::recovered::RecordedCompletionProgress::StaleReleased)
+                ) {
+                    self.runtime
+                        .transport_completion_custody
+                        .lock()
+                        .unwrap_or_else(|p| p.into_inner())
+                        .entries
+                        .get_mut(correlation)
+                        .expect("recorded recovery retains its slot")
+                        .state = RetainedCompletion::Ready(evidence);
+                    self.runtime
+                        .primary_provider
+                        .clear_inbound_completion_publication_pending(correlation);
+                    return Resume::Pending(Pending::RecoveryStaleProduct);
+                }
+                let completed = progress.ok().and_then(|progress| {
+                    let super::super::recovered::RecordedCompletionProgress::Completed(terminal) =
+                        progress
+                    else {
+                        unreachable!("stale release returned above")
+                    };
+                    let binding = self
+                        .admit_installed_transport_completion_binding(
+                            execution,
+                            evidence.committed(),
+                        )
+                        .ok()?;
+                    if !terminal.matches_transport_observation(&evidence, &binding) {
+                        return None;
+                    }
+                    self.runtime
+                        .primary_provider
+                        .release_recorded_terminal_dispatch_provenance(
+                            evidence.committed(),
+                            &terminal,
+                        )
+                        .ok()?;
+                    Some(terminal)
+                });
+                let mut custody = self
+                    .runtime
+                    .transport_completion_custody
+                    .lock()
+                    .unwrap_or_else(|p| p.into_inner());
+                if completed.is_some() {
+                    custody.finish(correlation);
+                    return Resume::Performed;
+                }
+                custody
+                    .entries
+                    .get_mut(correlation)
+                    .expect("recorded recovery retains its slot")
+                    .state = RetainedCompletion::Recorded(evidence, continuation);
+                return Resume::Pending(Pending::ProductRecoveryRequired);
+            }
             Work::Publish(evidence) => {
                 let outcome = self
                     .publish_installed_transport_completion(execution, phase, evidence, request);
@@ -165,7 +233,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .expect("retained completion");
         let (performed, prior) = match &mut entry.state {
             RetainedCompletion::PerformedPending(performed, prior) => (performed, prior),
-            _ => return Resume::Pending(Pending::ConcurrentContinuation),
+            RetainedCompletion::Ready(_)
+            | RetainedCompletion::Recorded(_, _)
+            | RetainedCompletion::Publishing
+            | RetainedCompletion::Unpublished(_, _, _)
+            | RetainedCompletion::Recovering
+            | RetainedCompletion::StaleRelease(_, _) => {
+                return Resume::Pending(Pending::ConcurrentContinuation)
+            }
         };
         if let Some(release) = prior.take()
             && let Err(failed) = self.finish_recovery_release(execution, release, &mut retirements)

@@ -50,10 +50,10 @@ impl OutstandingDispatchOwner {
             || publication.relational_commit() != original.commit_reference()
             || entry.branch != *publication.product_branch()
             || entry.incarnation != publication.product_incarnation()
-            || entry.performed_world.as_ref().is_none_or(|performed| {
-                performed.composite_commit() != publication.composite_commit()
-                    || performed.publication_attempt() != publication.publication_attempt()
-            })
+            || entry
+                .original
+                .as_ref()
+                .is_none_or(|source| !source.matches(publication))
         {
             return Err(Denial::OriginalMismatch);
         }
@@ -106,7 +106,11 @@ impl Drop for OutstandingDispatchInFlightLease {
         let Some(commit) = entry.commit else {
             return;
         };
-        if !basis.has_mandatory(commit) {
+        let has_live_basis = entry
+            .original
+            .as_ref()
+            .is_some_and(super::OutstandingDispatchOriginal::has_live_basis);
+        if has_live_basis && !basis.has_mandatory(commit) {
             return;
         }
         let removed = entries
@@ -115,6 +119,8 @@ impl Drop for OutstandingDispatchInFlightLease {
             .expect("lease owner remains");
         decrement(&mut entries.counts, &removed.contract);
         decrement(&mut entries.by_branch, &removed.incarnation);
-        basis.release_mandatory(commit);
+        if has_live_basis {
+            basis.release_mandatory(commit);
+        }
     }
 }

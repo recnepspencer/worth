@@ -53,6 +53,16 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         return Err(WorthQueryInboundAdmissionDenial::TerminalCleanupUnavailable);
                     }
                 };
+                if let Err(denial) =
+                    self.acknowledge_retained_inbound_terminal(execution, &accepted)
+                {
+                    self.runtime
+                        .inbound_custody
+                        .lock()
+                        .unwrap_or_else(|p| p.into_inner())
+                        .mark_publication_retryable(&accepted);
+                    return Err(denial);
+                }
                 self.runtime
                     .inbound_custody
                     .lock()
@@ -74,7 +84,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     retained,
                     "performed completion has exactly one owner custody slot"
                 );
-                self.release_retained_inbound_terminal(&accepted)?;
+                self.release_retained_inbound_terminal(execution, &accepted)?;
                 Ok(Posture::Performed)
             }
             WorthQueryInboundPublicationOutcome::ProductUnpublished(unpublished) => {
@@ -111,6 +121,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 
     pub(in crate::domain_computation) fn release_retained_inbound_terminal(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         accepted: &Arc<WorthQueryAcceptedInboundOccurrence>,
     ) -> Result<(), WorthQueryInboundAdmissionDenial> {
         let terminal = self
@@ -146,7 +157,43 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 .primary_provider
                 .release_terminal_dispatch_provenance(&terminal, world_protection)
                 .map_err(|_| WorthQueryInboundAdmissionDenial::TerminalCleanupUnavailable)?;
-            custody.mark_terminal_release_complete(accepted);
+            custody.mark_terminal_provenance_released(accepted);
+        }
+        drop(custody);
+        self.acknowledge_retained_inbound_terminal(execution, accepted)?;
+        self.runtime
+            .inbound_custody
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .mark_terminal_acknowledgement_complete(accepted);
+        Ok(())
+    }
+
+    pub(super) fn acknowledge_retained_inbound_terminal(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        accepted: &Arc<WorthQueryAcceptedInboundOccurrence>,
+    ) -> Result<(), WorthQueryInboundAdmissionDenial> {
+        if self.runtime.dispatch_journal.is_durable() {
+            use crate::domain_computation::application_aftermath::dispatch_journal::QueryInboundMessageKey;
+            let canonical = self
+                .runtime
+                .primary_provider
+                .lookup_completed_inbound(accepted.owner().record().correlation())
+                .map_err(|_| WorthQueryInboundAdmissionDenial::TerminalCleanupUnavailable)?
+                .ok_or(WorthQueryInboundAdmissionDenial::TerminalCleanupUnavailable)?;
+            let driver = self
+                .runtime
+                .dispatch_journal
+                .begin_inbound_admission(execution)
+                .map_err(|_| WorthQueryInboundAdmissionDenial::TerminalCleanupUnavailable)?;
+            driver
+                .acknowledge(
+                    QueryInboundMessageKey::from_claims(accepted.claims()),
+                    &canonical,
+                    execution,
+                )
+                .map_err(|_| WorthQueryInboundAdmissionDenial::TerminalCleanupUnavailable)?;
         }
         Ok(())
     }

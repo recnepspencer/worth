@@ -5,6 +5,11 @@ use worth_foundational::facade::{AspectFieldLocator, ContractValidatedAspectValu
 use worth_relational::facade::runtime::{EntityReadRecord, VisibilityProjectionView};
 
 impl WorthQueryPrimaryGraphProvider {
+    pub(in crate::domain_computation::primary_graph) fn dispatch_readmission_catalog(
+        &self,
+    ) -> &worth_query_installation::facade::InstalledOperationCatalog {
+        &self.installed_operations
+    }
     pub(in crate::domain_computation::primary_graph) fn readmit_dispatch_outboxes(
         &self,
         execution: &ExecutionRequest<'_, '_>,

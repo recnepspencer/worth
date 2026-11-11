@@ -375,3 +375,5 @@ fn collect_owned_inline_type_sizes(census: &mut crate::inline_type_sizes::Census
         owner.field::<teardown::ApplicationWorkflowTeardown>("workflow_teardown");
     }
 }
+
+pub use inbound_publication::WorthQueryRecordedCompletionDenial;

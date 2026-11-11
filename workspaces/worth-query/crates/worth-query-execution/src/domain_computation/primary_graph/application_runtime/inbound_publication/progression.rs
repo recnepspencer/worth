@@ -1,3 +1,4 @@
+use super::completion_publication::{CompletionPreparationDenial, PreparedCompletionPublication};
 use crate::domain_computation::execution_runtime::product_world::publication_denial::{
     WorthQueryProductPublicationDenial as PublicationDenial,
     WorthQueryProductPublicationOutcome as PublicationOutcome,
@@ -7,7 +8,7 @@ use crate::domain_computation::primary_graph::provider::WorthQueryInboundComplet
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
-use worth_relational::facade::mvcc::PreparedRelationalCommitCandidate;
+use worth_relational::facade::mvcc::ValidatedRelationalProposal;
 
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::ApplicationSchema;
@@ -106,7 +107,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let candidate = match completion_candidate(
             self.runtime
                 .primary_provider
-                .prepare_inbound_completion_candidate(
+                .validate_inbound_completion_proposal(
                     execution,
                     lease.relational_basis(),
                     &accepted,
@@ -117,16 +118,24 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         };
         let binding = lease.publication_binding();
         let recovery = binding.recovery();
-        let prepared = match binding.prepare_relational_candidate(candidate, request, false) {
+        let prepared = match PreparedCompletionPublication::prepare(&self.runtime.primary_provider, &binding, candidate, request, execution) {
             Ok(prepared) => prepared,
-            Err(PublicationDenial::ClockMismatch) => {
+            Err(CompletionPreparationDenial::Native(cause)) => return Outcome::Denied(Denial::CompletionPreparation(cause)),
+            Err(CompletionPreparationDenial::Opening(cause)) => {
+                return Outcome::Denied(match super::completion_publication::opening_request_stop(cause) {
+                    Some(stop) => Denial::ExecutionDenied(advancement_denial(stop)),
+                    None => Denial::ProductAdmission,
+                });
+            },
+            Err(CompletionPreparationDenial::Request(PublicationDenial::ClockMismatch)) => {
                 return Outcome::Denied(Denial::ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)))
             },
-Err(PublicationDenial::Stopped(stop)) => {
+Err(CompletionPreparationDenial::Request(PublicationDenial::Stopped(stop))) => {
                 return Outcome::Denied(Denial::ExecutionDenied(advancement_denial(stop)))
             }
-            Err(PublicationDenial::Refused(_)) => return Outcome::NoEffect,
+            Err(CompletionPreparationDenial::Request(PublicationDenial::Refused(_))) => return Outcome::NoEffect,
         };
+        accepted.record_preparation_denial(prepared.preparation_denial());
         let terminal = WorthQueryReservedProductPublicationReceipt::new(
             binding.root_identity(),
             prepared.unpublished_recovery_handle(),
@@ -189,8 +198,8 @@ Err(PublicationDenial::Stopped(stop)) => {
 // Both entry routes keep HEAD's preparation-refusal posture. The complete
 // refusal travels with the publication outcome rather than becoming a string.
 pub fn completion_candidate(
-    result: Result<PreparedRelationalCommitCandidate, Preparation>,
-) -> Result<PreparedRelationalCommitCandidate, Outcome> {
+    result: Result<ValidatedRelationalProposal, Preparation>,
+) -> Result<ValidatedRelationalProposal, Outcome> {
     match result {
         Ok(candidate) => Ok(candidate),
         Err(

@@ -75,6 +75,12 @@ pub enum WorthQueryCommittedDispatchOutboxReadDenial {
 use WorthQueryCommittedDispatchOutboxReadDenial as Denial;
 
 impl WorthQueryCommittedDispatchOutboxObservation {
+    /// Discard this observation's duplicate physical receipt, preserving exact
+    /// immutable meaning. The provider retains and retires the actual original.
+    pub(in crate::domain_computation) fn into_descriptive(mut self) -> Self {
+        self.committed_product_publication = self.committed_product_publication.descriptive();
+        self
+    }
     const fn seal(
         owner: WorthQueryCommittedDispatchOutboxOwnerObservation,
         committed_product_publication: WorthQueryCommittedProductPublication,

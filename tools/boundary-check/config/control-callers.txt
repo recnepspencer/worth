@@ -2282,3 +2282,11 @@ workspaces/worth-store/crates/worth-store/ workspaces/worth-store/crates/worth-s
 workspaces/worth-store/crates/worth-store/ workspaces/worth-store/crates/worth-store-court-store-replication-physical-record-journeys-physical-work/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/process/store/physical_record_journeys/physical_work/close_plan/task.rs
 
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/application_home/dispatch_custody/portable_causality.rs
+workspaces/worth-store/crates/worth-store-application/ workspaces/worth-query/crates/worth-query-host/src/application_home/opening/custody.rs
+workspaces/worth-query/crates/worth-query-host/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/application_home/dispatch_custody/inbound_custody/acknowledgement.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/application_home/dispatch_custody/inbound_custody/acknowledgement.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/application_home/dispatch_custody/inbound_custody/index_repair.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/application_home/dispatch_custody/inbound_custody/unpublished.rs
+crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/application_home/dispatch_custody/inbound_custody/unpublished.rs
+
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/application_home/dispatch_custody/inbound_custody/empty_original.rs

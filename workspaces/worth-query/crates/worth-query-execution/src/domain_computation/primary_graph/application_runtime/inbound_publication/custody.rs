@@ -6,10 +6,13 @@ use std::sync::Arc;
 
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::ApplicationSchema;
+mod home_retirement;
 mod maintenance;
 mod publication_retry;
+mod readmission;
 mod recovery;
 mod resume;
+pub(in crate::domain_computation::primary_graph) use home_retirement::InstalledTransportCloseCustody;
 
 use super::installed_transport::{
     InstalledTransportCompletion, InstalledTransportPublicationOutcome,
@@ -64,6 +67,10 @@ pub enum InstalledTransportResumeOutcome {
 }
 
 enum RetainedCompletion {
+    Recorded(
+        Arc<InstalledTransportCompletion>,
+        super::recovered::RecordedCompletionContinuation,
+    ),
     Ready(Arc<InstalledTransportCompletion>),
     /// The continuing caller holds the evidence until it returns an outcome.
     Publishing,
@@ -113,9 +120,32 @@ pub(in crate::domain_computation::primary_graph::application_runtime) struct Ins
     entries: BTreeMap<ExternalEffectCorrelationIdentity, CustodyEntry>,
     pending_by_operation: BTreeMap<String, BTreeSet<ExternalEffectCorrelationIdentity>>,
     maintenance_cursor_by_operation: BTreeMap<String, ExternalEffectCorrelationIdentity>,
+    finished: BTreeMap<ExternalEffectCorrelationIdentity, PerformedInstalledTransportCompletion>,
+    retired: Vec<RetainedCompletion>,
+    retired_finished: Vec<PerformedInstalledTransportCompletion>,
 }
 
 impl InstalledTransportCompletionCustody {
+    pub(in crate::domain_computation::primary_graph::application_runtime) fn recorded_completion_denial(
+        &self,
+        operation: &str,
+        correlation: &ExternalEffectCorrelationIdentity,
+    ) -> Option<Arc<super::recovered::WorthQueryRecordedCompletionDenial>> {
+        let entry = self.entries.get(correlation)?;
+        if entry.operation.as_deref() != Some(operation) {
+            return None;
+        }
+        match &entry.state {
+            RetainedCompletion::Recorded(_, original) => original.last_denial(),
+            RetainedCompletion::Ready(_)
+            | RetainedCompletion::Publishing
+            | RetainedCompletion::PerformedPending(_, _)
+            | RetainedCompletion::Unpublished(_, _, _)
+            | RetainedCompletion::Recovering
+            | RetainedCompletion::StaleRelease(_, _) => None,
+        }
+    }
+
     fn retain(
         &mut self,
         evidence: InstalledTransportCompletion,
@@ -148,6 +178,19 @@ impl InstalledTransportCompletionCustody {
         let Some(entry) = self.entries.remove(correlation) else {
             return;
         };
+        if let RetainedCompletion::PerformedPending(performed, prior) = entry.state
+            && performed
+                .evidence()
+                .committed()
+                .committed_product_publication()
+                .product_branch()
+                .owner_identity()
+                .durable()
+                .is_some()
+        {
+            assert!(prior.is_none(), "source release precedes finished custody");
+            self.finished.insert(*correlation, performed);
+        }
         if let Some(operation) = entry.operation
             && let Some(pending) = self.pending_by_operation.get_mut(&operation)
         {

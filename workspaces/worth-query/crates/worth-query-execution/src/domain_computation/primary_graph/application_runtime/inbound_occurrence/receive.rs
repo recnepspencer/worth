@@ -81,6 +81,7 @@ pub enum WorthQueryInboundAdmissionDenial {
 
 mod admit;
 mod denial;
+mod home_acceptance;
 mod phases;
 mod progress_error;
 mod receipt;
@@ -169,7 +170,9 @@ where
                     return self.accepted_progress_result(&accepted, envelope, result);
                 }
                 WorthQueryInboundPublicationClaim::Terminal => {
-                    if let Err(denial) = self.release_retained_inbound_terminal(&accepted) {
+                    if let Err(denial) =
+                        self.release_retained_inbound_terminal(execution, &accepted)
+                    {
                         return self.accepted_progress_error(&accepted, envelope, denial);
                     }
                     return Ok(WorthQueryInboundReceipt::from_accepted(

@@ -196,7 +196,7 @@ pub(super) fn recorded_observation(
     }
 }
 
-fn attempt_record_denial(
+pub(super) fn attempt_record_denial(
     cause: QueryDispatchJournalDenial,
 ) -> WorthQueryExternalDispatchPreparationDenial {
     use QueryDispatchJournalDenial as Journal;

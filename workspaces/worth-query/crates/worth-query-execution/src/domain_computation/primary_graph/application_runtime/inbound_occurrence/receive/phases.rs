@@ -35,10 +35,7 @@ pub struct WorthQueryAuthenticatedInboundOccurrence<'a, Schema> {
 pub(super) enum CorrelationDecision {
     Original(WorthQueryCommittedDispatchOutboxObservation),
     ExistingCustody(WorthQueryInboundCustodyAdmission),
-    Completed(
-        WorthQueryInboundOccurrenceClaims,
-        super::WorthQueryInboundReceiptPosture,
-    ),
+    Completed(super::WorthQueryInboundReceiptPosture),
 }
 
 /// Authenticated meaning tied to exact owner provenance or retained custody.
@@ -167,9 +164,14 @@ impl<'a, Schema: ApplicationSchema> WorthQueryCorrelatedInboundOccurrence<'a, Sc
     /// The phase witnesses admission before verifier, provenance, or custody access.
     pub(super) fn accept_in_advancement(
         self,
-        _phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     ) -> Result<WorthQueryAdmittedInboundOccurrence<'a, Schema>, Denial> {
-        self.authenticated.runtime.accept_correlated_inbound(self)
+        let execution = phase
+            .execution_request_for(&self.authenticated.runtime.runtime.product_runtime)
+            .map_err(|cause| Denial::advancement(cause.into()))?;
+        self.authenticated
+            .runtime
+            .accept_correlated_inbound(&execution, self)
     }
 }
 
@@ -187,7 +189,8 @@ impl<Schema: ApplicationSchema> WorthQueryAdmittedInboundOccurrence<'_, Schema> 
             .map_err(Denial::advancement)?
     }
 
-    pub(super) fn execute_in_advancement(
+    /// Consume accepted custody under the supplied actual runtime advancement.
+    pub fn execute_in_advancement(
         mut self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryRequestScope,
@@ -243,5 +246,55 @@ impl<Schema: ApplicationSchema> Drop for WorthQueryAdmittedInboundOccurrence<'_,
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .mark_publication_retryable(accepted);
+    }
+}
+
+impl<Schema: ApplicationSchema> WorthQueryAuthenticatedInboundOccurrence<'_, Schema> {
+    /// Recorded DATA from this exact authenticated phase and original owner.
+    /// A raw claims value cannot enter the journal's acceptance operation.
+    pub(in crate::domain_computation) fn accepted_message_record(
+        &self,
+        journal: &crate::domain_computation::application_aftermath::dispatch_journal::WorthQueryDispatchJournal,
+        owner: &crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation,
+    ) -> Result<crate::domain_computation::application_aftermath::dispatch_journal::QueryInboundAcceptedMessage,
+    crate::domain_computation::application_aftermath::dispatch_journal::QueryDispatchJournalDenial>{
+        use crate::domain_computation::application_aftermath::dispatch_journal::{
+            QueryDispatchJournalDenial, QueryInboundAcceptedMessage, QueryInboundDispatchSource,
+        };
+        if !std::ptr::eq(self.runtime.runtime.dispatch_journal.as_ref(), journal)
+            || owner.relational_runtime_instance_id()
+                != self
+                    .runtime
+                    .runtime
+                    .product_runtime
+                    .source()
+                    .authoritative_source_profile()
+                    .runtime_instance_id()
+            || owner
+                .committed_product_publication()
+                .product_branch()
+                .owner_identity()
+                != self.runtime.runtime.product_runtime.owner.owner_identity()
+        {
+            return Err(QueryDispatchJournalDenial::ForeignHome);
+        }
+        let record = owner.record();
+        if record.operation_slot() != Some(self.operation.as_str())
+            || record.inbound() != Some(&self.installed.contract)
+            || record.effect() != self.installed.contract.effect()
+            || record.correlation().bytes() != &self.claims.correlation_token
+            || record.correlation_family().as_str() != self.claims.correlation_family
+            || record.protocol_identity() != &self.claims.protocol_identity
+            || record.protocol_version() != self.claims.protocol_version
+            || record.payload() != self.claims.payload
+        {
+            return Err(QueryDispatchJournalDenial::MalformedFrame);
+        }
+        Ok(QueryInboundAcceptedMessage {
+            operation: self.operation.clone(),
+            claims: self.claims.clone(),
+            envelope_bytes: self.envelope.len() as u64,
+            source: QueryInboundDispatchSource::from_owner(owner)?,
+        })
     }
 }

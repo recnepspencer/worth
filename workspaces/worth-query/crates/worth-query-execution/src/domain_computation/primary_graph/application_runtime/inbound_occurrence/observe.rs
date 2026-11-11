@@ -88,3 +88,33 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         })
     }
 }
+
+impl<Schema: worth_query_installation::facade::ApplicationSchema>
+    WorthQueryPrimaryGraphApplicationRuntime<Schema>
+{
+    /// Actual latest cold-continuation refusal for this admitted route's original.
+    /// Diagnostic evidence carries no publication, delivery or retry authority.
+    pub fn observe_inbound_recovery_denial(
+        &self,
+        handle: &WorthQueryInboundVerifierHandle,
+        correlation_token: [u8; 32],
+    ) -> Option<std::sync::Arc<super::super::WorthQueryRecordedCompletionDenial>> {
+        self.installed_inbound_verifier(handle)?;
+        let correlation = ExternalEffectCorrelationIdentity::from_digest(CanonicalDigestId::new(
+            correlation_token,
+        ));
+        let signed = self
+            .runtime
+            .inbound_custody
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .recorded_completion_denial(handle.operation(), &correlation);
+        signed.or_else(|| {
+            self.runtime
+                .transport_completion_custody
+                .lock()
+                .unwrap_or_else(|p| p.into_inner())
+                .recorded_completion_denial(handle.operation(), &correlation)
+        })
+    }
+}

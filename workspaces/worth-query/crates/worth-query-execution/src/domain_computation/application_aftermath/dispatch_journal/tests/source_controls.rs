@@ -17,8 +17,10 @@ fn source_control_frames_preserve_each_source_and_refuse_revocation_downgrade() 
                 &mut generations,
             )
             .unwrap();
-        assert!(frame.bytes().len() as u64 <= QUERY_DISPATCH_FRAME_MAX_BYTES);
-        let decoded = QueryDispatchFrame::readmit(frame.bytes()).unwrap();
+        assert!(frame.bytes().len() as u64 <= QUERY_DISPATCH_FIXED_RECORD_MAX_BYTES);
+        let decoded =
+            QueryDispatchFrame::readmit(frame.bytes(), QUERY_DISPATCH_FIXED_RECORD_MAX_BYTES)
+                .unwrap();
         assert_eq!(decoded, frame);
         assert_eq!(
             QueryDispatchLedger::empty(home(2)).readmit(decoded.clone()),
@@ -65,7 +67,7 @@ fn an_intact_unknown_source_control_never_reactivates_a_source() {
     let mut payload = frame.bytes()[..frame.bytes().len() - 32].to_vec();
     *payload.last_mut().unwrap() = 0;
     assert_eq!(
-        QueryDispatchFrame::readmit(&resealed(payload)),
+        QueryDispatchFrame::readmit(&resealed(payload), QUERY_DISPATCH_FIXED_RECORD_MAX_BYTES),
         Err(Denial::MalformedFrame)
     );
 }

@@ -6,6 +6,7 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_execution::ExecutionRequest;
 use worth_query_installation::facade::ApplicationSchema;
+mod inbound;
 mod participation;
 pub(in crate::domain_computation::primary_graph) use participation::PrimaryGraphParticipationCustody;
 
@@ -62,6 +63,8 @@ pub(in crate::domain_computation::primary_graph) struct RetiringPrimaryGraphRunt
 }
 enum QueryRetirementStage {
     Handlers,
+    InboundCustody,
+    TransportCustody,
     Participation,
     Provider,
     Projection,
@@ -91,6 +94,25 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .dispatch_journal
             .settle_for_close(request)
             .map_err(WorthQueryHomeRetirementDenial::DispatchCustody)?;
+        if self.runtime.dispatch_journal.is_durable() {
+            self.runtime
+                .primary_provider
+                .protect_dispatch_originals_for_close(
+                    request,
+                    &self.runtime.product_runtime.owner.inspection_port(),
+                )?;
+        }
+        let transport = self
+            .runtime
+            .transport_completion_custody
+            .try_lock()
+            .map_err(|_| {
+                WorthQueryHomeRetirementDenial::Busy(
+                    WorthQueryHomeRetirementOwner::PublicationReceipts,
+                )
+            })?
+            .preflight_home_retirement(request, &self.runtime.dispatch_journal)?;
+        self.preflight_inbound_home_retirement(request)?;
         self.preflight_supplied_home_owners()?;
         self.runtime
             .primary_graph_authority
@@ -99,7 +121,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .preflight(&self.runtime.primary_provider)?;
         self.runtime
             .primary_provider
-            .preflight(request, dispatch_custody)?;
+            .preflight(request, dispatch_custody, &transport)?;
         self.mutation_projection
             .preflight_home_retirement(request)?;
         self.runtime
@@ -205,6 +227,28 @@ impl<Schema: ApplicationSchema> RetiringPrimaryGraphRuntime<Schema> {
                 .runtime
                 .mutation_handlers
                 .advance_home_retirement(&mut self.handlers, request)?,
+            QueryRetirementStage::InboundCustody => self
+                .runtime
+                .runtime
+                .inbound_custody
+                .try_lock()
+                .map_err(|_| {
+                    WorthQueryHomeRetirementDenial::Busy(
+                        WorthQueryHomeRetirementOwner::PublicationReceipts,
+                    )
+                })?
+                .advance_home_retirement(request, native)?,
+            QueryRetirementStage::TransportCustody => self
+                .runtime
+                .runtime
+                .transport_completion_custody
+                .try_lock()
+                .map_err(|_| {
+                    WorthQueryHomeRetirementDenial::Busy(
+                        WorthQueryHomeRetirementOwner::PublicationReceipts,
+                    )
+                })?
+                .advance_home_retirement(request, native)?,
             QueryRetirementStage::Participation => self
                 .runtime
                 .runtime
@@ -262,7 +306,9 @@ impl<Schema: ApplicationSchema> RetiringPrimaryGraphRuntime<Schema> {
         };
         if progress == Progress::Complete {
             self.stage = match self.stage {
-                QueryRetirementStage::Handlers => QueryRetirementStage::Participation,
+                QueryRetirementStage::Handlers => QueryRetirementStage::InboundCustody,
+                QueryRetirementStage::InboundCustody => QueryRetirementStage::TransportCustody,
+                QueryRetirementStage::TransportCustody => QueryRetirementStage::Participation,
                 QueryRetirementStage::Participation => QueryRetirementStage::Provider,
                 QueryRetirementStage::Provider => QueryRetirementStage::Projection,
                 QueryRetirementStage::Projection => QueryRetirementStage::Granular,

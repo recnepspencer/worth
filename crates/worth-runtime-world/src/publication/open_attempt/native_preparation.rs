@@ -25,6 +25,11 @@ pub struct WorldNativePreparationRefusal {
     cause: WorldNativePreparationDenial,
 }
 impl WorldNativePreparationRefusal {
+    /// Transfer the same original open and its exact preparation refusal.
+    pub fn into_parts(self) -> (WorldOpenedPublicationAttempt, WorldNativePreparationDenial) {
+        (self.open, self.cause)
+    }
+
     pub fn cause(&self) -> &WorldNativePreparationDenial {
         &self.cause
     }

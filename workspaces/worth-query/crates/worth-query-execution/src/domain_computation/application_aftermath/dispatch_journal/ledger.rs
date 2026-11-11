@@ -29,6 +29,7 @@ pub(super) struct QueryDispatchLedger {
     effects: BTreeMap<CanonicalDigestId, QueryDispatchCustody>,
     source_controls: BTreeMap<CanonicalDigestId, InboundSourceControl>,
     awaiting_observation: BTreeMap<DispatchAttemptIdentity, CanonicalDigestId>,
+    pub(super) inbound: super::inbound::QueryInboundMessageLedger,
 }
 impl QueryDispatchLedger {
     pub(super) fn empty(home: HomeIdentity) -> Self {
@@ -41,6 +42,7 @@ impl QueryDispatchLedger {
             effects: BTreeMap::new(),
             source_controls: BTreeMap::new(),
             awaiting_observation: BTreeMap::new(),
+            inbound: Default::default(),
         }
     }
     pub(super) const fn position(&self) -> u64 {
@@ -95,6 +97,7 @@ impl QueryDispatchLedger {
             .checked_add(1)
             .ok_or(Denial::IdentityExhausted)?;
         let record = match intent {
+            QueryDispatchRecordIntent::Inbound(value) => QueryDispatchRecord::Inbound(value),
             QueryDispatchRecordIntent::SourceControl { source, posture } => {
                 QueryDispatchRecord::SourceControl { source, posture }
             }
@@ -144,6 +147,7 @@ impl QueryDispatchLedger {
         self.validate(&frame.record, frame.position)?;
         let payload_digest = frame.payload_digest();
         match frame.record {
+            QueryDispatchRecord::Inbound(value) => self.inbound.fold(value, frame.position),
             QueryDispatchRecord::SourceControl { source, posture } => {
                 self.source_controls.insert(source, posture);
             }
@@ -185,6 +189,7 @@ impl QueryDispatchLedger {
     ) -> Result<(), QueryDispatchJournalDenial> {
         use QueryDispatchJournalDenial as Denial;
         match record {
+            QueryDispatchRecord::Inbound(value) => self.inbound.validate(value),
             QueryDispatchRecord::SourceControl { source, posture } => {
                 if self
                     .source_control(source)

@@ -11,6 +11,8 @@ mod identity;
 mod identity_derivation;
 pub(crate) mod inbound;
 mod observation;
+mod recorded_completion;
+pub(in crate::domain_computation) use recorded_completion::RecordedCompletionCausality;
 pub(crate) mod outbox;
 mod posture;
 mod proven_no_effect;
