@@ -171,6 +171,7 @@ fn funded_checkpoint_restore_keeps_the_worlds_zero_work_query_refusal() {
                 checkpoint,
                 Default::default(),
                 runtime_limits(),
+                installation::configuration(Arc::new(AtomicBool::new(false)), None),
             )
         })
         .unwrap()
@@ -219,6 +220,7 @@ fn checkpoint_restore_refuses_the_original_cancelled_phase() {
                 checkpoint,
                 Default::default(),
                 runtime_limits(),
+                installation::configuration(Arc::new(AtomicBool::new(false)), None),
             )
         })
         .unwrap();
