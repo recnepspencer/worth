@@ -1283,6 +1283,33 @@ these splits do not claim equivalent funding coverage from a related public cour
   kinds and target postures, and verify latest-history carrier and retained
   values after source and target drop. They do not claim funding coverage.
 
+### Landing 2a Memory invoice and deferred complexity proofs
+
+- **C2:** restore the complete
+  `memory_original_frame_survives_export_checkpoint_and_last_alias` campaign
+  from `0890a7800a:crates/worth-relational/src/history/commit/envelope_residency/memory_publication_tests.rs`.
+  Restore its same-SHA `envelope_residency.rs` mount, full
+  `history/commit/envelope_residency/` tree, canonical-artifact/immutable-byte
+  owners and `crates/worth-relational/src/tests/support.rs` with its complete
+  support tree. Preserve every original payload charge, no-extra-charge export,
+  exact retained bill, alias lifetime and zero-after-last-drop assertion.
+  The active H counterpart keeps original-frame identity, exact bytes before
+  and after checkpoint, and usable exported bytes after runtime and alias drops.
+- **C2:** the four complexity declarations `runtime.schema_transition.classification`,
+  `runtime.subscriber_resume.continuity`, `runtime.merge.planning`, and
+  `runtime.merge.execution_commit` are explicitly Debt while their complete
+  proof campaigns above are moved out. Restore their Verified declarations and
+  original proof lists from
+  `0890a7800a:crates/worth-relational/src/performance/data/complexity_contract_inventory.rs`
+  together with the already recorded complete schema-continuity and merge
+  campaigns at `86e84dc5cd738882bf50fced389fc7deaa31567f`, including their exact
+  original same-SHA fixture, parent, implementation and counter/control closure.
+  Restore the universal nonempty-proof assertion from
+  `0890a7800a:crates/worth-relational/src/tests/complexity/contracts/commit_budgets/contract_registry.rs`
+  when those proofs are registered again. No moved proof is represented as
+  currently executed or verified; every remaining named proof must still name
+  a registered test and every Verified declaration must have proof.
+
 ### Parallel work
 
 H items whose dependencies have merged may be built in parallel where their write scopes do not overlap. Each one merges into the integration branch when its reviewer approves and its Tier-2 run there is green. A C item may start before landing 2 only where the coordinator assigns it and it does not slow an H item.
