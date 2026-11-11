@@ -59,9 +59,40 @@ fn cold_applied_candidate_pin_retains_admitted_symbol_predecessor() {
         world: &world,
         reads: Cell::new(0),
     };
+    let owners = world
+        .runtime
+        .readmit_edit_coupled_owners(execution, &world.installed, &before, world.source)
+        .unwrap();
+    let mut tx = begin_main_transaction(&world.runtime);
+    // A real graph edit selects Native's sparse graph overlay. A flat scalar
+    // copy retains enough old rows to reconstruct a lost mark and masks the bug.
+    tx.push_batch(
+        update(world.source, "edited-source").push(MutationIntent::Create(CreateIntent::Relation(
+            RelationSpec {
+                partition_id: PartitionId::main(),
+                kind_id: KindId(2),
+                client_key: ClientKey::raw("prefix-edge"),
+                source: EntityReference::Existing(world.source),
+                target: EntityReference::Existing(world.carrier),
+                fields: string_aspect_field_patch([(
+                    aspect_key("label"),
+                    field_key("label"),
+                    "prefix-edge",
+                )]),
+            },
+        ))),
+        execution.allocation_policy(),
+    )
+    .unwrap();
+    let tx = tx
+        .bind_authored_coupled_producers(&world.installed, owners, None)
+        .unwrap();
     let proposal = world
-        .prepare(execution, &producer)
-        .expect("the producer's D read succeeds");
+        .runtime
+        .preparation_port()
+        .prepare_authored_coupled_transaction(execution, tx, &producer)
+        .expect("the producer's sparse graph D read succeeds")
+        .expect("the producer read completes");
     assert!(producer.reads.get() > 0, "the genuine callback read D");
     // Placement installs the genuine cold directory; this scalar-row fixture
     // need not fault another ID page after its initial resident C admission.
