@@ -185,3 +185,9 @@ mod checkpoint_root_publications;
 mod checkpoint_shared_partition;
 
 mod checkpoint_birth_refusal;
+
+mod checkpoint_generation_identity;
+
+mod checkpoint_topology_reidentification;
+
+mod checkpoint_truth_equivalence;

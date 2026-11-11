@@ -1,12 +1,22 @@
+//! Exact index generations and query results survive actual external source recovery.
+use super::checkpoint_recovery_observation::snapshot_for_branch;
 use super::*;
-use crate::facade::indexes::{BoundedEntityFieldLookupRequest, BoundedIndexParityMode};
-
+use worth_foundational::facade::AspectValue;
+use worth_relational::facade::{history::BranchId, indexes::*};
+use worth_testkit_relational::aspect_storage::{
+    definition::{aspect_field_locator, aspect_key, field_key},
+    publications::changed_entities,
+};
+fn string_aspect_value(value: &str) -> AspectValue {
+    AspectValue::String(value.into())
+}
 #[test]
 fn restored_catalog_allocates_fresh_identities_and_preserves_old_observations() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = durable_runtime_with_index_field_aspects();
+    let medium = TestDurableMedium::new();
+    let runtime = durable_runtime(&medium);
     let created = create_entity_outcome(execution, &runtime, "before-recovery");
     let entity = changed_entities(&created)[0];
     let field = aspect_field_locator(aspect_key("name"), field_key("name"));
@@ -37,15 +47,9 @@ fn restored_catalog_allocates_fresh_identities_and_preserves_old_observations() 
         },
     );
     assert!(build.failed_indexes.is_empty());
-    let (_, recovered) = checkpoint_and_recover_with(
-        execution,
-        &runtime,
-        durable_runtime_with_index_field_aspects,
-    );
-    let old_snapshot = recovered
-        .visibility_authority()
-        .snapshot()
-        .expect("current snapshot fixture is admitted");
+    medium.file_checkpoint(capture(execution, &runtime));
+    let (recovered, _) = recover(execution, &medium);
+    let old_snapshot = snapshot_for_branch(&recovered, &BranchId("main".into()));
     definition.name = "entity.name.after-recovery".into();
     let third = recovered
         .index_authority()
@@ -57,7 +61,13 @@ fn restored_catalog_allocates_fresh_identities_and_preserves_old_observations() 
         .expect("index fixture has identity capacity");
     assert!(third.index_id > second.index_id);
     assert!(fourth.index_id > third.index_id);
-    let committed = update_entity(execution, &recovered, entity, "after-recovery");
+    let committed = super::checkpoint_index_generations::update_entity_on_branch(
+        execution,
+        &recovered,
+        entity,
+        "after-recovery",
+        BranchId("main".into()),
+    );
     let after = recovered.index_authority().build_for_commit(
         execution,
         DerivedIndexBuildRequest {
@@ -94,7 +104,6 @@ fn restored_catalog_allocates_fresh_identities_and_preserves_old_observations() 
             after.generations[0].generation_id,
         ),
     ] {
-        let before = recovered.index_access().generation_selection_counters();
         let observed = recovered
             .index_access()
             .execute_bounded_entity_field_lookup(
@@ -113,14 +122,5 @@ fn restored_catalog_allocates_fresh_identities_and_preserves_old_observations() 
             .unwrap();
         assert_eq!(observed.generation_id(), expected);
         assert_eq!(observed.candidate_entity_ids(), &[entity]);
-        let counters = recovered.index_access().generation_selection_counters();
-        assert_eq!(
-            counters.generation_payload_reads - before.generation_payload_reads,
-            1
-        );
-        assert_eq!(
-            counters.history_inventory_entries - before.history_inventory_entries,
-            0
-        );
     }
 }
