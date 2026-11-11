@@ -1,6 +1,7 @@
 pub(crate) mod captured_decode;
 mod checkpoint_delta;
 mod decode_budget;
+mod funding;
 mod generation_decode_quote;
 
 pub(crate) use checkpoint_delta::{CompleteIndexCheckpointView, DerivedIndexCheckpointArtifacts};

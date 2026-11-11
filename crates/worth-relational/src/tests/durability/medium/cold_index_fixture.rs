@@ -10,7 +10,6 @@ pub(super) struct IndexFixture {
     pub(super) entity: crate::identity::data::EntityId,
     pub(super) index: DerivedIndexId,
     pub(super) generation: Arc<DerivedIndexGeneration>,
-    pub(super) carried: Option<Arc<DerivedIndexGeneration>>,
     pub(super) member: RelationalDurableMemberLocator,
     pub(super) manifest: crate::durability::data::RelationalCheckpointManifest,
     pub(super) history_symbol: Option<crate::symbols::data::Symbol>,
@@ -22,23 +21,17 @@ pub(super) fn reopened_with_source(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     wrap: impl FnOnce(Arc<MemberSource>) -> Arc<dyn RelationalDurableColdSource>,
 ) -> IndexFixture {
-    reopened_shape(execution, wrap, false, false)
+    reopened_shape(execution, wrap, false)
 }
 pub(super) fn reopened_historical(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> IndexFixture {
-    reopened_shape(execution, |source| source, true, false)
-}
-pub(super) fn reopened_carried(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> IndexFixture {
-    reopened_shape(execution, |source| source, false, true)
+    reopened_shape(execution, |source| source, true)
 }
 fn reopened_shape(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     wrap: impl FnOnce(Arc<MemberSource>) -> Arc<dyn RelationalDurableColdSource>,
     historical: bool,
-    carried: bool,
 ) -> IndexFixture {
     let producer =
         durable_runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
@@ -54,23 +47,6 @@ fn reopened_shape(
         })
         .expect("index fixture has identity capacity")
         .index_id;
-    let stable_index = carried.then(|| {
-        producer
-            .index_authority()
-            .register(DerivedIndexDefinition {
-                index_id: DerivedIndexId(0),
-                name: "matrix-lifecycle".into(),
-                branch_scoped: true,
-                kind: DerivedIndexKind::EntityField {
-                    field_locator: aspect_field_locator(
-                        aspect_key("lifecycle"),
-                        field_key("lifecycle"),
-                    ),
-                },
-            })
-            .unwrap()
-            .index_id
-    });
     let (entity, history_symbol, _retained_history) = if historical {
         use super::cold_symbols::view_levels::{admit_population, publish_text, TextMutation};
         admit_population(execution, &producer);
@@ -107,33 +83,19 @@ fn reopened_shape(
         crate::indexes::data::DerivedIndexBuildRequest {
             source_commit_id: head.commit_id,
             branch_id: branch.clone(),
-            index_ids: std::iter::once(index).chain(stable_index).collect(),
+            index_ids: vec![index],
         },
     );
     assert!(
         built.failed_indexes.is_empty(),
         "the actual producer must build this index"
     );
-    let carried = stable_index.map(|index| {
-        producer
-            .index_access()
-            .read_latest_generation(execution, index, &branch)
-            .unwrap()
-            .unwrap()
-    });
-    if carried.is_some() {
-        update_entity_and_release_snapshot(execution, &producer, entity, "matrix-index-updated");
-    }
     let generation = producer
         .index_access()
         .read_latest_generation(execution, index, &branch)
         .unwrap()
         .unwrap();
-    if let Some(carried) = &carried {
-        assert!(carried.applicability.version_id < generation.applicability.version_id);
-    } else {
-        assert_eq!(generation.source_commit_id, head.commit_id);
-    }
+    assert_eq!(generation.source_commit_id, head.commit_id);
     if historical {
         update_entity_and_release_snapshot(execution, &producer, entity, "matrix-index-after");
     }
@@ -194,7 +156,6 @@ fn reopened_shape(
         entity,
         index,
         generation,
-        carried,
         member: manifest.derived_indexes,
         manifest,
         history_symbol,

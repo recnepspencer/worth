@@ -68,8 +68,6 @@ mod cold_symbols;
 mod cold_tail_matrix;
 #[path = "cold_visibility.rs"]
 mod cold_visibility;
-#[path = "complete_index_selections.rs"]
-mod complete_index_selections;
 #[path = "replay_pin_concurrency.rs"]
 mod replay_pin_concurrency;
 use crate::durability::data::{

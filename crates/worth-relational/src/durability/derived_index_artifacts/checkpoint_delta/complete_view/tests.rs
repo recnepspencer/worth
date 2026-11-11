@@ -1,11 +1,12 @@
 //! The borrowed Complete view is read by the one format-3 reader, with its selections.
+use super::super::super::funding::with_budget;
 use super::*;
 use crate::durability::canonical_commit_artifact::borrowed_payload::BorrowedPayload;
 use crate::history::data::{BranchId, CommitId};
 use crate::identity::data::{EntityId, PartitionId};
 use crate::storage::data::AuthoritativeFieldComparisonKey;
 use crate::storage::substrate::maintenance::ReconstructionLane;
-use worth_execution::{CancellationSource, SerialMemoryBudget, SerialRequest};
+use worth_execution::SerialMemoryBudget;
 use worth_foundational::facade::AspectValue;
 
 fn generation(id: u64, changed_key: u64) -> DerivedIndexGeneration {
@@ -52,16 +53,16 @@ fn complete_view_roundtrips_same_index_generations_and_only_retained_selections(
     let bases = [basis(5, 1), basis(7, 2)];
     let retained = |basis: &IndexBasisCheckpoint| basis.commit == CommitId(7);
     let budget = SerialMemoryBudget::new(Some(4 * 1024 * 1024));
-    let host = SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
-    let request = ExecutionRequest::serial(&host);
-    let view =
-        CompleteIndexCheckpointView::capture(&generations, &bases, &retained, &request).unwrap();
+    let view = with_budget(&budget, |work| {
+        CompleteIndexCheckpointView::capture_funded(&generations, &bases, &retained, work)
+    })
+    .unwrap();
     assert!(budget.charged_memory_bytes() > 0);
     let wire = rmp_serde::to_vec_named(&view).unwrap();
     drop(view);
     assert_eq!(budget.charged_memory_bytes(), 0);
     // The funded reader's quote walks the same payload, selections included.
-    assert!(quote_decode(BorrowedPayload(&wire), &request).unwrap() > 0);
+    assert!(with_budget(&budget, |work| quote_decode(BorrowedPayload(&wire), work)).unwrap() > 0);
     let decoded: DerivedIndexCheckpointArtifacts = rmp_serde::from_slice(&wire).unwrap();
     assert!(decoded
         .generations
@@ -78,17 +79,17 @@ fn complete_view_roundtrips_same_index_generations_and_only_retained_selections(
 }
 
 #[test]
-fn complete_view_capture_stops_at_its_request_budget() {
+fn complete_view_capture_stops_at_its_funding_budget() {
     let generations = [Arc::new(generation(1, 90))];
     let retained = |_: &IndexBasisCheckpoint| true;
-    let host = SerialRequest::from_memory(
-        SerialMemoryBudget::new(Some(64)),
-        CancellationSource::new().token(),
-        None,
-    );
-    let request = ExecutionRequest::serial(&host);
+    let budget = SerialMemoryBudget::new(Some(64));
     assert!(matches!(
-        CompleteIndexCheckpointView::capture(&generations, &[], &retained, &request),
+        with_budget(&budget, |work| CompleteIndexCheckpointView::capture_funded(
+            &generations,
+            &[],
+            &retained,
+            work
+        )),
         Err(Stop::Request(_) | Stop::Allocation(_))
     ));
 }

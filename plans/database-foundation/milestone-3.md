@@ -150,6 +150,13 @@ Each H item's proof is its phase's graceful journeys, plus the graceful oracle.
 
 Cleanup courts moved out of the tree are listed under their C item, with `restore from <sha>:<path>`. Existing entries:
 - **C1:** the three transition-source recovery courts. They are listed in D16 under "Cleanup track: moved courts".
+- **C2:** `reclose_before_any_image_demand_keeps_the_selections_the_image_carried`
+  (restore from `10d117085f:crates/worth-relational/src/tests/durability/medium/complete_index_selections.rs`).
+  Restore its carried-only fixture mode from
+  `10d117085f:crates/worth-relational/src/tests/durability/medium/cold_index_fixture.rs`.
+  C2 owns `a deferred index image is not read on re-close`. The correctness
+  claim that selections survive re-close is already covered through public
+  owners by Query's `reopening/reclose.rs`; no deferral observer is added here.
 - **Phase 6 / H6:** the producer directory court (Phase 6, Required tests).
 
 The integration branch's cleanup ledgers (`merge-cleanup-reds.md`, `merge-families.md`) become entries here when their courts leave the tree before landing 2.
