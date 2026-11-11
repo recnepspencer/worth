@@ -1,8 +1,5 @@
 use super::*;
-#[path = "durability/canonical_commit_frame.rs"]
-mod canonical_commit_frame;
 use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
-pub(crate) use canonical_commit_frame::reseal_canonical_commit_frame;
 
 pub(crate) fn expect_durability_failure(
     stop: crate::durability::data::RelationalRecoveryStop,

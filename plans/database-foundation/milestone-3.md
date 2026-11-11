@@ -21,6 +21,12 @@ each invariant is enforced and where each new type lives.
 
 ### C4 - Injected faults
 
+Custom enforcement decision corruption retains its full original campaign:
+- C4 full original semantic_result_preserves_custom_enforcement_version_distinct_from_aggregate_request, including callback tuple indices, exact decision rewrite, outer reseal and ValidationMismatch refusal: `f9a53a5d17e01562d503b39b4627252bb63d8639:crates/worth-relational/src/tests/durability/contracts/semantic_result/custom_versions.rs`, with OnePlannedEntity in that file, original semantic_result.rs/contracts/mod.rs parents and `f9a53a5d17e01562d503b39b4627252bb63d8639:crates/worth-relational/src/tests/support/durability/canonical_commit_frame.rs`.
+
+Each restore includes the complete immutable shared fixture/control trees `f9a53a5d17e01562d503b39b4627252bb63d8639:crates/worth-relational/src/tests/support.rs`, `f9a53a5d17e01562d503b39b4627252bb63d8639:crates/worth-relational/src/tests/support`, plus direct owner/canonical/control ancestors from `f9a53a5d17e01562d503b39b4627252bb63d8639:crates/worth-relational/src`. Preserve complete original claims/arming/observations when restoring through genuinely owned source boundaries; never revive the runtime-discovery adapter. Copy these exact entries into the spec before removing original roots.
+
+
 The original rewrite/reseal setup in
 `durability_contract_replays_merge_from_typed_authority_when_diagnostics_are_absent`
 retains its complete callback and all original guards: restore from
@@ -271,6 +277,16 @@ Remaining pure cleanup roots (per-claim Landing 2a disposition):
   weakened fault assertions.
 
 ### C2 - Cost and bounds: backing and work budgets
+
+Capture, dictionary and lineage private remainders:
+
+All these original roots and fixtures are unchanged at f9a53a5d17e01562d503b39b4627252bb63d8639:
+
+- C2 full original native_checkpoint_retains_all_admitted_capture_owners_and_restores_editable_truth, including zero/cancel/retained-grant pressure and every owner/charge/pointer/section assertion: `f9a53a5d17e01562d503b39b4627252bb63d8639:crates/worth-relational/src/tests/durability/contracts/native_checkpoint/allocation.rs` with request() in that file and its original native_checkpoint.rs/contracts/mod.rs parents.
+- C2 full original unpublished_client_keys_leave_checkpoint_dictionary_equal_and_published_keys_restore, including before/after symbol and record frontiers, all image equality/normalization and actual symbol demand/membership: `f9a53a5d17e01562d503b39b4627252bb63d8639:crates/worth-relational/src/tests/durability/contracts/native_checkpoint/speculative_symbols.rs`, same original parents.
+- C2 full original checkpoint_restore_protects_published_lineage_identities_in_each_lane and inflight_tail_replay_resumes_after_the_largest_durable_lineage_values, including RestoreLane/discard_after_a_durable_anchor, exact live/discarded/recovered frontiers, cold directory/empty nodes, and tail_log.len()==1: `f9a53a5d17e01562d503b39b4627252bb63d8639:crates/worth-relational/src/tests/durability/medium/lineage_frontiers.rs` and original medium/mod.rs parent.
+
+Each restore includes the complete immutable shared fixture/control trees `f9a53a5d17e01562d503b39b4627252bb63d8639:crates/worth-relational/src/tests/support.rs`, `f9a53a5d17e01562d503b39b4627252bb63d8639:crates/worth-relational/src/tests/support`, plus direct owner/canonical/control ancestors from `f9a53a5d17e01562d503b39b4627252bb63d8639:crates/worth-relational/src`. Preserve complete original claims/arming/observations when restoring through genuinely owned source boundaries; never revive the runtime-discovery adapter. Copy these exact entries into the spec before removing original roots.
 
 Index, merge, bulk and empty-head private remainders:
 

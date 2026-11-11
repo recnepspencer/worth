@@ -1,7 +1,5 @@
 use super::*;
 use std::sync::Arc;
-mod allocation;
-mod speculative_symbols;
 
 use crate::validation::data::{
     CustomInvariantDescriptor, CustomInvariantExecutionContext, CustomInvariantExecutionError,

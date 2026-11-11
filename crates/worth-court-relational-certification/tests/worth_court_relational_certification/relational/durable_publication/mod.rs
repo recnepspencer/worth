@@ -158,11 +158,18 @@ mod checkpoint_canonical_neutrality;
 
 mod checkpoint_managed_text;
 
+mod canonical_publication_touches;
+mod checkpoint_abandoned_keys;
 mod checkpoint_bulk_bindings;
+mod checkpoint_custom_versions;
 mod checkpoint_empty_head;
+mod checkpoint_funded_capture;
 mod checkpoint_index_affinity;
 mod checkpoint_index_generations;
 mod checkpoint_index_lagging;
 mod checkpoint_index_recovery;
+mod checkpoint_lineage_authority;
+mod checkpoint_lineage_issuance;
+mod checkpoint_lineage_publication;
 mod checkpoint_merge_continuity;
 mod merge_source_copy_identity;

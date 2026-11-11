@@ -2,11 +2,11 @@ use super::*;
 use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 
 #[test]
-fn durability_contract_checkpoint_recovers_lineage_authority() {
+fn memory_checkpoint_preserves_lineage_artifact_and_original_authority() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     let first = create_entity_outcome(execution, &runtime, "first");
     let second = create_entity_outcome(execution, &runtime, "second");
     let first_entity = changed_entities(&first)[0];
@@ -23,7 +23,10 @@ fn durability_contract_checkpoint_recovers_lineage_authority() {
         .unwrap()
         .unwrap()
         .lineage_id;
-    let checkpoint = crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
+    let checkpoint = runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     assert_eq!(
         checkpoint
             .lineage
@@ -64,13 +67,11 @@ fn durability_contract_checkpoint_recovers_lineage_authority() {
         checkpoint.lineage.counters().node_count,
         checkpoint.lineage.nodes().len()
     );
-    let plan = crate::tests::support::recovery_plan_for(
-        execution,
-        &runtime,
-        RecoveryMode::NormalRecoveryVerification,
-    )
-    .unwrap();
-    let mut recovered = durable_runtime_with_test_schema();
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
+    let mut recovered = runtime_with_test_schema();
     recovered
         .durability_recovery()
         .recover(execution, plan)
