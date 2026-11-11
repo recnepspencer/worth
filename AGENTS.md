@@ -9,6 +9,11 @@ capability is missing, follow the capability index's procedure; never build a
 second way to do something the platform already does. The coding guidelines
 below bind platform contributors.
 
+**The kernel does not reestablish trust: see
+[the governing rule](docs/coding-guidelines/arch_laws.md#the-kernel-does-not-reestablish-trust).**
+Public WORTH owns currentness, invalidation, publication and recovery; a gap
+there is fixed in public WORTH, never rebuilt in a consumer.
+
 Platform contributors adding a capability first check the capability index and
 its known gaps, so the platform never gains a second way to do the same thing.
 Add each new consumer capability to the index in the same change.

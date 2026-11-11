@@ -1,5 +1,31 @@
 # Architectural Laws
 
+## THE KERNEL DOES NOT REESTABLISH TRUST
+
+**Public WORTH owns** snapshot consistency, dependency tracking, currentness,
+invalidation, safe publication, and recovery guarantees.
+
+**The kernel owns** CAD meaning: geometry, topology rules, and domain
+invariants declared through the platform.
+
+A successful public operation carries the guarantees of its declared
+contract. The kernel consumes that result without reconstructing or
+revalidating the platform machinery that established those guarantees.
+
+The kernel must not implement a second system for establishing
+platform-owned trust, including private freshness checks, dependency
+tracking, invalidation, publication validation, or recovery certification.
+
+If a required guarantee is missing or broken, fix the contract or
+implementation **in public WORTH**, then consume it through the public
+interface. Do not compensate with kernel-side infrastructure.
+
+CAD invariants remain the kernel's responsibility to define and install
+through the platform. They do not authorize the kernel to repeat platform
+verification after a successful operation.
+
+## The numbered laws
+
 1. Runtime state must be partitioned into autonomous subsystems behind contractual facades. Each operation receives only the state and authority it uses; read paths accept phase-scoped observation handles incapable of mutation. Subsystems must be independently borrowable, testable, and replaceable, making false field coupling impossible and snapshot isolation structural.
 
 2. Write-path contracts and read-path contracts are duals of the same truth. Every mutation must structurally declare what it invalidates, every projection must structurally declare what it consumes, and the framework must compute their intersection. Implicit contracts force global coupling.
