@@ -100,6 +100,8 @@ impl Serialize for Transitions<'_> {
                 follows: original.positioned.follows(),
                 schema,
                 transition: original.positioned.transition(),
+                caller_association: original.positioned.caller_association(),
+                artifact_digest: original.positioned.recorded_artifact_digest(),
             })?;
         }
         rows.end()
@@ -112,4 +114,6 @@ struct TransitionOriginalRecordRef<'a> {
     follows: crate::publication::patch::data::PatchStreamPosition,
     schema: [u8; 32],
     transition: &'a crate::branch::RelationalBranchTransition,
+    caller_association: Option<&'a crate::history::data::RelationalCallerAssociation>,
+    artifact_digest: Option<[u8; 32]>,
 }

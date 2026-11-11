@@ -21,6 +21,7 @@ where
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
         expected: ProductBranchObservation,
+        program_source: worth_proof::AdmittedBranchProgramSource,
         change: worth_relational::facade::mvcc::RelationalTransactionIntent,
         plan: &HomeProgramTransitionPlanDescription,
         step: u32,
@@ -120,6 +121,7 @@ where
             self.prepare_durable_open_with_assignment(
                 request,
                 expected,
+                program_source,
                 change,
                 cancellation,
                 deadline,

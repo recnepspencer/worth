@@ -7817,14 +7817,55 @@ loss outcomes and retry handling.
 
 ### Current durable Home composition boundary
 
-The lower Store Application `readmit_world` seam composes the same admitted
-Native owner with privately constructed Bridge and the authored Signal owner.
-Its first Relational-only durable lane requires an untouched InitialEmpty Signal
-root and an uninstalled Bridge baseline. Their versioned owner recipes, the
-exact Native predecessor and the program revision are mandatory World artifact
-v3 fields. Graph equality, a source profile or an old process identifier cannot
-readmit component authority. Native recovery, Signal seed admission, Bridge
-baseline admission and World reconciliation retain that order.
+Directory Homes retain authored Signal definitions, topology, branch cells and
+generation frontiers. Installed and runtime-published conditional definitions
+travel in Signal-owned, versioned, checksummed transitions, including Bridge's
+complete provider protocols, versions and parameters. The Home's protected
+Complete image is its sole reopen identity route; branch forks retain their
+original association and inherit the exact source Native root and authored
+Signal state.
+
+After reopen, discover serving branch selectors through the admitted Home:
+call `runtime.branches().inventory(&phase)` inside its
+`with_host_advancement` call. The returned inventory retains the actual World
+membership observations; iterate it for fresh `WorthQueryProductBranch`
+selectors, then select a branch normally for each domain request. Drop the
+inventory before Home close. Expected-basis descriptions remain tied to their
+live installation, while the protected Complete image owns reopen identity.
+
+Opening admits Native, installs fresh program/provider services, readmits the
+authored Signal owner, and then reconciles every World branch. Query serves that
+same `BridgeReadmittedAuthoredAssembly`. Initialization and completed owner
+effects do not execute again. Descriptor bytes grant no live authority: the
+actual recovering owner must readmit them, and foreign owners or unknown codec
+versions refuse with typed causes.
+
+Values, dirty/aspect versions, pending causes, traces and telemetry are derived.
+They start cold and recompute on demand, including when the application build
+identity changes. Bridge rebuilds its lowering registry and retention ledger
+from authored source and genuine fresh installation bindings; a cached value
+cannot replace a missing definition. Resource and temporal runtime state still
+require their later recovery phases.
+
+Ordinary Signal-only and mixed Native/Signal publications use the original
+durable `WithSignal` preparation. A Signal-only occurrence contains no Native
+effect and inherits its predecessor's exact Native source. Mixed publication
+settles Native first and preserves both original effects in its World
+occurrence. A graceful close or quiescent process kill preserves published
+authored state and committed receipts without repeating either effect.
+Unresolved live publication custody refuses close. If an unclean tail contains
+an associated owner effect without an occurrence or disposition, reopen refuses
+with `UncleanRecoveryUnsupported` before service (D18). A retained original
+cannot become a no-effect result; its crash continuation and pending settlement
+recovery belong to track C.
+
+Use `bind_conditional_definition` to install authored conditional membership
+without a managed clock or temporal operation. Actual temporal installation and
+execution keep their typed later-phase refusals. Writeback diagnostic retention
+is process-local and reports loss across reopen; diagnostic entries never
+authorize effect replay. Applications continue through the Query declaration
+and Host facades. See the [Signal owner contract](../crates/worth-signal/README.md#standalone-authored-owner-readmission)
+and [Bridge authored recovery](../crates/worth-runtime-bridge/README.md#authored-conditional-definition-recovery).
 
 The fresh Native-only Directory Host journey now opens the actual Home,
 initializes once, reads seeded data, publishes an ordinary mutation through the

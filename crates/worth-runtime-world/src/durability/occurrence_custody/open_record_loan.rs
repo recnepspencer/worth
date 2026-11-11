@@ -7,7 +7,7 @@ pub(super) struct OpenRecordLoan<'a> {
 impl<'a> OpenRecordLoan<'a> {
     pub(super) fn take(
         destination: &'a mut Option<WorldOpenAttemptRecord>,
-        relational: WorldRelationalEvidence,
+        owners: super::super::artifact::WorldOccurrenceOwnerEvidence,
         publishing_incarnation: worth_foundational::facade::HomeIncarnation,
     ) -> Self {
         let open = destination
@@ -17,7 +17,7 @@ impl<'a> OpenRecordLoan<'a> {
             destination,
             record: Some(WorldRecord::Occurrence {
                 open,
-                relational,
+                owners,
                 publishing_incarnation,
             }),
         }
@@ -42,7 +42,10 @@ impl Drop for OpenRecordLoan<'_> {
                 | WorldRecord::Branch { .. }
                 | WorldRecord::OpenAttempt(_)
                 | WorldRecord::Released { .. }
-                | WorldRecord::Continued { .. } => {
+                | WorldRecord::Continued { .. }
+                | WorldRecord::CreationIntent(_)
+                | WorldRecord::BranchCreated(_)
+                | WorldRecord::CreationReleased { .. } => {
                     unreachable!("only an actual occurrence can be loaned")
                 }
             }

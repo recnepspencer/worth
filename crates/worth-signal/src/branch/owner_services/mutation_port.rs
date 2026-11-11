@@ -22,9 +22,12 @@ pub use fork_reservation::SignalBranchForkReservation;
 #[cfg(test)]
 mod tests;
 
+pub(in crate::branch::owner_services) use denials::{
+    map_advance_admission_denial, map_advance_registry_denial, map_fork_admission_denial,
+};
 use denials::{
-    map_advance_admission_denial, map_advance_registry_denial, map_capture_admission_denial,
-    map_capture_registry_denial, map_restore_admission_denial, map_restore_registry_denial,
+    map_capture_admission_denial, map_capture_registry_denial, map_restore_admission_denial,
+    map_restore_registry_denial,
 };
 
 /// Public concrete weak mutation service issued by a sealed owner root.

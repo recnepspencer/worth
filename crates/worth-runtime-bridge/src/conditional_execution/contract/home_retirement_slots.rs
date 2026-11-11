@@ -113,7 +113,7 @@ impl super::BridgeOwnedSignalRuntime {
             return Err(Denial::Unsupported);
         }
         let slot = self.signal_runtime.get_mut().map_err(|_| {
-            Denial::Signal(worth_signal::facade::runtime::SignalInitialEmptyStopDenial::Poisoned)
+            Denial::Signal(worth_signal::facade::runtime::SignalOwnerStopDenial::Poisoned)
         })?;
         let runtime = slot.take().ok_or(Denial::Unsupported)?;
         match runtime.try_prepare_initial_empty_stop(request) {

@@ -11,7 +11,8 @@ use worth_query_execution::facade::{
     application_contribution::WorthQueryBootstrapAdvancementPhase, application_home_integration::*,
 };
 use worth_store_application::{
-    readmit_query_world, ApplicationHomeWorldDefinition, UnsharedReadmittedApplicationHome,
+    prepare_query_home_source, readmit_query_signal, readmit_query_world,
+    ApplicationHomeWorldDefinition, UnsharedReadmittedApplicationHome,
 };
 pub(super) type SuccessorBinding = worth_proof::AdmittedApplicationHomeBinding<
     worth_query_installation::facade::WorthQueryHomeBindingAdmission,
@@ -23,7 +24,7 @@ pub(super) struct ReadmittedHomeProgramTransition<
     B: ApplicationSchemaComposition,
     BP,
 > {
-    pub(super) before: ReadmittedExistingHomeNativeMeaning<A, AP>,
+    pub(super) before: PreparedExistingHomeSignalProgram<A, AP>,
     pub(super) target: PreparedHomeProgramTransitionTarget<B, BP>,
     pub(super) home: DirectoryHome,
     pub(super) source: worth_runtime_world::facade::ProductBranchObservation,
@@ -71,8 +72,8 @@ pub(super) fn prepare<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaC
             ))
         }
     };
-    let (budgets, clock, policy, execution, conditionals) = after.home_world_resources();
-    let home = match readmit_query_world(
+    let (budgets, clock, policy, execution, _conditionals) = after.home_world_resources();
+    let source = match prepare_query_home_source(
         home.share(),
         ApplicationHomeWorldDefinition::new(
             bridge,
@@ -81,16 +82,55 @@ pub(super) fn prepare<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaC
             clock,
             policy,
             execution,
-            conditionals,
         ),
         &request,
     ) {
+        Ok(source) => source,
+        Err(home) => {
+            return Err(Refused::predecessor(
+                OldRefused::ExistingWorldSourcePreparation {
+                    query: before,
+                    home,
+                },
+                after,
+            ))
+        }
+    };
+    let (registered, ordinary) = source.query_source_parts();
+    let (before, builder, mut bindings) =
+        match before.prepare_existing_home_signal_program(phase, registered, ordinary) {
+            Ok(parts) => parts,
+            Err(query) => {
+                return Err(Refused::predecessor(
+                    OldRefused::SignalProgramPreparation {
+                        home: source,
+                        query: Box::new(query),
+                    },
+                    after,
+                ))
+            }
+        };
+    let signal = match readmit_query_signal(source, builder, &mut bindings, &request) {
+        Ok(signal) => signal,
+        Err(home) => {
+            return Err(Refused::predecessor(
+                OldRefused::ExistingWorldReadmission {
+                    query: before,
+                    home,
+                    _bindings: bindings,
+                },
+                after,
+            ))
+        }
+    };
+    let home = match readmit_query_world(signal, &request) {
         Ok(home) => home.consume(|home| home),
         Err(home) => {
             return Err(Refused::predecessor(
                 OldRefused::ExistingWorldReadmission {
                     query: before,
                     home,
+                    _bindings: bindings,
                 },
                 after,
             ))

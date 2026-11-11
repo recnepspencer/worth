@@ -49,6 +49,7 @@ impl<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaComposition, BP>
             super::publication::publish(
                 &mut owners.home,
                 &owners.target,
+                &owners.before,
                 plan,
                 resources,
                 &request,

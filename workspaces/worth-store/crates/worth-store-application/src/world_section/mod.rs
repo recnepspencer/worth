@@ -1,4 +1,7 @@
 //! The Home's private World adapter. Only World decodes owner payloads.
+pub use readmission::{
+    ApplicationHomeProgrammeHandoffDenial, ApplicationHomeProgrammeHandoffRefused,
+};
 mod attachment;
 pub(crate) mod checkpoint;
 mod close;
@@ -107,3 +110,8 @@ impl worth_runtime_world::facade::RuntimeWorldDurableMedium for ApplicationWorld
         publication::publish(self, subject, execution)
     }
 }
+
+pub use readmission::{
+    prepare_query_home_source, readmit_query_signal, PreparedQueryHomeSource,
+    SignalReadmittedApplicationHome,
+};

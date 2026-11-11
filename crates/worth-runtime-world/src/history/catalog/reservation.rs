@@ -105,6 +105,10 @@ impl Drop for ReservedCompositeCommitCapacity {
 }
 
 impl ReservedCompositeCommitCapacity {
+    pub(crate) fn holds_history_reservation(&self) -> bool {
+        self.armed
+    }
+
     pub(crate) fn publication_envelope(
         &self,
     ) -> Option<&Arc<crate::history::CanonicalPublicationEnvelope>> {

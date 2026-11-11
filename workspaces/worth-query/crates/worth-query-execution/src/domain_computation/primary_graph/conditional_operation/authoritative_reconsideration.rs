@@ -215,7 +215,7 @@ fn retained_decision_evidence_mut(
         | Decision::OperationBackpressured(evidence, _)
         | Decision::OperationControlStopped(evidence, _)
         | Decision::OperationTerminalFailure(evidence, _)
-        | Decision::OperationProductUnpublished(evidence, _)
+        | Decision::OperationProductUnpublished(evidence, _, _)
         | Decision::OperationPreparationPending(evidence, _)
         | Decision::OperationPreparationRefused(evidence, _)
         | Decision::OperationProductStale(evidence, _)

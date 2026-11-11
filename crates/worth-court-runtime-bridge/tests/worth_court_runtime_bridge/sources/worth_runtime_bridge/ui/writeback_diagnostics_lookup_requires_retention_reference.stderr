@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+   --> tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/writeback_diagnostics_lookup_requires_retention_reference.rs:6:63
+    |
+  6 |     let _ = diagnostics.writeback_replay_record_for_reference(sealed_authority_placeholder::<&str>());
+    |                         ------------------------------------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `&BridgeWritebackDiagnosticReference<_>`, found `&str`
+    |                         |
+    |                         arguments to this method are incorrect
+    |
+    = note: expected reference `&BridgeWritebackDiagnosticReference<BridgeWritebackReplayRecord>`
+               found reference `&str`
+note: method defined here
+   --> $WORKSPACE/crates/worth-runtime-bridge/src/diagnostics/facade/query/writeback.rs:261:12
+    |
+261 |     pub fn writeback_replay_record_for_reference(
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

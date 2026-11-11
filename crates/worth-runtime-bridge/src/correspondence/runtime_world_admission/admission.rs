@@ -12,11 +12,25 @@ pub(crate) fn admit_installed_basis(
     installed: &BridgeInstalledSemanticCorrespondence,
     inspection: &RuntimeWorldCorrespondenceInspectionLedger,
 ) -> Result<AdmittedRuntimeWorldCorrespondenceBasis, RuntimeWorldCorrespondenceAdmissionDenial> {
+    admit_installed_basis_in(
+        runtime,
+        &runtime.semantic_dependency_registry,
+        installed,
+        inspection,
+    )
+}
+
+pub(crate) fn admit_installed_basis_in(
+    runtime: &RuntimeBridge,
+    registry: &crate::correspondence::AdmittedSemanticDependencyRegistry,
+    installed: &BridgeInstalledSemanticCorrespondence,
+    inspection: &RuntimeWorldCorrespondenceInspectionLedger,
+) -> Result<AdmittedRuntimeWorldCorrespondenceBasis, RuntimeWorldCorrespondenceAdmissionDenial> {
     let actual_runtime_key = installed.basis().bridge_runtime_key;
     require_bridge_runtime_affinity(runtime, actual_runtime_key)?;
 
     require_current_source_installation(
-        runtime,
+        registry,
         installed.dependency(),
         installed.basis().source_installation_generation(),
         inspection,
@@ -43,11 +57,25 @@ pub(crate) fn compare_current_basis(
     admitted: &AdmittedRuntimeWorldCorrespondenceBasis,
     inspection: &RuntimeWorldCorrespondenceInspectionLedger,
 ) -> Result<(), RuntimeWorldCorrespondenceAdmissionDenial> {
+    compare_current_basis_in(
+        runtime,
+        &runtime.semantic_dependency_registry,
+        admitted,
+        inspection,
+    )
+}
+
+pub(crate) fn compare_current_basis_in(
+    runtime: &RuntimeBridge,
+    registry: &crate::correspondence::AdmittedSemanticDependencyRegistry,
+    admitted: &AdmittedRuntimeWorldCorrespondenceBasis,
+    inspection: &RuntimeWorldCorrespondenceInspectionLedger,
+) -> Result<(), RuntimeWorldCorrespondenceAdmissionDenial> {
     let actual_runtime_key = admitted.basis().bridge_runtime_key;
     require_bridge_runtime_affinity(runtime, actual_runtime_key)?;
     match admitted.dependency() {
         Some(dependency) => require_current_source_installation(
-            runtime,
+            registry,
             dependency,
             admitted.source_installation_generation(),
             inspection,
@@ -77,15 +105,12 @@ fn require_bridge_runtime_affinity(
 /// registration vector; registry construction owns the derived-index
 /// invariant.
 fn require_current_source_installation(
-    runtime: &RuntimeBridge,
+    registry: &crate::correspondence::AdmittedSemanticDependencyRegistry,
     dependency: &super::super::BridgeSemanticDependencyCandidate,
     actual_generation: u64,
     inspection: &RuntimeWorldCorrespondenceInspectionLedger,
 ) -> Result<(), RuntimeWorldCorrespondenceAdmissionDenial> {
-    let Some(expected_generation) = runtime
-        .semantic_dependency_registry
-        .currentness_index()
-        .lookup(dependency, inspection)
+    let Some(expected_generation) = registry.currentness_index().lookup(dependency, inspection)
     else {
         return Err(RuntimeWorldCorrespondenceAdmissionDenial::InstalledCorrespondenceNotCurrent);
     };

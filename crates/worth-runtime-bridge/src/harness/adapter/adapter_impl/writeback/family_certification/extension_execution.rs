@@ -230,10 +230,10 @@ pub(in crate::harness::adapter::adapter_impl::writeback) fn execute_extensible_f
     let rebuilt_execution_record = rebuilt_runtime
         .diagnostics()
         .last_writeback_execution_record()
-        .ok_or_else(|| {
-            BridgeHarnessError::new(
-                "rebuilt projected execution record missing from retained diagnostics",
-            )
+        .map_err(|absence| {
+            BridgeHarnessError::new(format!(
+                "rebuilt projected execution record missing from retained diagnostics: {absence:?}",
+            ))
         })?;
     let changed_causality = writeback_causality_basis(
         "harness:writeback-family-extension-causality:changed",

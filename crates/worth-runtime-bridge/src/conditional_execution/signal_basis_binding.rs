@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use super::{
     BridgeConditionalDenial, BridgeConditionalDenialKind, BridgeInstalledConditionalLowering,
-    BridgeOwnedSignalRuntime,
 };
 
 /// Exact pairing of one installed definition generation with one admitted
@@ -13,7 +12,7 @@ pub struct BridgeConditionalSignalBasisBinding {
     pub(super) signal_port: super::signal_port::BridgeConditionalSignalPort,
 }
 
-impl BridgeOwnedSignalRuntime {
+impl super::execution_view::BridgeConditionalExecutionView<'_> {
     pub(super) fn admit_exact_conditional_signal_basis(
         &self,
         anchor: &Arc<BridgeInstalledConditionalLowering>,
@@ -64,7 +63,7 @@ impl BridgeOwnedSignalRuntime {
         basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
     ) -> Result<BridgeConditionalSignalBasisBinding, BridgeConditionalDenial> {
         self.require_live_installed_lowering(lowering)?;
-        let installed_port = self.signal_services()?.conditional_port(lowering)?;
+        let installed_port = self.conditional_port(lowering, basis)?;
         let signal_port =
             if installed_port.issuance_basis().admission_identity() == basis.admission_identity() {
                 installed_port.clone()
@@ -100,6 +99,10 @@ impl BridgeOwnedSignalRuntime {
 }
 
 impl BridgeConditionalSignalBasisBinding {
+    pub fn signal_basis(&self) -> &worth_signal::facade::branch::AdmittedSignalBranchBasis {
+        self.signal_port.issuance_basis()
+    }
+
     pub fn installed_lowering(&self) -> Arc<BridgeInstalledConditionalLowering> {
         Arc::clone(&self.lowering)
     }

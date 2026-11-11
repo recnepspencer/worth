@@ -7,9 +7,9 @@ pub use source::{PreparedExistingHomeQueryRuntime, QueryExistingHomeSourceAttach
 pub use world::QueryExistingHomeWorldAttachmentRefused;
 
 pub struct ReadmittedExistingHomeNativeMeaning<Schema: ApplicationSchemaComposition, Program> {
-    state: HomeApplicationState<Schema, Program>,
-    schema: InstalledNativeSchemaMeaning,
-    restore_work: Option<worth_relational::facade::durability::CheckpointRestoreWork>,
+    pub(super) state: HomeApplicationState<Schema, Program>,
+    pub(super) schema: InstalledNativeSchemaMeaning,
+    pub(super) restore_work: Option<worth_relational::facade::durability::CheckpointRestoreWork>,
 }
 pub struct QueryExistingHomeNativeReadmissionRefused<Schema: ApplicationSchemaComposition, Program>
 {

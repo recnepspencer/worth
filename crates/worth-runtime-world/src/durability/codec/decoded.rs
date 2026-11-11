@@ -23,7 +23,8 @@ pub(in crate::durability) fn admit(
     let tag = read.fixed::<1>()?[0];
     let strings = match tag {
         1 => 0,
-        2 | 5 | 6 => read.branch_name_bytes()?,
+        2 | 5 | 6 | 9 => read.branch_name_bytes()?,
+        7 | 8 => super::creation_name_extent::read(&mut read)?,
         3 | 4 => {
             let association = read.branch_name_bytes()?;
             // attempt/incarnation, then reserved commit/custody.

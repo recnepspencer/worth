@@ -80,7 +80,6 @@ impl<T: Copy> NodeMetaStore<T> {
         self.tiers.iter().filter(|entry| entry.is_some()).count()
     }
 
-    #[cfg(test)]
     pub(crate) fn shares_storage_with(&self, other: &Self) -> bool {
         self.tiers.shares_storage_with(&other.tiers)
     }

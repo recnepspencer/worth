@@ -5,8 +5,14 @@
 
 mod conditional_definition;
 mod creation;
+mod creation_reactivation;
+mod durable_creation;
+mod durable_creation_install;
 mod durable_publication;
-pub(crate) use conditional_definition::ConditionalDefinitionAttemptCustody;
+pub(crate) use conditional_definition::{
+    AuthoredConditionalDefinitionAttemptCustody, ConditionalDefinitionAttemptCustody,
+};
+pub(crate) use creation_reactivation::ReactivatedCreationFacts;
 #[cfg(test)]
 mod creation_rehearsal;
 mod head;
@@ -29,7 +35,7 @@ use crate::recovery::ReservedProductUnpublishedSlot;
 
 use super::{CompositeAttemptProgress, ReservedAttemptCapacities};
 
-use creation::ActiveCreationResources;
+pub(crate) use creation::ActiveCreationResources;
 pub(crate) use lease::ActiveAttemptResourceLease;
 pub(crate) use record::ActiveAttemptRecord;
 pub(crate) use resources::ActiveAttemptResources;
@@ -114,6 +120,34 @@ impl ActiveAttemptCustody {
         self.lease_resources().resources_mut().durable_open = open;
     }
 
+    pub(crate) fn durable_component_intent(
+        &self,
+    ) -> Option<crate::durability::WorldOpenComponentIntent> {
+        self.record
+            .state()
+            .resources
+            .as_ref()?
+            .durable_open
+            .as_ref()?
+            .subject
+            .open_attempt()
+            .map(|open| open.component_intent)
+    }
+
+    pub(crate) fn durable_association(
+        &self,
+    ) -> Option<worth_foundational::facade::CompositeAttemptAssociation> {
+        self.record
+            .state()
+            .resources
+            .as_ref()?
+            .durable_open
+            .as_ref()?
+            .subject
+            .open_attempt()
+            .map(|open| open.association.clone())
+    }
+
     pub(crate) fn has_durable_open(&self) -> bool {
         self.record
             .state()
@@ -180,8 +214,8 @@ impl ActiveAttemptCustody {
 impl Drop for ActiveAttemptCustody {
     fn drop(&mut self) {
         let Some(slot) = self.slot.take() else { return };
-        if self.record.product_moved()
-            || (self.record.progress().owner_effect_count() == 0 && !self.has_durable_open())
+        if (self.record.product_moved() && !self.retains_durable_creation())
+            || (self.record.progress().owner_effect_count() == 0 && !self.retains_durable_attempt())
         {
             slot.remove_active(self.record.identity());
             return;

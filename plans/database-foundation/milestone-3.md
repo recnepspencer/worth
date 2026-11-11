@@ -169,6 +169,9 @@ Cleanup courts moved out of the tree are listed under their C item, with `restor
   claim that selections survive re-close is already covered through public
   owners by Query's `reopening/reclose.rs`; no deferral observer is added here.
 - **Phase 6 / H6:** the producer directory court (Phase 6, Required tests).
+  - H5 note: a Directory Home with installed producers now refuses at preparation with `ProducerCleanupCustody` (family table: phase 7), because Query refuses Home retirement while producers are installed. Restoring the producer directory court needs that retirement lift (or an earlier family) first.
+- **C1:** the recovered Signal-only and mixed original continuation after an unclean reopen (`recovered_owners` court). It never landed: D18 refuses that reopen (proven by `owner_evidence/unclean_signal.rs`). Preserved without activation; restore the source from `a3e8d0fd340aedddaa6398d3ec874d198692799f:plans/database-foundation/moved-courts/c1/recovered_owners.rs.txt` into its original court path when C1 supports that continuation.
+- **C1:** `process::host::durable_retry::fate_reopening::cancellation_after_native_effect_retains_key_across_kill_and_reopen` and its retained-writer/reader helpers. D18 (`d27064d826`) deliberately refuses this unresolved owner-effect reopen before service; the court expects service and original continuation. Restore the named court and helpers from `f15ff306ecec9ca4a67be1091269d8d10898ab81:workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/process/host/durable_retry/fate_reopening.rs`. The independent proven-no-effect quiescent-reopen court remains active.
 
 Courts held out under D13 are listed the same way, under the H item whose Home capability they need. The second master merge (`171d380829`) brought in Query cold journeys that reach `WorthQueryInterimCheckpointRestore` from outside the frozen caller list, directly or through a shared reopen fixture. D13's list only shrinks, and Directory Home refuses their producers until the phases below land, so each court is deleted from the tree and returns through the Directory Home open, never through the interim door. The assertions move intact.
 
@@ -820,6 +823,19 @@ These claim-level moves preserve the independent H assertions named below. The o
 - **C2** `production_write_footprints_report_exact_records_and_local_publication_cost`: `restore from 73ce80ebfc:crates/worth-court-relational-branch-reference-compile-time/tests/worth_court_relational_branch_reference_compile_time/cost/relational/relational_certification/root_cost_scale_axes/publication/mod.rs`. Exact physical publication counters/allocation and scale/path sharing. H keeps actual production patch-record counts at1,64,4096 authored records and baseline oracle; restore same-SHA direct helper closure.
 
 - **C2 fixture closure** for the moved selected-member funding/retirement and byte-pressure claims: `restore from 73ce80ebfc:crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/selected_source.rs` and its same-SHA `selected_source/custody.rs`. Remove their now-unreachable pressure variant and custody-control owner; retained read and retirement ports forward to the real medium.
+
+### Landing 2a composition of previously moved Root claims
+
+- **C2:** the original-account invoice remainder of
+  `equivalent_proposal_entries_preserve_mutation_results` is preserved at
+  `restore from a98ed66840:crates/worth-relational/src/authority/commit/pipeline/request_checkpoints/work_account.rs`.
+  The same mutation and successor-version comparisons remain in the happy tree;
+  measured positive/bounded work belongs with the existing C2 account courts.
+- **C4:** H5's updated `forged_cross_region_kind_commitment_is_refused_before_region_payload_reads`
+  remains deferred with its original cross-region corruption claim:
+  `restore from a98ed66840:crates/worth-relational/src/durability/log/native_checkpoint_codec/kind_authentication_tests.rs`.
+  It complements the existing `9ed22bccaa` restore entry; merging H5 does not
+  resurrect a deliberately deferred corruption court.
 
 ### Parallel work
 

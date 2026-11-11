@@ -14,10 +14,26 @@ impl BridgeInstalledConditionalLowering {
         Provider: BridgeConditionalWakeProvider + BridgeConditionalProviderSemantics,
     {
         BridgeOwnedConditionalInstallationRequest {
-            contract: self.contract.clone(),
-            location: self.location.clone(),
+            contract: self.contract.as_ref().clone(),
+            location: self.location.as_ref().clone(),
             dependencies: self.semantic_dependencies().cloned().collect(),
             providers: self.providers.clone().wake(provider),
+        }
+    }
+    /// Authored successors declare complete provider parameters; the durable
+    /// owner reconstructs them through its admitted fresh decoder set.
+    pub fn successor_with_authored_wake_provider<P>(
+        &self,
+        provider: P,
+    ) -> BridgeOwnedConditionalInstallationRequest
+    where
+        P: BridgeConditionalWakeProvider + super::super::BridgeAuthoredConditionalProvider,
+    {
+        BridgeOwnedConditionalInstallationRequest {
+            contract: self.contract.as_ref().clone(),
+            location: self.location.as_ref().clone(),
+            dependencies: self.semantic_dependencies().cloned().collect(),
+            providers: self.providers.clone().authored_wake(provider),
         }
     }
 }

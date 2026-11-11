@@ -52,7 +52,7 @@ impl RuntimeBridge {
         *registry = rebuilt;
         let exact_index_parity = registry.reconstruct_derived_indexes() == *registry;
         Ok(super::BridgeCorrespondenceRebuildReport::new(
-            self.semantic_dependency_registry.authoritative_count(),
+            self.semantic_dependency_registry.admitted_count(),
             registry.authoritative_records.len(),
             registry.owners.len(),
             self.semantic_dependency_registry.rebuild_has_exact_parity(),

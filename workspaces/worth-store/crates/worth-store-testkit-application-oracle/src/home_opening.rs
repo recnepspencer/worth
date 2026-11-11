@@ -63,11 +63,22 @@ pub fn request(
     location: impl Into<PathBuf>,
     native: worth_relational::facade::runtime::RelationalRuntimeBuilder,
 ) -> ApplicationHomeRequest {
-    let binding = worth_query_testkit_installation::facade::installation::application_home_binding::admitted_home_binding();
-    let build = worth_foundational::facade::ApplicationBuildIdentity::parse(
-        "11111111-1111-4111-8111-111111111111",
+    request_with_build(
+        location,
+        native,
+        worth_foundational::facade::ApplicationBuildIdentity::parse(
+            "11111111-1111-4111-8111-111111111111",
+        )
+        .unwrap(),
     )
-    .unwrap();
+}
+/// The genuine Home binding is unchanged; only implementation identity varies.
+pub fn request_with_build(
+    location: impl Into<PathBuf>,
+    native: worth_relational::facade::runtime::RelationalRuntimeBuilder,
+    build: worth_foundational::facade::ApplicationBuildIdentity,
+) -> ApplicationHomeRequest {
+    let binding=worth_query_testkit_installation::facade::installation::application_home_binding::admitted_home_binding();
     ApplicationHomeRequest::new(location.into(), native.resolve(), binding, build)
 }
 

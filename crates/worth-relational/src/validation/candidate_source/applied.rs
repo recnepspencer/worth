@@ -31,6 +31,20 @@ impl AppliedMutationDraft {
         proposal: &crate::mvcc::RelationalMutationProposalIdentity,
         authored: Option<&crate::transactions::data::MergedCommitPlan>,
     ) -> Result<(), TransactionCommitError> {
+        crate::execution::transaction_stage(&execution, runtime.commit_work_budget.as_ref(), || {
+            self.prepare_managed_sources_in_original_stage(
+                execution, runtime, selected, proposal, authored,
+            )
+        })
+    }
+    fn prepare_managed_sources_in_original_stage(
+        &mut self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &RelationalPreparationRuntime,
+        selected: SelectedRelationalBranchRead<'_>,
+        proposal: &crate::mvcc::RelationalMutationProposalIdentity,
+        authored: Option<&crate::transactions::data::MergedCommitPlan>,
+    ) -> Result<(), TransactionCommitError> {
         execution.check_live().map_err(|cause| {
             Denial::from(DerivedRelationReadDenial::Request(cause.into()))
                 .into_commit_error(self.source_interpretation.physical_basis())

@@ -116,15 +116,17 @@ fn mutation_subject_cannot_authorize_a_different_effect_intent() {
         error.kind(),
         BridgeWritebackErrorKind::CausalityEffectMismatch
     );
-    assert!(runtime
-        .diagnostics()
-        .last_writeback_execution_record()
-        .is_none());
+    assert!(matches!(
+        runtime.diagnostics().last_writeback_execution_record(),
+        Err(worth_foundational::facade::DiagnosticRecordAbsence::NeverRetained)
+    ));
 }
 
 #[test]
-fn runtime_records_native_writeback_execution_record_on_success() {
-    let runtime = runtime_with_writeback_authority(BridgeRuntimePolicy::development());
+fn native_writeback_execution_retention_expires_without_losing_the_commit_receipt() {
+    let runtime = runtime_with_writeback_authority(
+        BridgeRuntimePolicy::development().with_route_record_limit(1),
+    );
     let lowered_policy = lowered_policy(&runtime);
     let contract = runtime
         .admit_writeback_declaration(
@@ -204,6 +206,7 @@ fn runtime_records_native_writeback_execution_record_on_success() {
     assert_eq!(record.counters().writeback_request_count(), 1);
     assert_eq!(record.counters().writeback_commit_count(), 1);
     assert_eq!(record.counters().writeback_failure_count(), 0);
+    super::diagnostic_retention::execution_expiry(&runtime.diagnostics, &record, &receipt);
 }
 
 #[test]

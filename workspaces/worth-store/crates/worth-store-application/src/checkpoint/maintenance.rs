@@ -8,6 +8,10 @@ use super::{
 use std::sync::{Arc, Mutex};
 use worker::MaintenanceWorker;
 
+pub(super) fn control_memory_bytes() -> Result<std::num::NonZeroU64, Denial> {
+    MaintenanceWorker::control_memory_bytes()
+}
+
 #[derive(Debug)]
 pub enum ApplicationHomeCheckpointMaintenanceDenial {
     Unavailable,

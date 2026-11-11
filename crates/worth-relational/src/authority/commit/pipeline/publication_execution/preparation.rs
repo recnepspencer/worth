@@ -113,25 +113,33 @@ pub(super) fn prepare_publication_phase(
                 "codec retirement cannot also mint a producer completion",
             ));
         }
-        let mut output_positions = if let Some(custody) = recovered_codec_publication_custody {
-            Some(custody.install_retirements(
-                execution,
-                &mut canonical_commit_envelope,
-                &branch_basis,
-            )?)
-        } else if let Some(admission) = required_output_publication {
-            Some(canonical_commit_envelope.install_required_output_origin(
-                execution,
-                runtime,
-                &branch_basis,
-                created_entities,
-                created_relations,
-                &working_state,
-                admission,
-            )?)
-        } else {
-            None
-        };
+        let mut output_positions = crate::execution::transaction_stage(
+            execution,
+            runtime.commit_work_budget.as_ref(),
+            || {
+                Ok::<_, TransactionCommitError>(
+                    if let Some(custody) = recovered_codec_publication_custody {
+                        Some(custody.install_retirements(
+                            execution,
+                            &mut canonical_commit_envelope,
+                            &branch_basis,
+                        )?)
+                    } else if let Some(admission) = required_output_publication {
+                        Some(canonical_commit_envelope.install_required_output_origin(
+                            execution,
+                            runtime,
+                            &branch_basis,
+                            created_entities,
+                            created_relations,
+                            &working_state,
+                            admission,
+                        )?)
+                    } else {
+                        None
+                    },
+                )
+            },
+        )?;
         let check_custody = || {
             owned_record_custody::require(
                 execution,
@@ -140,15 +148,11 @@ pub(super) fn prepare_publication_phase(
                 &adjacency_deltas,
             )
         };
-        match (
-            super::super::request_lease(execution),
+        crate::execution::transaction_stage(
+            execution,
             runtime.commit_work_budget.as_ref(),
-        ) {
-            (Some(_), Some(budget)) => budget
-                .run_stage(*execution, check_custody)
-                .map_err(|cause| TransactionCommitError::execution(cause.into()))?,
-            _ => check_custody(),
-        }?;
+            check_custody,
+        )?;
         let (_current_ownership_funding, additional_aspects, additional_adjacency) =
             ownership_completion::complete(
                 execution,
@@ -206,8 +210,14 @@ pub(super) fn prepare_publication_phase(
                 .map_err(|refusal| {
                     crate::mvcc::origin_denial(format!("semantic envelope seal: {refusal:?}"))
                 })?;
-        let canonical_commit_envelope = canonical_commit_envelope
-            .freeze_with_managed_source_history(source_interpretation, *execution)?;
+        let canonical_commit_envelope = crate::execution::transaction_stage(
+            execution,
+            runtime.commit_work_budget.as_ref(),
+            || {
+                canonical_commit_envelope
+                    .freeze_with_managed_source_history(source_interpretation, *execution)
+            },
+        )?;
         let clone_mode = working_state.clone_mode();
         let committed_partitions = working_state.into_partition_commits().1;
         runtime
@@ -302,20 +312,29 @@ pub(super) fn prepare_publication_phase(
                         failure,
                     )
                 })?;
-        let mirror_publication = runtime
-            .mirror_residency
-            .prepare_publication(
-                execution,
-                &runtime.services.symbols,
-                &branch_id,
-                prepared_history.root(),
-                &symbol_publication,
-                clone_mode,
-                committed_partitions,
-            )
-            .map_err(|failure| {
-                crate::authority::commit::preparation::storage_read_denial(&branch_basis, failure)
-            })?;
+        let mirror_publication = crate::execution::transaction_stage(
+            execution,
+            runtime.commit_work_budget.as_ref(),
+            || {
+                runtime
+                    .mirror_residency
+                    .prepare_publication(
+                        execution,
+                        &runtime.services.symbols,
+                        &branch_id,
+                        prepared_history.root(),
+                        &symbol_publication,
+                        clone_mode,
+                        committed_partitions,
+                    )
+                    .map_err(|failure| {
+                        crate::authority::commit::preparation::storage_read_denial(
+                            &branch_basis,
+                            failure,
+                        )
+                    })
+            },
+        )?;
         runtime
             .services
             .symbols

@@ -14,7 +14,7 @@ use super::super::{
 use super::{ActiveAttemptResources, ActiveHistoryCustody, ActivePinCustody};
 
 pub(crate) struct ActiveAttemptRecord {
-    identity: ProductUnpublishedOwnerEffectsIdentity,
+    pub(super) identity: ProductUnpublishedOwnerEffectsIdentity,
     pub(super) attempt: CompositePublicationAttemptIdentity,
     pub(super) expected: ProductBranchObservation,
     pub(super) admitted_at: RuntimeWorldInstant,
@@ -180,6 +180,7 @@ impl ActiveAttemptRecord {
             resources
                 .creation
                 .as_mut()
+                .filter(|c| c.durable.is_none())
                 .and_then(|c| c.observation_capacity.take()),
         );
         state.abandoned = true;

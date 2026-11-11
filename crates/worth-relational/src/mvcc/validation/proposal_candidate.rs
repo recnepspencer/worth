@@ -44,7 +44,9 @@ pub(super) fn prepare(
     let input = RelationalTransactionValidationInput::from_transaction(transaction);
     let (identity, source_interpretation) =
         owner.issue_mutation_proposal_identity(transaction.transaction_id, &input)?;
-    source_interpretation.bind_context(execution, context)?;
+    crate::execution::transaction_stage(execution, owner.commit_work_budget.as_ref(), || {
+        source_interpretation.bind_context(execution, context)
+    })?;
     transaction.reserve_preparation_client_keys(
         &mut symbols,
         owner.config.identity.client_key_symbol_policy,

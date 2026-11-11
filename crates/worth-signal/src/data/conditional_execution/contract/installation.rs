@@ -57,9 +57,11 @@ impl SignalGraph {
         }
         .map_err(|_| SignalConditionalContractDenial::OccurrenceExhausted)?;
         let service_retained_bytes = definition.installation_retained_bytes();
-        let semantic_condition = definition.condition;
+        let authored_definition = std::sync::Arc::new(definition);
+        let definition = authored_definition.as_ref();
+        let semantic_condition = &definition.condition;
         let condition =
-            lower_condition(self.runtime_instance_id(), node.node(), &semantic_condition);
+            lower_condition(self.runtime_instance_id(), node.node(), semantic_condition);
         let dependency_comparator = lower_comparator(
             self.runtime_instance_id(),
             node.node(),
@@ -95,7 +97,7 @@ impl SignalGraph {
             generation,
             occurrence,
             condition,
-            semantic_condition,
+            authored_definition: authored_definition.clone(),
             dependency_aspects: definition.dependency_aspects,
             trigger_aspects: definition.trigger_aspects,
             dependency_comparator,
@@ -107,6 +109,9 @@ impl SignalGraph {
         };
         installed.projection_contract =
             crate::data::conditional_execution::identity::contract_projection_basis(&installed);
+        installed.service_retained_bytes = installed
+            .service_retained_bytes
+            .saturating_add(installed.projection_contract.capacity());
         Ok(PreparedSignalConditionalContract {
             node: node.node(),
             predecessor_generation,
@@ -132,7 +137,10 @@ impl SignalGraph {
         let installed_generation = self
             .get_entry_mut(prepared.node)
             .map_err(|_| SignalConditionalContractDenial::StaleNode)?
-            .install_conditional_contract_occurrence(prepared.contract.occurrence)
+            .install_conditional_contract_occurrence(
+                prepared.contract.occurrence,
+                prepared.contract.authored_definition.clone(),
+            )
             .expect("prepared generation was checked before installation");
         debug_assert_eq!(installed_generation, prepared.contract.generation);
         Ok(prepared.contract)

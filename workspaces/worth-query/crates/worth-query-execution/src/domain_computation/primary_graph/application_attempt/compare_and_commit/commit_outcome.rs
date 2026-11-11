@@ -12,6 +12,9 @@ pub enum WorthQueryApplicationNoEffectCause {
     /// target did not become stale merely because this input changed.
     CurrentReadDependency(worth_runtime_world::facade::CurrentProductReadDependencyDenial),
     CorrespondenceRebindRequired,
+    CorrespondenceAdmissionDenied(
+        worth_runtime_bridge::facade::RuntimeWorldCorrespondenceAdmissionDenial,
+    ),
     ReferenceGenerationExhausted,
     CapacityExhausted,
     OwnerUnavailable,

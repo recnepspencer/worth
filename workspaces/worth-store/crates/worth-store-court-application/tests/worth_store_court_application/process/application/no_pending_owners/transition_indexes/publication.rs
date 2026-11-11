@@ -124,6 +124,7 @@ pub(super) fn run(
         .prepare_home_transition_step(
             execution,
             source.clone(),
+            fixture.admit_initial_program_source(&source),
             intent,
             grant.plan(),
             grant.original(),

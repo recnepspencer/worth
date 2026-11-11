@@ -44,7 +44,6 @@ impl<T: Copy + Ord> TierPolicyTable<T> {
         self.entries.iter().map(|(_, policy)| policy)
     }
 
-    #[cfg(test)]
     pub(crate) fn shares_storage_with(&self, other: &Self) -> bool {
         self.entries.shares_storage_with(&other.entries)
     }

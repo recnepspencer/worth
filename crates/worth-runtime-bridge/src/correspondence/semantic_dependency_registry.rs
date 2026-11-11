@@ -1,3 +1,4 @@
+mod authored_bindings;
 use std::collections::{BTreeMap, HashMap};
 
 use crate::error::{BridgeBuildError, BridgeBuildErrorKind};
@@ -10,7 +11,7 @@ use super::{
 
 #[derive(Debug, Clone, Default)]
 pub(crate) struct AdmittedSemanticDependencyRegistry {
-    authoritative: Vec<BridgeSemanticCorrespondenceRegistration>,
+    admitted: Vec<BridgeSemanticCorrespondenceRegistration>,
     index: BTreeMap<String, usize>,
     by_authority: BTreeMap<String, usize>,
     currentness_index: InstalledBindingCurrentnessIndex,
@@ -19,7 +20,7 @@ pub(crate) struct AdmittedSemanticDependencyRegistry {
 
 /// Derived currentness authority for installed source bindings.
 ///
-/// This index intentionally owns no reference to the authoritative
+/// This index intentionally owns no reference to the admitted
 /// registration storage. Its direct lookup is the only Runtime World
 /// currentness operation and records that operation immediately before the
 /// `HashMap::get`.
@@ -91,7 +92,7 @@ pub(crate) struct SemanticDependencyExtensionDenial {
 
 impl AdmittedSemanticDependencyRegistry {
     pub(crate) fn is_empty_for_home_stop(&self) -> bool {
-        self.authoritative.is_empty()
+        self.admitted.is_empty()
             && self.index.is_empty()
             && self.by_authority.is_empty()
             && self.currentness_index.generations.is_empty()
@@ -101,7 +102,7 @@ impl AdmittedSemanticDependencyRegistry {
     ) -> Result<Self, BridgeBuildError> {
         registrations.sort_by_key(BridgeSemanticCorrespondenceRegistration::canonical_key);
         let mut index: BTreeMap<String, usize> = BTreeMap::new();
-        let mut authoritative: Vec<BridgeSemanticCorrespondenceRegistration> = Vec::new();
+        let mut admitted: Vec<BridgeSemanticCorrespondenceRegistration> = Vec::new();
         let mut by_authority: BTreeMap<String, usize> = BTreeMap::new();
         let mut currentness_index = InstalledBindingCurrentnessIndex::default();
         let mut signal_graph_instance_id = None;
@@ -122,7 +123,7 @@ impl AdmittedSemanticDependencyRegistry {
             let authority_key = candidate.authority_registration_key();
             if let Some(existing) = by_authority
                 .get(&authority_key)
-                .map(|position| &authoritative[*position])
+                .map(|position| &admitted[*position])
                 && existing.dependency != registration.dependency
             {
                 return Err(BridgeBuildError::new(
@@ -131,7 +132,7 @@ impl AdmittedSemanticDependencyRegistry {
                     ));
             }
             if let Some(position) = index.get(&key).copied() {
-                authoritative[position]
+                admitted[position]
                     .extend_targets(&registration)
                     .map_err(|_| {
                         BridgeBuildError::new(
@@ -141,13 +142,13 @@ impl AdmittedSemanticDependencyRegistry {
                     })?;
                 continue;
             }
-            let position = authoritative.len();
+            let position = admitted.len();
             index.insert(key, position);
             by_authority.insert(authority_key, position);
-            authoritative.push(registration);
+            admitted.push(registration);
         }
         Ok(Self {
-            authoritative,
+            admitted,
             index,
             by_authority,
             currentness_index,
@@ -161,7 +162,7 @@ impl AdmittedSemanticDependencyRegistry {
     ) -> Option<Vec<BridgeSignalAspectTargetDeclaration>> {
         self.index
             .get(&candidate.canonical_registration_key())
-            .map(|position| &self.authoritative[*position])
+            .map(|position| &self.admitted[*position])
             .filter(|installed| installed.dependency == *candidate)
             .map(|installed| installed.targets.clone())
     }
@@ -173,24 +174,23 @@ impl AdmittedSemanticDependencyRegistry {
     pub(crate) fn rebuild_has_exact_parity(&self) -> bool {
         let currentness_parity = self
             .currentness_index
-            .rebuild_has_exact_parity(&self.authoritative);
-        Self::freeze(self.authoritative.clone()).is_ok_and(|rebuilt| {
+            .rebuild_has_exact_parity(&self.admitted);
+        Self::freeze(self.admitted.clone()).is_ok_and(|rebuilt| {
             currentness_parity
                 && rebuilt.index == self.index
                 && rebuilt.by_authority == self.by_authority
-                && rebuilt.authoritative == self.authoritative
+                && rebuilt.admitted == self.admitted
                 && rebuilt.signal_graph_instance_id == self.signal_graph_instance_id
         })
     }
 
     pub(crate) fn reconstruct_derived_indexes(&self) -> Result<Self, BridgeBuildError> {
-        Self::freeze(self.authoritative.clone())
+        Self::freeze(self.admitted.clone())
     }
 
-    pub(crate) fn authoritative_count(&self) -> usize {
-        self.authoritative.len()
+    pub(crate) fn admitted_count(&self) -> usize {
+        self.admitted.len()
     }
-
     pub(crate) fn signal_graph_instance_id(&self) -> Option<u64> {
         self.signal_graph_instance_id
     }
@@ -221,14 +221,14 @@ impl AdmittedSemanticDependencyRegistry {
             require_compatible_registration(
                 self.by_authority
                     .get(&authority_key)
-                    .map(|position| &self.authoritative[*position]),
+                    .map(|position| &self.admitted[*position]),
                 registration,
                 counters,
             )?;
             if let Some(existing) = self
                 .index
                 .get(&key)
-                .map(|position| &self.authoritative[*position])
+                .map(|position| &self.admitted[*position])
             {
                 require_compatible_registration(Some(existing), registration, counters)?;
                 if existing.has_new_targets(registration) {
@@ -281,8 +281,8 @@ impl AdmittedSemanticDependencyExtension {
             let position = *registry
                 .index
                 .get(&key)
-                .expect("admitted semantic extension retains its authoritative position");
-            registry.authoritative[position]
+                .expect("admitted semantic extension retains its admitted position");
+            registry.admitted[position]
                 .extend_targets(&registration)
                 .expect("admitted semantic extension remains compatible at commit");
             registry
@@ -293,10 +293,10 @@ impl AdmittedSemanticDependencyExtension {
             registry
                 .currentness_index
                 .insert_or_max(&registration.dependency);
-            registry.authoritative.push(registration);
+            registry.admitted.push(registration);
         }
         registry
-            .authoritative
+            .admitted
             .sort_by_key(BridgeSemanticCorrespondenceRegistration::canonical_key);
         rebuild_lookup_indexes(registry);
         if let Some(first) = self.registrations.first() {
@@ -309,7 +309,7 @@ impl AdmittedSemanticDependencyExtension {
 fn rebuild_lookup_indexes(registry: &mut AdmittedSemanticDependencyRegistry) {
     registry.index.clear();
     registry.by_authority.clear();
-    for (position, registration) in registry.authoritative.iter().enumerate() {
+    for (position, registration) in registry.admitted.iter().enumerate() {
         registry.index.insert(
             registration.dependency.canonical_registration_key(),
             position,

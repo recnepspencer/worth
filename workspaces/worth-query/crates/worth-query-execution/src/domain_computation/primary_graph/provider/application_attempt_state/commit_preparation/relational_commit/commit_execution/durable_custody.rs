@@ -24,13 +24,13 @@ pub(super) enum QueryNativeCustody {
 pub(in crate::domain_computation::primary_graph::provider) enum QueryDurableWorldCustody {
     PendingOpen(WorldPendingOpenAttempt),
     Opened(WorldOpenedPublicationAttempt),
-    NativePreparation(WorldQueryNativePreparation),
+    NativePreparation(super::QueryBoundWorldPreparation),
     #[allow(
         dead_code,
         reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
     )]
     NativeRefused(WorldNativePreparationRefusal),
-    Prepared(WorldPreparedPublicationWithoutSignal),
+    Prepared(super::QueryPreparedWorldPublication),
     PendingPublication(WorldPendingDurablePublication),
     Unpublished(ProductUnpublishedOwnerEffects),
     PublicationRecoveryRequired {
@@ -84,11 +84,12 @@ pub(in crate::domain_computation::primary_graph::provider) struct RetainedQueryD
     pub(super) terminal: crate::domain_computation::execution_runtime::product_world::WorthQueryReservedProductPublicationReceipt,
     pub(super) prepared_lineage_slot: Option<crate::domain_computation::primary_graph::output_lineage::PreparedOutputLineageSlot>,
     pub(super) query_denial: Option<QueryDurablePreparationDenial>,
+    pub(super) authored_completion: Option<worth_runtime_bridge::facade::BridgeDurableDefinitionCompletion>,
 }
 
 /// Narrow causes cannot embed a public same-store Query recovery wrapper.
-#[derive(Debug)]
 pub(in crate::domain_computation::primary_graph::provider) enum QueryDurablePreparationDenial {
+    ConditionalActivation(crate::domain_computation::execution_runtime::product_world::activation::WorthQueryProductActivationDenial),
     #[allow(
         dead_code,
         reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
@@ -181,5 +182,19 @@ impl RetainedQueryDurablePreparation {
         &mut self,
     ) -> QueryDurableWorldCustody {
         std::mem::replace(&mut self.world, QueryDurableWorldCustody::RecoveryOnly)
+    }
+}
+
+impl std::fmt::Debug for QueryDurablePreparationDenial {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Request(cause) => f.debug_tuple("Request").field(cause).finish(),
+            Self::Candidate(cause) => f.debug_tuple("Candidate").field(cause).finish(),
+            Self::Prerequisite(cause) => f.debug_tuple("Prerequisite").field(cause).finish(),
+            Self::QueryEvidence(cause) => f.debug_tuple("QueryEvidence").field(cause).finish(),
+            Self::ConditionalActivation(cause) => {
+                f.debug_tuple("ConditionalActivation").field(cause).finish()
+            }
+        }
     }
 }

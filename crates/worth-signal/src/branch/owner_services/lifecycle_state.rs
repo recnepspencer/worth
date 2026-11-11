@@ -1,4 +1,5 @@
 mod initial_empty_stop;
+pub(crate) use initial_empty_stop::{SignalPreparedOwnerStopGate, SignalStoppedOwnerGuard};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex, MutexGuard};
 

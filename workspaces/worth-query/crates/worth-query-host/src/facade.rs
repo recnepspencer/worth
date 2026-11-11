@@ -383,3 +383,6 @@ pub mod home_program_transition;
 pub use worth_foundational::facade::{
     CanonicalDigestId, DurableOwnerFamily, UncleanRecoveryUnsupported,
 };
+
+/// Typed refusal from fresh authored-program installation before Home service.
+pub use worth_query_execution::facade::application_home_integration::QueryHomeSignalProgramPreparationDenial;

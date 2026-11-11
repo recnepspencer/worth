@@ -26,7 +26,8 @@ fn owner_free_refusal(cause: &PreparationRefusal) -> bool {
         PreparationRefusal::Request(cause) => owner_free_request(cause),
         PreparationRefusal::Creation(cause) => match cause {
             WorthQueryProductBranchCreateError::ComponentsIncomplete
-            | WorthQueryProductBranchCreateError::IdentityExhausted
+            | WorthQueryProductBranchCreateError::NoEffect(_)
+            | WorthQueryProductBranchCreateError::ReleasedOriginal(_)
             | WorthQueryProductBranchCreateError::SourceAdmission(_)
             | WorthQueryProductBranchCreateError::Creation(_) => true,
             WorthQueryProductBranchCreateError::ProductUnpublished(_) => false,

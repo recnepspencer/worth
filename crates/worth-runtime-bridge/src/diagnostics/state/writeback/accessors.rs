@@ -11,7 +11,7 @@ impl BridgeDiagnosticsState {
     pub(crate) fn writeback_execution_records(&self) -> Vec<BridgeWritebackExecutionRecord> {
         self.writeback_execution_records
             .iter()
-            .map(|record| (**record).clone())
+            .map(|record| record.value().as_ref().clone())
             .collect()
     }
 
@@ -39,7 +39,7 @@ impl BridgeDiagnosticsState {
     pub(crate) fn writeback_replay_records(&self) -> Vec<BridgeWritebackReplayRecord> {
         self.writeback_replay_records
             .iter()
-            .map(|record| (**record).clone())
+            .map(|record| record.value().as_ref().clone())
             .collect()
     }
 
@@ -51,10 +51,14 @@ impl BridgeDiagnosticsState {
             .map(|record| (**record).clone())
     }
 
-    pub(crate) fn last_writeback_execution_record(&self) -> Option<BridgeWritebackExecutionRecord> {
+    pub(crate) fn last_writeback_execution_record(
+        &self,
+    ) -> Result<BridgeWritebackExecutionRecord, worth_foundational::facade::DiagnosticRecordAbsence>
+    {
         self.writeback_execution_records
             .back()
-            .map(|record| (**record).clone())
+            .map(|record| record.value().as_ref().clone())
+            .ok_or_else(|| self.writeback_scope.missing())
     }
 
     pub(crate) fn last_writeback_mapper_envelope(&self) -> Option<BridgeWritebackMapperEnvelope> {
@@ -77,10 +81,14 @@ impl BridgeDiagnosticsState {
             .map(|record| (**record).clone())
     }
 
-    pub(crate) fn last_writeback_replay_record(&self) -> Option<BridgeWritebackReplayRecord> {
+    pub(crate) fn last_writeback_replay_record(
+        &self,
+    ) -> Result<BridgeWritebackReplayRecord, worth_foundational::facade::DiagnosticRecordAbsence>
+    {
         self.writeback_replay_records
             .back()
-            .map(|record| (**record).clone())
+            .map(|record| record.value().as_ref().clone())
+            .ok_or_else(|| self.writeback_scope.missing())
     }
 
     pub(crate) fn writeback_admission_record_for_identity(
@@ -103,24 +111,30 @@ impl BridgeDiagnosticsState {
             .map(|record| (*record).clone())
     }
 
-    pub(crate) fn writeback_execution_record_for_identity(
+    pub(crate) fn writeback_execution_reference_for_identity(
         &self,
         record_identity: &BridgeWritebackExecutionRecordIdentity,
-    ) -> Option<BridgeWritebackExecutionRecord> {
+    ) -> Option<
+        super::super::super::writeback_retention::BridgeWritebackDiagnosticReference<
+            BridgeWritebackExecutionRecord,
+        >,
+    > {
         self.latest_writeback_execution_by_record_identity
             .get(record_identity.as_str())
-            .cloned()
-            .map(|record| (*record).clone())
+            .map(|record| record.reference(&self.writeback_scope))
     }
 
-    pub(crate) fn writeback_execution_record_for_candidate_digest(
+    pub(crate) fn writeback_execution_reference_for_candidate_digest(
         &self,
         candidate_digest: &str,
-    ) -> Option<BridgeWritebackExecutionRecord> {
+    ) -> Option<
+        super::super::super::writeback_retention::BridgeWritebackDiagnosticReference<
+            BridgeWritebackExecutionRecord,
+        >,
+    > {
         self.latest_writeback_execution_by_candidate_digest
             .get(candidate_digest)
-            .cloned()
-            .map(|record| (*record).clone())
+            .map(|record| record.reference(&self.writeback_scope))
     }
 
     pub(crate) fn writeback_mapper_envelope_for_identity(
@@ -183,13 +197,16 @@ impl BridgeDiagnosticsState {
             .map(|record| (*record).clone())
     }
 
-    pub(crate) fn writeback_replay_record_for_identity(
+    pub(crate) fn writeback_replay_reference_for_identity(
         &self,
         record_identity: &BridgeWritebackReplayRecordIdentity,
-    ) -> Option<BridgeWritebackReplayRecord> {
+    ) -> Option<
+        super::super::super::writeback_retention::BridgeWritebackDiagnosticReference<
+            BridgeWritebackReplayRecord,
+        >,
+    > {
         self.latest_writeback_replay_by_record_identity
             .get(record_identity.as_str())
-            .cloned()
-            .map(|record| (*record).clone())
+            .map(|record| record.reference(&self.writeback_scope))
     }
 }

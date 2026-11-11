@@ -23,6 +23,7 @@ mod registry;
 mod relational_preparation;
 mod request_stage;
 mod resolve;
+mod signal_medium;
 #[cfg(test)]
 mod tests;
 mod world_section;

@@ -30,6 +30,7 @@ where
         root: ProductBranchObservation,
         directory_support: fn(worth_foundational::facade::DurableStateFamily, u8) -> Option<u8>,
         maintenance: std::sync::Arc<dyn crate::domain_computation::execution_runtime::product_world::WorthQueryHomeMaintenance>,
+        branch_program_source_owner: std::sync::Arc<worth_proof::InstalledBranchProgramSourceOwner>,
     ) -> Result<
         worth_proof::QueryReadmitted<ReadmittedHomeQueryService<Schema, Program>>,
         QueryExistingHomeWorldAttachmentRefused<Schema, Program>,
@@ -69,6 +70,7 @@ where
                 root,
                 directory_support,
                 maintenance,
+                branch_program_source_owner,
             )
             .map_err(|inner| QueryExistingHomeWorldAttachmentRefused { inner })
     }

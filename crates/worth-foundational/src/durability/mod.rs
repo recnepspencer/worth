@@ -1,4 +1,17 @@
 //! Immutable vocabulary exchanged by durable owner ports.
+mod bridge_claim;
+mod conditional_provider;
+pub use conditional_provider::{
+    AuthoredProviderReconstructionDenial, BridgeAuthoredProviderDescription,
+    BridgeAuthoredProviderDescriptions, BridgeConditionalProviderRole,
+};
+mod diagnostic_record;
+mod signal_branch_effect;
+mod signal_definition_projection;
+pub use bridge_claim::BridgeSemanticClaimReference;
+pub use diagnostic_record::{DiagnosticRecordAbsence, DiagnosticRecordReadDenial};
+pub use signal_branch_effect::SignalBranchEffectKind;
+pub use signal_definition_projection::SignalDefinitionProjectionOutcome;
 
 mod checkpoint_admission;
 mod native_checkpoint_reference;
@@ -42,7 +55,9 @@ pub use home_transition_target::{
     HomeProgramTransitionCatalogDigest, HomeProgramTransitionSchemaCarrierDigest,
     HomeProgramTransitionSchemaDigest, HomeProgramTransitionTargetMeaning,
 };
+mod signal_identity;
 mod world_identity;
+pub use signal_identity::*;
 mod world_journal;
 pub use world_identity::*;
 pub use world_journal::WorldDurableJournal;
@@ -89,8 +104,7 @@ pub use correction_material_pin::{
     CorrectionMaterialPinIdentity, CorrectionMaterialPinOwner, CorrectionMaterialPinTerminal,
 };
 
-mod world_original_fate;
-pub use world_original_fate::WorldOriginalFate;
-
 mod unclean_recovery;
 pub use unclean_recovery::UncleanRecoveryUnsupported;
+mod world_original_fate;
+pub use world_original_fate::WorldOriginalFate;

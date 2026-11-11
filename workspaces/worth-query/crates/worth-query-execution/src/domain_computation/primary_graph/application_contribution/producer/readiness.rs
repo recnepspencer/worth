@@ -1,11 +1,12 @@
-use std::sync::Arc;
-
+use crate::domain_computation::primary_graph::{
+    conditional_operation::installation::route_binding::InstalledConditionalRoute,
+    managed_bridge::conditional_execution::ConditionalExecutionOwner,
+};
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationConditionalNode,
 };
 use worth_runtime_bridge::facade::{
     BridgeConditionalExecutionRequest, BridgeConditionalRuntimeBuilder,
-    BridgeInstalledConditionalLowering, BridgeSealedRuntimeAssembly,
 };
 
 use crate::domain_computation::primary_graph::conditional_operation::QueryConditionalComputeContext;
@@ -18,7 +19,7 @@ pub(in crate::domain_computation::primary_graph) trait PendingOutputReadiness<Sc
     fn producer_identity(&self) -> &str;
 
     fn install(
-        self: Box<Self>,
+        &self,
         bridge: &mut BridgeConditionalRuntimeBuilder,
         graph: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
     ) -> Result<
@@ -28,8 +29,7 @@ pub(in crate::domain_computation::primary_graph) trait PendingOutputReadiness<Sc
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryInstalledOutputReadinessRoute {
-    pub(in crate::domain_computation::primary_graph) lowering:
-        Arc<BridgeInstalledConditionalLowering>,
+    pub(in crate::domain_computation::primary_graph) lowering: InstalledConditionalRoute,
     pub(in crate::domain_computation::primary_graph) delivery_dependency_ordinal: usize,
 }
 
@@ -39,8 +39,8 @@ pub(in crate::domain_computation::primary_graph) type WorthQueryInstalledOutputR
 pub(in crate::domain_computation::primary_graph) fn evaluate_output_readiness(
     execution: worth_execution::ExecutionRequest<'_, '_>,
 
-    bridge: &BridgeSealedRuntimeAssembly,
-    lowering: &Arc<BridgeInstalledConditionalLowering>,
+    bridge: &ConditionalExecutionOwner<'_>,
+    lowering: &InstalledConditionalRoute,
     truth: &crate::domain_computation::primary_graph::conditional_operation::WorthQueryConditionalTruthBasis,
     producer_identity: &str,
     source_record: worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts,
@@ -50,8 +50,7 @@ pub(in crate::domain_computation::primary_graph) fn evaluate_output_readiness(
     worth_runtime_bridge::facade::BridgeConditionalDecisionEvidence,
     worth_runtime_bridge::facade::BridgeConditionalDenial,
 > {
-    let signal_basis =
-        bridge.admit_exact_conditional_signal_basis(lowering, truth.signal_basis())?;
+    let signal_basis = lowering.admit_signal_basis(bridge, truth.signal_basis())?;
     let mut compute = QueryConditionalComputeContext {
         output_version: attempt,
     };
@@ -59,7 +58,7 @@ pub(in crate::domain_computation::primary_graph) fn evaluate_output_readiness(
         execution,
         &signal_basis,
         BridgeConditionalExecutionRequest {
-            lowering,
+            lowering: signal_basis.installed_lowering_ref(),
             query_binding_identity: producer_identity,
             query_capability_identity: query_identity,
             snapshot_identity: truth.snapshot_projection(),
@@ -109,7 +108,7 @@ where
 }
 
 pub(in crate::domain_computation::primary_graph) fn install_output_readiness_routes<Schema>(
-    pending: Vec<Box<dyn PendingOutputReadiness<Schema>>>,
+    pending: &[Box<dyn PendingOutputReadiness<Schema>>],
     bridge: &mut BridgeConditionalRuntimeBuilder,
     graph: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
 ) -> Result<WorthQueryInstalledOutputReadinessRoutes, WorthQueryConditionalRuntimeInstallationDenial>
@@ -190,7 +189,7 @@ where
     }
 
     fn install(
-        self: Box<Self>,
+        &self,
         bridge: &mut BridgeConditionalRuntimeBuilder,
         graph: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
     ) -> Result<
@@ -207,7 +206,7 @@ where
                 )
             })?;
         Ok(WorthQueryInstalledOutputReadinessRoute {
-            lowering,
+            lowering: InstalledConditionalRoute::from_installation(lowering),
             delivery_dependency_ordinal: self.delivery_dependency_ordinal,
         })
     }

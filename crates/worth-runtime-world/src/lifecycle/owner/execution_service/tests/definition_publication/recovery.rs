@@ -195,7 +195,9 @@ fn activation_denial_retains_signal_successor_without_bridge_or_product_visibili
     };
     drop(custody);
     let unpublished =
-        crate::publication::RuntimeWorldUnpublishedConditionalDefinition::new(retained_effects);
+        crate::publication::RuntimeWorldUnpublishedConditionalDefinition::from_effects(
+            retained_effects,
+        );
 
     assert_eq!(
         lifecycle.bridge_conditional_retention().unwrap(),

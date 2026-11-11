@@ -22,3 +22,19 @@ pub fn provider_work_stop() -> Stop {
         ),
     )
 }
+
+pub fn original_capture_work_stop() -> Stop {
+    Stop::Operation(
+        Terminal::ProductUnpublished,
+        Cause::ProductUnpublished(graph::ProductUnpublishedCause::OriginalObservationStopped(
+            worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted,
+        )),
+    )
+}
+
+pub fn assert_work_stop_preserves_its_owning_phase(stop: &Stop) {
+    assert!(
+        *stop == provider_work_stop() || *stop == original_capture_work_stop(),
+        "unexpected work-stop phase: {stop:?}"
+    );
+}

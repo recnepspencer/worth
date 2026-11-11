@@ -46,22 +46,20 @@ where
                 RuntimeWorldBootstrapNoEffectCause::ForeignBasis,
             ));
         }
-        let Some(graph) = signal
-            .observation()
-            .target()
-            .as_basis()
-            .and_then(|basis| basis.graph_instance_id().parse::<u64>().ok())
-        else {
-            return Outcome::Refused(Refusal::Preparation(
-                RuntimeWorldBootstrapNoEffectCause::ForeignBasis,
-            ));
-        };
         let correspondence = owner
             .state
             .bridge
             .as_ref()
             .expect("serving World owns correspondence")
-            .admit_runtime_baseline(graph);
+            .admit_signal_baseline(&signal);
+        let correspondence = match correspondence {
+            Ok(basis) => basis,
+            Err(_) => {
+                return Outcome::Refused(Refusal::Preparation(
+                    RuntimeWorldBootstrapNoEffectCause::ForeignBasis,
+                ))
+            }
+        };
         owner.begin_durable_bootstrap(
             execution,
             RuntimeWorldBootstrapIntent::new(creation, relational, signal, correspondence),

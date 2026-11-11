@@ -42,10 +42,10 @@ fn source_alias_retirement_preserves_foreign_refusal_and_independent_read_custod
     drop(snapshot);
     let runtime = Arc::try_unwrap(runtime).unwrap();
     let refused = runtime.prepare_close().unwrap_err();
-    assert_eq!(
+    assert!(matches!(
         refused.reason(),
-        worth_relational::facade::runtime::RelationalRuntimeCloseDenial::ReadCustodyRetained
-    );
+        worth_relational::facade::runtime::RelationalRuntimeCloseDenial::ReadCustodyRetained(_)
+    ));
     drop(basis);
     refused.into_runtime().prepare_close().unwrap().finish();
     foreign.prepare_close().unwrap().finish();

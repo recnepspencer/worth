@@ -50,12 +50,51 @@ where
         }
     }
 
+    /// Reserve the original component intent before either owner is contacted.
+    pub fn prepare_query_publication_with_signal(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        expected: ProductBranchObservation,
+        source: worth_proof::AdmittedBranchProgramSource,
+        change: Option<worth_relational::facade::mvcc::RelationalTransactionIntent>,
+        cancellation: &RuntimeWorldCancellationToken,
+        deadline: Option<RuntimeWorldInstant>,
+    ) -> Result<
+        crate::publication::WorldPendingOpenAttempt,
+        crate::publication::WorldOpenAttemptRefusal,
+    > {
+        let owner = self.service().map_err(|_| {
+            crate::publication::WorldOpenAttemptRefusal::Reservation(
+                NoEffectCompositePublication::new(
+                    NoEffectCause::OwnerUnavailable,
+                    Some(expected.clone()),
+                ),
+            )
+        })?;
+        let intent = match change {
+            Some(change) => {
+                crate::publication::CompositeComponentIntent::RelationalAndSignal(change)
+            }
+            None => crate::publication::CompositeComponentIntent::SignalOnly,
+        };
+        owner.prepare_component_durable_open(
+            execution,
+            expected,
+            source,
+            intent,
+            cancellation,
+            deadline,
+            None,
+        )
+    }
+
     /// Return the original preparing bundle before any journal submission.
     /// The closed Query caller retains it outside its disposable request first.
     pub fn prepare_query_publication_without_signal(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         expected: ProductBranchObservation,
+        source: worth_proof::AdmittedBranchProgramSource,
         change: worth_relational::facade::mvcc::RelationalTransactionIntent,
         cancellation: &RuntimeWorldCancellationToken,
         deadline: Option<RuntimeWorldInstant>,
@@ -71,21 +110,27 @@ where
                 ),
             )
         })?;
-        owner.prepare_durable_open(execution, expected, change, cancellation, deadline)
+        owner.prepare_durable_open(execution, expected, source, change, cancellation, deadline)
     }
 
     pub fn open_publication_without_signal(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         expected: ProductBranchObservation,
+        source: worth_proof::AdmittedBranchProgramSource,
         change: worth_relational::facade::mvcc::RelationalTransactionIntent,
         cancellation: &RuntimeWorldCancellationToken,
         deadline: Option<RuntimeWorldInstant>,
     ) -> crate::publication::WorldOpenAttemptOutcome {
         match self.service() {
-            Ok(owner) => {
-                owner.begin_open_without_signal(execution, expected, change, cancellation, deadline)
-            }
+            Ok(owner) => owner.begin_open_without_signal(
+                execution,
+                expected,
+                source,
+                change,
+                cancellation,
+                deadline,
+            ),
             Err(_) => crate::publication::WorldOpenAttemptOutcome::Refused(
                 crate::publication::WorldOpenAttemptRefusal::Reservation(
                     NoEffectCompositePublication::new(

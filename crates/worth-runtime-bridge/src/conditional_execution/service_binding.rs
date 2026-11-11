@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex, PoisonError};
 
-use worth_proof::{ConditionalEvaluationSource, ConditionalSourceObservationOwner};
+use worth_proof::ConditionalSourceObservationOwner;
 use worth_signal::facade::branch::{
     SignalConditionalDefinitionPublicationPort, SignalConditionalExecutionPort,
     SignalOwnerServicePorts,
@@ -75,6 +75,10 @@ impl BridgeOwnedSignalRuntime {
 }
 
 impl BridgeSignalServiceBinding {
+    pub(super) fn source_owner(&self) -> &ConditionalSourceObservationOwner {
+        &self.source_owner
+    }
+
     pub(super) fn seal(
         runtime: &mut SignalRuntime<(), (), (), (), ()>,
         lowerings: &mut super::lowering_registry::BridgeConditionalLoweringRegistry,
@@ -213,24 +217,5 @@ impl BridgeSignalServiceBinding {
             .unwrap_or_else(PoisonError::into_inner)
             .issuance_basis()
             .clone()
-    }
-
-    pub(super) fn evaluation_source(
-        &self,
-        snapshot: Option<
-            &crate::snapshot::AdmittedSnapshotContext<
-                Box<dyn crate::snapshot::TruthSnapshotReader>,
-            >,
-        >,
-    ) -> ConditionalEvaluationSource {
-        match snapshot {
-            Some(snapshot) => self
-                .source_owner
-                .admit(super::source_projection::conditional_source_projection(
-                    snapshot.snapshot_identity(),
-                ))
-                .into(),
-            None => ConditionalEvaluationSource::NoRelationalSource,
-        }
     }
 }

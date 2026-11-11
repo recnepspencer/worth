@@ -10,7 +10,7 @@ impl WorthQueryProductRuntime {
         source_program: Option<&ApplicationProgramRevision>,
         intent: ProductBranchCreationIntent,
         cancellation: &RuntimeWorldCancellationToken,
-    ) -> Result<RuntimeWorldBranchCreationOutcome, WorthQueryProductBranchCreationDenial> {
+    ) -> Result<WorthQueryProductBranchCreationOutcome, WorthQueryProductBranchCreationDenial> {
         Self::create_product_branch(
             self,
             execution,
@@ -18,6 +18,7 @@ impl WorthQueryProductRuntime {
             source_program,
             intent,
             cancellation,
+            None,
         )
     }
 }

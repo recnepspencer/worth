@@ -51,11 +51,13 @@ fn occurrence_name_loans_restore_the_same_prepaid_open_when_filling_unwinds() {
     let unwound = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         let loan = OpenRecordLoan::take(
             &mut destination,
-            WorldRelationalEvidence {
-                commit: 1,
-                position: 1,
-                digest: [5; 32],
-            },
+            crate::durability::artifact::WorldOccurrenceOwnerEvidence::RelationalOnly(
+                WorldRelationalEvidence {
+                    commit: 1,
+                    position: 1,
+                    digest: [5; 32],
+                },
+            ),
             HomeIncarnation::initial(),
         );
         assert!(matches!(loan.record(), WorldRecord::Occurrence { .. }));

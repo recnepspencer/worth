@@ -141,7 +141,7 @@ impl<Schema: ApplicationSchema, Program: 'static> WorthQueryRetiringHomeQuery<Sc
         request: &ExecutionRequest<'_, '_>,
         native: &worth_relational::facade::runtime::RelationalRuntime,
         bridge_owner: &std::sync::Arc<
-            std::sync::RwLock<worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly>,
+            worth_runtime_bridge::facade::BridgeReadmittedAuthoredAssembly,
         >,
     ) -> Result<WorthQueryHomeRetirementAdvance<Schema, Program>, (Self, Denial)> {
         // Every original owner consults this same request. Retirement opens no
@@ -151,7 +151,7 @@ impl<Schema: ApplicationSchema, Program: 'static> WorthQueryRetiringHomeQuery<Sc
             .runtime
             .as_mut()
             .expect("sealed original runtime")
-            .advance(request, native, bridge_owner);
+            .advance(request, native, &crate::domain_computation::primary_graph::managed_bridge::conditional_owner::ConditionalOwner::Authored(std::sync::Arc::clone(bridge_owner)));
         match advanced {
             Ok(Progress::Advanced) => Ok(WorthQueryHomeRetirementAdvance::Advanced(self)),
             Ok(Progress::Complete) => Ok(WorthQueryHomeRetirementAdvance::Complete(

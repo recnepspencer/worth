@@ -1,9 +1,10 @@
-//! Reconstruct original meaning from the real Native cap without live-result fiction.
+//! Reconstruct original meaning from each actual recovered owner basis.
 use super::*;
 use crate::basis::CompositeBasisBackingDenial;
 use crate::durability::{WorldOpenAttemptRecord, WorldReadmissionDenial as Denial};
+use crate::history::RecoveredWorldOwnerEvidenceRef;
 use crate::history::{ReadmittedPublicationRecordBacking, ReadmittedWorldCommitDenial};
-use worth_relational::facade::durability::RelationalRecoveredPublicationCustody;
+use worth_runtime_bridge::facade::AdmittedRuntimeWorldCorrespondenceBasis;
 
 pub(crate) struct PreparedReadmittedWorldSuccessor {
     pub(crate) after: ProductBranchReferenceSnapshot,
@@ -22,11 +23,16 @@ where
         request: &worth_execution::ExecutionRequest<'_, '_>,
         before: &ProductBranchObservation,
         open: &WorldOpenAttemptRecord,
-        native: &RelationalRecoveredPublicationCustody,
+        owners: RecoveredWorldOwnerEvidenceRef<'_>,
+        bridge: AdmittedRuntimeWorldCorrespondenceBasis,
     ) -> Result<PreparedReadmittedWorldSuccessor, Denial> {
         let owner = self.owner_identity();
-        if native.predecessor().admission_identity()
-            != before.basis().relational_basis().admission_identity()
+        if owners.relational().is_some_and(|native| {
+            native.predecessor().admission_identity()
+                != before.basis().relational_basis().admission_identity()
+        }) || owners
+            .signal()
+            .is_some_and(|signal| signal.original().association() != Some(&open.association))
         {
             return Err(Denial::OccurrenceEvidenceMismatch);
         }
@@ -44,9 +50,15 @@ where
         let basis = crate::basis::admit_validated_for_request(
             request,
             &self.state.identities,
-            native.successor().clone(),
-            before.basis().signal_basis().clone(),
-            before.basis().correspondence_basis().clone(),
+            owners.relational().map_or_else(
+                || before.basis().relational_basis().clone(),
+                |native| native.successor().clone(),
+            ),
+            owners.signal().map_or_else(
+                || before.basis().signal_basis().clone(),
+                |signal| signal.basis().clone(),
+            ),
+            bridge,
         )
         .map_err(|cause| match cause {
             CompositeBasisBackingDenial::Request(cause) => {
@@ -54,13 +66,13 @@ where
             }
             CompositeBasisBackingDenial::CapacityOverflow => Denial::RecoveryCapacity,
         })?;
-        let commit = CompositeRuntimeWorldCommit::from_readmitted_native_publication(
+        let commit = CompositeRuntimeWorldCommit::from_readmitted_publication(
             request,
             commit,
             before.snapshot().commit(),
             basis,
             attempt.clone(),
-            native,
+            owners,
         )
         .map_err(|cause| match cause {
             ReadmittedWorldCommitDenial::Request(cause) => {

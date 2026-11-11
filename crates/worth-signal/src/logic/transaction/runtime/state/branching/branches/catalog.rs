@@ -78,6 +78,16 @@ where
         }
     }
 
+    pub(crate) fn initial_authored_source_is_pristine(&self) -> bool {
+        let root = SignalBranchId(0);
+        self.snapshot_reconstruction_runtime_is_pristine(root)
+            && self.next_branch_id == 1
+            && self.retirement_receipts.is_empty()
+            && self.active_merge_participants.is_empty()
+            && self.branch_head_generation(root) == 0
+            && self.branch_head_snapshot_id(root).is_none()
+    }
+
     pub fn with_live_catalog(
         live_branch_catalog: BTreeMap<SignalBranchId, SignalBranchHandle>,
         owner_runtime_instance_id: u64,
@@ -120,13 +130,13 @@ where
         mutation_ledger: BranchMutationLedger,
     ) -> BranchState<D, I, T> {
         self.observe_allocator_state(&authority.graph);
-        BranchState::new(authority, derived, ancestry, mutation_ledger)
+        BranchState::new(authority, Box::new(derived), ancestry, mutation_ledger)
     }
 
     pub fn restore_active_state(
         &mut self,
         mut state: BranchState<D, I, T>,
-        graph: &mut SignalGraph,
+        graph: &mut Box<SignalGraph>,
         config: &mut SignalRuntimeConfig<T>,
         checkpoint: &mut CheckpointRuntime<D, I>,
         resource: &mut super::super::super::resource::ResourceRuntimeState,

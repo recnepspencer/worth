@@ -39,6 +39,19 @@ struct RelationalForkVisibilityBinding {
 }
 
 impl RelationalForkOwnerBinding {
+    pub(crate) fn observe_original_frontiers(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        (
+            crate::publication::patch::data::PatchStreamPosition,
+            crate::branch::RelationalBranchTransitionSequence,
+        ),
+        worth_execution::WorkCeilingDenial,
+    > {
+        self.routes.observe_fork_original_frontiers(execution)
+    }
+
     pub(crate) fn root_identity_issuer(
         &self,
     ) -> &crate::branch::RelationalBranchRootIdentityIssuer {

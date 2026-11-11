@@ -1,8 +1,10 @@
 use super::support::*;
 
 #[test]
-fn runtime_rejects_replayed_writeback_bundle_when_semantic_meaning_drifts() {
-    let runtime = runtime_with_writeback_authority(BridgeRuntimePolicy::development());
+fn writeback_replay_comparison_retention_expires_after_a_rejected_semantic_drift() {
+    let runtime = runtime_with_writeback_authority(
+        BridgeRuntimePolicy::development().with_route_record_limit(1),
+    );
     let lowered_policy = lowered_policy(&runtime);
     let declaration = writeback_declaration(
         BridgeWritebackDeclarationIdentity::admit_bridge_owned("writeback:replay-mismatch"),
@@ -150,6 +152,25 @@ fn runtime_rejects_replayed_writeback_bundle_when_semantic_meaning_drifts() {
     assert_eq!(
         replay_record_explanation.replayed_effect_intent_patch_canonical_basis(),
         drifted_bundle.effect_intent_patch_canonical_basis()
+    );
+    let reference = runtime
+        .diagnostics()
+        .retained_writeback_replay_reference_for_identity(replay_record.record_identity())
+        .unwrap();
+    assert_eq!(
+        runtime
+            .diagnostics()
+            .writeback_replay_record_for_reference(&reference)
+            .unwrap(),
+        replay_record
+    );
+    runtime
+        .validate_replayed_writeback_bundle(&original_bundle, &original_bundle)
+        .unwrap();
+    super::diagnostic_retention::comparison_expiry(
+        &runtime.diagnostics.handle(),
+        &reference,
+        &original_bundle,
     );
 }
 

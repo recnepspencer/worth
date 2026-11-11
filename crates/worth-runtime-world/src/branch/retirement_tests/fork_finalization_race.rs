@@ -83,6 +83,10 @@ fn forked_finalization_recovery_denies_close_until_its_record_is_installed() {
     worker.join().expect("the fork worker does not panic");
     let effects = match outcome {
         RuntimeWorldBranchCreationOutcome::ProductUnpublished(effects) => effects,
+        RuntimeWorldBranchCreationOutcome::NoEffect(_)
+        | RuntimeWorldBranchCreationOutcome::ReleasedOriginal(_) => {
+            panic!("memory creation cannot return a Home publication fate")
+        }
         RuntimeWorldBranchCreationOutcome::Performed(_) => {
             panic!("a fork without observation authority cannot publish its destination")
         }

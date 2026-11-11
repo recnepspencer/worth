@@ -1,5 +1,6 @@
 //! Request-bounded business retirement; allocation destruction is separate.
 use super::{RelationalRuntimeHandle, RuntimeOwnership};
+use crate::change_source::RelationalReadCustodyHolders as Holders;
 use crate::runtime::{RelationalRuntime, RelationalRuntimeCloseDenial};
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
@@ -175,7 +176,9 @@ impl RelationalMemoryClose {
             };
         }
         if self.runtime.history.has_detached_retention_obligations() {
-            return O::Refused(RelationalRuntimeCloseDenial::ReadCustodyRetained);
+            return O::Refused(RelationalRuntimeCloseDenial::ReadCustodyRetained(
+                Holders::detached(self.runtime.history.retention_cost_counters()),
+            ));
         }
         match self
             .runtime
@@ -183,7 +186,13 @@ impl RelationalMemoryClose {
             .try_retire_stopped_head(self.head_cursor)
         {
             Err(()) => return O::Busy,
-            Ok(None) => return O::Refused(RelationalRuntimeCloseDenial::ReadCustodyRetained),
+            Ok(None) => {
+                return O::Refused(RelationalRuntimeCloseDenial::ReadCustodyRetained(
+                    Holders::BranchHead {
+                        index: self.head_cursor,
+                    },
+                ))
+            }
             Ok(Some(false)) => {
                 self.head_cursor += 1;
                 return O::Advanced;

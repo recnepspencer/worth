@@ -38,38 +38,54 @@ pub(crate) enum RelationalCandidateRegistrationDenial {
 impl RelationalRuntimePublicationOwner {
     /// Unlike ordinary close, this never reaps candidates or drains settlements.
     /// A retained candidate owns real reservations, including after its expiry.
-    pub(super) fn try_has_memory_close_custody(&self) -> Result<bool, ()> {
+    pub(super) fn try_memory_close_custody(
+        &self,
+    ) -> Result<Option<super::RelationalPublicationCustodyHolders>, ()> {
         let candidates = match self.binding.lifecycle.candidates.try_lock() {
             Ok(value) => value,
             Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
             Err(std::sync::TryLockError::WouldBlock) => return Err(()),
         };
-        if !candidates.is_empty() {
-            return Ok(true);
-        }
+        let candidate_custody = super::RelationalPublicationRegistryCustody::observed(
+            candidates.len(),
+            candidates.keys().next().copied(),
+        );
         drop(candidates);
-        if !self.binding.lifecycle.settlements.try_empty()? {
-            return Ok(true);
+        super::RelationalPublicationCustodyHolders {
+            candidates: candidate_custody,
+            settlements: self.binding.lifecycle.settlements.try_close_custody(),
+            companion: self.companion_close_custody(),
         }
-        let epoch = self.binding.lifecycle.companion.enter().map_err(|_| ())?;
-        Ok(epoch.has_live_close_client())
+        .memory_result()
     }
-    pub(super) fn has_live_publication_custody(&self) -> bool {
+    pub(super) fn live_publication_custody(
+        &self,
+    ) -> Option<super::RelationalPublicationCustodyHolders> {
         self.binding.reap_expired_candidates();
-        !self
+        let candidates = self
             .binding
             .lifecycle
             .candidates
             .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .is_empty()
-            || self.binding.lifecycle.settlements.has_pending()
-            || !self
-                .binding
-                .lifecycle
-                .companion
-                .enter()
-                .is_ok_and(|epoch| !epoch.has_live_close_client())
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let candidate_custody = super::RelationalPublicationRegistryCustody::observed(
+            candidates.len(),
+            candidates.keys().next().copied(),
+        );
+        drop(candidates);
+        super::RelationalPublicationCustodyHolders {
+            candidates: candidate_custody,
+            settlements: self.binding.lifecycle.settlements.close_custody(),
+            companion: self.companion_close_custody(),
+        }
+        .retained()
+    }
+
+    fn companion_close_custody(&self) -> super::RelationalPublicationCompanionCustody {
+        match self.binding.lifecycle.companion.enter() {
+            Ok(epoch) => epoch.close_custody(),
+            Err(stop) => super::RelationalPublicationCompanionCustody::Unavailable(stop),
+        }
     }
 
     pub(in crate::runtime) fn new() -> Self {

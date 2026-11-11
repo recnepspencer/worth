@@ -83,9 +83,12 @@ fn native_custody_correction_result_cleanup_is_explicit_idempotent_and_keeps_ext
     assert_eq!(runtime.visibility.handles.published_count(), 0);
     assert_eq!(runtime.retention().active_snapshot_count(), 1);
     let refused = runtime.prepare_close().unwrap_err();
-    assert_eq!(
-        refused.reason(),
-        crate::runtime::RelationalRuntimeCloseDenial::ReadCustodyRetained
+    assert!(
+        matches!(refused.reason(), crate::runtime::RelationalRuntimeCloseDenial::ReadCustodyRetained(
+            crate::facade::change_source::RelationalReadCustodyHolders::SnapshotsAndHistory {
+                active_snapshots, detached_history,
+            }
+        ) if active_snapshots != 0 || detached_history)
     );
     let runtime = refused.into_runtime();
     runtime.snapshots().release_snapshot(&independent).unwrap();

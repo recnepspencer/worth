@@ -1,10 +1,10 @@
 //! The authentic catalog grant cannot replace its caller's original controls.
 use super::*;
 use worth_relational::facade::{
-    durability::RecoveredRelationalRuntimeAuthority,
+    durability::{RecoveredRelationalRuntimeAuthority, RelationalRecoveryStop},
     runtime::{
         PreparedRelationalHomeProgramContracts, RelationalHomeProgramCatalogReadmissionSource,
-        RelationalRuntime,
+        RelationalHomeProgramContractDenial, RelationalRuntime,
     },
     transactions::RelationalExecutionDenialCause as Cause,
 };
@@ -32,9 +32,11 @@ pub(super) fn refuse(
         )
         .unwrap_err();
     match refused.reason() {
-        Denial::Backing(worth_execution::ExecutionRequestArrayDenial::Request(cause)) => {
+        Denial::TargetMeaning(RelationalHomeProgramContractDenial::SchemaImage(
+            RelationalRecoveryStop::Request(cause),
+        )) => {
             assert!(matches!(
-                Cause::from(*cause),
+                *cause,
                 Cause::PolicyMemoryExhausted {
                     admitted: 0,
                     ancestor: 0,
@@ -42,7 +44,7 @@ pub(super) fn refuse(
                 }
             ));
         }
-        other => panic!("the original zero budget must refuse backing: {other:?}"),
+        other => panic!("the original zero budget must refuse target schema capture: {other:?}"),
     }
     assert!(!refused.retains_acquired_custody());
     drop(refused);

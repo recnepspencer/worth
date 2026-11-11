@@ -67,6 +67,7 @@ impl BeforeWorldPreparation {
             terminal,
             prepared_lineage_slot: None,
             query_denial: None,
+            authored_completion: None,
         })
     }
 }

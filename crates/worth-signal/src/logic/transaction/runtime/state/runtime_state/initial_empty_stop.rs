@@ -1,8 +1,7 @@
 //! Original-runtime entry to reversible owner-local stop.
 use super::SignalRuntime;
 use crate::branch::{
-    PreparedInitialEmptySignalStop, SignalInitialEmptyStopDenial as Denial,
-    SignalInitialEmptyStopRefused,
+    PreparedInitialEmptySignalStop, SignalInitialEmptyStopRefused, SignalOwnerStopDenial as Denial,
 };
 use worth_execution::ExecutionRequest;
 impl<D, I, E, Ctx, T> SignalRuntime<D, I, E, Ctx, T>

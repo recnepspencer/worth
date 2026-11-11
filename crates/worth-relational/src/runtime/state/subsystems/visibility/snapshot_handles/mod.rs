@@ -86,8 +86,8 @@ pub(crate) struct SnapshotHandleRegistryCostCounters {
 }
 
 impl SnapshotHandles {
-    pub(crate) fn try_empty(&self) -> Result<bool, ()> {
-        Ok(self.active.try_empty()? && self.published.try_empty()?)
+    pub(crate) fn try_retained_registrations(&self) -> Result<(bool, bool), ()> {
+        Ok((!self.active.try_empty()?, !self.published.try_empty()?))
     }
     pub(crate) fn snapshot_identity_binding(&self) -> Arc<AtomicU64> {
         Arc::clone(&self.next_snapshot_id)

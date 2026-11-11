@@ -12,6 +12,8 @@ use worth_runtime_bridge::facade::{
     SubscriptionSliceKind, TruthDeltaSurfaceKind, TruthPatchScope, TruthPatchTargetSelector,
 };
 
+pub(in crate::domain_computation) mod conditional_execution;
+pub(in crate::domain_computation) mod conditional_owner;
 pub(in crate::domain_computation::primary_graph) mod home_definition;
 mod home_retirement;
 mod installed_custody;
@@ -71,7 +73,7 @@ impl WorthQueryInstalledApplicationBridge {
         Self {
             custody: Some(InstalledBridgeCustody::Serving {
                 ordinary,
-                conditional,
+                conditional: conditional_owner::ConditionalOwner::Memory(conditional),
             }),
         }
     }
@@ -83,35 +85,59 @@ impl WorthQueryInstalledApplicationBridge {
             .ordinary()
             .expect("retired Query exposes no ordinary Bridge")
     }
-    fn conditional_owner(
+    pub(in crate::domain_computation::primary_graph) fn conditional_owner(
         &self,
-    ) -> Option<&std::sync::Arc<std::sync::RwLock<BridgeSealedRuntimeAssembly>>> {
+    ) -> Option<&conditional_owner::ConditionalOwner> {
         self.custody
             .as_ref()
-            .expect("original Bridge custody")
-            .conditional()
+            .and_then(InstalledBridgeCustody::conditional)
     }
-    pub fn conditional(&self) -> std::sync::RwLockReadGuard<'_, BridgeSealedRuntimeAssembly> {
-        self.conditional_owner()
-            .expect("retired Query exposes no conditional Bridge")
-            .read()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    pub(in crate::domain_computation) fn conditional(
+        &self,
+    ) -> conditional_execution::ConditionalExecutionOwner<'_> {
+        match self.conditional_owner() {
+            Some(owner) => owner
+                .read()
+                .unwrap_or_else(std::sync::PoisonError::into_inner),
+            None => conditional_execution::ConditionalExecutionOwner::Stopped,
+        }
     }
     pub(super) fn conditional_lifecycle(
         &self,
-    ) -> std::sync::RwLockWriteGuard<'_, BridgeSealedRuntimeAssembly> {
-        self.conditional_owner()
-            .expect("retired Query exposes no conditional Bridge")
-            .write()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    ) -> Result<
+        std::sync::RwLockWriteGuard<'_, BridgeSealedRuntimeAssembly>,
+        worth_runtime_bridge::facade::BridgeConditionalDenial,
+    > {
+        use worth_runtime_bridge::facade::BridgeConditionalDenial;
+        match self.conditional_owner() {
+            Some(conditional_owner::ConditionalOwner::Memory(owner)) => Ok(owner
+                .write()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)),
+            Some(conditional_owner::ConditionalOwner::Authored(_)) => {
+                Err(BridgeConditionalDenial::operation_route_refused(
+                    "authored publication requires the original durable route",
+                ))
+            }
+            Some(conditional_owner::ConditionalOwner::Stopped) | None => {
+                Err(BridgeConditionalDenial::owner_stopped())
+            }
+        }
     }
-    pub(super) fn conditional_operations(
-        &self,
-    ) -> std::sync::Arc<std::sync::RwLock<BridgeSealedRuntimeAssembly>> {
-        std::sync::Arc::clone(
-            self.conditional_owner()
-                .expect("only serving Query retains Bridge"),
-        )
+    pub(super) fn conditional_operations(&self) -> conditional_owner::ConditionalOwner {
+        self.conditional_owner()
+            .cloned()
+            .unwrap_or(conditional_owner::ConditionalOwner::Stopped)
+    }
+    pub(in crate::domain_computation::primary_graph) fn attach_authored_home_bridge(
+        ordinary: RuntimeBridge,
+        conditional: std::sync::Arc<worth_runtime_bridge::facade::BridgeReadmittedAuthoredAssembly>,
+    ) -> Self {
+        Self {
+            custody: Some(InstalledBridgeCustody::Serving {
+                ordinary,
+                conditional: conditional_owner::ConditionalOwner::Authored(conditional),
+            }),
+        }
     }
 }
 

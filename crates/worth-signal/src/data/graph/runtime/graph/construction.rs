@@ -34,6 +34,7 @@ impl Clone for SignalGraph {
             initial_empty_origin: false,
             lifecycle_token: Default::default(),
             instance_id,
+            recorded_node_issuance: Default::default(),
             arena: self.arena.operational_clone(),
             topology: self.topology.operational_clone(),
             cause_sets,
@@ -96,6 +97,7 @@ impl SignalGraph {
             initial_empty_origin: true,
             lifecycle_token: Default::default(),
             instance_id: super::next_signal_graph_instance_id(),
+            recorded_node_issuance: Default::default(),
             arena: NodeArena {
                 definitions: Default::default(),
                 nodes: crate::data::persistent_paged_vector::PersistentPagedVector::new(),

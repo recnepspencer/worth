@@ -140,14 +140,28 @@ fn host_checkpoint_memory_failure_is_reported_while_original_retired_owners_rema
     let path = tempfile::tempdir().unwrap();
     let live = serial(None, None);
     let execution = ExecutionRequest::serial(&live);
-    let home = open(
-        path.path(),
-        execution,
-        Arc::new(AtomicUsize::new(0)),
-        Arc::new(AtomicUsize::new(0)),
+    let limits = ApplicationHomeCheckpointLimits::default();
+    let control_bytes = ApplicationHomeCheckpointLimits::maintenance_control_memory_bytes()
+        .expect("the actual worker reports its installation bill");
+    let limits = limits.with_maintenance_allowance(
+        limits.maintenance_work(),
+        control_bytes,
+        limits.maintenance_timeout(),
     );
-    // A real acknowledged journal tail makes capture larger than the fixed
-    // retirement cursor. No checkpoint or handler result is fabricated.
+    let request = fixture::request(
+        path.path().to_path_buf(),
+        build(),
+        Arc::new(AtomicUsize::new(0)),
+        Arc::new(AtomicUsize::new(0)),
+    )
+    .with_checkpoint_limits(limits);
+    let home = with_bootstrap_advancement_from_request(execution, |phase| {
+        request.open_in_advancement(&phase)
+    })
+    .unwrap()
+    .unwrap_or_else(|refused| panic!("actual Host admission: {refused:?}"));
+    // A real acknowledged journal tail requires payload memory during capture.
+    // No checkpoint or handler result is fabricated.
     for ordinal in 0..64 {
         assert!(matches!(
             operations::set_key(home.runtime(), 0xd110 + ordinal, 8),
@@ -155,17 +169,12 @@ fn host_checkpoint_memory_failure_is_reported_while_original_retired_owners_rema
         ));
     }
     assert_eq!(balance(home.runtime()), 8);
-    // D17 requires the actual World and Query retirement storage before seal:
-    // 584,296 retained bytes + 17,576 fixed task + 659,360 history rows already
-    // exceed 1 MiB. Fund that custody with 1.5 MiB; the remaining capture budget
-    // is smaller than the earlier authentic failed capture. D11 still requires
-    // that exact checkpoint failure and physical Closed with retired owners live.
-    let bounded = serial(Some(1536 * 1024), None);
-    let closed = home
-        .close(&ExecutionRequest::serial(&bounded))
-        .unwrap_or_else(|refused| {
-            panic!("a failed checkpoint is reported without withholding close ({} original bytes retained): {refused:?}", bounded.memory().unwrap().charged_memory_bytes())
-        });
+    // Automatic close capture uses the Home's own installed maintenance ledger.
+    // Its exact worker bill is admitted, leaving no payload memory. The caller
+    // independently funds original retirement; a capture failure cannot veto it.
+    let closed = home.close(&execution).unwrap_or_else(|refused| {
+        panic!("a failed checkpoint is reported without withholding close: {refused:?}")
+    });
     match closed.outcome() {
         ApplicationHomeCloseOutcome::Closed {
             checkpoint: Err(cause),

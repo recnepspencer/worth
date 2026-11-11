@@ -13,6 +13,8 @@ pub struct PositionedBranchTransition {
     follows: PatchStreamPosition,
     transition: RelationalBranchTransition,
     schema_carrier: Option<[u8; 32]>,
+    caller_association: Option<crate::history::data::RelationalCallerAssociation>,
+    recorded_artifact_digest: Option<[u8; 32]>,
     allocation_memory: Option<std::sync::Arc<worth_execution::ExecutionMemoryReservation>>,
 }
 
@@ -25,6 +27,8 @@ impl PositionedBranchTransition {
         Self {
             allocation_memory: None,
             schema_carrier: None,
+            caller_association: None,
+            recorded_artifact_digest: None,
             sequence,
             follows,
             transition,
@@ -53,6 +57,28 @@ impl PositionedBranchTransition {
         &self.transition
     }
 
+    pub fn caller_association(&self) -> Option<&crate::history::data::RelationalCallerAssociation> {
+        self.caller_association.as_ref()
+    }
+
+    /// Placement retained from the acknowledged original frame or its admitted image.
+    pub fn recorded_artifact_digest(&self) -> Option<[u8; 32]> {
+        self.recorded_artifact_digest
+    }
+
+    pub(crate) fn with_caller_association(
+        mut self,
+        association: Option<crate::history::data::RelationalCallerAssociation>,
+    ) -> Self {
+        self.caller_association = association;
+        self
+    }
+
+    pub(crate) fn with_recorded_artifact_digest(mut self, digest: Option<[u8; 32]>) -> Self {
+        self.recorded_artifact_digest = digest;
+        self
+    }
+
     pub(crate) fn schema_carrier(&self) -> Option<[u8; 32]> {
         self.schema_carrier
     }
@@ -68,6 +94,7 @@ impl PartialEq for PositionedBranchTransition {
             && self.follows == other.follows
             && self.transition == other.transition
             && self.schema_carrier == other.schema_carrier
+            && self.caller_association == other.caller_association
     }
 }
 impl Eq for PositionedBranchTransition {}

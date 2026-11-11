@@ -52,7 +52,7 @@ fn commit(
         .unwrap();
     let execution = ExecutionRequest::leased(&lease);
     let run = || {
-        crate::execution::work_observation::capture(|| match entry {
+        crate::execution::RelationalWorkAccountRecorderForTest::new().record_for_test(|| match entry {
             Entry::Strategy => {
                 if cancel_before_entry {
                     cancellation.cancel();
@@ -130,6 +130,24 @@ fn commit(
         outcome,
         whole_work.unwrap_or_else(|| charges.into_iter().sum()),
     )
+}
+
+#[test]
+fn equivalent_proposal_entries_preserve_mutation_results() {
+    let (ordinary, _) = commit(Entry::Ordinary, FUNDED_WORK_CEILING, true, false);
+    let ordinary = ordinary.unwrap();
+    for entry in ENTRIES {
+        let (reference, _) = commit(entry, FUNDED_WORK_CEILING, true, false);
+        let reference = reference.unwrap();
+        assert_eq!(
+            reference.changed_records, ordinary.changed_records,
+            "{entry:?}: same mutation result"
+        );
+        assert_eq!(
+            reference.version_id, ordinary.version_id,
+            "{entry:?}: same successor version"
+        );
+    }
 }
 
 #[test]

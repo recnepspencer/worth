@@ -61,6 +61,21 @@ pub struct BridgeConditionalDenial {
 }
 
 impl BridgeConditionalDenial {
+    /// The caller selected an operation unavailable through its actual owner route.
+    pub fn operation_route_refused(detail: impl Into<String>) -> Self {
+        Self::new(
+            BridgeConditionalDenialKind::OperationAuthorityMismatch,
+            detail,
+        )
+    }
+    /// The composing runtime has already released its conditional owner.
+    pub fn owner_stopped() -> Self {
+        Self::new(
+            BridgeConditionalDenialKind::StaleLowering,
+            "conditional owner has stopped",
+        )
+    }
+
     pub(crate) fn new(kind: BridgeConditionalDenialKind, detail: impl Into<String>) -> Self {
         Self {
             kind,

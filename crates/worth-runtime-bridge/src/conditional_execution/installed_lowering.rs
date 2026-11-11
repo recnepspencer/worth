@@ -33,8 +33,8 @@ pub struct BridgeInstalledConditionalLowering {
     pub(super) _authority:
         super::lowering_authority::BridgeInstalledConditionalLoweringAuthorityIdentity,
     pub(crate) projection: super::BridgeConditionalLoweringProjectionIdentity,
-    pub(crate) contract: super::BridgeConditionalContract,
-    pub(crate) location: super::BridgeConditionalLocation,
+    pub(crate) contract: Arc<super::BridgeConditionalContract>,
+    pub(crate) location: Arc<super::BridgeConditionalLocation>,
     pub(crate) correspondences: Arc<[BridgeInstalledSemanticCorrespondence]>,
     pub(super) semantic_observation_plan:
         Option<super::semantic_observation_plan::BridgeConditionalSemanticObservationPlan>,
@@ -46,6 +46,8 @@ pub struct BridgeInstalledConditionalLowering {
     pub(super) provider_admission: super::provider_admission::BridgeConditionalProviderAdmission,
     pub(super) lease: Arc<super::liveness::BridgeConditionalLoweringLease>,
     pub(super) _definition_retention: Option<Arc<super::retention::BridgeRetentionReservation>>,
+    pub(super) _authored_source:
+        Option<Arc<super::authored_section::BridgeReadmittedDefinitionSource>>,
     pub(crate) counters: BridgeInstalledConditionalLoweringCounters,
 }
 

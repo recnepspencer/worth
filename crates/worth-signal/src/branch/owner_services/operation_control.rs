@@ -7,6 +7,7 @@ pub enum SignalOwnerOperationBoundaryForTest {
     BranchRegistryLookup,
     BranchRegistryReservation,
     ExactBasisPreflight,
+    DurableCandidateCellWait,
     TargetCellAdmission,
     BeforeCanonicalMovement,
     AfterCanonicalMovement,

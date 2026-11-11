@@ -82,6 +82,7 @@ impl crate::ReadmittedApplicationHome {
             &self.context.serving,
             &self.context.checkpoint,
             None,
+            None,
             execution,
             |home, through, digest| {
                 self.relational
@@ -102,6 +103,7 @@ impl crate::ReadmittedApplicationHome {
         crate::checkpoint::journey::checkpoint(
             &self.context.serving,
             &self.context.checkpoint,
+            None,
             None,
             execution,
             |home, through, digest| {

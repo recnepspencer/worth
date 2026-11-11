@@ -224,7 +224,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                     super::super::output_evaluation::NativeOutputBasis {
                         receipt,
                         readiness: &execution,
-                        lowering: &route.lowering,
+                        lowering: execution.installed_lowering_ref(),
                         ordinal: route.delivery_dependency_ordinal,
                         layout: &self.runtime.primary_provider.graph.layout,
                     },

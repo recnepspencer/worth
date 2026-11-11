@@ -62,7 +62,7 @@ pub(in crate::domain_computation::primary_graph) fn readmit<Schema: ApplicationS
             } = decode_selected_row(&view, &bootstrap.graph.layout, &execution)?;
             admit_binding(roster, selected, binding, expected)?;
             admit_receipts(native, basis, terminal, created)?;
-            let activation = admit_activation(bootstrap, &view, &execution, selected)?;
+            let activation = admit_activation(bootstrap, &view, &execution, roster)?;
             let publication = publication(installed, terminal, counts);
             let cell = bootstrap
                 .program_activation
@@ -249,7 +249,7 @@ fn admit_activation<Schema: ApplicationSchema>(
     bootstrap: &WorthQueryPrimaryGraphBootstrap<Schema>,
     view: &VisibilityProjectionView,
     execution: &ExecutionRequest<'_, '_>,
-    selected: &ApplicationProgramRevision,
+    roster: &WorthQueryProgramSupportRoster<Schema>,
 ) -> Result<EntityId, Denial> {
     super::super::program_activation_recovery::read_activation(
         execution,
@@ -258,8 +258,12 @@ fn admit_activation<Schema: ApplicationSchema>(
         usize::MAX,
         "Home root does not activate its admitted program",
         |rendering| {
-            *rendering
-                == super::super::super::program_occurrence::program_revision_rendering(selected)
+            roster.entries().iter().any(|entry| {
+                *rendering
+                    == super::super::super::program_occurrence::program_revision_rendering(
+                        entry.revision(),
+                    )
+            })
         },
     )
     .map(|(identity, _)| identity)

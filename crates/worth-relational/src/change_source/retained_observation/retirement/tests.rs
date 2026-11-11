@@ -150,9 +150,12 @@ fn retained_observation_independent_alias_remains_readable_and_vetoes_close() {
         .unwrap()
         .is_some());
     let refused = runtime.prepare_close().unwrap_err();
-    assert_eq!(
-        refused.reason(),
-        RelationalRuntimeCloseDenial::ReadCustodyRetained
+    assert!(
+        matches!(refused.reason(), RelationalRuntimeCloseDenial::ReadCustodyRetained(
+            crate::facade::change_source::RelationalReadCustodyHolders::SnapshotsAndHistory {
+                active_snapshots, detached_history,
+            }
+        ) if active_snapshots != 0 || detached_history)
     );
     let runtime = refused.into_runtime();
     assert!(runtime
@@ -230,9 +233,12 @@ fn single_external_lease_retirement_preserves_an_independent_observation_veto() 
     finish(&mut task, &request);
     let retired = task.into_retired().unwrap();
     let refused = runtime.prepare_close().unwrap_err();
-    assert_eq!(
-        refused.reason(),
-        RelationalRuntimeCloseDenial::ReadCustodyRetained
+    assert!(
+        matches!(refused.reason(), RelationalRuntimeCloseDenial::ReadCustodyRetained(
+            crate::facade::change_source::RelationalReadCustodyHolders::SnapshotsAndHistory {
+                active_snapshots, detached_history,
+            }
+        ) if active_snapshots != 0 || detached_history)
     );
     let runtime = refused.into_runtime();
     assert_eq!(
@@ -295,9 +301,12 @@ fn original_basis_retirement_preserves_independent_reads_and_retained_payload() 
     );
     let retired_share = task.into_retired().unwrap();
     let refused = runtime.prepare_close().unwrap_err();
-    assert_eq!(
-        refused.reason(),
-        RelationalRuntimeCloseDenial::ReadCustodyRetained
+    assert!(
+        matches!(refused.reason(), RelationalRuntimeCloseDenial::ReadCustodyRetained(
+            crate::facade::change_source::RelationalReadCustodyHolders::SnapshotsAndHistory {
+                active_snapshots, detached_history,
+            }
+        ) if active_snapshots != 0 || detached_history)
     );
     let runtime = refused.into_runtime();
     assert_eq!(independent.identity(), &runtime.main_branch_identity());

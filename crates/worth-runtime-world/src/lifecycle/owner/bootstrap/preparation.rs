@@ -17,7 +17,7 @@ pub(super) struct PreparedRoot<Phase> {
     rollback: Option<InstalledRootCommitRollback>,
     recovered: bool,
     phase: Phase,
-    pub(super) checkpoint_origin: Option<crate::durability::WorldCheckpointOrigin>,
+    pub(super) checkpoint_origin: Option<crate::durability::PreparedCheckpointOccurrence>,
 }
 
 pub(super) struct ReadmittedRootPreparation {
@@ -40,22 +40,24 @@ where
         if self.state.durable.is_some() {
             return Err(RuntimeWorldBootstrapNoEffectCause::DurableBootstrapRequired);
         }
-        self.prepare_root_with_phase(intent, None, phase::memory())
+        self.prepare_root_with_phase(intent, None, phase::memory(), None)
     }
 
     pub(super) fn prepare_durable_root(
         &self,
         intent: RuntimeWorldBootstrapIntent,
+        origin: crate::durability::PreparedCheckpointOccurrence,
     ) -> Result<PreparedRoot<UnselectedDurableRoot>, RuntimeWorldBootstrapNoEffectCause> {
-        self.prepare_root_with_phase(intent, None, phase::unselected())
+        self.prepare_root_with_phase(intent, None, phase::unselected(), Some(origin))
     }
 
     pub(super) fn prepare_readmitted_root(
         &self,
         intent: RuntimeWorldBootstrapIntent,
         readmitted: ReadmittedRootPreparation,
+        origin: crate::durability::PreparedCheckpointOccurrence,
     ) -> Result<PreparedRoot<ReadmittedRoot>, RuntimeWorldBootstrapNoEffectCause> {
-        self.prepare_root_with_phase(intent, Some(readmitted), phase::readmitted())
+        self.prepare_root_with_phase(intent, Some(readmitted), phase::readmitted(), Some(origin))
     }
 
     fn prepare_root_with_phase<Phase>(
@@ -63,11 +65,19 @@ where
         intent: RuntimeWorldBootstrapIntent,
         readmitted: Option<ReadmittedRootPreparation>,
         phase: Phase,
+        mut checkpoint_origin: Option<crate::durability::PreparedCheckpointOccurrence>,
     ) -> Result<PreparedRoot<Phase>, RuntimeWorldBootstrapNoEffectCause> {
         let cancellation = intent.cancellation().cloned();
         let (creation, relational, signal, correspondence, generation, posture) =
             intent.into_parts();
-        let branch_reservation = match self.state.branches.reserve_root(self.owner_identity()) {
+        let reservation = if readmitted.is_some() && self.state.branches.root_cell().is_some() {
+            self.state
+                .branches
+                .reserve_branch(self.owner_identity(), creation.name().clone())
+        } else {
+            self.state.branches.reserve_root(self.owner_identity())
+        };
+        let branch_reservation = match reservation {
             Ok(reservation) => reservation,
             Err(_) => return Err(RuntimeWorldBootstrapNoEffectCause::CapacityExhausted),
         };
@@ -165,14 +175,15 @@ where
             Ok(pins) => pins,
             Err(_) => return Err(RuntimeWorldBootstrapNoEffectCause::CapacityExhausted),
         };
-        let checkpoint_origin = if self.state.durable.is_some() {
+        if self.state.durable.is_some() {
             let pins = product_head
                 .fork_history(&basis)
                 .map_err(|_| RuntimeWorldBootstrapNoEffectCause::CapacityExhausted)?;
-            Some(crate::durability::WorldCheckpointOrigin::new(&basis, pins))
-        } else {
-            None
-        };
+            checkpoint_origin
+                .as_mut()
+                .expect("durable construction prepays its original recipe link")
+                .bind(&basis, pins);
+        }
         if !self.owner_is_present() {
             return Err(RuntimeWorldBootstrapNoEffectCause::OwnerUnavailable);
         }

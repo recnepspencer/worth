@@ -110,6 +110,19 @@ impl<'a> MutationWorkspace<'a> {
         self.commit_work_budget.as_ref()
     }
 
+    /// Only owner mutation/assembly belongs here. Packet staging settles itself.
+    pub(crate) fn run_owned_mutation<T, E>(
+        &mut self,
+        mutate: impl FnOnce(&mut Self) -> Result<T, E>,
+    ) -> Result<T, E>
+    where
+        E: From<crate::transactions::data::TransactionCommitError>,
+    {
+        let execution = self.execution;
+        let budget = self.commit_work_budget.clone();
+        crate::execution::transaction_stage(&execution, budget.as_ref(), || mutate(self))
+    }
+
     pub(crate) fn with_context<R>(&mut self, f: impl FnOnce(MutationContext<'_>) -> R) -> R {
         let record_allocations = self
             .record_allocations

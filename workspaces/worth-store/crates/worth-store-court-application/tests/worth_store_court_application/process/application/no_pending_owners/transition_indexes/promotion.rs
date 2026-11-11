@@ -136,6 +136,7 @@ fn home_binding_promotes_the_original_receiver_only_after_all_actual_steps() {
         .prepare_home_transition_step(
             &execution,
             source.clone(),
+            fixture.admit_initial_program_source(&source),
             intent,
             grant.plan(),
             grant.original(),

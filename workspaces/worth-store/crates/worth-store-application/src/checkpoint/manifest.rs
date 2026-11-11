@@ -10,9 +10,9 @@ use worth_store::physical_runtime::{AnchoredRecordMembership, AnchoredRecordRead
 
 pub const HOME_CHECKPOINT_PROTOCOL: BoundaryProtocolIdentity =
     BoundaryProtocolIdentity::new("worth.application.home.checkpoint");
-pub const HOME_CHECKPOINT_VERSION: BoundaryProtocolVersion = BoundaryProtocolVersion::new(2);
+pub const HOME_CHECKPOINT_VERSION: BoundaryProtocolVersion = BoundaryProtocolVersion::new(3);
 const MAGIC: &[u8; 8] = b"WAPHCKP1";
-pub(super) const HEADER_BYTES: usize = 34;
+pub(super) const HEADER_BYTES: usize = 44;
 
 #[derive(Debug)]
 pub enum HomeManifestDenial {
@@ -30,6 +30,7 @@ pub(crate) struct SelectedHomeManifest {
     bytes: worth_execution::ExecutionImmutableBytes,
     relational: std::ops::Range<usize>,
     world: std::ops::Range<usize>,
+    signal: std::ops::Range<usize>,
 }
 
 impl DurableArtifactRetention for SelectedHomeManifest {
@@ -50,6 +51,10 @@ impl SelectedHomeManifest {
             .checked_add(sections.world.len())
             .ok_or(HomeManifestDenial::SizeLimit)?;
         let world = native_end..world_end;
+        let signal_end = world_end
+            .checked_add(sections.signal.len())
+            .ok_or(HomeManifestDenial::SizeLimit)?;
+        let signal = world_end..signal_end;
         bytes
             .get(relational.clone())
             .ok_or(HomeManifestDenial::Malformed)?;
@@ -61,6 +66,7 @@ impl SelectedHomeManifest {
             bytes,
             relational,
             world,
+            signal,
         })
     }
 
@@ -98,6 +104,14 @@ impl SelectedHomeManifest {
     ) {
         (self.bytes.clone(), self.world.clone())
     }
+    pub(crate) fn signal_region(
+        &self,
+    ) -> (
+        worth_execution::ExecutionImmutableBytes,
+        std::ops::Range<usize>,
+    ) {
+        (self.bytes.clone(), self.signal.clone())
+    }
     pub(crate) fn generation(&self) -> u64 {
         self.membership.membership().version().generation()
     }
@@ -106,24 +120,27 @@ impl SelectedHomeManifest {
     }
 }
 
-pub(super) fn emit(native: &[u8], world: &[u8], bytes: &mut Vec<u8>) {
+pub(super) fn emit(native: &[u8], world: &[u8], signal: &[u8], bytes: &mut Vec<u8>) {
     bytes.extend_from_slice(MAGIC);
     bytes.extend_from_slice(&HOME_CHECKPOINT_VERSION.get().to_le_bytes());
-    bytes.extend_from_slice(&2_u16.to_le_bytes());
+    bytes.extend_from_slice(&3_u16.to_le_bytes());
     for (family, section) in [
         (DurableOwnerFamily::Relational, native),
         (DurableOwnerFamily::World, world),
+        (DurableOwnerFamily::Signal, signal),
     ] {
         bytes.extend_from_slice(&family.tag().to_le_bytes());
         bytes.extend_from_slice(&(section.len() as u64).to_le_bytes());
     }
     bytes.extend_from_slice(native);
     bytes.extend_from_slice(world);
+    bytes.extend_from_slice(signal);
 }
 
 pub(crate) struct HomeManifestSections<'a> {
     pub(crate) relational: &'a [u8],
     pub(crate) world: &'a [u8],
+    pub(crate) signal: &'a [u8],
 }
 pub(crate) fn decode(bytes: &[u8]) -> Result<HomeManifestSections<'_>, HomeManifestDenial> {
     use HomeManifestDenial as Denial;
@@ -141,16 +158,29 @@ pub(crate) fn decode(bytes: &[u8]) -> Result<HomeManifestSections<'_>, HomeManif
     .admit(version)
     .map_err(Denial::UnsupportedVersion)?;
     let (count, rest) = rest.split_first_chunk::<2>().ok_or(Denial::Malformed)?;
-    if u16::from_le_bytes(*count) != 2 {
+    if u16::from_le_bytes(*count) != 3 {
         return Err(Denial::Malformed);
     }
     let (native, rest) = length(rest, DurableOwnerFamily::Relational)?;
-    let (world, payload) = length(rest, DurableOwnerFamily::World)?;
-    if native == 0 || world == 0 || native.checked_add(world) != Some(payload.len()) {
+    let (world, rest) = length(rest, DurableOwnerFamily::World)?;
+    let (signal, payload) = length(rest, DurableOwnerFamily::Signal)?;
+    if native == 0
+        || world == 0
+        || signal == 0
+        || native
+            .checked_add(world)
+            .and_then(|size| size.checked_add(signal))
+            != Some(payload.len())
+    {
         return Err(Denial::Malformed);
     }
-    let (relational, world) = payload.split_at_checked(native).ok_or(Denial::Malformed)?;
-    Ok(HomeManifestSections { relational, world })
+    let (relational, rest) = payload.split_at_checked(native).ok_or(Denial::Malformed)?;
+    let (world, signal) = rest.split_at_checked(world).ok_or(Denial::Malformed)?;
+    Ok(HomeManifestSections {
+        relational,
+        world,
+        signal,
+    })
 }
 fn length(
     bytes: &[u8],
@@ -162,8 +192,13 @@ fn length(
     let family = DurableOwnerFamily::from_tag(tag).map_err(|_| Denial::UnknownOwner { tag })?;
     if family != expected {
         return Err(match family {
-            DurableOwnerFamily::Relational | DurableOwnerFamily::World => Denial::Malformed,
-            family => Denial::UnsupportedOwner(family),
+            DurableOwnerFamily::Relational
+            | DurableOwnerFamily::World
+            | DurableOwnerFamily::Signal => Denial::Malformed,
+            family @ (DurableOwnerFamily::Bridge
+            | DurableOwnerFamily::Query
+            | DurableOwnerFamily::Dispatch
+            | DurableOwnerFamily::Correction) => Denial::UnsupportedOwner(family),
         });
     }
     let (length, rest) = rest.split_first_chunk::<8>().ok_or(Denial::Malformed)?;

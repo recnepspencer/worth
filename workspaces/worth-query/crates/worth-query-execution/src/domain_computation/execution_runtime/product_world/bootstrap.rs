@@ -34,7 +34,9 @@ impl WorthQueryProductRuntime {
         let relational_lifecycle = relational_services.lifecycle_port();
         let signal_services = bridge.signal_owner_services();
         let signal_basis_port = signal_services.basis_port();
-        let signal_lifecycle = signal_services.lifecycle_port();
+        let signal_lifecycle = super::signal_lifecycle::SignalLifecycleServices::Memory(
+            signal_services.lifecycle_port(),
+        );
         let signal_basis = bridge.admitted_signal_basis().clone();
         let correspondence_basis = bridge.admitted_runtime_world_correspondence_basis().clone();
         let definition_publication = bridge

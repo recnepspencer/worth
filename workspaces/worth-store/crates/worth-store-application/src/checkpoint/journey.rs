@@ -11,6 +11,7 @@ pub(crate) fn checkpoint(
     serving: &ServingPhysicalRuntime,
     owner: &HomeCheckpointOwner,
     world: Option<&worth_runtime_world::facade::WorldCheckpointPort>,
+    signal: Option<&worth_signal::facade::durability::SignalAuthoredCheckpointPort>,
     execution: &ExecutionRequest<'_, '_>,
     capture: impl FnOnce(
         worth_foundational::facade::HomeIdentity,
@@ -29,6 +30,7 @@ pub(crate) fn checkpoint(
     }
     execution.consult().map_err(Denial::Execution)?;
     let world = world.ok_or(Denial::WorldSectionRequired)?;
+    let signal = signal.ok_or(Denial::SignalSectionRequired)?;
     let mut retained = None;
     let mut returned = None;
     let mut caller_driver = None;
@@ -37,7 +39,7 @@ pub(crate) fn checkpoint(
             .run_native_with_checkpoint(|context| {
                 returned = Some((|| {
                     let (attempt, driver, input) = super::preparation::prepare_attempt(
-                        serving, owner, execution, world, capture,
+                        serving, owner, execution, world, signal, capture,
                     )?;
                     retained = Some(attempt.clone());
                     caller_driver = Some(driver);

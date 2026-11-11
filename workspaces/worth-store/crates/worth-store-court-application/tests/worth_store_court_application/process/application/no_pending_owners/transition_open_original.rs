@@ -72,7 +72,8 @@ pub(super) fn original_open_steps(
         .publication_port()
         .prepare_home_transition_step(
             execution,
-            source,
+            source.clone(),
+            fixture.admit_initial_program_source(&source),
             worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
             grant.plan(),
             grant.original(),

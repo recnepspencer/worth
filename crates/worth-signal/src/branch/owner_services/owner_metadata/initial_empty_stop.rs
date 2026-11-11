@@ -1,6 +1,6 @@
 //! Initial history proof under its real owner mutex.
 use super::SignalOwnerMetadata;
-use crate::branch::SignalInitialEmptyStopDenial as Denial;
+use crate::branch::SignalOwnerStopDenial as Denial;
 use std::sync::atomic::Ordering;
 impl<D, I, T> SignalOwnerMetadata<D, I, T>
 where
@@ -8,6 +8,18 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
+    pub(in crate::branch::owner_services) fn try_authored_home_stop_guard(
+        &self,
+    ) -> Result<impl Drop + '_, Denial> {
+        let state = self.state.try_lock().map_err(|e| match e {
+            std::sync::TryLockError::WouldBlock => Denial::Busy,
+            std::sync::TryLockError::Poisoned(_) => Denial::Poisoned,
+        })?;
+        if self.pending_snapshot_reservations.load(Ordering::Acquire) != 0 {
+            return Err(Denial::Busy);
+        }
+        Ok(state)
+    }
     pub(in crate::branch::owner_services) fn try_initial_empty_stop_guard(
         &self,
     ) -> Result<impl Drop + '_, Denial> {

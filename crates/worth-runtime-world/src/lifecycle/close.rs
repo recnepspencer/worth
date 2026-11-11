@@ -45,6 +45,10 @@ pub enum RuntimeWorldCloseDenial {
     PublicationFrontierChanged,
     UnresolvedBusinessCustody,
     CleanupRequired,
+    DurableCreationPending {
+        attempt: worth_foundational::facade::DurableCompositePublicationAttemptIdentity,
+        destination: worth_foundational::facade::DurableProductBranchIncarnation,
+    },
     CloseProgressPoisoned,
     CloseProgressInvariant,
     RecoveredNativeRetirement(

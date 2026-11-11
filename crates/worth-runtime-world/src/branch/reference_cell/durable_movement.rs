@@ -12,6 +12,8 @@ pub(super) enum ProductMovementPhase {
         subject: WorldDurableArtifact,
         committed: Option<DurablyCommitted<ActualWorldPublication>>,
     },
+    CreationInFlight(Box<super::durable_creation::WorldCreationCellCustody>),
+    CreationRecoveryRequired(Box<super::durable_creation::WorldCreationCellCustody>),
     RecoveryRequired {
         _subject: WorldDurableArtifact,
         _committed: Option<DurablyCommitted<ActualWorldPublication>>,
@@ -21,10 +23,10 @@ impl ProductMovementPhase {
     pub(super) fn denial(&self) -> Option<ProductBranchReferenceCellDenial> {
         match self {
             Self::Idle => None,
-            Self::MovementInFlight { .. } => {
+            Self::MovementInFlight { .. } | Self::CreationInFlight(_) => {
                 Some(ProductBranchReferenceCellDenial::MovementInFlight)
             }
-            Self::RecoveryRequired { .. } => {
+            Self::RecoveryRequired { .. } | Self::CreationRecoveryRequired(_) => {
                 Some(ProductBranchReferenceCellDenial::RecoveryRequired)
             }
         }
@@ -233,13 +235,19 @@ impl Drop for WorldProductMovementPermit {
         let mut current = self.cell.state.write();
         let previous = std::mem::take(&mut current.movement);
         current.movement = match previous {
-            ProductMovementPhase::MovementInFlight { subject, committed } => {
+            ProductMovementPhase::MovementInFlight { subject, committed }
+                if subject.same_subject(&self.subject) =>
+            {
                 ProductMovementPhase::RecoveryRequired {
                     _subject: subject,
                     _committed: committed,
                 }
             }
-            phase => phase,
+            phase @ (ProductMovementPhase::Idle
+            | ProductMovementPhase::MovementInFlight { .. }
+            | ProductMovementPhase::RecoveryRequired { .. }
+            | ProductMovementPhase::CreationInFlight(_)
+            | ProductMovementPhase::CreationRecoveryRequired(_)) => phase,
         };
     }
 }

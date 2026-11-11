@@ -124,7 +124,7 @@ impl crate::runtime::RelationalRuntime {
                     .ok_or(denied(RelationalBranchDeleteDenial::OwnerFailure))?
                     .retained_schema_authority(),
                 || self.admit_name_retirement(&branch, transition),
-                |_| {
+                |_, _| {
                     self.history.retire_admitted_branch_name(branch.clone());
                     state.mark_deleting();
                 },
@@ -181,7 +181,7 @@ impl crate::runtime::RelationalRuntime {
             step,
             selected_root.retained_schema_authority(),
             || self.admit_name_retirement(&branch, transition),
-            |_| {
+            |_, _| {
                 self.history.retire_admitted_branch_name(branch.clone());
                 state.mark_deleting();
                 let removed_cell = self

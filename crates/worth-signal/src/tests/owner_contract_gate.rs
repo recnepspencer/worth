@@ -34,6 +34,7 @@ fn operation_boundary_ordinal(
         SignalOwnerOperationBoundaryForTest::ForkDestinationInstallation => 8,
         SignalOwnerOperationBoundaryForTest::OutcomeConstruction => 9,
         SignalOwnerOperationBoundaryForTest::OwnerCloseBatch => 10,
+        SignalOwnerOperationBoundaryForTest::DurableCandidateCellWait => 11,
     }
 }
 
@@ -75,9 +76,10 @@ fn operation_control_feature_exports_the_frozen_progression_roster() {
         SignalOwnerOperationBoundaryForTest::ForkDestinationInstallation,
         SignalOwnerOperationBoundaryForTest::OutcomeConstruction,
         SignalOwnerOperationBoundaryForTest::OwnerCloseBatch,
+        SignalOwnerOperationBoundaryForTest::DurableCandidateCellWait,
     ];
 
     let ordinals = boundaries.map(operation_boundary_ordinal);
 
-    assert_eq!(ordinals, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    assert_eq!(ordinals, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
 }

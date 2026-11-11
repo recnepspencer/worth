@@ -6,7 +6,7 @@ use crate::durability::{
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest, ExecutionRequestArrayBuilder};
-use worth_foundational::facade::{CanonicalDigestId, WorldOriginalFate};
+use worth_foundational::facade::CanonicalDigestId;
 use worth_relational::facade::{
     durability::{
         RelationalWorldCatalogDenial, RelationalWorldEffectCoordinates as Coordinates,
@@ -22,75 +22,96 @@ pub(in crate::durability) fn prepare(
     request: &ExecutionRequest<'_, '_>,
     selected_checkpoint: Option<Arc<RelationalWorldSourceCatalog>>,
 ) -> Result<Arc<RelationalWorldSourceCatalog>, Denial> {
-    let mut sources = ExecutionOrderedMap::default();
-    for origin in image.branch_origins() {
-        let WorldRecord::Branch {
-            head, components, ..
-        } = &origin.record().record
-        else {
-            unreachable!("admitted branch origin")
+    let mut sources: ExecutionOrderedMap<_, Source> = ExecutionOrderedMap::default();
+    let mut published = ExecutionOrderedMap::default();
+    // Each exact reference appears after its source. Commit IDs alone do not
+    // order a fork from a historical parent, and exact reuse shares a commit.
+    for reference in image.references.values() {
+        let (commit, source) = match &reference.record().record {
+            WorldRecord::Branch {
+                head, components, ..
+            } => (head.commit, Source::Recorded(components.relational.clone())),
+            WorldRecord::BranchCreated(created) => (
+                created.intent.destination.commit,
+                Source::Recorded(created.components.relational.clone()),
+            ),
+            WorldRecord::OpenAttempt(open) => {
+                let occurrence = image
+                    .occurrences
+                    .get(&reference.event_position())
+                    .ok_or(Denial::MissingPredecessor)?;
+                let source = match occurrence.relational() {
+                    Some(evidence) => {
+                        let coordinates = Coordinates::from_recorded(
+                            CommitId(evidence.commit),
+                            PatchStreamPosition(evidence.position),
+                            CanonicalDigestId::new(evidence.digest),
+                        );
+                        published
+                            .insert_cloned_native_for_request(
+                                &open.association.attempt(),
+                                &coordinates,
+                                *request,
+                            )
+                            .map_err(|cause| Denial::Medium(Medium::Ordered(cause)))?;
+                        Source::Published(coordinates)
+                    }
+                    None => sources
+                        .get(&open.expected.commit)
+                        .ok_or(Denial::MissingPredecessor)?
+                        .clone(),
+                };
+                (open.commit, source)
+            }
+            WorldRecord::Owner { .. }
+            | WorldRecord::Occurrence { .. }
+            | WorldRecord::Released { .. }
+            | WorldRecord::Continued { .. }
+            | WorldRecord::CreationIntent(_)
+            | WorldRecord::CreationReleased { .. } => return Err(Denial::BranchLineage),
         };
         sources
-            .insert_cloned_native_for_request(
-                &head.commit,
-                &Source::Recorded(components.relational.clone()),
-                *request,
-            )
+            .insert_cloned_native_for_request(&commit, &source, *request)
             .map_err(|cause| Denial::Medium(Medium::Ordered(cause)))?;
     }
-    let mut published = ExecutionOrderedMap::default();
-    for occurrence in image.occurrences.values() {
-        let evidence = occurrence.relational();
-        let coordinates = Coordinates::from_recorded(
-            CommitId(evidence.commit),
-            PatchStreamPosition(evidence.position),
-            CanonicalDigestId::new(evidence.digest),
-        );
-        sources
-            .insert_cloned_native_for_request(
-                &occurrence.open().commit,
-                &Source::Published(coordinates),
-                *request,
-            )
-            .map_err(|cause| Denial::Medium(Medium::Ordered(cause)))?;
-        published
-            .insert_cloned_native_for_request(
-                &occurrence.open().association.attempt(),
-                &coordinates,
-                *request,
-            )
-            .map_err(|cause| Denial::Medium(Medium::Ordered(cause)))?;
-    }
-    let mut originals = ExecutionRequestArrayBuilder::allocate(*request, image.opens.len())
-        .map_err(|cause| Denial::Medium(Medium::Backing(cause)))?;
+    let mut originals = ExecutionRequestArrayBuilder::allocate(
+        *request,
+        image
+            .opens
+            .values()
+            .filter(|open| open.component_intent.changes_relational())
+            .count(),
+    )
+    .map_err(|cause| Denial::Medium(Medium::Backing(cause)))?;
     for open in image.opens.values() {
+        if !open.component_intent.changes_relational() {
+            continue;
+        }
         let source = sources
             .get(&open.expected.commit)
             .ok_or(Denial::MissingPredecessor)?
             .clone();
         let disposition = image.dispositions.get(&open.association.attempt());
-        let (fate, effect, receipt) =
-            if let Some(effect) = published.get(&open.association.attempt()) {
-                (WorldOriginalFate::Published, Some(*effect), None)
-            } else {
-                match disposition.map(|value| value.disposition()) {
-                    None => (WorldOriginalFate::Open, None, None),
-                    Some(RecoveredCustodyDisposition::Continued) => {
-                        (WorldOriginalFate::Continued, None, None)
-                    }
-                    Some(RecoveredCustodyDisposition::Released(evidence)) => (
-                        WorldOriginalFate::Released,
-                        evidence.as_ref().map(|e| {
-                            Coordinates::from_recorded(
-                                e.receipt().commit_id,
-                                PatchStreamPosition(e.position()),
-                                CanonicalDigestId::new(*e.digest()),
-                            )
-                        }),
-                        evidence.as_ref().map(|e| e.receipt()),
-                    ),
-                }
-            };
+        let fate = image
+            .original_fate(open.association.attempt())
+            .ok_or(Denial::MissingPredecessor)?;
+        let (effect, receipt) = if let Some(effect) = published.get(&open.association.attempt()) {
+            (Some(*effect), None)
+        } else {
+            match disposition.map(|value| value.disposition()) {
+                None | Some(RecoveredCustodyDisposition::Continued) => (None, None),
+                Some(RecoveredCustodyDisposition::Released(evidence)) => (
+                    evidence.as_ref().map(|e| {
+                        Coordinates::from_recorded(
+                            e.receipt().commit_id,
+                            PatchStreamPosition(e.position()),
+                            CanonicalDigestId::new(*e.digest()),
+                        )
+                    }),
+                    evidence.as_ref().map(|e| e.receipt()),
+                ),
+            }
+        };
         let association =
             super::super::encode_association(request, &open.association).map_err(Denial::Medium)?;
         let caller = CanonicalDigestId::new(Sha256::digest(association.elements()).into());

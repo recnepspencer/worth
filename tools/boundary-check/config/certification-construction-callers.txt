@@ -239,3 +239,6 @@ query-dispatch-publication workspaces/worth-store/crates/worth-store-application
 query-home-dispatch workspaces/worth-query/crates/worth-query-host/src/application_home/opening/custody.rs
 query-home-dispatch workspaces/worth-query/crates/worth-query-host/src/application_home/opening/service.rs
 query-home-dispatch workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/dispatch_journal.rs
+# Authored Signal admission uses the same actual Home fresh-source authority.
+native-world-fresh-source workspaces/worth-store/crates/worth-store-application/src/world_section/readmission/signal.rs
+native-world-fresh-source workspaces/worth-store/crates/worth-store-application/src/world_section/readmission/standalone_signal.rs

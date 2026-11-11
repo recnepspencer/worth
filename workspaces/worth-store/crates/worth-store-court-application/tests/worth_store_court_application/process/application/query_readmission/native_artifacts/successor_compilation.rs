@@ -38,10 +38,9 @@ fn successor_query_compilation_prepares_changed_meaning_without_installing_or_pu
     let execution = ExecutionRequest::leased(&lease);
     fresh_closed(directory.path(), execution);
     with_bootstrap_advancement_from_request(execution, |phase| {
-        let (query, mut home) = unshared(directory.path(), &phase);
-        let query = finalize_native(query, &mut home, &phase)
-            .unwrap_or_else(|refused| panic!("real A readmission: {:?}", refused.reason()));
-        let (native, _, _) = home.recovered_query_finalization_parts().unwrap();
+        let (query, home) = unshared(directory.path(), &phase);
+        let (query, home, _) = signal_preparation::existing_signal_program(query, home, &phase);
+        let native = home.relational().runtime();
         let original = native.config().schema.registry.authority_snapshot();
         let (_, basis) = native
             .observe_branch(&native.main_branch_identity())
@@ -80,7 +79,10 @@ fn successor_query_compilation_prepares_changed_meaning_without_installing_or_pu
         assert_eq!(after.descriptor(), basis.descriptor());
         drop((target, query, basis, after));
         assert!(matches!(
-            home.close(&execution).unwrap(),
+            home.close(&execution).unwrap_or_else(|refused| panic!(
+                "actual authored Home close: {:?}",
+                refused.reason()
+            )),
             ApplicationHomeCloseOutcome::Closed { .. }
         ));
     })
@@ -96,10 +98,11 @@ fn successor_query_compilation_refuses_a_real_foreign_predecessor_before_install
     fresh_closed(first.path(), execution);
     fresh_closed(second.path(), execution);
     with_bootstrap_advancement_from_request(execution, |phase| {
-        let (query_a, mut home_a) = unshared(first.path(), &phase);
-        let query_a = finalize_native(query_a, &mut home_a, &phase).unwrap_or_else(|refused| panic!("real A: {:?}", refused.reason()));
-        let (query_b, mut home_b) = unshared(second.path(), &phase);
-        let (native, _, _) = home_b.recovered_query_finalization_parts().unwrap();
+        let (query_a, home_a) = unshared(first.path(), &phase);
+        let (query_a, home_a, _) = signal_preparation::existing_signal_program(query_a, home_a, &phase);
+        let (query_b, home_b) = unshared(second.path(), &phase);
+        let (query_b, home_b, _) = signal_preparation::existing_signal_program(query_b, home_b, &phase);
+        let native = home_b.relational().runtime();
         let original = native.config().schema.registry.authority_snapshot();
         let (_, basis) = native.observe_branch(&native.main_branch_identity()).unwrap();
         let refused = successor().prepare_home_program_transition_target(&phase, native, &query_a, &basis)
@@ -108,7 +111,7 @@ fn successor_query_compilation_refuses_a_real_foreign_predecessor_before_install
             worth_relational::facade::runtime::RelationalHomeProgramContractDenial::ForeignRuntime)));
         assert_eq!(native.config().schema.registry.authority_snapshot(), original);
         drop((refused, query_a, query_b, basis));
-        assert!(matches!(home_b.close(&execution).unwrap(), ApplicationHomeCloseOutcome::Closed { .. }));
-        assert!(matches!(home_a.close(&execution).unwrap(), ApplicationHomeCloseOutcome::Closed { .. }));
+        assert!(matches!(home_b.close(&execution).unwrap_or_else(|refused| panic!("actual authored Home close: {:?}", refused.reason())), ApplicationHomeCloseOutcome::Closed { .. }));
+        assert!(matches!(home_a.close(&execution).unwrap_or_else(|refused| panic!("actual authored Home close: {:?}", refused.reason())), ApplicationHomeCloseOutcome::Closed { .. }));
     }).unwrap();
 }

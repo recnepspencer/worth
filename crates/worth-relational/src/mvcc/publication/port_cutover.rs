@@ -327,9 +327,14 @@ fn durable_stop_outcome(
 
 fn memory_frame_stop_outcome(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    cause:crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial,
+    cause: crate::durability::canonical_commit_artifact::MemoryFramePreparationDenial,
 ) -> RelationalPublicationOutcome {
+    use crate::durability::canonical_commit_artifact::MemoryFramePreparationDenial as Frame;
     use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial as Denial;
+    let cause = match cause {
+        Frame::Request(stop) => return RelationalPublicationOutcome::RequestStopped(stop),
+        Frame::Artifact(cause) => cause,
+    };
     if let Err(stop) = execution.consult()
         && stop
             != worth_execution::WorkCeilingDenial::Stopped(

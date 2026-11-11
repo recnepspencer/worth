@@ -16,6 +16,7 @@ pub(crate) struct SignalBranchOwnedReservation<S> {
     registry: Option<Arc<SignalBranchRegistry<S>>>,
     branch_id: SignalBranchId,
     name: String,
+    prepared_cell_incarnation: Option<SignalBranchCellIncarnation>,
     armed: bool,
 }
 
@@ -29,6 +30,7 @@ impl<S> SignalBranchOwnedReservation<S> {
             registry: Some(registry),
             branch_id,
             name,
+            prepared_cell_incarnation: None,
             armed: true,
         }
     }
@@ -56,7 +58,7 @@ impl<S> SignalBranchOwnedReservation<S> {
             registry,
             admission,
             branch_id: self.branch_id,
-            prepared_cell_incarnation: None,
+            prepared_cell_incarnation: self.prepared_cell_incarnation,
             reserved_name: Some(std::mem::take(&mut self.name)),
             consumed: false,
         }
@@ -98,6 +100,31 @@ pub(crate) struct SignalBranchReservation<'a, S> {
 }
 
 impl<'a, S> SignalBranchReservation<'a, S> {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
+    )]
+    pub(crate) fn into_owned(
+        mut self,
+        registry: Arc<SignalBranchRegistry<S>>,
+    ) -> SignalBranchOwnedReservation<S> {
+        assert!(
+            std::ptr::eq(Arc::as_ptr(&registry), self.registry),
+            "captured reservation returns to its exact issuing registry"
+        );
+        self.consumed = true;
+        SignalBranchOwnedReservation {
+            registry: Some(registry),
+            branch_id: self.branch_id,
+            name: self
+                .reserved_name
+                .take()
+                .expect("owned fork retains its reserved name"),
+            prepared_cell_incarnation: self.prepared_cell_incarnation,
+            armed: true,
+        }
+    }
+
     #[cfg(test)]
     pub(super) fn unnamed(
         registry: &'a SignalBranchRegistry<S>,

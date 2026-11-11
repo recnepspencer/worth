@@ -26,14 +26,10 @@ fn decoded_owner_description_clones_retain_actual_original_memory_grants() {
     let zero = SerialMemoryBudget::new(Some(0));
     let policy = SerialRequest::from_memory(zero.clone(), CancellationSource::new().token(), None);
     let refused = records::descriptions(&ExecutionRequest::serial(&policy));
-    assert!(matches!(
-        refused,
-        Err(crate::durability::WorldDurableMediumDenial::Request(
-            worth_execution::WorkCeilingDenial::Admission(
-                worth_execution::LeaseDenial::MemoryExhausted(
-                    worth_execution::MemoryLimitDenial::Capacity { admitted: 0, .. }
-                )
-            )
+    assert!(matches!(refused,
+        Err(crate::durability::WorldDurableMediumDenial::NativeDescription(cause))
+        if matches!(*cause,worth_relational::facade::branch::RelationalRecordedComponentRefusal::Request(
+            worth_relational::facade::transactions::RelationalExecutionDenialCause::PolicyMemoryExhausted {admitted:0,..}
         ))
     ));
     assert_eq!(zero.charged_memory_bytes(), 0);

@@ -1763,6 +1763,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "worth-store-court-application-replication"
+version = "0.1.0"
+dependencies = [
+ "sha2",
+ "tempfile",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-runtime-bridge",
+ "worth-signal",
+ "worth-store",
+ "worth-store-application",
+ "worth-store-testkit-store",
+]
+
+[[package]]
 name = "worth-store-court-aspect-native"
 version = "0.1.0"
 dependencies = [

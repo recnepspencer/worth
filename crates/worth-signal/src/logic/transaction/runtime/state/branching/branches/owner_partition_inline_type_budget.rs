@@ -36,5 +36,9 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
         owner.field::<SignalBranchRetentionRegistry>("retention");
         owner.field::<SignalBranchId>("selected_branch_id");
         owner.field::<Vec<SignalOwnerCellSeed<(), (), ()>>>("cells");
+        owner.field::<BTreeMap<SignalBranchId, crate::durability::SignalDurableBranchDescriptor>>(
+            "readmitted_coordinates",
+        );
+        owner.field::<Option<crate::durability::SignalDurableOwnerAdmission>>("durable_admission");
     }
 }

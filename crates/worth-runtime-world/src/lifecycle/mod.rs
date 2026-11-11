@@ -9,6 +9,7 @@ pub use interim_checkpoint::{
 mod close;
 pub(crate) use close::{checkpoint_close_step, RecoveredCloseReceipt};
 pub mod owner;
+pub(crate) use owner::WorldDurableCreationCustody;
 mod owner_inputs;
 mod ports;
 
@@ -39,11 +40,17 @@ mod execution;
 pub use execution::{RuntimeWorldBuildDenial, RuntimeWorldExecutionPlacement};
 mod public_owner;
 mod service_ports;
-pub use builder::{MissingRuntimeWorldInput, RuntimeWorldHomeBuilder, RuntimeWorldOwnerBuilder};
+pub use builder::{
+    MissingRuntimeWorldInput, RuntimeWorldOwnerBuilder, RuntimeWorldUnboundHomeBuilder,
+};
 pub use public_owner::RuntimeWorldOwner;
 pub use service_ports::*;
 
-pub use ports::RuntimeWorldBranchCreationOutcome;
+pub use ports::{
+    RuntimeWorldBranchCreationCompletion, RuntimeWorldBranchCreationNoEffect,
+    RuntimeWorldBranchCreationOutcome, RuntimeWorldBranchCreationRelease,
+    RuntimeWorldHomeBranchCreationRequest,
+};
 
 mod service_denial;
 pub use service_denial::RuntimeWorldServiceDenial;
@@ -68,3 +75,14 @@ pub use close::{
     RetiredRuntimeWorldHome, RuntimeWorldHomeRetirement, RuntimeWorldHomeRetirementDenial,
     RuntimeWorldHomeRetirementProgress,
 };
+
+mod authored_signal;
+pub(crate) use authored_signal::PreparedWorldSignalFork;
+pub use authored_signal::WorldSignalForkPreparationDenial;
+pub use authored_signal::{
+    RuntimeWorldAuthoredSignalAttachment, RuntimeWorldAuthoredSignalAttachmentDenial,
+};
+
+mod signal_services;
+
+pub use builder::RuntimeWorldAuthoredHomeBuilder;

@@ -15,8 +15,25 @@ impl SignalGraph {
         desired: impl IntoIterator<Item = DependencyEdge>,
     ) -> Result<(), SignalError> {
         let desired = CanonicalDependencies::new(desired);
+        self.validate_declared_edits(&[(node, desired.clone())])
+            .inspect_err(|_| {
+                self.invalidation_performed_counter_state().add(
+                    crate::data::telemetry::InvalidationPerformedCounter::RejectedTopologyMutations,
+                    1,
+                );
+            })?;
         let _ = self.reconcile_dependencies(node, desired.as_slice())?;
+        self.install_declared_dependencies(node, desired);
         Ok(())
+    }
+
+    /// Authored static edges, independent of the latest discovered read set.
+    pub fn declared_dependencies_of(&self, node: NodeId) -> Result<&[DependencyEdge], SignalError> {
+        self.validate_handle(node)?;
+        Ok(self.arena.definitions[node.index() as usize]
+            .declared_dependencies
+            .as_ref()
+            .map_or(&[], |dependencies| dependencies.as_slice()))
     }
 
     /// Installs the dependency set an evaluation of `node` has just
@@ -32,15 +49,16 @@ impl SignalGraph {
     /// invalidation landed after the evaluation) keeps its state and its
     /// pending revalidation, so the next read still recomputes it.
     ///
-    /// Cost: one `set_dependencies` plus O(desired) version lookups for the
-    /// snapshot.
+    /// Cost: one topology reconciliation plus O(desired) version lookups for
+    /// the snapshot. Authored declarations are unchanged.
     pub fn set_evaluated_dependencies(
         &mut self,
         node: NodeId,
         desired: impl IntoIterator<Item = DependencyEdge>,
     ) -> Result<(), SignalError> {
         let was_clean = matches!(self.get_state(node)?, NodeState::Clean);
-        self.set_dependencies(node, desired)?;
+        let desired = CanonicalDependencies::new(desired);
+        let _ = self.reconcile_dependencies(node, desired.as_slice())?;
         let mut snapshot = DependencySnapshot::empty();
         for edge in self.dependencies_of(node)? {
             let version = self.node_aspect_version(edge.source())?.get(edge.aspect());
@@ -82,7 +100,18 @@ impl SignalGraph {
             .iter()
             .map(|entry| (entry.node, entry.dependencies.clone()))
             .collect::<Vec<_>>();
+        let declarations = reconciliations.clone();
+        self.validate_declared_edits(&declarations)
+            .inspect_err(|_| {
+                self.invalidation_performed_counter_state().add(
+                    crate::data::telemetry::InvalidationPerformedCounter::RejectedTopologyMutations,
+                    1,
+                );
+            })?;
         let _ = self.reconcile_dependencies_batch(&reconciliations)?;
+        for (node, dependencies) in declarations {
+            self.install_declared_dependencies(node, dependencies);
+        }
         Ok(())
     }
 

@@ -130,9 +130,6 @@ fn inline_header_footprints_remove_only_actual_header_arcs() {
         visit_inline_value, StorageAllocationObservation, StorageAllocationVisitor,
     };
     type Header = SharedMap<RelationId, ()>;
-    fn header_arc<T>() -> u64 {
-        Arc::<T>::layout_bytes()
-    }
     #[derive(Default)]
     struct Inventory(Vec<StorageAllocationObservation>);
     impl StorageAllocationVisitor for Inventory {
@@ -148,8 +145,7 @@ fn inline_header_footprints_remove_only_actual_header_arcs() {
     }
     let old_kind = Arc::<MapNode<KindId, Arc<Header>>>::layout_bytes();
     let new_kind = Arc::<MapNode<KindId, Header>>::layout_bytes();
-    let kind_header = header_arc::<Header>();
-    assert_eq!(kind_header, Arc::<Header>::layout_bytes());
+    let kind_header = Arc::<Header>::layout_bytes();
     let old_kind_map: SharedMap<KindId, Arc<Header>> =
         [(KindId(7), Header::default())].into_iter().collect();
     let new_kind_map: SharedMap<KindId, Header> =
@@ -166,8 +162,7 @@ fn inline_header_footprints_remove_only_actual_header_arcs() {
     assert!(new_kind < old_kind + kind_header);
     let old_slot = Arc::<MapNode<usize, Arc<AdjacencySet>>>::layout_bytes();
     let new_slot = Arc::<MapNode<usize, AdjacencySet>>::layout_bytes();
-    let slot_header = header_arc::<AdjacencySet>();
-    assert_eq!(slot_header, Arc::<AdjacencySet>::layout_bytes());
+    let slot_header = Arc::<AdjacencySet>::layout_bytes();
     let policy = crate::config::data::AdjacencyPolicy {
         backend: crate::config::data::AdjacencyBackend::InlineSmallDegreeAdjacency,
         small_degree_inline_capacity: 4,

@@ -98,16 +98,21 @@ fn retired_bootstrap_completion_format_refuses_existing_home_without_replaying_s
     .unwrap()
     .err()
     .expect("retired development format must refuse");
-    let WorthQueryApplicationHomeOpenRefused::ExistingQueryAttachment { query, .. } = &refused
+    let WorthQueryApplicationHomeOpenRefused::ExistingNativeFinalization { query, .. } = &refused
     else {
-        panic!("actual selected Query completion must refuse: {refused:?}");
+        panic!("actual Native completion admission must refuse: {refused:?}");
     };
+    assert_eq!(
+        query.reason().kind(),
+        worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected
+    );
     assert!(
         query
-            .detail()
+            .reason()
+            .subject()
             .contains("Home bootstrap completion format is unsupported"),
-        "typed existing Query refusal: {}",
-        query.detail()
+        "typed existing Native refusal: {:?}",
+        query.reason()
     );
     assert_eq!(reopened_callbacks.load(Ordering::SeqCst), 0);
     refused

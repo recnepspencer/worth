@@ -259,7 +259,6 @@ impl<K: Clone + Ord, V: Clone> PersistentOrdMap<K, V> {
         }
     }
 
-    #[cfg(test)]
     pub(crate) fn ptr_eq(&self, other: &Self) -> bool {
         match (&self.storage, &other.storage) {
             (

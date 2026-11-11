@@ -3,16 +3,20 @@ use super::{
     BridgeConditionalContract, BridgeConditionalDenial, BridgeConditionalDenialKind,
     BridgeConditionalProviderSet,
 };
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub(super) struct BridgeConditionalProviderAdmission {
-    contract: BridgeConditionalContract,
+    contract: Arc<BridgeConditionalContract>,
     required_roles: [bool; PROVIDER_DIMENSION_CHECK_COUNT],
     semantic_contracts: BridgeConditionalProviderSemanticContracts,
 }
 
 impl BridgeConditionalProviderAdmission {
     pub(super) fn contract(&self) -> &BridgeConditionalContract {
+        &self.contract
+    }
+    pub(super) fn shared_contract(&self) -> &Arc<BridgeConditionalContract> {
         &self.contract
     }
 
@@ -26,9 +30,21 @@ impl BridgeConditionalProviderAdmission {
 }
 
 pub(super) fn admit_provider_set(
-    contract: &BridgeConditionalContract,
+    contract: Arc<BridgeConditionalContract>,
     providers: &BridgeConditionalProviderSet,
 ) -> Result<BridgeConditionalProviderAdmission, BridgeConditionalDenial> {
+    let required_roles = admit_provider_roles(&contract, providers)?;
+    Ok(BridgeConditionalProviderAdmission {
+        contract,
+        required_roles,
+        semantic_contracts: providers.semantic_contracts.clone(),
+    })
+}
+
+pub(super) fn admit_provider_roles(
+    contract: &BridgeConditionalContract,
+    providers: &BridgeConditionalProviderSet,
+) -> Result<[bool; PROVIDER_DIMENSION_CHECK_COUNT], BridgeConditionalDenial> {
     let required_roles = required_provider_roles(contract);
     let present_roles = present_provider_roles(providers);
     for ((required, present), (missing, extra)) in required_roles
@@ -38,11 +54,7 @@ pub(super) fn admit_provider_set(
     {
         require_exact(required, present, missing, extra)?;
     }
-    Ok(BridgeConditionalProviderAdmission {
-        contract: contract.clone(),
-        required_roles,
-        semantic_contracts: providers.semantic_contracts.clone(),
-    })
+    Ok(required_roles)
 }
 
 fn required_provider_roles(

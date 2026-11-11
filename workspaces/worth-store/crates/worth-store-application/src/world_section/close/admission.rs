@@ -16,27 +16,54 @@ where
     ) -> Result<(), crate::ApplicationHomeCloseDenial> {
         use crate::ApplicationHomeCloseDenial as Denial;
         use worth_runtime_world::facade::{RuntimeWorldCloseDenial, RuntimeWorldServiceDenial};
-        let Some(composition) = self.composition.as_ref() else {
-            return Ok(());
-        };
         // Funding and source validation finish before the actual final gates.
-        composition.preflight_home_retirement(request, self.home.relational().runtime())?;
+        if let Some(composition) = &self.composition {
+            composition.preflight_home_retirement(request, self.home.relational().runtime())?;
+        }
+        if let Some(signal) = &self.standalone_signal {
+            signal.preflight_home_retirement(request).map_err(|cause| {
+                Denial::Bridge(
+                    worth_runtime_bridge::facade::BridgeHomeRetirementDenial::AuthoredSignal(
+                        Box::new(cause),
+                    ),
+                )
+            })?;
+        }
         let admission = match self.world.try_prepare_close_admission(request) {
             Ok(admission) => admission,
             Err(RuntimeWorldCloseDenial::AlreadyClosing) => return Ok(()),
             Err(cause) => return Err(Denial::World(RuntimeWorldServiceDenial::Denied(cause))),
         };
-        if let Some(conditional) = &composition.conditional {
-            let mut conditional = conditional
-                .try_write()
-                .map_err(|_| Denial::WorldCompositionRetained)?;
-            conditional
-                .prepare_initial_empty_home_stop(request, self.home.relational().runtime())
-                .map_err(Denial::Bridge)?;
+        if let Some(conditional) = self
+            .composition
+            .as_ref()
+            .and_then(|composition| composition.conditional.as_ref())
+        {
+            let prepared = conditional
+                .signal_owner()
+                .prepare_home_stop(request)
+                .map_err(|cause| {
+                    Denial::Bridge(
+                        worth_runtime_bridge::facade::BridgeHomeRetirementDenial::AuthoredSignal(
+                            Box::new(cause),
+                        ),
+                    )
+                })?;
+            prepared.commit();
             // No fallible action may intervene before the actual final handoff.
             admission.begin();
-        } else {
+        } else if let Some(signal) = &self.standalone_signal {
+            let prepared = signal.prepare_home_stop(request).map_err(|cause| {
+                Denial::Bridge(
+                    worth_runtime_bridge::facade::BridgeHomeRetirementDenial::AuthoredSignal(
+                        Box::new(cause),
+                    ),
+                )
+            })?;
+            prepared.commit();
             admission.begin();
+        } else {
+            return Err(Denial::WorldCompositionRetained);
         }
         Ok(())
     }

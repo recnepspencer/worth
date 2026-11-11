@@ -47,6 +47,7 @@ pub(super) enum ResourceCause {
     Clock(worth_query_installation::facade::WorthQueryNamedClockFailure),
     Native(worth_runtime_world::facade::RuntimeWorldOwnedAsyncRequestAdmissionDenial),
     Revalidation(worth_runtime_world::facade::RuntimeWorldOwnedAsyncManagedRevalidationDenial),
+    Bridge(worth_runtime_bridge::facade::BridgeConditionalDenial),
     Managed(worth_runtime_bridge::facade::BridgeOwnedAsyncManagedDenial),
     Completion(worth_runtime_bridge::facade::BridgeAsyncCompletionRejection),
     DeniedCompletion(worth_runtime_bridge::facade::BridgeOwnedAsyncCompletionAdmission),
@@ -138,7 +139,7 @@ impl WorthQueryResourceActionDenial {
             C::Managed(_) => K::Cleanup,
             C::Selection(_) | C::Principal(_) | C::Scope(_) | C::ScopeCapture(_)
             | C::ParameterCapture(_) | C::Admission(_) | C::Value(_) | C::Clock(_)
-            | C::Native(_) | C::Revalidation(_) | C::Scratch(_) | C::Attempt(_) => K::Admission,
+            | C::Bridge(_) | C::Native(_) | C::Revalidation(_) | C::Scratch(_) | C::Attempt(_) => K::Admission,
         }
     }
 

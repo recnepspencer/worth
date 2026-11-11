@@ -216,6 +216,7 @@ pub mod merge {
 
 pub mod runtime {
     pub use super::runtime_validation_exports::*;
+    pub use crate::execution::RelationalWorkAccountRecorderForTest;
     pub use crate::presentation::facade::runtime::{
         ImmutableReadContract, RelationalBoundaryContract, RelationalRuntimeApi,
     };
@@ -266,9 +267,10 @@ pub mod runtime {
     };
     pub use crate::runtime::{
         PreparedRelationalRuntimeClose, PreparedRelationalSourceClose,
-        RelationalRuntimeCloseDenial, RelationalRuntimeCloseRefused, RelationalSourceClose,
-        RelationalSourceCloseDenial, RelationalSourceCloseProgress,
-        RetiredSourceRelationalAllocation,
+        RelationalPublicationCompanionCustody, RelationalPublicationCustodyHolders,
+        RelationalPublicationRegistryCustody, RelationalRuntimeCloseDenial,
+        RelationalRuntimeCloseRefused, RelationalSourceClose, RelationalSourceCloseDenial,
+        RelationalSourceCloseProgress, RetiredSourceRelationalAllocation,
     };
     pub use crate::storage::data::{
         ChunkVisibilitySummary, ChunkedStorageSummary, EntityReadRecord, PartitionStorageStats,

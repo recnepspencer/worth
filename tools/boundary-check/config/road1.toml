@@ -220,6 +220,8 @@ target = "worth-signal"
 allowed_sources = [
   "worth-store",
   "worth-store-application",
+  # court drives Signal through Store's SignalDurableMedium adapter.
+  "worth-store-court-application-replication",
   "worth-store-court-recovery-runtime-replication-store-physical-blob-journeys",
   "worth-store-court-recovery-runtime-replication-store-physical-record-journeys-durability-admission",
   "worth-store-court-recovery-runtime-replication-store-physical-record-journeys-record-chunk-views",

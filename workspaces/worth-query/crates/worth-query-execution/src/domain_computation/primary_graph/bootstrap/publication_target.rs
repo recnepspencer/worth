@@ -63,3 +63,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphBootstrap<Schema> {
         Ok(())
     }
 }
+
+impl<S: worth_query_installation::facade::ApplicationSchema>
+    super::WorthQueryPrimaryGraphBootstrap<S>
+{
+    pub(in crate::domain_computation::primary_graph) fn installed_native_receipt(
+        &self,
+    ) -> &worth_relational::facade::runtime::RelationalInitialSchemaInstallationReceipt {
+        &self.invariant_installation_receipt
+    }
+}

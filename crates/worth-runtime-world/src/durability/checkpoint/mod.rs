@@ -2,7 +2,7 @@
 pub const WORLD_CHECKPOINT_PROTOCOL: worth_foundational::facade::BoundaryProtocolIdentity =
     worth_foundational::facade::BoundaryProtocolIdentity::new("worth.world.checkpoint");
 pub const WORLD_CHECKPOINT_VERSION: worth_foundational::facade::BoundaryProtocolVersion =
-    worth_foundational::facade::BoundaryProtocolVersion::new(1);
+    worth_foundational::facade::BoundaryProtocolVersion::new(3);
 mod acknowledgement;
 mod coordinates;
 mod coverage;
@@ -14,9 +14,9 @@ mod graph;
 mod home_admission;
 mod image;
 mod origin;
-pub(crate) use origin::{
-    PreparedCheckpointOccurrence, WorldCheckpointOrigin, WorldCheckpointOriginState,
-};
+#[cfg(test)]
+pub(crate) use origin::WorldCheckpointOrigin;
+pub(crate) use origin::{PreparedCheckpointOccurrence, WorldCheckpointOriginState};
 pub use origin::{WorldCheckpointOriginRetirement, WorldCheckpointOriginRetirementDenial};
 mod original_observation;
 mod original_state;

@@ -10,6 +10,7 @@ use super::{
 pub struct BridgeSemanticCorrespondenceRegistration {
     pub(crate) dependency: BridgeSemanticDependencyCandidate,
     pub(crate) targets: Vec<BridgeSignalAspectTargetDeclaration>,
+    pub(crate) recorded_claim: Option<worth_foundational::facade::BridgeSemanticClaimReference>,
 }
 
 impl BridgeSemanticCorrespondenceRegistration {
@@ -40,6 +41,7 @@ impl BridgeSemanticCorrespondenceRegistration {
         Ok(Self {
             dependency,
             targets,
+            recorded_claim: None,
         })
     }
 

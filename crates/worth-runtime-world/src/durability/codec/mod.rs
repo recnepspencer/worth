@@ -1,7 +1,13 @@
 pub(in crate::durability) mod decoded;
 pub(in crate::durability) mod fields;
 pub(crate) use decoded::DecodedWorldRecord;
+mod created_branch;
+mod creation;
+mod creation_name_extent;
+mod initial_components;
+pub(in crate::durability) use initial_components::bridge_decode_denial;
 pub(in crate::durability) mod occurrence_backing;
+pub(in crate::durability) mod owner_evidence;
 pub(in crate::durability) mod owner_value;
 use super::artifact::WORLD_ARTIFACT_VERSION;
 use super::{WorldDurableFrameDenial as Denial, WorldDurableMediumDenial, WorldRecord};
@@ -112,14 +118,26 @@ fn decode_record(
             }
         }
         3 => WorldRecord::OpenAttempt(read.open()?),
+        7 => WorldRecord::CreationIntent(creation::read(&mut read)?),
+        8 => WorldRecord::BranchCreated(created_branch::read(&mut read, execution)?),
+        9 => {
+            let association = read.association()?;
+            let custody = worth_foundational::facade::DurableProductUnpublishedOwnerEffectsIdentity::from_recorded(
+                association.attempt().owner(), read.number()?,
+            );
+            WorldRecord::CreationReleased {
+                association,
+                custody,
+            }
+        }
         4 => {
             let open = read.open()?;
-            let relational = read.evidence()?;
+            let owners = owner_evidence::read(&mut read, execution)?;
             let publishing_incarnation =
                 HomeIncarnation::from_recorded(read.number()?).ok_or(Denial::Malformed)?;
             WorldRecord::Occurrence {
                 open,
-                relational,
+                owners,
                 publishing_incarnation,
             }
         }
@@ -189,20 +207,36 @@ pub(in crate::durability) fn write_record(
             head(out, value)?;
             number(out, bootstrap.ordinal())?;
             out(program_revision)?;
-            owner_value::emit(out, components)
+            initial_components::write(out, components)
         }
         WorldRecord::OpenAttempt(value) => {
             out(&[3])?;
             open(out, value)
         }
+        WorldRecord::CreationIntent(intent) => {
+            out(&[7])?;
+            creation::write(out, intent)
+        }
+        WorldRecord::BranchCreated(created) => {
+            out(&[8])?;
+            created_branch::write(out, created)
+        }
+        WorldRecord::CreationReleased {
+            association: value,
+            custody,
+        } => {
+            out(&[9])?;
+            association(out, value)?;
+            number(out, custody.ordinal())
+        }
         WorldRecord::Occurrence {
             open: value,
-            relational,
+            owners,
             publishing_incarnation,
         } => {
             out(&[4])?;
             open(out, value)?;
-            evidence(out, relational)?;
+            owner_evidence::write(out, owners)?;
             number(out, publishing_incarnation.get())
         }
         WorldRecord::Released {

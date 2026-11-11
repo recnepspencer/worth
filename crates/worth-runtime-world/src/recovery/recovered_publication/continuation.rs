@@ -16,6 +16,10 @@ pub enum WorldRecoveredContinuationDenial {
     Retention(crate::retention::RetentionObligationDenial),
     PredecessorChanged,
     NoOwnerEffect,
+    OwnerEffectsMismatch {
+        expected: WorldOpenComponentIntent,
+        actual: WorldOpenComponentIntent,
+    },
 }
 #[derive(Debug)]
 pub enum WorldRecoveredContinuationOutcome {
@@ -68,6 +72,20 @@ impl Drop for ContinuationLease {
     }
 }
 impl PreparedRecoveredPublication {
+    pub(super) fn retained_obligation_count(&self) -> usize {
+        let pairs = usize::from(self.pins.is_some())
+            + usize::from(self.transfer.is_some())
+            + usize::from(self.protection.is_some())
+            + usize::from(
+                self.origin
+                    .as_ref()
+                    .is_some_and(|origin| !origin.needs_binding()),
+            );
+        let history = usize::from(self.capacity.holds_history_reservation())
+            + usize::from(self.protection.is_some());
+        2 * pairs + history
+    }
+
     pub(crate) fn movement_recovery_required(&self) -> bool {
         self.protection.is_some() && self.permit.is_none()
     }
@@ -175,7 +193,7 @@ impl WorldRecoveredUnpublishedEffects {
                     Outcome::Pending(self)
                 }
                 WorldDurablePublicationStop::Refused(cause) => Outcome::Refused {
-                    cause: WorldRecoveredContinuationDenial::Durable(cause),
+                    cause: WorldRecoveredContinuationDenial::Durable(cause.into_cause()),
                     custody: self,
                 },
                 WorldDurablePublicationStop::EvidenceRequired => Outcome::EvidenceRequired(self),

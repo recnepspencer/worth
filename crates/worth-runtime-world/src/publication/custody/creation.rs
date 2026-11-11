@@ -12,7 +12,8 @@ use std::sync::Arc;
 
 /// Creation-only custody carried in the same owner record as its fork evidence.
 #[derive(Debug)]
-pub(super) struct ActiveCreationResources {
+pub(crate) struct ActiveCreationResources {
+    pub(crate) durable: Option<Box<crate::lifecycle::WorldDurableCreationCustody>>,
     pub(super) source_kind: crate::branch::BranchCreationSourceKind,
     pub(super) observation_capacity: Option<ReservedObservationCapacity>,
     pub(super) observation: Option<ProductBranchObservation>,
@@ -29,6 +30,7 @@ impl ActiveAttemptCustody {
         let resources = lease.resources_mut();
         assert!(resources.creation.is_none());
         resources.creation = Some(ActiveCreationResources {
+            durable: None,
             source_kind,
             observation_capacity: Some(observation_capacity),
             observation: None,
@@ -53,6 +55,12 @@ impl ActiveAttemptCustody {
     pub(crate) fn install_creation_history(&mut self, commit: &Arc<CompositeRuntimeWorldCommit>) {
         let mut lease = self.lease_resources();
         let resources = lease.resources_mut();
+        if matches!(
+            resources.history_custody,
+            ActiveHistoryCustody::Installed(_)
+        ) {
+            return;
+        }
         let ActiveHistoryCustody::Reserved(capacity) = &mut resources.history_custody else {
             panic!("creation holds reserved history")
         };
@@ -105,18 +113,23 @@ impl ActiveAttemptCustody {
             .creation
             .as_mut()
             .expect("creation custody");
-        let capacity = creation
-            .observation_capacity
-            .take()
-            .expect("creation reserved its observation before forks");
-        let components = retention
-            .issue_reserved_observation(snapshot.commit(), capacity)
-            .map_err(|denial| {
-                crate::recovery::ProductUnpublishedCause::from_retention_denial(&denial)
-            })?;
+        if creation.observation.is_some() {
+            return Ok(());
+        }
         let history = history
             .protect_explicit_commit(snapshot.commit())
             .map_err(|_| crate::recovery::ProductUnpublishedCause::DestinationAdmissionDenied)?;
+        if creation.observation_capacity.is_none() {
+            creation.observation_capacity =
+                Some(retention.reserve_observation().map_err(|denial| {
+                    crate::recovery::ProductUnpublishedCause::from_retention_denial(&denial)
+                })?);
+        }
+        let components = retention
+            .issue_retained_observation(snapshot.commit(), &mut creation.observation_capacity)
+            .map_err(|denial| {
+                crate::recovery::ProductUnpublishedCause::from_retention_denial(&denial)
+            })?;
         let observation = ProductBranchObservation::owner_issued(snapshot, components, history)
             .map_err(|_| crate::recovery::ProductUnpublishedCause::DestinationAdmissionDenied)?;
         #[cfg(test)]
@@ -184,6 +197,9 @@ impl ActiveAttemptCustody {
         let Some(creation) = resources.creation.as_mut() else {
             return;
         };
+        if creation.durable.is_some() {
+            return;
+        }
         drop(creation.observation.take());
         drop(creation.observation_capacity.take());
         if let Some(cell) = creation.cell.take() {

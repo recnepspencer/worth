@@ -8,7 +8,10 @@ use worth_relational::facade::{
     },
     mvcc::RelationalPublicationOutcome,
     runtime::{
-        RelationalRuntimeApi, RelationalRuntimeCloseDenial as Denial, RelationalRuntimeConfig,
+        RelationalPublicationCompanionCustody as Companion,
+        RelationalPublicationCustodyHolders as Holders,
+        RelationalPublicationRegistryCustody as Registry, RelationalRuntimeApi,
+        RelationalRuntimeCloseDenial as Denial, RelationalRuntimeConfig,
     },
 };
 use worth_testkit_relational::{
@@ -57,9 +60,8 @@ fn memory_terminal_close_retires_real_cached_read_and_preserves_original_stop() 
         )
         .unwrap();
     let refused = runtime.prepare_close().unwrap_err();
-    assert_eq!(
-        refused.reason(),
-        Denial::ReadCustodyRetained,
+    assert!(
+        matches!(refused.reason(), Denial::ReadCustodyRetained(_)),
         "real prior cache-close obstruction"
     );
     let runtime = refused.into_runtime();
@@ -133,7 +135,7 @@ fn memory_terminal_close_keeps_actual_independent_projection_until_its_release()
     for _ in 0..30 {
         match close.advance(request) {
             O::Advanced => {}
-            O::Refused(Denial::ReadCustodyRetained) => {
+            O::Refused(Denial::ReadCustodyRetained(_)) => {
                 refused = true;
                 break;
             }
@@ -216,7 +218,11 @@ fn memory_terminal_close_refuses_actual_expired_candidate_until_owner_discards_i
         .unwrap();
     assert!(matches!(
         close.advance(request),
-        O::Refused(Denial::PublicationCustodyRetained)
+        O::Refused(Denial::PublicationCustodyRetained(Holders {
+            candidates: Registry::Registered { count: 1, first_identity },
+            settlements: Registry::Empty,
+            companion: Companion::Released,
+        })) if first_identity > 0
     ));
     assert!(
         port.observe_branch(&identity).is_ok(),
@@ -254,7 +260,11 @@ fn memory_terminal_close_preserves_pending_settlement_and_explicit_snapshot_repa
         .unwrap();
     assert!(matches!(
         close.advance(request),
-        O::Refused(Denial::PublicationCustodyRetained)
+        O::Refused(Denial::PublicationCustodyRetained(Holders {
+            candidates: Registry::Empty,
+            settlements: Registry::Registered { count: 1, first_identity },
+            companion: Companion::Released,
+        })) if first_identity > 0
     ));
     let handle = close.into_refused_handle().unwrap(); // Explicit unbudgeted preseal restoration.
     let result =
@@ -262,7 +272,7 @@ fn memory_terminal_close_preserves_pending_settlement_and_explicit_snapshot_repa
     let mut close = handle.into_memory_close().unwrap();
     assert!(matches!(
         close.advance(request),
-        O::Refused(Denial::ReadCustodyRetained)
+        O::Refused(Denial::ReadCustodyRetained(_))
     ));
     let handle = close.into_refused_handle().unwrap();
     handle.with_runtime(|runtime| release_test_commit_snapshot(runtime, &result));

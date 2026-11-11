@@ -149,8 +149,15 @@ pub(super) fn controlled<T>(
         })
     };
     let result = operation(&mut checkpoint, &mut retain);
-    if let Some(cause) = first_stop.into_inner() {
-        return Err(cause.into());
+    preserve_original_stop(result, first_stop.into_inner())
+}
+
+pub(super) fn preserve_original_stop<T>(
+    result: Result<T, Cause>,
+    first: Option<MaintenanceRefusal>,
+) -> Result<T, KindMaintenanceError> {
+    match first {
+        Some(cause) => Err(cause.into()),
+        None => result.map_err(KindMaintenanceError::Storage),
     }
-    result.map_err(KindMaintenanceError::Storage)
 }

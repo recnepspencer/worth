@@ -20,4 +20,5 @@ mod restoration_header;
 
 mod predecessor_basis;
 
+mod bulk_work_account;
 mod checkpoint_versions;

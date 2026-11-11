@@ -1,6 +1,8 @@
 //! Borrowed writer inputs are copied only inside the admitted artifact owner.
 use super::*;
+mod creation;
 use crate::durability::{RecordedWorldInitialComponents, WorldDurableMediumDenial as Denial};
+pub(crate) use creation::{WorldCreationIntentInput, WorldRelationalCreationInput};
 
 pub(crate) struct WorldHeadInput<'a> {
     pub(crate) owner: DurableWorldOwnerIdentity,
@@ -108,6 +110,17 @@ pub(crate) enum WorldArtifactInput<'a> {
         components: RecordedWorldInitialComponents,
     },
     OpenAttempt(WorldOpenAttemptInput<'a>),
+    CreationIntent(WorldCreationIntentInput<'a>),
+    BranchCreated {
+        intent: WorldCreationIntentInput<'a>,
+        components: RecordedWorldInitialComponents,
+        owners: WorldCreatedBranchOwnerEvidence,
+        publishing_incarnation: HomeIncarnation,
+    },
+    CreationReleased {
+        association: &'a CompositeAttemptAssociation,
+        custody: DurableProductUnpublishedOwnerEffectsIdentity,
+    },
     Released {
         association: &'a CompositeAttemptAssociation,
         custody: DurableProductUnpublishedOwnerEffectsIdentity,
@@ -119,6 +132,10 @@ impl WorldArtifactInput<'_> {
         match self {
             Self::Branch { head, .. } => Ok(head.name.len()),
             Self::OpenAttempt(open) => open.name_bytes(),
+            Self::CreationIntent(intent) | Self::BranchCreated { intent, .. } => {
+                intent.name_bytes()
+            }
+            Self::CreationReleased { association, .. } => Ok(association.branch().name().len()),
             Self::Released { association, .. } | Self::Continued { association, .. } => {
                 Ok(association.branch().name().len())
             }
@@ -145,6 +162,29 @@ impl WorldArtifactInput<'_> {
                 components,
             },
             Self::OpenAttempt(open) => WorldRecord::OpenAttempt(open.materialize()?),
+            Self::CreationIntent(intent) => WorldRecord::CreationIntent(intent.materialize()?),
+            Self::BranchCreated {
+                intent,
+                components,
+                owners,
+                publishing_incarnation,
+            } => {
+                let created = WorldBranchCreatedRecord {
+                    intent: intent.materialize()?,
+                    components,
+                    owners,
+                    publishing_incarnation,
+                };
+                created.validate_description()?;
+                WorldRecord::BranchCreated(created)
+            }
+            Self::CreationReleased {
+                association,
+                custody,
+            } => WorldRecord::CreationReleased {
+                association: creation::copy_association(association)?,
+                custody,
+            },
             Self::Released {
                 association,
                 custody,
@@ -167,6 +207,12 @@ fn branch(
     owner: DurableWorldOwnerIdentity,
     name: &str,
 ) -> Result<DurableProductBranchIdentity, Denial> {
+    let copied = copy_name(name)?;
+    DurableProductBranchIdentity::from_recorded(owner, copied)
+        .map_err(|_| WorldDurableFrameDenial::IdentityMismatch.into())
+}
+
+fn copy_name(name: &str) -> Result<String, Denial> {
     // The caller already admitted this exact copy and its containing Arc.
     // The pinned Global/RawVec exact-growth contract is guarded by owner tests.
     let mut copied = String::new();
@@ -177,6 +223,5 @@ fn branch(
         return Err(Denial::NameAllocation);
     }
     copied.push_str(name);
-    DurableProductBranchIdentity::from_recorded(owner, copied)
-        .map_err(|_| WorldDurableFrameDenial::IdentityMismatch.into())
+    Ok(copied)
 }

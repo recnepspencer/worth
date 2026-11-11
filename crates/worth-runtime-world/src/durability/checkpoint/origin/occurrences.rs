@@ -48,6 +48,17 @@ impl PreparedCheckpointOccurrence {
             _funding: [funding, surplus],
         })
     }
+    pub(super) fn into_origin(mut self) -> WorldCheckpointOrigin {
+        let node = self.values.pop().expect("one prepaid recipe slot");
+        assert!(
+            node.next.is_none(),
+            "a newly admitted branch has no successor links"
+        );
+        match node.evidence {
+            OccurrenceEvidence::Held(origin) => origin,
+            OccurrenceEvidence::Prepared => unreachable!("only an admitted origin is retained"),
+        }
+    }
     pub(crate) fn needs_binding(&self) -> bool {
         match &self.values[0].evidence {
             OccurrenceEvidence::Prepared => true,

@@ -14,6 +14,8 @@ fn duplicate_signal_destination_denies_before_effect_and_retries_after_drop() {
     let held = owner
         .state
         .signal
+        .memory_services()
+        .expect("memory-only retirement fixture")
         .mutation_port()
         .reserve_fork_exact(
             validate_signal_branch_name(DUPLICATE_SIGNAL_TARGET).expect("valid Signal name"),
@@ -131,6 +133,8 @@ fn signal_fork_exact_reserves_then_consumes_without_an_advance() {
         owner
             .state
             .signal
+            .memory_services()
+            .expect("memory-only retirement fixture")
             .mutation_port()
             .reserve_fork_exact(
                 validate_signal_branch_name(target).expect("valid Signal name"),

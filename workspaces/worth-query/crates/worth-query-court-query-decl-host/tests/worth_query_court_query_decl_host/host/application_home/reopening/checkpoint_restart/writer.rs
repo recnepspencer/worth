@@ -4,6 +4,7 @@ use worth_query_host::facade::WorthQueryApplicationHome;
 type Home = WorthQueryApplicationHome<fixture::schema::HomeIdentitySchema, fixture::HomeProgram>;
 
 pub(super) fn run(case: Case, path: std::path::PathBuf) -> ! {
+    eprintln!("restart stage: opening");
     let initialized = Arc::new(AtomicUsize::new(0));
     let contacts = Arc::new(AtomicUsize::new(0));
     let build = ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap();
@@ -24,16 +25,16 @@ pub(super) fn run(case: Case, path: std::path::PathBuf) -> ! {
     })
     .unwrap()
     .unwrap_or_else(|refused| opening_failed("restart writer", &refused));
+    eprintln!("restart stage: opened");
     let (_, live) = scope();
     let mut value = 8;
-    assert!(matches!(
-        set(home.runtime(), &live, 0x435000, value).unwrap(),
-        WorthQueryApplicationMutationOutcome::Committed { .. }
-    ));
+    assert_committed(set(home.runtime(), &live, 0x435000, value).unwrap());
+    eprintln!("restart stage: first mutation committed");
     let generation = match case {
         Case::JournalOnly => 0,
         Case::InterruptedAck => {
             let original = interrupt(&home, &execution);
+            eprintln!("restart stage: initial ack interrupted");
             let resumed = home.recover_checkpoint(&execution).unwrap();
             assert_eq!(resumed.generation(), original);
             assert!(home
@@ -47,6 +48,7 @@ pub(super) fn run(case: Case, path: std::path::PathBuf) -> ! {
             home.checkpoint(&execution).unwrap().generation()
         }
     };
+    eprintln!("restart stage: initial checkpoint settled");
     let first_covered = home.inspect_checkpoint(&execution).unwrap().journals[0].covered;
     let additional = match case {
         Case::Image | Case::InterruptedAck => 0,
@@ -55,19 +57,19 @@ pub(super) fn run(case: Case, path: std::path::PathBuf) -> ! {
         Case::BoundedTail => 37,
     };
     for offset in 0..additional {
+        eprintln!("restart stage: additional mutation {offset}/{additional} starting");
         // Each mutation is a distinct authenticated request. Checkpoint work
         // from earlier requests must not consume a later request's deadline.
         let (_, live) = scope();
         value += 1;
-        assert!(matches!(
-            set(home.runtime(), &live, 0x435100 + offset, value).unwrap(),
-            WorthQueryApplicationMutationOutcome::Committed { .. }
-        ));
+        assert_committed(set(home.runtime(), &live, 0x435100 + offset, value).unwrap());
     }
+    eprintln!("restart stage: all additional mutations committed");
     assert_eq!(initialized.load(Ordering::SeqCst), 1);
     assert_eq!(contacts.load(Ordering::SeqCst), 1 + additional as usize);
     let (_, live) = scope();
     assert_eq!(balance(home.runtime(), &live), value);
+    eprintln!("restart stage: final balance verified");
     // An ordinary Query read resumes pending Home maintenance. Park the second
     // interruption after that read so the original unacked attempt reaches kill.
     let generation = if matches!(case, Case::InterruptedAck) {
@@ -77,6 +79,7 @@ pub(super) fn run(case: Case, path: std::path::PathBuf) -> ! {
     } else {
         generation
     };
+    eprintln!("restart stage: final checkpoint/ack boundary reached");
     let observed = home.inspect_checkpoint(&execution).unwrap();
     let tail = observed
         .journals
@@ -121,6 +124,7 @@ pub(super) fn run(case: Case, path: std::path::PathBuf) -> ! {
         | Case::ColdRecapture
         | Case::BoundedTail => observed.journals[0].covered,
     };
+    eprintln!("restart stage: durable observations verified");
     let ready = path.with_extension("complete-home-ready");
     let pending = ready.with_extension("pending");
     std::fs::write(
@@ -166,4 +170,19 @@ fn interrupt(home: &Home, original: &worth_execution::ExecutionRequest<'_, '_>) 
     pending
         .selected_generation
         .expect("physical selection must precede interruption")
+}
+
+fn assert_committed(outcome: WorthQueryApplicationMutationOutcome<(), u64>) {
+    if let WorthQueryApplicationMutationOutcome::Commit(
+        worth_query_host::facade::primary_graph::WorthQueryApplicationUncommitted::ProductUnpublished(original)
+    ) = &outcome {
+        panic!("writer original owner cause: {:?}", original.cause());
+    }
+    assert!(
+        matches!(
+            outcome,
+            WorthQueryApplicationMutationOutcome::Committed { .. }
+        ),
+        "writer outcome: {outcome:?}"
+    );
 }

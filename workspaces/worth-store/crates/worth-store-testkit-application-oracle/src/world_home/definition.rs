@@ -27,33 +27,21 @@ impl RuntimeWorldClockSource for Clock {
     }
 }
 
-pub(super) fn authored() -> (
-    ApplicationWorldDefinition<(), (), (), (), ()>,
-    SignalRuntime<(), (), (), (), ()>,
-) {
+pub(super) fn authored() -> ApplicationWorldDefinition<(), (), (), (), ()> {
     authored_with_history_limit(16)
 }
 pub(super) fn authored_with_history_limit(
     limit: u64,
-) -> (
-    ApplicationWorldDefinition<(), (), (), (), ()>,
-    SignalRuntime<(), (), (), (), ()>,
-) {
-    let graph = SignalGraph::new();
-    let mut signal = SignalRuntime::builder(graph)
-        .with_domains::<()>()
-        .with_impacts::<()>()
-        .with_events::<()>()
-        .with_context::<()>()
-        .with_tiers::<()>()
-        .with_kernel_defaults()
-        .build();
-    let services = signal
-        .owner_component_services()
-        .expect("actual Signal owner services");
-    let definitions = signal
-        .runtime_world_definition_publication_port()
-        .expect("actual Signal definition publication owner");
+) -> ApplicationWorldDefinition<(), (), (), (), ()> {
+    authored_with_signal(
+        limit,
+        Box::new(SignalRuntime::build_for::<()>(SignalGraph::new())),
+    )
+}
+pub(super) fn authored_with_signal(
+    limit: u64,
+    signal: Box<SignalRuntime<(), (), (), (), ()>>,
+) -> ApplicationWorldDefinition<(), (), (), (), ()> {
     let bridge = RuntimeBridgeBuilder::new()
         .with_signal_sink(UnboundDelivery)
         .register_mapping(BridgeMappingRegistration::new(
@@ -71,8 +59,6 @@ pub(super) fn authored_with_history_limit(
             CoarseRoutingMode::Direct,
         ));
     let world = RuntimeWorldOwner::builder()
-        .with_signal_services(services)
-        .with_signal_definition_publication(definitions)
         .with_budgets(budgets(limit))
         .with_clock(RuntimeWorldClock::from_source(Clock))
         .with_execution_policy(ExecutionRequestPolicy::new(
@@ -80,9 +66,13 @@ pub(super) fn authored_with_history_limit(
             DeterminismContract::CanonicalBitwise,
             ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, None),
         ));
-    (
-        ApplicationWorldDefinition::new(world, bridge, "application-world-home"),
+    ApplicationWorldDefinition::new(
+        world,
         signal,
+        worth_signal::facade::durability::SignalDurableTierVocabulary::declare([((), "base")])
+            .unwrap(),
+        bridge,
+        "application-world-home",
     )
 }
 

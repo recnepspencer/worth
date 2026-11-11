@@ -34,6 +34,8 @@ mod ancestor_selection;
 mod custody;
 #[path = "fork_creation/destinations.rs"]
 mod destinations;
+#[path = "fork_creation/durable_close_custody.rs"]
+mod durable_close_custody;
 #[path = "fork_creation/incarnation.rs"]
 mod incarnation;
 #[path = "fork_creation/matrix.rs"]
@@ -248,6 +250,10 @@ pub(super) fn create_forked_branch(
     )
     .expect("owner-issued fork reaches a performed branch outcome")
     {
+        RuntimeWorldBranchCreationOutcome::NoEffect(_)
+        | RuntimeWorldBranchCreationOutcome::ReleasedOriginal(_) => {
+            panic!("memory creation cannot return a Home publication fate")
+        }
         RuntimeWorldBranchCreationOutcome::Performed(observation) => observation,
         RuntimeWorldBranchCreationOutcome::ProductUnpublished(_) => {
             panic!("fully admitted fork unexpectedly became unpublished")

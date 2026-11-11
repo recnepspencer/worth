@@ -194,6 +194,9 @@ pub struct SignalGraph {
     pub(in crate::data::graph) lifecycle_token: std::sync::Arc<()>,
     #[serde(skip, default = "next_signal_graph_instance_id")]
     pub(in crate::data::graph) instance_id: u64,
+    #[serde(skip, default)]
+    pub(in crate::data::graph) recorded_node_issuance:
+        worth_execution::ExecutionOrderedMap<u32, u32>,
     pub(in crate::data::graph) arena: NodeArena,
     pub(in crate::data::graph) topology: EdgeTopology,
     #[serde(
@@ -261,6 +264,7 @@ impl<'de> Deserialize<'de> for SignalGraph {
             initial_empty_origin: false,
             lifecycle_token: Default::default(),
             instance_id: next_signal_graph_instance_id(),
+            recorded_node_issuance: Default::default(),
             arena: wire.arena,
             topology: wire.topology,
             cause_sets: wire.cause_sets,
@@ -283,6 +287,7 @@ impl<'de> Deserialize<'de> for SignalGraph {
             epoch_output_preparation_fault_after: Default::default(),
         };
         graph.rebind_observation_capture_state();
+        graph.rebuild_declared_dependents();
         Ok(graph)
     }
 }

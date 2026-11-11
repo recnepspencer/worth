@@ -3,9 +3,9 @@ use super::*;
 
 pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
     {
-        let _owner = census.owner::<SignalInitialEmptyStopDenial>(
+        let _owner = census.owner::<SignalOwnerStopDenial>(
             "crates/worth-signal/src/branch/owner_services/initial_empty_stop.rs",
-            "SignalInitialEmptyStopDenial",
+            "SignalOwnerStopDenial",
             128 * 1024,
         );
     }
@@ -16,7 +16,7 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
             128 * 1024,
         );
         owner.field::<SignalRuntime<(), (), (), (), ()>>("runtime");
-        owner.field::<SignalInitialEmptyStopDenial>("reason");
+        owner.field::<SignalOwnerStopDenial>("reason");
     }
     {
         let mut owner = census.owner::<PreparedInitialEmptySignalStop<(), (), (), (), ()>>(

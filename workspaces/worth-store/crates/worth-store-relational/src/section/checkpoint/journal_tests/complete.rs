@@ -155,7 +155,7 @@ fn weak_complete_preparation_preserves_close_stop_resume_and_owner_loss() {
     };
     assert!(matches!(
         cause,
-        RelationalSectionCloseDenial::Native(RelationalRuntimeCloseDenial::ReadCustodyRetained)
+        RelationalSectionCloseDenial::Native(RelationalRuntimeCloseDenial::ReadCustodyRetained(_))
     ));
     drop(prepared);
     let closing = section
@@ -221,7 +221,7 @@ fn owned_visibility_cache_retires_before_external_capture_recheck_and_source_sea
         match closing.advance(execution, &serving) {
             Ok(Progress::Advanced) => {}
             Err(RelationalSectionCloseDenial::Native(
-                RelationalRuntimeCloseDenial::ReadCustodyRetained,
+                RelationalRuntimeCloseDenial::ReadCustodyRetained(_),
             )) => {
                 refused = true;
                 break;

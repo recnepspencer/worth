@@ -1,6 +1,6 @@
 //! Reversible initial-owner transition, with no operation admission.
 use super::{SignalOwnerLifecycleState, OWNER_CLOSING, OWNER_OPEN};
-use crate::branch::SignalInitialEmptyStopDenial as Denial;
+use crate::branch::SignalOwnerStopDenial as Denial;
 use std::sync::{atomic::Ordering, MutexGuard};
 
 pub(in crate::branch::owner_services) struct InitialEmptyStopAdmission<'a> {
@@ -50,14 +50,17 @@ impl SignalOwnerLifecycleState {
     }
     pub(in crate::branch::owner_services) fn try_prepared_initial_empty_stop_guard(
         &self,
-    ) -> Result<impl Drop + '_, Denial> {
+    ) -> Result<SignalStoppedOwnerGuard<'_>, Denial> {
         let gate = self.transition_gate.try_lock().map_err(|_| Denial::Busy)?;
         if self.phase_and_count.load(Ordering::Acquire) != OWNER_CLOSING
             || self.cleanup_claimed.load(Ordering::Acquire)
         {
             return Err(Denial::OwnerUnavailable);
         }
-        Ok(gate)
+        Ok(SignalStoppedOwnerGuard {
+            lifecycle: self,
+            _gate: gate,
+        })
     }
 }
 impl InitialEmptyStopAdmission<'_> {
@@ -72,5 +75,58 @@ impl InitialEmptyStopAdmission<'_> {
             )
             .map(|_| ())
             .map_err(|_| Denial::Busy)
+    }
+}
+
+/// Holds the real transition gate until the composed owner commits or rolls back.
+pub(crate) struct SignalPreparedOwnerStopGate<'a> {
+    lifecycle: &'a SignalOwnerLifecycleState,
+    _gate: MutexGuard<'a, ()>,
+    committed: bool,
+}
+impl SignalOwnerLifecycleState {
+    pub(crate) fn try_authored_stop_gate(&self) -> Result<SignalPreparedOwnerStopGate<'_>, Denial> {
+        let admission = self.try_initial_empty_stop_admission()?;
+        admission
+            .lifecycle
+            .phase_and_count
+            .compare_exchange(
+                OWNER_OPEN,
+                OWNER_CLOSING,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            )
+            .map_err(|_| Denial::Busy)?;
+        Ok(SignalPreparedOwnerStopGate {
+            lifecycle: admission.lifecycle,
+            _gate: admission._gate,
+            committed: false,
+        })
+    }
+}
+impl SignalPreparedOwnerStopGate<'_> {
+    pub(crate) fn commit(mut self) {
+        self.committed = true;
+    }
+}
+impl Drop for SignalPreparedOwnerStopGate<'_> {
+    fn drop(&mut self) {
+        if !self.committed {
+            // This guard still owns transition_gate, so no cleanup or phase transition can race rollback.
+            self.lifecycle
+                .phase_and_count
+                .store(OWNER_OPEN, Ordering::Release);
+        }
+    }
+}
+
+/// The actual committed closing phase remains locked through its admission fence.
+pub(crate) struct SignalStoppedOwnerGuard<'a> {
+    lifecycle: &'a SignalOwnerLifecycleState,
+    _gate: MutexGuard<'a, ()>,
+}
+impl SignalStoppedOwnerGuard<'_> {
+    pub(crate) fn owner_runtime_instance(&self) -> u64 {
+        self.lifecycle.owner_runtime_instance_id
     }
 }

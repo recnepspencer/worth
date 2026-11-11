@@ -21,6 +21,15 @@ impl ProductBranchReferenceCell {
             .current
             .try_write()
             .map_err(|_| crate::lifecycle::RuntimeWorldCloseDenial::Busy)?;
+        match &image.movement {
+            super::ProductMovementPhase::CreationInFlight(original)
+            | super::ProductMovementPhase::CreationRecoveryRequired(original) => {
+                return Err(original.close_denial())
+            }
+            super::ProductMovementPhase::Idle
+            | super::ProductMovementPhase::MovementInFlight { .. }
+            | super::ProductMovementPhase::RecoveryRequired { .. } => {}
+        }
         if let Some(protection) = image.protection.as_mut() {
             protection
                 .try_retire_components_for_close()

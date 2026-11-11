@@ -1,4 +1,8 @@
 //! Store composition audience; applications enter through Query Host.
+pub use crate::signal_medium::{StoreSignalMedium, StoreSignalMediumAttachmentRefused};
+pub use crate::world_section::{
+    ApplicationHomeProgrammeHandoffDenial, ApplicationHomeProgrammeHandoffRefused,
+};
 
 pub use crate::checkpoint::{
     ApplicationHomeCheckpoint, ApplicationHomeCheckpointDenial,
@@ -9,7 +13,8 @@ pub use crate::checkpoint::{
 };
 pub use crate::close::{
     ApplicationHomeCloseDenial, ApplicationHomeCloseOutcome, ApplicationHomeClosePosture,
-    ApplicationHomeRecoveryCustody, RetiredApplicationHomeAllocation,
+    ApplicationHomePhysicalCustodyHolders, ApplicationHomeRecoveryCustody,
+    HomeSignalPhysicalHolder, RetiredApplicationHomeAllocation,
 };
 pub use crate::deadline::ApplicationHomeDeadlineDenial;
 pub use crate::descriptor::transition_binding::ApplicationHomeTransitionBindingRefused;
@@ -64,3 +69,10 @@ pub use crate::world_section::{
     WorldReadmittedApplicationHome, WorldSealedApplicationHome,
 };
 pub use worth_foundational::facade::{HomeIdentity, HomeIncarnation, UncleanRecoveryUnsupported};
+
+pub use crate::signal_medium::HomeSignalInitialSourceDenial;
+
+pub use crate::world_section::{
+    prepare_query_home_source, readmit_query_signal, PreparedQueryHomeSource,
+    SignalReadmittedApplicationHome,
+};

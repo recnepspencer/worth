@@ -1,4 +1,27 @@
+pub(crate) mod authored_section;
 mod authoritative_delivery;
+mod authoritative_delivery_view;
+pub use authored_section::{
+    BridgeAuthoredBranchDenial, BridgeAuthoredBranchView, BridgeAuthoredDependencyDescription,
+    BridgeAuthoredInstallationBindings, BridgeAuthoredReadmissionDenial, BridgeAuthoredSection,
+    BridgeAuthoredSectionDenial, BridgeDurableDefinitionCompletion,
+    BridgeDurableDefinitionCompletionDenial, BridgeDurableDefinitionPublicationDenial,
+    BridgeDurableForkPublicationDenial, BridgePreparedAuthoredDefinitionPublication,
+    BridgeReadmittedAuthoredAssembly, BRIDGE_AUTHORED_SECTION_PROTOCOL,
+    BRIDGE_AUTHORED_SECTION_VERSION,
+};
+mod authored_declaration;
+mod authored_provider;
+mod authored_provider_builders;
+mod authored_provider_retention;
+pub use authored_provider::{
+    BridgeAuthoredConditionalProvider, BridgeAuthoredProviderDenial,
+    BridgeAuthoredProviderDescription, BridgeAuthoredProviderDescriptions,
+};
+mod authored_execution;
+mod authored_home_retirement;
+mod authored_inspection;
+pub use authored_home_retirement::RetiringBridgeAuthoredAssembly;
 mod causal_observation;
 mod compatibility;
 mod contract;
@@ -8,17 +31,21 @@ mod denial;
 mod evaluation_reuse;
 mod evaluation_session;
 mod execution;
+mod execution_view;
 mod installation_admission;
 mod installation_extension;
 mod installed_lowering;
 mod lifecycle_probe;
 mod liveness;
+pub use authored_declaration::BridgeAuthoredConditionalDeclaration;
+pub use authored_execution::BridgeAuthoredConditionalExecution;
 mod lowering;
 mod lowering_authority;
 mod lowering_identity;
 mod lowering_installation;
 mod lowering_registry;
 mod managed_time;
+mod memory_execution;
 #[cfg(test)]
 pub(crate) use managed_time::budget_tests::assert_retention_boundaries;
 #[cfg(test)]
@@ -132,7 +159,12 @@ pub use retained_decision::{
     BridgeConditionalDecisionReentryRequest, BridgeRetainedConditionalDecisionSeed,
 };
 pub use retention::BridgeConditionalRetentionObservation;
-pub use runtime_builder::BridgeConditionalRuntimeBuilder;
+pub use runtime_builder::BridgeAuthoredProgrammeHandoffDenial;
+pub use runtime_builder::{BridgeConditionalRuntimeBuilder, BridgeFreshAuthoredBindings};
+pub use runtime_builder::{
+    BridgeInitialSourceDenial, BridgeInitialSourcePreparationRefusal,
+    BridgeInitialSourcePublication, BridgePublishedInitialSource,
+};
 pub use sealed_runtime_assembly::BridgeSealedRuntimeAssembly;
 pub use semantic_contract::{
     BridgeConditionalCondition, BridgeConditionalContract, BridgeConditionalContractParts,

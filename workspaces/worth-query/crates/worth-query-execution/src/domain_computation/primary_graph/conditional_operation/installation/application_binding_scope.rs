@@ -53,6 +53,7 @@ where
             target,
             initial_binding_count: self.bindings.len(),
             initial_readiness_count: self.output_readiness.len(),
+            initial_definition_count: self.definitions.len(),
             required_producers,
         });
     }
@@ -71,7 +72,11 @@ where
             + self
                 .output_readiness
                 .len()
-                .saturating_sub(scope.initial_readiness_count);
+                .saturating_sub(scope.initial_readiness_count)
+            + self
+                .definitions
+                .len()
+                .saturating_sub(scope.initial_definition_count);
         if bound == 1 {
             Ok(())
         } else {
@@ -192,6 +197,7 @@ mod tests {
             target: super::WorthQueryConditionalNodeLocation::operation("ready").unwrap(),
             initial_binding_count: 0,
             initial_readiness_count: 0,
+            initial_definition_count: 0,
             required_producers: Vec::new(),
         };
         let ready = super::WorthQueryConditionalNodeLocation::operation("ready").unwrap();

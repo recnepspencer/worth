@@ -4,8 +4,10 @@ mod association;
 mod binding;
 mod checkpoint;
 mod codec;
+pub(crate) use checkpoint::PreparedCheckpointOccurrence;
 pub(crate) use checkpoint::WorldCheckpointImage;
-pub(crate) use checkpoint::{PreparedCheckpointOccurrence, WorldCheckpointOrigin};
+#[cfg(test)]
+pub(crate) use checkpoint::WorldCheckpointOrigin;
 pub use checkpoint::{
     PreparedWorldCheckpoint, WorldCheckpointJournalRecord, WorldCheckpointOriginRetirement,
     WorldCheckpointOriginRetirementDenial, WorldCheckpointPort, WorldCheckpointReadSource,
@@ -37,20 +39,24 @@ pub use readmission_custody::WorldNativeReadmissionCustody;
 mod release_evidence;
 mod root_readmission;
 pub(crate) use artifact::{
-    DurableWorldHead, PreparedWorldArtifact, WorldArtifactInput, WorldHeadInput,
-    WorldOpenAttemptInput, WorldOpenAttemptRecord, WorldOpenComponentIntent, WorldRecord,
-    WorldRelationalEvidence,
+    DurableWorldHead, PreparedWorldArtifact, WorldArtifactInput, WorldBranchCreatedRecord,
+    WorldCreatedBranchOwnerEvidence, WorldCreationIntentInput, WorldHeadInput,
+    WorldOpenAttemptInput, WorldOpenAttemptRecord, WorldRecord,
+    WorldRecordedRelationalCreationPlan, WorldRelationalCreationInput, WorldRelationalEvidence,
+    WorldRelationalForkEvidence,
 };
 pub use artifact::{
-    WorldDurableArtifact, WorldDurableFrameDenial, WORLD_ARTIFACT_PROTOCOL, WORLD_ARTIFACT_VERSION,
+    WorldDurableArtifact, WorldDurableFrameDenial, WorldOpenComponentIntent,
+    WORLD_ARTIFACT_PROTOCOL, WORLD_ARTIFACT_VERSION,
 };
 pub(crate) use association::is_world_association;
 pub(crate) use association::{
     decode_association, encode_association, encode_home_transition_association,
 };
 pub(crate) use binding::{
-    ActualWorldPublication, HomeProgramBindingReservation, WorldCommittedPublication,
-    WorldDurableMediumBinding, WorldDurablePublicationStop,
+    ActualWorldNoEffectPublication, ActualWorldPublication, HomeProgramBindingReservation,
+    WorldCommittedPublication, WorldDurableMediumBinding, WorldDurablePublicationStop,
+    WorldPublicationRefusal,
 };
 pub(crate) use frontiers::WorldIdentityFrontiers;
 pub use medium::{
@@ -61,3 +67,5 @@ pub use readmission::WorldReadmissionDenial;
 pub(crate) use readmission::WorldRecoveredJournalState;
 pub(crate) use release_evidence::WorldRelationalReleaseEvidence;
 pub use root_readmission::RefusedWorldRootReadmission;
+
+pub(crate) use artifact::{WorldOccurrenceOwnerEvidence, WorldSignalEvidence};

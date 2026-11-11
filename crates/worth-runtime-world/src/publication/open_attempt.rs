@@ -9,14 +9,18 @@ use crate::identity::CompositePublicationAttemptIdentity;
 use std::sync::Arc;
 use worth_execution::{ExecutionArray, ExecutionRequest};
 mod native_preparation;
+mod signal_preparation;
 pub use native_preparation::{
     WorldNativePreparationDenial, WorldNativePreparationRefusal,
     WorldPreparedPublicationWithoutSignal, WorldQueryNativePreparation,
 };
+pub use signal_preparation::{WorldPreparedPublicationWithSignal, WorldQuerySignalPreparation};
 #[derive(Debug)]
 pub enum WorldOpenAttemptRefusal {
     TransitionAdmission(worth_proof::HomeProgramTransitionAdmissionDenial),
     NotHomeBound,
+    ProgramSourceOwnerRequired,
+    ProgramSource(worth_proof::BranchProgramSourceAdmissionDenial),
     Reservation(super::NoEffectCompositePublication),
     Durable(WorldDurableMediumDenial),
     IdentityScope,
@@ -56,6 +60,18 @@ impl WorldOpenAttemptOriginal {
     }
 }
 impl WorldPendingOpenAttempt {
+    /// Keep this same submitted original; no owner effect or physical fate is inferred.
+    pub fn retain(self) -> crate::recovery::ProductUnpublishedOwnerEffects {
+        self.original.custody.retain_open()
+    }
+    /// Keep this same conditional-definition original as its typed unpublished outcome.
+    pub fn retain_conditional_definition(
+        self,
+    ) -> crate::publication::RuntimeWorldUnpublishedConditionalDefinition {
+        crate::publication::RuntimeWorldUnpublishedConditionalDefinition::from_effects(
+            self.retain(),
+        )
+    }
     pub fn unpublished_recovery_handle(&self) -> crate::recovery::ProductUnpublishedRecoveryHandle {
         self.original.custody.unpublished_recovery_handle()
     }
@@ -84,7 +100,9 @@ impl WorldPendingOpenAttempt {
             }
             Err(WorldDurablePublicationStop::Refused(cause)) => {
                 self.original.custody.retain_durable_open(None);
-                WorldOpenAttemptOutcome::Refused(WorldOpenAttemptRefusal::Durable(cause))
+                WorldOpenAttemptOutcome::Refused(WorldOpenAttemptRefusal::Durable(
+                    cause.into_cause(),
+                ))
             }
         }
     }

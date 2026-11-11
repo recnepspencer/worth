@@ -1,8 +1,7 @@
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 use worth_runtime_bridge::facade::{
     BridgeInstalledConditionalLowering, BridgeOwnedConditionalInstallationRequest,
-    BridgeSealedRuntimeAssembly,
 };
 use worth_runtime_world::facade::ProductBranchObservation;
 
@@ -17,7 +16,7 @@ pub struct WorthQueryAdmittedApplicationConditionalDefinition {
     identity: [u8; 32],
     predecessor: Arc<BridgeInstalledConditionalLowering>,
     request: BridgeOwnedConditionalInstallationRequest,
-    bridge: Arc<RwLock<BridgeSealedRuntimeAssembly>>,
+    bridge: crate::domain_computation::primary_graph::managed_bridge::conditional_owner::ConditionalOwner,
     activations: Arc<
         crate::domain_computation::execution_runtime::product_world::activation::WorthQueryProductActivationRegistry,
     >,
@@ -29,7 +28,7 @@ pub(in crate::domain_computation::primary_graph) struct
     pub expected_product: ProductBranchObservation,
     pub predecessor: Arc<BridgeInstalledConditionalLowering>,
     pub request: BridgeOwnedConditionalInstallationRequest,
-    pub bridge: Arc<RwLock<BridgeSealedRuntimeAssembly>>,
+    pub bridge: crate::domain_computation::primary_graph::managed_bridge::conditional_owner::ConditionalOwner,
     pub activations: Arc<
         crate::domain_computation::execution_runtime::product_world::activation::WorthQueryProductActivationRegistry,
     >,

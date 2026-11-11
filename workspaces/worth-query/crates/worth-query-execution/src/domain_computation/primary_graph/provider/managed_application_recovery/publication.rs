@@ -83,8 +83,9 @@ pub(super) fn publish<Schema: ApplicationSchema>(
     let bridge = bridge_root
         .read()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let memory = bridge.memory().map_err(Denial::Bridge)?;
     let prepared = binding
-        .prepare_conditional_definition_adoption(recovery.record_handle(), &bridge, request)
+        .prepare_conditional_definition_adoption(recovery.record_handle(), memory, request)
         .map_err(adoption_denial)?;
     reserve_delivery(
         guard,
@@ -93,7 +94,7 @@ pub(super) fn publish<Schema: ApplicationSchema>(
         prepared.unpublished_recovery_handle(),
     )?;
     Ok(prepared
-        .execute(execution, &bridge)
+        .execute(execution, memory)
         .map(|outcome| match outcome {
             PublicationOutcome::Performed((publication, lowering)) => {
                 PublicationOutcome::Performed((

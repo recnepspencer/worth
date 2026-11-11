@@ -1,15 +1,7 @@
 //! Consuming initial-owner stop; allocation destruction remains unbudgeted.
+use super::SignalOwnerStopDenial;
 use crate::logic::transaction::SignalRuntime;
-use worth_execution::{ExecutionRequest, MapKernelStop};
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SignalInitialEmptyStopDenial {
-    Busy,
-    Poisoned,
-    Unsupported,
-    OwnerUnavailable,
-    Stopped(MapKernelStop),
-}
+use worth_execution::ExecutionRequest;
 
 /// Untouched owning runtime after preparation refusal.
 #[must_use]
@@ -20,7 +12,7 @@ where
     T: Copy + Ord,
 {
     runtime: SignalRuntime<D, I, E, Ctx, T>,
-    reason: SignalInitialEmptyStopDenial,
+    reason: SignalOwnerStopDenial,
 }
 impl<D, I, E, Ctx, T> SignalInitialEmptyStopRefused<D, I, E, Ctx, T>
 where
@@ -30,11 +22,11 @@ where
 {
     pub(crate) fn new(
         runtime: SignalRuntime<D, I, E, Ctx, T>,
-        reason: SignalInitialEmptyStopDenial,
+        reason: SignalOwnerStopDenial,
     ) -> Self {
         Self { runtime, reason }
     }
-    pub fn reason(&self) -> SignalInitialEmptyStopDenial {
+    pub fn reason(&self) -> SignalOwnerStopDenial {
         self.reason
     }
     pub fn into_runtime(self) -> SignalRuntime<D, I, E, Ctx, T> {
@@ -62,9 +54,7 @@ where
     pub(crate) fn new(runtime: SignalRuntime<D, I, E, Ctx, T>) -> Self {
         Self { runtime }
     }
-    pub fn resume(
-        self,
-    ) -> Result<SignalRuntime<D, I, E, Ctx, T>, (Self, SignalInitialEmptyStopDenial)> {
+    pub fn resume(self) -> Result<SignalRuntime<D, I, E, Ctx, T>, (Self, SignalOwnerStopDenial)> {
         match self.runtime.try_resume_initial_empty_owner() {
             Ok(()) => Ok(self.runtime),
             Err(reason) => Err((self, reason)),
@@ -74,10 +64,8 @@ where
     pub fn commit(
         self,
         request: &ExecutionRequest<'_, '_>,
-    ) -> Result<
-        StoppedInitialEmptySignalAllocation<D, I, E, Ctx, T>,
-        (Self, SignalInitialEmptyStopDenial),
-    > {
+    ) -> Result<StoppedInitialEmptySignalAllocation<D, I, E, Ctx, T>, (Self, SignalOwnerStopDenial)>
+    {
         match self.runtime.try_commit_initial_empty_owner_stop(request) {
             Ok(()) => Ok(StoppedInitialEmptySignalAllocation {
                 _runtime: self.runtime,

@@ -27,6 +27,54 @@ impl OwnerCreatedComponentCustodyRegistry {
         Ok(state.reserved != 0 || !state.installed.is_empty())
     }
 
+    /// A reservation, or the product-branch incarnations its installed records
+    /// belong to, for a caller that decides which incarnations are published.
+    pub(crate) fn try_close_custody_incarnations(
+        &self,
+    ) -> Result<Option<Vec<ProductBranchIncarnation>>, ()> {
+        let state = self.state.try_lock().map_err(|_| ())?;
+        if state.reserved != 0 {
+            return Ok(None);
+        }
+        let mut incarnations = Vec::new();
+        incarnations
+            .try_reserve_exact(state.installed.len())
+            .map_err(|_| ())?;
+        incarnations.extend(state.installed.iter().map(|record| record.incarnation()));
+        Ok(Some(incarnations))
+    }
+
+    /// Close-time custody. A memory-only owner keeps every record. A durable
+    /// Home records each published sibling in its World artifact and readmits it,
+    /// so only a reservation or a record whose sibling incarnation is not an
+    /// installed (published) branch remains unresolved.
+    pub(crate) fn try_unresolved_close_custody(
+        &self,
+        durable: bool,
+        branches: &crate::branch::registry::ProductBranchRegistry,
+    ) -> Result<bool, ()> {
+        if !durable {
+            return self.try_has_close_custody();
+        }
+        Ok(match self.try_close_custody_incarnations()? {
+            None => true,
+            Some(incarnations) => incarnations
+                .into_iter()
+                .any(|incarnation| branches.branch_cell_by_lifecycle(incarnation).is_none()),
+        })
+    }
+
+    /// Custody after a completed close. Close already refused every unpublished
+    /// sibling of a durable Home, and its published siblings may since have
+    /// released their live cells, so only a reservation is inconsistent there.
+    pub(crate) fn try_unresolved_closed_custody(&self, durable: bool) -> Result<bool, ()> {
+        if durable {
+            Ok(self.try_close_custody_incarnations()?.is_none())
+        } else {
+            self.try_has_close_custody()
+        }
+    }
+
     pub(crate) fn new(maximum: RuntimeWorldBudgetLimit) -> Self {
         Self {
             state: Arc::new(Mutex::new(CustodyRegistryState {

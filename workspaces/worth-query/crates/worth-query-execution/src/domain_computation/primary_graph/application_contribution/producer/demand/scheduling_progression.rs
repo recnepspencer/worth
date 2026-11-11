@@ -7,15 +7,14 @@ use super::bridge_denial::bridge_denial;
 use super::bridge_denial::is_temporarily_deferred;
 use super::progression::denial;
 use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputSchedulingResult;
+use crate::domain_computation::primary_graph::conditional_operation::installation::route_binding::InstalledConditionalRoute;
 use crate::domain_computation::primary_graph::conditional_operation::WorthQuerySelectedSignalProjections;
+use crate::domain_computation::primary_graph::managed_bridge::conditional_execution::ConditionalExecutionOwner;
 use crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use crate::domain_computation::primary_graph::WorthQueryObservedSource;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
-use std::sync::Arc;
 use worth_runtime_bridge::facade::BridgeConditionalDenial;
-use worth_runtime_bridge::facade::BridgeInstalledConditionalLowering;
-use worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly;
 
 const OUTPUT_SCHEDULE_DOMAIN: &[u8] = b"worth-query:output-schedule:v1";
 
@@ -182,11 +181,11 @@ where
         performed_source: Option<
             &crate::domain_computation::primary_graph::application_output_demand::WorthQueryPerformedOutputDemandSource,
         >,
-        route: &Arc<BridgeInstalledConditionalLowering>,
+        route: &InstalledConditionalRoute,
         current_signal_basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
         execute_signal: impl FnOnce(
-            &BridgeSealedRuntimeAssembly,
-            &Arc<BridgeInstalledConditionalLowering>,
+            &ConditionalExecutionOwner<'_>,
+            &InstalledConditionalRoute,
             &worth_signal::facade::branch::AdmittedSignalBranchBasis,
             u64,
             u64,

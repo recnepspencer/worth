@@ -1,23 +1,21 @@
 use std::sync::Arc;
 
 use worth_query_installation::facade::{
-    WorthQueryArtifactReuseEquivalence, WorthQueryComparatorRequirement,
-    WorthQueryConditionalConditionClass, WorthQueryHostConditionalOutputComparatorProvider,
+    WorthQueryBoundHostOutputComparator, WorthQueryBoundHostOutputVersion,
+    WorthQueryHostConditionalOutputComparatorProvider,
     WorthQueryHostConditionalOutputVersionProvider, WorthQueryHostConditionalPredicateProvider,
     WorthQueryInstalledApplicationConditionalNode, WorthQueryInstalledGraphParticipationAuthority,
-    WorthQueryInstalledTemporalConditionalOperation, WorthQueryNamedClock,
-    WorthQueryNamedClockSource, WorthQueryOutputEquivalenceRequirement,
+    WorthQueryInstalledHostConditionalProvider, WorthQueryInstalledTemporalConditionalOperation,
+    WorthQueryNamedClock, WorthQueryNamedClockSource, WorthQueryOutputEquivalenceRequirement,
     WorthQueryPortableConditionalNodeDeclaration, WorthQuerySemanticLocality,
     WorthQueryTemporalIntentProjector,
 };
 use worth_runtime_bridge::facade::{
-    BridgeConditionalComputeProvider, BridgeConditionalCondition, BridgeConditionalContract,
-    BridgeConditionalContractParts, BridgeConditionalLocation, BridgeConditionalProviderSemantics,
+    BridgeConditionalComputeProvider, BridgeConditionalProviderSemantics,
     BridgeConditionalProviderSet, BridgeOwnedConditionalInstallationRequest,
     BridgeSemanticDependencyCandidate, BridgeSemanticDependencyCandidateParts,
     BridgeSemanticLocality,
 };
-use worth_signal::facade::{SignalConditionalArtifactReuse, SignalConditionalVersionComparator};
 
 use super::installation::{
     WorthQueryConditionalRuntimeInstallationDenial,
@@ -25,8 +23,12 @@ use super::installation::{
 };
 use super::predicate_observation::QueryTemporalPredicateProvider;
 
+mod authored_outputs;
+mod contract_lowering;
+use contract_lowering::{lower_dependency_contract, lower_location, lower_temporal_contract};
 mod output_readiness_installation;
 mod providers;
+use authored_outputs::{QueryAuthoredConditionalComputeProvider, QueryAuthoredOutputComparator};
 mod readiness_provider;
 pub(in crate::domain_computation::primary_graph) use output_readiness_installation::prepare_dependency_conditional_installation;
 pub(in crate::domain_computation::primary_graph) use providers::QueryConditionalComputeContext;
@@ -80,36 +82,100 @@ where
     Projector: WorthQueryTemporalIntentProjector<Node, Clock, QueryResult, Input>,
     Node: 'static,
 {
-    let installed_provider = binding.clocked_node().provider();
+    prepare_host_predicate_installation(binding.clocked_node().provider(), graph)
+}
+
+pub(super) fn prepare_host_predicate_installation<
+    Schema,
+    ApplicationOperation,
+    Input,
+    D,
+    O,
+    F,
+    Node,
+    Provider,
+>(
+    installed_provider: &WorthQueryInstalledHostConditionalProvider<
+        Schema,
+        ApplicationOperation,
+        Input,
+        D,
+        O,
+        F,
+        Node,
+        Provider,
+    >,
+    graph: &WorthQueryInstalledGraphParticipationAuthority,
+) -> Result<BridgeOwnedConditionalInstallationRequest, WorthQueryConditionalRuntimeInstallationDenial>
+where
+    Provider: WorthQueryHostConditionalPredicateProvider<Node>,
+    Node: 'static,
+{
     let node = installed_provider.node();
     let contract = lower_temporal_contract(node.declaration())?;
     let location = lower_location(node.location());
     let dependencies = dependency_candidates(node, graph)?;
     let node_authority: Arc<str> = Arc::from(node.authority_identity());
+    let portable_node: Arc<str> = Arc::from(node.declaration().identity());
     let output_version = installed_provider.retain_output_version_for_runtime();
-    let compute_identity: Arc<str> = Arc::from(format!(
-        "{}|output-version={}",
-        node_authority,
-        output_version
-            .as_ref()
-            .map(|(identity, _)| *identity)
-            .unwrap_or("query-attempt"),
-    ));
     let output_comparator = installed_provider.retain_output_comparator_for_runtime();
     validate_output_comparator_identity(node.declaration(), output_comparator.as_ref())?;
-    let providers = BridgeConditionalProviderSet::new()
-        .wake(QueryTemporalPredicateProvider::<Node, Provider>::new(
+    let authored_predicate = installed_provider.retain_authored_predicate_for_runtime();
+    let authored = authored_predicate.is_some();
+    let providers = match authored_predicate {
+        Some(source) => BridgeConditionalProviderSet::new().authored_wake(
+            super::authored_predicate::QueryAuthoredPredicateProvider::new(
+                source,
+                portable_node.clone(),
+                node_authority.clone(),
+            ),
+        ),
+        None => BridgeConditionalProviderSet::new().wake(QueryTemporalPredicateProvider::<
+            Node,
+            Provider,
+        >::new(
             installed_provider.retain_provider_for_runtime(),
-            Arc::clone(&node_authority),
-        ))
-        .compute(QueryConditionalComputeProvider::<Node> {
-            semantics: QueryConditionalComputeSemanticContract(compute_identity),
-            output_version: output_version.map(|(_, provider)| provider),
-        });
+            node_authority.clone(),
+        )),
+    };
+    let providers = match output_version {
+        None if authored => providers.authored_compute(QueryAuthoredConditionalComputeProvider::<
+            Node,
+        >::new(portable_node.clone(), None)),
+        None => providers.compute(QueryConditionalComputeProvider::<Node> {
+            semantics: QueryConditionalComputeSemanticContract(
+                format!("{node_authority}|output-version=query-attempt").into(),
+            ),
+            output_version: None,
+        }),
+        Some(WorthQueryBoundHostOutputVersion::Authored(provider)) => {
+            providers.authored_compute(QueryAuthoredConditionalComputeProvider::<Node>::new(
+                portable_node.clone(),
+                Some(provider),
+            ))
+        }
+        Some(WorthQueryBoundHostOutputVersion::Memory(provider)) => {
+            let compute_identity: Arc<str> = format!(
+                "{}|output-version={}",
+                node_authority,
+                provider.semantic_identity()
+            )
+            .into();
+            providers.compute(QueryConditionalComputeProvider::<Node> {
+                semantics: QueryConditionalComputeSemanticContract(compute_identity),
+                output_version: Some(provider),
+            })
+        }
+    };
     let providers = match output_comparator {
-        Some((identity, provider)) => {
+        Some(WorthQueryBoundHostOutputComparator::Authored(provider)) => providers
+            .authored_output_comparator(QueryAuthoredOutputComparator::<Node>::new(
+                portable_node,
+                provider,
+            )),
+        Some(WorthQueryBoundHostOutputComparator::Memory(provider)) => {
             providers.output_comparator(QueryHostOutputComparator::<Node> {
-                identity: Arc::from(identity),
+                identity: Arc::from(provider.semantic_identity()),
                 provider,
             })
         }
@@ -123,25 +189,24 @@ where
     })
 }
 
-fn validate_output_comparator_identity<Node>(
+fn validate_output_comparator_identity<Node: 'static>(
     declaration: &WorthQueryPortableConditionalNodeDeclaration,
-    installed: Option<&(
-        &'static str,
-        Arc<dyn WorthQueryHostConditionalOutputComparatorProvider<Node>>,
-    )>,
+    installed: Option<&WorthQueryBoundHostOutputComparator<Node>>,
 ) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial> {
     let WorthQueryOutputEquivalenceRequirement::Registered(required) =
         declaration.output_equivalence()
     else {
         return Ok(());
     };
-    let Some((installed_identity, _)) = installed else {
+    let Some(installed) = installed else {
         return Err(bridge_denial(format!(
             "registered output comparator `{}` has no bound host provider",
             required.as_str()
         )));
     };
-    if *installed_identity != required.as_str() {
+    let provider = installed.provider();
+    let installed_identity = provider.semantic_identity();
+    if installed_identity != required.as_str() {
         return Err(bridge_denial(format!(
             "registered output comparator `{}` was bound to provider `{installed_identity}`",
             required.as_str()
@@ -233,127 +298,6 @@ fn candidate_from_authority(
         relevant_changes: dependency.relevant_changes().to_vec(),
     })
     .map_err(|denial| bridge_denial(format!("semantic dependency denied: {:?}", denial.kind())))
-}
-
-fn lower_temporal_contract(
-    declaration: &WorthQueryPortableConditionalNodeDeclaration,
-) -> Result<BridgeConditionalContract, WorthQueryConditionalRuntimeInstallationDenial> {
-    if declaration.condition().class() != WorthQueryConditionalConditionClass::Temporal {
-        return Err(bridge_denial(
-            "named clock binding did not retain a temporal condition",
-        ));
-    }
-    Ok(BridgeConditionalContract::new(
-        BridgeConditionalContractParts {
-            identity: Arc::from(declaration.identity()),
-            dependency_count: declaration.dependencies().len(),
-            condition_dependency_ordinals: (0..declaration.dependencies().len()).collect(),
-            condition: BridgeConditionalCondition::TemporalWake,
-            dependency_comparator: lower_dependency_comparator(declaration.dependency_comparator()),
-            output_comparator: lower_output_comparator(declaration.output_equivalence()),
-            artifact_reuse: lower_artifact_reuse(declaration.artifact_reuse_equivalence()),
-        },
-    ))
-}
-
-fn lower_dependency_contract(
-    declaration: &WorthQueryPortableConditionalNodeDeclaration,
-) -> Result<BridgeConditionalContract, WorthQueryConditionalRuntimeInstallationDenial> {
-    if declaration.dependencies().is_empty() {
-        return Err(bridge_denial(
-            "output readiness conditional has no declared dependency",
-        ));
-    }
-    let condition_dependency_ordinals = declaration
-        .condition()
-        .dependencies()
-        .iter()
-        .map(|condition_dependency| {
-            declaration
-                .dependencies()
-                .iter()
-                .position(|dependency| dependency == condition_dependency)
-                .ok_or_else(|| bridge_denial("readiness condition dependency was not declared"))
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-    if condition_dependency_ordinals.is_empty() {
-        return Err(bridge_denial(
-            "output readiness condition has no declared observation dependency",
-        ));
-    }
-    Ok(BridgeConditionalContract::new(
-        BridgeConditionalContractParts {
-            identity: Arc::from(declaration.identity()),
-            dependency_count: declaration.dependencies().len(),
-            condition_dependency_ordinals,
-            condition: BridgeConditionalCondition::RuntimePredicate,
-            dependency_comparator: lower_dependency_comparator(declaration.dependency_comparator()),
-            output_comparator: lower_output_comparator(declaration.output_equivalence()),
-            artifact_reuse: lower_artifact_reuse(declaration.artifact_reuse_equivalence()),
-        },
-    ))
-}
-
-fn lower_location(
-    location: &worth_query_installation::facade::WorthQueryConditionalNodeLocation,
-) -> BridgeConditionalLocation {
-    match location.stage_identity() {
-        Some(stage) => BridgeConditionalLocation::workflow_stage(
-            Arc::from(stage),
-            Arc::from(location.node_identity()),
-        ),
-        None => BridgeConditionalLocation::operation(Arc::from(location.node_identity())),
-    }
-}
-
-fn lower_dependency_comparator(
-    requirement: &WorthQueryComparatorRequirement,
-) -> SignalConditionalVersionComparator {
-    match requirement {
-        WorthQueryComparatorRequirement::ExactCanonicalValue
-        | WorthQueryComparatorRequirement::FoundationalContractEquivalence => {
-            SignalConditionalVersionComparator::Exact
-        }
-        WorthQueryComparatorRequirement::Registered(_) => {
-            SignalConditionalVersionComparator::RuntimeResolved
-        }
-    }
-}
-
-fn lower_output_comparator(
-    requirement: &WorthQueryOutputEquivalenceRequirement,
-) -> SignalConditionalVersionComparator {
-    match requirement {
-        WorthQueryOutputEquivalenceRequirement::ExactCanonicalValue
-        | WorthQueryOutputEquivalenceRequirement::FoundationalContractEquivalence => {
-            SignalConditionalVersionComparator::Exact
-        }
-        WorthQueryOutputEquivalenceRequirement::OutputIdentity => {
-            SignalConditionalVersionComparator::OutputIdentity
-        }
-        WorthQueryOutputEquivalenceRequirement::Registered(_) => {
-            SignalConditionalVersionComparator::RuntimeResolved
-        }
-    }
-}
-
-fn lower_artifact_reuse(
-    requirement: &WorthQueryArtifactReuseEquivalence,
-) -> SignalConditionalArtifactReuse {
-    match requirement {
-        WorthQueryArtifactReuseEquivalence::NotReusable => {
-            SignalConditionalArtifactReuse::NotReusable
-        }
-        WorthQueryArtifactReuseEquivalence::DependencyAndOutputEquivalent => {
-            SignalConditionalArtifactReuse::DependencyAndOutputEquivalent
-        }
-        WorthQueryArtifactReuseEquivalence::OutputEquivalent => {
-            SignalConditionalArtifactReuse::OutputEquivalent
-        }
-        WorthQueryArtifactReuseEquivalence::Registered(_) => {
-            SignalConditionalArtifactReuse::RuntimeResolved
-        }
-    }
 }
 
 fn bridge_denial(subject: impl Into<String>) -> WorthQueryConditionalRuntimeInstallationDenial {

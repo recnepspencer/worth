@@ -68,6 +68,7 @@ impl WorldCheckpointImage {
                 )?;
             }
         }
+        image.resolve_collected_history(request)?;
         image.validate_open_identities(request)?;
         Ok((image, selected_coverage))
     }

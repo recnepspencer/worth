@@ -73,6 +73,11 @@ impl RelationalSourceHistoryBinding {
     pub(crate) fn retire_head(&self, index: usize) -> Result<Option<bool>, ()> {
         self.branches.try_retire_stopped_head(index)
     }
+    pub(crate) fn retained_close_holders(
+        &self,
+    ) -> crate::runtime::state::RelationalReadCustodyHolders {
+        crate::runtime::state::RelationalReadCustodyHolders::detached(self.retention.counters())
+    }
     pub(crate) fn external_custody_retained(&self) -> bool {
         self.retention.has_detached_obligations()
     }

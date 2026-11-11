@@ -21,7 +21,7 @@ const COMPONENTS: &[u8] = br#"{
     "definition_commitment": "signal-initial-empty-definition-v1"
   },
   "bridge": {
-    "version": 1, "baseline": "bridge-runtime-world-uninstalled-baseline-v1",
+    "version": 2, "baseline": "bridge-runtime-world-baseline-v2",
     "adapter_semantic_identity": "untrusted-adapter", "graph_role": "primary"
   }
 }"#;
@@ -32,8 +32,51 @@ pub(super) fn descriptions(
     let mut data: serde_json::Value = serde_json::from_slice(COMPONENTS).unwrap();
     data["relational"]["descriptor"]["visibility_commitment"] =
         serde_json::to_value(CanonicalDigestId::new([0; 32])).unwrap();
-    let data = serde_json::to_vec(&data).unwrap();
-    RecordedWorldInitialComponents::from_json_in(request, &data)
+    let relational = serde_json::to_vec(&data["relational"]).unwrap();
+    let bridge = serde_json::to_vec(&data["bridge"]).unwrap();
+    let owner = DurableSignalOwnerIdentity::from_recorded(
+        HomeIdentity::from_observed_bytes([7; 16]).unwrap(),
+        SignalOwnerSlotIdentity::from_recorded(0),
+    );
+    let branch = DurableSignalBranchIdentity::from_recorded(owner, 0);
+    let descriptor =
+        worth_signal::facade::durability::SignalDurableBranchDescriptor::from_recorded(
+            DurableSignalGeneration::from_recorded(
+                DurableSignalCellIncarnation::from_recorded(branch, 1),
+                0,
+            ),
+            None,
+            DurableSignalAdmissionIdentity::from_recorded(owner, 1),
+            SignalDefinitionTransitionReference::from_recorded(
+                SignalDefinitionTransitionIdentity::from_recorded(owner, 1),
+                [4; 32],
+            ),
+        )
+        .unwrap();
+    let point = worth_signal::facade::durability::SignalRecordedSourcePoint::from_recorded(
+        SignalBranchAdvanceReference::from_recorded(
+            SignalBranchAdvanceIdentity::from_recorded(owner, 1),
+            [5; 32],
+        ),
+        std::num::NonZeroU64::MIN,
+        descriptor,
+    )
+    .unwrap();
+    Ok(RecordedWorldInitialComponents {
+        relational:
+            worth_relational::facade::branch::RecordedRelationalComponentReference::from_json_in(
+                request,
+                &relational,
+            )
+            .map_err(|cause| {
+                crate::durability::WorldDurableMediumDenial::NativeDescription(Box::new(cause))
+            })?,
+        signal: crate::durability::WorldSignalEvidence::from_point(point, request)?,
+        bridge: worth_runtime_bridge::facade::RecordedRuntimeWorldBaseline::from_json_in(
+            request, &bridge,
+        )
+        .map_err(crate::durability::codec::bridge_decode_denial)?,
+    })
 }
 
 pub(super) fn origin(
@@ -95,14 +138,17 @@ pub(super) fn published(
     .unwrap();
     let occurrence = WorldRecord::Occurrence {
         open: open.clone(),
-        relational: WorldRelationalEvidence {
-            commit: 1,
-            position: 1,
-            digest: [9; 32],
-        },
+        owners: crate::durability::artifact::WorldOccurrenceOwnerEvidence::RelationalOnly(
+            WorldRelationalEvidence {
+                commit: 1,
+                position: 1,
+                digest: [9; 32],
+            },
+        ),
         publishing_incarnation: HomeIncarnation::initial(),
     };
     admit(&mut image, &occurrence, 1, request).unwrap();
+    image.resolve_collected_history(request).unwrap();
     image.validate_open_identities(request).unwrap();
     (image, open)
 }

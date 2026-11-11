@@ -5,13 +5,19 @@ pub(in crate::domain_computation::primary_graph::application_installation::home_
     Program,
 > {
     pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) state:
-        HomeApplicationState<Schema, Program>,
+        super::program_state::HomeServingProgramState<Schema, Program>,
     pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) bootstrap:
         WorthQueryPrimaryGraphBootstrap<Schema>,
+    pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) services: crate::domain_computation::primary_graph::application_runtime::installation::home_attachment::HomeApplicationServices<Schema>,
+    pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) producers: crate::domain_computation::primary_graph::application_contribution::WorthQueryInstalledApplicationProducerRegistry<Schema>,
+    pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) conditionals: crate::domain_computation::primary_graph::application_contribution::WorthQueryInstalledApplicationConditionalRegistry<Schema>,
+    pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) producer_routes: crate::domain_computation::primary_graph::application_contribution::WorthQueryInstalledOutputProducerRoutes,
+    pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) definition_routes: crate::domain_computation::primary_graph::conditional_operation::definition_declarations::ConditionalDefinitionDeclarations,
+    pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) readiness_routes: crate::domain_computation::primary_graph::application_contribution::WorthQueryInstalledOutputReadinessRoutes,
     pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) bridge:
         super::super::super::super::managed_bridge::WorthQueryInstalledApplicationBridge,
 }
-pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) fn assemble<
+pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) fn prepare<
     Schema: ApplicationSchemaComposition,
     Program,
 >(
@@ -19,9 +25,10 @@ pub(in crate::domain_computation::primary_graph::application_installation::home_
     schema: InstalledNativeSchemaMeaning,
     restore_work: Option<worth_relational::facade::durability::CheckpointRestoreWork>,
     owner: WorthQueryRelationalSourceOwner,
-    bridge: RuntimeBridge,
-    conditional: Arc<RwLock<BridgeSealedRuntimeAssembly>>,
-) -> HomeQueryPreparation<Schema, Program> {
+) -> (
+    HomeApplicationState<Schema, Program>,
+    WorthQueryPrimaryGraphBootstrap<Schema>,
+) {
     let mut graph = super::super::super::super::WorthQueryPrimaryGraph::from_installed_source(
         state.runtime.authority_identity(),
         state.installed.binding_identity(),
@@ -60,5 +67,5 @@ pub(in crate::domain_computation::primary_graph::application_installation::home_
     bootstrap.resources = std::mem::take(&mut state.pending.resources);
     bootstrap.managed_indexes = std::mem::take(&mut state.pending.managed_indexes);
     bootstrap.program_activation = Some(state.activation.clone());
-    HomeQueryPreparation { state, bootstrap, bridge: super::super::super::super::managed_bridge::WorthQueryInstalledApplicationBridge::attach_home_bridge(bridge, conditional) }
+    (state, bootstrap)
 }

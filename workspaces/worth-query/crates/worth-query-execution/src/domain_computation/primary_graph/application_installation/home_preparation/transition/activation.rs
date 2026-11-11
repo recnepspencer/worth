@@ -12,7 +12,7 @@ impl<Schema: ApplicationSchemaComposition, Program>
         BeforeProgram,
     >(
         &self,
-        predecessor: &ReadmittedExistingHomeNativeMeaning<Before, BeforeProgram>,
+        predecessor: &PreparedExistingHomeSignalProgram<Before, BeforeProgram>,
         source: &author_source::WorthQueryHomeProgramTransitionReadSource<'_, '_>,
     ) -> Result<WorkerIntentBatch, WorthQueryPrimaryGraphInstallationDenial> {
         use super::super::super::super::{
@@ -27,8 +27,17 @@ impl<Schema: ApplicationSchemaComposition, Program>
             "the exact transition source does not activate A",
             |value| *value == program_revision_rendering(revision),
         )?;
-        cell.publish(identity)
-            .map_err(|_| author_source::denied("A activation is already bound"))?;
+        match cell.published() {
+            None => cell
+                .publish(identity)
+                .map_err(|_| author_source::denied("A activation is already bound"))?,
+            Some(original) if original == identity => (),
+            Some(_) => {
+                return Err(author_source::denied(
+                    "A activation belongs to another record",
+                ))
+            }
+        }
         self._pending
             ._state
             .activation

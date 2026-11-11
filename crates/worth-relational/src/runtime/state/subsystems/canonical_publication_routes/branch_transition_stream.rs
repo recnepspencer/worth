@@ -17,6 +17,8 @@ use crate::branch::{
 
 use super::RelationalCanonicalPublicationRoutes;
 
+#[path = "branch_transition_stream/associated_originals.rs"]
+mod associated_originals;
 #[path = "branch_transition_stream/retained_log.rs"]
 mod retained_log;
 #[path = "branch_transition_stream/schema_inputs.rs"]
@@ -82,6 +84,21 @@ pub(crate) struct BranchTransitionPublication<'routes> {
 }
 
 impl RelationalCanonicalPublicationRoutes {
+    pub(crate) fn original_branch_transition(
+        &self,
+        sequence: RelationalBranchTransitionSequence,
+    ) -> Option<Arc<PositionedBranchTransition>> {
+        let state = self.branch_transitions.state();
+        if sequence > state.head {
+            return None;
+        }
+        state
+            .log
+            .binary_search_by_key(&sequence, |entry| entry.positioned.sequence())
+            .ok()
+            .map(|index| Arc::clone(&state.log[index].positioned))
+    }
+
     pub(crate) fn try_initial_schema_publication(
         &self,
     ) -> Result<std::sync::RwLockWriteGuard<'_, ()>, ()> {
@@ -122,7 +139,12 @@ impl BranchTransitionPublication<'_> {
         step: &S,
         schema: Arc<crate::branch::RelationalBranchRootSchemaAuthority>,
         prepare: impl FnOnce() -> Result<RelationalBranchTransition, D>,
-        cutover: impl FnOnce(&PositionedBranchTransition) -> R,
+        cutover: impl FnOnce(
+            &PositionedBranchTransition,
+            Option<
+                worth_proof::DurablyCommitted<crate::branch::RelationalCommittedTransitionEvidence>,
+            >,
+        ) -> R,
     ) -> Result<R, BranchTransitionRecordError<D, S::Stop>> {
         let (_reservation, follows) = self
             .routes
@@ -141,7 +163,8 @@ impl BranchTransitionPublication<'_> {
             .map_err(BranchTransitionRecordError::OriginalInputsStopped)?
             .carrier_digest();
         let positioned = PositionedBranchTransition::admit(sequence, follows, transition)
-            .with_schema_carrier(Some(carrier));
+            .with_schema_carrier(Some(carrier))
+            .with_caller_association(step.caller_association().cloned());
         let retained = self
             .routes
             .branch_transitions
@@ -160,13 +183,14 @@ impl BranchTransitionPublication<'_> {
         let publication: RelationalTransitionPublication = step
             .take(positioned)
             .map_err(BranchTransitionRecordError::Step)?;
-        Ok(publication.cutover(|positioned| {
-            let positioned = self
-                .routes
-                .branch_transitions
-                .append(positioned, schema, retained);
-            cutover(&positioned)
-        }))
+        Ok(publication.cutover(
+            |positioned| {
+                self.routes
+                    .branch_transitions
+                    .append(positioned, schema, retained)
+            },
+            |positioned, evidence| cutover(&positioned, evidence),
+        ))
     }
 }
 

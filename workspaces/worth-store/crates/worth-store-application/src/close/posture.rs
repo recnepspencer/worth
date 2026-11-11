@@ -30,6 +30,9 @@ pub struct ApplicationHomeRecoveryCustody {
     descriptor: crate::descriptor::HomeDescriptor,
     checkpoint: super::checkpoint_result::HomeCloseCheckpointResult,
     physical: PhysicalCloseCustody,
+    signal_medium: Option<std::sync::Weak<crate::signal_medium::StoreSignalMedium>>,
+    signal_owner_retirement:
+        Option<worth_signal::facade::durability::SignalRetainedAuthoredHomeAllocation>,
     native: NativeCloseCustody,
     world_owner: WorldOwnerCloseCustody,
     world_origin_retirement: Option<worth_runtime_world::facade::WorldCheckpointOriginRetirement>,
@@ -62,6 +65,11 @@ impl ApplicationHomeRecoveryCustody {
             location: context.location,
             descriptor: context.descriptor,
             checkpoint,
+            signal_medium: context
+                .signal_close_probe
+                .into_inner()
+                .unwrap_or_else(std::sync::PoisonError::into_inner),
+            signal_owner_retirement: context.signal_owner_retirement,
             physical: PhysicalCloseCustody::Retained(context.serving),
             native: NativeCloseCustody::NeverAttached,
             world_owner: WorldOwnerCloseCustody::from_original(context.world_owner_retirement),
@@ -90,6 +98,11 @@ impl ApplicationHomeRecoveryCustody {
             location: context.location,
             descriptor: context.descriptor,
             checkpoint: stored,
+            signal_medium: context
+                .signal_close_probe
+                .into_inner()
+                .unwrap_or_else(std::sync::PoisonError::into_inner),
+            signal_owner_retirement: context.signal_owner_retirement,
             physical: PhysicalCloseCustody::Retained(context.serving),
             native: NativeCloseCustody::Prepared(native),
             world_owner: WorldOwnerCloseCustody::from_original(context.world_owner_retirement),
@@ -120,6 +133,11 @@ impl ApplicationHomeRecoveryCustody {
             location: context.location,
             descriptor: context.descriptor,
             checkpoint,
+            signal_medium: context
+                .signal_close_probe
+                .into_inner()
+                .unwrap_or_else(std::sync::PoisonError::into_inner),
+            signal_owner_retirement: context.signal_owner_retirement,
             physical: PhysicalCloseCustody::Retained(context.serving),
             native: NativeCloseCustody::Serving(relational),
             world_owner: WorldOwnerCloseCustody::from_original(context.world_owner_retirement),
@@ -270,7 +288,7 @@ impl ApplicationHomeRecoveryCustody {
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<(), ApplicationHomeCloseDenial> {
         let PhysicalCloseCustody::Retained(serving) = &self.physical else {
-            return Err(ApplicationHomeCloseDenial::PhysicalCustodyRetained);
+            return Err(ApplicationHomeCloseDenial::PhysicalCustodyPhaseMismatch);
         };
         if let Some(checkpoint) =
             crate::checkpoint::close_settlement::settle(serving, &self.checkpoint_owner, execution)

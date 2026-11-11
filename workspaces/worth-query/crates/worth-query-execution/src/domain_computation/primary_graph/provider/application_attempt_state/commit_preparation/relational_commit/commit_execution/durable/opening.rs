@@ -6,12 +6,7 @@ pub(super) fn prepare(
     provider: &WorthQueryPrimaryGraphProvider,
     query: QueryPreparingApplicationCommit,
 ) -> Result<QueryDurablePreparationGuard, Stop> {
-    if query.attempt.has_conditional_definition() {
-        return Err(Stop::ProductPreparationRefused(Refused::new(
-            Refusal::ConditionalPublicationRequired,
-            query,
-        )));
-    }
+    let with_signal = query.attempt.has_conditional_definition();
     let product = query.attempt.affinity().product_publication().clone();
     let Some(control) = product.request_control(query.attempt.affinity().publication_request())
     else {
@@ -44,7 +39,7 @@ pub(super) fn prepare(
             )))
         }
     };
-    let open = match prepare_query_open(&execution, &product, &control) {
+    let open = match prepare_query_open(&execution, &product, &control, with_signal) {
         Ok(open) => open,
         Err(cause) => return Err(refused_before_open(before.refuse(), cause)),
     };

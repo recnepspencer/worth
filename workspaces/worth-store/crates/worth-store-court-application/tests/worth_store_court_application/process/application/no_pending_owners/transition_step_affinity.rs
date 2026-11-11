@@ -78,6 +78,7 @@ fn a_committed_transition_grant_refuses_another_world_attempt_before_target_exec
         .open_publication_without_signal(
             &execution,
             source.clone(),
+            fixture.admit_initial_program_source(&source),
             RelationalTransactionIntent::ordinary(),
             &cancellation.token(),
             None,

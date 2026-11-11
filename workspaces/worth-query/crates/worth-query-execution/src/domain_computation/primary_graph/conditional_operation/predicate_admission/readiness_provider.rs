@@ -1,3 +1,4 @@
+mod authored_source;
 use std::sync::Arc;
 
 use worth_runtime_bridge::facade::{
@@ -14,11 +15,17 @@ pub(super) struct QueryOutputReadinessSemanticContract {
 
 pub(super) struct QueryOutputReadinessPredicate {
     semantics: QueryOutputReadinessSemanticContract,
+    authored_node: Arc<str>,
 }
 
 impl QueryOutputReadinessPredicate {
-    pub(super) fn new(node_authority: Arc<str>, dependency_count: usize) -> Self {
+    pub(super) fn new(
+        node_authority: Arc<str>,
+        authored_node: Arc<str>,
+        dependency_count: usize,
+    ) -> Self {
         Self {
+            authored_node,
             semantics: QueryOutputReadinessSemanticContract {
                 node_authority,
                 dependency_count,

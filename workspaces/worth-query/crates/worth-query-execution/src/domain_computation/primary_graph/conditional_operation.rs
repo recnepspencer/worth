@@ -12,6 +12,11 @@ mod authorization_sources;
 mod canonical_identity;
 pub(crate) mod clock_observation;
 mod definition;
+pub(in crate::domain_computation::primary_graph) mod definition_declarations;
+mod pending_definition;
+pub(in crate::domain_computation::primary_graph) use pending_definition::{
+    install_pending_definitions, PendingDefinitionDeclaration,
+};
 mod execution_provenance;
 mod input_validation;
 mod inspection;
@@ -24,7 +29,10 @@ mod predicate_admission;
 pub(in crate::domain_computation::primary_graph) use predicate_admission::{
     prepare_dependency_conditional_installation, QueryConditionalComputeContext,
 };
+mod authored_predicate;
+mod authored_provider_source;
 mod predicate_observation;
+pub(in crate::domain_computation::primary_graph) use authored_predicate::QueryAuthoredPredicateProvider;
 mod publication;
 mod reconstruction_authority;
 mod reinstallation;

@@ -72,7 +72,7 @@ where
         Ok(bridge) => bridge,
         Err(cause) => return Err(Refused::BridgeDefinition { query, home, cause }),
     };
-    let (budgets, clock, policy, execution, conditionals) = query.home_world_resources();
+    let (budgets, clock, policy, execution, _conditionals) = query.home_world_resources();
     let definition = ApplicationHomeWorldDefinition::new(
         bridge,
         "primary-application-source",
@@ -80,13 +80,43 @@ where
         clock,
         policy,
         execution,
-        conditionals,
     );
-    let home = match readmit_query_world(home.share(), definition, &request) {
-        Ok(home) => home.consume(|home| home),
-        Err(home) => return Err(Refused::WorldReadmission { query, home }),
+    let source = match prepare_query_home_source(home.share(), definition, &request) {
+        Ok(source) => source,
+        Err(home) => return Err(Refused::WorldSourcePreparation { query, home }),
     };
-    let (source, bridge, conditional) = match home.query_composition_parts() {
+    let (registered, ordinary) = source.query_source_parts();
+    let (query, builder, mut bindings) =
+        match query.prepare_home_signal_program(phase, registered, ordinary) {
+            Ok(parts) => parts,
+            Err(query) => {
+                return Err(Refused::SignalProgramPreparation {
+                    home: source,
+                    query: Box::new(query),
+                })
+            }
+        };
+    let signal = match readmit_query_signal(source, builder, &mut bindings, &request) {
+        Ok(signal) => signal,
+        Err(home) => {
+            return Err(Refused::WorldReadmission {
+                query,
+                home,
+                _bindings: bindings,
+            })
+        }
+    };
+    let home = match readmit_query_world(signal, &request) {
+        Ok(home) => home.consume(|home| home),
+        Err(home) => {
+            return Err(Refused::WorldReadmission {
+                query,
+                home,
+                _bindings: bindings,
+            })
+        }
+    };
+    let (_, _, conditional) = match home.query_composition_parts() {
         Ok(parts) => parts,
         Err(cause) => return Err(Refused::Composition { query, home, cause }),
     };
@@ -94,7 +124,7 @@ where
         ApplicationHomeOpeningStage::QueryReadmission,
         ApplicationHomeOpeningEdge::Before,
     );
-    let query = match query.attach_home_registered_source(phase, source, bridge, conditional) {
+    let query = match query.attach_home_authored_signal(conditional) {
         Ok(query) => query,
         Err(query) => return Err(Refused::SourceAttachment { query, home }),
     };
@@ -138,6 +168,7 @@ where
         root,
         directory_requirement_refusal,
         maintenance,
+        home.branch_program_source_owner(),
     ) {
         Ok(query) => query.consume(|query| query),
         Err(query) => return Err(Refused::QueryAttachment { query, home }),

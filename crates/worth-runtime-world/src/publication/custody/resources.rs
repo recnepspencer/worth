@@ -36,7 +36,7 @@ pub(crate) struct ActiveAttemptResources {
     pub(super) pin_denial: Option<RetentionObligationDenial>,
     pub(super) product_head: Option<crate::branch::ProductBranchHeadProtection>,
     pub(super) delivery: Option<crate::history::PublicationDeliveryClaim>,
-    pub(super) creation: Option<super::ActiveCreationResources>,
+    pub(crate) creation: Option<super::ActiveCreationResources>,
     pub(super) operation: Option<RuntimeWorldOperationReservation>,
     pub(super) publication_capacity: Option<ReservedPublicationAttemptCapacity>,
 }
@@ -60,6 +60,15 @@ pub(super) enum ActivePinCustody {
 }
 
 impl ActiveAttemptResources {
+    pub(crate) fn reactivate_creation_operation(
+        &mut self,
+        operation: crate::lifecycle::owner::RuntimeWorldOperationReservation,
+        capacity: crate::lifecycle::owner::ReservedPublicationAttemptCapacity,
+    ) {
+        assert!(self.operation.is_none() && self.publication_capacity.is_none());
+        self.operation = Some(operation);
+        self.publication_capacity = Some(capacity);
+    }
     pub(crate) fn retains_signal_definition(&self) -> bool {
         self.conditional_definition
             .as_ref()

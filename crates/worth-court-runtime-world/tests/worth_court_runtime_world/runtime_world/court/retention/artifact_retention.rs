@@ -69,6 +69,7 @@ fn a_world_artifact_memory_refusal_precedes_name_and_frame_construction_without_
         .open_publication_without_signal(
             &execution,
             root.clone(),
+            fixture.recorder.program_source(&root),
             worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
             &cancel.token(),
             None,

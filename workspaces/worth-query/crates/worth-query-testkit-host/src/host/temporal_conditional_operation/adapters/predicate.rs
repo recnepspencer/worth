@@ -1,5 +1,7 @@
 #![allow(dead_code)] // This fixture is compiled by several independent certification targets.
 
+#[path = "predicate/authored_source.rs"]
+mod authored_source;
 pub use std::sync::atomic::{AtomicBool, Ordering};
 pub use std::sync::Arc;
 

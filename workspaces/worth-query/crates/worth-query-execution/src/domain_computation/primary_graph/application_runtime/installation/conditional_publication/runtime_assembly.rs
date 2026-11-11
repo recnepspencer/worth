@@ -22,6 +22,7 @@ pub(super) fn assemble<S: ApplicationSchema>(
         output_producer_routes,
         output_readiness_routes,
         conditional_operations,
+        definition_routes,
     } = prepared.consume();
     let mut application = assemble_application_runtime(
         phase,
@@ -36,6 +37,7 @@ pub(super) fn assemble<S: ApplicationSchema>(
         output_readiness_routes,
     )
     .map_err(crate::domain_computation::primary_graph::conditional_operation::publication_denial)?;
+    application.conditional_cleanup.definitions = definition_routes;
     owned_contributions::transfer(&mut application, resources, managed_indexes);
     Ok(storage.fill(UnreconciledConditionalRuntime {
         application,

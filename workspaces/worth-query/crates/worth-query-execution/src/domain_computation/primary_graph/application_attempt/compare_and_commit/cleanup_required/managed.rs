@@ -32,7 +32,7 @@ pub(super) struct ManagedCleanupState {
     pub(super) failure: WorthQueryMutationCleanupFailure,
     pub(super) original: Option<super::super::RetainedOriginalCleanupCommit>,
     pub(super) runtime: WorthQueryProductRuntime,
-    pub(super) bridge: std::sync::Arc<std::sync::RwLock<worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly>>,
+    pub(super) bridge: crate::domain_computation::primary_graph::managed_bridge::conditional_owner::ConditionalOwner,
     pub(super) last_denial: Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryAdvancementDenial>,
 }
 impl std::fmt::Debug for ManagedCleanupState {

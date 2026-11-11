@@ -80,11 +80,12 @@ impl CompositeHistoryCatalog {
                 )
             }
         };
-        Ok(WorldReadmittedPublication {
-            record,
-            _history: protection,
-            _catalog: self.clone(),
-        })
+        let native = record.native_view().ok_or(Denial::NativeMismatch)?;
+        Ok(WorldReadmittedPublication::from_native(
+            native,
+            protection,
+            self.clone(),
+        ))
     }
 
     pub(crate) fn readmitted_publication(
@@ -102,17 +103,18 @@ impl CompositeHistoryCatalog {
             Some(PublicationEvidence::Readmitted(record)) => record.clone(),
             Some(PublicationEvidence::Live(_)) | None => return Err(Denial::NotReadmitted),
         };
+        let native = record.native_view().ok_or(Denial::NativeMismatch)?;
         lock_index(&state.reachability)
             .increment_direct_protection(identity)
             .map_err(Denial::History)?;
-        Ok(WorldReadmittedPublication {
-            record,
-            _history: CompositeHistoryProtectionObligation::new(
+        Ok(WorldReadmittedPublication::from_native(
+            native,
+            CompositeHistoryProtectionObligation::new(
                 state.reachability.clone(),
                 identity.clone(),
                 HistoryProtectionClass::ExplicitObligation,
             ),
-            _catalog: self.clone(),
-        })
+            self.clone(),
+        ))
     }
 }

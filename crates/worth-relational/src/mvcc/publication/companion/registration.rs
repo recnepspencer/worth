@@ -90,8 +90,25 @@ pub(crate) struct CompanionRegistrationEpoch<'a> {
 }
 
 impl CompanionRegistrationEpoch<'_> {
+    pub(crate) fn close_custody(&self) -> crate::runtime::RelationalPublicationCompanionCustody {
+        use crate::runtime::RelationalPublicationCompanionCustody as Custody;
+        match &*self.state {
+            CompanionRegistrationState::Standalone
+            | CompanionRegistrationState::RequiredRebind { .. } => Custody::Released,
+            CompanionRegistrationState::RequiredActive { generation, .. } => {
+                if self._client.is_some() {
+                    Custody::Client {
+                        generation: *generation,
+                    }
+                } else {
+                    Custody::Released
+                }
+            }
+        }
+    }
     /// Close observes actual client lifetime, independently of the required
     /// publication contract which continues to refuse writes until rebind.
+    #[cfg(test)]
     pub(crate) fn has_live_close_client(&self) -> bool {
         self._client.is_some()
     }

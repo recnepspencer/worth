@@ -10,6 +10,13 @@ pub struct ApplicationHomeCheckpointLimits {
     maintenance_timeout: Duration,
 }
 impl ApplicationHomeCheckpointLimits {
+    /// The owner-reported allocation bill for the joined maintenance worker.
+    /// Payload capture needs additional memory beyond this installation floor.
+    pub fn maintenance_control_memory_bytes(
+    ) -> Result<NonZeroU64, super::ApplicationHomeCheckpointDenial> {
+        super::maintenance::control_memory_bytes()
+    }
+
     pub const fn new(entries: NonZeroU64, payload_bytes: NonZeroU64) -> Self {
         Self {
             entries,

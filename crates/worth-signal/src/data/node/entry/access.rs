@@ -99,7 +99,15 @@ impl NodeEntry {
 
     /// Replace per-node evaluation policy descriptor.
     pub fn set_eval_config(&mut self, config: NodeEvaluationConfig) {
-        self.definition.eval_config = config.upgrade_legacy_output_equivalence();
+        let config = config.upgrade_legacy_output_equivalence();
+        let current = &self.definition.eval_config;
+        if current.condition != config.condition
+            || current.comparator != config.comparator
+            || current.output_equivalence != config.output_equivalence
+        {
+            self.definition.conditional_definition = None;
+        }
+        self.definition.eval_config = config;
     }
 
     pub(crate) const fn conditional_contract_generation(&self) -> u64 {
@@ -113,6 +121,9 @@ impl NodeEntry {
     pub(crate) fn install_conditional_contract_occurrence(
         &mut self,
         occurrence: u64,
+        definition: std::sync::Arc<
+            crate::data::conditional_execution::SignalConditionalContractDefinition,
+        >,
     ) -> Option<u64> {
         let next = self
             .definition
@@ -120,6 +131,7 @@ impl NodeEntry {
             .checked_add(1)?;
         self.definition.conditional_contract_generation = next;
         self.definition.conditional_contract_occurrence = occurrence;
+        self.definition.conditional_definition = Some(definition);
         Some(next)
     }
 

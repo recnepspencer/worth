@@ -13,6 +13,7 @@ impl SignalGraph {
             graph.repair_retired_downstream_topology(id, &scratch.node_buffer_b)?;
             graph.replace_reverse_subscriptions_for_consumer(id, &[])?;
             graph.release_pending_causes(id)?;
+            graph.retire_declared_adjacency(id);
             graph.retire_node_slot(id)?;
             #[cfg(debug_assertions)]
             {

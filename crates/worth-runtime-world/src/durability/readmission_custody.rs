@@ -5,9 +5,15 @@ use worth_relational::facade::durability::{
 };
 
 pub struct WorldNativeReadmissionCustody {
-    pub(crate) root: Option<RecoveredRelationalBranchBasis>,
+    pub(crate) creation_forks:
+        Vec<Option<worth_relational::facade::durability::ReadmittedRelationalAssociatedFork>>,
+    pub(crate) creation_signals:
+        Vec<Option<worth_signal::facade::durability::SignalReadmittedSourcePoint>>,
+    pub(crate) fork_retirements: Vec<crate::basis::NativeBasisRetirement>,
+    pub(crate) roots: Vec<Option<RecoveredRelationalBranchBasis>>,
     pub(crate) publications:
         Vec<Option<RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>>>,
+    pub(crate) occurrence_owners: Vec<Option<crate::history::RecoveredWorldOwnerEvidence>>,
     pub(crate) records: Vec<std::sync::Arc<crate::history::ReadmittedPublicationRecord>>,
     pub(crate) history: Option<crate::history::CompositeHistoryCatalog>,
     pub(crate) branches: Option<crate::branch::registry::ProductBranchRegistry>,
@@ -15,6 +21,8 @@ pub struct WorldNativeReadmissionCustody {
     pub(crate) observations: Vec<crate::branch::ProductBranchObservation>,
     pub(crate) slots: Vec<Option<crate::recovery::ReservedProductUnpublishedSlot>>,
     pub(crate) capacities: Vec<crate::history::ReservedCompositeCommitCapacity>,
+    pub(crate) checkpoint_origins: Vec<super::PreparedCheckpointOccurrence>,
+    pub(crate) checkpoint_occurrences: Vec<super::PreparedCheckpointOccurrence>,
     _metadata_funding: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
@@ -22,8 +30,9 @@ impl std::fmt::Debug for WorldNativeReadmissionCustody {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter
             .debug_struct("WorldNativeReadmissionCustody")
-            .field("root_retained", &self.root.is_some())
+            .field("root_retained", &self.roots.iter().any(Option::is_some))
             .field("publication_slots", &self.publications.len())
+            .field("occurrence_owner_slots", &self.occurrence_owners.len())
             .field("readmitted_records", &self.records.len())
             .field("history_retained", &self.history.is_some())
             .field("branches_retained", &self.branches.is_some())
@@ -31,6 +40,8 @@ impl std::fmt::Debug for WorldNativeReadmissionCustody {
             .field("observation_slots", &self.observations.len())
             .field("recovery_slots", &self.slots.len())
             .field("capacity_slots", &self.capacities.len())
+            .field("checkpoint_origin_retained", &self.checkpoint_origins.len())
+            .field("checkpoint_occurrences", &self.checkpoint_occurrences.len())
             .finish()
     }
 }
@@ -38,14 +49,31 @@ impl std::fmt::Debug for WorldNativeReadmissionCustody {
 impl WorldNativeReadmissionCustody {
     pub(crate) fn allocate(
         request: &worth_execution::ExecutionRequest<'_, '_>,
+        branches: usize,
         occurrences: usize,
         opens: usize,
+        creations: usize,
     ) -> Result<Self, super::WorldReadmissionDenial> {
         use super::{WorldDurableMediumDenial as Medium, WorldReadmissionDenial as Denial};
         let failed = || Denial::RecoveryCapacity;
-        let publications = occurrences.checked_add(opens).ok_or_else(failed)?;
-        let observations = occurrences.checked_add(1).ok_or_else(failed)?;
+        let publications = opens;
+        let fork_shares = creations.checked_mul(2).ok_or_else(failed)?;
+        let observations = occurrences.checked_add(branches).ok_or_else(failed)?;
         let quote = [
+            std::mem::size_of::<
+                Option<worth_relational::facade::durability::ReadmittedRelationalAssociatedFork>,
+            >()
+            .checked_mul(creations),
+            std::mem::size_of::<
+                Option<worth_signal::facade::durability::SignalReadmittedSourcePoint>,
+            >()
+            .checked_mul(creations),
+            std::mem::size_of::<crate::basis::NativeBasisRetirement>().checked_mul(fork_shares),
+            std::mem::size_of::<Option<RecoveredRelationalBranchBasis>>().checked_mul(branches),
+            std::mem::size_of::<super::PreparedCheckpointOccurrence>().checked_mul(branches),
+            std::mem::size_of::<super::PreparedCheckpointOccurrence>().checked_mul(occurrences),
+            std::mem::size_of::<Option<crate::history::RecoveredWorldOwnerEvidence>>()
+                .checked_mul(occurrences),
             std::mem::size_of::<
                 Option<RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>>,
             >()
@@ -67,8 +95,12 @@ impl WorldNativeReadmissionCustody {
             .reserve_retained_memory(quote)
             .map_err(|cause| Denial::Medium(Medium::Request(cause)))?;
         Ok(Self {
-            root: None,
+            creation_forks: Vec::with_capacity(creations),
+            creation_signals: Vec::with_capacity(creations),
+            fork_retirements: Vec::with_capacity(fork_shares),
+            roots: Vec::with_capacity(branches),
             publications: Vec::with_capacity(publications),
+            occurrence_owners: Vec::with_capacity(occurrences),
             records: Vec::with_capacity(occurrences),
             history: None,
             branches: None,
@@ -76,6 +108,8 @@ impl WorldNativeReadmissionCustody {
             observations: Vec::with_capacity(observations),
             slots: Vec::with_capacity(opens),
             capacities: Vec::with_capacity(occurrences),
+            checkpoint_origins: Vec::with_capacity(branches),
+            checkpoint_occurrences: Vec::with_capacity(occurrences),
             _metadata_funding: funding,
         })
     }
@@ -90,7 +124,7 @@ impl WorldNativeReadmissionCustody {
     }
 
     pub fn retains_root_admission(&self) -> bool {
-        self.root.is_some()
+        self.roots.iter().any(Option::is_some)
             || self
                 .branches
                 .as_ref()
@@ -111,6 +145,11 @@ impl WorldNativeReadmissionCustody {
     }
     pub fn retained_publication_admissions(&self) -> usize {
         self.records.len()
+            + self
+                .occurrence_owners
+                .iter()
+                .filter(|owners| owners.is_some())
+                .count()
             + self
                 .publications
                 .iter()

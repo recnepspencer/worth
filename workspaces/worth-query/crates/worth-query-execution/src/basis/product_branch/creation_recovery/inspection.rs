@@ -30,6 +30,7 @@ pub enum WorthQueryProductBranchCreationRecoveryCause {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProductBranchCreationRecoveryNextAction {
+    ContinueOriginalPublication,
     SettleOwnerEffects,
     ReleaseObligations,
     Inspect,
@@ -138,7 +139,7 @@ fn map_action(
     use ProductUnpublishedNextAction as Action;
     match action {
         Action::ContinueOriginalPublication => {
-            unreachable!("cold original continuation is distinct from live branch creation")
+            WorthQueryProductBranchCreationRecoveryNextAction::ContinueOriginalPublication
         }
         Action::SettleOwnerEffects => {
             WorthQueryProductBranchCreationRecoveryNextAction::SettleOwnerEffects

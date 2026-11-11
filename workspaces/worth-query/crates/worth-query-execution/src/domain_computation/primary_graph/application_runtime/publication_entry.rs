@@ -85,6 +85,7 @@ where
                 conditional_evaluation_budget,
             },
         )
+        .map_err(|refused| refused.into_parts().1)
     }
 
     /// Begins conditional publication with one host-installed trusted-time
@@ -113,6 +114,7 @@ where
                 conditional_evaluation_budget,
             },
         )
+        .map_err(|refused| refused.into_parts().1)
     }
 
     /// Publishes one application runtime with a host-installed trusted-time

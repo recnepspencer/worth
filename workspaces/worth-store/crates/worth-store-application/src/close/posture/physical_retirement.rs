@@ -17,11 +17,15 @@ impl ApplicationHomeRecoveryCustody {
             let serving = match Arc::try_unwrap(serving) {
                 Ok(serving) => serving,
                 Err(serving) => {
+                    let holders = super::super::physical_holders::observe(
+                        &serving,
+                        self.signal_medium.as_ref(),
+                    );
                     return Self {
                         physical: PhysicalCloseCustody::Retained(serving),
                         ..self
                     }
-                    .refused(ApplicationHomeCloseDenial::PhysicalCustodyRetained)
+                    .refused(ApplicationHomeCloseDenial::PhysicalCustodyRetained(holders));
                 }
             };
             self.physical = match start.start(serving) {
@@ -67,6 +71,7 @@ impl ApplicationHomeRecoveryCustody {
                                         )
                                     })
                                 }),
+                                _signal: self.signal_owner_retirement,
                                 _world_owner: self.world_owner.into_retired(),
                                 _world_origin: self.world_origin_retirement,
                                 _world_report: self.world_close_report,

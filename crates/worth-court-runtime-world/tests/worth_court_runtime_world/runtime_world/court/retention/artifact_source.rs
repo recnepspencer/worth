@@ -5,9 +5,10 @@ use worth_foundational::facade::*;
 use worth_relational::facade::{durability::*, runtime::RelationalRuntime};
 use worth_runtime_bridge::facade::*;
 use worth_runtime_world::facade::*;
-use worth_signal::facade::{SignalGraph, SignalRuntime};
+use worth_signal::facade::durability::SignalDurableOwner;
 
 mod journal;
+pub(super) mod signal_medium;
 pub(super) use journal::Recorder;
 struct Clock;
 impl RuntimeWorldClockSource for Clock {
@@ -15,7 +16,7 @@ impl RuntimeWorldClockSource for Clock {
         RuntimeWorldInstant::from_ticks(0)
     }
 }
-struct UnboundDelivery;
+pub(super) struct UnboundDelivery;
 impl InvalidationSink for UnboundDelivery {
     fn deliver_invalidation(
         &self,
@@ -31,19 +32,30 @@ impl InvalidationSink for UnboundDelivery {
 pub(super) struct Fixture {
     pub(super) world: RuntimeWorldOwner<(), (), (), (), ()>,
     pub(super) native: Arc<RelationalRuntime>,
-    pub(super) signal: SignalRuntime<(), (), (), (), ()>,
+    pub(super) signal: SignalDurableOwner<(), (), (), (), ()>,
+    signal_medium: Arc<signal_medium::Medium>,
     pub(super) recorder: Arc<Recorder>,
     _bridge: RuntimeBridge,
     native_medium: Arc<worth_testkit_relational::durable_medium::TestDurableMedium>,
 }
 impl Fixture {
     pub(super) fn new(request: &ExecutionRequest<'_, '_>) -> Self {
-        Self::fresh(request, false)
+        Self::fresh(request, false, RuntimeWorldBudgets::without_policy_limits())
     }
     pub(super) fn journal(request: &ExecutionRequest<'_, '_>) -> Self {
-        Self::fresh(request, true)
+        Self::fresh(request, true, RuntimeWorldBudgets::without_policy_limits())
     }
-    fn fresh(request: &ExecutionRequest<'_, '_>, journal: bool) -> Self {
+    pub(super) fn journal_with_budgets(
+        request: &ExecutionRequest<'_, '_>,
+        budgets: RuntimeWorldBudgets,
+    ) -> Self {
+        Self::fresh(request, true, budgets)
+    }
+    fn fresh(
+        request: &ExecutionRequest<'_, '_>,
+        journal: bool,
+        budgets: RuntimeWorldBudgets,
+    ) -> Self {
         let (mut native, medium) =
             worth_testkit_relational::initial_input_source::initialized(request);
         let plan = native
@@ -61,15 +73,26 @@ impl Fixture {
             .durability_recovery()
             .admit_fresh_home_source(request, plan)
             .unwrap();
+        let (signal, signal_medium) = signal_medium::owner(request);
         Self::attach(
             native,
             medium,
             Recorder::new(journal),
             request,
             Admission::Fresh(admission),
+            signal,
+            signal_medium,
+            budgets,
         )
+        .unwrap()
     }
     pub(super) fn reopen(self, request: &ExecutionRequest<'_, '_>) -> Self {
+        self.try_reopen(request).unwrap()
+    }
+    pub(super) fn try_reopen(
+        self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Self, WorldReadmissionDenial> {
         let Self {
             native_medium,
             recorder,
@@ -77,9 +100,12 @@ impl Fixture {
             native,
             signal,
             _bridge,
+            signal_medium,
         } = self;
         drop((world, native, signal, _bridge));
         let recorder = recorder.successor();
+        let signal_medium = signal_medium.successor(request);
+        let signal = signal_medium::readmit(signal_medium.clone(), request);
         let mut native = worth_testkit_relational::initial_input_source::receiver(&native_medium);
         let plan = native
             .durability()
@@ -103,6 +129,9 @@ impl Fixture {
             recorder,
             request,
             Admission::Recovered(authority),
+            signal,
+            signal_medium,
+            RuntimeWorldBudgets::without_policy_limits(),
         )
     }
     fn attach(
@@ -111,7 +140,10 @@ impl Fixture {
         recorder: Arc<Recorder>,
         request: &ExecutionRequest<'_, '_>,
         admission: Admission,
-    ) -> Self {
+        signal: SignalDurableOwner<(), (), (), (), ()>,
+        signal_medium: Arc<signal_medium::Medium>,
+        budgets: RuntimeWorldBudgets,
+    ) -> Result<Self, WorldReadmissionDenial> {
         let native = Arc::new(native);
         let source =
             RuntimeBridgeRelationalSource::for_graph_role(native.clone(), "artifact-court")
@@ -136,20 +168,10 @@ impl Fixture {
             ))
             .build()
             .unwrap();
-        let mut signal = SignalRuntime::builder(SignalGraph::new())
-            .with_domains::<()>()
-            .with_impacts::<()>()
-            .with_events::<()>()
-            .with_context::<()>()
-            .with_tiers::<()>()
-            .with_kernel_defaults()
-            .build();
+        let attachment = RuntimeWorldAuthoredSignalAttachment::install(&signal, request).unwrap();
         let builder = RuntimeWorldOwner::builder()
-            .with_signal_services(signal.owner_component_services().unwrap())
-            .with_signal_definition_publication(
-                signal.runtime_world_definition_publication_port().unwrap(),
-            )
-            .with_budgets(RuntimeWorldBudgets::without_policy_limits())
+            .with_authored_signal(attachment)
+            .with_budgets(budgets)
             .with_clock(RuntimeWorldClock::from_source(Clock))
             .with_execution_policy(ExecutionRequestPolicy::for_workers(
                 ExecutionPosture::Serial,
@@ -157,17 +179,15 @@ impl Fixture {
                 std::num::NonZeroUsize::MIN,
             ));
         let world = match admission {
-            Admission::Fresh(admission) => builder
-                .admit_fresh_world_home(
-                    native.owner_component_services(),
-                    bridge.runtime_world_correspondence_port(),
-                    recorder.clone(),
-                    recorder.snapshot(),
-                    request,
-                    &native,
-                    &admission,
-                )
-                .unwrap(),
+            Admission::Fresh(admission) => builder.admit_fresh_world_home(
+                native.owner_component_services(),
+                bridge.runtime_world_correspondence_port(),
+                recorder.clone(),
+                recorder.snapshot(),
+                request,
+                &native,
+                &admission,
+            )?,
             Admission::Recovered(authority) => {
                 let prepared = PreparedWorldHomeData::from_home_source(
                     recorder.binding().clone(),
@@ -177,25 +197,37 @@ impl Fixture {
                 .unwrap()
                 .bind(recorder.clone(), request)
                 .unwrap();
-                builder
-                    .readmit_world_home(
-                        native.owner_component_services(),
-                        bridge.runtime_world_correspondence_port(),
-                        &prepared,
-                        request,
-                        &native,
-                        &authority,
-                    )
-                    .unwrap()
+                builder.readmit_world_home(
+                    native.owner_component_services(),
+                    bridge.runtime_world_correspondence_port(),
+                    &prepared,
+                    request,
+                    &native,
+                    &authority,
+                )?
             }
         };
-        Self {
+        Ok(Self {
             world,
             native,
             signal,
+            signal_medium,
             recorder,
             _bridge: bridge,
             native_medium: medium,
+        })
+    }
+    pub(super) fn associated_signal_digest(&self, request: &ExecutionRequest<'_, '_>) -> [u8; 32] {
+        match self
+            .signal
+            .source_port()
+            .inspect_associated_advances(request, |effect, _| {
+                std::ops::ControlFlow::Break(effect.digest())
+            })
+            .unwrap()
+        {
+            std::ops::ControlFlow::Break(digest) => digest,
+            std::ops::ControlFlow::Continue(()) => panic!("actual Signal effect required"),
         }
     }
     pub(super) fn finish(self, request: &ExecutionRequest<'_, '_>) {
@@ -216,10 +248,14 @@ impl Fixture {
             .native
             .observe_branch(&self.native.main_branch_identity())
             .unwrap();
-        let signal = self
-            .signal
-            .observe_signal_branch_basis(self.signal.current_branch())
-            .unwrap();
+        let branch = DurableSignalBranchIdentity::from_recorded(self.signal.binding().owner(), 0);
+        let port = self.signal.source_port();
+        let descriptor = port.observe(branch).unwrap();
+        let signal = port
+            .readmit_descriptor(&descriptor)
+            .unwrap()
+            .basis()
+            .clone();
         self.world.publication_port().begin_durable_bootstrap_root(
             request,
             ProductBranchCreationIntent::named(name).unwrap(),
