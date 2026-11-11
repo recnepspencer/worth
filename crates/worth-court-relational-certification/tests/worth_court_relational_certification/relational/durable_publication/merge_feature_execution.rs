@@ -1,11 +1,12 @@
 //! One feature-into-main prepared merge executed over an explicit durable medium.
 use super::branch_history_publications::{create_entity_outcome_on_branch, fork};
 use super::branch_history_recovery::current_head;
+use super::merge_proof_journey::merge_request;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::{
     history::{BranchId, CommitId},
-    merge::{MergeExecutionOutcome, MergeExecutionRequest, MergeIntent},
+    merge::{MergeExecutionOutcome, MergeExecutionRequest, MergeIntent, PreparedMergeExecution},
     runtime::RelationalRuntime,
 };
 use worth_testkit_relational::{
@@ -59,4 +60,19 @@ pub(super) fn execute_feature_into_main_merge(
         main_head_commit_id,
         feature_head.commit.commit_id,
     )
+}
+
+/// The runtime-surface preparation of the fixture's feature-into-main merge.
+pub(super) fn prepare_feature_merge(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+) -> PreparedMergeExecution {
+    runtime
+        .prepare_merge_execution(
+            execution,
+            runtime
+                .bind_merge_execution_request(merge_request())
+                .unwrap(),
+        )
+        .expect("prepared merge")
 }

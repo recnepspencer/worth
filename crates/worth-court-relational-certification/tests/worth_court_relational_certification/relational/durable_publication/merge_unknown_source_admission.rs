@@ -7,11 +7,8 @@ use worth_relational::facade::merge::{
 use worth_testkit_relational::durable_medium::TestDurableMedium;
 use worth_testkit_relational::durable_publication::{create_entity_outcome, durable_runtime};
 
-// The retained name overclaims: no parent or branch metadata is mismatched.
-// The exercised refusal is the owner declining to bind an unknown source
-// branch, which production reports before any preparation or planning runs.
 #[test]
-fn merge_commit_context_rejects_mismatched_parent_branch_metadata() {
+fn unknown_merge_source_refuses_while_a_valid_preparation_remains_held() {
     let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -45,7 +42,7 @@ fn merge_commit_context_rejects_mismatched_parent_branch_metadata() {
             BranchId("wrong".to_string()),
             MergeIntent::ReconcileIntoTarget,
         ))
-        .expect_err("mismatched merge context should be rejected");
+        .expect_err("unknown source must refuse even with another valid preparation held");
 
     match denial {
         RelationalMergeRequestBindingDenial::UnknownBranch(branch_id) => {

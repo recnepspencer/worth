@@ -1,6 +1,6 @@
 //! Executing a prepared merge is refused once either actual branch head has advanced.
 use super::branch_history_publications::{create_entity, create_entity_outcome_on_branch};
-use super::merge_prepared_verification::prepare_feature_merge;
+use super::merge_feature_execution::prepare_feature_merge;
 use super::merge_proof_journey::merge_ready_runtime;
 use worth_relational::facade::{history::BranchId, merge::MergeExecutionError};
 use worth_testkit_relational::durable_medium::TestDurableMedium;
