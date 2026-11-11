@@ -222,6 +222,271 @@ Courts held out under D13 are listed the same way, under the H item whose Home c
   - A restored court reaches its doors through the landed H capability; the frozen caller lists never grow, so any caller row a restored court would need requires a fresh boundary ruling. Rows removed with these courts (`control-callers.txt`): owner `crates/worth-relational/` for `coherent_roster.rs`, `current_history.rs`, `current_roster.rs`; owner `workspaces/worth-query/crates/worth-query-execution/` for `coherent_roster.rs`, `current_history.rs`, `parameter_inverse/adjacency_gap.rs`.
   - The Native subclaims of these courts (co-anchor closure, duplicate coupled-edge custody, current-roster corruption, codec-retirement semantics) are track H and are rebuilt as Native-owned courts through existing Native issuance; they never stand in for the Query journeys above.
 
+### C2: fixture exact-work, island growth and shared-process memory campaigns
+
+These are whole cost/bounds campaigns under Landing 2a's C2 disposition, not
+passing H results and not ignored tests. Immutable source for every artifact
+below is `89039fa7350156c5a62deb38eccaddbec66a297c`.
+
+- **Parameter exact-work campaign.** Restore both
+  `parameter_lease_exact_budget_keeps_the_serial_verdict` and
+  `parameter_lease_one_unit_short_is_the_work_stop`, their complete `run`
+  input matrix, original `Case`/`committed` helpers, serial-versus-leased
+  comparison, measured `charged_work`, exact paid grant and paid-minus-one
+  refusal. The actual one-short run returned `ProductUnpublished`, rather than
+  its asserted pre-effect `Denied(WorkExhausted)`. This remains failed evidence;
+  no arbitrary grant, accepted-unpublished substitution or weaker assertion
+  replaces the campaign.
+  `restore 89039fa7350156c5a62deb38eccaddbec66a297c:workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/parameter_entry/src/parameter_invariant/lease_tests.rs`.
+  Restore its original exact setup closure at that SHA:
+  `.../parameter_entry/src/parameter_invariant/lease_tests/authentication.rs`,
+  `.../parameter_entry/src/parameter_invariant/lease_tests/program.rs`,
+  `.../parameter_entry/src/parameter_invariant/lease_tests/resources.rs`,
+  `.../parameter_entry/src/parameter_invariant/lease_tests/schema.rs` and
+  `.../parameter_entry/src/parameter_invariant/lease_tests/world.rs` under the
+  same `workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/`
+  prefix. This is the COMPLETE RECURSIVE `lease_tests/` tree, including
+  `lease_tests/schema/records.rs` explicitly mounted by `schema.rs`. Preserve both path mounts and the original native commit door. The
+  independent `parameter_lease_cancelled_commit_keeps_the_cancellation` remains
+  live, on the same actual leased commit path, with its cancellation and one
+  advancement assertions intact. Its still-used placement, budget-reset and
+  request-observer controls and exact caller row remain mounted. Restore C2's
+  original observer/arm statements from the same-SHA
+  `tools/boundary-check/config/control-callers.txt` and Query Execution's
+  `application_contribution/request_execution` owner tree; do not add new rows.
+
+- **Component-island growth campaign.** Restore the whole
+  `real_split_component_reads_are_unchanged_with_ten_and_ten_thousand_unrelated_islands`
+  comparison, including both real populations, complete `split` setup,
+  independent before/after membership and heir identity assertions, actual two
+  selected three-member components, preparation/evaluation captures, nonzero
+  adjacency assertion and exact business-read comparison. Its large population
+  actually refused `CanonicalArtifactEncoding(SizeLimit { observed: 268435457,
+  maximum: 268435456 })` during installation, before the growth comparison.
+  `restore 89039fa7350156c5a62deb38eccaddbec66a297c:workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/component_islands/locality.rs`.
+  Restore the exact `mod locality` mount from same-SHA
+  `workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/component_islands/mod.rs`,
+  its complete same-SHA `component_islands/{world,identity_model,union_find}.rs`
+  and `component_islands/world/` tree, plus the complete same-SHA
+  `checkpoint_recovery/support.rs` and `checkpoint_recovery/support/` tree
+  under that prefix. The still-used World, observers and differential/oracle
+  functional courts stay live. No smaller population, raised artifact limit or
+  replacement semantic proxy discharges the moved growth claim.
+
+- **Shared-process exact memory campaign.** Restore the entire isolated-child
+  `execution_memory_is_shared_by_installed_worlds_and_reselected_on_checkpoint_reopen`
+  journey: omitted-authority refusal, two genuine Worlds sharing one host
+  authority, all bootstrap-return observations, exact reservation capacities,
+  allocator contact counts, live payload bytes, retained ticket lifetimes
+  across World/lease drops, checkpoint reconstruction and authority reselection,
+  exact Process-level refusal payloads, and final full-capacity release.
+  Its actual post-reopen assertion at line116 failed; it is not evidence of a
+  passing memory bound. This campaign deliberately fills process capacity and
+  asserts exact remaining bytes; the complete campaign belongs in C2.
+  `restore 89039fa7350156c5a62deb38eccaddbec66a297c:workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/process/certification/program_example_authority/execution_memory/mod.rs`.
+  Restore the exact original process mounts at that SHA:
+  `workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/process/certification/program_example_authority/mod.rs`
+  and
+  `workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/process/certification/mod.rs`.
+  Restore its complete support source and path export:
+  `restore 89039fa7350156c5a62deb38eccaddbec66a297c:workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/execution_memory.rs`;
+  `restore 89039fa7350156c5a62deb38eccaddbec66a297c:workspaces/worth-query/crates/worth-query-testkit-certification/src/certification/program_example_authority.rs`.
+  The full same-SHA `program_example_authority/product_workflow_support/`
+  tree supplies the original actual schema, program, binding, seed, reads,
+  clock and configuration. It stays live for independent ordinary Temporal
+  examples/courts. The moved campaign has no unique control-caller row or
+  production hook. Its sole interim checkpoint authorization in
+  `tools/boundary-check/config/interim-checkpoint-callers.txt` is removed with
+  that caller. Its historical row is recoverable from the same immutable SHA,
+  but MUST NOT be reinstated: D13 freezes that list against growth. Restore
+  this entire semantic/resource journey through the ordinary public Home open
+  path and genuine configured execution authority, or an already-authorized
+  retained fixture owner where lawful; do not add an interim capture/restore
+  caller, byte transport authority, or adapter shortcut. The general runtime
+  Execution-memory implementation stays.
+
+All paths abbreviated with `.../` above use the explicit common immutable
+prefix in their paragraph. Restoration must take the original complete source
+and parent mounts, not a reduced wrapper or only the final red assertion. H
+quiescent-kill idempotency and historical-read cases are independent and remain
+active; neither is moved by this cost classification.
+
+### C2: complete logical-rule acquisition growth campaign
+
+`logical_local_rule_business_acquisitions_ignore_ten_and_ten_thousand_unrelated_cohorts`
+moves as one whole C2 growth campaign. Restore its ten-versus-ten-thousand
+comparison and complete `run` sequence: real graph/rule installation, original
+projected membership, actual edge replacement, both independently recorded
+preparation/evaluation read measures, nonzero read assertions, literal edge
+oracle, unchanged record identities, post-edit logical members, retained
+Native logical identity, and close. Its real failure was installation's
+`CandidateLifetimeExpired { maximum_lifetime_millis: 30000 }`, before the
+large-scale comparison completed. It is not a passing growth result; no timeout
+is raised, no smaller population substituted and no comparison weakened.
+
+Restore each complete artifact and mount/hook below from immutable
+`89039fa7350156c5a62deb38eccaddbec66a297c`:
+
+- `restore 89039fa7350156c5a62deb38eccaddbec66a297c:workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/relation_laws/logical/locality/mod.rs`
+- Court mount: `restore 89039fa7350156c5a62deb38eccaddbec66a297c:workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/relation_laws/logical/mod.rs`
+- Whole growth setup and `LocalLogical` policy: `restore 89039fa7350156c5a62deb38eccaddbec66a297c:workspaces/worth-query/crates/worth-query-testkit-certification-application-graph/src/certification/application_graph/relation_laws/logical/locality.rs`
+- Whole scoped observer/guard: `restore 89039fa7350156c5a62deb38eccaddbec66a297c:workspaces/worth-query/crates/worth-query-testkit-certification-application-graph/src/certification/application_graph/relation_laws/logical/observation.rs`
+- Fixture-specific schema model: `restore 89039fa7350156c5a62deb38eccaddbec66a297c:workspaces/worth-query/crates/worth-query-testkit-certification-application-graph/src/certification/application_graph/relation_laws/schema/policy_models/local_logical.rs`
+- Both support mounts: `restore 89039fa7350156c5a62deb38eccaddbec66a297c:workspaces/worth-query/crates/worth-query-testkit-certification-application-graph/src/certification/application_graph/relation_laws/logical.rs`
+- Model mount/export: `restore 89039fa7350156c5a62deb38eccaddbec66a297c:workspaces/worth-query/crates/worth-query-testkit-certification-application-graph/src/certification/application_graph/relation_laws/schema/policy_models.rs`
+- The scoped-versus-census policy and observer hooks: `restore 89039fa7350156c5a62deb38eccaddbec66a297c:workspaces/worth-query/crates/worth-query-testkit-certification-application-graph/src/certification/application_graph/relation_laws/schema.rs`
+- Rule capture and scoped preparation/evaluation branches: `restore 89039fa7350156c5a62deb38eccaddbec66a297c:workspaces/worth-query/crates/worth-query-testkit-certification-application-graph/src/certification/application_graph/relation_laws/logical/rule.rs`
+
+The ordinary `Logical` rule courts stay live with their existing census
+semantics, projected-member meaning, old/proposed comparison and stable
+logical identity claims. Only the removed locality policy selected the scoped
+branch and its measurement callback. No court is ignored or conditionally gated.
+
+### Landing 2a authored current-ownership cold campaigns
+
+- **C4 — damaged current fact-family pairing.** Move the whole
+  `external_cold_pairing_rejects_whole_fact_family_loss_before_an_unrelated_access`
+  campaign, not only its red assertion. It captures a real Query publication,
+  corrupts each complete fact family, reconstructs cold current members, then
+  asserts the typed corrupt-current-ownership refusal on unrelated access.
+  Restore the complete Query court and Native probe:
+  `restore 89039fa7350156c5a62deb38eccaddbec66a297c:workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/cold_pairing.rs`;
+  `restore 89039fa7350156c5a62deb38eccaddbec66a297c:crates/worth-relational/src/publication/ownership/cold_pairing_court.rs`.
+- **C2 — complete physical cold-locality campaign.** Move the whole
+  `current_custody_contacts_only_the_touched_publication_and_leaves_other_regions_cold`
+  campaign, including its seed and value encoders, 64-partition setup, exact
+  63-cold-member invoice, before/after residency observations, roster counts,
+  real unrelated preparation and typed owned-delete refusal. Restore:
+  `restore 89039fa7350156c5a62deb38eccaddbec66a297c:workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/locality.rs`;
+  `restore 89039fa7350156c5a62deb38eccaddbec66a297c:crates/worth-relational/src/publication/ownership/locality_court.rs`.
+
+For either campaign restore its shared complete capture/corruption/recovery
+source, including original frame/region handling and source ownership:
+`restore 89039fa7350156c5a62deb38eccaddbec66a297c:crates/worth-relational/src/publication/ownership/cold_checkpoint_source.rs`.
+Restore the external-placement corruption method used only by that source from
+`restore 89039fa7350156c5a62deb38eccaddbec66a297c:crates/worth-relational/src/durability/data/native_checkpoint/roster_corruption.rs`.
+The active embedded-placement corruption method stays compiled.
+Restore each campaign's exact Query bridge method from
+`restore 89039fa7350156c5a62deb38eccaddbec66a297c:workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/certification_controls/owned_publication.rs`,
+the corresponding court and Native mounts from
+`restore 89039fa7350156c5a62deb38eccaddbec66a297c:workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/mod.rs`
+and `restore 89039fa7350156c5a62deb38eccaddbec66a297c:crates/worth-relational/src/publication/ownership.rs`,
+and its exact Native/Query caller rows from
+`restore 89039fa7350156c5a62deb38eccaddbec66a297c:tools/boundary-check/config/control-callers.txt`.
+C2 also restores `CurrentOwnershipLocalityForTest` and its export from
+`restore 89039fa7350156c5a62deb38eccaddbec66a297c:crates/worth-relational/src/facade.rs`.
+These are function/mount/export restorations, not wholesale replacement of the
+other active controls. Production current-ownership selection, membership,
+metadata, retargeting, merge and ordinary authored-correction courts stay live.
+Both actual failing executions remain red historical evidence; no passing
+completion or successful cold reconstruction is claimed.
+
+### Landing 2a Query cancellation sweeps and temporal identity cost
+
+These complete campaigns move to their named cleanup lanes. No test is ignored
+or conditionally gated. Immutable source is
+`89039fa7350156c5a62deb38eccaddbec66a297c`, before the Python-only runner fix.
+That source contains the full tests and their original arming closure.
+
+- **C4 — original Directory receipt cancellation at every consult.**
+  `original_directory_receipt_preserves_cancellation_at_every_consult` counts
+  the admitted business callback, injects cancellation at each observed consult,
+  verifies the exact typed stop, then verifies late cancellation preserves the
+  already-produced original receipt, one handler contact and unchanged balance.
+  Restore the WHOLE test, including its local call helper, baseline, full sweep
+  and post-sweep/late-cancellation observations:
+  `restore 89039fa7350156c5a62deb38eccaddbec66a297c:workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/process/host/durable_retry/request_stops.rs`.
+  Restore its exact `crates/worth-execution/` caller row from
+  `restore 89039fa7350156c5a62deb38eccaddbec66a297c:tools/boundary-check/config/control-callers.txt`.
+  The containing module and the ordinary cancelled-key/no-effect/retry court
+  remain live. The sweep's real run was externally stopped after exceeding the
+  committed CI deadline under a runner that had omitted that deadline; no pass
+  or native-timeout event is asserted.
+
+- **C2 — typed terminal at every charged work prefix.**
+  `conditional_operation_work_stop_terminal_matches_its_typed_cause` first
+  executes a healthy temporal operation, records every real charged prefix,
+  reruns each unique positive prefix one unit short, and compares the terminal
+  with its actual typed owning cause. Restore the WHOLE test and local run
+  function, charge collection, all terminal/cause variants and assertions:
+  `restore 89039fa7350156c5a62deb38eccaddbec66a297c:workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/oracle/host/temporal_conditional_operation/counted_read_stops/mod.rs`.
+  Restore its exact `crates/worth-execution/` caller row from
+  `restore 89039fa7350156c5a62deb38eccaddbec66a297c:tools/boundary-check/config/control-callers.txt`.
+  The containing mount, shared counted-read support, and the neighboring
+  cancellation-at-selected-consults court remain live. The work-prefix sweep
+  was externally stopped after exceeding the omitted committed CI deadline;
+  that execution remains failed. This move does not weaken its terminal
+  classification contract or fit a new work ceiling.
+
+- **C2 — complete exact temporal identity-work campaign (two wrappers).**
+  Both `temporal_identity_work_is_cold_or_fresh_admission_only` wrappers failed
+  the initial exact basis-preparation invoice (actual3, expected1). Restore both
+  wrappers and the ENTIRE shared campaign, including binding/installation
+  preparation, digest/text counts, admission phase counts, and every later
+  zero-work assertion:
+  `restore 89039fa7350156c5a62deb38eccaddbec66a297c:workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/cost/host/temporal_conditional_operation/mod.rs`;
+  `restore 89039fa7350156c5a62deb38eccaddbec66a297c:workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/cost/certification/runtime_world_branching/mod.rs`;
+  `restore 89039fa7350156c5a62deb38eccaddbec66a297c:workspaces/worth-query/crates/worth-query-testkit-host/src/host/temporal_conditional_operation/courtroom.rs`.
+  Functional H coverage remains in
+  `courtroom::host_installs_and_executes_due_operation`, which asserts actual
+  committed lineage, application-attempt identity and authored effects. The
+  unrelated-row reconstruction growth courts and all other temporal lifecycle
+  courts remain unchanged.
+
+### Landing 2a Query checkpoint wire campaigns (C4)
+
+- Move the complete
+  `checkpoint_recovery_retains_corruption_and_unsupported_semantics_by_type`
+  campaign, including all corruption and version twins, outer checksum/length
+  repair, legacy comparison, typed cause checks and positive original restore.
+  Its obsolete CHK20.1/CHK20 producer assumption and successful legacy import
+  claim require C4 reconciliation with the current-format-only cutover; they
+  must not be repaired by reintroducing retired formats in H. Restore:
+  `restore 89039fa7350156c5a62deb38eccaddbec66a297c:workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/aspect_patterns/one_of/checkpoint_recovery.rs`
+  and its mount from
+  `restore 89039fa7350156c5a62deb38eccaddbec66a297c:workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/aspect_patterns/one_of/mod.rs`.
+- Move the whole
+  `checkpoint_inspection_compares_query_header_count_and_output_metadata_bytes`
+  function, including the actual optional-output producer, healthy capture and
+  baseline inspection, every authenticated header/count/metadata-byte attack,
+  and all inequality observations. Restore that complete function from
+  `restore 89039fa7350156c5a62deb38eccaddbec66a297c:workspaces/worth-query/crates/worth-query-court-decl-execution-package-archive/tests/worth_query_court_decl_execution_package_archive/domain_computation/primary_graph/output_lineage/ownership_oracle/optional_aspects/retained_recovery/mod.rs`.
+  The containing module, optional-aspect absence/invalidation journey and
+  projection/identity/no-authoring assertions remain live. Its arming and
+  observation caller rows remain because those same live functions still use
+  the existing doors. No function is ignored or conditionally gated.
+
+Both original executions remain failures, not successful format or corruption
+evidence. Ordinary current checkpoint restore/continue courts and typed Native
+cause propagation courts remain active.
+
+### C2: producer succession's exact physical shrink invoice
+
+The exact physical live-record removal invoice is split from the still-live
+functional producer-succession history/restore journey. Restore the COMPLETE
+`assert_shrink_delta` helper, including checkpoint inspection, publication-record
+filter, entity/relation classification, exact four-entity/four-relation invoice
+and diagnostic record sets from
+`restore 89039fa7350156c5a62deb38eccaddbec66a297c:workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/producer_succession/checkpoint.rs`.
+Its WHOLE campaign is preserved in
+`restore 89039fa7350156c5a62deb38eccaddbec66a297c:workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/producer_succession/history_courts.rs`:
+restore the complete original
+`checkpoint_keeps_exact_per_route_retirement_and_recovers_the_surviving_generator`
+sequence, including two-child production/settlement, baseline capture, actual
+shrink/settlement, subsequent capture, exact invoice invocation, independent
+per-route history/origin checks, restore, absent retired sources, regrowth and
+all final live-source assertions. Those H assertions remain active now; C2 must
+retain them when restoring the mixed physical-cost claim. No helper-only or
+assertion-only restoration is sufficient.
+
+Only the invoice call and its otherwise-unused baseline capture leave the H
+journey. Every typed/current-format history, separate retired route, exact
+predecessor identity, producer/dependency/birth metadata, retired-role and
+no-recreated-edge assertion remains, as do real restoration and further writes.
+The actual old invoice execution failed and remains failed evidence; no amount
+of physical reclamation is certified by the retained H test. No test is ignored
+or gated and no count is adjusted to the latest observed value.
+
 ### Landing 2a restored-header cleanup campaigns
 
 - **C4:** restore the complete `669ac9fcd4:crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/restoration_header/` tree:

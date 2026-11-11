@@ -1,8 +1,6 @@
 #[path = "program_example_authority/product_workflow_support/mod.rs"]
 pub mod product_workflow_support;
 
-#[path = "execution_memory.rs"]
-pub mod execution_memory;
 #[path = "mutation_attempt_report.rs"]
 pub mod mutation_attempt_report;
 
