@@ -16,6 +16,7 @@ use super::super::recovered_schema_basis::RecoveredSchemaBasis;
 use super::owner_bindings::{owner_merge_parent_bases, owner_options_for_branch};
 
 pub(super) fn replay_envelope_effect(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
     positioned: &crate::history::data::PositionedCanonicalCommit,
@@ -89,6 +90,7 @@ pub(super) fn replay_envelope_effect(
         return Ok(());
     }
     super::super::index_catalog::reconstruct_predecessor(
+        lane,
         execution,
         restored,
         &envelope.branch_context,

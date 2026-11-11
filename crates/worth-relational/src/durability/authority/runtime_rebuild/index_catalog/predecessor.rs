@@ -5,6 +5,7 @@ use crate::indexes::data::DerivedIndexMaintenanceDenialKind;
 use crate::runtime::RelationalRuntime;
 
 pub(in super::super) fn reconstruct_predecessor(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
     branch: &crate::history::data::BranchId,
@@ -29,7 +30,7 @@ pub(in super::super) fn reconstruct_predecessor(
     };
     restored
         .index_authority()
-        .reconstruct_installed_for_basis(execution, &basis)
+        .reconstruct_installed_for_basis(lane, execution, &basis)
         .map(|_| ())
         .map_err(|denial| match denial.kind {
             DerivedIndexMaintenanceDenialKind::Execution(cause) => {

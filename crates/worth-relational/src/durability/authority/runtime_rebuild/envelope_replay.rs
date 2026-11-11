@@ -29,7 +29,7 @@ pub(super) fn replay_readmitted_envelope(
     restore_authoritative_envelope: bool,
     recovered_roots: &mut RecoveredRootInventory,
 ) -> Result<crate::history::data::PositionedCanonicalCommit, RelationalRecoveryStop> {
-    crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|_lane| {
+    crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
         let envelope = readmitted.envelope();
         if matches!(
             envelope.authority_kind,
@@ -92,7 +92,7 @@ pub(super) fn replay_readmitted_envelope(
                     DurabilityError::new(RecoveryFailureClass::ReplayFailure, detail)
                 })?;
         }
-        let replay_result = replay_envelope_effect(execution, restored, &positioned, catalog);
+        let replay_result = replay_envelope_effect(lane, execution, restored, &positioned, catalog);
         let staged_was_not_consumed = restored.record_identity.clear_staged_replay_allocations();
         replay_result?;
         if staged_was_not_consumed && replays_mutation_pipeline {

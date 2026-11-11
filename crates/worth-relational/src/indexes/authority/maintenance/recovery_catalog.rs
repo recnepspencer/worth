@@ -1,4 +1,4 @@
-//! Fund the installed catalog selection before recovery traverses or copies it.
+//! Recover missing catalog coverage without replacing admitted predecessor selections.
 use super::{request_payment, work::MaintenanceWork, IndexAuthority};
 use crate::indexes::data::{
     DerivedIndexBuildRequest, DerivedIndexId, DerivedIndexMaintenanceBudget,
@@ -9,6 +9,7 @@ use crate::indexes::data::{
 impl IndexAuthority<'_> {
     pub(crate) fn reconstruct_installed_for_basis(
         &self,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: &crate::branch::AdmittedRelationalBranchBasis,
     ) -> Result<DerivedIndexMaintenanceOutcome, DerivedIndexMaintenanceDenial> {
@@ -17,19 +18,35 @@ impl IndexAuthority<'_> {
             maximum_cold_record_slots: None,
             maximum_derived_rows: None,
         };
-        let (prepared, _) = request_payment::run(execution, budget, |work| {
+        let (prepared, counts) = request_payment::run(execution, budget, |work| {
             let observation = basis.observation();
             let source_commit_id = observation.commit_id().ok_or(Denial::CommitMismatch)?;
             let branch = observation.identity().branch_id();
+            let projection = self
+                .runtime
+                .read_truth()
+                .project_observation(&observation)
+                .map_err(Denial::Basis)?;
+            let root = projection
+                .selected_root()
+                .ok_or(Denial::SnapshotUnavailable)?;
+            let selected = self.runtime.indexes.prepare_reconstruction_basis(
+                lane,
+                root,
+                branch,
+                &mut |units, bytes| work.prepare(units, bytes),
+                None,
+            )?;
             work.prepare(branch.0.len() as u64, branch.0.len() as u64)?;
             let mut branch_name = String::new();
             branch_name
                 .try_reserve_exact(branch.0.len())
                 .map_err(|_| allocation_failed())?;
             branch_name.push_str(&branch.0);
-            let index_ids = self.runtime.indexes.with_definitions(|definitions| {
+            let mut index_ids = self.runtime.indexes.with_definitions(|definitions| {
                 collect_ids(&mut definitions.keys().copied(), work)
             })?;
+            retain_missing(&mut index_ids, &selected, work)?;
             Ok(DerivedIndexBuildRequest {
                 source_commit_id,
                 branch_id: crate::history::data::BranchId(branch_name),
@@ -37,10 +54,39 @@ impl IndexAuthority<'_> {
             })
         })?;
         let (request, funding) = prepared.into_funded_parts();
+        if request.index_ids.is_empty() {
+            return Ok(DerivedIndexMaintenanceOutcome {
+                generations: Vec::new(),
+                work: counts,
+            });
+        }
         let result = self.reconstruct_for_basis(execution, request, basis, budget);
         drop(funding);
         result
     }
+}
+
+fn retain_missing(
+    ids: &mut Vec<DerivedIndexId>,
+    selected: &crate::runtime::PreparedIndexBasisSelection,
+    work: &mut MaintenanceWork<'_, '_, '_>,
+) -> Result<(), Denial> {
+    let count = ids.len();
+    let mut missing = 0;
+    for read in 0..count {
+        let index = ids[read];
+        work.lookup(count, 1)?;
+        if selected.generation(index).is_some() {
+            continue;
+        }
+        work.lookup(count, 1)?;
+        if !selected.generation_is_empty(index) {
+            ids[missing] = index;
+            missing += 1;
+        }
+    }
+    ids.truncate(missing);
+    Ok(())
 }
 
 fn collect_ids(

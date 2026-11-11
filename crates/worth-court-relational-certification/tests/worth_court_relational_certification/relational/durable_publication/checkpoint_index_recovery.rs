@@ -86,3 +86,51 @@ fn checkpoint_index_artifact_survives_tail_replay_without_envelope_caches() {
     let rebuilt = build(execution, &recovered, index.index_id, &second);
     assert!(generation(execution, &recovered, rebuilt).is_some());
 }
+
+#[test]
+fn checkpoint_and_new_tail_index_definitions_preserve_predecessor_generation_identity() {
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+    let medium = TestDurableMedium::new();
+    let runtime = durable_runtime(&medium);
+    let first = create_entity_outcome(execution, &runtime, "mixed-index-checkpoint");
+    let retained = name_index(&runtime);
+    let first_generation = build(execution, &runtime, retained.index_id, &first);
+    capture_durably(execution, &runtime, &medium).unwrap();
+
+    let introduced = scoped_name_index(&runtime);
+    build(execution, &runtime, introduced.index_id, &first);
+    let second = create_entity_outcome(execution, &runtime, "mixed-index-tail");
+    let expected = [retained.index_id, introduced.index_id].map(|index| {
+        runtime
+            .index_access()
+            .read_published_generation_for_commit(execution, index, &second.commit)
+            .unwrap()
+            .unwrap()
+    });
+    let unjournaled = build(execution, &runtime, retained.index_id, &second);
+    let plan = runtime
+        .durability()
+        .recovery_plan_from_source(
+            execution,
+            medium.recovery_source(),
+            RecoveryMode::NormalRecoveryVerification,
+        )
+        .unwrap();
+    let mut recovered = durable_runtime(&medium);
+    recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
+
+    assert!(generation(execution, &recovered, first_generation).is_some());
+    assert!(generation(execution, &recovered, unjournaled).is_none());
+    for expected in expected {
+        let actual = recovered
+            .index_access()
+            .read_published_generation_for_commit(execution, expected.index_id, &second.commit)
+            .unwrap()
+            .unwrap();
+        assert_eq!(actual.as_ref(), expected.as_ref());
+    }
+}
