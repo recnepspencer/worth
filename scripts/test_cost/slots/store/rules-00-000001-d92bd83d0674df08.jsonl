@@ -1,0 +1,20 @@
+{"count": 19, "kind": "leaf"}
+{"binary": "worth-store-offline-verifier", "slots": 2, "test": "backup_verification::checkpoint_backup_tests::rehashed_second_page_frontier_mutations_are_denied"}
+{"binary": "worth-store-operations", "slots": 2, "test": "phase_1_6_tests::control_media_boundaries::control_recovery_objects_cannot_overlap_protected_media"}
+{"binary": "worth-store-physical-backend", "slots": 2, "test": "filesystem_media::tests::filesystem_effects::range_operations::peak_operation_bytes_track_the_largest_causal_boundary_request"}
+{"binary": "worth-store-physical-backend", "slots": 2, "test": "filesystem_media::tests::mutation_ownership::eight_processes_contend_then_process_death_releases_one_stable_namespace"}
+{"binary": "worth-store-physical-backend", "slots": 2, "test": "filesystem_media::tests::mutation_ownership::explicit_close_reports_release_and_allows_successor"}
+{"binary": "worth-store-physical-backend", "slots": 2, "test": "io_capability::tests::independent_admissions_with_same_basis_produce_equivalent_witnesses"}
+{"binary": "worth-store-physical-format", "slots": 2, "test": "canonical_redo::tests::count_limit_precedes_record_allocation"}
+{"binary": "worth-store-physical-format", "slots": 2, "test": "checkpoint::tests::tier_certificate::tier_certificate_binds_checkpoint_root_anchor_and_selected_wal_members"}
+{"binary": "worth-store-physical-format", "slots": 2, "test": "format_identity::vocabulary::tests::zero_raw_identifier_is_rejected"}
+{"binary": "worth-store-physical-format", "slots": 2, "test": "offline_verifier::tests::malformed_membership_denies_before_header_decode"}
+{"binary": "worth-store-physical-format", "slots": 2, "test": "reference::tests::placement_mismatch_denies_separately_from_stale_generation"}
+{"binary": "worth-store-physical-format", "slots": 2, "test": "store_namespace::tests::identity_record::identity_is_unavailable_after_every_structural_or_integrity_violation"}
+{"binary": "worth-store-recovery-physics", "slots": 2, "test": "redo_replay::plan::tests::canonical_record_bytes_must_equal_the_projected_frame_payload"}
+{"binary": "worth-store-recovery-physics", "slots": 2, "test": "redo_replay::plan::tests::supersession::exact_wal_image_chain_supersedes_only_its_historical_claims"}
+{"binary": "worth-store-recovery-physics", "slots": 2, "test": "source_precedence::pending_wal_release_custody::effective_heads::checkpoint_head_tree::tests::pending_source_without_ordered_replays_must_carry_the_checkpoint_head_tree"}
+{"binary": "worth-store-recovery-runtime", "slots": 2, "test": "entry::admission::tests::a_second_process_cannot_enter_the_owned_recovery_root"}
+{"binary": "worth-store-recovery-runtime", "slots": 2, "test": "orchestration::planning::page_observation::ordered_history::charge::tests::the_segment_tree_is_charged_whole_only_where_the_roots_capacity_changed"}
+{"binary": "worth-store-recovery-runtime", "slots": 2, "test": "orchestration::planning::successor_candidate_observation::artifact_read::tests::cumulative_discovery_limit_remains_a_discovery_denial"}
+{"binary": "worth-store-wal", "slots": 2, "test": "append::frame_plan::tests::planning_is_path_free_and_advances_only_the_returned_frontier"}
