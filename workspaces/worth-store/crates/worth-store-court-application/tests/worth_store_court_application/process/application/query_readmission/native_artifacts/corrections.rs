@@ -67,6 +67,11 @@ impl Source {
         execution: &ExecutionRequest<'_, '_>,
         batch: WorkerIntentBatch,
     ) -> Published {
+        let source_revision = *self.home.binding().selected().revision().bytes();
+        let program_source = self.home.branch_program_source_owner().admit_source(
+            source_revision,
+            world_branch_program_source_commitment(&self.expected, source_revision).unwrap(),
+        );
         let cancellation = RuntimeWorldCancellationSource::new();
         let native = self.home.relational().runtime();
         let change = RelationalTransactionIntent::ordinary();
@@ -77,6 +82,7 @@ impl Source {
             .open_publication_without_signal(
                 execution,
                 self.expected.clone(),
+                program_source,
                 change.clone(),
                 &cancellation.token(),
                 None,

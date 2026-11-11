@@ -1326,6 +1326,23 @@ these splits do not claim equivalent funding coverage from a related public cour
   exercises actual conversion and aliases with the complete expected key.
   Neither H court claims funding coverage or a public historical-conversion door.
 
+### Landing 2a exact Home-step invoice campaign
+
+- **C2:** restore the complete
+  `home_step_body_and_candidate_share_the_original_work_ceiling` campaign and
+  `trial` fixture from
+  `0890a7800a:workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_indexes/work_account.rs`.
+  Restore its same-SHA `mod work_account` mount in `transition_indexes.rs`, the
+  COMPLETE `transition_indexes/` fixture tree (including `target.rs`),
+  `no_pending_owners/transition_opening.rs` and its child fixture closure, and all
+  referenced parent imports, actual Home transition-plan/step-grant/World-open/
+  Native preparation owners and work-account controls. Preserve the actual SDK
+  invoice, exact and one-unit-short requests in both wrapped/unwrapped forms,
+  typed WorkExhausted, discarded candidate and unchanged Native basis assertions.
+  Restore through the current genuine Home and index-maintenance budget contract;
+  never revive an obsolete signature or fabricate original-step/source admission.
+  Ordinary transition/index and step-affinity courts remain active under H.
+
 ### Parallel work
 
 H items whose dependencies have merged may be built in parallel where their write scopes do not overlap. Each one merges into the integration branch when its reviewer approves and its Tier-2 run there is green. A C item may start before landing 2 only where the coordinator assigns it and it does not slow an H item.
