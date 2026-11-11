@@ -23,12 +23,13 @@ worth_query_structured_value_binding!(pub InputBinding for Edit { identity: "nes
 worth_query_structured_value_binding!(pub ResultBinding for Changed { identity: "nested-catalog.edit.result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "nested-catalog.edit.denial.v1" });
 worth_query_operation!(pub EditGraph for Catalog, input InputBinding);
-worth_query_operation_reads!(EditGraph => [Directory,DirectoryIdentity,Item,ItemIdentity,ItemName,ItemEnabled,Children]);
+worth_query_operation_reads!(EditGraph => [Directory,DirectoryIdentity,Item,ItemIdentity,ItemName,ItemEnabled,BadgeFlag,BadgeDetail,Children]);
 worth_query_operation_creates!(EditGraph => [Directory,Item]);
 worth_query_operation_links!(EditGraph => [Contains,Children]);
 worth_query_operation_unlinks!(EditGraph => [Children]);
 worth_query_operation_deletes!(EditGraph => [Item]);
-worth_query_operation_writes!(EditGraph => [DirectoryIdentity,ItemIdentity,ItemName,ItemEnabled]);
+worth_query_operation_removes_aspects!(EditGraph => [ItemBadge]);
+worth_query_operation_writes!(EditGraph => [DirectoryIdentity,ItemIdentity,ItemName,ItemEnabled,BadgeFlag,BadgeDetail]);
 
 fn scope(_: &Edit) -> String {
     "catalog".into()
@@ -52,6 +53,8 @@ pub(super) fn declare(
         .operation_read_field(op, ItemIdentity::at("ItemIdentity"))
         .operation_read_field(op, ItemName::at("ItemName"))
         .operation_read_field(op, ItemEnabled::at("ItemEnabled"))
+        .operation_read_field(op, BadgeFlag::at("BadgeFlag"))
+        .operation_read_field(op, BadgeDetail::at("BadgeDetail"))
         .operation_read_relation(op, Children::reference())
         .operation_create(op, Directory::reference())
         .operation_create(op, Item::reference())
@@ -63,6 +66,9 @@ pub(super) fn declare(
         .operation_write(op, ItemIdentity::at("ItemIdentity"))
         .operation_write(op, ItemName::at("ItemName"))
         .operation_write(op, ItemEnabled::at("ItemEnabled"))
+        .operation_write(op, BadgeFlag::at("BadgeFlag"))
+        .operation_write(op, BadgeDetail::at("BadgeDetail"))
+        .operation_remove_aspect(op, ItemBadge::reference())
         .application_mutation_binding::<Binding>()
 }
 

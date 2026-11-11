@@ -262,10 +262,7 @@ pub fn causal_inspection_target(
     observation_target: CausalObservationTargetHandle,
     result_shape_context: CausalResultShapeContextHandle,
 ) -> Result<CausalInspectionTarget, CausalInspectionConstructionStop> {
-    Ok(CausalInspectionTarget::new(
-        observation_target,
-        result_shape_context,
-    )?)
+    CausalInspectionTarget::new(observation_target, result_shape_context)
 }
 
 pub fn request_causal_inspection(
@@ -360,17 +357,13 @@ fn requested_families_or_resolved(
 fn missing_family_failure_evidence(
     family: CausalEvidenceFamily,
 ) -> Result<WorthQueryEvidenceIdentity, WorthQueryEvidenceIdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(
-            WorthQueryEvidenceScope::CausalInspectionRequestFailure,
-        )
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::CausalInspectionRequestFailure)
         .field_shape(
             WorthQueryEvidenceTag::new("role"),
             "missing-requested-evidence-family",
         )
         .field_shape(WorthQueryEvidenceTag::new("family"), family.as_str())
-        .seal()?,
-    )
+        .seal()
 }
 
 fn request_digest(
@@ -381,7 +374,7 @@ fn request_digest(
     requested_evidence_families: &[CausalEvidenceFamily],
     inspection_basis_digest: &str,
 ) -> Result<CausalInspectionRequestIdentity, WorthQueryEvidenceIdentityDerivationDenial> {
-    Ok(compose_causal_inspection_request_identity(
+    compose_causal_inspection_request_identity(
         reference_set.anchor().anchor_digest(),
         reference_set.reference_set_digest(),
         target.target_identity(),
@@ -389,5 +382,5 @@ fn request_digest(
         requested_richness,
         requested_evidence_families,
         inspection_basis_digest,
-    )?)
+    )
 }

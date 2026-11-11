@@ -70,7 +70,7 @@ impl<S: Scenario> ApplicationCorrectionBinding<S> for UndoCreate<S> {
         })
     }
     fn visit_coupled_outputs<V: ApplicationCoupledOutputVisitor<S, Self::Source>>(visitor: &mut V) {
-        if S::MODE == 60 {
+        if matches!(S::MODE, 60 | 72) {
             visitor.required::<program::Start>();
         }
     }

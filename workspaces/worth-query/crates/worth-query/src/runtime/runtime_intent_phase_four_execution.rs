@@ -12,9 +12,7 @@ impl WorthQueryRuntime {
         &self,
         handoff: WorthQueryAuthoritativeIntentExecutionHandoff,
     ) -> Result<WorthQueryAuthoritativeIntentExecutionBinding, IdentityDerivationDenial> {
-        Ok(WorthQueryAuthoritativeIntentExecutionBinding::from_handoff(
-            handoff,
-        )?)
+        WorthQueryAuthoritativeIntentExecutionBinding::from_handoff(handoff)
     }
 
     pub(crate) fn prepare_effect_intent_execution_binding(
@@ -22,11 +20,9 @@ impl WorthQueryRuntime {
         handoff: WorthQueryEffectTriggeredIntentExecutionHandoff,
         pending_delivery: &WorthQueryEffectDelivery,
     ) -> Result<WorthQueryEffectTriggeredIntentExecutionBinding, IdentityDerivationDenial> {
-        Ok(
-            WorthQueryEffectTriggeredIntentExecutionBinding::from_handoff_and_delivery(
-                handoff,
-                pending_delivery,
-            )?,
+        WorthQueryEffectTriggeredIntentExecutionBinding::from_handoff_and_delivery(
+            handoff,
+            pending_delivery,
         )
     }
 

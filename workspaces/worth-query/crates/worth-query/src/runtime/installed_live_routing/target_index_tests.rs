@@ -73,7 +73,7 @@ fn selector(
 }
 
 fn mutation(aspect: &str) -> Result<WorthQueryMutationDelta, IdentityDerivationDenial> {
-    Ok(WorthQueryMutationDelta::from_touched_aspects(
+    WorthQueryMutationDelta::from_touched_aspects(
         "Vertex",
         crate::memory_workspace::WorthQueryEntityIdentity::from_relational_record(
             worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts::entity(1, 1, 1),
@@ -85,11 +85,11 @@ fn mutation(aspect: &str) -> Result<WorthQueryMutationDelta, IdentityDerivationD
                 worth_foundational::facade::FieldKey::new("id").unwrap(),
             ),
         )],
-    )?)
+    )
 }
 
 fn path_mutation(fields: &[&str]) -> Result<WorthQueryMutationDelta, IdentityDerivationDenial> {
-    Ok(WorthQueryMutationDelta::from_touched_aspects(
+    WorthQueryMutationDelta::from_touched_aspects(
         "Vertex",
         crate::memory_workspace::WorthQueryEntityIdentity::from_relational_record(
             worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts::entity(1, 1, 1),
@@ -99,7 +99,7 @@ fn path_mutation(fields: &[&str]) -> Result<WorthQueryMutationDelta, IdentityDer
             worth_foundational::facade::AspectKey::new("profile").unwrap(),
             path(fields),
         )],
-    )?)
+    )
 }
 
 fn path(fields: &[&str]) -> worth_foundational::facade::CanonicalFieldPath {

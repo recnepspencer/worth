@@ -16,7 +16,7 @@ pub trait Scenario:
     type Boundary: sheet_boundary::Profile;
     type NodeProfile: node_profile::NodeProfile<Self>;
     const MODE: u8;
-    const COUPLED: bool = matches!(Self::MODE, 6..=12 | 14..=28 | 30 | 39 | 40 | 41 | 42 | 43 | 48 | 60 | 61 | 64 | 66 | 68 | 69 | 70);
+    const COUPLED: bool = matches!(Self::MODE, 6..=12 | 14..=28 | 30 | 39 | 40 | 41 | 42 | 43 | 48 | 60 | 61 | 64 | 66 | 68 | 69 | 70 | 72);
     const TWO_BODIES: bool = matches!(
         Self::MODE,
         7 | 8 | 9 | 15..=18 | 20 | 27 | 28 | 42 | 43 | 61 | 64
@@ -170,7 +170,7 @@ impl<S: Scenario> Registration<S> for Contracts {
                 schema
             };
             let schema = sheet_boundary::declare(heterogeneous::declare(content::declare(
-                stage_schema::declare(schema),
+                coupled::creation_inverse::wire::declare(stage_schema::declare(schema)),
             )));
             let schema = currentness_guards::declare(parameter_inverse::declare(
                 relation_splice::declare(schema),

@@ -37,7 +37,7 @@ fn released_query_backing_preserves_historical_truth_and_marks_only_live_readers
                 .entity_id_for_test();
             let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
             let handle = graph.integration_handle_for_test();
-            let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+            let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
             let label_ref = AccountLabel::at("AccountLabel");
             let label = graph
                 .layout_for_test()

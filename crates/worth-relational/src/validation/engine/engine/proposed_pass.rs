@@ -13,23 +13,31 @@ impl InvariantEngine<'_> {
         &self,
         execution: &worth_execution::ExecutionRequest<'state, 'state>,
         request: InvariantExecutionRequest<'state>,
+        prepare_sources: &mut dyn FnMut() -> Result<
+            (),
+            crate::transactions::data::TransactionCommitError,
+        >,
     ) -> Result<StartedProposedPass, crate::transactions::data::TransactionCommitError> {
         check_live(*execution)?;
         self.admit_custom_posture(execution, &request)?;
         if execution.has_accounting() {
             return execution
                 .run(ExecutionWorkCeiling::new(execution.work_ceiling()), |_| {
-                    self.begin_proposed_inner(execution, request)
+                    self.begin_proposed_inner(execution, request, prepare_sources)
                 })
                 .map(|(result, _)| result)
                 .map_err(request_failure)?;
         }
-        self.begin_proposed_inner(execution, request)
+        self.begin_proposed_inner(execution, request, prepare_sources)
     }
     fn begin_proposed_inner<'state>(
         &self,
         execution: &worth_execution::ExecutionRequest<'state, 'state>,
         request: InvariantExecutionRequest<'state>,
+        prepare_sources: &mut dyn FnMut() -> Result<
+            (),
+            crate::transactions::data::TransactionCommitError,
+        >,
     ) -> Result<StartedProposedPass, crate::transactions::data::TransactionCommitError> {
         let proposal = request.proposal_identity().cloned().ok_or_else(|| {
             crate::transactions::data::TransactionCommitError::conflict(
@@ -64,7 +72,12 @@ impl InvariantEngine<'_> {
             )?;
         }
         check_live(*execution)?;
-        if !prefix.prevents_custom(request.execution_point()) && request.should_execute_anything() {
+        // The commit-boundary Native prefix admits Source preparation and its readers together.
+        let native_admitted = !prefix.has_blocking_violation();
+        if native_admitted {
+            prepare_sources()?;
+        }
+        if native_admitted && request.should_execute_anything() {
             let selection = InvariantStage::Custom {
                 packet_offset: prefix.packet_count(),
             };

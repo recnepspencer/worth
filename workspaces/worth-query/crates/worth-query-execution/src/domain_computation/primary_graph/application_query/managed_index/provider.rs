@@ -36,8 +36,8 @@ where
     S: ApplicationSchema,
     I: ApplicationManagedIndexBinding<S>,
 {
-    type Node: Copy + Send + Sync + 'static;
-    type Summary: Copy + Eq + Send + Sync + 'static;
+    type Node: Clone + Send + Sync + 'static;
+    type Summary: Clone + Eq + Send + Sync + 'static;
     type Denial: Copy + Eq + std::error::Error + Send + Sync + 'static;
     const IDENTITY: &'static str;
     const VERSION: u32;
@@ -54,7 +54,7 @@ where
     }
     fn merge_summaries(
         &self,
-        _parts: [Option<Self::Summary>; 3],
+        _parts: [Option<&Self::Summary>; 3],
         _sources: &WorthQueryManagedIndexSummarySources<'_, '_, S, I>,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<Self::Summary, WorthQueryManagedIndexProviderStop<Self::Denial>> {
@@ -62,18 +62,18 @@ where
             .refuse(super::WorthQueryManagedIndexStop::SummaryUnavailable)
             .into())
     }
-    fn node_summary(
+    fn node_summary<'node>(
         &self,
-        _node: Self::Node,
+        _node: &'node Self::Node,
         control: &WorthQueryManagedIndexControl<'_>,
-    ) -> Result<Self::Summary, WorthQueryManagedIndexProviderStop<Self::Denial>> {
+    ) -> Result<&'node Self::Summary, WorthQueryManagedIndexProviderStop<Self::Denial>> {
         Err(control
             .refuse(super::WorthQueryManagedIndexStop::SummaryUnavailable)
             .into())
     }
     fn summary_may_match(
         &self,
-        _summary: Self::Summary,
+        _summary: &Self::Summary,
         _sources: &WorthQueryManagedIndexSummarySources<'_, '_, S, I>,
         _probe: &WorthQueryManagedIndexProbeValue<S, I>,
         control: &WorthQueryManagedIndexControl<'_>,
@@ -138,7 +138,7 @@ where
     /// BinarySourceTree roots are checked by Query; this is no query coverage assertion.
     fn decompose(
         &self,
-        _node: Self::Node,
+        _node: &Self::Node,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<WorthQueryManagedIndexNodeRegion, WorthQueryManagedIndexProviderStop<Self::Denial>>
     {

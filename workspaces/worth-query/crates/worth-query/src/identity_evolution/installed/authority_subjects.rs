@@ -25,9 +25,7 @@ impl InstalledIdentityEvolutionOutcome {
         if let Some(target) = &self.lifecycle_target {
             return (ordinal == 0).then(|| target.evidence_identity());
         }
-        let Some(continuity) = self.continuity.as_ref() else {
-            return None;
-        };
+        let continuity = self.continuity.as_ref()?;
         continuity
             .successor_authoritative_identities()
             .get(ordinal)

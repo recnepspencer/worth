@@ -55,21 +55,21 @@ const RUNTIME_CONSUMER_ATTACHMENT_BUDGET_POLICY: &str =
 pub(crate) fn representative_public_live_view_declaration_row(
 ) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let fixture = live_aggregate_fixture()?;
-    Ok(aggregate_route_artifacts(
+    aggregate_route_artifacts(
         WorthQueryLowerRuntimeSeamKey::PublicLiveViewDeclaration,
         "Public live view declaration",
         public_live_declaration_evidence(&fixture),
-    )?)
+    )
 }
 
 pub(crate) fn representative_runtime_live_installation_orchestration_row(
 ) -> Result<RepresentativeArtifacts, IdentityDerivationDenial> {
     let fixture = live_aggregate_fixture()?;
-    Ok(aggregate_route_artifacts(
+    aggregate_route_artifacts(
         WorthQueryLowerRuntimeSeamKey::RuntimeLiveInstallationOrchestration,
         "Runtime live installation orchestration",
         runtime_live_installation_evidence(&fixture),
-    )?)
+    )
 }
 
 struct LiveAggregateFixture {

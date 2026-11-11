@@ -44,6 +44,7 @@ mod component_reads;
 mod fresh_subject;
 
 mod append;
+pub(super) mod creation_inverse;
 
 impl<S: Scenario> WorthQueryApplicationRequiredOutputSource<S, program::Start>
     for lifecycle::CreateBinding<S>

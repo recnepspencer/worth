@@ -192,7 +192,7 @@ impl WorthQueryRuntimeRemaskPosture {
         support_identity: &WorthQueryEvidenceIdentity,
         basis_identity: &WorthQueryEvidenceIdentity,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             projection.disposition_kind,
             projection.reason_kind,
             support_identity.clone(),
@@ -202,7 +202,7 @@ impl WorthQueryRuntimeRemaskPosture {
             projection.tenant_schema_digest.clone(),
             projection.relationship_proof_digest.clone(),
             projection.schema_context_digest.clone(),
-        )?)
+        )
     }
 
     pub fn disposition_kind(&self) -> WorthQueryRuntimeRemaskDispositionKind {
@@ -282,13 +282,11 @@ fn remask_drift_label_identity(
     identity_family: &str,
     digest: &str,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                identity_family,
-            )
-            .field_shape(WorthQueryEvidenceTag::new("digest"), digest)
-            .seal()?,
-    )
+    worth_query_evidence_identity(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            identity_family,
+        )
+        .field_shape(WorthQueryEvidenceTag::new("digest"), digest)
+        .seal()
 }

@@ -27,7 +27,7 @@ use crate::subscription::{
 fn continuation_harness_identity(
     label: &str,
 ) -> Result<crate::WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(crate::WorthQueryEvidenceIdentity::compose(
+    crate::WorthQueryEvidenceIdentity::compose(
         crate::WorthQueryEvidenceScope::SubscriptionActivationReceipt,
     )
     .field_shape(
@@ -35,7 +35,7 @@ fn continuation_harness_identity(
         "subscription_continuation_harness_identity_v1",
     )
     .field_shape(crate::WorthQueryEvidenceTag::new("label"), label)
-    .seal()?)
+    .seal()
 }
 
 pub(super) fn lifecycle_lane(
@@ -46,7 +46,7 @@ pub(super) fn lifecycle_lane(
     patch_width: u64,
     continuation_width: u64,
 ) -> Result<SubscriptionLifecycleCertificationBundle, IdentityDerivationDenial> {
-    Ok(lifecycle_lane_with_delivery_profile(
+    lifecycle_lane_with_delivery_profile(
         live_family,
         view_family,
         delta_kind,
@@ -56,12 +56,12 @@ pub(super) fn lifecycle_lane(
         ActiveDeliveryDensityPosture::SparseDelta,
         1,
         ActiveSubscriptionAllocationPosture::PatchScratch,
-    )?)
+    )
 }
 
 pub(super) fn lifecycle_lane_with_posture(
 ) -> Result<SubscriptionLifecycleCertificationBundle, IdentityDerivationDenial> {
-    Ok(lifecycle_lane_with_delivery_profile(
+    lifecycle_lane_with_delivery_profile(
         LiveQueryFamily::Detail,
         None,
         QuerySubscriptionMaintenanceDeltaKind::DetailFieldDelta,
@@ -71,7 +71,7 @@ pub(super) fn lifecycle_lane_with_posture(
         ActiveDeliveryDensityPosture::BurstCoalesced,
         2,
         ActiveSubscriptionAllocationPosture::HeapAllocationDebtExplicit,
-    )?)
+    )
 }
 
 fn lifecycle_lane_with_delivery_profile(

@@ -8,6 +8,7 @@ use worth_query_execution::court_doors_for_test::domain_computation::managed_run
 use worth_query_installation::facade::PublishedAftermathPosture;
 
 #[test]
+#[expect(clippy::disallowed_methods, reason = "Client-race court")]
 fn concurrent_receipt_claims_register_exactly_one_handle() {
     let registry = Arc::new(WorthQueryRecoveryHandleRegistry::new_for_test());
     let claim = real_claim(7);

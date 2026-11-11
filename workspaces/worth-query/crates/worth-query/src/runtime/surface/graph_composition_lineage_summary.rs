@@ -243,12 +243,10 @@ fn aggregate_digest<'a>(
     label: &str,
     digests: impl IntoIterator<Item = &'a WorthQueryEvidenceIdentity>,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
-            .field_shape(WorthQueryEvidenceTag::new("role"), label)
-            .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("digest"), digests)
-            .seal()?,
-    )
+    worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
+        .field_shape(WorthQueryEvidenceTag::new("role"), label)
+        .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("digest"), digests)
+        .seal()
 }
 
 fn graph_composition_lineage_entry_digest(
@@ -298,5 +296,5 @@ fn graph_composition_lineage_entry_digest(
             WorthQueryEvidenceTag::new("continuity_resolution"),
             entry.continuity_resolution_digest().evidence_identity(),
         );
-    Ok(identity.seal()?)
+    identity.seal()
 }

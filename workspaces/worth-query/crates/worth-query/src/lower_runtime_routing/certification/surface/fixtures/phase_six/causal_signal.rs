@@ -56,12 +56,12 @@ pub(crate) fn representative_causal_bridge_materialization_row(
                 artifact.bridge_envelope_for_reporting().unwrap_or("none"),
             )
             .seal()?;
-    Ok(route_planned_row(
+    route_planned_row(
         WorthQueryLowerRuntimeSeamKey::CausalBridgeMaterialization,
         WorthQueryLowerRuntimeAuthorityOwner::RuntimeBridge,
         "Causal bridge materialization",
         evidence,
-    )?)
+    )
 }
 
 pub(crate) fn representative_frontier_evidence_row(
@@ -95,12 +95,12 @@ pub(crate) fn representative_frontier_evidence_row(
                 executed.realized_breadth().unwrap_or_default().to_string(),
             )
             .seal()?;
-    Ok(route_planned_row(
+    route_planned_row(
         WorthQueryLowerRuntimeSeamKey::FrontierEvidenceIntake,
         WorthQueryLowerRuntimeAuthorityOwner::Signal,
         "Frontier evidence intake",
         evidence,
-    )?)
+    )
 }
 
 fn route_planned_row(

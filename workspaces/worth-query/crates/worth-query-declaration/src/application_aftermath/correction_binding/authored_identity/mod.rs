@@ -1,6 +1,7 @@
 //! Family-declared logical identity for authored lifecycle inverses.
 mod authoring;
 mod key;
+mod owned_members;
 pub use authoring::ApplicationAuthoredCorrection;
 pub use key::ApplicationAuthoredLogicalKey;
 
@@ -23,6 +24,8 @@ pub struct DeclaredAuthoredCorrection {
     parts: DeclaredAuthoredCorrectionParts,
     co_anchors: Vec<DeclaredAuthoredCorrection>,
     optional: bool,
+    owner: Option<crate::application_aftermath::PortablePreImageRelationLocus>,
+    live_owner: Option<crate::application_aftermath::PortablePreImageRelationLocus>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -41,13 +44,82 @@ impl DeclaredAuthoredCorrection {
             parts,
             co_anchors: Vec::new(),
             optional: false,
+            owner: None,
+            live_owner: None,
         }
+    }
+    /// Zero to many members of this role family stay under this live owner;
+    /// the roles are family prefixes, as for a member of an authored anchor.
+    pub fn live_member_owner(
+        &self,
+    ) -> Option<&crate::application_aftermath::PortablePreImageRelationLocus> {
+        self.live_owner.as_ref()
+    }
+    pub fn with_live_member_owner(
+        mut self,
+        owner: crate::application_aftermath::PortablePreImageRelationLocus,
+    ) -> Self {
+        self.live_owner = Some(owner);
+        self
     }
     pub fn co_anchors(&self) -> &[Self] {
         &self.co_anchors
     }
     pub fn is_optional(&self) -> bool {
         self.optional
+    }
+    /// A member family uses role prefixes; its live roster is the sources of
+    /// this exactly-one relation into the enclosing authored anchor.
+    pub fn member_owner(
+        &self,
+    ) -> Option<&crate::application_aftermath::PortablePreImageRelationLocus> {
+        self.owner.as_ref()
+    }
+    /// Match a member output against its complete declared family descriptor.
+    pub fn member_role_suffix<'a>(
+        &self,
+        name: &'a str,
+        posture: ApplicationMutationOutputPosture,
+        entity: &str,
+        inverse: bool,
+    ) -> Option<&'a str> {
+        self.member_owner().or(self.live_member_owner())?;
+        let ApplicationSchemaMember::Field {
+            entity: declared_entity,
+            ..
+        } = self.parts.logical_key.as_ref()
+        else {
+            return None;
+        };
+        let expected = if inverse {
+            match self.parts.source_posture {
+                ApplicationMutationOutputPosture::Create => {
+                    ApplicationMutationOutputPosture::Retire
+                }
+                ApplicationMutationOutputPosture::Retire => {
+                    ApplicationMutationOutputPosture::Create
+                }
+                ApplicationMutationOutputPosture::Preserve => return None,
+            }
+        } else {
+            self.parts.source_posture
+        };
+        if declared_entity != entity || posture != expected {
+            return None;
+        }
+        name.strip_prefix(if inverse {
+            &self.parts.inverse_role
+        } else {
+            &self.parts.source_role
+        })
+        .filter(|suffix| !suffix.is_empty())
+    }
+    pub fn with_member_owner(
+        mut self,
+        owner: crate::application_aftermath::PortablePreImageRelationLocus,
+    ) -> Self {
+        self.owner = Some(owner);
+        self
     }
     pub fn with_co_anchor(mut self, mut anchor: Self, optional: bool) -> Self {
         anchor.optional = optional;

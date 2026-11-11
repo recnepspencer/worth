@@ -41,6 +41,11 @@ pub(crate) struct WorthQueryCollectionMaintenanceIndex {
     source_identities: BTreeMap<WorthQueryEntityIdentity, WorthQueryEntityIdentity>,
 }
 
+// Ord/Eq compare immutable value text and entity identity, never the mutable codec seal.
+#[expect(
+    clippy::mutable_key_type,
+    reason = "Codec seals do not participate in Ord/Eq"
+)]
 impl WorthQueryCollectionMaintenanceIndex {
     pub(crate) fn build(
         inputs: WorthQueryCollectionMaintenanceInputs<'_>,

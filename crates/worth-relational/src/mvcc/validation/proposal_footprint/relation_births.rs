@@ -57,7 +57,7 @@ fn only_births_with_an_allocated_endpoint_carry_structural_prior_absence() {
         ],
     );
     let footprint = validated
-        .relation_mutation_footprint(execution, &[KindId(2)])
+        .relation_mutation_footprint(execution, &[KindId(2)], &[], &[])
         .expect("the validated draft projects its relation lifecycle");
     let mut births = Vec::new();
     for mutation in footprint.relations() {

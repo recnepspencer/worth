@@ -14,7 +14,7 @@ const FULL_RUN_HISTORY_POLICY: worth_foundational::ExecutionRequestPolicy =
         worth_foundational::ExecutionBudget::new(
             std::num::NonZeroUsize::MIN,
             None,
-            Some(20_000_000),
+            Some(128_000_000),
         ),
     );
 
@@ -163,7 +163,8 @@ impl Reference {
 }
 
 // Generated payloads retain their Native creation/deletion history. Its positive
-// checkpoint journey funds content closure, encoding and integrity work separately
+// checkpoint journey funds content closure, encoding, integrity and charged
+// per-root kind reconstruction separately
 // from the logical partition ceilings; the shared refusal World stays at 8m.
 pub(in super::super) fn model_history_policy() -> worth_foundational::ExecutionRequestPolicy {
     worth_foundational::ExecutionRequestPolicy::new(
@@ -172,7 +173,7 @@ pub(in super::super) fn model_history_policy() -> worth_foundational::ExecutionR
         worth_foundational::ExecutionBudget::new(
             std::num::NonZeroUsize::MIN,
             None,
-            Some(16_000_000),
+            Some(128_000_000),
         ),
     )
 }

@@ -62,7 +62,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         &layout.proposal.identity,
     )?
     .ok_or_else(|| denial("workflow proposal identity is unavailable"))?;
-    let Some(identity) = (&value).raw_text() else {
+    let Some(identity) = value.raw_text() else {
         return Err(denial("workflow proposal identity has the wrong type"));
     };
     if decode_identity(identity).is_none() {

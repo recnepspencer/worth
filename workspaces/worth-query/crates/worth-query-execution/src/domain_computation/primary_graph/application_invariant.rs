@@ -7,6 +7,7 @@ use std::panic::{RefUnwindSafe, UnwindSafe};
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 
 pub use worth_relational::facade::runtime::CustomInvariantInterruption;
+pub(super) mod content_fields;
 mod hook_error;
 pub use hook_error::WorthQueryApplicationInvariantError;
 

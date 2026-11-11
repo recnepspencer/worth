@@ -4,6 +4,7 @@ mod court;
 mod fixture;
 mod original_registration;
 mod pinned;
+mod precedence;
 pub(super) mod probe;
 mod refusal;
 pub(super) mod registry;

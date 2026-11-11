@@ -44,8 +44,5 @@ pub(crate) fn compose_declaration_digest(
             compose_fact_request_entry_digest(request, requested.native_contract_for(request))
         })
         .collect::<Result<Vec<_>, _>>()?;
-    Ok(seal(encoder.field_value_sequence(
-        WorthQueryEvidenceTag::new("requested_fact"),
-        fact_requests,
-    ))?)
+    seal(encoder.field_value_sequence(WorthQueryEvidenceTag::new("requested_fact"), fact_requests))
 }

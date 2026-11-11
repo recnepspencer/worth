@@ -7,7 +7,7 @@ impl QueryObservationReceipt {
         inspection_basis: crate::basis_lifecycle::ScopedInspectionBasis,
     ) -> Result<Self, IdentityDerivationDenial> {
         let snapshot_evidence_identity = receipt.snapshot_evidence_identity();
-        Ok(Self::from_parts(ObservationReceiptParts {
+        Self::from_parts(ObservationReceiptParts {
             family: QueryObservationReceiptFamily::ReadReceipt,
             observation_receipt_identity: read_observation_receipt_identity(receipt)?,
             query_identity: read_observation_query_identity(receipt, &snapshot_evidence_identity)?,
@@ -34,7 +34,7 @@ impl QueryObservationReceipt {
                 CausalEvidenceFamily::QueryInspection,
                 read_observation_result_reference_digest(receipt, &snapshot_evidence_identity)?,
             )?],
-        })?)
+        })
     }
 
     pub(crate) fn certification_historical_replay_fixture(
@@ -45,7 +45,7 @@ impl QueryObservationReceipt {
             .inspect()
             .expect("certification historical inspection basis should admit");
         let fixture_authority = fixture_authority_identity(label)?;
-        Ok(Self::from_parts(ObservationReceiptParts {
+        Self::from_parts(ObservationReceiptParts {
             family: QueryObservationReceiptFamily::Fixture,
             observation_receipt_identity: causal_observation_receipt_evidence_identity(
                 QueryObservationReceiptFamily::Fixture,
@@ -79,6 +79,6 @@ impl QueryObservationReceipt {
                     &fixture_component_identity(label, "evidence_reference", "query_inspection")?,
                 )?,
             )?],
-        })?)
+        })
     }
 }

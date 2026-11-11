@@ -107,7 +107,7 @@ where
                 authority.installation_generation().ordinal() as usize,
             );
     }
-    Ok(identity.seal()?)
+    identity.seal()
 }
 
 pub(crate) fn contribution_basis_identity<Phase, P, T, S>(
@@ -122,14 +122,12 @@ where
     P: WorthQueryDomainCapabilityPayload,
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    Ok(
-        domain_capability_scope_encoder("worth_query_domain_capability_basis_v1")
-            .field_shape(
-                WorthQueryEvidenceTag::new("assumption"),
-                contribution_basis(artifact).as_str(),
-            )
-            .seal()?,
-    )
+    domain_capability_scope_encoder("worth_query_domain_capability_basis_v1")
+        .field_shape(
+            WorthQueryEvidenceTag::new("assumption"),
+            contribution_basis(artifact).as_str(),
+        )
+        .seal()
 }
 
 pub(crate) fn contribution_basis<Phase, P, T, S>(

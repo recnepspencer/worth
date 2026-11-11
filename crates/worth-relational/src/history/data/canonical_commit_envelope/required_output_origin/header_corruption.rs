@@ -36,6 +36,7 @@ fn corrupt(
         let mut event = CanonicalAuthoredRetirement {
             _decoded_memory: event._decoded_memory.clone(),
             anchor: event.anchor,
+            owned_members: event.owned_members,
             birth: event.birth,
             co_anchors: event.co_anchors.clone(),
             publications: event.publications.clone(),
@@ -78,6 +79,7 @@ fn corrupt(
         .expect("lawful restoration");
     let mut event = CanonicalAuthoredRestoration {
         _decoded_memory: event._decoded_memory.clone(),
+        owned_members: event.owned_members,
         retirement: event.retirement,
         original_anchor: event.original_anchor,
         anchor: event.anchor,

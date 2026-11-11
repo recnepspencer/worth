@@ -69,12 +69,10 @@ pub(crate) fn capture_region_members(
                     checkpoint,
                 )?,
                 entities: super::history_capture::split_rows(
-                    lane,
                     &partition.entity_arena,
                     &mut image.entity_arena.metadata_history,
                 )?,
                 relations: super::history_capture::split_rows(
-                    lane,
                     &partition.relation_arena,
                     &mut image.relation_arena.metadata_history,
                 )?,

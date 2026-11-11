@@ -59,13 +59,13 @@ impl WorthQueryIntentReceipt {
         let handoff = WorthQueryAdmittedIntentExecutionHandoff::from(binding.handoff().clone());
         let decision_trace_envelope =
             WorthQueryIntentDecisionTraceEnvelope::for_admitted_execution(&handoff, &execution);
-        Ok(Self::new(
+        Self::new(
             declaration,
             execution,
             write_receipt,
             execution_provenance,
             decision_trace_envelope,
-        )?)
+        )
     }
 
     pub(in crate::runtime) fn from_effect_binding(
@@ -82,13 +82,13 @@ impl WorthQueryIntentReceipt {
         let handoff = WorthQueryAdmittedIntentExecutionHandoff::from(binding.handoff().clone());
         let decision_trace_envelope =
             WorthQueryIntentDecisionTraceEnvelope::for_admitted_execution(&handoff, &execution);
-        Ok(Self::new(
+        Self::new(
             declaration,
             execution,
             write_receipt,
             execution_provenance,
             decision_trace_envelope,
-        )?)
+        )
     }
 
     fn new(

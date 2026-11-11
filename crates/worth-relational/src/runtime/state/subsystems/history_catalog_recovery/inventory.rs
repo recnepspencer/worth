@@ -3,7 +3,6 @@ use super::*;
 impl HistorySubsystem {
     pub(crate) fn install_recovered_canonical_inventory(
         &mut self,
-        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         commits: Vec<Arc<crate::history::data::PositionedCanonicalCommit>>,
         symbols: &crate::symbols::data::StringInterner,
@@ -46,14 +45,13 @@ impl HistorySubsystem {
             .map(|commit| (commit.commit.commit_id, Arc::clone(commit)))
             .collect();
         self.rebuild_catalog_with_live_roots_and_descriptors(
-            lane,
             execution,
             &std::collections::BTreeMap::new(),
             &std::collections::BTreeMap::new(),
             &admitted,
             symbols,
         )?;
-        self.rebuild_recovered_canonical_routes(lane, commits)
+        self.rebuild_recovered_canonical_routes(commits)
             .map_err(|detail| RelationalHistoryRecoveryDenial::Invalid(detail.to_owned()))
     }
 }

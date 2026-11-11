@@ -110,7 +110,7 @@ pub(in crate::domain_computation::primary_graph) fn current_definition(
         return Ok(None);
     };
     let Some(content_identity) =
-        ApplicationWorkflowDefinitionContentIdentity::from_recorded(&recorded)
+        ApplicationWorkflowDefinitionContentIdentity::from_recorded(recorded)
     else {
         return Ok(None);
     };

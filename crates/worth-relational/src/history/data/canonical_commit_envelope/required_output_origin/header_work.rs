@@ -52,6 +52,7 @@ impl CanonicalCommitEnvelopeBody {
         );
         let event = CanonicalAuthoredRestoration {
             _decoded_memory: event._decoded_memory.clone(),
+            owned_members: event.owned_members,
             retirement: event.retirement,
             original_anchor: event.original_anchor,
             anchor: event.anchor,

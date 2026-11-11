@@ -2,19 +2,19 @@
 use super::*;
 use crate::application_invariant_acceptance::managed_index::maintained::nested::edit::Edit;
 use crate::application_invariant_acceptance::managed_index::prefix_observation;
-pub(super) fn set(names: &[&str]) -> BTreeSet<String> {
+pub(in super::super) fn set(names: &[&str]) -> BTreeSet<String> {
     names.iter().map(|s| (*s).to_owned()).collect()
 }
-pub(super) fn names(rows: &[query::ItemRow]) -> BTreeSet<String> {
+pub(in super::super) fn names(rows: &[query::ItemRow]) -> BTreeSet<String> {
     rows.iter().map(|r| r.identity.clone()).collect()
 }
-pub(super) fn find(event: &str, prefix: &str) -> query::FindPrefix {
+pub(in super::super) fn find(event: &str, prefix: &str) -> query::FindPrefix {
     query::FindPrefix {
         directory: event.into(),
         prefix: prefix.into(),
     }
 }
-pub(super) fn publish(world: &host::EventHost, key: &mut u64, input: Edit) {
+pub(in super::super) fn publish(world: &host::EventHost, key: &mut u64, input: Edit) {
     let scope = authentication::request_scope();
     let principal = authentication::block_on(
         authentication::admit(world.installed_schema()).authenticate(
@@ -36,7 +36,7 @@ pub(super) fn publish(world: &host::EventHost, key: &mut u64, input: Edit) {
         .unwrap();
     assert!(result.result().is_some(), "{result:?}");
 }
-pub(super) fn edit_history(world: &host::EventHost, key: &mut u64, input: history::Edit) {
+pub(in super::super) fn edit_history(world: &host::EventHost, key: &mut u64, input: history::Edit) {
     let scope = authentication::request_scope();
     let principal = authentication::block_on(
         authentication::admit(world.installed_schema()).authenticate(
@@ -58,7 +58,7 @@ pub(super) fn edit_history(world: &host::EventHost, key: &mut u64, input: histor
         .unwrap();
     assert!(result.result().is_some(), "{result:?}");
 }
-pub(super) fn setup() -> (
+pub(in super::super) fn setup() -> (
     host::EventHost,
     Arc<prefix_observation::Calls>,
     Arc<rule::Calls>,
@@ -67,6 +67,34 @@ pub(super) fn setup() -> (
     let provider = Arc::new(prefix_observation::Calls::default());
     let records = Arc::new(rule::Calls::default());
     let world = host::install_events(Arc::clone(&provider), Arc::clone(&records));
+    populate(world, provider, records)
+}
+pub(in super::super) fn setup_growth() -> (
+    host::EventHost,
+    Arc<crate::application_invariant_acceptance::managed_index::prefix_observation::Calls>,
+    Arc<rule::Calls>,
+    u64,
+) {
+    let provider = Arc::new(
+        crate::application_invariant_acceptance::managed_index::prefix_observation::Calls::default(
+        ),
+    );
+    let records = Arc::new(rule::Calls::default());
+    let world = host::install_event_growth(Arc::clone(&provider), Arc::clone(&records));
+    populate(world, provider, records)
+}
+fn populate(
+    world: host::EventHost,
+    provider: Arc<
+        crate::application_invariant_acceptance::managed_index::prefix_observation::Calls,
+    >,
+    records: Arc<rule::Calls>,
+) -> (
+    host::EventHost,
+    Arc<crate::application_invariant_acceptance::managed_index::prefix_observation::Calls>,
+    Arc<rule::Calls>,
+    u64,
+) {
     let mut key = 3000;
     for event in ["A", "B", "C", "D", "U"] {
         publish(

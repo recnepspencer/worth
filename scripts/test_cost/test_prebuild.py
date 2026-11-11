@@ -11,6 +11,23 @@ from native_features import NativeFeatureRefusal
 
 
 class PrerequisiteOwnershipTests(unittest.TestCase):
+    def test_compiler_only_cli_publishes_receipts_without_other_prerequisites(self):
+        from compiler_prebuild import CompilerScope
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary)
+            expected = {'WORTH_PREBUILT_COMPILER_OUTCOMES': 'root.json'}
+            with patch('sys.argv', ['prebuild.py', '--workspace', 'root', '--compiler-only',
+                                    '--output', temporary]), \
+                 patch('prebuild.inherited', return_value={}), \
+                 patch('prebuild.CargoRunner') as runner, \
+                 patch('prebuild.prepare') as other, \
+                 patch('compiler_prebuild.prepare', return_value=expected) as compiler:
+                main()
+            other.assert_not_called()
+            compiler.assert_called_once_with(Path.cwd(), 'root', output / 'compiler',
+                                             runner.return_value, CompilerScope.FIXTURES, source_roots=[])
+            self.assertEqual(json.loads((output / 'environment.json').read_text()), expected)
+
     def test_standalone_prebuild_refuses_external_flags_before_preparing_any_graph(self):
         with patch('sys.argv', ['prebuild.py', '--workspace', 'query']), \
              patch.dict(os.environ, {'RUSTFLAGS': '-C opt-level=3'}), \

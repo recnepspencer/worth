@@ -16,6 +16,7 @@ pub enum WorthQueryApplicationCapabilityInstallationDenialKind {
 pub struct WorthQueryApplicationCapabilityInstallationDenial {
     kind: WorthQueryApplicationCapabilityInstallationDenialKind,
     subject: String,
+    canonical_denial: Option<worth_foundational::facade::CanonicalDigestDerivationDenial>,
 }
 
 impl WorthQueryApplicationCapabilityInstallationDenial {
@@ -26,6 +27,7 @@ impl WorthQueryApplicationCapabilityInstallationDenial {
         Self {
             kind,
             subject: subject.into(),
+            canonical_denial: None,
         }
     }
 
@@ -35,6 +37,20 @@ impl WorthQueryApplicationCapabilityInstallationDenial {
 
     pub fn subject(&self) -> &str {
         &self.subject
+    }
+
+    pub(crate) fn with_canonical_denial(
+        mut self,
+        cause: worth_foundational::facade::CanonicalDigestDerivationDenial,
+    ) -> Self {
+        self.canonical_denial = Some(cause);
+        self
+    }
+
+    pub const fn canonical_denial(
+        &self,
+    ) -> Option<&worth_foundational::facade::CanonicalDigestDerivationDenial> {
+        self.canonical_denial.as_ref()
     }
 }
 

@@ -15,44 +15,28 @@ impl WorthQueryMutationAuthorityIdentity {
         role: &'static str,
         identity: &BridgeExistingTruthBindingAuthoritativeIdentity,
     ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-        Ok(Self::from_bridge_authority(
-            role,
-            "existing-truth",
-            identity.as_str(),
-        )?)
+        Self::from_bridge_authority(role, "existing-truth", identity.as_str())
     }
 
     pub(in crate::runtime) fn from_bridge_naming_attachment(
         role: &'static str,
         identity: &BridgeNamingAttachmentIdentity,
     ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-        Ok(Self::from_bridge_authority(
-            role,
-            "naming-attachment",
-            identity.as_str(),
-        )?)
+        Self::from_bridge_authority(role, "naming-attachment", identity.as_str())
     }
 
     pub(in crate::runtime) fn from_bridge_naming_authority(
         role: &'static str,
         identity: &BridgeNamingAuthoritativeIdentity,
     ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-        Ok(Self::from_bridge_authority(
-            role,
-            "naming-authority",
-            identity.as_str(),
-        )?)
+        Self::from_bridge_authority(role, "naming-authority", identity.as_str())
     }
 
     pub(in crate::runtime) fn from_bridge_continuity_authority(
         role: &'static str,
         identity: &BridgeContinuityAuthoritativeIdentity,
     ) -> Result<Self, crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial> {
-        Ok(Self::from_bridge_authority(
-            role,
-            "continuity-authority",
-            identity.as_str(),
-        )?)
+        Self::from_bridge_authority(role, "continuity-authority", identity.as_str())
     }
 
     fn from_bridge_authority(
@@ -93,14 +77,12 @@ fn bridge_import_identity(
     WorthQueryEvidenceIdentity,
     crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
 > {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAuthorityIdentity)
-            .field_shape(WorthQueryEvidenceTag::new("role"), role)
-            .field_shape(WorthQueryEvidenceTag::new("bridge_family"), bridge_family)
-            .field_bridge_retained_evidence_identity(
-                WorthQueryEvidenceTag::new("bridge_identity"),
-                identity,
-            )
-            .seal()?,
-    )
+    worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAuthorityIdentity)
+        .field_shape(WorthQueryEvidenceTag::new("role"), role)
+        .field_shape(WorthQueryEvidenceTag::new("bridge_family"), bridge_family)
+        .field_bridge_retained_evidence_identity(
+            WorthQueryEvidenceTag::new("bridge_identity"),
+            identity,
+        )
+        .seal()
 }

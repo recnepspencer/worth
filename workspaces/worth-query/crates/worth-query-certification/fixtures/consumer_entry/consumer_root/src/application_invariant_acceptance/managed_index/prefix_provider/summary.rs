@@ -7,7 +7,7 @@ type Bounds = PrefixSourceBounds<WorthQueryManagedIndexSourceSlot>;
 type Sources<'a, 'b, S, I> = WorthQueryManagedIndexSummarySources<'a, 'b, S, I>;
 
 pub(super) fn merge<S: ApplicationSchema, I: PrefixSourceIndex<S>>(
-    parts: [Option<Bounds>; 3],
+    parts: [Option<&Bounds>; 3],
     sources: &Sources<'_, '_, S, I>,
     control: &WorthQueryManagedIndexControl<'_>,
     calls: &Calls,
@@ -15,7 +15,7 @@ pub(super) fn merge<S: ApplicationSchema, I: PrefixSourceIndex<S>>(
     #[cfg(not(test))]
     let _ = calls;
     let mut result = None;
-    for bounds in parts.into_iter().flatten() {
+    for bounds in parts.into_iter().flatten().copied() {
         control.checkpoint(1)?;
         result = Some(match result {
             None => bounds,
@@ -50,7 +50,7 @@ pub(super) fn merge<S: ApplicationSchema, I: PrefixSourceIndex<S>>(
     result.ok_or(Stop::Domain(PrefixIndexDenial::InvalidTopology))
 }
 pub(super) fn may_match<S: ApplicationSchema, I: PrefixSourceIndex<S>>(
-    bounds: Bounds,
+    bounds: &Bounds,
     sources: &Sources<'_, '_, S, I>,
     probe: &Probe,
     control: &WorthQueryManagedIndexControl<'_>,

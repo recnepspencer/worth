@@ -325,7 +325,7 @@ impl WorthQueryRuntime {
         shared_admission: Option<&WorthQueryWriteAdmissionExecutionRecord>,
         receipt: &WorthQueryMutationReceipt,
     ) -> Result<Option<WorthQueryIntentExecutionProvenance>, IdentityDerivationDenial> {
-        Ok(shared_admission
+        shared_admission
             .map(|record| {
                 let commit_label = receipt
                     .commit_identity
@@ -344,7 +344,7 @@ impl WorthQueryRuntime {
                     &snapshot_evidence_identity,
                 )
             })
-            .transpose()?)
+            .transpose()
     }
 
     fn shared_write_decision_trace_envelope(

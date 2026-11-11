@@ -61,6 +61,8 @@ pub struct WorthQueryApplicationInvariantFactories<Schema> {
         worth_query_declaration::facade::application_history::ErasedApplicationHistoryDefinition,
     >,
     binding_identity: ApplicationSchemaBindingIdentity,
+    content_bindings:
+        worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
     expected: BTreeMap<
         (String, ApplicationInvariantExecutionPoint),
         worth_query_installation::facade::WorthQueryInstalledApplicationInvariantDescriptor,
@@ -98,6 +100,7 @@ where
                 } else { None }
             }).collect(),
             binding_identity: schema.binding_identity(),
+            content_bindings: schema.value_bindings().clone(),
             expected,
             factories: BTreeMap::new(),
             installed_order: Vec::new(),
@@ -179,6 +182,12 @@ where
         ),
         WorthQueryPrimaryGraphInstallationDenial,
     > {
+        let content_fields = std::sync::Arc::new(
+            super::application_invariant::content_fields::InvariantContentFields::lower(
+                self.content_bindings.clone(),
+                layout,
+            ),
+        );
         if binding_identity != self.binding_identity {
             return Err(denial(
                 WorthQueryPrimaryGraphInstallationDenialKind::ForeignInvariantFactory,
@@ -265,7 +274,12 @@ where
                 })
                 .collect::<Result<Vec<_>, _>>()?;
             let registration = rule
-                .into_registration(descriptor, self.binding_identity.clone(), program_selection)
+                .into_registration(
+                    descriptor,
+                    self.binding_identity.clone(),
+                    program_selection,
+                    content_fields.clone(),
+                )
                 .map_err(|detail| {
                     denial(
                         WorthQueryPrimaryGraphInstallationDenialKind::InvariantFactoryRejected,

@@ -5,6 +5,7 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationIdempotencyResolution;
 
 #[test]
+#[expect(clippy::disallowed_methods, reason = "Client-race court")]
 fn pending_correction_cutover_never_looks_unseen_on_another_branch() {
     let world = installed_authorization_world(
         true,

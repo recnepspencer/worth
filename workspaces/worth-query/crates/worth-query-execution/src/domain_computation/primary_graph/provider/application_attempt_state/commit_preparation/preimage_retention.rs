@@ -1,6 +1,7 @@
 //! Fail-closed retention from the admitted decision read-set.
 
 mod authored_anchors;
+mod owned_relations;
 mod relations;
 pub(crate) mod selection;
 pub(crate) use relations::WorthQueryRetainedRelationPreImageSeal;
@@ -74,14 +75,21 @@ pub(super) fn retain_attempt_preimage(
                 "preimage projection capacity exhausted"),
         })?;
     let examined = candidates.examined();
-    let selected = if let Some(anchors) = authored_anchors::select(attempt)? {
-        selection::retain_from_authored_anchors(demand, candidates.iter(), &footprint, &anchors)
+    let selected = if let Some(selection) = authored_anchors::select(attempt)? {
+        selection::retain_from_authored_anchors(
+            demand,
+            candidates.iter(),
+            &footprint,
+            &selection.anchors,
+            selection.own_changes,
+        )
     } else {
         selection::retain_from_attempt(demand, candidates.iter(), &footprint)
     };
     let (mut retained, candidates_materialized) = selected.map_err(retention_failure)?.into_parts();
     if !demand.relations().is_empty() {
         retained = relations::retain(
+            attempt,
             execution,
             layout,
             demand,

@@ -91,7 +91,7 @@ fn exercise(worker_only: bool) {
         })
         .unwrap();
     let contacts = host.producer_contacts_on_this_thread_for_test();
-    let denial = super::super::super::courts::checkout(&document, &request, root, expected.clone(), 0xd1214_10)
+    let denial = super::super::super::courts::checkout(&document, &request, root, expected.clone(), 0x0d12_1410)
         .expect_err("the configured source partition has no row at D; another partition cannot certify its parent");
     assert!(
         matches!(

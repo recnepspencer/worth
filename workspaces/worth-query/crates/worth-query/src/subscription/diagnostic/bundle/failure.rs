@@ -68,32 +68,30 @@ impl QuerySubscriptionDiagnosticBundleError {
         evidence_parts: &[String],
     ) -> Self {
         let counters = QuerySubscriptionDiagnosticCounters::missing_stage_denied();
-        let failure_identity = (|| {
-            Ok(WorthQueryEvidenceIdentity::compose(
-                crate::evidence_identity::WorthQueryEvidenceScope::SubscriptionActivationReceipt,
-            )
-            .field_shape(
-                crate::evidence_identity::WorthQueryEvidenceTag::new("identity_family"),
-                "query_subscription_diagnostic_bundle_error_v1",
-            )
-            .field_shape(
-                crate::evidence_identity::WorthQueryEvidenceTag::new("error_kind"),
-                error_kind.as_str(),
-            )
-            .field_shape(
-                crate::evidence_identity::WorthQueryEvidenceTag::new("message"),
-                message,
-            )
-            .field_evidence_identity(
-                crate::evidence_identity::WorthQueryEvidenceTag::new("counters"),
-                &counters.evidence_identity(),
-            )
-            .field_value_sequence(
-                crate::evidence_identity::WorthQueryEvidenceTag::new("evidence"),
-                evidence_parts.iter().map(String::as_str),
-            )
-            .seal()?)
-        })();
+        let failure_identity = WorthQueryEvidenceIdentity::compose(
+            crate::evidence_identity::WorthQueryEvidenceScope::SubscriptionActivationReceipt,
+        )
+        .field_shape(
+            crate::evidence_identity::WorthQueryEvidenceTag::new("identity_family"),
+            "query_subscription_diagnostic_bundle_error_v1",
+        )
+        .field_shape(
+            crate::evidence_identity::WorthQueryEvidenceTag::new("error_kind"),
+            error_kind.as_str(),
+        )
+        .field_shape(
+            crate::evidence_identity::WorthQueryEvidenceTag::new("message"),
+            message,
+        )
+        .field_evidence_identity(
+            crate::evidence_identity::WorthQueryEvidenceTag::new("counters"),
+            &counters.evidence_identity(),
+        )
+        .field_value_sequence(
+            crate::evidence_identity::WorthQueryEvidenceTag::new("evidence"),
+            evidence_parts.iter().map(String::as_str),
+        )
+        .seal();
         Self {
             error_kind,
             message,
@@ -113,7 +111,7 @@ impl QuerySubscriptionDiagnosticBundleError {
     pub fn failure_identity(
         &self,
     ) -> Result<&WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-        Ok(self.failure_identity.as_ref().map_err(|cause| *cause)?)
+        self.failure_identity.as_ref().map_err(|cause| *cause)
     }
 
     pub fn counters(&self) -> &QuerySubscriptionDiagnosticCounters {
@@ -154,80 +152,80 @@ impl QuerySubscriptionDiagnosticFailure {
     pub fn from_family_selection_error(
         error: &QuerySubscriptionFamilySelectionError,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             *error.diagnostic()?.stage(),
             error.message(),
             error.diagnostic()?.source_identity().clone(),
             error.counters().evidence_identity(),
             error.failure_class().as_str(),
             error.diagnostic()?.evidence_identity(),
-        )?)
+        )
     }
 
     pub fn from_declaration_denial(
         error: &QuerySubscriptionDeclarationDenial,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             *error.diagnostic()?.stage(),
             error.message(),
             error.diagnostic()?.source_identity().clone(),
             error.counters().evidence_identity(),
             error.denial_kind().as_str(),
             error.diagnostic()?.evidence_identity(),
-        )?)
+        )
     }
 
     pub fn from_bridge_lowering_error(
         error: &QuerySubscriptionBridgeLoweringError,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             *error.diagnostic()?.stage(),
             error.message(),
             error.diagnostic()?.source_identity().clone(),
             error.counters().evidence_identity(),
             error.denial_kind().as_str(),
             error.diagnostic()?.evidence_identity(),
-        )?)
+        )
     }
 
     pub fn from_admission_error(
         error: &QuerySubscriptionAdmissionError,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             *error.pipeline_diagnostic().stage(),
             error.message(),
             error.pipeline_diagnostic().source_identity().clone(),
             error.counters().evidence_identity(),
             error.denial_kind().as_str(),
             error.pipeline_diagnostic().evidence_identity(),
-        )?)
+        )
     }
 
     pub fn from_support_report_error(
         error: &QuerySubscriptionSupportReportError,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             QuerySubscriptionDiagnosticStage::SupportReporting,
             error.message(),
             error.failure_identity()?.clone(),
             error.failure_identity()?.clone(),
             error.denial_kind().as_str(),
             error.failure_identity()?,
-        )?)
+        )
     }
 
     pub fn from_lifecycle_certification_error(
         error: &SubscriptionLifecycleCertificationError,
     ) -> Result<Self, IdentityDerivationDenial> {
         let failure_identity = error.failure_identity()?.clone();
-        Ok(Self::new(
+        Self::new(
             QuerySubscriptionDiagnosticStage::Certification,
             error.message(),
             failure_identity.clone(),
             failure_identity.clone(),
             "lifecycle_certification",
             &failure_identity,
-        )?)
+        )
     }
 
     pub fn stage(&self) -> &QuerySubscriptionDiagnosticStage {

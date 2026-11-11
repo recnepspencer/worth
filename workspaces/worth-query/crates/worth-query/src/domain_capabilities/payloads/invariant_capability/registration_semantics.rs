@@ -21,22 +21,20 @@ impl WorthQueryInvariantRegistrationRuntimeSemantics {
     pub fn from_registration(
         registration: InvariantRegistration,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(InvariantCatalog {
+        Self::new(InvariantCatalog {
             registrations: vec![registration],
-        })?)
+        })
     }
 
     fn registration_identity_for_catalog(
         invariant_catalog: &InvariantCatalog,
     ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-        Ok(domain_capability_scope_encoder(
-            "worth_query_invariant_registration_runtime_semantics_v1",
-        )
-        .field_shape(
-            WorthQueryEvidenceTag::new("registration_label"),
-            invariant_catalog.canonical_registration_digest(),
-        )
-        .seal()?)
+        domain_capability_scope_encoder("worth_query_invariant_registration_runtime_semantics_v1")
+            .field_shape(
+                WorthQueryEvidenceTag::new("registration_label"),
+                invariant_catalog.canonical_registration_digest(),
+            )
+            .seal()
     }
 
     pub fn invariant_catalog(&self) -> &InvariantCatalog {

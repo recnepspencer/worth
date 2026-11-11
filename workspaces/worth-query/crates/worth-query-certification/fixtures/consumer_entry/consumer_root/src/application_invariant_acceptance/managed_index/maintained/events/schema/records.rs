@@ -76,7 +76,7 @@ impl Directory {
 pub struct Item;
 impl fragment::Entity for Item {
     const NAME: &'static str = "Item";
-    type Aspects = (ItemFacts,);
+    type Aspects = (ItemFacts, Option<ItemBadge>);
     type Relations = (Children,);
 }
 impl Item {
@@ -240,6 +240,8 @@ impl Children {
 pub struct Previous;
 impl fragment::Relation for Previous {
     const NAME: &'static str = "Previous";
+    const CARDINALITY: ApplicationRelationCardinality =
+        ApplicationRelationCardinality::new(None, Some(1), None, None, None, None);
     type To = Directory;
 }
 impl Previous {
@@ -257,3 +259,35 @@ impl Retires {
         relation(CatalogRecords, Directory, Self)
     }
 }
+
+/// One optional parent owns a required flag and an independently optional detail.
+pub struct ItemBadge;
+impl fragment::Aspect for ItemBadge {
+    const NAME: &'static str = "ItemBadge";
+    type Row = ItemBadgeValue;
+}
+impl ItemBadge {
+    pub fn reference() -> fragment::AspectSelection<CatalogRecords, Item, Self> {
+        fragment::aspect(CatalogRecords, Item, Self)
+    }
+}
+pub struct ItemBadgeValue {
+    pub badge_flag: bool,
+    pub badge_detail: Option<bool>,
+}
+impl fragment::Record<ItemBadgeValue> for CatalogRecordsBindings {
+    fn record() -> impl fragment::Shape<ItemBadgeValue, Self> {
+        fragment::field("BadgeFlag", |row: &ItemBadgeValue| row.badge_flag)
+            .and("BadgeDetail", |row: &ItemBadgeValue| row.badge_detail)
+            .build(
+                |badge_flag, badge_detail, _: &mut ValueDecodeAdmission<'_>| {
+                    Ok::<_, std::convert::Infallible>(ItemBadgeValue {
+                        badge_flag,
+                        badge_detail,
+                    })
+                },
+            )
+    }
+}
+pub type BadgeFlag = FieldSelection<CatalogRecords, Item, ItemBadge, bool>;
+pub type BadgeDetail = FieldSelection<CatalogRecords, Item, ItemBadge, bool>;

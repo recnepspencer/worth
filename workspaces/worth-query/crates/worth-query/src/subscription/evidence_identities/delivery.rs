@@ -28,18 +28,16 @@ pub(in crate::subscription) fn live_relevance_identity(
 pub(in crate::subscription) fn slice_intent_identity(
     parts: &[QuerySubscriptionSlicePart],
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "query_subscription_slice_intent_v1",
-            )
-            .field_value_sequence(
-                WorthQueryEvidenceTag::new("parts"),
-                parts.iter().map(QuerySubscriptionSlicePart::canonical_part),
-            )
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "query_subscription_slice_intent_v1",
+        )
+        .field_value_sequence(
+            WorthQueryEvidenceTag::new("parts"),
+            parts.iter().map(QuerySubscriptionSlicePart::canonical_part),
+        )
+        .seal()
 }
 
 pub(in crate::subscription) fn patch_group_identity(
@@ -61,15 +59,13 @@ pub(in crate::subscription) fn patch_group_identity(
 pub(in crate::subscription) fn delivery_cause_evidence_label_identity(
     label: &str,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "query_subscription_delivery_cause_evidence_label_v1",
-            )
-            .field_shape(WorthQueryEvidenceTag::new("label"), label)
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "query_subscription_delivery_cause_evidence_label_v1",
+        )
+        .field_shape(WorthQueryEvidenceTag::new("label"), label)
+        .seal()
 }
 
 pub(in crate::subscription) fn delivery_cause_identity(

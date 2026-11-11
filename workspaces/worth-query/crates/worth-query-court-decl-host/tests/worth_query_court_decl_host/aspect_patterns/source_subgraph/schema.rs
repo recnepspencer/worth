@@ -41,7 +41,15 @@ pub struct Contribution;
 impl ApplicationSchemaContribution<Schema> for Contribution {
     const IDENTITY: ApplicationSchemaContributionIdentity =
         ApplicationSchemaContributionIdentity::new("source-subgraph.contribution.v1");
-    type Members = (SourceModel, SourceFeature, Contracts, correction::Restore);
+    type Members = (
+        SourceModel,
+        SourceFeature,
+        Contracts,
+        correction::Restore,
+        roster::UndoCreate,
+        roster::UndoRetire,
+        roster::local_member::UndoDelete,
+    );
 }
 
 pub struct Contracts;
@@ -50,7 +58,9 @@ impl Registration<Schema> for Contracts {
         schema: ApplicationSchemaDeclarationBuilder<Schema>,
     ) -> Result<ApplicationSchemaDeclarationBuilder<Schema>, ApplicationSchemaDeclarationDenial>
     {
-        Ok(generation::declare(edit::declare(declare(schema))))
+        Ok(roster::declare(generation::declare(edit::declare(
+            declare(schema),
+        ))))
     }
 }
 

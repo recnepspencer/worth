@@ -128,15 +128,13 @@ pub(in crate::subscription) fn lifecycle_certification_bundle_identity(
 pub(in crate::subscription) fn lifecycle_active_lane_lookup_class_identity(
     lookup_class: &str,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "subscription_active_lane_lookup_class_v1",
-            )
-            .field_shape(WorthQueryEvidenceTag::new("lookup_class"), lookup_class)
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "subscription_active_lane_lookup_class_v1",
+        )
+        .field_shape(WorthQueryEvidenceTag::new("lookup_class"), lookup_class)
+        .seal()
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -149,111 +147,101 @@ pub(in crate::subscription) fn lifecycle_subscription_budget_identity(
     durable_checkpoint_requested: bool,
     store_backed_restart_requested: bool,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "active_subscription_budget_v1",
-            )
-            .field_usize(
-                WorthQueryEvidenceTag::new("lookup_width"),
-                registry_lookup_width as usize,
-            )
-            .field_usize(
-                WorthQueryEvidenceTag::new("fanout_width"),
-                fanout_width as usize,
-            )
-            .field_usize(
-                WorthQueryEvidenceTag::new("allocation_scope_width"),
-                allocation_scope_width as usize,
-            )
-            .field_shape(WorthQueryEvidenceTag::new("lookup_class"), lookup_class)
-            .field_shape(
-                WorthQueryEvidenceTag::new("allocation_posture"),
-                allocation_posture,
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("durable_checkpoint_requested"),
-                if durable_checkpoint_requested {
-                    "true"
-                } else {
-                    "false"
-                },
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("store_backed_restart_requested"),
-                if store_backed_restart_requested {
-                    "true"
-                } else {
-                    "false"
-                },
-            )
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "active_subscription_budget_v1",
+        )
+        .field_usize(
+            WorthQueryEvidenceTag::new("lookup_width"),
+            registry_lookup_width as usize,
+        )
+        .field_usize(
+            WorthQueryEvidenceTag::new("fanout_width"),
+            fanout_width as usize,
+        )
+        .field_usize(
+            WorthQueryEvidenceTag::new("allocation_scope_width"),
+            allocation_scope_width as usize,
+        )
+        .field_shape(WorthQueryEvidenceTag::new("lookup_class"), lookup_class)
+        .field_shape(
+            WorthQueryEvidenceTag::new("allocation_posture"),
+            allocation_posture,
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("durable_checkpoint_requested"),
+            if durable_checkpoint_requested {
+                "true"
+            } else {
+                "false"
+            },
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("store_backed_restart_requested"),
+            if store_backed_restart_requested {
+                "true"
+            } else {
+                "false"
+            },
+        )
+        .seal()
 }
 
 pub(in crate::subscription) fn lifecycle_allocation_posture_identity(
     posture: &str,
     allocation_scope_width: u64,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "subscription_allocation_posture_v1",
-            )
-            .field_shape(WorthQueryEvidenceTag::new("posture"), posture)
-            .field_usize(
-                WorthQueryEvidenceTag::new("allocation_scope_width"),
-                allocation_scope_width as usize,
-            )
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "subscription_allocation_posture_v1",
+        )
+        .field_shape(WorthQueryEvidenceTag::new("posture"), posture)
+        .field_usize(
+            WorthQueryEvidenceTag::new("allocation_scope_width"),
+            allocation_scope_width as usize,
+        )
+        .seal()
 }
 
 pub(in crate::subscription) fn lifecycle_active_delivery_density_posture_identity(
     posture: &str,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "subscription_active_delivery_density_posture_v1",
-            )
-            .field_shape(WorthQueryEvidenceTag::new("posture"), posture)
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "subscription_active_delivery_density_posture_v1",
+        )
+        .field_shape(WorthQueryEvidenceTag::new("posture"), posture)
+        .seal()
 }
 
 pub(in crate::subscription) fn lifecycle_context_view_shape_identity(
     view_family: Option<&str>,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "subscription_lifecycle_view_shape_v1",
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("view"),
-                view_family.unwrap_or("none"),
-            )
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "subscription_lifecycle_view_shape_v1",
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("view"),
+            view_family.unwrap_or("none"),
+        )
+        .seal()
 }
 
 pub(in crate::subscription) fn lifecycle_context_basis_posture_identity(
     basis: &str,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "subscription_lifecycle_basis_v1",
-            )
-            .field_shape(WorthQueryEvidenceTag::new("basis"), basis)
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(SUBSCRIPTION_IDENTITY_SCOPE)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "subscription_lifecycle_basis_v1",
+        )
+        .field_shape(WorthQueryEvidenceTag::new("basis"), basis)
+        .seal()
 }
 
 pub(in crate::subscription) fn lifecycle_preview_promotion_residue_identity(

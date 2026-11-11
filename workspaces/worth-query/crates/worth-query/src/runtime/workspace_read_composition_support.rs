@@ -12,12 +12,12 @@ impl WorthQueryWorkspace {
     pub fn public_read_composition_phase_one_closeout(
         &self,
     ) -> Result<WorthQueryReadCompositionPhaseOneCloseout, IdentityDerivationDenial> {
-        Ok(self.runtime.public_read_composition_phase_one_closeout()?)
+        self.runtime.public_read_composition_phase_one_closeout()
     }
 
     pub fn public_read_composition_phase_gate(
         &self,
     ) -> Result<WorthQueryReadCompositionPhaseGate, IdentityDerivationDenial> {
-        Ok(self.runtime.public_read_composition_phase_gate()?)
+        self.runtime.public_read_composition_phase_gate()
     }
 }

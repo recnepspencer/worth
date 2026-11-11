@@ -34,7 +34,7 @@ pub fn direct_table_lane(
         CAPABILITY_IDENTITY,
     );
     let reuse = exact_saved_query_reuse(&saved);
-    Ok(lane_bundle(
+    lane_bundle(
         MilestoneNineFiveCompositionAxis::Direct,
         MilestoneNineFiveViewAxis::Table,
         projection_axis_for(projection_surface),
@@ -51,7 +51,7 @@ pub fn direct_table_lane(
         projection_surface_digest(&projection_bundle()?, projection_surface),
         &saved,
         &reuse,
-    )?)
+    )
 }
 
 pub fn named_scope_table_lane(
@@ -63,7 +63,7 @@ pub fn named_scope_table_lane(
         CAPABILITY_IDENTITY,
     );
     let reuse = exact_saved_query_reuse(&saved);
-    Ok(lane_bundle(
+    lane_bundle(
         MilestoneNineFiveCompositionAxis::NamedScopeExpansion,
         MilestoneNineFiveViewAxis::Table,
         MilestoneNineFiveProjectionAxis::RetainedDerivedArtifactBinding,
@@ -89,7 +89,7 @@ pub fn named_scope_table_lane(
         ),
         &saved,
         &reuse,
-    )?)
+    )
 }
 
 pub fn direct_detail_live_lane(
@@ -101,7 +101,7 @@ pub fn direct_detail_live_lane(
         CAPABILITY_IDENTITY,
     );
     let reuse = exact_saved_query_reuse(&saved);
-    Ok(lane_bundle(
+    lane_bundle(
         MilestoneNineFiveCompositionAxis::Direct,
         MilestoneNineFiveViewAxis::Detail,
         MilestoneNineFiveProjectionAxis::LiveArtifactBinding,
@@ -121,7 +121,7 @@ pub fn direct_detail_live_lane(
         ),
         &saved,
         &reuse,
-    )?)
+    )
 }
 
 pub fn template_detail_live_lane(
@@ -133,7 +133,7 @@ pub fn template_detail_live_lane(
         CAPABILITY_IDENTITY,
     );
     let reuse = exact_saved_query_reuse(&saved);
-    Ok(lane_bundle(
+    lane_bundle(
         MilestoneNineFiveCompositionAxis::TemplateInstantiation,
         MilestoneNineFiveViewAxis::Detail,
         MilestoneNineFiveProjectionAxis::LiveArtifactBinding,
@@ -159,7 +159,7 @@ pub fn template_detail_live_lane(
         ),
         &saved,
         &reuse,
-    )?)
+    )
 }
 
 pub fn grouped_ordinary_lane(
@@ -171,7 +171,7 @@ pub fn grouped_ordinary_lane(
         CAPABILITY_IDENTITY,
     );
     let reuse = exact_saved_query_reuse(&saved);
-    Ok(lane_bundle(
+    lane_bundle(
         MilestoneNineFiveCompositionAxis::Direct,
         MilestoneNineFiveViewAxis::KanbanGrouped,
         MilestoneNineFiveProjectionAxis::RelationalGroupedProjection,
@@ -191,7 +191,7 @@ pub fn grouped_ordinary_lane(
         ),
         &saved,
         &reuse,
-    )?)
+    )
 }
 
 pub fn grouped_preserved_lane(
@@ -203,7 +203,7 @@ pub fn grouped_preserved_lane(
         CAPABILITY_IDENTITY,
     );
     let reuse = exact_saved_query_reuse(&saved);
-    Ok(lane_bundle(
+    lane_bundle(
         MilestoneNineFiveCompositionAxis::BasisAwareComposition,
         MilestoneNineFiveViewAxis::KanbanGrouped,
         MilestoneNineFiveProjectionAxis::RelationalGroupedProjection,
@@ -229,7 +229,7 @@ pub fn grouped_preserved_lane(
         ),
         &saved,
         &reuse,
-    )?)
+    )
 }
 
 pub fn template_public_bridge_table_lane(
@@ -241,7 +241,7 @@ pub fn template_public_bridge_table_lane(
         CAPABILITY_IDENTITY,
     );
     let reuse = exact_saved_query_reuse(&saved);
-    Ok(lane_bundle(
+    lane_bundle(
         MilestoneNineFiveCompositionAxis::TemplateInstantiation,
         MilestoneNineFiveViewAxis::Table,
         MilestoneNineFiveProjectionAxis::LiveArtifactBinding,
@@ -267,7 +267,7 @@ pub fn template_public_bridge_table_lane(
         ),
         &saved,
         &reuse,
-    )?)
+    )
 }
 
 pub fn preserved_detail_lane(
@@ -279,7 +279,7 @@ pub fn preserved_detail_lane(
     let reuse = exact_saved_query_reuse(&saved);
     let canonical = direct_detail();
     let view = detail_view(&canonical);
-    Ok(lane_bundle(
+    lane_bundle(
         MilestoneNineFiveCompositionAxis::BasisAwareComposition,
         MilestoneNineFiveViewAxis::Detail,
         MilestoneNineFiveProjectionAxis::LiveArtifactBinding,
@@ -304,5 +304,5 @@ pub fn preserved_detail_lane(
         ),
         &saved,
         &reuse,
-    )?)
+    )
 }

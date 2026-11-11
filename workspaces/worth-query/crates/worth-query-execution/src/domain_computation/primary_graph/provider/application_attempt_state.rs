@@ -28,6 +28,7 @@ mod registered_reads;
 pub(crate) mod registration;
 mod retained_basis;
 pub(in crate::domain_computation) use registered_reads::RegisteredPrimaryRead;
+mod owned_members;
 mod staged;
 use commit_completion::WorthQueryPreparedProviderApplicationAttempt;
 pub(in crate::domain_computation::primary_graph::provider) use commit_preparation::commit_prepared_application;

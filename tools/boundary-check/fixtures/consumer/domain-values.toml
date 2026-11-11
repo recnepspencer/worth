@@ -1,0 +1,6 @@
+[[binding]]
+source = "src/lib.rs"
+binding = "MeasurementBinding"
+posture = "domain"
+reason = "Reference-free numerical measurement."
+forbidden_types = ["CellName"]

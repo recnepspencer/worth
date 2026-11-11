@@ -28,11 +28,11 @@ impl WorthQueryInvariantCapabilityContributionAuthoring {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             WorthQueryInvariantCapabilityContributionPosture::CapabilityGap,
             semantic_code,
             detail,
-        )?)
+        )
     }
 
     pub fn graph_capability_gap(
@@ -41,23 +41,23 @@ impl WorthQueryInvariantCapabilityContributionAuthoring {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_graph_capability(
+        Self::with_graph_capability(
             WorthQueryInvariantCapabilityContributionPosture::CapabilityGap,
             semantic_code,
             detail,
             WorthQueryGraphCapabilityRuntimeSemantics::new(capability_family, capability_class),
-        )?)
+        )
     }
 
     pub fn invariant_denial(
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             WorthQueryInvariantCapabilityContributionPosture::InvariantDenial,
             semantic_code,
             detail,
-        )?)
+        )
     }
 
     pub fn graph_invariant_denial(
@@ -72,7 +72,7 @@ impl WorthQueryInvariantCapabilityContributionAuthoring {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_graph_invariant_denial(
+        Self::with_graph_invariant_denial(
             WorthQueryInvariantCapabilityContributionPosture::InvariantDenial,
             semantic_code,
             detail,
@@ -86,18 +86,18 @@ impl WorthQueryInvariantCapabilityContributionAuthoring {
                 breadth_digest,
                 counter_snapshot,
             )?,
-        )?)
+        )
     }
 
     pub fn support_summary(
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             WorthQueryInvariantCapabilityContributionPosture::SupportSummary,
             semantic_code,
             detail,
-        )?)
+        )
     }
 
     pub fn graph_support_summary(
@@ -106,12 +106,12 @@ impl WorthQueryInvariantCapabilityContributionAuthoring {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_graph_capability(
+        Self::with_graph_capability(
             WorthQueryInvariantCapabilityContributionPosture::SupportSummary,
             semantic_code,
             detail,
             WorthQueryGraphCapabilityRuntimeSemantics::new(capability_family, capability_class),
-        )?)
+        )
     }
 
     pub fn invariant_registration(
@@ -119,12 +119,12 @@ impl WorthQueryInvariantCapabilityContributionAuthoring {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_invariant_registration(
+        Self::with_invariant_registration(
             WorthQueryInvariantCapabilityContributionPosture::InvariantRegistration,
             semantic_code,
             detail,
             WorthQueryInvariantRegistrationRuntimeSemantics::new(invariant_catalog)?,
-        )?)
+        )
     }
 
     pub fn invariant_rule_registration(
@@ -132,12 +132,12 @@ impl WorthQueryInvariantCapabilityContributionAuthoring {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_invariant_registration(
+        Self::with_invariant_registration(
             WorthQueryInvariantCapabilityContributionPosture::InvariantRegistration,
             semantic_code,
             detail,
             WorthQueryInvariantRegistrationRuntimeSemantics::from_registration(registration)?,
-        )?)
+        )
     }
 
     pub fn for_intent_declaration(
@@ -149,9 +149,9 @@ impl WorthQueryInvariantCapabilityContributionAuthoring {
         >,
         IdentityDerivationDenial,
     > {
-        Ok(self.bind_to_declaration_target(
+        self.bind_to_declaration_target(
             WorthQueryDeclarationBoundContributionTarget::for_intent_declaration(declaration),
-        )?)
+        )
     }
 
     pub fn for_lower_runtime_boundary_envelope(
@@ -163,11 +163,11 @@ impl WorthQueryInvariantCapabilityContributionAuthoring {
         >,
         IdentityDerivationDenial,
     > {
-        Ok(self.bind_to_lower_runtime_boundary_target(
+        self.bind_to_lower_runtime_boundary_target(
             WorthQueryLowerRuntimeBoundaryBoundContributionTarget::for_lower_runtime_boundary_envelope(
                 envelope,
             ),
-        )?)
+        )
     }
 
     pub fn for_lower_runtime_boundary_source<S>(
@@ -182,7 +182,7 @@ impl WorthQueryInvariantCapabilityContributionAuthoring {
     where
         S: WorthQueryLowerRuntimeBoundaryEnvelopeSource + ?Sized,
     {
-        Ok(self.for_lower_runtime_boundary_envelope(source.lower_runtime_boundary_envelope())?)
+        self.for_lower_runtime_boundary_envelope(source.lower_runtime_boundary_envelope())
     }
 
     pub fn bind_to_declaration_target(
@@ -194,7 +194,7 @@ impl WorthQueryInvariantCapabilityContributionAuthoring {
         >,
         IdentityDerivationDenial,
     > {
-        Ok(bind_requested(self.payload, target)?)
+        bind_requested(self.payload, target)
     }
 
     pub fn bind_to_lower_runtime_boundary_target(
@@ -206,7 +206,7 @@ impl WorthQueryInvariantCapabilityContributionAuthoring {
         >,
         IdentityDerivationDenial,
     > {
-        Ok(bind_requested(self.payload, target)?)
+        bind_requested(self.payload, target)
     }
 
     pub(crate) fn bind_to_installed_target<T>(
@@ -226,10 +226,10 @@ impl WorthQueryInvariantCapabilityContributionAuthoring {
                 T,
             >,
     {
-        Ok(bind_requested::<
+        bind_requested::<
             WorthQueryInvariantCapabilityContributionPayload,
             crate::domain_capabilities::WorthQueryInstalledDomainContributionTarget<T>,
-        >(self.payload, target)?)
+        >(self.payload, target)
     }
 
     fn new(

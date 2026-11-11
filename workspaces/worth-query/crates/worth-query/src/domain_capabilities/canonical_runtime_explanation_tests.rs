@@ -181,9 +181,9 @@ fn ready_explanation(
     >,
     IdentityDerivationDenial,
 > {
-    Ok(ready(
+    ready(
         authoring
             .bind_to_lower_runtime_boundary_target(lower_runtime_target("boundary-explanation")?)
             .expect("fixture digest must fit"),
-    )?)
+    )
 }

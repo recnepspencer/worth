@@ -52,7 +52,7 @@ impl ProjectionFactExtractionCounters {
     }
 
     pub(crate) fn digest(&self) -> Result<String, IdentityDerivationDenial> {
-        Ok(compose_extraction_counters_digest(self)?)
+        compose_extraction_counters_digest(self)
     }
 
     pub(crate) fn new(
@@ -212,7 +212,7 @@ impl ConsumedProjectionFactSet {
     }
 
     pub fn issue_receipt(&self) -> Result<ProjectionConsumptionReceipt, IdentityDerivationDenial> {
-        Ok(ProjectionConsumptionReceipt::from_fact_set(self)?)
+        ProjectionConsumptionReceipt::from_fact_set(self)
     }
 
     pub(crate) fn new(

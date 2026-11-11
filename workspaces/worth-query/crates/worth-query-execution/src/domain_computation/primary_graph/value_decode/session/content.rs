@@ -18,7 +18,7 @@ impl ValueDecodeSession<'_> {
     ) -> Result<Arc<Installed>, Stop> {
         self.content_binding_matching(entity, aspect, field, Installed::matches_content::<C>)
     }
-    fn content_binding_matching(
+    pub(in crate::domain_computation::primary_graph) fn content_binding_matching(
         &self,
         entity: &str,
         aspect: &str,

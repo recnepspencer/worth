@@ -46,6 +46,7 @@ fn causal_lower_authorities_admit_one_managed_direct_run_and_cleanup_every_owner
 }
 
 #[test]
+#[expect(clippy::disallowed_methods, reason = "Foreign-thread court")]
 fn cleanup_thread_failure_returns_all_authority_for_owner_thread_retry() {
     let host_request = worth_query_testkit_execution_primary_graph_application_attempt::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);

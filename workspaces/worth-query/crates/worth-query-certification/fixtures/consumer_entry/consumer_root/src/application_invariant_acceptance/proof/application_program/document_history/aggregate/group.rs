@@ -70,7 +70,12 @@ fn group<'a, Outputs>(
             .unwrap_or_else(|(_, cause)| panic!("capture original grouped fixed trees: {cause:?}"))
     })
 }
-fn until<Outputs: WorthQueryHistoryOutputsMode<ConsumerSchema, History>>(
+fn until<
+    Outputs: worth_query_host::facade::application_entry::WorthQueryHistoryOutputsMode<
+        ConsumerSchema,
+        History,
+    >,
+>(
     app: &App,
     group: &mut Group<'_, Outputs>,
     mut ready: impl FnMut(&mut Group<'_, Outputs>) -> bool,

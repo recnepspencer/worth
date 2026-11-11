@@ -56,12 +56,19 @@ pub struct Handler;
 impl OperationHandler<Schema, Binding> for Handler {
     fn decide(
         &self,
-        _: &Issue,
+        input: &Issue,
         reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<Schema, Record>, operation::Denial> {
         let result = reader
             .resolve_entity(Key::at("Key"), "record".to_owned())
-            .and_then(|root| reader.mutation_target(&root));
+            .and_then(|root| {
+                if input.key == "undeclared-content-read" {
+                    reader
+                        .content(&root, samples())
+                        .map_err(HandlerExecutionDenial::new)?;
+                }
+                reader.mutation_target(&root)
+            });
         match result {
             Ok(target) => HandlerResult::Completed(target),
             Err(cause) => HandlerResult::ExecutionDenied(cause),

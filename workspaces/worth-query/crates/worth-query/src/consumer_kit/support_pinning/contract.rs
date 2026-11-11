@@ -80,7 +80,7 @@ impl WorthQuerySupportPinContract {
     pub(crate) fn to_document(
         &self,
     ) -> Result<WorthQuerySupportPinContractDocument, IdentityDerivationDenial> {
-        Ok(WorthQuerySupportPinContractDocument::from_contract(self)?)
+        WorthQuerySupportPinContractDocument::from_contract(self)
     }
 
     pub fn consumer_name(&self) -> &str {

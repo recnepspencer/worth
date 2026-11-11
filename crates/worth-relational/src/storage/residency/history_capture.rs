@@ -12,7 +12,6 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 pub(super) fn split_rows<K: RecordKind, T>(
-    _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     arena: &RecordArena<K>,
     rows: &mut [Vec<T>],
 ) -> Result<Vec<RegionHistoryRow<T>>, Cause> {

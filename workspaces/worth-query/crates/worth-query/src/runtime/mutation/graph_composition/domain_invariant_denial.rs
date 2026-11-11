@@ -36,12 +36,12 @@ impl WorthQueryGraphCompositionDomainInvariantDenial {
             invariant_family.as_str(),
         )
         .seal()?;
-        Ok(Self::build(
+        Self::build(
             invariant_family,
             message,
             domain_invariant_summary,
             violation_digest,
-        )?)
+        )
     }
 
     pub fn owner_family(&self) -> &str {

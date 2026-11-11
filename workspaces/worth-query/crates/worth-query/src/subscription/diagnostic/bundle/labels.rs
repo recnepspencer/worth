@@ -14,7 +14,7 @@ pub(super) fn semantic_labels_for_support(
     support_posture: &QuerySubscriptionSupportPosture,
     denial_or_coverage_class_label: &str,
 ) -> Result<QuerySubscriptionDiagnosticSemanticLabels, IdentityDerivationDenial> {
-    Ok(QuerySubscriptionDiagnosticSemanticLabels::new(
+    QuerySubscriptionDiagnosticSemanticLabels::new(
         query_family_label.to_string(),
         declaration.family().as_str().to_string(),
         lowering.bridge_family().as_str().to_string(),
@@ -32,7 +32,7 @@ pub(super) fn semantic_labels_for_support(
         declaration.live_graph_access_posture().as_str().to_string(),
         support_posture.as_str().to_string(),
         denial_or_coverage_class_label.to_string(),
-    )?)
+    )
 }
 
 pub(super) fn semantic_labels_for_denied_bundle(
@@ -42,7 +42,7 @@ pub(super) fn semantic_labels_for_denied_bundle(
     support: Option<&QuerySubscriptionSupportReport>,
     denial_class_label: &str,
 ) -> Result<QuerySubscriptionDiagnosticSemanticLabels, IdentityDerivationDenial> {
-    Ok(QuerySubscriptionDiagnosticSemanticLabels::new(
+    QuerySubscriptionDiagnosticSemanticLabels::new(
         selection.query_family_label().to_string(),
         declaration
             .map(|value| value.family().as_str().to_string())
@@ -78,7 +78,7 @@ pub(super) fn semantic_labels_for_denied_bundle(
             .map(|value| value.support_posture().as_str().to_string())
             .unwrap_or_else(|| "not_reported".to_string()),
         denial_class_label.to_string(),
-    )?)
+    )
 }
 
 pub(super) fn omitted_stages_after_failure(

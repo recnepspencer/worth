@@ -171,7 +171,7 @@ impl WorthQueryFeedbackPhaseGraphInspection {
                 (WorthQueryFeedbackTermination::CoalescedNoMutation, 0, 0)
             };
 
-        Ok(Self::new(
+        Self::new(
             receipt.effect_name(),
             receipt.trigger_source_kind(),
             receipt.write_adjacent_trigger_class(),
@@ -187,7 +187,7 @@ impl WorthQueryFeedbackPhaseGraphInspection {
             resubscribed_live_view_count,
             resubscribed_derived_view_count,
             receipt.intent_receipt().pending_write_intent_count(),
-        )?)
+        )
     }
 
     #[allow(clippy::too_many_arguments)]

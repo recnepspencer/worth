@@ -34,7 +34,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
         .primary_graph_for_test()
         .unwrap();
     let handle = graph.integration_handle_for_test();
-    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+    let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
     let status_ref = AccountStatus::at("AccountStatus");
     let label_ref = AccountLabel::at("AccountLabel");
     let status = graph

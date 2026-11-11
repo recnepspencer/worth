@@ -23,15 +23,15 @@ pub(crate) fn compose_transition_rule_digest(
             neighbor.as_str(),
         );
     }
-    Ok(seal(encoder)?)
+    seal(encoder)
 }
 
 pub(crate) fn compose_transition_rules_digest(
     rule_digests: &[String],
 ) -> Result<String, IdentityDerivationDenial> {
-    Ok(compose_sequence_digest(
+    compose_sequence_digest(
         "projection_consumption_transition_rules_v1",
         "rule",
         rule_digests.iter().map(String::as_str),
-    )?)
+    )
 }

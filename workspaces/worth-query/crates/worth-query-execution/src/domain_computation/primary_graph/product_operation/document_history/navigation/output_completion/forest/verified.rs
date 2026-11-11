@@ -167,10 +167,10 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             .graph
             .with_runtime(execution, |native| {
                 let evidence = authority
-                    .selected_output_read(&execution, native)
+                    .selected_output_read(execution, native)
                     .map_err(ReadDenial::SelectionRead)?;
                 if !super::super::super::output_verification::selected_profile_root_is_current(
-                    execution, native, &evidence, selected, profile,
+                    execution, native, evidence, selected, profile,
                 )? {
                     return Err(ReadDenial::Incomplete {
                         model: evidence.model(),

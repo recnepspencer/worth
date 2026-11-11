@@ -3,7 +3,7 @@ use super::{projection_denial, WorthQueryApplicationReadExecutionDenial};
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_query::ApplicationQueryResultFieldPresence as Presence;
 use worth_relational::facade::runtime::RelationalProjectedFieldObservation as Observation;
-pub(super) fn value<'a>(
+pub(in crate::domain_computation::primary_graph::application_query) fn value<'a>(
     observed: Option<Observation<'a>>,
     presence: Presence,
     subject: &str,

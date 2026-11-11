@@ -308,7 +308,7 @@ where
     let requested = graph_invariant_denial_authoring()?
         .for_lower_runtime_boundary_source(source)
         .expect("fixture digest must fit");
-    Ok(materialize_invariant_denial(requested)?)
+    materialize_invariant_denial(requested)
 }
 
 fn materialize_invariant_denial_from_envelope(
@@ -317,24 +317,22 @@ fn materialize_invariant_denial_from_envelope(
     let requested = graph_invariant_denial_authoring()?
         .for_lower_runtime_boundary_envelope(envelope)
         .expect("fixture digest must fit");
-    Ok(materialize_invariant_denial(requested)?)
+    materialize_invariant_denial(requested)
 }
 
 fn graph_invariant_denial_authoring(
 ) -> Result<WorthQueryInvariantCapabilityContributionAuthoring, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryInvariantCapabilityContributionAuthoring::graph_invariant_denial(
-            "graph.non_manifold_edge_split",
-            ["edges"],
-            ["edge-1"],
-            ["edge_split"],
-            ["publication"],
-            "program-digest",
-            "breadth-digest",
-            "counter-snapshot",
-            "graph.non_manifold_edge_split",
-            "edge split would violate graph composition invariant",
-        )?,
+    WorthQueryInvariantCapabilityContributionAuthoring::graph_invariant_denial(
+        "graph.non_manifold_edge_split",
+        ["edges"],
+        ["edge-1"],
+        ["edge_split"],
+        ["publication"],
+        "program-digest",
+        "breadth-digest",
+        "counter-snapshot",
+        "graph.non_manifold_edge_split",
+        "edge split would violate graph composition invariant",
     )
 }
 

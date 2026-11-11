@@ -234,7 +234,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
                         .selected_output_read(&execution, native)
                         .map_err(Denial::SelectionRead)?;
                     super::super::super::output_verification::selected_profile_root_is_current(
-                        &execution, native, &evidence, &selected, profile,
+                        &execution, native, evidence, &selected, profile,
                     )
                 })?;
         if !current {

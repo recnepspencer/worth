@@ -307,7 +307,7 @@ mod tests {
         else {
             panic!("native refinement fixture must admit")
         };
-        Ok(bind_materialized_projection_contract(&admitted)?)
+        bind_materialized_projection_contract(&admitted)
     }
 
     fn field_path() -> crate::projection_consumption::ProjectionFactFieldPath {

@@ -20,6 +20,7 @@ mod close;
 mod cold;
 mod exact_refinement;
 mod growth;
+mod owned_summary;
 mod realized_footprint;
 mod rebuild;
 mod rewiring;

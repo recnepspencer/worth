@@ -27,12 +27,12 @@ impl<S: Scenario> OperationHandler<S, RetireBinding<S>> for Handler {
                     reader.field(&entity, schema::id::<S>())?;
                     reader.field(&entity, schema::value::<S>())?;
                 }
-                if matches!(S::MODE, 5 | 13 | 19 | 20) {
+                if matches!(S::MODE, 5 | 13 | 19 | 20 | 72) {
                     for edge in reader
                         .relations_to(Peer::reference(), &entity)
                         .map_err(HandlerExecutionDenial::new)?
                     {
-                        if matches!(S::MODE, 19 | 20) {
+                        if matches!(S::MODE, 19 | 20 | 72) {
                             let from = reader
                                 .field(edge.from(), schema::id::<S>())?
                                 .expect("business peer has its logical key");
@@ -79,7 +79,7 @@ impl<S: Scenario> OperationHandler<S, RetireBinding<S>> for Handler {
                 }
                 targets.push(reader.mutation_target(&entity)?);
             }
-            let body = if heterogeneous::active::<S>() {
+            let body = if <S::Heterogeneous as heterogeneous::Profile>::RETIRES_BODY {
                 let body = reader
                     .resolve_entity(heterogeneous::BodyKey::at("BodyKey"), 10000 + input.id)?;
                 reader.entity(&body, heterogeneous::Body::reference())?;
@@ -88,7 +88,9 @@ impl<S: Scenario> OperationHandler<S, RetireBinding<S>> for Handler {
             } else {
                 None
             };
+            let wire = <S::Boundary as sheet_boundary::Profile>::read_retirement(reader, input.id)?;
             Ok(RetirementTargets {
+                wire,
                 body,
                 nodes: targets,
                 edges,
@@ -109,6 +111,7 @@ impl<S: Scenario> OperationHandler<S, RetireBinding<S>> for Handler {
     ) -> HandlerResult<(), ()> {
         let result: Result<(), WorthQueryApplicationAttemptDenial> = (|| {
             <S::Heterogeneous as heterogeneous::Profile>::retire(targets.body, writer)?;
+            <S::Boundary as sheet_boundary::Profile>::retire_created(writer, targets.wire)?;
             for (from, to) in targets.stage_edges {
                 let from = writer.projected_entity(&from)?;
                 let to = writer.projected_entity(&to)?;

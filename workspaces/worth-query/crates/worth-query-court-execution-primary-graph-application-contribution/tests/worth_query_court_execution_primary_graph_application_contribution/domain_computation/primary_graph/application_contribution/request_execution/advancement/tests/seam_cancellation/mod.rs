@@ -95,6 +95,7 @@ pub fn placements() -> [Placement; 3] {
 }
 
 #[test]
+#[expect(clippy::disallowed_methods, reason = "Client-race court")]
 fn cancellation_during_bridge_read_remains_cancellation_in_the_advancement() {
     let _observer = worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
     let world = installed_authorization_world(
@@ -195,6 +196,7 @@ fn cancellation_during_bridge_read_remains_cancellation_in_the_advancement() {
 }
 
 #[test]
+#[expect(clippy::disallowed_methods, reason = "Client-race court")]
 fn cancellation_during_signal_evaluation_remains_cancellation_in_the_advancement() {
     use worth_signal::facade::adapters::NodeContract;
     use worth_signal::facade::Aspect;

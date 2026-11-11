@@ -200,10 +200,10 @@ impl WorthQueryRuntimeAsyncSourceBinding {
         WorthQueryEvidenceIdentity,
         crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
     > {
-        Ok(async_source_basis_identity(
+        async_source_basis_identity(
             self.declaration_identity_reporting.as_ref(),
             self.truth_view_basis_digest.as_ref(),
-        )?)
+        )
     }
 
     pub(super) fn current_generation_identity(
@@ -212,10 +212,10 @@ impl WorthQueryRuntimeAsyncSourceBinding {
         WorthQueryEvidenceIdentity,
         crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
     > {
-        Ok(async_source_generation_identity(
+        async_source_generation_identity(
             self.declaration_identity_reporting.as_ref(),
             self.request_generation,
-        )?)
+        )
     }
 
     pub(super) fn take_initial_state_delivery(&mut self) -> bool {
@@ -284,10 +284,10 @@ pub(super) fn transition_basis_identity(
     WorthQueryEvidenceIdentity,
     crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
 > {
-    Ok(async_source_basis_identity(
+    async_source_basis_identity(
         transition.declaration_identity(),
         transition.truth_view_basis_digest(),
-    )?)
+    )
 }
 
 pub(super) fn transition_generation_identity(
@@ -296,10 +296,10 @@ pub(super) fn transition_generation_identity(
     WorthQueryEvidenceIdentity,
     crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
 > {
-    Ok(async_source_generation_identity(
+    async_source_generation_identity(
         transition.declaration_identity(),
         transition.request_generation(),
-    )?)
+    )
 }
 
 fn async_source_basis_identity(
@@ -309,22 +309,20 @@ fn async_source_basis_identity(
     WorthQueryEvidenceIdentity,
     crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
 > {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::RuntimeStateSnapshot)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "worth_query_bridge_async_basis_v1",
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("bridge_declaration"),
-                declaration,
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("truth_view_basis"),
-                truth_view_basis_digest,
-            )
-            .seal()?,
-    )
+    worth_query_evidence_identity(WorthQueryEvidenceScope::RuntimeStateSnapshot)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "worth_query_bridge_async_basis_v1",
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("bridge_declaration"),
+            declaration,
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("truth_view_basis"),
+            truth_view_basis_digest,
+        )
+        .seal()
 }
 
 fn async_source_generation_identity(
@@ -334,22 +332,20 @@ fn async_source_generation_identity(
     WorthQueryEvidenceIdentity,
     crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
 > {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::RuntimeStateSnapshot)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "worth_query_bridge_async_generation_v1",
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("bridge_declaration"),
-                declaration,
-            )
-            .field_shape(
-                WorthQueryEvidenceTag::new("request_generation"),
-                request_generation.to_string(),
-            )
-            .seal()?,
-    )
+    worth_query_evidence_identity(WorthQueryEvidenceScope::RuntimeStateSnapshot)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "worth_query_bridge_async_generation_v1",
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("bridge_declaration"),
+            declaration,
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("request_generation"),
+            request_generation.to_string(),
+        )
+        .seal()
 }
 
 fn binding_error(

@@ -10,7 +10,7 @@ use crate::subscription::{
 pub(super) fn continuation_harness_identity(
     label: &str,
 ) -> Result<crate::WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(crate::WorthQueryEvidenceIdentity::compose(
+    crate::WorthQueryEvidenceIdentity::compose(
         crate::WorthQueryEvidenceScope::SubscriptionActivationReceipt,
     )
     .field_shape(
@@ -18,7 +18,7 @@ pub(super) fn continuation_harness_identity(
         "subscription_continuation_harness_identity_v1",
     )
     .field_shape(crate::WorthQueryEvidenceTag::new("label"), label)
-    .seal()?)
+    .seal()
 }
 
 pub(super) fn roomy_budget() -> QuerySubscriptionWorkBudget {

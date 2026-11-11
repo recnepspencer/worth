@@ -18,12 +18,12 @@ pub(super) fn certified_lane(
     view_family: Option<LiveViewShapeFamily>,
     construction_source: QuerySubscriptionConstructionSource,
 ) -> Result<MilestoneNineOneCertificationBundle, IdentityDerivationDenial> {
-    Ok(certified_lane_with_scale(
+    certified_lane_with_scale(
         live_family,
         view_family,
         construction_source,
         [10, 100, 1000],
-    )?)
+    )
 }
 
 pub(super) fn certified_lane_with_basis(
@@ -32,7 +32,7 @@ pub(super) fn certified_lane_with_basis(
     construction_source: QuerySubscriptionConstructionSource,
     basis_posture: crate::subscription::QuerySubscriptionBasisPosture,
 ) -> Result<MilestoneNineOneCertificationBundle, IdentityDerivationDenial> {
-    Ok(certified_lane_from_live(
+    certified_lane_from_live(
         LiveQueryAdmissionArtifact::for_test_with_basis(
             live_family,
             view_family,
@@ -40,7 +40,7 @@ pub(super) fn certified_lane_with_basis(
             basis_posture,
         )?,
         [10, 100, 1000],
-    )?)
+    )
 }
 
 pub(super) fn certified_lane_with_scale(
@@ -49,10 +49,10 @@ pub(super) fn certified_lane_with_scale(
     construction_source: QuerySubscriptionConstructionSource,
     row_counts: [u64; 3],
 ) -> Result<MilestoneNineOneCertificationBundle, IdentityDerivationDenial> {
-    Ok(certified_lane_from_live(
+    certified_lane_from_live(
         LiveQueryAdmissionArtifact::for_test(live_family, view_family, construction_source)?,
         row_counts,
-    )?)
+    )
 }
 
 pub(super) fn certified_lane_with_context(
@@ -63,7 +63,7 @@ pub(super) fn certified_lane_with_context(
     tenant_digest: &str,
     relationship_proof_digest: &str,
 ) -> Result<MilestoneNineOneCertificationBundle, IdentityDerivationDenial> {
-    Ok(certified_lane_from_live(
+    certified_lane_from_live(
         LiveQueryAdmissionArtifact::for_test_with_context(
             live_family,
             view_family,
@@ -76,7 +76,7 @@ pub(super) fn certified_lane_with_context(
             QuerySubscriptionRelationshipProofPosture::Admitted,
         )?,
         [10, 100, 1000],
-    )?)
+    )
 }
 
 fn certified_lane_from_live(

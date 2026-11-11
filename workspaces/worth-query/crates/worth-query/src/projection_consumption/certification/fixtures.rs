@@ -232,16 +232,13 @@ pub fn source_mismatch_failure_digest() -> Result<String, IdentityDerivationDeni
 pub fn source_digest(
     contract: &MaterializedProjectionContract,
 ) -> Result<String, IdentityDerivationDenial> {
-    Ok(compose_certified_source_digest(contract)?)
+    compose_certified_source_digest(contract)
 }
 
 pub fn source_receipt_digest(
     contract: &MaterializedProjectionContract,
 ) -> Result<String, IdentityDerivationDenial> {
-    Ok(compose_certified_source_receipt_digest(
-        contract,
-        &compose_certified_source_digest(contract)?,
-    )?)
+    compose_certified_source_receipt_digest(contract, &compose_certified_source_digest(contract)?)
 }
 
 fn admitted_contract(

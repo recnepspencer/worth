@@ -87,5 +87,5 @@ where
 fn mutation_declaration_identity(
     command: &WorthQueryWriteCommand,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(crate::intent_admission::authoritative_mutation_input_identity(command)?)
+    crate::intent_admission::authoritative_mutation_input_identity(command)
 }

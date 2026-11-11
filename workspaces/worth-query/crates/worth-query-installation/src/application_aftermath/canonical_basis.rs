@@ -16,15 +16,20 @@ use super::denial::{
 };
 use super::external_effect_contract::InstalledExternalEffectContract;
 use super::reconciliation::WorthQueryInstalledReconciliationProcedure;
-use crate::canonical_work::WorthQueryCanonicalWorkEvidence;
+use crate::canonical_work::{
+    WorthQueryCanonicalWorkEvidence, INSTALLATION_MAXIMUM_CANONICAL_BYTES,
+};
 
 const DOMAIN: CanonicalBasisDomain =
     CanonicalBasisDomain::Future("worth-query.application-aftermath-installation");
 const RULE_VERSION: &str = "worth-query-application-aftermath-installation-v2";
-const MAXIMUM_ENTRY_COUNT: u32 = 128;
-const MAXIMUM_CANONICAL_BYTES: usize = 32 * 1_024;
+/// A recorded inverse adds three entries for each field and relation it
+/// demands, so the basis is as wide as the graph the inverse restores. Its one
+/// bound is the installation ceiling that admitted the schema declaring that
+/// demand; installation work stays linear in the declared demand.
 const AFTERMATH_BUDGET: CanonicalDigestWorkBudget =
-    match CanonicalDigestWorkBudget::new(MAXIMUM_ENTRY_COUNT, MAXIMUM_CANONICAL_BYTES) {
+    match CanonicalDigestWorkBudget::for_encoded_byte_ceiling(INSTALLATION_MAXIMUM_CANONICAL_BYTES)
+    {
         Some(budget) => budget,
         None => panic!("fixed aftermath canonical-work budget is valid"),
     };

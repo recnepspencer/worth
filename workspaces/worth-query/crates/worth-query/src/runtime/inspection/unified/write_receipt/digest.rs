@@ -158,7 +158,7 @@ pub(super) fn build_write_receipt_inspection_digest(
                     .map(|breadth| breadth.counter_snapshot()),
             );
 
-    Ok(digest_mutation_evidence::append_mutation_evidence_fields(
+    digest_mutation_evidence::append_mutation_evidence_fields(
         encoder,
         existing_truth_binding_evidence,
         symbolic_target_reference_evidence,
@@ -195,5 +195,5 @@ pub(super) fn build_write_receipt_inspection_digest(
         WorthQueryEvidenceTag::new("live_patch_artifact"),
         live_patch_artifacts.iter(),
     )
-    .seal()?)
+    .seal()
 }

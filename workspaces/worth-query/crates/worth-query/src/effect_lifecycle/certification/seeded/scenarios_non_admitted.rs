@@ -108,22 +108,22 @@ pub(super) fn store_backed_deferred_row(
     index: usize,
     _stepper: &mut SeedStepper,
 ) -> Result<EffectLifecycleSeededCertificationRow, IdentityDerivationDenial> {
-    Ok(deferred_row(
+    deferred_row(
         index,
         EffectAuthoringBasis::store_backed(format!("store-basis-{index}")),
         "seeded-store-backed-deferred",
-    )?)
+    )
 }
 
 pub(super) fn durable_reload_deferred_row(
     index: usize,
     _stepper: &mut SeedStepper,
 ) -> Result<EffectLifecycleSeededCertificationRow, IdentityDerivationDenial> {
-    Ok(deferred_row(
+    deferred_row(
         index,
         EffectAuthoringBasis::durable_reload(format!("durable-reload-{index}")),
         "seeded-durable-reload-deferred",
-    )?)
+    )
 }
 
 pub(super) fn tenant_merge_denied_row(

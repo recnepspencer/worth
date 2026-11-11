@@ -192,12 +192,10 @@ impl WorthQueryInstalledDomainExecutionReceipt {
         role: &'static str,
         value: &str,
     ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-        Ok(
-            worth_query_evidence_identity(WorthQueryEvidenceScope::InstalledDomainExecution)
-                .field_shape(WorthQueryEvidenceTag::new("role"), role)
-                .field_value(WorthQueryEvidenceTag::new("query_minted_value"), value)
-                .seal()?,
-        )
+        worth_query_evidence_identity(WorthQueryEvidenceScope::InstalledDomainExecution)
+            .field_shape(WorthQueryEvidenceTag::new("role"), role)
+            .field_value(WorthQueryEvidenceTag::new("query_minted_value"), value)
+            .seal()
     }
 
     pub(crate) fn derive(

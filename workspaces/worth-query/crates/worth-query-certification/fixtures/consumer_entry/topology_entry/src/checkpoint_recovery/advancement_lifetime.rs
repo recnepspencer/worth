@@ -247,8 +247,10 @@ mod serial {
         let application = install(None);
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);
-        // This computational allowance is declared by the caller, not fitted to a measured total.
-        let handler_allowance = 8_192;
+        // Fund source authorization and Native reads before reaching Signal.
+        // This remains a finite caller grant, not a pinned invoice for those
+        // reads; the assertion below requires the Signal scheduling refusal.
+        let handler_allowance = 32_768;
         let controls = WorthQueryOutputDemandControls::default();
         let mut output = request
             .advanced()
@@ -262,6 +264,8 @@ mod serial {
             advancement_requests_on_this_thread_for_test as reports,
             bound_advancement_requests_on_this_thread_for_test as bound,
             place_managed_computations_on_this_thread_for_test as place,
+            signal_request_refusals_on_this_thread_for_test as signal_refusals,
+            SignalCheckpointDenialForTest as SignalStop,
             WorthQueryExecutionPlacementForTest as Placement,
         };
         struct Restore(Placement, Option<worth_foundational::ExecutionBudget>);
@@ -281,7 +285,14 @@ mod serial {
             ))),
         );
         reports();
+        signal_refusals();
         let outcome = output.advance(&application, &request);
+        assert_eq!(
+            signal_refusals(),
+            [SignalStop::WorkCeiling],
+            "{:?}",
+            outcome.as_ref().err()
+        );
         let reports = reports();
         let denial = match outcome {
             Err(denial) => denial,
@@ -289,8 +300,7 @@ mod serial {
         };
         let worth_query_host::facade::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand(
         worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial),
-    ) = denial else { panic!("the existing Signal scheduling path reports its refusal"); };
-        // Payload typing for this existing Signal denial remains in part three.
+    ) = denial else { panic!("the existing Signal scheduling path reports its refusal: {denial:?}"); };
         assert_eq!(
         denial.kind(),
         WorthQueryOutputDemandDenialKind::ExecutionRequest(

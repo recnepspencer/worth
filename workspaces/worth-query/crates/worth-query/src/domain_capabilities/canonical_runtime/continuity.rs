@@ -25,7 +25,7 @@ pub fn materialize_canonical_continuity_artifact<T>(
 where
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    Ok(super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)?)
+    super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)
 }
 
 pub(crate) fn materialize_runtime_continuity_evidence<T>(
@@ -79,15 +79,13 @@ fn domain_capability_continuity_binding_identity(
     target_kind: WorthQueryDomainCapabilityTargetKind,
     binding_identity: &WorthQueryEvidenceIdentity,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        domain_capability_scope_encoder("domain_capability_continuity_binding_v1")
-            .field_shape(
-                WorthQueryEvidenceTag::new("target_kind"),
-                target_kind.as_str(),
-            )
-            .field_evidence_identity(WorthQueryEvidenceTag::new("binding"), binding_identity)
-            .seal()?,
-    )
+    domain_capability_scope_encoder("domain_capability_continuity_binding_v1")
+        .field_shape(
+            WorthQueryEvidenceTag::new("target_kind"),
+            target_kind.as_str(),
+        )
+        .field_evidence_identity(WorthQueryEvidenceTag::new("binding"), binding_identity)
+        .seal()
 }
 
 fn runtime_semantics_match_posture(

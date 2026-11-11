@@ -18,8 +18,8 @@ use worth_query_declaration::facade::application_schema::{
 use worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity;
 
 use crate::application_aftermath::{
-    install_application_aftermath, WorthQueryAftermathInstallationDenial,
-    WorthQueryInstalledAftermathContract,
+    install_application_aftermath, InstalledExternalEffectContract,
+    WorthQueryAftermathInstallationDenial, WorthQueryInstalledAftermathContract,
 };
 use crate::package::WorthQueryPortableInstalledReconciliationProcedureRecord;
 
@@ -123,6 +123,25 @@ impl AftermathInstall {
             protocol,
         });
         self
+    }
+
+    /// Installs associated portable meaning whose demand is wider than the
+    /// fixture model, with the operation's reads stated beside it.
+    pub(crate) fn install_portable(
+        &self,
+        reads: Vec<ApplicationOperationDecisionReadTarget>,
+        portable: PortableApplicationAftermathContract,
+    ) -> Result<WorthQueryInstalledAftermathContract, WorthQueryAftermathInstallationDenial> {
+        let source = FixtureAftermathInstallationSource::new(
+            self.binding.clone(),
+            self.operation_slot.to_owned(),
+            reads,
+            InstalledExternalEffectContract::None,
+            Some(portable),
+            None,
+        );
+        install_application_aftermath(&source)
+            .map(|installed| installed.expect("the fixture declares an aftermath"))
     }
 
     pub(crate) fn install(

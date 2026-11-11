@@ -113,7 +113,7 @@ pub fn observe<Schema>(
         let Some(content) = (content).as_ref().and_then(|value| value.raw_text()) else {
             return Err(Denial::Corrupt);
         };
-        let content = worth_query_declaration::facade::application_program::ApplicationWorkflowDefinitionContentIdentity::from_recorded(&content).ok_or(Denial::Corrupt)?;
+        let content = worth_query_declaration::facade::application_program::ApplicationWorkflowDefinitionContentIdentity::from_recorded(content).ok_or(Denial::Corrupt)?;
         let definitions = adjacency_with_kind(
             execution,
             runtime,

@@ -30,6 +30,7 @@ fn empty_operation_program_denial_has_no_inbound_reservation_or_lookup_work() {
 }
 
 #[test]
+#[expect(clippy::disallowed_methods, reason = "Client-race court")]
 fn post_preparation_cancellation_releases_inbound_dispatch_reservation() {
     let host_request = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);

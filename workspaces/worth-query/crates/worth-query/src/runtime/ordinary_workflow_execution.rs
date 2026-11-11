@@ -339,21 +339,19 @@ fn preview_request_identity(
     label: &WorthQuerySessionLabel,
     declaration_identity: &WorthQueryEvidenceIdentity,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
-            .field_shape(
-                WorthQueryEvidenceTag::new("role"),
-                "ordinary-preview-request",
-            )
-            .field_shape(WorthQueryEvidenceTag::new("family"), family)
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("session_label"),
-                label.identity_digest(),
-            )
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("declaration"),
-                declaration_identity,
-            )
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
+        .field_shape(
+            WorthQueryEvidenceTag::new("role"),
+            "ordinary-preview-request",
+        )
+        .field_shape(WorthQueryEvidenceTag::new("family"), family)
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("session_label"),
+            label.identity_digest(),
+        )
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("declaration"),
+            declaration_identity,
+        )
+        .seal()
 }

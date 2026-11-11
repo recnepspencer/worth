@@ -29,7 +29,7 @@ impl WorthQueryWorkflowContributionAuthoring {
                 "promotion-eligible merge conflict inspection requires preview foundation binding",
             )
             .clone();
-        Ok(Self::with_runtime_and_inspection_semantics(
+        Self::with_runtime_and_inspection_semantics(
             WorthQueryWorkflowContributionPosture::PromotionEligible,
             semantic_code,
             detail,
@@ -48,7 +48,7 @@ impl WorthQueryWorkflowContributionAuthoring {
                 lowered_merge,
                 relational_inspection,
             ),
-        )?)
+        )
     }
 
     pub fn confirmation_required_merge_conflict_inspection(
@@ -65,7 +65,7 @@ impl WorthQueryWorkflowContributionAuthoring {
                 "confirmation-required merge conflict inspection requires runtime basis binding",
             )
             .clone();
-        Ok(Self::with_runtime_and_inspection_semantics(
+        Self::with_runtime_and_inspection_semantics(
             WorthQueryWorkflowContributionPosture::ConfirmationRequired,
             semantic_code,
             detail,
@@ -83,7 +83,7 @@ impl WorthQueryWorkflowContributionAuthoring {
                 lowered_merge,
                 relational_inspection,
             ),
-        )?)
+        )
     }
 
     pub fn confirmation_required_post_merge_merge_outcome_inspection(
@@ -97,7 +97,7 @@ impl WorthQueryWorkflowContributionAuthoring {
             .runtime_snapshot_identity()
             .expect("post-merge merge outcome inspection requires runtime basis binding")
             .clone();
-        Ok(Self::with_runtime_and_inspection_semantics(
+        Self::with_runtime_and_inspection_semantics(
             WorthQueryWorkflowContributionPosture::ConfirmationRequired,
             semantic_code,
             detail,
@@ -112,7 +112,7 @@ impl WorthQueryWorkflowContributionAuthoring {
                 WorkflowFreshnessPolicy::ExactBasis,
             ),
             WorthQueryWorkflowInspectionSemantics::post_merge_from_merge(lowered_merge),
-        )?)
+        )
     }
 
     pub fn confirmation_required_post_merge_writeback_outcome_inspection(
@@ -126,7 +126,7 @@ impl WorthQueryWorkflowContributionAuthoring {
             .runtime_snapshot_identity()
             .expect("post-merge writeback inspection requires runtime basis binding")
             .clone();
-        Ok(Self::with_runtime_and_inspection_semantics(
+        Self::with_runtime_and_inspection_semantics(
             WorthQueryWorkflowContributionPosture::ConfirmationRequired,
             semantic_code,
             detail,
@@ -141,7 +141,7 @@ impl WorthQueryWorkflowContributionAuthoring {
                 WorkflowFreshnessPolicy::ExactBasis,
             ),
             WorthQueryWorkflowInspectionSemantics::post_merge_from_writeback(lowered_writeback),
-        )?)
+        )
     }
 
     fn with_runtime_and_inspection_semantics(

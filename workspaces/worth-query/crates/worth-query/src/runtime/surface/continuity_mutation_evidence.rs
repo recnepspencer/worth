@@ -42,9 +42,7 @@ impl WorthQueryContinuityMutationEvidence {
     pub(in crate::runtime) fn from_bridge(
         bundle: &BridgeContinuityMutationBundle,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::from_bridge_with_query_context(
-            bundle, None, None, None,
-        )?)
+        Self::from_bridge_with_query_context(bundle, None, None, None)
     }
 
     pub(in crate::runtime) fn from_bridge_with_query_context(

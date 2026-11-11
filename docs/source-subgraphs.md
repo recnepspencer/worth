@@ -8,8 +8,8 @@ Here `decl::` means `worth_query_decl::facade::` and `host::` means
 `worth_query_host::facade::`. The
 [small public fixture](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/aspect_patterns/source_subgraph/mod.rs)
 uses these two application facades. Its source is a root with two named members.
-Its generated result is another root with two members. Both topologies are fixed;
-ordinary installed operations can change values, but cannot change membership.
+Its generated result is another root with two members. The initial field-edit and producer courts use fixed topologies. The additional
+authored-roster courts below exercise topology-changing lifecycle operations.
 
 ## Declare and observe the complete source
 
@@ -68,6 +68,10 @@ retention width is nine bytes, including its scalar tag.
 This qualifies a member edit and its undo. The current recorded-field demand
 requires present mutated fields on one common record. It is not an arbitrary
 multi-record graph snapshot, absent-field retention or a general topology inverse.
+An authored correction's anchors are the one case with an absent pre-image: a
+demanded optional field or aspect that the mutation read on that exact anchor
+and found absent retains nothing, and the inverse restores it by writing
+nothing there. A demanded locus the mutation did not read still refuses.
 Declare a supported inverse for each edit meaning; refuse unsupported meanings
 instead of reconstructing missing prior truth from current state.
 
@@ -134,3 +138,15 @@ Every live/retired member must participate in the declared output contract.
 An optional output family with minimum zero is not proof that an omitted member
 does not exist. The fixed fixture does not qualify arbitrary reachability,
 mutable relation currentness or graph-wide recorded undo.
+
+## Variable authored membership
+
+The same source-subgraph host also declares a variable authored member kind with
+`ApplicationAuthoredCorrection::owned_members`. Its exactly-one member-to-anchor
+relation is the sole live membership authority. The existing authored identity,
+recorded field/relation pre-image, Native retirement event and restoration owners
+carry the complete inverse. No producer publication is required for an authored
+roster, including an empty one. See the [authored retirement
+walkthrough](build-an-application.md#source-owned-producer-publications) for output
+families, total byte bounds and the typed exact-roster refusals. The recorded
+pre-image is historical inverse material, never a second live graph.

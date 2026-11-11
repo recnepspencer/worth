@@ -1,4 +1,5 @@
 use super::*;
+
 use crate::admission::{
     WorthQueryInstallationAdmissionProfile, WorthQueryInstallationSupportStatus,
 };
@@ -6,6 +7,21 @@ use crate::authority_cryptography::InstallationAuthorityRootKey;
 use crate::package::{
     WorthQueryPortableDefinition, WorthQueryPortableDomainIdentity, WorthQueryPortableDomainPackage,
 };
+
+impl WorthQueryInstalledPackageIndex {
+    pub(crate) fn assert_admitted_declaration_budgets(&self) -> std::collections::BTreeSet<String> {
+        let mut families = std::collections::BTreeSet::new();
+        for record in self.application_schemas.values() {
+            families.extend(
+                crate::declaration_budget_tests::assert_declaration_allowance(
+                    record.declaration(),
+                    record.identity_budget(),
+                ),
+            );
+        }
+        families
+    }
+}
 
 fn admitted(owner: &str, semantics: &str) -> WorthQueryAdmittedPortableDomainPackage {
     admitted_with_slot(owner, format!("{owner}.read"), semantics)

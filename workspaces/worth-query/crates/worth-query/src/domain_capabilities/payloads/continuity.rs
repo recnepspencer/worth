@@ -45,52 +45,46 @@ fn continuity_authoritative_identity(
     role: &str,
     source_label: &str,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        domain_capability_scope_encoder("worth_query_continuity_authoritative_source_v1")
-            .field_shape(WorthQueryEvidenceTag::new("role"), role)
-            .field_shape(WorthQueryEvidenceTag::new("source_label"), source_label)
-            .seal()?,
-    )
+    domain_capability_scope_encoder("worth_query_continuity_authoritative_source_v1")
+        .field_shape(WorthQueryEvidenceTag::new("role"), role)
+        .field_shape(WorthQueryEvidenceTag::new("source_label"), source_label)
+        .seal()
 }
 
 fn continuity_successor_authoritative_identity(
     index: usize,
     source_label: &str,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        domain_capability_scope_encoder("worth_query_continuity_authoritative_source_v1")
-            .field_shape(WorthQueryEvidenceTag::new("role"), "successor")
-            .field_usize(WorthQueryEvidenceTag::new("index"), index)
-            .field_shape(WorthQueryEvidenceTag::new("source_label"), source_label)
-            .seal()?,
-    )
+    domain_capability_scope_encoder("worth_query_continuity_authoritative_source_v1")
+        .field_shape(WorthQueryEvidenceTag::new("role"), "successor")
+        .field_usize(WorthQueryEvidenceTag::new("index"), index)
+        .field_shape(WorthQueryEvidenceTag::new("source_label"), source_label)
+        .seal()
 }
 
 fn compose_continuity_runtime_semantics_identity(
     runtime_semantics: &WorthQueryContinuityRuntimeSemantics,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(domain_capability_scope_encoder(
-        "worth_query_domain_capability_continuity_runtime_semantics_v1",
-    )
-    .field_shape(
-        WorthQueryEvidenceTag::new("family"),
-        runtime_semantics.family().as_str(),
-    )
-    .field_shape(
-        WorthQueryEvidenceTag::new("outcome_class"),
-        runtime_semantics.outcome_class().as_str(),
-    )
-    .field_evidence_identity(
-        WorthQueryEvidenceTag::new("prior_authoritative"),
-        runtime_semantics.prior_authoritative_identity(),
-    )
-    .field_evidence_identity_sequence(
-        WorthQueryEvidenceTag::new("successor_authoritative"),
-        runtime_semantics
-            .successor_authoritative_identities()
-            .iter(),
-    )
-    .seal()?)
+    domain_capability_scope_encoder("worth_query_domain_capability_continuity_runtime_semantics_v1")
+        .field_shape(
+            WorthQueryEvidenceTag::new("family"),
+            runtime_semantics.family().as_str(),
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("outcome_class"),
+            runtime_semantics.outcome_class().as_str(),
+        )
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("prior_authoritative"),
+            runtime_semantics.prior_authoritative_identity(),
+        )
+        .field_evidence_identity_sequence(
+            WorthQueryEvidenceTag::new("successor_authoritative"),
+            runtime_semantics
+                .successor_authoritative_identities()
+                .iter(),
+        )
+        .seal()
 }
 
 fn compose_continuity_payload_identity(
@@ -122,7 +116,7 @@ fn compose_continuity_payload_identity(
         ),
         None => identity.field_shape(WorthQueryEvidenceTag::new("correspondence"), "none"),
     };
-    Ok(identity.seal()?)
+    identity.seal()
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -212,12 +206,7 @@ impl WorthQueryContinuityContributionPayload {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_runtime_semantics(
-            posture,
-            semantic_code,
-            detail,
-            None,
-        )?)
+        Self::with_runtime_semantics(posture, semantic_code, detail, None)
     }
 
     pub fn with_runtime_semantics(
@@ -226,13 +215,7 @@ impl WorthQueryContinuityContributionPayload {
         detail: impl Into<String>,
         runtime_semantics: Option<WorthQueryContinuityRuntimeSemantics>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_all_semantics(
-            posture,
-            semantic_code,
-            detail,
-            runtime_semantics,
-            None,
-        )?)
+        Self::with_all_semantics(posture, semantic_code, detail, runtime_semantics, None)
     }
 
     pub fn with_correspondence_semantics(
@@ -241,13 +224,13 @@ impl WorthQueryContinuityContributionPayload {
         detail: impl Into<String>,
         correspondence_semantics: Option<WorthQueryContinuityCorrespondenceSemantics>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_all_semantics(
+        Self::with_all_semantics(
             posture,
             semantic_code,
             detail,
             None,
             correspondence_semantics,
-        )?)
+        )
     }
 
     pub fn with_all_semantics(

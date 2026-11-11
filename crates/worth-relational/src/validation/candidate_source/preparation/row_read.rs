@@ -4,7 +4,23 @@ use super::*;
 use crate::derived_relation::{DerivedRelationData, DerivedRelationReadShape as Shape};
 use crate::graph_member::NativeMemberKey;
 
+pub(super) struct OrderedStepSupport {
+    pub(super) identity: crate::derived_relation::DerivedRelationReadIdentity,
+    pub(super) members: std::collections::BTreeSet<EntityId>,
+    pub(super) _records: (
+        Vec<crate::validation::data::StructuralRelationRecord>,
+        Vec<crate::validation::data::StructuralRelationRecord>,
+    ),
+    pub(super) _retention: crate::validation::CustomInvariantWorkMeter,
+}
+pub(super) enum OccurrenceMembership {
+    Inverse(PreparedManagedIndexRelationRead),
+    OrderedStep(Arc<OrderedStepSupport>),
+}
 enum Membership<'read> {
+    Step {
+        _prepared: &'read PreparedManagedIndexSourceOccurrence,
+    },
     Borrowed {
         _read: &'read PreparedManagedIndexRelationRead,
     },
@@ -16,7 +32,7 @@ enum Membership<'read> {
 /// is descriptive; consumption still validates the complete current read owner.
 pub struct PreparedManagedIndexSourceOccurrence {
     pub(super) occurrence: ManagedIndexSourceOccurrence,
-    pub(super) read: PreparedManagedIndexRelationRead,
+    pub(super) membership: OccurrenceMembership,
 }
 impl PreparedManagedIndexSourceOccurrence {
     pub fn occurrence(&self) -> &ManagedIndexSourceOccurrence {
@@ -92,19 +108,34 @@ impl<'source> ManagedIndexSourceRows<'source> {
         if occurrence.row != prepared.occurrence.row {
             return Err(Definition::ForeignObservation.into());
         }
-        let data = self.projection.read(
-            &prepared.read,
-            &self.projection.program.0.path,
-            occurrence.row,
-            Shape::Adjacency { reverse: true },
-        )?;
-        self.require_member(data, self.scope)?;
+        let membership = match &prepared.membership {
+            OccurrenceMembership::Inverse(read) => {
+                let data = self.projection.read(
+                    read,
+                    &self.projection.program.0.path,
+                    occurrence.row,
+                    Shape::Adjacency { reverse: true },
+                )?;
+                self.require_member(data, self.scope)?;
+                Membership::Borrowed { _read: read }
+            }
+            OccurrenceMembership::OrderedStep(support) => {
+                let levels = usize::BITS - support.members.len().max(1).leading_zeros();
+                self.projection.checkpoint(u64::from(levels) + 1)?;
+                if self.projection.scope_identity(self.scope)?.as_ref() != Some(&support.identity)
+                    || !support.members.contains(&occurrence.row)
+                {
+                    return Err(Definition::ForeignObservation.into());
+                }
+                Membership::Step {
+                    _prepared: prepared,
+                }
+            }
+        };
         Ok(PreparedManagedIndexSourceRowRead {
             rows: self,
             occurrence,
-            _membership: Membership::Borrowed {
-                _read: &prepared.read,
-            },
+            _membership: membership,
         })
     }
     /// A retained occurrence has no current membership ticket. Reacquire it once.
@@ -126,12 +157,23 @@ impl<'source> ManagedIndexSourceRows<'source> {
     }
 }
 impl PreparedManagedIndexSourceRowRead<'_, '_> {
+    /// Carry this actual row admission into its declared endpoint projection.
+    pub fn prepare_projection(
+        &self,
+        route: usize,
+    ) -> Result<super::PreparedManagedIndexProjectionRead, ReadDenial> {
+        self.rows
+            .prepare_admitted_projection(self.occurrence, route)
+    }
+
     /// Retain only content selected through this exact field and membership ticket.
+    /// The observation preserves absent aspect, absent field and present value;
+    /// Query owns required/optional interpretation and scalar decoding.
     pub fn with_field_content<T>(
         &self,
         column: usize,
         project: impl FnOnce(
-            Option<&worth_foundational::facade::AspectValue>,
+            crate::runtime::RelationalProjectedFieldObservation<'_>,
             Option<crate::content::RelationalContentFrame>,
         ) -> T,
     ) -> Result<T, super::super::ManagedIndexSourcePreparationDenial> {
@@ -153,7 +195,7 @@ impl PreparedManagedIndexSourceRowRead<'_, '_> {
     pub fn with_field<T>(
         &self,
         column: usize,
-        project: impl FnOnce(Option<&worth_foundational::facade::AspectValue>) -> T,
+        project: impl FnOnce(crate::runtime::RelationalProjectedFieldObservation<'_>) -> T,
     ) -> Result<T, ReadDenial> {
         self.rows.projection.checkpoint(0)?;
         // Construction proved membership in this immutable loan. The retained

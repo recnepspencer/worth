@@ -178,12 +178,12 @@ fn requirement_width_row(
             && counter.relationship_checks() == 10
             && counter.authority_constructions() == 1
     });
-    Ok(row(
+    row(
         ConsumedProjectionAuthorityComplexityAxis::RequirementWidth,
         scale,
         counters,
         satisfied,
-    )?)
+    )
 }
 
 fn fact_width_row() -> Result<ConsumedProjectionAuthorityComplexityRow, IdentityDerivationDenial> {
@@ -202,12 +202,12 @@ fn fact_width_row() -> Result<ConsumedProjectionAuthorityComplexityRow, Identity
             && counter.requirement_checks() == 2
             && counter.authority_constructions() == 1
     });
-    Ok(row(
+    row(
         ConsumedProjectionAuthorityComplexityAxis::FactWidth,
         scale,
         counters,
         satisfied,
-    )?)
+    )
 }
 
 fn irrelevant_growth_row(
@@ -225,7 +225,7 @@ fn irrelevant_growth_row(
         .collect::<Result<Vec<_>, IdentityDerivationDenial>>()?;
     let baseline = &counters[0];
     let satisfied = counters.iter().all(|counter| counter == baseline);
-    Ok(row(axis, scale.to_vec(), counters, satisfied)?)
+    row(axis, scale.to_vec(), counters, satisfied)
 }
 
 fn row(

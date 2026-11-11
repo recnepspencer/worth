@@ -1,4 +1,4 @@
-//! Predecessor contracts, read hooks and lifecycle handlers for fixture families.
+//! Optional predecessor observations and lifecycle bindings stay at their fixture owner.
 // Shared fixture hooks default to no predecessor observation.
 macro_rules! predecessor_contract {
     (PredecessorInitial) => {

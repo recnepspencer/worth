@@ -210,5 +210,7 @@ pub enum DerivedRelationDenial {
     InvalidMemberCase,
     InvalidGraphLaws,
     InvalidEventChain,
+    OrderedPredecessorMembershipRequired,
+    OrderedPredecessorMustBeToOne,
     SourceProgramIdentityExhausted,
 }

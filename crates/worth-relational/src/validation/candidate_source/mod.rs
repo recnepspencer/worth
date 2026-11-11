@@ -21,7 +21,7 @@ mod provider_failure;
 pub use provider_failure::ManagedIndexSourceProviderFailure;
 mod publication;
 pub use publication::{ManagedIndexSourcePublication, ManagedIndexSourcePublicationRoot};
-mod image;
+pub(crate) mod image;
 pub(crate) use image::ManagedIndexSourceAssociation;
 pub use image::ManagedIndexSourceCacheRetirement;
 pub(crate) use image::PublicCacheEntry;

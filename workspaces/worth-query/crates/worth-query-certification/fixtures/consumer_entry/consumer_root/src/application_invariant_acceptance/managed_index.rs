@@ -35,3 +35,4 @@ const PREFIX_MAINTENANCE:
 
 pub(in crate::application_invariant_acceptance) mod prefix_probe;
 pub(in crate::application_invariant_acceptance) mod prefix_provider;
+const PREFIX_SOURCE_SCOPE: worth_query_decl::facade::application_query::ApplicationManagedIndexSourceScope = worth_query_decl::facade::application_query::ApplicationManagedIndexSourceScope::SameAdmittedScope;

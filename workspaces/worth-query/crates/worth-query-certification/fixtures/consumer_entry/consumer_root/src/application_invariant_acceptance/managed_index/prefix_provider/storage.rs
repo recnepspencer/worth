@@ -60,7 +60,7 @@ impl<S: ApplicationSchema, I: PrefixSourceIndex<S>> PrefixBuildStorage
         Ok(id)
     }
     fn read(&mut self, id: Self::Id) -> Result<Node, Stop> {
-        self.nodes.get(id).map_err(Into::into)
+        self.nodes.get(id).map(|node| *node).map_err(Into::into)
     }
     fn replace(&mut self, id: Self::Id, node: Node) -> Result<(), Stop> {
         self.nodes.replace(id, node)?;

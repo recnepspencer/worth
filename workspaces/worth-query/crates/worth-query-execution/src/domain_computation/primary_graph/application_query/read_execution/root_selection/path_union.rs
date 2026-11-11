@@ -230,10 +230,7 @@ pub(super) fn frontier_denial<L>(
             work_limit_denial(subject)
         }
         worth_relational::facade::runtime::BoundedFrontierReadStop::Admission(stop) => {
-            super::super::denial::relational_read_denial(
-                worth_relational::facade::transactions::RelationalExecutionDenialCause::from(stop),
-                subject,
-            )
+            super::super::denial::relational_read_denial(stop, subject)
         }
     }
 }

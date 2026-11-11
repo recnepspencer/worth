@@ -53,3 +53,5 @@ pub use crate::symbols::data::observe_symbol_snapshot_materialization;
 pub use crate::inspection::relation_law_sources::{
     observe_relation_law_sources, RelationLawSourceObservation, RelationLawSourceWitness,
 };
+
+pub use crate::validation::candidate_source::image::inspection::inspect_managed_source_material;

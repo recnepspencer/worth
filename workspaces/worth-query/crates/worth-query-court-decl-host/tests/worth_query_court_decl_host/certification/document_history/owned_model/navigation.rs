@@ -1,7 +1,9 @@
 //! A genuine NAV grant selects the complete installed graph through Native.
 use super::*;
 use worth_query_decl::facade::application_capability::*;
-pub(super) mod grant;
+pub(super) mod grant {
+    navigation_grant!();
+}
 mod transfer;
 worth_query_capability!(pub Navigate in Schema);
 worth_query_capability_context!(pub Context in Schema);

@@ -129,7 +129,7 @@ impl WorthQueryAdmittedPlanAdmissionContribution {
             WorthQueryAdmissionContributionPosture::SupportOnly => unreachable!(),
         })?;
 
-        Ok(materialize_common_lane(
+        materialize_common_lane(
             "admission",
             WorthQueryDomainCapabilityTargetKind::AdmittedIntentPlan,
             self.posture.as_str(),
@@ -142,7 +142,7 @@ impl WorthQueryAdmittedPlanAdmissionContribution {
                 )
             },
             |ready| Ok(materialize_runtime_admission_decision(ready)),
-        )?)
+        )
     }
 
     pub fn materialize(
@@ -201,7 +201,7 @@ impl WorthQueryAdmittedPlanContinuityContribution {
         )?
         .bind_to_installed_target(self.target)?;
 
-        Ok(materialize_common_lane(
+        materialize_common_lane(
             "continuity-lineage",
             WorthQueryDomainCapabilityTargetKind::AdmittedIntentPlan,
             WorthQueryContinuityContributionPosture::Preserved.as_str(),
@@ -214,7 +214,7 @@ impl WorthQueryAdmittedPlanContinuityContribution {
                 )
             },
             materialize_runtime_continuity_evidence,
-        )?)
+        )
     }
 
     pub fn materialize(

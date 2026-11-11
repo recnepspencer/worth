@@ -53,3 +53,6 @@ pub mod history;
 
 #[path = "relation_laws/logical.rs"]
 pub mod logical;
+
+#[path = "relation_laws/endpoint_deletion.rs"]
+pub mod endpoint_deletion;

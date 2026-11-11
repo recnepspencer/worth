@@ -195,6 +195,6 @@ impl WorthQueryLiveArtifactBundle {
         snapshot_identity: WorthQuerySnapshotIdentity,
         reads: BTreeMap<WorthQueryLiveArtifactTarget, WorthQueryLiveReadResult>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(snapshot_identity, reads)?)
+        Self::new(snapshot_identity, reads)
     }
 }

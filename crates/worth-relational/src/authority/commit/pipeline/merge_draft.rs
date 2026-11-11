@@ -102,14 +102,7 @@ fn prepare_symbol_round(
                 input.content(),
             )?;
             let candidate = round.with_candidate_symbols(mutation.candidate_symbols());
-            mutation.prepare_managed_sources(
-                *execution,
-                &candidate,
-                selected,
-                &identity,
-                (parent_count == 0 && !admitted.semantic_plan().has_selection())
-                    .then_some(admitted.command_plan()),
-            )?;
+
             let control = InvariantPreparationControl::for_transaction(
                 input,
                 execution.allocation_policy(),
@@ -124,6 +117,16 @@ fn prepare_symbol_round(
                 mutation.aggregate_source(selected),
                 execution,
                 &control,
+                &mut || {
+                    mutation.prepare_managed_sources(
+                        *execution,
+                        &candidate,
+                        selected,
+                        &identity,
+                        (parent_count == 0 && !admitted.semantic_plan().has_selection())
+                            .then_some(admitted.command_plan()),
+                    )
+                },
             )?;
             mutation.prepare_aggregate(execution, round, selected, admitted.command_plan())?;
             let aggregate_admission = mutation.complete_aggregate_draft(

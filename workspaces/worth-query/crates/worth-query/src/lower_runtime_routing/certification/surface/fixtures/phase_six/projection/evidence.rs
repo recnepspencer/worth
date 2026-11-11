@@ -67,7 +67,7 @@ pub(super) fn projection_source_evidence_identity(
             reference.identity(),
         );
     }
-    Ok(builder.seal()?)
+    builder.seal()
 }
 
 pub(super) fn relational_grouped_projection_evidence(
@@ -75,16 +75,14 @@ pub(super) fn relational_grouped_projection_evidence(
     grouped_digest: &str,
     role: &'static str,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("source"),
-                &projection_source_evidence_identity(source, "relational-grouped")?,
-            )
-            .field_shape(WorthQueryEvidenceTag::new("role"), role)
-            .field_value(WorthQueryEvidenceTag::new("grouped"), grouped_digest)
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("source"),
+            &projection_source_evidence_identity(source, "relational-grouped")?,
+        )
+        .field_shape(WorthQueryEvidenceTag::new("role"), role)
+        .field_value(WorthQueryEvidenceTag::new("grouped"), grouped_digest)
+        .seal()
 }
 
 pub(super) fn bridge_grouped_projection_evidence(
@@ -92,19 +90,17 @@ pub(super) fn bridge_grouped_projection_evidence(
     grouped_identity: &BridgeIdentityEvidence,
     role: &'static str,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
-            .field_evidence_identity(
-                WorthQueryEvidenceTag::new("source"),
-                &projection_source_evidence_identity(source, "bridge-grouped")?,
-            )
-            .field_shape(WorthQueryEvidenceTag::new("role"), role)
-            .field_bridge_retained_evidence_identity(
-                WorthQueryEvidenceTag::new("grouped"),
-                grouped_identity,
-            )
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::LowerRuntimeBoundaryEvidence)
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("source"),
+            &projection_source_evidence_identity(source, "bridge-grouped")?,
+        )
+        .field_shape(WorthQueryEvidenceTag::new("role"), role)
+        .field_bridge_retained_evidence_identity(
+            WorthQueryEvidenceTag::new("grouped"),
+            grouped_identity,
+        )
+        .seal()
 }
 
 pub(super) fn projection_snapshot_identity() -> TruthSnapshotIdentity {

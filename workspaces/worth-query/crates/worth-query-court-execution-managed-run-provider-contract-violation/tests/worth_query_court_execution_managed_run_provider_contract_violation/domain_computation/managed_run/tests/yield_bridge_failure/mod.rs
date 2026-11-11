@@ -5,6 +5,7 @@ use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_co
 use crate::process::domain_computation::managed_run::tests::*;
 
 #[test]
+#[expect(clippy::disallowed_methods, reason = "Foreign-thread court")]
 fn bridge_terminalization_failure_preserves_the_paused_run_for_retry_or_cleanup() {
     worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
@@ -67,6 +68,7 @@ fn bridge_terminalization_failure_preserves_the_paused_run_for_retry_or_cleanup(
 }
 
 #[test]
+#[expect(clippy::disallowed_methods, reason = "Foreign-thread court")]
 fn workflow_bridge_failure_aborts_artifact_freeze_and_restores_production() {
     worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();

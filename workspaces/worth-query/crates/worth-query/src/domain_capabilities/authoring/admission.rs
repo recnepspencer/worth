@@ -20,11 +20,11 @@ impl WorthQueryAdmissionContributionAuthoring {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             WorthQueryAdmissionContributionPosture::Advisory,
             semantic_code,
             detail,
-        )?)
+        )
     }
 
     pub fn advisory_at_stage(
@@ -32,23 +32,23 @@ impl WorthQueryAdmissionContributionAuthoring {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_decision_stage(
+        Self::with_decision_stage(
             WorthQueryAdmissionContributionPosture::Advisory,
             semantic_code,
             detail,
             decision_stage,
-        )?)
+        )
     }
 
     pub fn violation(
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             WorthQueryAdmissionContributionPosture::Violation,
             semantic_code,
             detail,
-        )?)
+        )
     }
 
     pub fn violation_at_stage(
@@ -56,23 +56,23 @@ impl WorthQueryAdmissionContributionAuthoring {
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::with_decision_stage(
+        Self::with_decision_stage(
             WorthQueryAdmissionContributionPosture::Violation,
             semantic_code,
             detail,
             decision_stage,
-        )?)
+        )
     }
 
     pub fn support_only(
         semantic_code: impl Into<String>,
         detail: impl Into<String>,
     ) -> Result<Self, IdentityDerivationDenial> {
-        Ok(Self::new(
+        Self::new(
             WorthQueryAdmissionContributionPosture::SupportOnly,
             semantic_code,
             detail,
-        )?)
+        )
     }
 
     pub fn for_intent_declaration(
@@ -82,9 +82,9 @@ impl WorthQueryAdmissionContributionAuthoring {
         WorthQueryRequestedAdmissionContribution<WorthQueryDeclarationBoundContributionTarget>,
         IdentityDerivationDenial,
     > {
-        Ok(self.bind_to_declaration_target(
+        self.bind_to_declaration_target(
             WorthQueryDeclarationBoundContributionTarget::for_intent_declaration(declaration),
-        )?)
+        )
     }
 
     pub fn for_admitted_intent_plan(
@@ -94,9 +94,9 @@ impl WorthQueryAdmissionContributionAuthoring {
         WorthQueryRequestedAdmissionContribution<WorthQueryAdmittedPlanBoundContributionTarget>,
         IdentityDerivationDenial,
     > {
-        Ok(self.bind_to_admitted_plan_target(
+        self.bind_to_admitted_plan_target(
             WorthQueryAdmittedPlanBoundContributionTarget::for_admitted_intent_plan(plan),
-        )?)
+        )
     }
 
     pub fn bind_to_declaration_target(
@@ -106,7 +106,7 @@ impl WorthQueryAdmissionContributionAuthoring {
         WorthQueryRequestedAdmissionContribution<WorthQueryDeclarationBoundContributionTarget>,
         IdentityDerivationDenial,
     > {
-        Ok(bind_requested(self.payload, target)?)
+        bind_requested(self.payload, target)
     }
 
     pub fn bind_to_admitted_plan_target(
@@ -116,7 +116,7 @@ impl WorthQueryAdmissionContributionAuthoring {
         WorthQueryRequestedAdmissionContribution<WorthQueryAdmittedPlanBoundContributionTarget>,
         IdentityDerivationDenial,
     > {
-        Ok(bind_requested(self.payload, target)?)
+        bind_requested(self.payload, target)
     }
 
     pub(crate) fn bind_to_installed_target<T>(
@@ -136,10 +136,10 @@ impl WorthQueryAdmissionContributionAuthoring {
                 T,
             >,
     {
-        Ok(bind_requested::<
+        bind_requested::<
             WorthQueryAdmissionContributionPayload,
             crate::domain_capabilities::WorthQueryInstalledDomainContributionTarget<T>,
-        >(self.payload, target)?)
+        >(self.payload, target)
     }
 
     fn new(

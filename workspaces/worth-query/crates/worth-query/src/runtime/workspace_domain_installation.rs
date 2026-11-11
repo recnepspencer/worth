@@ -155,7 +155,7 @@ impl WorthQueryWorkspace {
         crate::domain_installation::WorthQueryDomainExecutionIndexRebuildReport,
         IdentityDerivationDenial,
     > {
-        Ok(self.runtime.verify_domain_execution_index_rebuild()?)
+        self.runtime.verify_domain_execution_index_rebuild()
     }
 
     pub fn rebuild_conditional_execution_index(

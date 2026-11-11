@@ -156,10 +156,8 @@ impl WorthQueryRuntime {
         WorthQueryReadCompositionPhaseOneCloseout,
         crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
     > {
-        Ok(
-            Self::public_read_composition_phase_one_closeout_for_support_profile(
-                &self.backend.support_profile(),
-            )?,
+        Self::public_read_composition_phase_one_closeout_for_support_profile(
+            &self.backend.support_profile(),
         )
     }
 }

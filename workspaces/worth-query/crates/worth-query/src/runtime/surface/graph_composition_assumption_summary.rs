@@ -207,10 +207,8 @@ fn aggregate_digest(
     label: &str,
     digests: &[WorthQueryEvidenceIdentity],
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
-            .field_shape(WorthQueryEvidenceTag::new("role"), label)
-            .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("digest"), digests.iter())
-            .seal()?,
-    )
+    worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceAggregateDigest)
+        .field_shape(WorthQueryEvidenceTag::new("role"), label)
+        .field_evidence_identity_sequence(WorthQueryEvidenceTag::new("digest"), digests.iter())
+        .seal()
 }

@@ -106,14 +106,14 @@ pub(in crate::runtime) fn project_live_subscription_ordinary_runtime_posture(
             None => WorthQueryOrdinaryRuntimePostureKind::Current,
         },
     };
-    Ok(WorthQueryOrdinaryRuntimePosture::new_with_support_identity(
+    WorthQueryOrdinaryRuntimePosture::new_with_support_identity(
         kind,
         cause_posture,
         async_posture,
         basis_posture,
         remask_posture,
         state.installation.support_identity().clone(),
-    )?)
+    )
 }
 
 fn ordinary_async_posture_kind(

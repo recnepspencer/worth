@@ -43,13 +43,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                     let evidence = authority
                         .selected_output_read(&execution, native)
                         .map_err(Denial::SelectionRead)?;
-                    profile_is_current(
-                        &execution,
-                        native,
-                        &evidence,
-                        &selected,
-                        authority.profile(),
-                    )
+                    profile_is_current(&execution, native, evidence, &selected, authority.profile())
                 })
         })();
         authority

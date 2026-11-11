@@ -19,6 +19,7 @@ pub(crate) struct AdjacencyDelta {
 
 #[derive(Debug, Clone, Default)]
 pub(crate) struct MutationPublicationEffect {
+    pub(crate) has_entity_deletions: bool,
     pub(crate) changed_records: Vec<RecordRef>,
     pub(crate) canonical_deltas: Vec<CanonicalRecordAspectDelta>,
     pub(crate) patch_fragments: Vec<FoundationalPatchFragment>,
@@ -45,6 +46,7 @@ impl MutationEffect {
     pub(crate) fn with_capacity(change_count: usize, diagnostic_count: usize) -> Self {
         Self {
             publication: MutationPublicationEffect {
+                has_entity_deletions: false,
                 changed_records: Vec::with_capacity(change_count),
                 canonical_deltas: Vec::with_capacity(change_count),
                 patch_fragments: Vec::with_capacity(change_count),
@@ -59,6 +61,7 @@ impl MutationEffect {
     }
 
     pub(crate) fn accumulate(&mut self, child: MutationEffect) {
+        self.publication.has_entity_deletions |= child.publication.has_entity_deletions;
         self.publication
             .changed_records
             .extend(child.publication.changed_records);

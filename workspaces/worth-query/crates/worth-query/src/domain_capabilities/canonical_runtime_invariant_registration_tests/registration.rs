@@ -200,9 +200,7 @@ fn ready_invariant_registration(
     >,
     IdentityDerivationDenial,
 > {
-    Ok(ready(authoring.bind_to_declaration_target(
-        declaration_target("intent-invariant"),
-    )?)?)
+    ready(authoring.bind_to_declaration_target(declaration_target("intent-invariant"))?)
 }
 
 fn ready_invariant_registration_payload(
@@ -213,8 +211,5 @@ fn ready_invariant_registration_payload(
     >,
     IdentityDerivationDenial,
 > {
-    Ok(ready_payload(
-        declaration_target("intent-invariant"),
-        payload,
-    )?)
+    ready_payload(declaration_target("intent-invariant"), payload)
 }

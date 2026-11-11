@@ -12,50 +12,48 @@ fn declaration_digest_evidence(
     field: &'static str,
     digest: &str,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceSourceDigest)
-            .field_shape(WorthQueryEvidenceTag::new("identity_family"), family)
-            .field_value(WorthQueryEvidenceTag::new(field), digest)
-            .seal()?,
-    )
+    worth_query_evidence_identity(WorthQueryEvidenceScope::MutationEvidenceSourceDigest)
+        .field_shape(WorthQueryEvidenceTag::new("identity_family"), family)
+        .field_value(WorthQueryEvidenceTag::new(field), digest)
+        .seal()
 }
 
 pub(crate) fn canonical_query_evidence_identity(
     digest: &CanonicalQueryDigest,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(declaration_digest_evidence(
+    declaration_digest_evidence(
         "canonical_query_digest_v1",
         "canonical_query_digest",
         digest.as_str(),
-    )?)
+    )
 }
 
 pub(crate) fn validated_query_evidence_identity(
     digest: &ValidatedQueryDigest,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(declaration_digest_evidence(
+    declaration_digest_evidence(
         "validated_query_digest_v1",
         "validated_query_digest",
         digest.as_str(),
-    )?)
+    )
 }
 
 pub(crate) fn canonical_result_shape_evidence_identity(
     digest: &CanonicalResultShapeDigest,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(declaration_digest_evidence(
+    declaration_digest_evidence(
         "canonical_result_shape_digest_v1",
         "result_shape_digest",
         digest.as_str(),
-    )?)
+    )
 }
 
 pub(crate) fn collection_plan_evidence_identity(
     digest: &CollectionPlanDigest,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(declaration_digest_evidence(
+    declaration_digest_evidence(
         "collection_plan_digest_v1",
         "collection_plan_digest",
         digest.as_str(),
-    )?)
+    )
 }

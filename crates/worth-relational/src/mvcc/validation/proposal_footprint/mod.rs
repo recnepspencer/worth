@@ -1,5 +1,7 @@
 //! Exact mutation truth projected from one owner-validated mutation.
+mod member_restoration;
 mod relations;
+pub use member_restoration::{RecordedMemberRestoration, RecordedMemberRestorationRefusal};
 pub use relations::{ValidatedRelationMutation, ValidatedRelationMutationFootprint};
 
 use worth_foundational::facade::{

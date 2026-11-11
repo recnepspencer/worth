@@ -240,11 +240,9 @@ impl ProjectionConsumptionSource {
 fn certification_basis_identity(
     label: &'static str,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::ProjectionConsumptionIdentity)
-            .field_shape(WorthQueryEvidenceTag::new("certification_basis"), label)
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::ProjectionConsumptionIdentity)
+        .field_shape(WorthQueryEvidenceTag::new("certification_basis"), label)
+        .seal()
 }
 
 #[cfg(test)]

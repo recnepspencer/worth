@@ -123,35 +123,35 @@ impl QueryCausalTemporalAsyncExplanation {
 pub(in crate::domain_computation::primary_graph) fn project_admitted_temporal_async_explanation(
     inspection: &AdmittedCausalInspection,
 ) -> Result<QueryCausalTemporalAsyncExplanation, WorthQueryEvidenceIdentityDerivationDenial> {
-    Ok(QueryCausalTemporalAsyncExplanation::project(
+    QueryCausalTemporalAsyncExplanation::project(
         inspection.subject().inspection_reason(),
         inspection.subject().observation_outcome(),
         inspection.subject().resolved_evidence_families(),
         None,
-    )?)
+    )
 }
 
 pub(in crate::domain_computation::primary_graph) fn project_advisory_temporal_async_explanation(
     inspection: &AdvisoryCausalInspection,
 ) -> Result<QueryCausalTemporalAsyncExplanation, WorthQueryEvidenceIdentityDerivationDenial> {
-    Ok(QueryCausalTemporalAsyncExplanation::project(
+    QueryCausalTemporalAsyncExplanation::project(
         inspection.subject().inspection_reason(),
         inspection.subject().observation_outcome(),
         inspection.subject().resolved_evidence_families(),
         None,
-    )?)
+    )
 }
 
 pub(in crate::domain_computation::primary_graph) fn project_denied_temporal_async_explanation(
     inspection: &DeniedCausalInspection,
     bridge_denial_family: Option<BridgeCausalEvidenceFamily>,
 ) -> Result<QueryCausalTemporalAsyncExplanation, WorthQueryEvidenceIdentityDerivationDenial> {
-    Ok(QueryCausalTemporalAsyncExplanation::project(
+    QueryCausalTemporalAsyncExplanation::project(
         inspection.subject().inspection_reason(),
         inspection.subject().observation_outcome(),
         inspection.subject().resolved_evidence_families(),
         bridge_denial_family,
-    )?)
+    )
 }
 
 #[derive(Clone, Copy)]

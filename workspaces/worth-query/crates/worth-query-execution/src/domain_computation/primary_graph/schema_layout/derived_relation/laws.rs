@@ -1,4 +1,4 @@
-//! Preserve the old proved subset; all other laws use real Native enforcement.
+//! Discharge proved endpoint laws; stronger laws retain real Native enforcement.
 use super::*;
 use worth_query_declaration::facade::application_schema::{
     ApplicationGraphMemberMeaning as Endpoint, ApplicationRelationGraphLaws,
@@ -16,7 +16,9 @@ pub(super) fn lower(
     domains: &BTreeMap<String, super::super::projected_member_domain::ProjectedMemberDomainLayout>,
     registry: &RelationalSchemaRegistry,
 ) -> Result<Option<DerivedRelationGraphLaws>, Denial> {
-    if legacy_proved(parts, schema, registry, relations) {
+    if (parts.expression.is_legacy_shape() || maintained_ordered(parts, schema))
+        && endpoint_laws_proved(parts, schema, registry, relations)
+    {
         return Ok(None);
     }
     let laws = &parts.laws;
@@ -66,14 +68,13 @@ pub(super) fn lower(
     }))
 }
 
-fn legacy_proved(
+fn endpoint_laws_proved(
     parts: &WorthQueryPortableDerivedRelationParts,
     schema: &ErasedApplicationSchemaDeclaration,
     registry: &RelationalSchemaRegistry,
     relations: &BTreeMap<String, KindId>,
 ) -> bool {
     if parts.laws != ApplicationRelationGraphLaws::unbounded()
-        || !parts.expression.is_legacy_shape()
         || parts.from.entity().is_none()
         || parts.to.entity().is_none()
     {
@@ -92,4 +93,58 @@ fn legacy_proved(
             })
         },
     )
+}
+
+/// A maintained ordered Source owns event-chain definedness on every affected
+/// scope. Physical same-context leaves prove the default endpoint laws; doing
+/// a second complete ordered traversal here adds no evidence. No stronger law
+/// is discharged, and installation still binds the exact Native Source recipe.
+fn maintained_ordered(
+    parts: &WorthQueryPortableDerivedRelationParts,
+    schema: &ErasedApplicationSchemaDeclaration,
+) -> bool {
+    use worth_foundational::facade::RelationDirection;
+    use worth_query_declaration::facade::{
+        application_query::{
+            ApplicationManagedIndexSourceScope, ApplicationQueryRootPathSourceKind,
+            ApplicationQueryRootPathTraversal,
+        },
+        application_schema::ApplicationDerivedRelationNode,
+    };
+    if !matches!(
+        parts.expression.nodes.last(),
+        Some(ApplicationDerivedRelationNode::OrderedEvents { .. })
+    ) {
+        return false;
+    }
+    let required = super::super::managed_source::requirements(schema);
+    schema.members().iter().any(|member| {
+        let Member::ManagedIndex { definition } = member else {
+            return false;
+        };
+        let index = definition.parts();
+        if index.source.scope != ApplicationManagedIndexSourceScope::OrderedPredecessor
+            || !required.contains_key(index.name.as_str())
+        {
+            return false;
+        }
+        schema.members().iter().any(|member| {
+            let Member::ApplicationQuery { definition } = member else {
+                return false;
+            };
+            if definition.name() != index.source.binding.parts().query_name {
+                return false;
+            }
+            let [path] = definition.root_paths() else {
+                return false;
+            };
+            let [step] = path.steps() else { return false };
+            path.guards().is_empty()
+                && definition.predicates().is_empty()
+                && step.source_kind() == ApplicationQueryRootPathSourceKind::Derived
+                && step.direction() == RelationDirection::Forward
+                && step.traversal() == ApplicationQueryRootPathTraversal::OneHop
+                && step.relation() == parts.relation
+        })
+    })
 }

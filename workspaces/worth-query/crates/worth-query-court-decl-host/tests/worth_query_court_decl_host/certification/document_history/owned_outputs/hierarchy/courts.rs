@@ -134,7 +134,7 @@ fn exercise(worker_only: bool, initial: u64, stale: bool) {
         &request,
         root,
         document.selection(&request).unwrap(),
-        0xd1214_01,
+        0x0d12_1401,
     )
     .unwrap_or_else(|cause| panic!("non-leaf selection: {cause:?}"));
     assert_eq!(
@@ -181,7 +181,7 @@ fn exercise(worker_only: bool, initial: u64, stale: bool) {
     drop(observation);
     let contacts = host.producer_contacts_on_this_thread_for_test();
     let selected =
-        super::super::courts::checkout(&document, &request, future, selected, 0xd1214_02).unwrap();
+        super::super::courts::checkout(&document, &request, future, selected, 0x0d12_1402).unwrap();
     assert_eq!(
         host.producer_contacts_on_this_thread_for_test(),
         contacts,

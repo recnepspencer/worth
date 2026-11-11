@@ -6,7 +6,7 @@
 //! starts at `1` in every instance; recovery effect/inspect authority binds to
 //! the runtime identity basis instead (Q8.20).
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::{Arc, Mutex};
 
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
@@ -76,8 +76,8 @@ impl worth_proof::TerminalState for WorthQueryRecoveryResourceTerminal {
 }
 
 /// Opaque registry slot. Not a public recovery identity and not Clone on the
-/// handle path â€” only the registry retains membership.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+/// handle path — only the registry retains membership.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct WorthQueryRecoveryRegistrySlot(u64);
 
 impl WorthQueryRecoveryRegistrySlot {
@@ -93,7 +93,7 @@ struct RecoveryRegistryState {
     /// its claim back. Only `register_once` adds; every exit path removes.
     claims_by_slot: HashMap<WorthQueryRecoveryRegistrySlot, WorthQueryRecoveryMintClaim>,
     terminal_by_claim: HashMap<WorthQueryRecoveryMintClaim, WorthQueryRecoveryResourceTerminal>,
-    live: HashMap<WorthQueryRecoveryRegistrySlot, ()>,
+    live: BTreeMap<WorthQueryRecoveryRegistrySlot, ()>,
     terminated: HashMap<WorthQueryRecoveryRegistrySlot, WorthQueryRecoveryResourceTerminal>,
 }
 
@@ -106,7 +106,7 @@ impl RecoveryRegistryState {
             claimed_commits: HashSet::new(),
             claims_by_slot: HashMap::new(),
             terminal_by_claim: HashMap::new(),
-            live: HashMap::new(),
+            live: BTreeMap::new(),
             terminated: HashMap::new(),
         }
     }

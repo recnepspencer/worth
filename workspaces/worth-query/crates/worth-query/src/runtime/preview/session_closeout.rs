@@ -62,7 +62,7 @@ impl<'a> WorthQueryPreviewSession<'a> {
         WorthQueryPreviewCloseoutEvidence,
         crate::evidence_identity::WorthQueryEvidenceIdentityDerivationDenial,
     > {
-        Ok(WorthQueryPreviewCloseoutEvidence::new(
+        WorthQueryPreviewCloseoutEvidence::new(
             kind,
             self.effect_policy,
             &self.basis_admission,
@@ -84,7 +84,7 @@ impl<'a> WorthQueryPreviewSession<'a> {
             self.pending_write_intent_residue_count(),
             residue_snapshot.crossed_authoritative_residue_count,
             rebinding_identity,
-        )?)
+        )
     }
 
     pub(super) fn handle_binding_count(

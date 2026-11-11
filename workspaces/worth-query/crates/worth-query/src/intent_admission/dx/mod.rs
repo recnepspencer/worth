@@ -123,7 +123,7 @@ impl WorthQueryRuntimeIntentAdmissionReviewData {
         request: WorthQueryRawIntentAdmissionRequest,
     ) -> Result<Self, IdentityDerivationDenial> {
         let decision = admit_runtime_intent_request(request.clone())?;
-        Ok(Self::from_decision(request, decision)?)
+        Self::from_decision(request, decision)
     }
 
     pub(crate) fn from_decision(

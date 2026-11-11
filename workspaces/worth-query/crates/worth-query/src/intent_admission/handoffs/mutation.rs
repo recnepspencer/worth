@@ -230,24 +230,22 @@ fn command_handoff_fingerprint(
         .declared_entity_identity_ref()
         .map(|identity| identity.evidence_identity());
     let declared_collection_identity = command.declared_collection_identity();
-    Ok(worth_query_evidence_identity(
-        WorthQueryEvidenceScope::AuthoritativeMutationExecutionHandoff,
-    )
-    .field_shape(
-        WorthQueryEvidenceTag::new("family"),
-        command.mutation_family().as_str(),
-    )
-    .optional_evidence_identity(
-        WorthQueryEvidenceTag::new("declared_entity_identity"),
-        declared_entity_identity.as_ref(),
-    )
-    .optional_evidence_identity(
-        WorthQueryEvidenceTag::new("declared_collection"),
-        declared_collection_identity
-            .as_ref()
-            .map(crate::runtime::WorthQueryMutationTargetCollectionIdentity::evidence_identity),
-    )
-    .seal()?)
+    worth_query_evidence_identity(WorthQueryEvidenceScope::AuthoritativeMutationExecutionHandoff)
+        .field_shape(
+            WorthQueryEvidenceTag::new("family"),
+            command.mutation_family().as_str(),
+        )
+        .optional_evidence_identity(
+            WorthQueryEvidenceTag::new("declared_entity_identity"),
+            declared_entity_identity.as_ref(),
+        )
+        .optional_evidence_identity(
+            WorthQueryEvidenceTag::new("declared_collection"),
+            declared_collection_identity
+                .as_ref()
+                .map(crate::runtime::WorthQueryMutationTargetCollectionIdentity::evidence_identity),
+        )
+        .seal()
 }
 
 fn batch_handoff_fingerprint(
@@ -257,16 +255,14 @@ fn batch_handoff_fingerprint(
         .iter()
         .map(command_handoff_fingerprint)
         .collect::<Result<Vec<_>, _>>()?;
-    Ok(worth_query_evidence_identity(
-        WorthQueryEvidenceScope::AuthoritativeMutationExecutionHandoff,
-    )
-    .field_shape(
-        WorthQueryEvidenceTag::new("role"),
-        "batch-command-fingerprint",
-    )
-    .field_evidence_identity_sequence(
-        WorthQueryEvidenceTag::new("command"),
-        command_fingerprints.iter(),
-    )
-    .seal()?)
+    worth_query_evidence_identity(WorthQueryEvidenceScope::AuthoritativeMutationExecutionHandoff)
+        .field_shape(
+            WorthQueryEvidenceTag::new("role"),
+            "batch-command-fingerprint",
+        )
+        .field_evidence_identity_sequence(
+            WorthQueryEvidenceTag::new("command"),
+            command_fingerprints.iter(),
+        )
+        .seal()
 }

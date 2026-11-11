@@ -3,16 +3,9 @@ use super::*;
 use worth_query_host::facade::product::WorthQueryProductBranch;
 pub type Host = WorthQueryProgramApplicationRuntime<Schema, program::Program>;
 pub type Document<'a> = WorthQueryApplicationHistoryDocument<'a, Schema, History>;
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 pub struct Configuration {
     pub second_derivation: Option<fn(u64) -> u64>,
-}
-impl Default for Configuration {
-    fn default() -> Self {
-        Self {
-            second_derivation: None,
-        }
-    }
 }
 impl WorthQueryApplicationContribution<Schema> for Contribution {
     type Configuration = Configuration;
@@ -153,7 +146,7 @@ pub(super) fn attach_with_scope<'a, P: ApplicationProgramDefinition<Schema>>(
             .create(&phase)
             .unwrap()
             .into_owned_head();
-        host.request(&principal, &scope)
+        host.request(&principal, scope)
             .on_branch(head.branch())
             .attach_history::<History>(&phase, head, query::model::Read("a".into()))
             .unwrap()

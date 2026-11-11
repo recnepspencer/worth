@@ -225,10 +225,10 @@ pub fn discover_effect_lifecycle_support(
     effect_family: EffectFamily,
 ) -> Result<EffectLifecycleSupportDiscovery, IdentityDerivationDenial> {
     let support_matrix = effect_lifecycle_support_matrix()?;
-    Ok(EffectLifecycleSupportDiscovery::new(
+    EffectLifecycleSupportDiscovery::new(
         basis_family,
         effect_family,
         support_decision_for(basis_family, effect_family)?,
         support_matrix.matrix_identity().clone(),
-    )?)
+    )
 }

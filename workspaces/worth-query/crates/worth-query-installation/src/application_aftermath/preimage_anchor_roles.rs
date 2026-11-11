@@ -1,4 +1,4 @@
-//! Heterogeneous inverse fields require each kind's declared authored anchor.
+//! Heterogeneous inverse fields require an authored anchor or its declared live owner.
 use super::{WorthQueryAftermathInstallationDenial, WorthQueryAftermathInstallationDenialKind};
 use worth_query_declaration::facade::{
     application_aftermath::{PortableApplicationAftermathContract, PortableCorrectionMechanism},
@@ -26,7 +26,9 @@ pub(super) fn validate(
         .and_then(|binding| binding.authored_identity());
     for locus in demand.loci() {
         if !authored.is_some_and(|identity| std::iter::once(identity).chain(identity.co_anchors())
-            .any(|anchor| matches!(anchor.parts().logical_key.as_ref(), ApplicationSchemaMember::Field { entity, .. } if entity == locus.entity()))) {
+            .any(|anchor| matches!(anchor.parts().logical_key.as_ref(), ApplicationSchemaMember::Field { entity, .. } if entity == locus.entity())
+                || anchor.live_member_owner().is_some_and(|owner|
+                    owner.to() == locus.entity() && demand.relations().contains(owner)))) {
             return Err(WorthQueryAftermathInstallationDenial::new(WorthQueryAftermathInstallationDenialKind::PreImageDemandNotCoveredByAuthoredAnchors, locus.entity()));
         }
     }

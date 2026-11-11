@@ -29,7 +29,7 @@ pub(crate) fn compose_receipt_integrity_digest(
             posture_digest,
         );
     }
-    Ok(seal(encoder)?)
+    seal(encoder)
 }
 
 pub(crate) fn compose_receipt_digest(
@@ -70,9 +70,9 @@ pub(crate) fn compose_receipt_digest(
     }
     let warnings = warning_kinds.iter().map(|warning| warning.as_str());
     let neighbors = deferred_neighbors.iter().map(|neighbor| neighbor.as_str());
-    Ok(seal(
+    seal(
         encoder
             .field_value_sequence(WorthQueryEvidenceTag::new("warning_kind"), warnings)
             .field_value_sequence(WorthQueryEvidenceTag::new("deferred_neighbor"), neighbors),
-    )?)
+    )
 }

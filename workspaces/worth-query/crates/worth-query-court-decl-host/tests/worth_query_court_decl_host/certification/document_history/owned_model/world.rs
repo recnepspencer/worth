@@ -103,13 +103,13 @@ fn install_with_limits(shared: bool, limits: WorthQueryApplicationLimits) -> Hos
                 WorthQueryApplicationEntityKey::new("nested").unwrap(),
             ))?;
             graph.bind_relation(WorthQueryApplicationRelationSeed::new(
-                Reference::reference(),
+                Reference::binding(),
                 "reference-link",
                 WorthQueryApplicationEntityKey::new("a").unwrap(),
                 WorthQueryApplicationEntityKey::new("reference").unwrap(),
             ))?;
             graph.bind_relation(WorthQueryApplicationRelationSeed::new(
-                Reference::reference(),
+                Reference::binding(),
                 "foreign-loose-reference",
                 WorthQueryApplicationEntityKey::new("b").unwrap(),
                 WorthQueryApplicationEntityKey::new("loose").unwrap(),

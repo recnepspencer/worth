@@ -4,7 +4,8 @@ pub use correction::*;
 mod managed_index;
 mod mutation_handler;
 pub use crate::domain_computation::application_aftermath::{
-    WorthQueryRelationPreImageDenial, WorthQueryRelationPreImageFailure,
+    WorthQueryPreImageRetentionDenial, WorthQueryRelationPreImageDenial,
+    WorthQueryRelationPreImageFailure,
 };
 pub use crate::domain_computation::primary_graph::application_attempt::WorthQuerySignedCreationPreparationDenial;
 mod resources;

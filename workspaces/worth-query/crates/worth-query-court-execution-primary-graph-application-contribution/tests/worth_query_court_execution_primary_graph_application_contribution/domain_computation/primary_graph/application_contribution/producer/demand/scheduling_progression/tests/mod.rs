@@ -140,6 +140,7 @@ pub fn operation(
 }
 
 #[test]
+#[expect(clippy::disallowed_methods, reason = "Client-race court")]
 fn busy_signal_slot_defers_with_custody_then_a_later_advance_completes() {
     let (owner, lowering) = installation();
     let policy = BridgeExecutionPolicyBaseline::operational().request_policy();

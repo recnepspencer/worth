@@ -201,52 +201,50 @@ fn writeback_identity(
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
     let snapshot_evidence_identity = snapshot_identity.evidence_identity();
     let entity_evidence_identity = target.entity_identity.evidence_identity();
-    Ok(WorthQueryEvidenceIdentity::compose(
-        WorthQueryEvidenceScope::RuntimeBridgeWritebackAuthority,
-    )
-    .field_value(WorthQueryEvidenceTag::new("collection"), target.collection)
-    .field_evidence_identity(
-        WorthQueryEvidenceTag::new("entity"),
-        &entity_evidence_identity,
-    )
-    .field_evidence_identity(
-        WorthQueryEvidenceTag::new("snapshot_identity"),
-        &snapshot_evidence_identity,
-    )
-    .field_shape(
-        WorthQueryEvidenceTag::new("mutation_family"),
-        mutation.mutation_family().as_str(),
-    )
-    .field_shape(
-        WorthQueryEvidenceTag::new("mutation_kind"),
-        mutation_kind_label(&target.mutation_kind),
-    )
-    .field_value_sequence(
-        WorthQueryEvidenceTag::new("declared_aspect_operations"),
-        mutation_operation_identity_parts(mutation),
-    )
-    .field_value_sequence(
-        WorthQueryEvidenceTag::new("aspect_values"),
-        mutation
-            .admitted_aspect_values()
-            .iter()
-            .map(|aspect| aspect.terminal_digest_material()),
-    )
-    .field_value_sequence(
-        WorthQueryEvidenceTag::new("asserted_aspect_values"),
-        mutation
-            .asserted_admitted_aspect_values()
-            .iter()
-            .map(|aspect| aspect.terminal_digest_material()),
-    )
-    .field_value_sequence(
-        WorthQueryEvidenceTag::new("mutation_metadata"),
-        mutation
-            .mutation_metadata()
-            .entries()
-            .map(|(key, value)| format!("{}={}", key.as_str(), value.terminal_digest_text())),
-    )
-    .seal()?)
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::RuntimeBridgeWritebackAuthority)
+        .field_value(WorthQueryEvidenceTag::new("collection"), target.collection)
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("entity"),
+            &entity_evidence_identity,
+        )
+        .field_evidence_identity(
+            WorthQueryEvidenceTag::new("snapshot_identity"),
+            &snapshot_evidence_identity,
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("mutation_family"),
+            mutation.mutation_family().as_str(),
+        )
+        .field_shape(
+            WorthQueryEvidenceTag::new("mutation_kind"),
+            mutation_kind_label(&target.mutation_kind),
+        )
+        .field_value_sequence(
+            WorthQueryEvidenceTag::new("declared_aspect_operations"),
+            mutation_operation_identity_parts(mutation),
+        )
+        .field_value_sequence(
+            WorthQueryEvidenceTag::new("aspect_values"),
+            mutation
+                .admitted_aspect_values()
+                .iter()
+                .map(|aspect| aspect.terminal_digest_material()),
+        )
+        .field_value_sequence(
+            WorthQueryEvidenceTag::new("asserted_aspect_values"),
+            mutation
+                .asserted_admitted_aspect_values()
+                .iter()
+                .map(|aspect| aspect.terminal_digest_material()),
+        )
+        .field_value_sequence(
+            WorthQueryEvidenceTag::new("mutation_metadata"),
+            mutation
+                .mutation_metadata()
+                .entries()
+                .map(|(key, value)| format!("{}={}", key.as_str(), value.terminal_digest_text())),
+        )
+        .seal()
 }
 
 fn mutation_operation_identity_parts(

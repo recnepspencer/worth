@@ -39,7 +39,7 @@ pub(super) fn compose_consumed_projection_fact_family_digest(
         chunk_count += 1;
     }
 
-    Ok(seal(
+    seal(
         scope_encoder("consumed_projection_fact_family_root_v2")
             .field_shape(WorthQueryEvidenceTag::new("fact_family"), fact_family)
             .field_usize(WorthQueryEvidenceTag::new("entry_count"), entry_count)
@@ -48,16 +48,16 @@ pub(super) fn compose_consumed_projection_fact_family_digest(
                 WorthQueryEvidenceTag::new("terminal_chunk_digest"),
                 terminal_chunk_digest,
             ),
-    )?)
+    )
 }
 
 fn compose_fact_family_genesis_digest(
     fact_family: &'static str,
 ) -> Result<String, IdentityDerivationDenial> {
-    Ok(seal(
+    seal(
         scope_encoder("consumed_projection_fact_family_genesis_v2")
             .field_shape(WorthQueryEvidenceTag::new("fact_family"), fact_family),
-    )?)
+    )
 }
 
 fn compose_fact_family_chunk_digest(
@@ -67,7 +67,7 @@ fn compose_fact_family_chunk_digest(
     predecessor_chunk_digest: &str,
     entries: impl IntoIterator<Item = String>,
 ) -> Result<String, IdentityDerivationDenial> {
-    Ok(seal(
+    seal(
         scope_encoder("consumed_projection_fact_family_chunk_v2")
             .field_shape(WorthQueryEvidenceTag::new("fact_family"), fact_family)
             .field_usize(WorthQueryEvidenceTag::new("chunk_ordinal"), chunk_ordinal)
@@ -80,5 +80,5 @@ fn compose_fact_family_chunk_digest(
                 predecessor_chunk_digest,
             )
             .field_value_sequence(WorthQueryEvidenceTag::new("fact_entry"), entries),
-    )?)
+    )
 }

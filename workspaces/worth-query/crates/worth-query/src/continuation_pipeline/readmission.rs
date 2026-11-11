@@ -126,38 +126,34 @@ pub(crate) fn continuation_readmission_basis_identity(
     basis_kind: WorthQueryPreparedContinuationBasisKind,
     identity: impl AsRef<str>,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::ContinuationReadmissionBasis)
-            .field_shape(
-                WorthQueryEvidenceTag::new("basis_kind"),
-                basis_kind.as_str(),
-            )
-            .field_value(WorthQueryEvidenceTag::new("basis_identity"), identity)
-            .seal()?,
-    )
+    worth_query_evidence_identity(WorthQueryEvidenceScope::ContinuationReadmissionBasis)
+        .field_shape(
+            WorthQueryEvidenceTag::new("basis_kind"),
+            basis_kind.as_str(),
+        )
+        .field_value(WorthQueryEvidenceTag::new("basis_identity"), identity)
+        .seal()
 }
 
 pub(crate) fn continuation_readmission_lower_runtime_binding_identity(
     identity: impl AsRef<str>,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(worth_query_evidence_identity(
+    worth_query_evidence_identity(
         WorthQueryEvidenceScope::ContinuationReadmissionLowerRuntimeBinding,
     )
     .field_value(
         WorthQueryEvidenceTag::new("lower_runtime_binding"),
         identity,
     )
-    .seal()?)
+    .seal()
 }
 
 pub(crate) fn continuation_readmission_source_basis_identity(
     identity: impl AsRef<str>,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        worth_query_evidence_identity(WorthQueryEvidenceScope::ContinuationReadmissionSourceBasis)
-            .field_value(WorthQueryEvidenceTag::new("source_basis"), identity)
-            .seal()?,
-    )
+    worth_query_evidence_identity(WorthQueryEvidenceScope::ContinuationReadmissionSourceBasis)
+        .field_value(WorthQueryEvidenceTag::new("source_basis"), identity)
+        .seal()
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

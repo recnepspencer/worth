@@ -11,16 +11,14 @@ use super::snapshot::WorthQuerySupportSnapshot;
 pub fn project_support_snapshot(
     matrix: &WorthQueryRuntimePublicSupportMatrix,
 ) -> Result<WorthQuerySupportSnapshot, IdentityDerivationDenial> {
-    Ok(WorthQuerySupportSnapshot::from_public_support_matrix(
-        matrix,
-    )?)
+    WorthQuerySupportSnapshot::from_public_support_matrix(matrix)
 }
 
 pub fn project_workspace_support_snapshot(
     workspace: &WorthQueryWorkspace,
 ) -> Result<WorthQuerySupportSnapshot, IdentityDerivationDenial> {
     let matrix = workspace.public_support_matrix()?;
-    Ok(project_support_snapshot(&matrix)?)
+    project_support_snapshot(&matrix)
 }
 
 pub fn load_support_snapshot_terminal_json_document(

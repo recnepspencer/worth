@@ -61,7 +61,7 @@ impl<E> RootPathReadDenial<E> {
             BoundedFrontierReadStop::Limit(_) => Self::FrontierLimit {
                 subject: subject.to_owned(),
             },
-            BoundedFrontierReadStop::Admission(stop) => Self::native(subject, stop.into()),
+            BoundedFrontierReadStop::Admission(stop) => Self::native(subject, stop),
         }
     }
 }

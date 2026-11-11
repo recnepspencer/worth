@@ -115,11 +115,11 @@ impl CausalInspectionPlan {
                 .bridge_evidence_identity(),
         )
         .map_err(CausalInspectionConstructionStop::Bridge)?;
-        Ok(bridge_request_from_summary(
+        bridge_request_from_summary(
             summary,
             inspection.subject().query_observation_evidence_identity(),
             self.reference_set.references(),
-        )?)
+        )
     }
 
     fn bridge_request_for_advisory(
@@ -138,11 +138,11 @@ impl CausalInspectionPlan {
                 .bridge_evidence_identity(),
         )
         .map_err(CausalInspectionConstructionStop::Bridge)?;
-        Ok(bridge_request_from_summary(
+        bridge_request_from_summary(
             summary,
             inspection.subject().query_observation_evidence_identity(),
             self.reference_set.references(),
-        )?)
+        )
     }
 }
 

@@ -9,6 +9,7 @@ use worth_query_host::facade::application_invariants::*;
 mod courts;
 mod directory_home;
 pub mod expectation;
+pub mod optional_aspect;
 mod provider;
 pub mod query;
 mod rule;
@@ -16,6 +17,15 @@ pub use provider::Provider;
 pub use rule::{definition, resolve, CheckSamples};
 #[derive(Default)]
 pub struct Calls {
+    pub optional_updates: AtomicUsize,
+    pub optional_changes: Mutex<
+        Vec<(
+            Option<optional_aspect::query::Row>,
+            Option<optional_aspect::query::Row>,
+        )>,
+    >,
+    pub reader_impostor: AtomicUsize,
+    pub reader_bytes: Mutex<Vec<Vec<u8>>>,
     pub cancel_content: Mutex<Option<WorthQueryCancellationSource>>,
     pub content_reads: AtomicUsize,
     pub exact_reads: AtomicUsize,
@@ -43,7 +53,7 @@ impl ApplicationManagedIndexBinding<Schema> for Index {
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    expectation::declare(schema)
+    optional_aspect::declare(expectation::declare(schema))
         .application_query(query::state())
         .application_query_binding::<query::StateBinding>()
         .application_query(query::source())

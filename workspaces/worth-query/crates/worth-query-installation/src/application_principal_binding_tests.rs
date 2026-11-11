@@ -319,3 +319,8 @@ fn installed_index_in_runtime(
     )
     .unwrap()
 }
+
+pub(crate) fn budget_declaration(
+) -> worth_query_declaration::facade::application_schema::ErasedApplicationSchemaDeclaration {
+    inspection::declaration(true).erased().clone()
+}

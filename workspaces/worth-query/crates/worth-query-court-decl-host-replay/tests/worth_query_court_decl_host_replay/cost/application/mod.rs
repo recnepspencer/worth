@@ -116,8 +116,7 @@ fn measure(d: Dimensions) -> Sample {
         .unwrap();
     let cursor = preceding
         .continuation()
-        .expect("position before retained history tail")
-        .clone();
+        .expect("position before retained history tail");
     drop(preceding);
     let (_, report) = execution
         .run(ExecutionWorkCeiling::new(None), |_| {

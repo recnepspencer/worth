@@ -81,14 +81,34 @@ pub fn reject_occupied_registration(
 ) -> WorthQueryApplicationCommitOutcome {
     let execution = phase;
 
-    let (_coupled_outputs, admission, lease, provider_attempt, outcome_identity, _workflow_settlement_publication, mut authorization, idempotency, mut running, unbound_run, mut attempt_basis, aftermath_causality, completion_storage,) = victim.into_parts_for_test();
+    let (
+        _coupled_outputs,
+        admission,
+        lease,
+        provider_attempt,
+        outcome_identity,
+        _workflow_settlement_publication,
+        mut authorization,
+        idempotency,
+        mut running,
+        unbound_run,
+        mut attempt_basis,
+        aftermath_causality,
+        completion_storage,
+    ) = victim.into_parts_for_test();
     let original_completion = attempt_basis.take_original_completion_for_test();
     let reservation_basis = WorthQueryApplicationAttemptBasis::capture(
         &world.application,
         &admission,
         lease.snapshot_for_test(),
         lease.product(),
-    phase.execution_request_for_for_test((*world.application.runtime_for_test()).product_runtime_for_test()).expect("fixture issuer").allocation_policy())
+        phase
+            .execution_request_for_for_test(
+                (*world.application.runtime_for_test()).product_runtime_for_test(),
+            )
+            .expect("fixture issuer")
+            .allocation_policy(),
+    )
     .expect("the real running attempt must recapture its own exact basis");
     let admitted_session = admit_provider_session(
         execution,
@@ -146,7 +166,15 @@ pub fn reject_occupied_registration(
         &phase.borrowed_request_for_test(),
         phase,
         &world.application,
-        completion_storage.complete_for_test(WorthQueryProgressedApplicationCommit::new_for_test(None, outcome, lease, running, cleanup, admission.publication_request_for_test().clone(), original_completion)),
+        completion_storage.complete_for_test(WorthQueryProgressedApplicationCommit::new_for_test(
+            None,
+            outcome,
+            lease,
+            running,
+            cleanup,
+            admission.publication_request_for_test().clone(),
+            original_completion,
+        )),
     )
 }
 
@@ -159,7 +187,21 @@ pub fn while_peer_is_registered(
 ) -> WorthQueryApplicationCommitOutcome {
     let execution = phase;
 
-    let (coupled_outputs, admission, lease, provider_attempt, outcome_identity, _workflow_settlement_publication, mut authorization, idempotency, mut running, mutation_run, mut attempt_basis, aftermath_causality, completion_storage,) = peer.into_parts_for_test();
+    let (
+        coupled_outputs,
+        admission,
+        lease,
+        provider_attempt,
+        outcome_identity,
+        _workflow_settlement_publication,
+        mut authorization,
+        idempotency,
+        mut running,
+        mutation_run,
+        mut attempt_basis,
+        aftermath_causality,
+        completion_storage,
+    ) = peer.into_parts_for_test();
     let original_completion = attempt_basis.take_original_completion_for_test();
     let product = attempt_basis.retained_product();
     let admitted = admit_provider_session(
@@ -206,25 +248,39 @@ pub fn while_peer_is_registered(
     let commit_lane = (*(*world.application.runtime_for_test()).primary_provider_for_test())
         .application_branch_commit_lane_for_test(product.observation_for_test());
     let coordination = commit_lane.enter_for_test();
-    let authority = WorthQueryApplicationCommitProgressionAuthority::new_for_test(&world.application, (*world.application.runtime_for_test()).primary_provider_for_test(), &admission, authorization, idempotency, &coordination, &product, &original_completion, aftermath_causality, None, &coupled_outputs);
+    let authority = WorthQueryApplicationCommitProgressionAuthority::new_for_test(
+        &world.application,
+        (*world.application.runtime_for_test()).primary_provider_for_test(),
+        &admission,
+        authorization,
+        idempotency,
+        &coordination,
+        &product,
+        &original_completion,
+        aftermath_causality,
+        None,
+        &coupled_outputs,
+    );
     let peer = finish_application_commit(
         &phase.borrowed_request_for_test(),
         phase,
         &world.application,
-        completion_storage.complete_for_test(registered
-            .progress_for_test(
-                &phase.borrowed_request_for_test(),
-                phase,
-                &authority,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .finish_for_test(
-                lease,
-                running,
-                None,
-                admission.publication_request_for_test().clone(),
-                original_completion,
-            )),
+        completion_storage.complete_for_test(
+            registered
+                .progress_for_test(
+                    &phase.borrowed_request_for_test(),
+                    phase,
+                    &authority,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .finish_for_test(
+                    lease,
+                    running,
+                    None,
+                    admission.publication_request_for_test().clone(),
+                    original_completion,
+                ),
+        ),
     );
     assert!(matches!(
         peer,

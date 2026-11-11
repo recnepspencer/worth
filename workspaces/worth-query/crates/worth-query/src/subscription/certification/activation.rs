@@ -45,14 +45,12 @@ impl QuerySubscriptionCertificationError {
         Self {
             denial_kind,
             message,
-            failure_identity: (|| {
-                Ok(subscription_certification_failure_identity(
-                    "query_subscription_certification_error_v1",
-                    denial_kind.as_str(),
-                    message,
-                    evidence,
-                )?)
-            })(),
+            failure_identity: subscription_certification_failure_identity(
+                "query_subscription_certification_error_v1",
+                denial_kind.as_str(),
+                message,
+                evidence,
+            ),
         }
     }
 
@@ -67,7 +65,7 @@ impl QuerySubscriptionCertificationError {
     pub fn failure_identity(
         &self,
     ) -> Result<&WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-        Ok(self.failure_identity.as_ref().map_err(|cause| *cause)?)
+        self.failure_identity.as_ref().map_err(|cause| *cause)
     }
 }
 

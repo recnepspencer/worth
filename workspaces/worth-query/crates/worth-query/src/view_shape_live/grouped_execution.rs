@@ -264,16 +264,14 @@ pub fn materialize_grouped_execution_surface_from_truth_view(
 pub(crate) fn bridge_grouped_truth_view_digest_evidence_identity(
     digest: &worth_runtime_bridge::facade::BridgeGroupedTruthViewDigest,
 ) -> Result<WorthQueryEvidenceIdentity, IdentityDerivationDenial> {
-    Ok(
-        WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::BridgeGroupedTruthViewDigest)
-            .field_shape(
-                WorthQueryEvidenceTag::new("identity_family"),
-                "bridge_grouped_truth_view_digest_v1",
-            )
-            .field_value(
-                WorthQueryEvidenceTag::new("grouped_truth_view_digest"),
-                digest.as_str(),
-            )
-            .seal()?,
-    )
+    WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::BridgeGroupedTruthViewDigest)
+        .field_shape(
+            WorthQueryEvidenceTag::new("identity_family"),
+            "bridge_grouped_truth_view_digest_v1",
+        )
+        .field_value(
+            WorthQueryEvidenceTag::new("grouped_truth_view_digest"),
+            digest.as_str(),
+        )
+        .seal()
 }

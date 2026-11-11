@@ -152,3 +152,8 @@ fn public_warm_lookup_is_one_probe_without_canonical_work_and_rejects_identity_d
         crate::application_capability::WorthQueryApplicationCapabilityInstallationDenialKind::CapabilityMeaningChanged
     );
 }
+
+pub(crate) fn budget_declaration(
+) -> worth_query_declaration::facade::application_schema::ErasedApplicationSchemaDeclaration {
+    Schema::declaration().unwrap().erased().clone()
+}

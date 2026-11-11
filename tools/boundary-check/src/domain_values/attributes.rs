@@ -37,7 +37,7 @@ fn check_with_helpers(
                         .to_string();
                     if derive.leading_colon.is_none() && derive.segments.len() > 1
                         && items.iter().any(|item| matches!(item, Item::Mod(value) if value.ident == namespace)
-                            || matches!(item, Item::Use(value) if imported(&value.tree, &namespace))) {
+                            || matches!(item, Item::Use(value) if imported(&value.tree, &namespace, false))) {
                         return Err(format!("shadowed derive namespace: {name}"));
                     }
                     let builtins = [
@@ -57,7 +57,7 @@ fn check_with_helpers(
                         "worth_foundational::facade::WorthValue",
                         "worth_query_decl::facade::application_schema::WorthValue",
                     ];
-                    if !(known.contains(&name) || (builtins.contains(&name) && !items.iter().any(|item| matches!(item, Item::Use(value) if imported(&value.tree, &name))))) {
+                    if !(known.contains(&name) || (builtins.contains(&name) && !items.iter().any(|item| matches!(item, Item::Use(value) if imported(&value.tree, name, false))))) {
                         return Err(format!("unknown/shadowed derive may change namespace resolution: {name}"));
                     }
                 }
@@ -65,16 +65,17 @@ fn check_with_helpers(
             "serde" | "worth_value" | "charged_bytes" => {
                 if !helpers.contains(&path)
                     || items.iter().any(
-                        |item| matches!(item, Item::Use(value) if imported(&value.tree, &path)),
+                        |item| matches!(item, Item::Use(value) if imported(&value.tree, &path, true)),
                     )
                 {
                     return Err(format!("unowned/shadowed helper attribute: {path}"));
                 }
             }
+            "cfg_attr" if conditional_lints(attribute) => (),
             "doc" | "cfg" | "path" | "allow" | "warn" | "deny" | "forbid" | "expect"
             | "deprecated" | "repr" | "must_use" | "non_exhaustive" | "test" | "ignore"
             | "should_panic" | "inline" | "cold" | "track_caller" | "rustfmt::skip"
-            | "recursion_limit" => (),
+            | "recursion_limit" | "macro_use" | "macro_export" => (),
             _ => {
                 return Err(format!(
                     "unsupported transforming attribute in domain source: {path}"
@@ -85,13 +86,27 @@ fn check_with_helpers(
     Ok(())
 }
 
-fn imported(tree: &UseTree, name: &str) -> bool {
+fn conditional_lints(attribute: &Attribute) -> bool {
+    let Ok(arguments) = attribute.parse_args_with(
+        syn::punctuated::Punctuated::<syn::Meta, syn::Token![,]>::parse_terminated,
+    ) else {
+        return false;
+    };
+    arguments.len() > 1
+        && arguments.iter().skip(1).all(|meta| {
+            ["allow", "warn", "deny", "forbid", "expect"]
+                .iter()
+                .any(|name| meta.path().is_ident(name))
+        })
+}
+
+fn imported(tree: &UseTree, name: &str, glob: bool) -> bool {
     match tree {
         UseTree::Name(value) => value.ident == name,
         UseTree::Rename(value) => value.rename == name,
-        UseTree::Path(value) => imported(&value.tree, name),
-        UseTree::Group(group) => group.items.iter().any(|tree| imported(tree, name)),
-        UseTree::Glob(_) => true,
+        UseTree::Path(value) => imported(&value.tree, name, glob),
+        UseTree::Group(group) => group.items.iter().any(|tree| imported(tree, name, glob)),
+        UseTree::Glob(_) => glob,
     }
 }
 

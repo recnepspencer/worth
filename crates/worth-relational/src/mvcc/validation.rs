@@ -28,9 +28,9 @@ mod validated_proposal;
 pub use crate::validation::data::CustomInvariantNonApplicability;
 pub use custom_invariant_execution_receipt::CustomInvariantExecutionReceipt;
 pub use proposal_footprint::{
-    ValidatedMutationFootprint, ValidatedMutationFootprintNotRequested,
-    ValidatedMutationFootprintProjection, ValidatedMutationFootprintWork,
-    ValidatedRelationMutation, ValidatedRelationMutationFootprint,
+    RecordedMemberRestoration, RecordedMemberRestorationRefusal, ValidatedMutationFootprint,
+    ValidatedMutationFootprintNotRequested, ValidatedMutationFootprintProjection,
+    ValidatedMutationFootprintWork, ValidatedRelationMutation, ValidatedRelationMutationFootprint,
 };
 pub use proposal_identity::RelationalMutationProposalIdentity;
 pub use proposal_touches::{

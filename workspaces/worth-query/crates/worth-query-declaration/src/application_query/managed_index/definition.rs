@@ -143,10 +143,11 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>
                     provider_version: I::PROVIDER_VERSION,
                     structure: I::STRUCTURE,
                     membership: I::MEMBERSHIP,
-                    source:
-                        super::ApplicationManagedIndexSourceMeaning::same_scope_without_parameters(
-                            ApplicationQueryBindingReference::of::<S, I::SourceBinding>(),
-                        ),
+                    source: super::ApplicationManagedIndexSourceMeaning {
+                        binding: ApplicationQueryBindingReference::of::<S, I::SourceBinding>(),
+                        scope: I::SOURCE_SCOPE,
+                        parameters: super::ApplicationManagedIndexSourceParameters::NoParameters,
+                    },
                     entity: I::Entity::IDENTIFIER.to_owned(),
                     probe: ApplicationManagedIndexProbeMeaning::of::<I::ProbeBinding>(),
                 },

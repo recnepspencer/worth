@@ -9,6 +9,7 @@ pub const MANY_CHUNKS: usize = 50_000;
 pub const SMALL_STACK_BYTES: usize = 256 * 1024;
 
 #[test]
+#[expect(clippy::disallowed_methods, reason = "Small-stack court")]
 fn partial_stream_and_sealed_product_drop_iteratively_on_a_small_stack() {
     let thread = std::thread::Builder::new()
         .name("graph-materialization-drop".to_owned())

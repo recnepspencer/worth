@@ -1,6 +1,9 @@
 //! Sealed test doors over this module's private members.
 use super::*;
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct WorthQueryApplicationAttemptBindingMismatch;
+
 impl<'run> WorthQuerySessionBoundReadsAndEffects<'run> {
     #[doc(hidden)]
     pub fn execution_request_for_test(&self) -> worth_execution::ExecutionRequest<'run, 'run> {
@@ -45,9 +48,12 @@ impl<'run> WorthQuerySessionBoundReadsAndEffects<'run> {
     pub fn bind_application_attempt_for_test(
         &self,
         basis: crate::domain_computation::primary_graph::WorthQueryApplicationAttemptBasis,
-    ) -> Result<crate::domain_computation::primary_graph::WorthQueryApplicationAttemptAffinity, ()>
-    {
+    ) -> Result<
+        crate::domain_computation::primary_graph::WorthQueryApplicationAttemptAffinity,
+        WorthQueryApplicationAttemptBindingMismatch,
+    > {
         Self::bind_application_attempt(self, basis)
+            .map_err(|()| WorthQueryApplicationAttemptBindingMismatch)
     }
 }
 

@@ -31,6 +31,20 @@ impl PreparedAuthoredIdentity {
     ) -> Result<(), AuthoredCorrectionCandidateDenial> {
         poll(request)?;
         for declaration in self.declaration.co_anchors() {
+            if declaration.member_owner().is_some() {
+                if roles.clone().any(|(name, posture, entity, _)| {
+                    declaration
+                        .member_role_suffix(name, posture, entity, true)
+                        .is_some()
+                        && !self
+                            .co_anchors
+                            .iter()
+                            .any(|member| member.declaration.parts().inverse_role == name)
+                }) {
+                    return Err(Identity("authored inverse supplied an extra owned member"));
+                }
+                continue;
+            }
             let present = self.co_anchors.iter().any(|anchor| {
                 anchor.declaration.parts().source_role == declaration.parts().source_role
             });
@@ -114,7 +128,9 @@ impl PreparedAuthoredIdentity {
                 let spec = matched.ok_or(Identity(
                     "authored inverse output has no actual creation intent",
                 ))?;
-                if spec.fields.get(&self.locator) != Some(&self.key) {
+                if self.declaration.live_member_owner().is_none()
+                    && spec.fields.get(&self.locator) != Some(&self.key)
+                {
                     return Err(Identity(
                         "authored inverse changed the declared logical key",
                     ));

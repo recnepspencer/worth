@@ -67,7 +67,7 @@ pub fn materialize_canonical_aftermath_artifact<T>(
 where
     T: WorthQueryDomainCapabilityTargetBinding,
 {
-    Ok(super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)?)
+    super::artifacts::materialize_domain_capability_canonical_runtime_artifact(contribution)
 }
 
 pub(crate) fn materialize_projection_consumption_eligibility<T>(

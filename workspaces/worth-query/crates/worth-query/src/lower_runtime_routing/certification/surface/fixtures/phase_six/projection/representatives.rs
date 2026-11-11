@@ -32,13 +32,13 @@ pub(crate) fn representative_projection_query_receipts_row(
     let receipt = certification_query_write_receipt(execution);
     let source = ProjectionConsumptionSource::from_write_receipt(&receipt);
 
-    Ok(readmission_projection_row(
+    readmission_projection_row(
         WorthQueryLowerRuntimeSeamKey::ProjectionSourceIntakeFromQueryReceipts,
         WorthQueryLowerRuntimeAuthorityOwner::Query,
         "Projection source intake from Query receipts",
         projection_source_evidence_identity(&source, "query-receipt-source")?,
         projection_source_evidence_identity(&source, "query-receipt-retained")?,
-    )?)
+    )
 }
 
 pub(crate) fn representative_projection_relational_row(
@@ -87,13 +87,13 @@ pub(crate) fn representative_projection_relational_row(
     .expect("relational projection fixture should group row set");
     let source = ProjectionConsumptionSource::from_relational_grouped_projection(&grouped);
 
-    Ok(readmission_projection_row(
+    readmission_projection_row(
         WorthQueryLowerRuntimeSeamKey::ProjectionSourceIntakeFromRelationalArtifacts,
         WorthQueryLowerRuntimeAuthorityOwner::Relational,
         "Projection source intake from relational artifacts",
         relational_grouped_projection_evidence(&source, grouped.digest().as_str(), "source")?,
         relational_grouped_projection_evidence(&source, grouped.digest().as_str(), "retained")?,
-    )?)
+    )
 }
 
 pub(crate) fn representative_projection_bridge_row(
@@ -145,7 +145,7 @@ pub(crate) fn representative_projection_bridge_row(
     .expect("bridge projection fixture should group truth view");
     let source = ProjectionConsumptionSource::from_bridge_grouped_truth_view(&grouped);
 
-    Ok(readmission_projection_row(
+    readmission_projection_row(
         WorthQueryLowerRuntimeSeamKey::ProjectionSourceIntakeFromBridgeArtifacts,
         WorthQueryLowerRuntimeAuthorityOwner::RuntimeBridge,
         "Projection source intake from bridge artifacts",
@@ -159,7 +159,7 @@ pub(crate) fn representative_projection_bridge_row(
             &grouped.digest().bridge_admission_evidence(),
             "retained",
         )?,
-    )?)
+    )
 }
 
 fn readmission_projection_row(

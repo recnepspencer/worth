@@ -103,7 +103,7 @@ pub fn compare_test_backend_write_receipts(
     in_memory: &WorthQueryWriteReceipt,
     bridge: &WorthQueryWriteReceipt,
 ) -> Result<WorthQueryTestBackendEquivalenceReport, IdentityDerivationDenial> {
-    Ok(WorthQueryTestBackendEquivalenceReport::new(vec![
+    WorthQueryTestBackendEquivalenceReport::new(vec![
         WorthQueryTestBackendEquivalenceRow::compare(
             "mutation_family",
             in_memory.mutation_family().as_str(),
@@ -148,7 +148,7 @@ pub fn compare_test_backend_write_receipts(
                 .is_empty())
             .to_string(),
         ),
-    ])?)
+    ])
 }
 
 fn semantic_delta_rows(receipt: &WorthQueryWriteReceipt) -> String {

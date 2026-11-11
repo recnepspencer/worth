@@ -17,7 +17,7 @@ use super::transcript_session_proofs::{
 pub(super) fn workflow_editor_transcript(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<WorthQueryRuntimePublicApiTranscriptEvidence, IdentityDerivationDenial> {
-    Ok(execute_transcript(
+    execute_transcript(
         request_execution,
         TranscriptSpec {
             family: "workflow-editor",
@@ -31,13 +31,13 @@ pub(super) fn workflow_editor_transcript(
             neighbor_families: &[WorthQueryRuntimeFacadeFamily::StoreBackedExecution],
             assertion_floor: 12,
         },
-    )?)
+    )
 }
 
 pub(super) fn geometry_kernel_transcript(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<WorthQueryRuntimePublicApiTranscriptEvidence, IdentityDerivationDenial> {
-    Ok(execute_transcript(
+    execute_transcript(
         request_execution,
         TranscriptSpec {
             family: "geometry-kernel",
@@ -51,13 +51,13 @@ pub(super) fn geometry_kernel_transcript(
             neighbor_families: &[WorthQueryRuntimeFacadeFamily::DurableArtifacts],
             assertion_floor: 12,
         },
-    )?)
+    )
 }
 
 pub(super) fn table_spreadsheet_transcript(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<WorthQueryRuntimePublicApiTranscriptEvidence, IdentityDerivationDenial> {
-    Ok(execute_transcript(
+    execute_transcript(
         request_execution,
         TranscriptSpec {
             family: "table-spreadsheet",
@@ -71,13 +71,13 @@ pub(super) fn table_spreadsheet_transcript(
             neighbor_families: &[WorthQueryRuntimeFacadeFamily::StoreBackedExecution],
             assertion_floor: 12,
         },
-    )?)
+    )
 }
 
 pub(super) fn composed_runtime_transcript(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<WorthQueryRuntimePublicApiTranscriptEvidence, IdentityDerivationDenial> {
-    Ok(execute_transcript(
+    execute_transcript(
         request_execution,
         TranscriptSpec {
             family: "composed-runtime",
@@ -99,13 +99,13 @@ pub(super) fn composed_runtime_transcript(
             ],
             assertion_floor: 16,
         },
-    )?)
+    )
 }
 
 pub(super) fn composed_runtime_hostile_transcript(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<WorthQueryRuntimePublicApiTranscriptEvidence, IdentityDerivationDenial> {
-    Ok(execute_transcript(
+    execute_transcript(
         request_execution,
         TranscriptSpec {
             family: "composed-runtime-hostile",
@@ -129,7 +129,7 @@ pub(super) fn composed_runtime_hostile_transcript(
             ],
             assertion_floor: 18,
         },
-    )?)
+    )
 }
 
 pub(super) struct TranscriptSpec {
@@ -363,7 +363,7 @@ fn execute_transcript(
             effect_intent_inspection.inspection_digest()
         ),
     ]);
-    Ok(WorthQueryRuntimePublicApiTranscriptEvidence::new(
+    WorthQueryRuntimePublicApiTranscriptEvidence::new(
         spec.family,
         support_contract.contract_digest(),
         state.state_digest().terminal_projection_for_reporting(),
@@ -380,7 +380,7 @@ fn execute_transcript(
         preview_residue_count + write.pending_write_intent_count(),
         authority_lane_digest,
         spec.assertion_floor,
-    )?)
+    )
 }
 
 fn live_field(authored_field_text: &str) -> AspectFieldKey {
