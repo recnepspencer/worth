@@ -8,13 +8,7 @@ use crate::storage::substrate::{
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
 
 fn fixed<T>() -> u64 {
-    let header = std::alloc::Layout::new::<[usize; 2]>();
-    header
-        .extend(std::alloc::Layout::new::<T>())
-        .unwrap()
-        .0
-        .pad_to_align()
-        .size() as u64
+    StorageAllocation::<T>::layout_bytes()
 }
 // Fixture-only public observation of the actual controller, never a private size guess.
 fn controller_memory() -> u64 {

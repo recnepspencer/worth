@@ -263,13 +263,6 @@ impl VisibilitySubsystem {
         self.cache.clear_branch_head_residency(tracked_states);
     }
 
-    /// Every version a replay pin currently retains, collected so the fence
-    /// computation never scans the index while holding its lock.
-    #[cfg(test)]
-    pub(crate) fn replay_retention_versions(&self) -> Vec<crate::identity::data::VersionId> {
-        self.replay_retention.read().versions().collect()
-    }
-
     pub(crate) fn increment_replay_retention(
         &self,
         version_id: crate::identity::data::VersionId,

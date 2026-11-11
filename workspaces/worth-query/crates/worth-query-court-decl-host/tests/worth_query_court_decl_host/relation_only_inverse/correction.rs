@@ -10,6 +10,28 @@ impl ApplicationAuthoredCorrectionFamily<Schema> for Family {
 }
 pub struct UndoSpawn;
 impl ApplicationCorrectionBinding<Schema> for UndoSpawn {
+    fn recover_source_input(bytes: &[u8], expected: worth_query_decl::facade::application_schema::CanonicalDigestId, bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds) -> Result<worth_query_decl::facade::application_operation::ApplicationEncodedInput<<Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<Schema>>::InputBinding>, worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial>{
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained_with_seed(bytes, expected, bounds, worth_query_decl::facade::application_schema::CanonicalValueSeed::<<Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<Schema>>::Input>::new(bounds))
+    }
+
+    fn recover_inverse_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<
+                Schema,
+                Self,
+            > as worth_query_decl::facade::application_operation::ApplicationMutationBinding<
+                Schema,
+            >>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    > {
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained_with_seed(bytes, expected, bounds, worth_query_decl::facade::application_schema::CanonicalValueSeed::<<worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<Schema, Self> as worth_query_decl::facade::application_operation::ApplicationMutationBinding<Schema>>::Input>::new(bounds))
+    }
+
     const IDENTITY: &'static str = "relation-only-inverse.undo-spawn.v1";
     type Source = SpawnBinding;
     type InverseIntent = Despawn;

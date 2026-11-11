@@ -21,10 +21,9 @@ impl WorthQueryPreparedCorrectionSource {
         if self.lineage.role() != WorthQueryAftermathCausalRole::RecordedReverse {
             return Ok(());
         }
-        let evidence = self.material.commit_evidence();
-        let demanded = evidence
-            .original_authority()
-            .installed_aftermath()
+        let source = self.custody.occurrence();
+        let demanded = source
+            .aftermath()
             .and_then(|contract| contract.mechanism())
             .and_then(|mechanism| match mechanism {
                 worth_query_installation::facade::InstalledCorrectionMechanism::RecordedInverse(
@@ -38,14 +37,14 @@ impl WorthQueryPreparedCorrectionSource {
         let missing = || {
             fail(
                 Kind::MissingObservation,
-                evidence
-                    .output_correspondence()
+                source
+                    .correspondence()
                     .native_witness_roles()
                     .map(|(_, _, _, id)| RecordRef::Entity(id))
                     .collect(),
             )
         };
-        let retained = evidence.retained_preimage().ok_or_else(missing)?;
+        let retained = source.memory_preimage().ok_or_else(missing)?;
         if retained.relation_loci() != demand.relations() {
             return Err(missing());
         }

@@ -1,11 +1,8 @@
-mod adjacency_checkpoint;
 mod associated_effects;
 mod associated_effects_discovery;
-mod branch_and_aspect_history;
 mod branch_root_checkpoint;
 mod branch_root_content_binding;
 mod branch_root_schema_binding;
-mod branch_root_shared_target_binding;
 mod branch_transition;
 mod caller_association;
 mod canonical_artifact_neutrality;
@@ -14,30 +11,22 @@ mod checkpoint_recovery;
 mod declared_schema_binding;
 mod derived_index_checkpoint;
 mod descriptor_continuity;
-mod fork_provenance_checkpoint;
-mod fork_tail_after_source_moved;
-mod global_generation_reclamation;
-mod lineage_allocator_denials;
-mod lineage_artifact_recovery;
 mod lineage_event_allocator_recovery;
 mod managed_field_text;
 mod merge_replay_continuity;
 mod native_checkpoint;
-mod native_checkpoint_restore_benchmark;
 mod record_allocation_recovery;
 mod recorded_component_checkpoint;
 mod rejected_and_parent_closure;
 mod retention_inspection_store;
 mod schema_transition_continuity;
 mod semantic_result;
-mod tail_checkpoint_validation;
 
 use crate::diagnostics::data::RelationalDiagnosticValue;
 use crate::facade::diagnostics::{DiagnosticCode, DiagnosticsScope};
 use crate::facade::durability::{
-    RecoveryAuthorityContinuityCheck, RecoveryAuthorityContinuityMismatch, RecoveryAuthorityParity,
-    RecoveryFailureClass, RecoveryPlan, RecoveryVerificationMode, RecoveryVerificationOutcome,
-    RelationIntegrityContractFamily,
+    RecoveryAuthorityContinuityCheck, RecoveryAuthorityContinuityMismatch, RecoveryFailureClass,
+    RecoveryPlan, RecoveryVerificationMode, RelationIntegrityContractFamily,
 };
 use crate::facade::history::BranchId;
 use crate::facade::identity::KindId;
@@ -48,7 +37,7 @@ use crate::facade::lineage::LineageEventKind;
 use crate::facade::merge::{MergeExecutionRequest, MergeIntent};
 use crate::facade::replay::ReplayVerificationLayer;
 use crate::facade::runtime::RelationalRuntimeApi;
-use crate::facade::schema::{DescriptorCanonicalBasisVersion, DescriptorSemanticsVersion};
+use crate::facade::schema::DescriptorSemanticsVersion;
 use crate::facade::schema::{
     EntityKindRegistration, HistoricalInterpretationSensitivity, KindAspectContractDeclarations,
     ProposedSchemaTransition, RelationalSchemaRegistry, SchemaDiffAtom, SchemaDiffDetail,

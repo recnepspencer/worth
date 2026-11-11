@@ -33,6 +33,11 @@ impl RelationalBranchSharingObservation {
     /// over this slice reproduces
     /// [`Self::unique_physical_authoritative_bytes`] exactly, which is what
     /// makes that total independently checkable.
+    ///
+    /// That agreement is arithmetic, not a physical measurement of nested
+    /// persistent aspect backing. A payload carrier's row includes its checked
+    /// declared upper bound for that backing, and distinct carriers sharing it
+    /// each include it. No row identifies a shared aspect node or value.
     pub fn authoritative_allocations(&self) -> &[RelationalAuthoritativeAllocationObservation] {
         &self.authoritative_allocations
     }

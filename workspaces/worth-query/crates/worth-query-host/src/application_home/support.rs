@@ -3,24 +3,15 @@ use worth_foundational::facade::DurableStateFamily;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum DirectoryFamilySupport {
-    Supported,
+    Supported(u8),
     RefusedUntil(u8),
-}
-
-/// The phase whose dispatch-custody extension Directory Homes now deliver.
-const DISPATCH_CUSTODY_PHASE: u8 = 8;
-
-/// The families that extension is delivered for: an emission's outbox row and
-/// its attempt journal. No other family gains a phase-8 extension here.
-fn delivers_dispatch_custody(family: DurableStateFamily) -> bool {
-    family == DurableStateFamily::DispatchOutbox || family == DurableStateFamily::DispatchAttempts
 }
 
 /// Base support does not admit later correction/component extensions.
 pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFamilySupport {
     use DurableStateFamily::*;
     match family {
-        ProgramActivation | PortablePackageMeaning => DirectoryFamilySupport::Supported,
+        ProgramActivation | PortablePackageMeaning => DirectoryFamilySupport::Supported(4),
         AggregateIdentity
         | AggregateMembership
         | AggregateLineage
@@ -38,11 +29,12 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
         | UnpublishedIdempotency
         | PendingApplicationPublication
         | ApplicationBranchCleanup
-        | DispatchOutbox
-        | DispatchAttempts
         | AftermathCausality
         | CorrectionIntent
-        | PublicationDiagnosticMaterial => DirectoryFamilySupport::Supported,
+        | PublicationDiagnosticMaterial => DirectoryFamilySupport::Supported(4),
+        // Phase 8's external dispatch custody is delivered for exactly an
+        // emission's outbox row and its attempt journal.
+        DispatchOutbox | DispatchAttempts => DirectoryFamilySupport::Supported(8),
         WorldConditionalDefinitionCustody
         | SignalNodeDefinitions
         | SignalTopology
@@ -115,10 +107,10 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
         | RecoveryClaimDispositions
         | RecoveryHandleCustody
         | BankRecoveryClaim => DirectoryFamilySupport::RefusedUntil(8),
-        CorrectionPreImages
-        | CorrectionGovernedInput
-        | CorrectionOriginalMeaning
-        | OriginalOperationDescription
+        CorrectionPreImages | CorrectionGovernedInput | CorrectionOriginalMeaning => {
+            DirectoryFamilySupport::Supported(9)
+        }
+        OriginalOperationDescription
         | FixedDeliveryCustody
         | ServerSourceCustody
         | HttpOriginalOwners
@@ -137,17 +129,14 @@ pub(crate) fn directory_requirement_refusal(
     family: DurableStateFamily,
     required_phase: u8,
 ) -> Option<u8> {
-    let family_phase = match directory_family_support(family) {
-        DirectoryFamilySupport::Supported => 0,
-        DirectoryFamilySupport::RefusedUntil(phase) => phase,
-    };
-    let phase = family_phase.max(required_phase);
-    let dispatch_custody = family_phase == 0
-        && required_phase == DISPATCH_CUSTODY_PHASE
-        && delivers_dispatch_custody(family);
-    if phase <= 4 || dispatch_custody {
-        None
-    } else {
-        Some(phase)
+    match directory_family_support(family) {
+        DirectoryFamilySupport::Supported(phase) => {
+            if required_phase <= phase {
+                None
+            } else {
+                Some(required_phase)
+            }
+        }
+        DirectoryFamilySupport::RefusedUntil(phase) => Some(phase.max(required_phase)),
     }
 }

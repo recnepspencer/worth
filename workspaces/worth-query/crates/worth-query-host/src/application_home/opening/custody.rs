@@ -18,12 +18,14 @@ pub(super) fn readmit<Schema: ApplicationSchemaComposition, Program: 'static>(
 > {
     let request = phase.execution_request();
     let obligations = home.query_obligations_medium();
+    let material = home.query_corrections_medium();
     let dispatch = super::super::dispatch_journal::HomeQueryDispatchMedium::over(
         home.query_dispatch_journal_operation(),
     );
     let query = match query.readmit_custody(
         &request,
         std::sync::Arc::clone(&obligations),
+        std::sync::Arc::clone(&material),
         std::sync::Arc::clone(&dispatch),
     ) {
         Ok(admitted) => admitted.consume(|query| query),
@@ -33,6 +35,7 @@ pub(super) fn readmit<Schema: ApplicationSchemaComposition, Program: 'static>(
                 query: super::super::UnadmittedHomeQueryService::retain(
                     query,
                     obligations,
+                    material,
                     dispatch,
                 ),
                 home,
@@ -40,14 +43,18 @@ pub(super) fn readmit<Schema: ApplicationSchemaComposition, Program: 'static>(
             });
         }
     };
-    let home_admission = admit_to_home(&query, &home, &request);
-    match home_admission {
+    match admit_to_home(&query, &home, &request) {
         Ok(()) => Ok(CustodyReadmitted::from_owner(AdmittedHomeCustody {
             query,
             home,
         })),
         Err(cause) => Err(WorthQueryApplicationHomeOpenRefused::CustodyReadmission {
-            query: super::super::UnadmittedHomeQueryService::retain(query, obligations, dispatch),
+            query: super::super::UnadmittedHomeQueryService::retain(
+                query,
+                obligations,
+                material,
+                dispatch,
+            ),
             home,
             cause,
         }),
@@ -60,6 +67,15 @@ fn admit_to_home<Schema: ApplicationSchemaComposition, Program: 'static>(
     home: &DirectoryHome,
     request: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<(), HomeCustodyReadmissionDenial> {
+    let material = query
+        .correction_material_admission()
+        .expect("successful Query material admission retains its exact proof");
+    home.admit_query_corrections(material, request)
+        .map_err(|cause| {
+            HomeCustodyReadmissionDenial::Query(
+                QueryHomeCustodyReadmissionDenial::CorrectionMaterial(cause),
+            )
+        })?;
     let obligations = query
         .program_support_admission()
         .expect("successful Query admission retains its proof");

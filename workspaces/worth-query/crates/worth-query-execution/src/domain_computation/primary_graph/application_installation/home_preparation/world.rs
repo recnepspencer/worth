@@ -16,6 +16,7 @@ mod tests;
 pub struct ReadmittedHomeQueryService<Schema, Program> {
     runtime: WorthQueryProgramApplicationRuntime<Schema, Program>,
     program_support_admission: std::sync::OnceLock<worth_proof::AdmittedHomeQueryObligations>,
+    correction_material_admission: std::sync::OnceLock<worth_proof::AdmittedHomeQueryCorrections>,
     dispatch_custody_admission: std::sync::OnceLock<worth_proof::AdmittedHomeQueryDispatch>,
 }
 impl<Schema: 'static, Program: 'static> worth_proof::AuthorityMarker
@@ -23,6 +24,11 @@ impl<Schema: 'static, Program: 'static> worth_proof::AuthorityMarker
 {
 }
 impl<Schema, Program> ReadmittedHomeQueryService<Schema, Program> {
+    pub fn correction_material_admission(
+        &self,
+    ) -> Option<worth_proof::AdmittedHomeQueryCorrections> {
+        self.correction_material_admission.get().cloned()
+    }
     pub fn program_support_admission(&self) -> Option<worth_proof::AdmittedHomeQueryObligations> {
         self.program_support_admission.get().cloned()
     }
@@ -248,6 +254,7 @@ where
             worth_proof::QueryReadmitted::from_owner(ReadmittedHomeQueryService {
                 runtime,
                 program_support_admission: std::sync::OnceLock::new(),
+                correction_material_admission: std::sync::OnceLock::new(),
                 dispatch_custody_admission: std::sync::OnceLock::new(),
             })
         })

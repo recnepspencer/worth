@@ -1398,15 +1398,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "worth-query-court-decl-host-owned-codec-transition"
-version = "0.1.0"
-dependencies = [
- "worth-query-decl",
- "worth-query-host",
- "worth-query-testkit-certification-canonical",
-]
-
-[[package]]
 name = "worth-query-court-decl-host-package-archive-replay-application-graph"
 version = "0.1.0"
 dependencies = [
@@ -1721,6 +1712,7 @@ dependencies = [
  "worth-query-testkit-certification-correction",
  "worth-query-testkit-certification-granular-invalidation",
  "worth-query-testkit-document-retention",
+ "worth-query-testkit-execution-primary-graph-application-contribution",
  "worth-query-testkit-host",
  "worth-relational",
  "worth-runtime-bridge",

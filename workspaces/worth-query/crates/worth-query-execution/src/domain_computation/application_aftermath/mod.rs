@@ -1,6 +1,7 @@
 //! External effects, recovery custody, and canonical recorded correction causality.
 
 mod correction;
+pub(crate) mod correction_material;
 pub(in crate::domain_computation) use correction::OriginalCorrectionDisclosure;
 pub(crate) mod commit_causality;
 pub(crate) use commit_causality::ApplicationCommitCausality;

@@ -12,6 +12,8 @@ pub enum WorthQueryProductPreparationStage {
     OpenPending,
     OpenUnresolved,
     OpenEvidenceRequired,
+    RecordingOriginalMeaning,
+    RecordingCorrectionMaterial,
     BindingNativeProposal,
     PreparingNative,
     PreparingQueryCandidate,

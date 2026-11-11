@@ -64,6 +64,3 @@ impl RelationalRegionResidency {
         Ok(RelationalResidencyLease::accepted(cell, region))
     }
 }
-
-#[cfg(test)]
-mod tests;

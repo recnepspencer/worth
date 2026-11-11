@@ -67,6 +67,13 @@ impl RelationalDurableMedium for Attachment {
     ) -> DurablePublicationFate<String> {
         let mut contents = self.0.lock();
         contents.offered.push(artifact.clone());
+        if let Some(answer) = contents.scripted.pop_front() {
+            return answer.answer(
+                &mut contents.commits,
+                artifact.position().0,
+                artifact.as_bytes(),
+            );
+        }
         if contents
             .commits
             .publish(artifact.position().0, artifact.as_bytes())
@@ -82,9 +89,16 @@ impl RelationalDurableMedium for Attachment {
         &self,
         artifact: &RelationalBranchTransitionArtifact,
     ) -> DurablePublicationFate<String> {
-        if self
-            .0
-            .lock()
+        let mut contents = self.0.lock();
+        contents.offered_transitions.push(artifact.clone());
+        if let Some(answer) = contents.scripted_transitions.pop_front() {
+            return answer.answer(
+                &mut contents.transitions,
+                artifact.sequence().0,
+                artifact.as_bytes(),
+            );
+        }
+        if contents
             .transitions
             .publish(artifact.sequence().0, artifact.as_bytes())
         {

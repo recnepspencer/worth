@@ -73,7 +73,7 @@ pub(super) fn apply_relation_row<'a>(
         // Both staging adapters emit canonical ImportReductionKey row order.
         // Binding keys borrow that SAME original row instead of cloned packets.
         let (original_source,original_target)=intent.endpoints.get(row_index)
-            .expect(/* Proof: Only the ordered staging adapter and the original enumerate loop call this private row function, with their identical original endpoint ordinal. */ "row ordinal belongs to its original endpoints");
+            .expect(/* Proof: Only the leased and ordered staging adapters call this private row function, each with the ordinal of the intent endpoint row it staged. */ "row ordinal belongs to its original endpoints");
         workspace.register_created_relation(
             intent.partition_id,
             intent.kind_id,

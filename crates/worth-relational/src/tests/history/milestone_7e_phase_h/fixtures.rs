@@ -16,10 +16,10 @@ use crate::facade::schema::{
 use crate::facade::transactions::{CreateIntent, MutationIntent, WorkerIntentBatch};
 use crate::merge::data::RelationalSchemaReconciliationWitnessRowInput;
 use crate::tests::support::{
-    aspect_key, entity_field_aspect, field_key, relation_field_aspect, relation_source_aspect,
-    relation_target_aspect, string_aspect_field_patch, CascadeDeletePolicy, CrossContextPolicy,
+    aspect_key, entity_field_aspect, field_key, string_aspect_field_patch, CascadeDeletePolicy,
+    CrossContextPolicy,
 };
-use crate::transactions::data::{PublishedMergeExecutionAuthority, RecordRef};
+use crate::transactions::data::RecordRef;
 use std::sync::Arc;
 
 pub(super) fn additive_row() -> RelationalSchemaReconciliationWitnessRow {
@@ -123,58 +123,7 @@ pub(super) fn synthetic_witness(
 pub(super) fn runtime_with_schema_declared_entity_policy(
     policy: AspectMergePolicyKind,
 ) -> RelationalRuntime {
-    runtime_with_schema_declared_entity_policy_builder(policy, None)
-}
-
-pub(super) fn durable_runtime_with_schema_declared_entity_policy(
-    policy: AspectMergePolicyKind,
-) -> RelationalRuntime {
-    runtime_with_schema_declared_entity_policy_builder(
-        policy,
-        Some(crate::tests::support::TestDurableMedium::new()),
-    )
-}
-
-pub(super) fn runtime_with_relation_identity_registry(
-    medium: std::sync::Arc<crate::tests::support::TestDurableMedium>,
-) -> RelationalRuntime {
-    let label_key = aspect_key("label");
-    let registry = RelationalSchemaRegistry::new()
-        .register_entity_kind(EntityKindRegistration {
-            kind_id: KindId(1),
-            kind_name: "test.entity".to_string(),
-            schema_id: SchemaId("test".to_string()),
-            schema_version_id: SchemaVersionId(1),
-            aspect_contract_declarations: KindAspectContractDeclarations::default(),
-        })
-        .and_then(|registry| {
-            registry.register_relation_kind(RelationKindRegistration {
-                kind_id: KindId(2),
-                kind_name: "test.relation".to_string(),
-                schema_id: SchemaId("test".to_string()),
-                schema_version_id: SchemaVersionId(1),
-                cross_context_policy: CrossContextPolicy::AllowExplicit,
-                cascade_delete_policy: CascadeDeletePolicy::CascadeDeleteRelations,
-                aspect_contract_declarations: KindAspectContractDeclarations::new(vec![
-                    relation_field_aspect(label_key.clone(), field_key("label")),
-                    relation_source_aspect(),
-                    relation_target_aspect(),
-                ])
-                .with_identity_declarations(vec![IdentityBasisDeclaration {
-                    scope: IdentityBasisScope::AspectKey(label_key.clone()),
-                    basis: IdentityBasisKind::DeclaredKeySet(
-                        Arc::<[worth_foundational::facade::AspectKey]>::from([label_key]).into(),
-                    ),
-                }]),
-                relation_integrity: RelationIntegrityDeclarations::default(),
-            })
-        })
-        .expect("topology identity registry");
-
-    RelationalRuntimeApi::builder()
-        .schema_registry(registry)
-        .build_durable(medium.attachment())
-        .expect("valid native runtime configuration")
+    runtime_with_schema_declared_entity_policy_builder(policy)
 }
 
 pub(super) fn create_named_entity_on_branch(
@@ -218,19 +167,6 @@ pub(super) fn merge_request() -> MergeExecutionRequest {
 
 pub(super) fn merge_planning_request() -> MergePlanningRequest {
     merge_request().into()
-}
-
-pub(super) fn published_merge_authority(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
-    commit_id: crate::facade::history::CommitId,
-) -> PublishedMergeExecutionAuthority {
-    runtime
-        .replay()
-        .canonical_commit_envelope(execution, commit_id)
-        .unwrap()
-        .and_then(|envelope| envelope.merge_execution_authority.clone())
-        .expect("published merge authority")
 }
 
 fn retained_row(
@@ -277,7 +213,6 @@ fn retained_row(
 
 fn runtime_with_schema_declared_entity_policy_builder(
     policy: AspectMergePolicyKind,
-    medium: Option<std::sync::Arc<crate::tests::support::TestDurableMedium>>,
 ) -> RelationalRuntime {
     let name_key = aspect_key("name");
     let status_key = aspect_key("status");
@@ -316,10 +251,5 @@ fn runtime_with_schema_declared_entity_policy_builder(
         })
         .expect("schema-declared merge policy registry");
     let builder = RelationalRuntimeApi::builder().schema_registry(registry);
-    match medium {
-        Some(medium) => builder
-            .build_durable(medium.attachment())
-            .expect("valid native runtime configuration"),
-        None => builder.build().expect("valid native runtime configuration"),
-    }
+    builder.build().expect("valid native runtime configuration")
 }

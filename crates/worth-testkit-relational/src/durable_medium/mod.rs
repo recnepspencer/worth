@@ -1,6 +1,10 @@
 //! Original externally owned medium for public Native durability courts.
 //! Typed adapters use Native facades; byte storage is also reused by unit tests.
 mod attachment;
+pub mod changed_member;
+pub mod member_placement;
+mod scripted_publication;
+pub use scripted_publication::ScriptedPublication;
 pub mod bytes;
 mod cold_source;
 pub mod immutable_members;
@@ -28,6 +32,9 @@ struct Contents {
     transitions: ByteJournal,
     members: MemberBytes,
     offered: Vec<RelationalCanonicalCommitArtifact>,
+    offered_transitions: Vec<RelationalBranchTransitionArtifact>,
+    scripted: std::collections::VecDeque<ScriptedPublication>,
+    scripted_transitions: std::collections::VecDeque<ScriptedPublication>,
     checkpoint: Option<RelationalDurableCheckpointSource>,
     selected: Option<OpaqueCapturedCheckpointSubject>,
 }
@@ -58,6 +65,26 @@ impl TestDurableMedium {
         self.contents
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
+    }
+    pub fn script_next_publication(&self, answer: ScriptedPublication) {
+        self.lock().scripted.push_back(answer);
+    }
+    pub fn script_next_transition(&self, answer: ScriptedPublication) {
+        self.lock().scripted_transitions.push_back(answer);
+    }
+    pub fn offered_transitions(&self) -> Vec<RelationalBranchTransitionArtifact> {
+        self.lock().offered_transitions.clone()
+    }
+    pub fn committed_artifacts(
+        &self,
+    ) -> Result<Vec<RelationalCanonicalCommitArtifact>, RelationalCanonicalCommitArtifactFrameRefusal>
+    {
+        self.lock()
+            .commits
+            .entries
+            .values()
+            .map(|bytes| RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes.clone()))
+            .collect()
     }
     pub fn offered(&self) -> Vec<RelationalCanonicalCommitArtifact> {
         self.lock().offered.clone()

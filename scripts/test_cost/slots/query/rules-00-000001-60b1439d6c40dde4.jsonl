@@ -1,0 +1,19 @@
+{"count": 18, "kind": "leaf"}
+{"binary": "worth-query-declaration", "slots": 2, "test": "application_schema::operation_definition::body::signing_validation::tests::certified_captures_need_explicit_roles_and_cannot_be_reinterpreted_as_legacy_or_unsigned"}
+{"binary": "worth-query-execution", "slots": 2, "test": "domain_computation::primary_graph::application_attempt::provider_binding::unique_value_tests::a_unique_write_without_its_observed_selection_does_not_lower"}
+{"binary": "worth-query-execution", "slots": 2, "test": "domain_computation::primary_graph::causal_inspection::application_inspection::stop::projection_tests::sibling_execution_stop_reader_borrows_the_original_request_and_excludes_other_stages"}
+{"binary": "worth-query-execution", "slots": 2, "test": "domain_computation::primary_graph::workflow::definition::compilation::reuse::tests::production_counters_distinguish_cold_misses_from_warm_hits"}
+{"binary": "worth-query-installation", "slots": 2, "test": "application_aftermath::tests::lowering_correspondence::an_operation_declaring_no_reads_denies_distinctly_from_a_missed_slot"}
+{"binary": "worth-query-installation", "slots": 2, "test": "application_operation::installed::operation_compilation::invariant_selection::tests::entity_create_requires_only_its_declared_entity_applicability"}
+{"binary": "worth-query-installation", "slots": 2, "test": "application_operation::installed::operation_compilation_tests::portable_source_seam::retained_portable_reads_are_the_aftermath_coverage_source"}
+{"binary": "worth-query-installation", "slots": 2, "test": "application_program::adoption::requirements_tests::a_program_this_host_does_not_support_names_itself_in_the_refusal"}
+{"binary": "worth-query-installation", "slots": 2, "test": "application_schema::native_contract::canonical_basis::tests::prepared_contract_entries_cannot_cross_the_schema_derived_budget"}
+{"binary": "worth-query-installation", "slots": 2, "test": "domain_computation::execution_resource_contract::strategy::tests::strategy_names_reject_nonportable_boundaries"}
+{"binary": "worth-query-installation", "slots": 2, "test": "domain_computation_canonical_identity_tests::every_search_semantic_dimension_changes_contract_identity"}
+{"binary": "worth-query-installation", "slots": 2, "test": "package::portable_records::application_contract::reconstruction_work::body_tests::clear_optional_portable_operation_reconstruction_accounts_without_input"}
+{"binary": "worth-query-installation", "slots": 2, "test": "package::reconstruction::exact_semantic_readmission_tests::oversized_schema_text_is_denied_before_canonical_basis_allocation"}
+{"binary": "worth-query-installation", "slots": 2, "test": "package::reconstruction::work_budget_tests::oversized_operation_workflow_identity_is_denied_at_push_before_records_can_close"}
+{"binary": "worth-query-package-archive", "slots": 2, "test": "record::application_schema::tests::derived_relation::derived_recipe_collection_and_read_meaning_round_trip_without_stored_ids"}
+{"binary": "worth-query-package-archive", "slots": 2, "test": "record::operation_body::tests::creation_links::creation_link_directions_roundtrip_and_old_record_cannot_consume_them"}
+{"binary": "worth-query-package-archive", "slots": 2, "test": "record::operation_body::tests::path_capture::certified_path_v29_roundtrips_identity_and_reverse_path_with_exact_decode_measure"}
+{"binary": "worth-query-testkit-installed-operation-fixture", "slots": 3, "test": "setup_observation::tests::length_prefixes_disambiguate_field_boundaries"}

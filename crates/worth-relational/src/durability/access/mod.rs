@@ -1,4 +1,5 @@
 mod authority_continuity;
+mod canonical_source;
 mod continuity_issue_mapping;
 mod envelope_version_selection;
 mod medium_recovery_plan;

@@ -16,6 +16,11 @@ impl WorthQueryRecoveredAftermathCausality {
     ) -> Self {
         Self { fact }
     }
+    pub(in crate::domain_computation::primary_graph) fn canonical_fact(
+        &self,
+    ) -> &WorthQueryCanonicalCorrectionFact {
+        &self.fact
+    }
     pub const fn role(&self) -> WorthQueryAftermathCausalRole {
         self.fact.role
     }

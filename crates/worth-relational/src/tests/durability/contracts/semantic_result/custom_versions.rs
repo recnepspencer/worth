@@ -124,8 +124,7 @@ fn semantic_result_preserves_independent_original_execution_and_enforcement_vers
     );
     assert_eq!(execution_meaning.metadata.current_version, predecessor);
     assert_eq!(custom.version, committed.commit.version_id);
-    // These are independently captured facts even when the current aggregate
-    // and actual enforcement name the same proposed version.
+    assert_ne!(custom.version, execution_meaning.metadata.current_version, "the actual custom callback checked the proposed effect while retaining its predecessor basis");
     assert!(callback.contains(&(
         custom.observation_kind,
         custom.version,

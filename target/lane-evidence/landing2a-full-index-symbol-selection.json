@@ -1,0 +1,11 @@
+[
+  "residency_failure_matrix_full_read_subjects_cover_every_door_and_class",
+  "cold_visibility_doors_preserve_storage_failure_and_never_advance_publication",
+  "cold_and_warm_visibility_preserve_an_observation_across_a_later_commit",
+  "full_read_doors_preserve_history_symbol_refusals_and_current_head",
+  "current_symbols_preserve_full_history_refusal_and_original_head_values",
+  "residency_failure_matrix_index_doors_preserve_every_failure_class",
+  "historical_index_reconstruction_uses_the_old_value_and_full_cold_history",
+  "residency_failure_matrix_historical_index_builds_preserve_full_source_failures",
+  "an_older_index_directory_retains_its_cold_frame_after_home_replacement"
+]

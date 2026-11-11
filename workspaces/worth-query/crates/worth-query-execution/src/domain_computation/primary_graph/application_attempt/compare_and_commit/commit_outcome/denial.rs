@@ -30,6 +30,7 @@ mod workflow;
 /// as presented.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationCommitDenialKind {
+    StaleIncarnation,
     IdempotencyPreparationBusy,
     OriginalEffectReleased,
     /// Retained content disagreed with its certified identity before publication.
@@ -223,6 +224,14 @@ pub struct WorthQueryApplicationCommitDenial {
 }
 
 impl WorthQueryApplicationCommitDenial {
+    pub(crate) const fn stale_incarnation() -> Self {
+        Self {
+            kind: WorthQueryApplicationCommitDenialKind::StaleIncarnation,
+            stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
+            detail: None,
+            cause: None,
+        }
+    }
     pub(crate) fn correction_identity_mismatch(detail: &'static str) -> Self {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::CorrectionIdentityMismatch,

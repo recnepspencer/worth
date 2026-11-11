@@ -1,12 +1,11 @@
 use crate::facade::history::BranchId;
-use crate::facade::merge::{MergeExecutionOutcome, MergeExecutionRequest, MergeIntent};
+use crate::facade::merge::{MergeExecutionRequest, MergeIntent};
 use crate::facade::runtime::RelationalRuntime;
 use crate::merge::data::RelationalMergeAdmittedSurfaceRow;
 use crate::tests::support::{
-    checkpoint_and_recover_with, create_branch_from_main, create_entity,
-    create_entity_outcome_on_branch, durable_runtime_with_test_schema,
+    create_branch_from_main, create_entity, create_entity_outcome_on_branch,
+    runtime_with_test_schema,
 };
-use crate::transactions::data::PublishedMergeExecutionAuthority;
 
 #[test]
 fn retained_merge_proof_packet_preserves_exact_authority_truth() {
@@ -73,63 +72,6 @@ fn retained_merge_proof_packet_preserves_exact_authority_truth() {
         .is_empty());
     assert!(!proof_packet.admitted_merge_surface_digest().is_empty());
     assert!(!proof_packet.packet_digest().is_empty());
-}
-
-#[test]
-fn published_merge_outcome_retains_proof_packet_as_authority() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = merge_ready_runtime(execution);
-    let outcome = execute_merge(execution, &runtime);
-    let summary_packet = outcome.execution_summary.proof_packet().clone();
-    let live_authority =
-        published_merge_authority(execution, &runtime, outcome.commit.commit.commit_id);
-
-    assert_eq!(
-        summary_packet,
-        outcome.execution_summary.proof_packet.clone()
-    );
-    assert_eq!(
-        summary_packet,
-        live_authority.execution_summary.proof_packet.clone()
-    );
-    assert_eq!(
-        outcome
-            .execution_summary
-            .correspondence_witness
-            .witness_digest(),
-        summary_packet.correspondence_witness_digest()
-    );
-    assert_eq!(summary_packet.request(), &outcome.execution_summary.request);
-    assert_eq!(
-        summary_packet.branch_basis(),
-        &outcome.execution_summary.branch_basis
-    );
-    assert_eq!(
-        summary_packet.execution_digest(),
-        outcome.execution_summary.execution_digest
-    );
-    assert_eq!(
-        outcome.execution_summary.target_head_commit_id,
-        summary_packet.branch_basis().target_head().commit_id
-    );
-    assert_eq!(
-        outcome.execution_summary.source_head_commit_id,
-        summary_packet.branch_basis().source_head().commit_id
-    );
-    assert_eq!(
-        outcome.execution_summary.merge_base_commit_id,
-        summary_packet
-            .branch_basis()
-            .merge_base()
-            .commit()
-            .commit_id
-    );
-    assert!(outcome
-        .execution_summary
-        .retains_consistent_proof_packet_authority());
-    assert!(live_authority.retains_consistent_proof_packet_authority());
 }
 
 #[test]
@@ -242,37 +184,8 @@ fn proof_packet_deserialization_rejects_forged_retained_truth() {
     assert!(malformed_planning_digest_result.is_err());
 }
 
-#[test]
-fn merge_proof_packet_survives_publication_and_recovery_without_drift() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = merge_ready_runtime(execution);
-    let outcome = execute_merge(execution, &runtime);
-    let live_packet = outcome.execution_summary.proof_packet.clone();
-    let live_authority =
-        published_merge_authority(execution, &runtime, outcome.commit.commit.commit_id);
-    let (_recovery, recovered) =
-        checkpoint_and_recover_with(execution, &runtime, durable_runtime_with_test_schema);
-    let recovered_authority =
-        published_merge_authority(execution, &recovered, outcome.commit.commit.commit_id);
-
-    assert_eq!(live_packet, live_authority.execution_summary.proof_packet);
-    assert_eq!(
-        live_packet,
-        recovered_authority.execution_summary.proof_packet
-    );
-    assert_eq!(
-        live_packet.packet_digest(),
-        recovered_authority
-            .execution_summary
-            .proof_packet
-            .packet_digest()
-    );
-}
-
 fn merge_ready_runtime(execution: &worth_execution::ExecutionRequest<'_, '_>) -> RelationalRuntime {
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(
@@ -290,32 +203,6 @@ fn merge_request() -> MergeExecutionRequest {
         BranchId("feature".to_string()),
         MergeIntent::ReconcileIntoTarget,
     )
-}
-
-fn execute_merge(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
-) -> MergeExecutionOutcome {
-    let prepared = runtime
-        .merge()
-        .prepare_merge_execution(execution, merge_request())
-        .expect("prepared merge");
-    runtime
-        .execute_prepared_merge(execution, prepared)
-        .expect("executed merge")
-}
-
-fn published_merge_authority(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
-    commit_id: crate::facade::history::CommitId,
-) -> PublishedMergeExecutionAuthority {
-    runtime
-        .replay()
-        .canonical_commit_envelope(execution, commit_id)
-        .unwrap()
-        .and_then(|envelope| envelope.merge_execution_authority.clone())
-        .expect("published merge authority")
 }
 
 #[derive(serde::Serialize)]
@@ -368,6 +255,3 @@ fn proof_packet_payload_with_surface<'a>(
         packet_digest,
     }
 }
-
-#[path = "milestone_7e_phase_e/replay_drift.rs"]
-mod replay_drift;

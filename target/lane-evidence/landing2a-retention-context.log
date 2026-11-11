@@ -1,0 +1,13 @@
+command: cargo run --manifest-path tools/agent-context/Cargo.toml -- check
+HEAD: 81d41f55751571a5631ec842a6ac4b7c82e13422
+git_status_short_empty: false
+start_utc: 2026-11-09T20:41:28.219300+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+    Finished `dev` profile [optimized + debuginfo] target(s) in 1.40s
+     Running `tools\agent-context\target\debug\agent-context.exe check`
+
+end_utc: 2026-11-09T20:41:31.110815+00:00
+exit_code: 0
+tests_passed: 0
+tests_failed: 0
+tests_ignored: 0

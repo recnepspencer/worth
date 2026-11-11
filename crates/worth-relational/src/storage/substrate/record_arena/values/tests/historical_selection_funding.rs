@@ -5,6 +5,7 @@ use crate::storage::substrate::RelationRecordKind;
 
 fn check<K: RecordKind>(
     make_extra: impl Fn(&ExecutionRequest<'_, '_>) -> K::Extra,
+    retained_bill: impl Fn(&K::Extra) -> u64,
     id: RecordId<K::Domain>,
 ) where
     K::Extra: PartialEq,
@@ -55,16 +56,15 @@ fn check<K: RecordKind>(
         assert_ne!(installed.id(), original.id());
         assert_eq!(installed.as_ref(), original.as_ref());
         assert_eq!(
-            K::extra_owned_allocation_bytes(&installed),
-            K::extra_owned_allocation_bytes(&original)
+            K::extra_reachable_bound_bytes(&installed),
+            K::extra_reachable_bound_bytes(&original)
         );
         let history = target.metadata_history_at(0).unwrap();
         assert_eq!(
             K::metadata_extra(&history[history.len() - 1]).id(),
             installed.id()
         );
-        let bill = StorageAllocation::<K::Extra>::layout_bytes()
-            + K::extra_owned_allocation_bytes(&installed);
+        let bill = retained_bill(installed.as_ref());
         drop((original, source, target));
         assert_eq!(source_budget.charged_memory_bytes(), 0);
         assert_eq!(target_budget.charged_memory_bytes(), bill);
@@ -78,6 +78,7 @@ fn check<K: RecordKind>(
 fn selected_entity_extra_retains_its_successor_bill_after_source_retirement() {
     check::<EntityRecordKind>(
         |request| extra(request, "retained selection"),
+        expected,
         EntityId::new(PartitionId::main(), 0, 1),
     );
 }
@@ -93,6 +94,12 @@ fn selected_relation_extra_retains_its_successor_bill_after_source_retirement() 
                 target: EntityId::new(PartitionId::main(), 2, 1),
             });
             extra
+        },
+        |extra| {
+            StorageAllocation::<RelationExtra>::layout_bytes()
+                + extra.authoritative_aspect_state().map_or(0, |state| {
+                    u64::try_from(state.aspects().retained_storage_bytes().unwrap()).unwrap()
+                })
         },
         RelationId::new(PartitionId::main(), 0, 1),
     );

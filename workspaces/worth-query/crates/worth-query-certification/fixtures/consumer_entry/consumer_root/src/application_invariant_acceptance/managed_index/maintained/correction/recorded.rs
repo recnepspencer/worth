@@ -16,6 +16,41 @@ impl ApplicationCorrectionBinding<Catalog> for Note {
     type Source = note::Binding;
     type InverseIntent = note::Input;
     type Disclosure = state::Binding;
+
+    fn recover_source_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<Catalog>>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    >{
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained(
+            bytes, expected, bounds,
+        )
+    }
+
+    fn recover_inverse_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<
+                Catalog,
+                Self,
+            > as worth_query_decl::facade::application_operation::ApplicationMutationBinding<
+                Catalog,
+            >>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    > {
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained(
+            bytes, expected, bounds,
+        )
+    }
     fn disclosure_parameters(
         original: &note::Input,
     ) -> Result<ApplicationQueryParameterSet<state::NoteQuery>, ApplicationCorrectionDerivationDenial>
@@ -75,6 +110,41 @@ impl ApplicationCorrectionBinding<Catalog> for Mover {
     type Source = mover::Binding;
     type InverseIntent = mover::Input;
     type Disclosure = state::Binding;
+
+    fn recover_source_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<Catalog>>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    >{
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained(
+            bytes, expected, bounds,
+        )
+    }
+
+    fn recover_inverse_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<
+                Catalog,
+                Self,
+            > as worth_query_decl::facade::application_operation::ApplicationMutationBinding<
+                Catalog,
+            >>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    > {
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained(
+            bytes, expected, bounds,
+        )
+    }
     fn disclosure_parameters(
         original: &mover::Input,
     ) -> Result<ApplicationQueryParameterSet<state::NoteQuery>, ApplicationCorrectionDerivationDenial>
@@ -131,6 +201,41 @@ impl ApplicationCorrectionBinding<Catalog> for Motion {
     type Source = motion::Binding;
     type InverseIntent = motion::Input;
     type Disclosure = state::Binding;
+
+    fn recover_source_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <Self::Source as worth_query_decl::facade::application_operation::ApplicationMutationBinding<Catalog>>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    >{
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained(
+            bytes, expected, bounds,
+        )
+    }
+
+    fn recover_inverse_input(
+        bytes: &[u8],
+        expected: worth_query_decl::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_decl::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput<
+            <worth_query_decl::facade::application_aftermath::ApplicationInverseBinding<
+                Catalog,
+                Self,
+            > as worth_query_decl::facade::application_operation::ApplicationMutationBinding<
+                Catalog,
+            >>::InputBinding,
+        >,
+        worth_query_decl::facade::application_operation::ApplicationRetainedInputDenial,
+    > {
+        worth_query_decl::facade::application_operation::ApplicationEncodedInput::decode_retained(
+            bytes, expected, bounds,
+        )
+    }
     fn disclosure_parameters(
         original: &motion::Input,
     ) -> Result<ApplicationQueryParameterSet<state::NoteQuery>, ApplicationCorrectionDerivationDenial>

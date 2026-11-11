@@ -89,12 +89,13 @@ fn every_commit_family_evaluates_once_and_publication_reuses_the_result() {
     }
     let medium = worth_testkit_relational::durable_medium::TestDurableMedium::new();
     let runtime = builder.build_durable(medium.attachment()).unwrap();
-    let predecessor = runtime.current_version_id();
     let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = ExecutionRequest::serial(&host);
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
+    // The version this proposal was observed against, read from its own basis.
+    let predecessor = basis.observation().version_id();
     let mut tx = runtime
         .begin_branch_transaction(
             &basis,

@@ -248,28 +248,23 @@ fn ordinary_preparation_keeps_its_explicit_allocation_contract() {
 }
 
 #[test]
-fn prepared_cell_second_reservation_refuses_with_original_cause_and_refund() {
+fn prepared_cell_admission_refuses_with_original_cause_and_refund() {
     let fixture = Fixture::new();
     let request = fixture.request();
-    let entry_bill = arc_bill::<node::Entry<u64, u64>>();
-    let node_bill = arc_bill::<node::Node<u64, u64>>();
-    let mut before_node_reservation = 0;
-    // Observe the public nested controller at the same second-reservation cut,
-    // with its already admitted entry ticket alive. No private kernel constant.
+    let bill = cell_bill();
+    let mut before_cell_reservation = 0;
+    // The actual owner enters one unit-result stage and prepays the whole
+    // entry/node cell before either allocation. Its later ticket split is not
+    // a second source admission or another nested controller.
     request
-        .run_native_with_checkpoint(|_| {
-            let entry = request.reserve_retained_memory(entry_bill).unwrap();
-            request
-                .run_native_with_checkpoint(|_| {
-                    before_node_reservation = fixture.budget.charged_memory_bytes();
-                })
-                .unwrap();
-            drop(entry);
+        .run_native_with_checkpoint(|context| {
+            context.poll().unwrap();
+            before_cell_reservation = fixture.budget.charged_memory_bytes();
         })
         .unwrap();
-    assert!(before_node_reservation >= entry_bill);
     assert_eq!(fixture.budget.charged_memory_bytes(), 0);
-    let budget = SerialMemoryBudget::new(Some(before_node_reservation + node_bill - 1));
+    let fits = before_cell_reservation.checked_add(bill).unwrap();
+    let budget = SerialMemoryBudget::new(Some(fits.checked_sub(1).unwrap()));
     let serial = SerialRequest::from_memory(budget.clone(), CancellationToken::new(), None);
     let denial =
         ExecutionOrderedMapCell::prepare_for_request(1u64, 7u64, ExecutionRequest::serial(&serial))
@@ -278,6 +273,16 @@ fn prepared_cell_second_reservation_refuses_with_original_cause_and_refund() {
         crate::WorkCeilingDenial::Admission(crate::LeaseDenial::MemoryExhausted(
             crate::MemoryLimitDenial::Capacity { requested, .. }
         ))
-    ) if requested == node_bill));
+    ) if requested == bill));
+    assert_eq!(budget.charged_memory_bytes(), 0);
+
+    let budget = SerialMemoryBudget::new(Some(fits));
+    let serial = SerialRequest::from_memory(budget.clone(), CancellationToken::new(), None);
+    let cell =
+        ExecutionOrderedMapCell::prepare_for_request(1u64, 7u64, ExecutionRequest::serial(&serial))
+            .unwrap();
+    assert_eq!(*cell.value(), 7);
+    assert_eq!(budget.charged_memory_bytes(), bill);
+    drop(cell);
     assert_eq!(budget.charged_memory_bytes(), 0);
 }

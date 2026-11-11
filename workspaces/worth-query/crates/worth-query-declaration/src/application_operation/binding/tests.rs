@@ -20,7 +20,7 @@ use crate::authentication::{
     WorthQueryPrincipalMappingStatus, WorthQueryPrincipalMappingStatusBinding,
 };
 
-#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 struct RenameInput {
     account_id: u64,
 }

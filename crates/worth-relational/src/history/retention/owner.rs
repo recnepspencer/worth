@@ -123,15 +123,6 @@ impl RelationalBranchRetentionOwner {
             != self.inner.live_head_count.load(Ordering::Acquire)
     }
 
-    #[cfg(test)]
-    pub(crate) fn retired_branch_binding_count(&self) -> usize {
-        self.inner
-            .read_retired_roots()
-            .values()
-            .map(|entry| entry.branch_bindings.len())
-            .sum()
-    }
-
     pub(crate) fn new(runtime_instance_id: u64) -> Self {
         Self::new_with_limits(
             runtime_instance_id,

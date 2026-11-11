@@ -1,0 +1,102 @@
+[
+  {
+    "log": "target/lane-evidence/landing2a-merge-owner-boundary.log",
+    "command": "python scripts/application_build.py cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .",
+    "head": "9addca717914f10d9d9187f41e46267ada05677b",
+    "clean": "false",
+    "exit": "1",
+    "pass": "0",
+    "fail": "0",
+    "ignored": "0"
+  },
+  {
+    "log": "target/lane-evidence/landing2a-merge-owner-clippy.log",
+    "command": "python scripts/application_build.py cargo clippy -p worth-relational -p worth-court-relational-cold-residency --all-targets",
+    "head": "9addca717914f10d9d9187f41e46267ada05677b",
+    "clean": "false",
+    "exit": "0",
+    "pass": "0",
+    "fail": "0",
+    "ignored": "0"
+  },
+  {
+    "log": "target/lane-evidence/landing2a-merge-owner-context.log",
+    "command": "python scripts/application_build.py cargo run --manifest-path tools/agent-context/Cargo.toml -- check",
+    "head": "9addca717914f10d9d9187f41e46267ada05677b",
+    "clean": "false",
+    "exit": "0",
+    "pass": "0",
+    "fail": "0",
+    "ignored": "0"
+  },
+  {
+    "log": "target/lane-evidence/landing2a-merge-owner-fmt.log",
+    "command": "python scripts/application_build.py cargo fmt -p worth-relational -p worth-court-relational-cold-residency",
+    "head": "9addca717914f10d9d9187f41e46267ada05677b",
+    "clean": "false",
+    "exit": "0",
+    "pass": "0",
+    "fail": "0",
+    "ignored": "0"
+  },
+  {
+    "log": "target/lane-evidence/landing2a-merge-owner-functions.log",
+    "command": "python scripts/quality/scrutinize_rust_functions.py --dirty .",
+    "head": "9addca717914f10d9d9187f41e46267ada05677b",
+    "clean": "false",
+    "exit": "0",
+    "pass": "0",
+    "fail": "0",
+    "ignored": "0"
+  },
+  {
+    "log": "target/lane-evidence/landing2a-merge-owner-line-caps.log",
+    "command": "\"C:/Program Files/Git/bin/bash.exe\" scripts/ci/check_workspace_rust_line_caps.sh dirty",
+    "head": "9addca717914f10d9d9187f41e46267ada05677b",
+    "clean": "false",
+    "exit": "0",
+    "pass": "0",
+    "fail": "0",
+    "ignored": "0"
+  },
+  {
+    "log": "target/lane-evidence/landing2a-merge-owner-public-intermediate-cold.log",
+    "command": "python target/lane-evidence/landing2a_merge_owner.py root",
+    "head": "9addca717914f10d9d9187f41e46267ada05677b",
+    "clean": "false",
+    "exit": "0",
+    "pass": "1",
+    "fail": "0",
+    "ignored": "0"
+  },
+  {
+    "log": "target/lane-evidence/landing2a-merge-owner-public-record-ref-fix.log",
+    "command": "python target/lane-evidence/landing2a_merge_owner.py root",
+    "head": "9addca717914f10d9d9187f41e46267ada05677b",
+    "clean": "false",
+    "exit": "100",
+    "pass": "0",
+    "fail": "1",
+    "ignored": "0"
+  },
+  {
+    "log": "target/lane-evidence/landing2a-merge-owner-public.log",
+    "command": "python target/lane-evidence/landing2a_merge_owner.py root",
+    "head": "9addca717914f10d9d9187f41e46267ada05677b",
+    "clean": "false",
+    "exit": "1",
+    "pass": "0",
+    "fail": "0",
+    "ignored": "0"
+  },
+  {
+    "log": "target/lane-evidence/landing2a-merge-owner-validation.log",
+    "command": "python target/lane-evidence/landing2a_merge_owner.py native",
+    "head": "9addca717914f10d9d9187f41e46267ada05677b",
+    "clean": "false",
+    "exit": "0",
+    "pass": "1",
+    "fail": "0",
+    "ignored": "0"
+  }
+]

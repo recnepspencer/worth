@@ -37,7 +37,12 @@ pub(super) fn retained_nodes<K, V>(entries: usize) -> Option<usize> {
     // A concrete input must itself have addressable cells. Empty im maps still
     // allocate one root; every additional node has at least31 keys.
     Layout::array::<(K, V)>(entries).ok()?;
-    let nodes = (entries / MINIMUM_NON_ROOT_KEYS).checked_add(1)?;
+    let nodes = if entries <= 2 * MINIMUM_NON_ROOT_KEYS {
+        // A root with two minimum-size children already needs63 entries.
+        1
+    } else {
+        (entries / MINIMUM_NON_ROOT_KEYS).checked_add(1)?
+    };
     node_bytes::<K, V>()?.checked_mul(nodes)
 }
 

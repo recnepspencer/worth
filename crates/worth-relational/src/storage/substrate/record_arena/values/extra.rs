@@ -21,7 +21,20 @@ pub(crate) struct RelationExtra {
     #[serde(skip)]
     _funding: Option<ExecutionMemoryReservation>,
 }
+/// Checked declared upper bound of the persistent aspect backing reachable
+/// from one extra carrier, excluding the carrier's own layout. Backing shared
+/// with another extra is included in full for each holder: a deliberate
+/// overbound, never an exact deduplicated inventory. `None` is unrepresentable.
+fn reachable_state_bound_bytes(state: Option<&State>) -> Option<u64> {
+    match state {
+        None => Some(0),
+        Some(state) => u64::try_from(state.aspects().retained_storage_bytes()?).ok(),
+    }
+}
 impl EntityExtra {
+    pub(crate) fn reachable_bound_bytes(&self) -> Option<u64> {
+        reachable_state_bound_bytes(self.authoritative_aspect_state())
+    }
     pub(crate) fn from_funded_parts(
         structural_fingerprint: Option<StructuralFingerprint>,
         lineage_id: Option<LineageId>,
@@ -91,6 +104,9 @@ impl EntityExtra {
     }
 }
 impl RelationExtra {
+    pub(crate) fn reachable_bound_bytes(&self) -> Option<u64> {
+        reachable_state_bound_bytes(self.authoritative_aspect_state())
+    }
     pub(crate) fn from_funded_parts(
         endpoints: Option<RelationEndpoints>,
         authoritative_aspect_state: Option<State>,

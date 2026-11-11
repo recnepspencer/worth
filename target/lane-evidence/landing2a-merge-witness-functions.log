@@ -1,0 +1,28 @@
+command: python scripts/quality/scrutinize_rust_functions.py --dirty .
+HEAD: 26cc5a58f28f3dca4ec01874eb55f68050484610
+git_status_short_empty: false
+start_utc: 2026-11-10T00:50:51.186710+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/merge_collaboration_witness_journeys.rs:12: merge_collaboration_truth_replay_equivalence_survives_live_publication_and_recovery: 76 lines, 0 parameters [long-function]
+crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/merge_collaboration_witness_journeys.rs:89: merge_collaboration_support_surface_reflects_correspondence_posture_over_real_history: 65 lines, 0 parameters [long-function]
+crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/merge_schema_witness_journeys.rs:12: retained_schema_reconciliation_witness_preserves_runtime_additive_truth_across_authority_lanes: 90 lines, 0 parameters [long-function]
+crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/merge_schema_witness_journeys.rs:103: retained_schema_reconciliation_witness_keeps_runtime_structural_denial_typed: 73 lines, 0 parameters [long-function]
+crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/merge_witness_authoring.rs:37: create_named_entity_on_branch: 27 lines, 6 parameters [many-parameters]
+crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/merge_witness_authoring.rs:64: update_entity_status_on_branch: 25 lines, 5 parameters [many-parameters]
+crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/merge_witness_authoring.rs:123: create_relation: 21 lines, 5 parameters [many-parameters]
+crates/worth-relational/src/tests/history/milestone_7e_phase_g/mod.rs:24: retained_merge_correspondence_witness_rejects_forged_or_incomplete_truth: 67 lines, 0 parameters [long-function]
+crates/worth-relational/src/tests/history/milestone_7e_phase_h/fixtures.rs:129: create_named_entity_on_branch: 30 lines, 6 parameters [many-parameters]
+crates/worth-relational/src/tests/history/milestone_7e_phase_h/fixtures.rs:172: retained_row: 41 lines, 8 parameters [many-parameters]
+crates/worth-relational/src/tests/history/milestone_7e_phase_i/fixtures.rs:35: update_entity_status_on_branch: 40 lines, 5 parameters [many-parameters]
+crates/worth-relational/src/tests/history/milestone_7e_phase_i/mod.rs:61: retained_merge_strategy_witness_rejects_forged_or_rehashed_truth: 73 lines, 0 parameters [long-function]
+crates/worth-relational/src/tests/history/milestone_7e_phase_i/mod.rs:136: retained_merge_strategy_witness_differentiates_policy_topology_and_deletion_subidentity: 67 lines, 0 parameters [long-function]
+crates/worth-relational/src/tests/history/milestone_7e_phase_l/fixtures.rs:83: update_entity_status_on_branch: 40 lines, 5 parameters [many-parameters]
+crates/worth-relational/src/tests/history/milestone_7e_phase_l/mod.rs:12: merge_support_inspection_witness_denies_missing_required_proof_family: 70 lines, 0 parameters [long-function]
+crates/worth-relational/src/tests/history/milestone_7e_phase_m/fixtures.rs:133: update_entity_status_on_branch: 41 lines, 5 parameters [many-parameters]
+scrutinized 17 Rust files; 16 candidate functions; 0 scan errors
+
+end_utc: 2026-11-10T00:51:02.737797+00:00
+exit_code: 0
+tests_passed: 0
+tests_failed: 0
+tests_ignored: 0

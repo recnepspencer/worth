@@ -56,9 +56,20 @@ impl CheckpointProjectionContext {
         let schema = super::schema_custody::ProjectionSchemaCustody::Published(
             root.retained_schema_authority(),
         );
+        // A readmitted root keeps its commit receipt even when its original
+        // envelope is not resident; the receipt names the same version.
+        let version = root
+            .commit_receipt()
+            .map(|receipt| receipt.version_id)
+            .ok_or_else(|| {
+                crate::durability::checkpoints::region_directory::corrupt(
+                    "index checkpoint root has no commit",
+                )
+            })?;
         let basis = crate::visibility::snapshot_states::SnapshotStateBasis::Exact(
-            crate::visibility::snapshot_states::VisibilitySnapshotBasis::from_prepared_root(
+            crate::visibility::snapshot_states::VisibilitySnapshotBasis::from_applied_root(
                 branch.clone(),
+                version,
                 root,
             ),
         );

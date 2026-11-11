@@ -1,3 +1,3 @@
 #[path = "application_graph/mod.rs"]
 pub mod application_graph;
-pub use application_graph::{canonical_identity, canonical_transition, source_owned_transition};
+pub use application_graph::{canonical_identity, canonical_transition};

@@ -175,7 +175,7 @@ fn select_scoped_root<ReadIdentity>(
         .parameters
         .bindings()
         .iter()
-        .find(|(name, _)| *name == predicate.parameter())
+        .find(|(name, _)| name.as_ref() == predicate.parameter())
         .map(|(_, value)| value)
         .ok_or_else(|| {
             read_execution_denial(

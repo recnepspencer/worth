@@ -18,7 +18,11 @@ pub(crate) use origin::{
     PreparedCheckpointOccurrence, WorldCheckpointOrigin, WorldCheckpointOriginState,
 };
 pub use origin::{WorldCheckpointOriginRetirement, WorldCheckpointOriginRetirementDenial};
+mod original_observation;
+mod original_state;
+pub use original_state::WorldOriginalStateObservation;
 mod port;
+pub use original_observation::{WorldOriginalObservation, WorldOriginalObservationDenial};
 mod program_activation;
 pub use program_activation::{WorldProgramActivationHistory, WorldProgramActivationHistoryEntry};
 mod source;

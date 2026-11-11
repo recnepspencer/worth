@@ -42,7 +42,10 @@ impl identity_seal::Sealed for DurableCompositeCommitIdentity {}
 impl DurableIdentity for DurableCompositeCommitIdentity {}
 
 /// Recorded World occurrence data. Its ordinal is never a live issuance grant.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(
+    Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize,
+)]
+#[serde(deny_unknown_fields)]
 pub struct DurableCompositePublicationAttemptIdentity {
     owner: DurableWorldOwnerIdentity,
     ordinal: u64,

@@ -94,6 +94,8 @@ pub(in crate::domain_computation::primary_graph::provider) enum QueryDurablePrep
         reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
     )]
     Request(worth_execution::WorkCeilingDenial),
+    OriginalMeaning(crate::facade::program_support::QueryProgramSupportDenial),
+    CorrectionMaterial(crate::facade::correction_material::QueryCorrectionMaterialDenial),
     #[allow(
         dead_code,
         reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
@@ -134,8 +136,18 @@ impl QueryPreparingApplicationCommit {
 }
 impl std::fmt::Debug for RetainedQueryDurablePreparation {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let original_meaning = match &self.query_denial {
+            Some(QueryDurablePreparationDenial::OriginalMeaning(cause)) => Some(cause),
+            _ => None,
+        };
+        let correction_material = match &self.query_denial {
+            Some(QueryDurablePreparationDenial::CorrectionMaterial(cause)) => Some(cause),
+            _ => None,
+        };
         formatter
             .debug_struct("RetainedQueryDurablePreparation")
+            .field("correction_material", &correction_material)
+            .field("original_meaning", &original_meaning)
             .field("stage", &self.stage())
             .field("query_denial", &self.query_denial)
             .finish_non_exhaustive()
@@ -155,7 +167,7 @@ impl RetainedQueryDurablePreparation {
                 QueryDurableOwnerCall::Publication => Stage::Publishing,
                 QueryDurableOwnerCall::PublicationAdvance => Stage::PublicationPending,
             },
-            QueryDurableWorldCustody::Opened(_) => Stage::BindingNativeProposal,
+            QueryDurableWorldCustody::Opened(_) => self.stage,
             QueryDurableWorldCustody::NativePreparation(_) => match &self.query.native {
                 QueryNativeCustody::Candidate(_) => Stage::PreparingQueryCandidate,
                 _ => Stage::PreparingNative,

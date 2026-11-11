@@ -1,4 +1,4 @@
-//! Phase 4 custody/fates (1473–1476) and abandonment (1505–1506).
+//! Phase 4 custody/fates (1473Ã¢â‚¬â€œ1476) and abandonment (1505Ã¢â‚¬â€œ1506).
 //! Correspondence relates uncertainty with actual custody, never just terminal tags.
 use super::{
     comparison::{compare_head, HostDivergence, ProjectionPart},
@@ -20,6 +20,8 @@ pub enum PreparationStage {
     OpenPending,
     OpenUnresolved,
     OpenEvidenceRequired,
+    RecordingOriginalMeaning,
+    RecordingCorrectionMaterial,
     BindingNativeProposal,
     PreparingNative,
     PreparingQueryCandidate,
@@ -38,6 +40,8 @@ impl PreparationStage {
             S::OpenPending => Self::OpenPending,
             S::OpenUnresolved => Self::OpenUnresolved,
             S::OpenEvidenceRequired => Self::OpenEvidenceRequired,
+            S::RecordingOriginalMeaning => Self::RecordingOriginalMeaning,
+            S::RecordingCorrectionMaterial => Self::RecordingCorrectionMaterial,
             S::BindingNativeProposal => Self::BindingNativeProposal,
             S::PreparingNative => Self::PreparingNative,
             S::PreparingQueryCandidate => Self::PreparingQueryCandidate,

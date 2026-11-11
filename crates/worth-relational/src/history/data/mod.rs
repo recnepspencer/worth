@@ -70,7 +70,8 @@ pub(crate) use canonical_commit_envelope::{
 pub use canonical_commit_envelope::{
     CanonicalCommitAuthorityKind, CanonicalCommitEnvelope, CanonicalOwnedGraphSelection,
     CanonicalRetainedEntitySelection, RelationalDescriptiveTouch, RelationalDescriptiveTouchGraph,
-    RelationalDescriptiveTouchPrecision, RelationalReplayRecord, RelationalTouchAdjacencyDirection,
+    RelationalDescriptiveTouchPrecision, RelationalIntroducedSchemaObservation,
+    RelationalOriginalInputObservation, RelationalReplayRecord, RelationalTouchAdjacencyDirection,
     ReplaySchemaVersion, SharedCanonicalCommitEnvelope,
 };
 pub(crate) use canonical_commit_envelope::{

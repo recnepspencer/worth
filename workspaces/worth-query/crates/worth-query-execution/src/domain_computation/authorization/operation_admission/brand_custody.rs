@@ -3,7 +3,7 @@
 use std::marker::PhantomData;
 
 use worth_query_declaration::facade::application_operation::{
-    ApplicationEncodedInput, ApplicationMutationBindingDescriptor, ApplicationSharedInput,
+    ApplicationMutationBindingDescriptor, ApplicationRetainedInput, ApplicationSharedInput,
 };
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
@@ -137,7 +137,7 @@ impl<Schema, Operation, Input, Scope>
     )]
     pub(in crate::domain_computation) fn retain_original_input<Binding>(
         &mut self,
-        input: ApplicationEncodedInput<Binding::InputBinding>,
+        input: ApplicationRetainedInput<Binding::InputBinding>,
         correction: Option<
             std::sync::Arc<
                 crate::domain_computation::application_aftermath::OriginalCorrectionDisclosure,
@@ -154,7 +154,9 @@ impl<Schema, Operation, Input, Scope>
     {
         // The caller has checked the sealed handler's binding and input identity.
         self.core.data.original_input = Some(ErasedOriginalInput {
-            encoded: std::sync::Arc::new(input.clone()),
+            canonical: input.canonical_snapshot().clone(),
+            mutation_identity: Binding::IDENTITY,
+            retained: std::sync::Arc::new(input.clone()),
             program: None,
             identity: *input.identity(),
             binding_type: std::any::TypeId::of::<Binding>(),

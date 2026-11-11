@@ -4,27 +4,9 @@ use crate::authority::mutation::stale_targets::ensure_entity_target_is_current;
 use crate::authority::mutation::MutationWorkspace;
 use crate::transactions::data::DeleteEntityIntent;
 
-pub(super) type DeleteEntity = fn(
-    &worth_execution::ExecutionRequest<'_, '_>,
-    &mut crate::storage::overlay::WorkingState,
-    crate::identity::data::VersionId,
-    crate::identity::data::EntityId,
-    &crate::schema::data::RelationalSchemaRegistry,
-    crate::config::data::CascadeDeletePolicy,
-    &mut MutationOutcome,
-    Option<&std::collections::BTreeSet<crate::identity::data::RelationId>>,
-) -> Result<(), crate::transactions::data::TransactionCommitError>;
-
 pub(super) fn apply(
     intent: &DeleteEntityIntent,
     workspace: &mut MutationWorkspace<'_>,
-) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
-    apply_using(intent, workspace, delete_entity_with_cascade)
-}
-fn apply_using(
-    intent: &DeleteEntityIntent,
-    workspace: &mut MutationWorkspace<'_>,
-    delete: DeleteEntity,
 ) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
     let version_id = workspace.version_id();
     let cascade_delete_policy = workspace.cascade_delete_policy();
@@ -37,7 +19,7 @@ fn apply_using(
             }
             return Err(error.into());
         }
-        delete(
+        delete_entity_with_cascade(
             &context.execution,
             context.state,
             version_id,

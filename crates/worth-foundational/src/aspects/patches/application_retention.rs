@@ -14,6 +14,15 @@ impl AuthoritativeRecordAspectPatch {
         &self,
         current: Option<&State>,
     ) -> Option<AspectPatchStorageBounds> {
+        if current.is_none()
+            && let Some(field) = self.field_patches.first()
+        {
+            // The actual absent-state owner refuses before constructing a tree.
+            return Some(AspectPatchStorageBounds {
+                retained_bytes: 0,
+                transient_bytes: field.key().as_str().len(),
+            });
+        }
         let map = current.map(State::aspects);
         let mut payload = map.map_or(0, Map::payload_storage_bytes);
         let mut count = map.map_or(0, Map::len);
@@ -95,19 +104,31 @@ impl AuthoritativeRecordAspectPatch {
             Some(map) => {
                 map.edit_storage_bytes(operations, self.whole_aspect_sets.len(), new_key_width)?
             }
+            None if self.whole_aspect_sets.len() <= 64 => {
+                // The actual application constructor consumes a unique stream;
+                // both roots stay unique leaves. Key copies are in `copied`.
+                Map::construction_storage_bytes(0)?
+            }
             None => Map::empty_edit_storage_bytes(
                 operations,
                 self.whole_aspect_sets.len(),
                 new_key_width,
             )?,
         };
-        // Copy-path scratch includes final nodes as well as temporary nodes.
-        // This intentional overlap is a conservative bound, not an exact invoice.
+        // Full node capacity already includes the occupied inline key/value
+        // cells counted in the cached payload extent. Only nested heaps remain.
+        let inline = std::mem::size_of::<(crate::aspects::AspectKey, Value)>() as u128;
+        let payload = payload.checked_sub(inline.checked_mul(count as u128)?)?;
+        let retained_bytes = usize::try_from(payload)
+            .ok()?
+            .checked_add(Map::construction_storage_bytes(count)?)?;
+        // The construction bound includes final nodes and every newly copied
+        // key/field/value. Retention pays those final nodes once, so scratch is
+        // only construction's excess above the independent successor bill.
+        let construction = path_bytes.checked_add(copied)?.checked_add(denial_key)?;
         Some(AspectPatchStorageBounds {
-            retained_bytes: usize::try_from(payload)
-                .ok()?
-                .checked_add(Map::construction_storage_bytes(count)?)?,
-            transient_bytes: path_bytes.checked_add(copied)?.checked_add(denial_key)?,
+            retained_bytes,
+            transient_bytes: construction.saturating_sub(retained_bytes),
         })
     }
 }

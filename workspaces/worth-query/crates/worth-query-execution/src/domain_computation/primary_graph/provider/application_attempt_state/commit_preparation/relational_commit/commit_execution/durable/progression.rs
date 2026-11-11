@@ -43,7 +43,7 @@ fn advance(
     allocation: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     context: &mut worth_execution::MapKernelContext<'_, '_>,
 ) -> Result<Progress, worth_execution::WorkCeilingDenial> {
-    if let Some(outcome) = opening::advance(execution, guard, context)? {
+    if let Some(outcome) = opening::advance(execution, provider, guard, context)? {
         return Ok(outcome);
     }
     if let Some(outcome) = native_binding::advance(execution, guard, context)? {

@@ -1,0 +1,27 @@
+Command: ["cargo", "nextest", "run", "--cargo-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\landing2a-original-observation-root-initial\\build\\cargo-metadata.json", "--binaries-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\landing2a-original-observation-root-initial\\build\\binaries.json", "--profile", "ci", "--config-file", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\landing2a-original-observation-root-initial\\nextest.toml", "--ignore-default-filter", "--no-fail-fast", "--no-tests=fail", "--message-format", "libtest-json", "-E", "test(=relational::durable_publication::original_input_observation::original_input_observation_preserves_complete_attribution_across_schema_checkpoint_recovery)"]
+Working directory: C:\programming\worth worktees\worktrees\m3-p3-reopen
+HEAD: 559e5da598bf2f84bb318fe7c9db63c343f2e4c9
+Git status --short empty: False
+Start: 2026-11-10T01:22:13.849937+00:00
+
+{"type": "cargo-invocation", "command": ["cargo", "nextest", "run", "--cargo-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\landing2a-original-observation-root-initial\\build\\cargo-metadata.json", "--binaries-metadata", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\landing2a-original-observation-root-initial\\build\\binaries.json", "--profile", "ci", "--config-file", "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target\\test-cost\\landing2a-original-observation-root-initial\\nextest.toml", "--ignore-default-filter", "--no-fail-fast", "--no-tests=fail", "--message-format", "libtest-json", "-E", "test(=relational::durable_publication::original_input_observation::original_input_observation_preserves_complete_attribution_across_schema_checkpoint_recovery)"], "cwd": "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen", "capture": "ordered", "mode": "build", "target_dir": "C:\\programming\\worth worktees\\worktrees\\m3-p3-reopen\\target", "cargo_profile": "test"}
+info: experimental features enabled: wrapper-scripts
+────────────
+ Nextest run ID c77af4ef-c56c-4c9e-97a0-bc4d891552a4 with nextest profile: ci
+    Starting 1 test across 1 binary (359 tests skipped)
+{"type":"suite","event":"started","test_count":2}
+{"type":"test","event":"started","name":"worth-court-relational-certification::worth_court_relational_certification$cost::relational::relational_certification::scale_invariant_admission::large_runtime_keeps_global_enforcement_and_filters_graph_planning"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":1,"measured":0,"filtered_out":358,"exec_time":0}
+        PASS [  10.524s] (1/1) worth-court-relational-certification::worth_court_relational_certification relational::durable_publication::original_input_observation::original_input_observation_preserves_complete_attribution_across_schema_checkpoint_recovery
+{"type":"suite","event":"started","test_count":2}
+{"type":"test","event":"started","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::original_input_observation::original_input_observation_preserves_complete_attribution_across_schema_checkpoint_recovery"}
+{"type":"test","event":"ok","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::original_input_observation::original_input_observation_preserves_complete_attribution_across_schema_checkpoint_recovery","exec_time":10.5240347}
+{"type":"suite","event":"ok","passed":1,"failed":0,"ignored":1,"measured":0,"filtered_out":358,"exec_time":10.5240347}
+────────────
+     Summary [  10.530s] 1 test run: 1 passed, 359 skipped
+
+
+{"type": "cargo-result", "exit_code": 0}
+
+End: 2026-11-10T01:22:32.459811+00:00
+Exit code: 0

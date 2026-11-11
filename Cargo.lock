@@ -1955,6 +1955,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "worth-court-relational-cold-residency"
+version = "0.1.0"
+dependencies = [
+ "rmp-serde",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-relational",
+ "worth-testkit-relational",
+]
+
+[[package]]
 name = "worth-court-runtime-bridge"
 version = "0.1.0"
 dependencies = [

@@ -294,3 +294,6 @@ impl RelationalTransactionValidationInput {
         &self.control
     }
 }
+
+#[cfg(test)]
+mod merge_history_tests;

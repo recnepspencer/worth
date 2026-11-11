@@ -111,6 +111,7 @@ pub(super) fn cleanup_failed_outcome(outcome: Progression, receiver: &crate::dom
             | Kind::ProgramNotActiveOnOccurrence { .. }
             | Kind::ProgramSupportRetired
             | Kind::ProgramActivationUnresolved
+            | Kind::StaleIncarnation
             | Kind::CorrectionContextMismatch
             | Kind::CorrectionIdentityMismatch => cleanup_indeterminate(),
         },

@@ -54,6 +54,19 @@ pub fn set(runtime: &OracleRuntime, key: u64, value: u64) -> MutationOutcome {
         )
         .unwrap()
 }
+/// Prepare the existing request for a scoped caller. The request owner proves
+/// the concrete runtime capture is Send; a court need not unfold its entire
+/// storage graph again at thread::spawn's auto-trait boundary.
+pub fn set_worker(
+    runtime: &OracleRuntime,
+    key: u64,
+    value: u64,
+) -> impl FnOnce() -> Result<(), String> + Send + '_ {
+    move || {
+        let _original = set(runtime, key, value);
+        Ok(())
+    }
+}
 pub fn balance(runtime: &OracleRuntime) -> u64 {
     let scope = WorthQueryRequestScope::new(None, WorthQueryCancellationSource::new().token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = identity::inspection_authentication::authenticate(

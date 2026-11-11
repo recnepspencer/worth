@@ -11,6 +11,32 @@ impl ApplicationCorrectionBinding<IdentityExecutionSchema> for RecordedLabelEdit
     type Source = LabelBinding;
     type InverseIntent = LabelEdit;
     type Disclosure = TestAccountSourceBinding;
+
+    fn recover_source_input(
+        bytes: &[u8],
+        expected: worth_query_declaration::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_declaration::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_declaration::facade::application_operation::ApplicationEncodedInput<
+            <Self::Source as worth_query_declaration::facade::application_operation::ApplicationMutationBinding<IdentityExecutionSchema>>::InputBinding,
+        >,
+        worth_query_declaration::facade::application_operation::ApplicationRetainedInputDenial,
+    >{
+        worth_query_declaration::facade::application_operation::ApplicationEncodedInput::decode_retained(bytes, expected, bounds)
+    }
+
+    fn recover_inverse_input(
+        bytes: &[u8],
+        expected: worth_query_declaration::facade::application_schema::CanonicalDigestId,
+        bounds: worth_query_declaration::facade::application_schema::ValueDecodeBounds,
+    ) -> Result<
+        worth_query_declaration::facade::application_operation::ApplicationEncodedInput<
+            <worth_query_declaration::facade::application_aftermath::ApplicationInverseBinding<IdentityExecutionSchema, Self> as worth_query_declaration::facade::application_operation::ApplicationMutationBinding<IdentityExecutionSchema>>::InputBinding,
+        >,
+        worth_query_declaration::facade::application_operation::ApplicationRetainedInputDenial,
+    >{
+        worth_query_declaration::facade::application_operation::ApplicationEncodedInput::decode_retained(bytes, expected, bounds)
+    }
     fn disclosure_parameters(
         original: &LabelEdit,
     ) -> Result<
@@ -45,6 +71,7 @@ impl ApplicationCorrectionBinding<IdentityExecutionSchema> for RecordedLabelEdit
         original: &LabelEdit,
         material: ApplicationCorrectionSourceMaterial<'_, IdentityExecutionSchema>,
     ) -> Result<LabelEdit, ApplicationCorrectionDerivationDenial> {
+        super::inverse_observation::record();
         use ApplicationCorrectionDerivationDenial::InvalidPreImage;
         use ApplicationCorrectionDerivationDenial::MissingPreImage;
         use ApplicationCorrectionDerivationDenial::UnsupportedSourceMeaning;

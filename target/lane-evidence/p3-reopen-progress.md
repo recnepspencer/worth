@@ -1,3 +1,5 @@
+IN PROGRESS ? Landing2a source2db457e903; merge-parent transaction admission ruling pending.
+
 FUNDING MERGED bd3ac03d2f
 D13 ACTIVE: single-door/source registry batch, including the reviewed pre-World
 Native transition continuation. Current validation: three Root Clippy invocations
@@ -329,3 +331,345 @@ review APPROVE source,fullBCnotachieved. Read-only next-family audit maps80files
 dictionary claims requiring owner decomposition. No broad cold edits or extra
 Cargo run. User clarification about live allocation claim still pending. See
 turn-end-state.md; counts0checks/1Clippy/1focusedbuild/1testrun.
+
+
+2026-11-09 Landing2a: allocation refusal moved to C2 in b736be6f47 after fresh
+APPROVE; exact restore and public-observation obligation in milestone3. No product
+allocation path changed. Cold-family86-test independent classification pending.
+First public migration batch moves the two actual damaged-member/tail refusal
+courts onto the external provider, with explicit medium custody and unchanged
+claims. Testkit cold source capture is shared by its existing recovered fixture.
+New cold-residency court is the source-ceiling split (old certification35909lines),
+with exact frontier owner/delegation/workspace registration. First Root check is
+running; no focused build/test run yet. Counts1check,0Clippy,0build,0tests so far.
+Formatting initially found module-path layout inconsistency; fixed conventional
+mod.rs placement and reran fmt green before compilation. Full log retained.
+Complete/ACK label has no concrete defect in landing note or held reports;
+clarification question is pending while implementation continues.
+
+First cold public packet6/0/0: five migrated courts plus existing custody regression.
+One owned build,one selected run; initialcheck green. Added profile-preserving
+source capture fixture, no Native public or wire change. C2 five pure private
+claims moved with exact restore refs. Review caught two mixed proposed moves;
+restored their full public/private original tests pending proper split. No changed
+public proof inputs after green evidence. Currentgate boundary remains14 (3ours
+unchanged local providers,11other-owner), no newcourt/testkit findings. Context
+and caps green. Counts1check,0Clippy,1focusedbuild,1selectedrun; no ignored tests.
+
+Freshreview also found partial-residency success/equality inside the discarded
+visibility counter court. Restored entire test/file/mount and its baseline row.
+Four entirely private tests remain C2; baseline now unchanged. No public court,
+testkit or product runtime inputs changed after6/0/0. Complete/ACK clarification
+stillpending. Node/event observation design review found feasible typed owners;
+return existing event semantic DATA with current ordinary collection policy,
+not a new quota/result wrapper; actual counted node lease stays inNodeRead.
+
+Lineage-owner slice is coherent: counted semantic node reads, branch-authored
+discovery at a validated original publication cut, real port presence, and public
+event/source courts. Two reviewer-found type/doc issues and provider-protection
+payload mismatch fixed before compile. Metadata lock brackets only short
+canonical selection/validation; traversal and provider I/O stay outside it.
+Sixteen affected names selected together; two eight-reader controls reserve
+their actual eleven slots. First owned build for this slice follows formatting.
+
+First lineage build diagnosed one caller family (three mistaken facade imports
+and one private conversion where the actual read-only envelope accessor exists).
+All four fixed together. Source reviewer also found selected-read retirement
+payload distinct from placement registration; delegate that original producer
+payload's validator/retirement back to its actual owner. No policy or assertion
+change. Second coherent build/run follows; no extra workspace check.
+
+Lineage public16/0/0. First full scopedClippy found the two original harness
+thread sites now outside the old broad cfg(test) allow; performance law41's exact
+local expects declare court contention,count8 each,footprint11,without new allow
+attributes/global config/pool wrappers. Also removed two stale imports and the
+now-uncalled cfg(test) resident_replay_pins hook,with exact C2 restore reference.
+Same32production warnings stay queued; this is final fourth blocking round for
+this coherent slice. Test bodies unchanged; reuse16/0/0 rather than rerunning.
+
+Final lineageClippy exits0: same32library/23lib-test diagnostics, no newwarning.
+All16selectedpublicproofs pass, exact8-readercontention preserved. Fresh independent
+review APPROVE including provider protection/retirement corrections and two
+performance-law41 thread-site expects. Caps/mandatoryboundary/context follow this
+planned slice completion. Remaining adapterclosure/dead32/CompleteACK still active.
+Currentturn counts1check,2Clippy,3focusedbuilds,2selectedtestruns.
+
+Lineage slice phasegates complete:32Rustfilescapsgreen,contextgreen,fmtgreen.
+Mandatoryboundary remains exact14(3unmigratedownedproviders,11assignedelsewhere),
+noneonnewAPI/courts. ScopedfreshreviewAPPROVE,nofindingsopen. Committhissafe
+point,thencontinueadapterdecomposition. No newtestexecutionafter16/0/0:later
+sourcehunksareexpectannotations,unusedimports,uncalledcfgtesthook,andformatting.
+
+427700edd0 commits the reviewed lineage/source slice. Next coherent current-read
+family prepares15publiccourts before anycompile: all current/projection/snapshot
+doors, accepted pin semantics, failure/aspect matrices, metadata, materialization
+and original retirement versions. Native originals stay mounted until proof and
+review. No new product API or testkit backing change. C2 split of exact dictionary
+staging and direct cold probes is explicit; public suffixes are retained. First
+owned build/run for this slice follows now.
+
+Currentfamilyfirstbuilddiagnosticsclassified/fixedtogether:2missingtransaction
+imports,main-versionreadsreplacedwithactualissuedmainobservation(oractualdelete
+resultversion),andmaterializationusestheexistingpublicpublication/settlement
+ports. One minimal real-owner DATA getter source_records() on original suspension
+completion preserves its prepublication record claim;6linebranch/materialization
+merge seam,no new type/constructor/witness/control. Reviewer P2 naming fixed;
+privateColdprobesremainC2. Secondbuild/runfollowscompletebatch,no budgetchanges.
+
+Currentpublicpacket15/0/0. Exactoriginalclosurederivedfrommounted#[path]edges:
+17files/15tests. Portkeepsallpublicassertions;2privateprobe/dictionarysubclaims
+getexact427700edd0restoreentriesC2. Removeold17filefamily/mountandshrinkbaseline
+by16rows(noadditions). FirstrootClippyfollowscompleteconsumerretirement.
+
+CurrentrootClippygreenexit0,same32/23warnings. Beforephasecompletion,split
+currentfixturefieldmeaningsandexactreadbasisfrompublicationrecipes(one named
+responsibility per file). Bodies unchanged; one final cold-court-onlyClippy
+checks this extraction (fourth blocking round),reuseRootClippyand15/0/0.
+
+Boundaryreviewfinds2newownedBC9002s:copiednestedexhaustivecategoryfilesin
+externalcourt,forbiddenbelowtoplevel. This is our topologydefect,not an allowed
+carryover. Foldbothtestsintoowningmatrixfiles(under400),preserveeveryassertion,
+removechildfileswithoutbaselineaddition. Review-fixroundchecksnewcourt,and
+rerunsonlythe2relocatednamesbecausefulltestidentity/selectionchanged. No15case
+repeat. Other14findingsremainactive. Extra verification is the one review-fix
+round for this slice; count each actualcommand in report.
+
+Correctedcurrentslice15/0/0plusrelocated2/0/0;Root/courtClippygreen,no new
+warnings;fmt/22filecaps/contextgreen;boundary14(3ownedunmigratedproviders).
+FreshcorrectedindependentreviewAPPROVE,nofindingsopen.Committhissafe point.
+Thisturncounts1cargo check,5Clippy,6focusedbuilds,4selectedtestruns.
+
+Lineage/retention/region cohort complete before Cargo:16 public courts plus3 pure owner coverage units. Design correction independently APPROVED. Actual source artifacts and public recovery-plan basis preserve directory row coverage; resident counters/pin census/cache clear/private graph cases split to C2. Original tests remain mounted until qualification and review. One selected court build/run and one Native lib-only build/run, sequential, exclude examples/oracles.
+
+Retention packet first build clean,15/1/0. One fixture error: selected recapture supplied empty membership while replacing original private residency preparation; provide actual immutable source.members keys, no fresh placement or guessed list. Reviewer P2 found point lookup observes selected-root Head while only mirror History non-read was asserted; preserve mirror check and add actual selected-root History non-read. Rerun only failed row capture plus strengthened point name together. Native3pure units separately selected lib-only in same coherent verification batch; no ordinary suite/oracle.
+
+Corrected public capture/point2/0/0; other14successful names reused.10original source files retired only after public evidence,3isolation testfunctions moved but descendant fixture intact. ExactC2restore refs81d41f5575;baseline minus9rows,noadds. Native lib-only3coverage units compiling now. ScopedRoot/courtClippy and phasegates next,thenfreshindependentreview.
+
+Native pure3/0/0;Clippyexit0same32prod/23existingtestwarnings plus2newlyunused fixturemembers from this migration. Delete the now-uncalled cfgtest LineageSubsystem::node (search+compiler),withC2restore81d41f5575,and uncalledrecover_relations recipewrapper. No live owner/testbody changed. One review-fix fifth blocking round is needed to show no new warnings; Root-onlyClippy,not another court/test rebuild. Source review APPROVE; finalevidence reviewfollowsgates.
+
+Lineage/retention/regions slice complete:16publiccasespass via15/1/0then2/0/0;Native3purecoveragepass. FinalRootClippyexit0same32lib/23libtestwarnings,no newones;fmt/context/caps22pass;functions13advisoriesreviewedcohesive;boundary14unchanged(3ownedadaptersstillactive),noneinchangedfiles. Fresh independent finalreview APPROVE,noopenfindings. Commitreviewedsafe point thencontinue41originalcoldtests/runtimeattachmentclosure. Cumulativeturncounts1check,7Clippy,9focusedbuilds,7selectedtestruns. Noignoredtestexecuted,queryscale,oracle,scenario,Query/Storebuild,mergeorpush.
+
+1403ddb275 commits16publiclineage/retention/regions+3pureunits withfreshAPPROVE. Next12court envelope/invariant/candidate/crosspartition/fork design initiallyREJECT3preservationgaps(sourceI/O and exactrelationsemantics),allcorrected andfreshdesignAPPROVE. No newCargo yet;fullbatchimplementedunderpublicowners. One existingRecordKindTag facadeexportseam. Tracefoundpublicreclamation/count owners:preservethose instead of C2. Memory image envelopecountobserved through same retainedimage/publicrecover coverage,notnewcounterdoor. OriginalNativecourtsstillmounted;C2splitrecordsfollowqualification.
+
+First12courtprebuildfailedbeforetests:1private touched_record_refs call+1unused import. Replace privatehelper with actual public canonicalidentity/patchcontent for these realchanged-namefixtures;removeunusedimport. ReviewP2foundcandidatepositive lostchanged_entities[0] observations whilemovingprivatefloorchecks;restorebothIDs+actualrecordname. Retain exact publicdiagnosticVec equality via existingdiagnostics_snapshot owner. All diagnostics/reviewfamiliesfixedtogether beforesecondbuild;12namesstillunrun,no budgetchanges.
+
+Envelope/invariant/candidate/fork packet12/0/0 afteronefailedprebuild (privatetouchedhelper+unusedimport). Reviewcorrectionsclosed:actualcreatedIDs+nameanddiagnosticVec retainedpublicly;sourceandrelationsemanticassertionscomplete. Remove6originalfiles,2candidatefn/1primarycrosspartfn,retainremainingdescendantrecipes;baseline-7rows,0adds.29originalcoldtestsremain. Root/testkit/courtClippy followscoherentconsumerretirement,thirdblockingroundfor12cases.
+
+ThirdroundRoot/testkit/courtClippyexit0same32lib/23testwarnings,no newdiagnostics. Caps19pass,functions9advisories/0errorsreviewedcohesive. Freshfinalsource/evidence reviewer nofindings;mandatoryboundary/context/fmt running.29oldcoldtestsremain. This12court slice used2focusedbuilds(oneprebuildfail),1selectedrun,1Clippy;turncumulative1check,8Clippy,11focusedbuilds,8selectedruns.
+
+12courtslicephasegatescomplete:Clippy/fmt/context/caps19pass,functions9advisoriesreviewedcohesive;boundarysame14noneonchangedfiles. Freshfinalindependentreview APPROVE,noopenfindings. Commitnowthen29remainingcoldcourts+attachmentclosure;overall4gateitemsremainactive. Turncounts1check,8Clippy,11focusedbuilds,8selectedruns. Noignoredtestexecuted,oracles,queryscale,scenarios,Query/Storebuild,mergeorpush.
+
+Full/index/symbol nine-court batch source traced before Cargo. Preserve all47 Full doors and14 index doors, all six refusal causes, public no-load generation and reservation observations. Private dictionary/resident probes and private frontier allocation case exactC2. Expose existing request-funded try_read_version as real typed retained-version read (body unchanged), because the47th operation was private; denial already facade-exported. No new source factory/control. Design approved, implementation source review active. First selected nine-name packet follows coherent batch; originals still mounted.
+
+First nine-court prebuild failed on two remaining private convenience calls plus one unused import; no test ran. Fix whole family: use existing public exact matching_definition with the same declared index descriptor; preserve private Exact-vs-Resident basis representation assertion in C2 and publicly retain issued observation version identity. Remove unused import. No production semantic or budget changes. Second batched build follows all diagnostics.
+
+Nine-court run8/1/0. Fixture target-selection bug: a historical version reads the single carried main-root MVCC interval, not an absent per-commit checkpoint root. Replace receipt-as-root inference with assertions that the actual emitted directory has exactly one root matching the issued main observation, while the real historical projection preserves requested version. No owner algorithm copied, no public assertion weakened. Rerun only failed historical-index matrix.
+
+FourthblockingroundClippyexit0butnewunusedfixturewarningsafterconsumerretirement. Removeunuseddirectoryfield, oldViewFixture/reopened privateprep (alreadyexactC2restore), nowuncalledfixture wrapper, imports. Same23oldlibtest/32productionwarningsmustremainqueued,nosuppressions. One fifthreview-fixroundRoot+courtClippycheckscompleteddeletionbatch; no testrepeat. Caps29pass,functions12cohesiveowner/matrixadvisories0scanerrors.
+
+Review-fix Clippy found one implied stale Symbol import after ViewFixture deletion; remove it. Extra sixthblocking round is justified to qualify that remaining new diagnostic after all other corrections; Root-onlyClippy, reuse unchanged green courtinputs, no testrepeat. This is an implementation cleanup miss, not a product defect or fixture allowance.
+
+Full/index/symbol slice committed next:9publicports qualified8/1/0 thenfailedmatrix1/0/0; firstprebuildfailed2privateconveniences+unusedimport, fixedall. Realretained-versionread exposedexistingownerbodyunchanged; onepublicmerge seam. ExactprivateC2refs14e282569e;14oldfiles+1mixedtestremoved;baseline-15/0adds. Allnewunusedfixtures/importsremovedafterreviewP2,finalRootClippy32/23only. Caps29/fmt/contextpass;12functionadvisoriescohesive;boundarysame14noneinthischangedset. FreshfinalreviewAPPROVE.19originalcoldtests/3adaptersremain;32warning/CompleteACK gates stillopen. Turncounts1check,11Clippy,14focusedbuilds,10selectedruns. Noignoredtest/oracle/scale/scenario/QueryStorebuild/merge/push.
+
+3fa8da0cb4 reviewedninecourtscommitclean. Next17court design independentlyAPPROVED:merge4/preparation2/adjacency3/ring1/symbolbucket3/tail1/uniqueness1/reserved1/restart1. AllportedbeforeCargo;originalsstillmounted. Exactprivatecost/dictionary/residencyclaimswillgetC2restore3fa8da0cb4,notpublicproxies. Twohistorycourtsstillmountedpendingownerdecisionforgenuinepublicparenttransactionadmission(ordinaryadmissionalwaysinitializesempty,oldtestprivatesetter). Asyncdecisionrequested;other17independent. MinimalpublicexistingindexDATAreadbodyunchanged(capabilitydocumented)preservesAuditretainededgebehavior. NoCargo forthisbatchyet;finalsourceAPI/fixtureauditrunning.
+
+Seventeen-court source reviewAPPROVE afterprecompileKindIdimportfix. Auditcorrectedexternalmedium.recovery_source returntype and persistedNativehandleexpectation: file_checkpoint deliberately storesuntrustedbytes whileactualmediumretainsselectedoriginalsubject; ACK provesactualselection, persistedbytescomparedtoactualsecondcapture. No inventedcaptureproof ondecodedhandle. AllsourceerrorsfixedbeforefirstCargo. First17-name packetnowruns,originalsstillmounted.
+
+17courtfirstprebuildfailed9diagnostics/2warnings,no tests: privateinputcopy(3),frontierrecordsfield(4),sourceinto_parts(1),candidatepublication(1). Completefamilyfix: publicoriginal-inputconstructionretainsactualcheckpoint/tail/transitions+samephysicalsource; publicinto_records; actualmediumArcascoldsource; realpublicpublication_port.compare_and_publish followedbysettle_performed_publication(exactshippingownerchain),exhaustiveoutcomematch. Removeunusedlocatorimport/secondprepmediummove. No publicconstructor/observer/shim added. Secondbatchedpacketafterallerrorsandimplicationsfixed.
+
+17publiccourts17/0/0. Beforeconsumerretirement,fixtureauditfoundrealshapeerror: restart with_published_members overlaysalloldbytes, originalplacekeptonlyselectedmembers. Fixactualexternalproviderwith_selected_members (Neworiginalbytes,Carriedactualpriorbytes,unselectedremoved) anduseitfor32restarts. AddactualpublicFullrecordreadatreservedcourt'soriginalpostlineagenodewarmingpoint; exactprivaterootwarmC2stillpreserved. Rerunonlyrestart+reservednamesinthirdround;others15unchangedreusegreen. No budget/ceiling/countchange.
+
+17publiccasespass17/0/0; strictexactselectedplacement+publicFullreserved2/0/0. Retire21oldfiles/mounts+2uncalledrecipewrappers,baseline shrinks(noadds),exactprivateC2refs3fa8da0cb4. Twooriginalmergehistorytestsremainmountedpendingnewadmissiondecision. Root/testkit/courtClippy followscoherentretirement,fourthblockinground;no otherworkspace checkneeded.
+
+FourthroundClippyexit0,32prod/24testwarnings,one newunusedLocatorparentimportafterretirement. Removeexactimport;fifthreview-fixroundRoot-onlyClippy,reusegreenunchangedcourt/testkitinputs,no testrepeat. Caps35/fmt-sourcepass,functions16cohesiveclosedmatrix/fixture/ownerdispatchadvisories0scanerrors. FreshfinalreviewsourceAPPROVE,finalevidencependingClippyclean+boundary/context/fmt. Twofunctionalmergehistorycourtsremainblockedonactualcreationcapabilitydecision,noprivatesetter/proxy.
+
+Seventeencourtslicegatescomplete:qualified17/0/0+selectedplacement/Full2/0/0;Root/testkit/courtClippyexit0,andcleanRoot32/23queuedwarningsonly;fmt/context/caps35pass;16functionadvisoriesreviewedcohesive;boundarysame14noneinchangedfiles(3ownedadaptersremain). FreshfinalindependentreviewAPPROVE,nofindingsopen. Commitreviewedsafe point. Counts1cargo check,13Clippy,17focusedbuilds,12selectedtestruns. TwooriginalmergehistorytestsremainHAPPYpendingcreationcontractdecision;32deadcode/CompleteACKqualificationnotstartedoutoforder. Noignoredtest/oracle/scale/scenario/QueryStorebuild/merge/push.
+
+
+2026-11-09 merge-parent ruling applied: actual-delta planning observation and two
+replacement halves prepared in one batch. Initial independent design REJECT
+caught eager inline restoration; revised composition explicitly places cold
+proof in public shipping merge and exact Conflict/diagnostic in Native owner
+validation over its restored originals. No public merge-parent transaction door.
+C4 fault move and obsolete adapter closure follow only after replacement green.
+This turn so far: 0checks/0Clippy/0builds/0runs.
+
+First focused public prebuild failed before tests: both diagnostics were the same
+RecordRef non-Copy move in test observation arguments. Clone descriptive record
+at both uses; no owner behavior change. Whole diagnostic family fixed before
+second build. Revised design/source reviewer APPROVE. Counts0check/0Clippy/1build/0run.
+
+Public merge first run0/1/0: fixture incorrectly demanded zero reads for every
+canonical body at recovery, although root admission reads heads. Preserve the
+actual claim: intermediate nonhead position has no read before planning and a
+real read afterwards. No covered body is cleared/evicted. Original court only
+asserted intermediate cold, not all history cold. Correct fixture before next
+batched public/owner verification. Counts0check/0Clippy/2build/1run.
+
+Both merge replacement halves pass1/0/0 each; no ignored body ran. Remove old
+HAPPY court only after those results, preserve matrix+fixtures via exact C4
+restore9addca7179, delete obsolete cold adapters and mounts. Baseline transfers
+only original ExecutionRequest allowance to actual owner unit, net minus3rows.
+4focused builds/3runs so far; no check/Clippy. Fifth blocking round justified:
+Root/court Clippy must compile completed consumer/adapter deletion, detecting
+stale mounts/imports after otherwise green replacement evidence. No test repeat.
+
+Merge-history slice phase gates: Root/coldcourt Clippy exits0, same32lib/23test
+warnings (next owned gate), no new diagnostic. Fmt/context/caps11 pass. Functions
+3cohesive fixture/scenario advisories,0scanerrors. Boundary12:1remainingowned
+runtime_attachment plus11routed others; none in this slice. Coldsource2 removed.
+Fresh final independent review requested. Counts0check/1Clippy/4builds/3runs.
+
+Fresh final independent review APPROVE, no open findings for mergehistory slice.
+Commit reviewed safe point; then runtimeattachment consumer cutover,32warnings,
+CompleteACK. No ownership/async blocker. Full logledger merge-owner-lanes.md.
+
+MERGE HISTORY LANDED ee7aef9014 with fresh APPROVE. Next8public-history ports
+prepared coherently before Cargo; allactualsource/receiver media explicit. Audit
+corrected empty-contract authoring (same emptyfields/emptyfeaturecommit), released
+same created snapshots, validated named digest/filter/outcome/observation types
+fromowners. No new observerdoor or Native adapter. Originals remain mounted.
+Nextselectedpacket8 only; no check or test invocation yet for thisslice.
+
+Historycohort first prebuild failed9 diagnostics, no tests. One family: private
+branch_head(6)/latest_commit(3) conveniences. Nearest working public analogues
+commit_surfaces.rs:12/92 and encoded_checkpoint_backing.rs:225. Fix allcalls:
+ownerissued observe_branch+branch_head_for_observation returns samefullreceipt;
+historical_latest_commit is exact shipping method oldalias delegates to. No new
+observerdoor. Counts0check/1Clippy/5builds/3runs cumulative; slice1build/0run.
+
+Publichistory8/0/0 at secondprebuild afterwholeprivateconveniencefamilyfix. All
+sameassertionsnowshippingpublicowners; firstprebuild9diagnostics/no tests.
+Remove4Nativefiles/mounts and only runtime scenario fromdefinitionlookup; pure
+matching unitstaysowner. Baseline deletesoldrows, no additions. No repeatedtest.
+Cumulative0checks/1Clippy/6focusedbuilds/4selectedruns. Slice2builds/1run.
+
+History/C2 thirdblockinground Clippy exits0,32lib/46unitwarnings:23duplicates+
+23new orphaned cost-fixture diagnostics from12moved roots. Fix ALL inonebatch:
+remove9unusedimportgroups,10unusedFintechperformance wrappers+exports (scoped
+rgfindsno type usersoutsideFintech), measurementmodule/glob, is_null predicate,
+densepatchcounter,2unconstructedChipfixturevariants+arms. C2restoreee7a refs
+includeallpartialhelpers. KeepordinaryFintechscenarios/shared13costroots.
+Fourthround Root-onlyClippy; certgreenreuse (publicAPI unchanged/testonly edits).
+No testrepeat. Cumulative0check/2Clippy/6builds/4runs beforethisfourthround.
+
+Publichistory/C2slice finalphasegatespass:8/0/0;Root/courtClippyexit0 andcleanRoot
+32lib/23duplicatestestwarnings only;fmt/context/caps15pass;7cohesiveadvisories;
+boundarysame12nonechanged(1remainingowned). FreshindependentreviewAPPROVE,
+noopenfindings. Commit8ports+12costrootsC2(47files+partialhelperspreservedee7a).
+Currentdirectproviderclosure194files (scopedrg), notallindependenttestcases.
+Continueadapterconsumers, then32warnings/CompleteACK. Noownershipblocker.
+Cumulative0check/3Clippy/6focusedbuilds/4selectedruns. Noignoredbody/oracle/scale/
+scenario/QueryStorebuild/merge/push.
+
+HISTORY/C2 LANDED50d691f03d (freshAPPROVE). Continue6shippingplannerDATAports:
+actualOwnerBound request replacesprivate literal/cfgtest overload; everyoriginal
+visibility/lifecycle/policy/digest assertion unchanged. Reusequalifiedheadread and
+ordinarybranchauthoring; addonlybranchdelete helper andnormalfeatureplanrecipe.
+Split3visibility/3policycasesunder400. No newplatformAPI orNativeadapter.
+Originalsremainmounted; firstsix-name packet pending sourceaudit.
+
+Sixcase precompile source review REJECTcaughtoneprivate read_version before
+Cargo. Correcttoexistingpublictry_read_version, explicitlyexpectbothrequest
+successandretainedvisibility, sameentitylookup/exactLiveassertion. No budget or
+APIchange, no buildrunconsumed. RemainingAPI/source reviewfindingsnone.
+
+MergeplannerDATA6/0/0 onfirstbuild/run. SourceprecompileP1fixedbeforeCargo;
+no testfailure. RemoveoldNative6casefile/mount andbaselineonlyafterpass. Original
+visibility/lifecycle/policy/digest assertions preservedpublicly. ScopedClippy
+nextsecondblockinground; no repeatprior8 or6tests. Cumulative0check/3Clippy/
+7focusedbuilds/5selectedruns beforeClippy. No API/budget/format changes.
+
+SixplannerDATAphasegatescomplete:6/0/0firstbuild/run;Root/certClippysame32/23
+only;fmt/context/caps6pass;5cohesivefunctionadvisories;boundary12nonechanged.
+FreshfinalreviewAPPROVEall29assertionspreserved. Commit thissafe point then
+46rootproof/witnessbatchfromcompletedboundaryclassification. No newdoor needed;
+publicHAPPY andactualNativeMemory-ownpureunits split; C4 exactrefs preservefaults.
+Cumulative0check/4Clippy/7builds/5runs. Noignored/oracle/scale/scenario/merge/push.
+
+Proof/request first22-root batch:11public observations and14ownerunits selected.
+TwoC4restore45b6e references; stateless d mapping now actualowner. Honest
+Memory reconstructs Native retained originals for exact current-basis proof;
+external pair checks physical historical/current basis. Precompile review caught
+UnknownBranch tuple and missing facade export; both fixed before any Cargo.
+No authority door added; narrow existing publicbasis facade line is merge seam.
+
+Proof/request public firstbuild11/0/0. Native14ownerunitpacketbuildingsecondround,
+onlypackagecachelockwaitingsofar. Cumulative0check/4Clippy/9builds/6selectedruns
+(Nativebuildpending, 7thselectedrunpending). Noignored body executed.
+
+
+Proof/request slice complete:11public+14ownerfirstbuild/run, each0fail/0ignored.
+Fmt/context/caps16green,8cohesiveadvisories,Clippyonly32/23,boundarysame12
+nonechanged. Ledgerlanding2a-merge-proof-lanes.md/json. Baseline-2; onlynew
+productionseam existingbasisfacadeexport, statelessmapperunitmount. ExactC4
+restores45b6e87a0a. FreshindependentreviewAPPROVE. Activegatequeuecontinues:
+remainingruntimeattachmentconsumers,32warningfamilies,Complete/ACKpubliclane.
+Cumulative0check/5Clippy/9focusedbuilds/7selectedruns, noforbiddenbodyrun.
+
+Witness24-root coherentbatch sourcecomplete:8externaldurable,12retainedowner/
+actualMemorysiblings,4C4exactrestore26cc5a58f2. Schemadeclarationsreadfrom
+actualhelpers: h/l/mnameidentity,iwithoutidentity;emptystructuralentitieskeep
+emptyfields. Snapshotretainsactualemittedstructuralcounts. SourceQA before
+firstCargo; no productionauthorityAPIchange orbudgetraise.
+
+
+Witnessslicecomplete8public+12ownerfirstpass,4exactC4refs26cc5a58f2.
+FreshindependentreviewAPPROVE;ledgerlanding2a-merge-witness-lanes.md/json.
+Fmt/context/caps17pass,16cohesiveadvisories,Clippyonly32/23,boundarysame12
+nonechanged. No productionAPIchange/budgetraise/localadapter. Cumulative
+0check/6Clippy/11focusedbuilds/9selectedruns,10toolCargo(boundary/context).
+Next: remaininghistory65/compiler family, thencontract/otherfullclosure
+fromcompleteclaimdispositions; originalinputreadonlyobservationdesignAPPROVE
+(privatewiretypesremainprivate). Allgateitemsstillactive:runtimeattachment,
+32warningfamilies,CompleteACK. NoOwnershipblocker/noForbiddenbody/push/merge.
+
+Original-attribution capabilityprecursor implementing approvedclass3design,
+privatewiretypeskeptprivate. Source-reviewP2exhaustiveRecordedCanonicalInputs
+patternfixed beforeCargo (MutationConfigalsoexhaustive). Newvalueunit+physical
+two-schemahistorycheckpoint/receivercourt, independentfullMsgPackDATAprojection
+withonlyoriginal2exclusions. Actualscopeplanoriginal-input-observation-plan.md.
+No check/build/test after559e5da598yet; coherentbatch/sourceQA pendingbeforecompile.
+
+FreshindependentsourceQA(forknone)APPROVE originalobservationimplementation
+andphysicalschemahistorycourt. CompleteRecordedInputs+MutationConfigpatterns
+exhaustive; privatewiretypesunchanged. Addedbyte-onlydecodedcounterpartmust
+observeNone(noattributionmint), whileactualprotectedsourceoriginalSome. First
+coherentnewcapabilityproofpacket next; allremaining65historyportsstillactive.
+
+Precompileboundarycorrection: removedtheNEWunrunbyte-onlySerdeextraassertion,
+notanoriginaltest/claim. Descriptive_decode.rsexplicitlyadmitsSystemtextonly;
+Managedtextmayrefusebeforeattribution. Acceptingthatrefusalwouldnotprove
+attribution'scaptureboundary. No observerwiretraits/constructorswereadded;
+existingD12byte-onlycaptureproofcourtsremainunchanged. ActualSomeoriginal/
+restoredfullDATAandpredecessornegativearetheplannednewpublicproof.
+
+Original-attribution precursor complete: public1/0/0 and owner1/0/0, first pass.
+Fresh independent review APPROVE(fork none). Fmt/context/caps10 pass; one cohesive
+function advisory; Clippy only the queued32/23 and boundary same12 with none in
+this candidate. New public views keep private wire types private, both input
+struct projections exhaustive, whole introduced image Eq and no authority door.
+Full public DATA comparator preserves all original fields/exclusions. Evidence:
+landing2a-original-observation-lanes.md/json. Cumulative0check/7Clippy/13focused
+builds/11selected runs;12boundary/context tool Cargo runs. Continue remaining65
+history/compiler roots, then contract/other consumer closure; remove attachment,
+fix32warning families, qualifyCompleteACK. No ownership/ruling wait is a blocker.
+
+ORIGINAL ATTRIBUTION LANDED f9f15bf8c8 (fresh APPROVE, first-pass1+1).
+Next coherent batch:65remaining history/compiler roots. Boundary review and
+specific plan at landing2a-merge-execution-plan.md; exact65-root machine mapping
+at merge-execution-claims.json. No Rust changes for this next batch yet, no new
+check/build/test. Source-selection ACK feasibility review confirms real inline
+read custody cannot replace the medium's original selected-response/Weak binding;
+private detach-once is C2 custody/action. Continue all other work, no ownership
+or ruling wait. Keep all original restoration references and public counterparts.
+
+Next65-root plan now fresh independent APPROVE (fork none), before Rust edits.
+Review corrected3actualMemory reconstruction labels and the exact-shared custom
+name-only registry. All65/39source entries verified, JSON exact with zero missing
+or duplicate roots. Existing facade::storage already exports the canonical field
+comparison key (facade.rs:364); no new key/encoder/observer door is needed.
+Projection uses existing project_observation/try_project_historical_version and
+request-bearing entity_record_with_projection_scope. Read actual public APIs;
+do not mistake private aliases or partial facade search for missing capability.
+Continue this coherent whole batch before next compile; counts unchanged.

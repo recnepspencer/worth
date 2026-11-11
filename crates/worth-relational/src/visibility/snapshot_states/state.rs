@@ -120,21 +120,6 @@ impl VisibilitySnapshotBasis {
         }
     }
 
-    /// A prepared candidate owns both roots until its single-use publication
-    /// decision. This projection never enters the snapshot/reader catalogue.
-    pub(crate) fn from_prepared_root(branch_id: BranchId, root: Arc<RelationalBranchRoot>) -> Self {
-        let version_id = root
-            .canonical_envelope()
-            .expect(/* Proof: The private prepared publication root is constructed with its descriptor and canonical envelope before exposing the prepared phase. */ "prepared commit root has its canonical envelope")
-            .commit
-            .version_id;
-        Self {
-            key: VisibilitySnapshotStateKey::exact(branch_id, version_id, root.as_ref()),
-            root,
-            _retained_observation: None,
-        }
-    }
-
     pub(crate) fn capture_current(
         runtime: &crate::runtime::RelationalRuntime,
         branch_id: &BranchId,

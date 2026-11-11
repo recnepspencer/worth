@@ -1,3 +1,7 @@
+mod discovery;
+mod observation;
+pub use discovery::RelationalLineageDiscoveryDenial;
+pub use observation::RelationalLineageNodeRead;
 #[cfg(test)]
 mod aspect_history;
 #[cfg(test)]

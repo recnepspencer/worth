@@ -14,6 +14,7 @@ pub(crate) enum HomeJournalAdmission {
     World,
     Transition,
     QueryObligations,
+    QueryCorrections,
     QueryDispatch,
     RequireAbsent,
 }
@@ -67,7 +68,7 @@ pub(crate) const HOME_JOURNALS: [HomeJournal; 11] = [
     },
     HomeJournal {
         name: "query.corrections",
-        admission: HomeJournalAdmission::RequireAbsent,
+        admission: HomeJournalAdmission::QueryCorrections,
     },
 ];
 

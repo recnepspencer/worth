@@ -1,5 +1,6 @@
 //! Full row data and prior independent projection preimages, without services.
 use super::*;
+use crate::facade::symbols::StringInterner;
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId, VersionId};
 use crate::storage::substrate::{
     EntityArena, EntityExtra, RelationArena, RelationEndpoints, RelationExtra, SlotInit,

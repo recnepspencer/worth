@@ -2,6 +2,7 @@ mod approved_payment_correction;
 mod authentication;
 mod contributions;
 mod correction;
+mod correction_input;
 mod decision_read_manifest;
 mod entities;
 mod estate;

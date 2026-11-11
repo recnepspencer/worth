@@ -1,5 +1,6 @@
 //! Original-request retained proposal custody through the actual public Native pipeline.
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
+use worth_relational::facade::mvcc::ValidatedRelationalProposal;
 use worth_relational::facade::transactions::{
     CommitExecutionDenialKind, RelationalExecutionDenialCause, TransactionCommitError,
 };
@@ -58,11 +59,12 @@ fn unfunded_validated_proposal_backing_refuses_and_releases_original_custody() {
     let TransactionCommitError::Execution { denial, .. } = denied else {
         panic!("unfunded real validation must preserve its typed execution refusal");
     };
+    let owner_backing_bytes = ValidatedRelationalProposal::state_backing_layout().size() as u64;
     assert!(
         matches!(denial.kind,
         CommitExecutionDenialKind::Cause(RelationalExecutionDenialCause::PolicyMemoryExhausted {
             requested, admitted, ancestor: 0,
-        }) if requested > SMALL_OWNER_CEILING && admitted < requested),
+        }) if requested == owner_backing_bytes && requested > admitted),
         "{denial:?}"
     );
     assert_eq!(budget.charged_memory_bytes(), 0);

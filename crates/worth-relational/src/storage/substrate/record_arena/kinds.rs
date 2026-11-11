@@ -35,7 +35,10 @@ pub(crate) trait RecordKind: Clone + Debug + 'static {
     fn metadata_extra(
         metadata: &Self::Meta,
     ) -> &crate::storage::substrate::StorageAllocation<Self::Extra>;
-    fn extra_owned_allocation_bytes(extra: &Self::Extra) -> u64;
+    /// Checked declared upper bound of the backing reachable from this extra
+    /// beyond its carrier layout. Each holder counts shared backing again, so
+    /// this is never an exact physical inventory. `None` is unrepresentable.
+    fn extra_reachable_bound_bytes(extra: &Self::Extra) -> Option<u64>;
 }
 
 pub(crate) trait HistoricalMetadata: Sized {
@@ -107,10 +110,8 @@ impl RecordKind for EntityRecordKind {
         &metadata.extra
     }
 
-    fn extra_owned_allocation_bytes(extra: &Self::Extra) -> u64 {
-        extra
-            .authoritative_aspect_state()
-            .map_or(0, |state| state.owned_allocation_capacity_bytes() as u64)
+    fn extra_reachable_bound_bytes(extra: &Self::Extra) -> Option<u64> {
+        extra.reachable_bound_bytes()
     }
 }
 
@@ -193,10 +194,8 @@ impl RecordKind for RelationRecordKind {
         &metadata.extra
     }
 
-    fn extra_owned_allocation_bytes(extra: &Self::Extra) -> u64 {
-        extra
-            .authoritative_aspect_state()
-            .map_or(0, |state| state.owned_allocation_capacity_bytes() as u64)
+    fn extra_reachable_bound_bytes(extra: &Self::Extra) -> Option<u64> {
+        extra.reachable_bound_bytes()
     }
 }
 

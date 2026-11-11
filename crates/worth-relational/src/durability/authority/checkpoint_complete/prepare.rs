@@ -52,6 +52,7 @@ pub(super) fn prepare(
         &dictionary,
         &lineage,
         &frozen.indexes,
+        &super::metadata::retained_selection(&roots, &frozen.branches),
         frozen
             .original
             .base

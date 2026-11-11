@@ -17,10 +17,6 @@ pub(super) fn readmit(
     for (family, kind) in [
         ("outbox", layout.provider_dispatch_outbox().entity_kind),
         ("inbound", layout.provider_inbound_completion().kind),
-        (
-            "aftermath",
-            layout.provider_aftermath_causality().entity_kind,
-        ),
     ] {
         absent(&view, execution, family, kind)?;
     }

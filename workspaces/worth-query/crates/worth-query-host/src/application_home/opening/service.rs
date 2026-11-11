@@ -51,6 +51,7 @@ pub(in crate::application_home) fn finish_service<
     );
     let settled = custody.consume(|HomeServiceCustody { query, home }| {
         let obligations = home.query_obligations_medium();
+        let material = home.query_corrections_medium();
         let dispatch = super::super::dispatch_journal::HomeQueryDispatchMedium::over(
             home.query_dispatch_journal_operation(),
         );
@@ -63,6 +64,7 @@ pub(in crate::application_home) fn finish_service<
                 query: super::super::UnadmittedHomeQueryService::retain(
                     query,
                     obligations,
+                    material,
                     dispatch,
                 ),
                 home,

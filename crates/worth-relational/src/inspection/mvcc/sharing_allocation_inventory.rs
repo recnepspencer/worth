@@ -9,6 +9,8 @@ use crate::identity::data::PartitionId;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum RelationalAuthoritativeAllocationKind {
     /// One native shared storage allocation reachable through a partition.
+    /// An entity or relation payload carrier is one such allocation; the
+    /// persistent aspect backing nested in it has no locator of its own.
     PartitionPayload,
     /// The partition-state object that owns one region's payload.
     PartitionStateObject,
@@ -150,7 +152,10 @@ impl RelationalAuthoritativeAllocationObservation {
     ///
     /// Byte scope: the authoritative storage of this allocation only.
     /// Diagnostics, retention metadata, allocator bookkeeping, and optional
-    /// caches belonging to the same owner are excluded.
+    /// caches belonging to the same owner are excluded. For an entity or
+    /// relation payload carrier this is its own layout plus a checked declared
+    /// upper bound of the persistent aspect backing reachable from it; a
+    /// distinct carrier sharing that backing reports it again.
     pub const fn authoritative_bytes(self) -> u64 {
         self.authoritative_bytes
     }

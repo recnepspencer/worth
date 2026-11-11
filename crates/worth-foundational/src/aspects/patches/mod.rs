@@ -1,4 +1,6 @@
 mod application;
+#[cfg(test)]
+mod application_geometry_tests;
 mod application_retention;
 mod construction;
 mod denials;

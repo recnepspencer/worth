@@ -20,6 +20,26 @@ pub(super) struct CheckedCorrectionSource<'check, 'target, 'source, Schema, C, B
 impl<'check, 'target, 'source, Schema, C, Binding>
     CheckedCorrectionSource<'check, 'target, 'source, Schema, C, Binding>
 {
+    pub(super) fn borrow_parts(
+        &self,
+    ) -> (
+        &'check WorthQuerySelectedProductOperation<'target, Schema>,
+        &'check WorthQuerySelectedCorrectionSource<'source, Schema>,
+        &ProductBranchAncestorSelection,
+        &WorthQueryProgramSupportInterpretation,
+        Option<crate::equality_type_id::EqualityTypeId>,
+    ) {
+        (
+            self.target,
+            self.source,
+            &self.ancestry,
+            &self.interpretation,
+            self.required_root,
+        )
+    }
+    pub(super) fn target(&self) -> &'check WorthQuerySelectedProductOperation<'target, Schema> {
+        self.target
+    }
     pub(super) fn into_parts(
         self,
     ) -> (
@@ -80,10 +100,12 @@ where
         super::material::mechanism(source)?,
         worth_query_installation::facade::InstalledCorrectionMechanism::Compensation(_)
     ) {
+        let execution = phase
+            .execution_request_for(&target.application().runtime.product_runtime)
+            .map_err(|_| Denial::ForeignPhase)?;
         let facts = source
             .occurrence()
-            .commit_evidence()
-            .rebased_source_facts()
+            .facts(&execution)
             .map_err(|_| Denial::SemanticMaterialUnavailable)?;
         super::restored_support::require(target, phase, source, &facts)?;
     }
@@ -142,14 +164,9 @@ where
     C: ApplicationCorrectionBinding<Schema>,
 {
     require_selected_ancestry(target, source, &ancestry)?;
-    let retained = source
+    let association = source
         .occurrence()
-        .commit_evidence()
-        .original_authority()
-        .retained_governed_input_carrier()
-        .ok_or(Denial::SemanticMaterialUnavailable)?;
-    let association = retained
-        .correction()
+        .disclosure()
         .ok_or(Denial::UnsupportedSourceMeaning)?
         .association();
     if association.declaration().reapplication_source()
@@ -180,8 +197,6 @@ where
 {
     let original = source
         .occurrence()
-        .commit_evidence()
-        .original_authority()
         .original_program()
         .ok_or(Denial::UnsupportedSourceMeaning)?;
     let inspection = target

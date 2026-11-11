@@ -277,6 +277,38 @@ fn prepare_writer(
         .with_recovery_posture(WorthQueryProviderSessionRecoveryPosture::RecoveryRequired));
     }
     aftermath::seal(execution, provider, runtime, pending, after)?;
+    provider
+        .seal_correction_material(
+            pending
+                .application
+                .as_ref()
+                .expect("performed original remains in pending custody"),
+            execution,
+        )
+        .map_err(|cause| {
+            failure("original correction material publication remains in custody")
+                .with_correction_material_denial(cause)
+        })?;
+    if let Some(causality) = pending
+        .attempt
+        .as_ref()
+        .expect("pending original retains its attempt")
+        .aftermath_causality()
+    {
+        provider
+            .release_correction_preparation(
+                causality.prepared_correction(),
+                pending
+                    .application
+                    .as_ref()
+                    .expect("performed original remains in pending custody"),
+                execution,
+            )
+            .map_err(|cause| {
+                failure("correction material pin release remains in custody")
+                    .with_correction_material_denial(cause)
+            })?;
+    }
     Ok(())
 }
 

@@ -53,15 +53,6 @@ impl VisibilityPinAuthority<'_> {
             .map_err(crate::execution::RelationalExecutionDenialCause::StorageUnavailable)
     }
 
-    /// Resident-only admission refuses cold pinning without performing I/O.
-    #[cfg(test)]
-    pub(crate) fn resident_replay_pins(
-        &self,
-        state: SnapshotState,
-    ) -> Result<ResidentReplayPins, crate::storage::data::RelationalStorageUnavailable> {
-        self.resident_replay_pins_in(state, self.runtime.acquire_partition_edition())
-    }
-
     fn resident_replay_pins_in(
         &self,
         state: SnapshotState,

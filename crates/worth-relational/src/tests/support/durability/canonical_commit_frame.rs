@@ -1,9 +1,9 @@
-//! Deliberately resealed hostile frames, independently composing the v5 commitment.
+//! Deliberately resealed hostile frames, independently composing the v8 commitment.
 use sha2::{Digest, Sha256};
 
 pub(crate) fn reseal_canonical_commit_frame(bytes: &mut [u8]) {
     assert_eq!(&bytes[..8], b"WRTHRCCA");
-    assert_eq!(u16::from_le_bytes(bytes[8..10].try_into().unwrap()), 5);
+    assert_eq!(u16::from_le_bytes(bytes[8..10].try_into().unwrap()), 8);
     let mut leaves = [[0; 32]; 3];
     let mut seen = 0u8;
     crate::durability::canonical_commit_artifact::borrowed_payload::BorrowedPayload(&bytes[66..])
@@ -22,7 +22,7 @@ pub(crate) fn reseal_canonical_commit_frame(bytes: &mut [u8]) {
         .unwrap();
     assert_eq!(seen, 7);
     let mut digest = Sha256::new();
-    digest.update(b"worth.relational.canonical.v5\0");
+    digest.update(b"worth.relational.canonical.v8\0");
     digest.update(&bytes[10..26]);
     for leaf in leaves {
         digest.update(leaf);

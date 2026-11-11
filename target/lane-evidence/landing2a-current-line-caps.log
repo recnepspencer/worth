@@ -1,0 +1,13 @@
+command: "C:/Program Files/Git/bin/bash.exe" scripts/ci/check_workspace_rust_line_caps.sh dirty
+HEAD: 427700edd0d5d4e0437647eb8f7c7722f0018ebf
+git_status_short_empty: false
+start_utc: 2026-11-09T19:29:34.711067+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+[workspace-rust-line-caps] enforcing 400-line cap for dirty Rust files
+[workspace-rust-line-caps] PASS: checked 24 Rust files
+
+end_utc: 2026-11-09T19:29:52.199872+00:00
+exit_code: 0
+tests_passed: 0
+tests_failed: 0
+tests_ignored: 0

@@ -6,9 +6,18 @@ pub(super) fn contracts() -> Vec<Contract<'static>> {
     vec![
         Contract {
             fixture: "receipt_cannot_be_fabricated.rs",
-            errors: &[Diagnostic::Uncoded {
-                cause: "cannot construct",
-                symbols: &["RelationalChangeReceipt", "private fields"],
+            errors: &[Diagnostic::Code {
+                code: "E0451",
+                symbols: &[
+                    "RelationalChangeReceipt",
+                    "patch",
+                    "records_examined",
+                    "records_filtered_out",
+                    "consistency",
+                    "proof",
+                    "commit_identity",
+                    "private",
+                ],
             }],
         },
         Contract {

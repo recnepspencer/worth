@@ -269,7 +269,7 @@ fn demand(
         .is_some_and(|pending| Arc::ptr_eq(pending, &image))
     {
         for generation in admitted.generations.all() {
-            state.restore_generation(generation.as_ref().clone());
+            state.restore_generation_payload(generation.as_ref().clone());
         }
         state.bases.merge(&admitted.bases);
         state.cold_checkpoint = None;
@@ -278,6 +278,16 @@ fn demand(
 }
 
 impl IndexingState {
+    /// A retained payload is not a publication at its authored version.
+    pub(super) fn restore_generation_payload(
+        &mut self,
+        generation: crate::indexes::data::DerivedIndexGeneration,
+    ) {
+        self.next_generation_id = self
+            .next_generation_id
+            .max(generation.generation_id.0.saturating_add(1));
+        self.generations.insert(generation);
+    }
     pub(crate) fn demand_checkpoint_image(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -287,7 +297,7 @@ impl IndexingState {
         };
         let admitted = image.readmit(execution)?;
         for generation in admitted.generations.all() {
-            self.restore_generation(generation.as_ref().clone());
+            self.restore_generation_payload(generation.as_ref().clone());
         }
         self.bases.merge(&admitted.bases);
         self.cold_checkpoint = None;

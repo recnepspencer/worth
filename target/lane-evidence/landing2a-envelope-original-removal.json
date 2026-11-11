@@ -1,0 +1,17 @@
+{
+  "base": "1403ddb275",
+  "removed_files": [
+    "cold_envelope_lifetime.rs",
+    "cold_envelope_matrix.rs",
+    "cold_envelope_matrix/exhaustive.rs",
+    "cold_envelopes.rs",
+    "cold_invariants.rs",
+    "cold_fork_edits.rs"
+  ],
+  "partial_files": [
+    "cold_members.rs",
+    "cold_candidates.rs"
+  ],
+  "baseline_removed_rows": 7,
+  "remaining_original_cold_tests": 29
+}

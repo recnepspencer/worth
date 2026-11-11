@@ -123,6 +123,15 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
         Binding: ApplicationMutationBinding<Schema>,
         Binding::Input: Clone + Send + Sync + 'static,
     {
+        if let Err(cause) = source.admit_receiver(
+            self.runtime()
+                .runtime
+                .product_runtime
+                .owner
+                .owner_identity(),
+        ) {
+            return WorthQueryApplicationCommitOutcome::Denied(cause);
+        }
         if !source.is_action_binding::<Binding>()
             || !source.matches_input(identities.input_identity())
             || !source.requires_root(None)

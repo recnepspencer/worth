@@ -40,7 +40,10 @@ pub(in crate::domain_computation::authorization) fn retain_original_scope<Schema
 /// The encoded original input and its exact identities; the brand holds the
 /// typed shared input beside it.
 pub(super) struct ErasedOriginalInput {
-    pub(super) encoded: std::sync::Arc<dyn std::any::Any + Send + Sync>,
+    pub(super) canonical:
+        worth_query_declaration::facade::application_operation::ApplicationCanonicalInput,
+    pub(super) mutation_identity: &'static str,
+    pub(super) retained: std::sync::Arc<dyn std::any::Any + Send + Sync>,
     pub(super) program:
         Option<std::sync::Arc<crate::domain_computation::primary_graph::OriginalProgramMeaning>>,
     pub(super) identity: [u8; 32],
@@ -88,13 +91,25 @@ impl WorthQueryAdmittedOperation {
         self.data.original_inspection_disclosure.as_ref()
     }
 
-    pub(in crate::domain_computation) fn original_encoded_input(
+    pub(in crate::domain_computation) fn original_material_input(
+        &self,
+    ) -> Option<(
+        &worth_query_declaration::facade::application_operation::ApplicationCanonicalInput,
+        &'static str,
+        [u8; 32],
+    )> {
+        self.data
+            .original_input
+            .as_ref()
+            .map(|input| (&input.canonical, input.mutation_identity, input.identity))
+    }
+    pub(in crate::domain_computation) fn original_retained_input(
         &self,
     ) -> Option<&std::sync::Arc<dyn std::any::Any + Send + Sync>> {
         self.data
             .original_input
             .as_ref()
-            .map(|input| &input.encoded)
+            .map(|input| &input.retained)
     }
 
     pub(in crate::domain_computation) fn retain_original_program(

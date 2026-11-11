@@ -91,8 +91,7 @@ impl AuthoritativeRecordAspectPatch {
             CanonicalAspectStateMap::from_canonical_entries(
                 self.whole_aspect_sets
                     .iter()
-                    .map(|value| (value.key().clone(), value.clone()))
-                    .collect(),
+                    .map(|value| (value.key().clone(), value.clone())),
             ),
         ))
     }

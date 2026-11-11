@@ -30,3 +30,6 @@ impl CanonicalCommitEnvelope {
         Ok(())
     }
 }
+
+mod observation;
+pub use observation::{RelationalIntroducedSchemaObservation, RelationalOriginalInputObservation};
