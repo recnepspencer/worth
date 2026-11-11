@@ -1,4 +1,5 @@
 use std::sync::Arc;
+mod readmitted;
 
 use worth_relational::facade::history::RelationalCommitReceipt;
 use worth_runtime_world::facade::{
@@ -10,7 +11,8 @@ use worth_runtime_world::facade::{
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationReceipt;
 
 /// Descriptive identity of the exact World transition that committed a Query
-/// application. Construction requires World's permanently consumed delivery.
+/// application. Construction requires its consumed live delivery or the exact
+/// readmitted World/Native source pair; descriptive recovery grants no delivery.
 #[derive(Clone)]
 pub struct WorthQueryCommittedProductPublication {
     custody: PublicationCustody,

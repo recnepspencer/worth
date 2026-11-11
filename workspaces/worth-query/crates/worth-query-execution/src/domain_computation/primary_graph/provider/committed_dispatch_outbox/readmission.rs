@@ -8,8 +8,10 @@ impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn readmit_dispatch_outboxes(
         &self,
         execution: &ExecutionRequest<'_, '_>,
+        observation: &worth_runtime_world::facade::RuntimeWorldObservationPort,
+        inspection: &worth_runtime_world::facade::RuntimeWorldInspectionPort,
     ) -> Result<bool, Denial> {
-        self.graph.with_runtime(execution, |runtime| {
+        let (inbound, candidates) = self.graph.with_runtime(execution, |runtime| {
             let (_, basis) = runtime
                 .observe_branch(&runtime.main_branch_identity())
                 .map_err(|_| Denial::ExactCommitUnavailable)?;
@@ -18,21 +20,23 @@ impl WorthQueryPrimaryGraphProvider {
                 .project_observation(&basis.observation())
                 .map_err(|_| Denial::ExactCommitUnavailable)?;
             self.readmit_outbox_view(execution, &view)
-        })
+        })?;
+        self.readmit_dispatch_correlation_index(execution, observation, inspection, candidates)?;
+        Ok(inbound)
     }
 
     fn readmit_outbox_view(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         view: &VisibilityProjectionView,
-    ) -> Result<bool, Denial> {
+    ) -> Result<(bool, Vec<super::recovered::RecoveredDispatchCandidate>), Denial> {
         let layout = self.graph.layout.provider_dispatch_outbox();
         let outboxes = view
             .bounded_entities_of_kind(execution, layout.entity_kind, usize::MAX)
             .map_err(read_denial)?
             .map_err(|_| Denial::Malformed)?;
         if outboxes.records().is_empty() {
-            return Ok(false);
+            return Ok((false, Vec::new()));
         }
         let binding_layout = self.graph.layout.provider_idempotency();
         let bindings = view
@@ -86,6 +90,10 @@ impl WorthQueryPrimaryGraphProvider {
                 }
                 let required = required_fields(layout)?;
                 let mut inbound = false;
+                let mut candidates = Vec::new();
+                candidates
+                    .try_reserve_exact(outboxes.records().len())
+                    .map_err(|_| Denial::Malformed)?;
                 for row in outboxes.records() {
                     context.checkpoint(1).map_err(stop)?;
                     let aspect = row
@@ -132,8 +140,13 @@ impl WorthQueryPrimaryGraphProvider {
                     );
                     // Do not short-circuit: a later malformed row must still refuse service.
                     inbound |= rebound.inbound()?.is_some();
+                    candidates.push(super::recovered::RecoveredDispatchCandidate {
+                        version: row.created_at_version,
+                        entity: row.entity_id,
+                        expected: rebound.readmitted_record()?,
+                    });
                 }
-                Ok(inbound)
+                Ok((inbound, candidates))
             })
             .map_err(|cause| read_denial(cause.into()))?
             .0

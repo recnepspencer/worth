@@ -1,6 +1,7 @@
 //! External dispatch custody on a real Directory Home: the attempt is durable
 //! before the contact and its one observation is durable when the dispatch
 //! returns. Every recorded fate here is issued by the actual Home.
+mod recovered_correlation;
 mod recovery_admission;
 mod source_controls;
 use super::*;

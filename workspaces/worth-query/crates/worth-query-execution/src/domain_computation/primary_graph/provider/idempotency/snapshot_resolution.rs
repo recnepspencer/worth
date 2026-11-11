@@ -17,7 +17,7 @@ pub(in crate::domain_computation::primary_graph::provider) mod original_binding;
 mod original_receipt;
 pub(in crate::domain_computation::primary_graph::provider) use original_receipt::RecordedOriginalBinding;
 mod key_observation;
-mod source_denial;
+pub(in crate::domain_computation::primary_graph::provider) mod source_denial;
 mod source_receipt;
 pub(in crate::domain_computation::primary_graph::provider) use key_observation::observe;
 pub use original_receipt::{

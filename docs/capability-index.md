@@ -1907,3 +1907,13 @@ view borrows its immutable envelope, performs no loading or schema copying,
 and grants no currentness, schema installation or readmission authority.
 Its schema view exposes stored carrier/root/descriptor metadata without a wire
 constructor. Applications continue through Query's two audience facades.
+
+### Original dispatch lookup by correlation
+
+`WorthQueryPrimaryGraphApplicationRuntime::observe_committed_dispatch_outbox_by_correlation`
+uses an advancement phase and a Query correlation from the emitted outbox. It
+returns read-only evidence after checking the exact original Native row and World
+publication. Directory Homes rebuild recovered correlation selectors before
+service. Reading one does not contact the external owner or recreate a live receipt
+or fresh delivery. Missing, ambiguous and unavailable sources return typed denials.
+Inbound completion remains separately admitted by its custody requirements.

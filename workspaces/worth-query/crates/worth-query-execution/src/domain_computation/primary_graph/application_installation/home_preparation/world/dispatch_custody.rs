@@ -16,7 +16,11 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         if application
             .runtime
             .primary_provider
-            .readmit_dispatch_outboxes(execution)
+            .readmit_dispatch_outboxes(
+                execution,
+                &application.runtime.product_runtime.owner.observation_port(),
+                &application.runtime.product_runtime.owner.inspection_port(),
+            )
             .map_err(Denial::DispatchOutbox)?
         {
             application.runtime.product_runtime.admit_directory_capability(

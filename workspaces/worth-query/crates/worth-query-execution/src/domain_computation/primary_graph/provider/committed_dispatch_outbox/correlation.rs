@@ -11,6 +11,8 @@ impl WorthQueryPrimaryGraphProvider {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         correlation: &ExternalEffectCorrelationIdentity,
+        observation: &worth_runtime_world::facade::RuntimeWorldObservationPort,
+        inspection: &worth_runtime_world::facade::RuntimeWorldInspectionPort,
     ) -> Result<WorthQueryCommittedDispatchOutboxObservation, Denial> {
         let outstanding = self.outstanding_dispatch.posture(correlation);
         if matches!(
@@ -26,11 +28,24 @@ impl WorthQueryPrimaryGraphProvider {
             .observe_correlation(correlation)
             .map_err(|()| Denial::AmbiguousCorrelation)?;
         let Some(committed) = committed else {
+            if let Some(recovered) = self.recovered_dispatch_for_correlation(
+                execution,
+                correlation,
+                observation,
+                inspection,
+            )? {
+                if let Some(OutstandingDispatchPosture::Committed(expected)) = outstanding
+                    && recovered.commit_reference().commit_id != expected
+                {
+                    return Err(Denial::CommitMismatch);
+                }
+                return Ok(recovered);
+            }
             return match outstanding {
                 Some(OutstandingDispatchPosture::Committed(_)) => {
                     Err(Denial::CommittedIndexUnavailable)
                 }
-                _ => Err(Denial::Missing),
+                Some(OutstandingDispatchPosture::PendingPublication) | None => Err(Denial::Missing),
             };
         };
         if let Some(OutstandingDispatchPosture::Committed(expected)) = outstanding

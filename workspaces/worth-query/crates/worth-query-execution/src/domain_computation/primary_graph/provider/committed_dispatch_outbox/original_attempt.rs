@@ -67,7 +67,8 @@ impl WorthQueryPrimaryGraphProvider {
             let answer = CommittedOutboxRead {
                 runtime,
                 layout: self.graph.layout.provider_dispatch_outbox(),
-                binding,
+                record: binding.record(),
+                record_ref: binding.record_ref(),
                 expected_commit,
                 expected_runtime,
                 retained_basis: lease,

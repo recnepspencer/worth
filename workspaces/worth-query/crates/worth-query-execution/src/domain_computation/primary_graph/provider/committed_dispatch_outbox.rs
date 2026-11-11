@@ -18,6 +18,7 @@ mod correlation;
 mod original_attempt;
 mod original_row;
 mod readmission;
+pub(super) mod recovered;
 pub(crate) mod restoration;
 mod work;
 
@@ -230,7 +231,8 @@ impl WorthQueryPrimaryGraphProvider {
             CommittedOutboxRead {
                 runtime,
                 layout: &layout,
-                binding,
+                record: binding.record(),
+                record_ref: binding.record_ref(),
                 expected_commit: &expected_commit,
                 expected_runtime,
                 retained_basis: retained_basis.lease(),
@@ -276,7 +278,26 @@ where
     ) -> Result<WorthQueryCommittedDispatchOutboxObservation, Denial> {
         self.runtime
             .primary_provider
-            .committed_dispatch_outbox_for_correlation(execution, correlation)
+            .committed_dispatch_outbox_for_correlation(
+                execution,
+                correlation,
+                &self.runtime.product_runtime.owner.observation_port(),
+                &self.runtime.product_runtime.owner.inspection_port(),
+            )
+    }
+
+    /// Selects a candidate by correlation and verifies its exact original
+    /// Native row and World publication. This is read-only owner evidence;
+    /// it grants neither dispatch nor fresh publication delivery.
+    pub fn observe_committed_dispatch_outbox_by_correlation(
+        &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        correlation: &crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity,
+    ) -> Result<WorthQueryCommittedDispatchOutboxObservation, Denial> {
+        let execution = phase
+            .execution_request_for(&self.runtime.product_runtime)
+            .map_err(|_| Denial::ForeignPhase)?;
+        self.observe_committed_dispatch_outbox_for_correlation(&execution, correlation)
     }
 
     /// Reads this receipt's outbox from a fresh provider-owned Relational view.
