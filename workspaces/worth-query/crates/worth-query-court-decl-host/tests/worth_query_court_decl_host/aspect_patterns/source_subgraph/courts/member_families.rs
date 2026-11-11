@@ -5,6 +5,7 @@ use super::*;
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 use worth_relational::facade::transactions::RecordRef;
 mod owner_fields;
+mod reapplication;
 
 fn selection(members: &[&str], operand: Option<&str>, notes: &[&str]) -> local_member::Delete {
     local_member::Delete {

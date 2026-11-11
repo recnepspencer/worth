@@ -2,6 +2,7 @@
 use super::*;
 use crate::domain_computation::application_aftermath::WorthQueryCorrectionLineageBinding;
 use worth_query_declaration::facade::application_operation::ApplicationMutationInputScope;
+mod live_outputs;
 
 pub(super) fn selected_lineage<S>(
     alternative: &WorthQuerySelectedCorrectionAlternative<'_, S>,
@@ -75,6 +76,7 @@ where
     {
         return Err(Denial::ActiveReversalConsumed);
     }
+    live_outputs::require(target, execution, active)?;
     let checked = super::compatibility::require_reapplication_program::<S, C>(
         target,
         source,
