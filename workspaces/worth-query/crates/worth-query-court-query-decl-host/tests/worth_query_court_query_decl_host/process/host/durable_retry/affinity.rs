@@ -2,6 +2,11 @@
 use super::*;
 use worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial as Denial;
 use worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyResolutionDenialKind;
+use worth_query_host::facade::product::{
+    WorthQueryProductBranch, WorthQueryProductBranchCreateError,
+    WorthQueryProductBranchCreationContinuation, WorthQueryProductBranchCreationRecovery,
+    WorthQueryProductBranchRecoveryDenial,
+};
 
 #[test]
 fn inherited_directory_key_refuses_a_sibling_product_affinity() {
@@ -12,6 +17,7 @@ fn inherited_directory_key_refuses_a_sibling_product_affinity() {
     let (_, live) = scope();
     let original = set(home.runtime(), &live, 0x7375626c696e67, 8).unwrap();
     assert!(matches!(original, Outcome::Committed { result: 8, .. }));
+    let (_, live) = scope();
     let application = home.runtime().runtime();
     let sibling = application
         .with_application_advancement(&live, |phase| {
@@ -27,14 +33,12 @@ fn inherited_directory_key_refuses_a_sibling_product_affinity() {
         })
         .unwrap()
         .unwrap_or_else(|cause| match cause {
-            worth_query_host::facade::product::WorthQueryProductBranchCreateError::ProductUnpublished(
-                recovery,
-            ) => panic!(
-                "the actual directory World creates the exact sibling; retained original: {:?}",
-                recovery.inspect()
-            ),
+            WorthQueryProductBranchCreateError::ProductUnpublished(original) => {
+                finish_sibling_creation(&home, original)
+            }
             other => panic!("the actual directory World creates the exact sibling: {other:?}"),
         });
+    let (_, live) = scope();
     let principal =
         identity::inspection_authentication::authenticate(application.installed_schema(), &live);
     let retry = home
@@ -63,6 +67,45 @@ fn inherited_directory_key_refuses_a_sibling_product_affinity() {
     assert_eq!(balance(home.runtime(), &live), 8);
     drop(original);
     drop(home);
+}
+
+fn finish_sibling_creation(
+    home: &worth_query_host::facade::WorthQueryApplicationHome<
+        fixture::schema::HomeIdentitySchema,
+        fixture::HomeProgram,
+    >,
+    mut original: WorthQueryProductBranchCreationRecovery,
+) -> WorthQueryProductBranch {
+    let application = home.runtime().runtime();
+    let deadline = std::time::Instant::now() + Duration::from_secs(120);
+    loop {
+        assert!(
+            std::time::Instant::now() < deadline,
+            "the original sibling creation must settle"
+        );
+        let (_, live) = scope();
+        let answer = application
+            .with_application_advancement(&live, |phase| original.continue_in_advancement(&phase))
+            .expect("the Home admits continuation of the original sibling");
+        match answer {
+            Ok(WorthQueryProductBranchCreationContinuation::Performed(branch)) => return branch,
+            Ok(WorthQueryProductBranchCreationContinuation::NoEffect(cause)) => {
+                panic!("the original sibling creation refused: {cause:?}")
+            }
+            Ok(WorthQueryProductBranchCreationContinuation::ReleasedOriginal(cause)) => {
+                panic!("the original sibling creation released: {cause:?}")
+            }
+            Err(failure) => {
+                assert_eq!(
+                    failure.denial(),
+                    WorthQueryProductBranchRecoveryDenial::Busy,
+                    "original sibling continuation: {failure:?}"
+                );
+                original = failure.into_recovery();
+                std::thread::yield_now();
+            }
+        }
+    }
 }
 
 #[test]
