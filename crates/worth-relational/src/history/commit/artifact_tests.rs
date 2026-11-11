@@ -98,7 +98,7 @@ fn recovery_relinks_an_already_sealed_payload_without_reencoding_or_weakening_ro
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = crate::tests::support::runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "preencoded-recovery-root");
     let root = runtime
         .history

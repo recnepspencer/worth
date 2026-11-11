@@ -7,7 +7,7 @@ use crate::tests::support::*;
 fn original(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> (RelationalNativeCheckpoint, [CheckpointRecordIdentity; 2]) {
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     let entity = create_entity(execution, &runtime, "inspected-record");
     let target = create_entity(execution, &runtime, "inspected-target");
     let relation = create_relation(execution, &runtime, entity, target, "inspected-link");
@@ -186,7 +186,7 @@ fn inspection_refuses_unknown_root_allocator_and_row_fields() {
 fn the_live_census_includes_divergent_retained_branch_roots() {
     let host = crate::test_execution_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     let mut expected = vec![create_entity(&execution, &runtime, "shared-root")];
     for branch in ["left-inspection", "right-inspection"] {
         let branch_id = create_branch_from_main(&runtime, branch);

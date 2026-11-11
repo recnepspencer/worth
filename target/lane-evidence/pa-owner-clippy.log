@@ -1,0 +1,29 @@
+command: cargo clippy -p worth-relational --all-targets
+HEAD: 0dadb5c0ba823ea04fe14e0433d0369de182576b
+git_status_short_empty: false
+start_utc: 2026-11-11T01:30:35.622567+00:00
+    Checking worth-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-relational)
+    Checking worth-testkit-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-testkit-relational)
+error[E0432]: unresolved import `tests::native_strategy_fixtures::persisted_intent_runtime`
+   --> crates\worth-relational\src\commit_strategies\facade.rs:117:71
+    |
+117 |     execute_persisted_intent_strategy_commit, lowered_commit_fixture, persisted_intent_runtime,
+    |                                                                       ^^^^^^^^^^^^^^^^^^^^^^^^ no `persisted_intent_runtime` in `commit_strategies::facade::tests::native_strategy_fixtures`
+
+error[E0425]: cannot find function `intent_strategy_runtime` in module `crate::commit_strategies::facade`
+   --> crates\worth-relational\src\branch\root_authoritative_payload_tests.rs:154:57
+    |
+154 |     let mut runtime = crate::commit_strategies::facade::intent_strategy_runtime();
+    |                                                         ^^^^^^^^^^^^^^^^^^^^^^^ not found in `crate::commit_strategies::facade`
+    |
+note: function `crate::commit_strategies::facade::tests::native_strategy_fixtures::intent_strategy_runtime` exists but is inaccessible
+   --> crates\worth-relational\src\commit_strategies\facade_tests\native_strategy_fixtures.rs:144:1
+    |
+144 | pub(crate) fn intent_strategy_runtime() -> crate::facade::runtime::RelationalRuntime {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not accessible
+
+Some errors have detailed explanations: E0425, E0432.
+For more information about an error, try `rustc --explain E0425`.
+error: could not compile `worth-relational` (lib test) due to 2 previous errors
+end_utc: 2026-11-11T01:31:38.565450+00:00
+exit_code: 101

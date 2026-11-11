@@ -141,24 +141,19 @@ impl CommitStrategyExecutor for PlanningExecutor {
     }
 }
 
-pub(crate) fn persisted_intent_runtime(
-    medium: std::sync::Arc<crate::tests::support::TestDurableMedium>,
-    include_executor: bool,
-) -> crate::facade::runtime::RelationalRuntime {
+pub(crate) fn intent_strategy_runtime() -> crate::facade::runtime::RelationalRuntime {
     let descriptor = IntentReconciliationStrategy::descriptor(CommitStrategyId(161));
-    let mut builder = RelationalRuntimeBuilder::new()
+    let builder = RelationalRuntimeBuilder::new()
         .schema_registry(strategy_schema_registry())
         .commit_strategy(
             CommitStrategyRegistration::new(descriptor.clone())
                 .expect("intent strategy registration"),
         );
-    if include_executor {
-        builder = builder.commit_strategy_executor(
-            IntentReconciliationStrategy::execution_registration(&descriptor),
-        );
-    }
     builder
-        .build_durable(medium.attachment())
+        .commit_strategy_executor(IntentReconciliationStrategy::execution_registration(
+            &descriptor,
+        ))
+        .build()
         .expect("valid native runtime configuration")
 }
 

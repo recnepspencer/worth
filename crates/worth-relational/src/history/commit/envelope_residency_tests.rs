@@ -42,7 +42,7 @@ fn selected(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     failure: Option<Cause>,
 ) -> (RelationalCommitIndexEntry, Arc<Source>) {
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "indexed-envelope-record");
     let commit = runtime
         .history

@@ -114,5 +114,5 @@ mod tests;
 
 #[cfg(test)]
 pub(crate) use tests::native_strategy_fixtures::{
-    execute_persisted_intent_strategy_commit, lowered_commit_fixture, persisted_intent_runtime,
+    execute_persisted_intent_strategy_commit, intent_strategy_runtime, lowered_commit_fixture,
 };

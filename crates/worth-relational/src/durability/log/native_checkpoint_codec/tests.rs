@@ -148,7 +148,7 @@ fn member_directory_preserves_divergent_sibling_roots_and_pinned_reader() {
 fn current_manifest_deduplicates_equal_region_members_and_round_trips() {
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "manifest-roundtrip");
     let native = runtime
         .durability_authority()
@@ -191,7 +191,7 @@ fn current_manifest_deduplicates_equal_region_members_and_round_trips() {
 fn current_directory_rejects_damaged_duplicate_and_missing_members() {
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "manifest-damage");
     let native = runtime
         .durability_authority()
@@ -236,7 +236,7 @@ fn current_directory_rejects_damaged_duplicate_and_missing_members() {
 fn native_capture_sections_count_current_directory_values() {
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "manifest-sections");
     let native = runtime
         .durability_authority()
@@ -316,7 +316,7 @@ fn native_capture_sections_count_current_directory_values() {
 fn chk6_and_retired_inner_partition_grammars_are_refused() {
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let runtime = durable_runtime_with_test_schema();
+    let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "retired-checkpoint");
     let native = runtime
         .durability_authority()
