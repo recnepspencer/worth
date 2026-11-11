@@ -55,7 +55,7 @@ fn join_coordinates(
             .ok_or_else(|| Denial::MissingWorldOriginal {
                 record: fact.record.clone(),
             })?;
-        if original.relational_commit() != coordinate.relational().commit_id {
+        if original.relational_commit() != Some(coordinate.relational().commit_id) {
             return Err(Denial::WorldOriginalMismatch {
                 record: fact.record.clone(),
             });
@@ -78,7 +78,7 @@ fn original_for_commit<'a>(
 ) -> Result<WorldOriginalObservation<'a>, Denial> {
     let mut matches = originals
         .original_observations()
-        .filter(|original| original.relational_commit() == commit);
+        .filter(|original| original.relational_commit() == Some(commit));
     let original = matches.next().ok_or_else(|| Denial::MissingWorldOriginal {
         record: record.clone(),
     })?;

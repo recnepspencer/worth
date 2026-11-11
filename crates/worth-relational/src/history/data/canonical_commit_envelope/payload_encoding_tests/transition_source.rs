@@ -10,29 +10,30 @@ pub(super) fn commit(
     proposed: ProposedSchemaTransition,
     policy: Option<SchemaReconciliationPolicy>,
 ) -> SharedCanonicalCommitEnvelope {
-    let original = crate::test_execution_policy::serial_request();
-    let execution = worth_execution::ExecutionRequest::serial(&original);
-    let mut runtime = runtime_with_declared_aspect_schema_profile(
-        crate::facade::config::RelationalRuntimeProfile::CertificationCore,
-        crate::config::data::CascadeDeletePolicy::CascadeDeleteRelations,
-    );
-    let first = create_entity_outcome(&execution, &runtime, "codec-predecessor");
-    release_test_commit_snapshot(&runtime, &first);
-    drop(first);
-    runtime.set_schema_registry_for_test(registry.clone());
-    let options = test_owner_transaction_validation_input_for_main(&runtime)
-        .with_schema_transition(proposed, policy);
-    let mut transaction = runtime
-        .begin_branch_transaction(options.basis(), options.intent().clone())
-        .unwrap();
-    transaction
-        .push_batch(
-            batch_create("codec-transition"),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    let result = transaction.commit(&execution, &runtime).unwrap();
-    let envelope = result.publication().envelope.clone();
-    release_test_commit_snapshot(&runtime, &result);
-    envelope
+    with_memory_record_publication(
+        declared_aspect_schema_registry(
+            crate::config::data::CascadeDeletePolicy::CascadeDeleteRelations,
+        ),
+        "codec-predecessor",
+        |world| {
+            let mut runtime = world.runtime;
+            let execution = world.execution;
+            runtime.set_schema_registry_for_test(registry.clone());
+            let options = test_owner_transaction_validation_input_for_main(&runtime)
+                .with_schema_transition(proposed, policy);
+            let mut transaction = runtime
+                .begin_branch_transaction(options.basis(), options.intent().clone())
+                .unwrap();
+            transaction
+                .push_batch(
+                    batch_create("codec-transition"),
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap();
+            let result = transaction.commit(&execution, &runtime).unwrap();
+            let envelope = result.publication().envelope.clone();
+            release_test_commit_snapshot(&runtime, &result);
+            envelope
+        },
+    )
 }

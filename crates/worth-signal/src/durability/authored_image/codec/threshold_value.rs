@@ -58,6 +58,10 @@ pub(super) fn write(out: &mut Write<'_>, value: &AspectValue) -> Result<(), Deni
                 out.byte(0)?;
                 out.text(value)
             }
+            InternedString::Stored(value) => {
+                out.byte(0)?;
+                out.text(value.as_str())
+            }
             InternedString::Symbol(symbol) => {
                 out.byte(1)?;
                 out.small_number(symbol.0)

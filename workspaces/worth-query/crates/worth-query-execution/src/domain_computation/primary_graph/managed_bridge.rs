@@ -12,6 +12,7 @@ use worth_runtime_bridge::facade::{
     SubscriptionSliceKind, TruthDeltaSurfaceKind, TruthPatchScope, TruthPatchTargetSelector,
 };
 
+pub(crate) mod causal_reporting;
 pub(in crate::domain_computation) mod conditional_execution;
 pub(in crate::domain_computation) mod conditional_owner;
 pub(in crate::domain_computation::primary_graph) mod home_definition;

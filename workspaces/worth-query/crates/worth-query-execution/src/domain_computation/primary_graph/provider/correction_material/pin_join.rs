@@ -74,7 +74,9 @@ pub(super) fn admit(
             .original_observations()
             .filter(|original| original.identity() == commit);
         let native = observed.next().ok_or(Denial::TargetChanged)?;
-        if observed.next().is_some() || native.relational_commit() != target.relational.commit_id {
+        if observed.next().is_some()
+            || native.relational_commit() != Some(target.relational.commit_id)
+        {
             return Err(Denial::TargetChanged);
         }
         match row.owner {

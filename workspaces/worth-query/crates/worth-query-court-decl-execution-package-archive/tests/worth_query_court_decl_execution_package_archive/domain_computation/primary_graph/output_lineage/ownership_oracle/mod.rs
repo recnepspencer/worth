@@ -98,7 +98,12 @@ include!("../../../../../../../worth-query-certification/fixtures/consumer_entry
 /// Reuse the real installed MODE2 producer when another owner needs its evidence.
 pub(in crate::domain_computation::primary_graph) fn with_genuine_native_observation<T>(
     inspect: impl FnOnce(
-        &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
+        &dyn Fn(
+            worth_runtime_bridge::facade::BridgeConditionalCausalEnvelopeRequest,
+        ) -> Result<
+            worth_runtime_bridge::facade::BridgeCausalExplanationEnvelope,
+            worth_query_execution::facade::causal_inspection::WorthQueryBridgeCausalReportingDenial,
+        >,
         &worth_runtime_bridge::facade::BridgeConditionalCausalObservation,
     ) -> T,
 ) -> T {
@@ -109,8 +114,13 @@ pub(in crate::domain_computation::primary_graph) fn with_genuine_native_observat
         .unwrap()
         .causal_observation_for_test()
         .unwrap();
-    let owner = runtime.runtime_for_test().bridge_for_test().conditional();
-    inspect(&owner, observation)
+    let report = |request| {
+        runtime
+            .runtime_for_test()
+            .bridge_for_test()
+            .assemble_native_causal_report(request)
+    };
+    inspect(&report, observation)
 }
 
 #[path = "admission/mod.rs"]

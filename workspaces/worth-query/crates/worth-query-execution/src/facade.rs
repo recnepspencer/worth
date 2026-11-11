@@ -18,6 +18,7 @@ pub mod evidence_identity {
 #[doc(hidden)]
 pub mod causal_inspection {
     pub use crate::domain_computation::primary_graph::causal_inspection::*;
+    pub use crate::domain_computation::primary_graph::managed_bridge::causal_reporting::WorthQueryBridgeCausalReportingDenial;
 }
 
 /// Fresh application inspection; only its supported result and request vocabulary.

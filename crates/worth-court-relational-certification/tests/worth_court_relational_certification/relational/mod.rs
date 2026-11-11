@@ -16,8 +16,6 @@ mod compound_publication;
 mod materialization;
 mod validated_proposal_memory;
 
-mod restoration_header;
-
 mod predecessor_basis;
 
 mod bulk_work_account;

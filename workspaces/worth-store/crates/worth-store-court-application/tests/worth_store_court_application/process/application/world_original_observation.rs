@@ -241,7 +241,7 @@ fn protected_original_metadata_keeps_native_association_and_ancestry_after_grace
     for (original, (commit, predecessor, native)) in originals.iter().zip(&reference) {
         assert_eq!(original.identity().ordinal(), *commit);
         assert_eq!(original.predecessor().ordinal(), *predecessor);
-        assert_eq!(original.relational_commit(), *native);
+        assert_eq!(original.relational_commit(), Some(*native));
         assert_eq!(
             original.branch().owner(),
             fixture.home.world().owner_identity().durable().unwrap()
@@ -276,7 +276,7 @@ fn protected_original_metadata_keeps_native_association_and_ancestry_after_grace
     for (original, (commit, predecessor, native)) in originals.iter().zip(&reference) {
         assert_eq!(original.identity().ordinal(), *commit);
         assert_eq!(original.predecessor().ordinal(), *predecessor);
-        assert_eq!(original.relational_commit(), *native);
+        assert_eq!(original.relational_commit(), Some(*native));
         assert!(history
             .original_is_ancestor_of(original, selected.selected_commit(), &execution)
             .unwrap());

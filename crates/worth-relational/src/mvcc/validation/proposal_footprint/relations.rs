@@ -152,7 +152,7 @@ impl ValidatedRelationalProposal {
                 if !(members.is_empty() && member_kinds.is_empty())
                     && let RecordRef::Entity(entity) = fragment.target
                     && fragment.structural_change == crate::publication::patch::data::RecordStructuralChange::Created {
-                    let partition = self.proposed_mutation.state.get_current_partition(entity.partition_id);
+                    let partition = self.state.proposed_mutation.state.get_current_partition(entity.partition_id);
                     if let Some(kind) = partition.as_ref().and_then(|partition| partition.entity_arena().get(&entity)).filter(|row| row.is_live()).and_then(|row| row.kind_id()) {
                         self.project_restored_member(entity, kind, members, member_kinds, &mut restored_entities, &mut member_refusal, context)?;
                     }

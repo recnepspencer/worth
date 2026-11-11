@@ -11,6 +11,7 @@ use crate::branch::{
     RelationalForkTargetReservation,
 };
 use crate::history::data::BranchId;
+use crate::runtime::BranchTransitionRecordError;
 
 type ForkStop = RelationalBranchTransitionStop<RelationalForkDenial>;
 use super::publication::with_basis;
@@ -178,7 +179,8 @@ impl RelationalForkPort {
         step: &S,
         target_branch: BranchId,
         source_branch: &BranchId,
-    ) -> Result<RelationalForkOutcome, ForkFailure<S::Stop>> {
+    ) -> Result<RelationalForkOutcome, BranchTransitionRecordError<RelationalForkDenial, S::Stop>>
+    {
         let denied = BranchTransitionRecordError::Denied;
         let (_, source) = self.observe_fork_source(source_branch).map_err(denied)?;
         let reservation = self.reserve_fork_target(target_branch).map_err(denied)?;

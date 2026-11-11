@@ -225,46 +225,9 @@ fn original_input_denial(
         Stop::Durability(_) | Stop::AdmissionImage(_) => {
             RuntimeWorldBranchAdmissionDenial::OwnerUnavailable
         }
-        Stop::Request(cause) => original_request_denial(cause),
-        Stop::Content(cause) => original_request_denial(cause.into_execution_cause()),
-    }
-}
-
-fn original_request_denial(
-    cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
-) -> RuntimeWorldBranchAdmissionDenial {
-    use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
-    match cause {
-        Cause::DeadlineElapsed => RuntimeWorldBranchAdmissionDenial::DeadlineBeforeEffect,
-        Cause::Cancelled | Cause::NestedStopped => {
-            RuntimeWorldBranchAdmissionDenial::CancelledBeforeEffect
-        }
-        Cause::PolicyMemoryExhausted { .. }
-        | Cause::ProcessMemoryExhausted { .. }
-        | Cause::DeclaredMemoryExhausted { .. }
-        | Cause::ChargedBytesOverflow
-        | Cause::ResultCapacityExceeded
-        | Cause::AllocationFailed
-        | Cause::ScratchCapacityExceeded
-        | Cause::MemoryOverflow => RuntimeWorldBranchAdmissionDenial::CapacityExhausted,
-        Cause::Content(_)
-        | Cause::ContentInconsistency
-        | Cause::HistoricalVisibility(_)
-        | Cause::ProjectionContract(_)
-        | Cause::StorageUnavailable(_)
-        | Cause::WorkerLimitExceedsParent
-        | Cause::MemoryLimitExceedsParent
-        | Cause::WorkLimitExceedsParent
-        | Cause::UnrelatedNestedLease
-        | Cause::NoActiveExecutionScope
-        | Cause::EquivalenceContractUnavailable
-        | Cause::WorkCounterOverflow
-        | Cause::AccountingUnavailable
-        | Cause::WorkExhausted
-        | Cause::WorkerFailed
-        | Cause::UncheckedCustomKernel
-        | Cause::ExpectedIdentitiesNotCanonical => {
-            RuntimeWorldBranchAdmissionDenial::OwnerUnavailable
+        Stop::Request(cause) => super::super::super::native_fork_denial::execution_denial(cause),
+        Stop::Content(cause) => {
+            super::super::super::native_fork_denial::execution_denial(cause.into_execution_cause())
         }
     }
 }

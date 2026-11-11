@@ -52,7 +52,7 @@ fn cascade<T>(
                 "relations" => {
                     vector::<(RelationId, RelationId)>(value, request, |_| Ok(0.into()))?
                 }
-                "anchor" | "birth" | "retirement" | "original_anchor" => 0.into(),
+                "anchor" | "birth" | "retirement" | "original_anchor" | "owned_members" => 0.into(),
                 _ => return Err(Refusal::NonCanonicalPayload),
             };
             add(&mut bytes, nested)

@@ -49,8 +49,7 @@ impl PreparedAuthoredCorrection {
         }
         source
             .occurrence()
-            .commit_evidence()
-            .output_correspondence()
+            .correspondence()
             .require_source_binding::<C::Source>()
             .map_err(|cause| {
                 Denial::SourceOutput(

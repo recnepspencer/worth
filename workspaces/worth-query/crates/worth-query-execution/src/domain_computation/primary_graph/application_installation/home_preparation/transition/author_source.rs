@@ -128,7 +128,7 @@ impl<Schema: ApplicationSchemaComposition, Program>
             admitted,
             layout,
             receipt,
-            self.predecessor_program_support().1,
+            self.predecessor_program_roster(),
             observation,
             inspection,
         )

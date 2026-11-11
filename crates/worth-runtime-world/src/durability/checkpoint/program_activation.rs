@@ -99,9 +99,12 @@ impl WorldProgramActivationHistoryEntry<'_> {
                 program_revision, ..
             } => *program_revision,
             WorldRecord::OpenAttempt(open) => open.program_revision,
+            WorldRecord::BranchCreated(created) => created.intent.program_revision,
             WorldRecord::Owner { .. }
             | WorldRecord::Occurrence { .. }
             | WorldRecord::Released { .. }
+            | WorldRecord::CreationIntent(_)
+            | WorldRecord::CreationReleased { .. }
             | WorldRecord::Continued { .. } => {
                 unreachable!("only admitted origins/opens own history entries")
             }
@@ -118,6 +121,7 @@ impl WorldProgramActivationHistoryEntry<'_> {
             WorldRecord::Branch {
                 program_revision, ..
             } => Ok(*program_revision),
+            WorldRecord::BranchCreated(created) => Ok(created.intent.program_revision),
             WorldRecord::OpenAttempt(open) => match &self.binding.lineage {
                 Some(lineage) => lineage.recorded_activation_for_original(
                     &open.association,
@@ -129,6 +133,8 @@ impl WorldProgramActivationHistoryEntry<'_> {
             WorldRecord::Owner { .. }
             | WorldRecord::Occurrence { .. }
             | WorldRecord::Released { .. }
+            | WorldRecord::CreationIntent(_)
+            | WorldRecord::CreationReleased { .. }
             | WorldRecord::Continued { .. } => {
                 unreachable!("only admitted origins/opens own history entries")
             }
@@ -138,9 +144,12 @@ impl WorldProgramActivationHistoryEntry<'_> {
         match &self.head.program_record().record {
             WorldRecord::Branch { .. } => None,
             WorldRecord::OpenAttempt(open) => Some(open.expected.commit),
+            WorldRecord::BranchCreated(created) => Some(created.intent.source.commit),
             WorldRecord::Owner { .. }
             | WorldRecord::Occurrence { .. }
             | WorldRecord::Released { .. }
+            | WorldRecord::CreationIntent(_)
+            | WorldRecord::CreationReleased { .. }
             | WorldRecord::Continued { .. } => {
                 unreachable!("only admitted origins/opens own history entries")
             }

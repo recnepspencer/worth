@@ -101,32 +101,6 @@ impl<Schema: ApplicationSchemaComposition, Program>
         }
     }
 
-    pub(super) fn predecessor_program_support(
-        &self,
-    ) -> (
-        &worth_query_installation::facade::WorthQueryInstalledApplicationSchema<Schema>,
-        &worth_query_installation::facade::WorthQueryProgramSupportRoster<Schema>,
-    ) {
-        (&self.state.installed, &self.state.support.roster)
-    }
-
-    pub(super) fn predecessor_activation(
-        &self,
-    ) -> (
-        &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
-        &WorthQueryProgramActivationCell,
-    ) {
-        (&self.state.support.initial_revision, &self.state.activation)
-    }
-
-    pub(super) fn predecessor_native_meaning(
-        &self,
-    ) -> (
-        &super::super::super::schema_layout::WorthQueryPrimaryGraphLayout,
-        &RelationalInitialSchemaInstallationReceipt,
-    ) {
-        (&self.schema.layout, &self.schema.receipt)
-    }
     pub fn home_bridge_definition(
         &self,
     ) -> Result<

@@ -188,6 +188,10 @@ impl RetainedQueryDurablePreparation {
 impl std::fmt::Debug for QueryDurablePreparationDenial {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::OriginalMeaning(cause) => f.debug_tuple("OriginalMeaning").field(cause).finish(),
+            Self::CorrectionMaterial(cause) => {
+                f.debug_tuple("CorrectionMaterial").field(cause).finish()
+            }
             Self::Request(cause) => f.debug_tuple("Request").field(cause).finish(),
             Self::Candidate(cause) => f.debug_tuple("Candidate").field(cause).finish(),
             Self::Prerequisite(cause) => f.debug_tuple("Prerequisite").field(cause).finish(),

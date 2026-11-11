@@ -26,18 +26,6 @@ impl CanonicalCommitEnvelopeBody {
         allow_empty: bool,
         context: &mut MapKernelContext<'_, '_>,
     ) -> Result<(), Stop> {
-        let before = super::header_work::begin(self, context);
-        let result = self.validate_indexed_restoration(event, allow_empty, context);
-        super::header_work::finish(self, context, before);
-        result
-    }
-
-    fn validate_indexed_restoration(
-        &self,
-        event: &CanonicalAuthoredRestoration,
-        allow_empty: bool,
-        context: &mut MapKernelContext<'_, '_>,
-    ) -> Result<(), Stop> {
         let charge = super::super::super::codec_retirement_closure::charge;
         if (!allow_empty && !event.owned_members && event.publications.is_empty())
             || self.producer_cascade_retirement.is_some()

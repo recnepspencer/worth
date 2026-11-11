@@ -100,10 +100,7 @@ impl PreparedAuthoredIdentity {
         family: &DeclaredAuthoredCorrection,
         members: &mut Vec<Self>,
     ) -> Result<(), Denial> {
-        let outputs = source
-            .occurrence()
-            .commit_evidence()
-            .output_correspondence();
+        let outputs = source.occurrence().correspondence();
         for (name, _, _, _) in
             outputs
                 .native_witness_roles()

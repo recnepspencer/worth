@@ -5,6 +5,7 @@ mod created_branch;
 mod creation;
 mod creation_name_extent;
 mod initial_components;
+#[cfg(test)]
 pub(in crate::durability) use initial_components::bridge_decode_denial;
 pub(in crate::durability) mod occurrence_backing;
 pub(in crate::durability) mod owner_evidence;

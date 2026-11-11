@@ -5,9 +5,8 @@ use crate::identity::data::{EntityId, KindId, PartitionId, RelationId, VersionId
 use crate::storage::substrate::{
     EntityArena, RelationArena, RelationEndpoints, RelationExtra, SlotInit,
 };
-use worth_execution::ExecutionRequest;
 
-pub(super) fn partition(count: usize, execution: &ExecutionRequest<'_, '_>) -> PartitionState {
+pub(super) fn partition(count: usize) -> PartitionState {
     let policy = AdjacencyPolicy {
         backend: AdjacencyBackend::InlineSmallDegreeAdjacency,
         small_degree_inline_capacity: 4,
@@ -38,23 +37,18 @@ pub(super) fn partition(count: usize, execution: &ExecutionRequest<'_, '_>) -> P
             .ensure(slot, &partition.adjacency_policy);
     }
     for slot in 0..count {
-        create(&mut partition, slot, 1, execution);
+        create(&mut partition, slot, 1);
     }
     partition
 }
-fn create(
-    partition: &mut PartitionState,
-    slot: usize,
-    version: u64,
-    execution: &ExecutionRequest<'_, '_>,
-) {
+fn create(partition: &mut PartitionState, slot: usize, version: u64) {
     let kind = KindId(7 + slot as u32 % 2);
     let endpoints = endpoints(1);
     let (actual, generation, _) = partition.relation_arena.push_slot(SlotInit {
         partition_id: partition.partition_id,
         kind_id: kind,
         version_id: VersionId(version),
-        extra: relation_extra(execution, endpoints.clone()),
+        extra: relation_extra(endpoints.clone()),
     });
     assert_eq!(actual, slot);
     insert(
@@ -90,7 +84,6 @@ pub(super) fn edit(
     partition: &mut PartitionState,
     slot: usize,
     step: usize,
-    execution: &ExecutionRequest<'_, '_>,
 ) -> PartitionMutationJournal {
     let view = partition.relation_arena.get_slot(slot).unwrap();
     let id = RelationId::new(partition.partition_id, slot as u64, view.generation());
@@ -111,7 +104,7 @@ pub(super) fn edit(
         .relation_arena
         .apply_extra_update(
             slot,
-            relation_extra(execution, new.clone()),
+            relation_extra(new.clone()),
             VersionId(step as u64 + 2),
         )
         .unwrap();
@@ -208,11 +201,6 @@ fn journal<'a>(
     journal
 }
 
-fn relation_extra(
-    execution: &ExecutionRequest<'_, '_>,
-    endpoints: RelationEndpoints,
-) -> RelationExtra {
-    let mut extra = RelationExtra::empty_for_request(execution).unwrap();
-    extra.endpoints = Some(endpoints);
-    extra
+fn relation_extra(endpoints: RelationEndpoints) -> RelationExtra {
+    RelationExtra::from_unbudgeted_parts(Some(endpoints), None)
 }

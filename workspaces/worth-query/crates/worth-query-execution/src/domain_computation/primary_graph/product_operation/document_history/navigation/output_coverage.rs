@@ -26,7 +26,7 @@ pub(super) fn require<'s, S: ApplicationSchema>(
             let mut covered = false;
             for settlement in settlements.clone() {
                 let work = route.family.len().max(settlement.output_family_identity().len()) as u64 + 8;
-                charge(execution, work)?;
+                charge_route_comparison(execution, work)?;
                 if settlement.covers_historical_route(route) { covered = true; break; }
             }
             if !covered && !selected_output.selected_route_is_current(execution, native, route)
@@ -71,4 +71,24 @@ impl<S: ApplicationSchema + 'static, P: worth_query_declaration::facade::applica
         })();
         authority.confirm_read(phase, self.runtime(), authority.request(), result).map_err(control)?
     }
+}
+
+fn charge_route_comparison(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    work: u64,
+) -> Result<(), Denial> {
+    let stopped = |cause| {
+        Denial::Control(Box::new(WorthQueryHistoryNavigationDenial::Stopped(
+            crate::domain_computation::primary_graph::application_contribution::advancement_denial(
+                cause,
+            ),
+        )))
+    };
+    execution
+        .run_native_with_checkpoint(|context| {
+            crate::domain_computation::primary_graph::admitted_capture::checkpoint(context, work)
+        })
+        .map_err(stopped)?
+        .0
+        .map_err(|cause| stopped(worth_execution::WorkCeilingDenial::Stopped(cause)))
 }

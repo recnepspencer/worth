@@ -133,9 +133,6 @@ pub(crate) fn require_no_pending_home_journals(
                     .require_admitted(request)
                     .map_err(ApplicationHomeOwnerAdmissionDenial::QueryDispatch)?;
             }
-            HomeJournalAdmission::RequireAbsent => {
-                require_empty_journal(context, journal.name, request)?;
-            }
         }
     }
     if context.transition.required().is_some()

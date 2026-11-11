@@ -235,6 +235,14 @@ application output-equivalence association. See [read-only Native observation cu
 `compare_exact_output` supplies a fixed baseline/candidate computation in a fresh
 private Signal partition; its paired observations do not independently establish
 Native field provenance or application permission.
+Installed Query platform owners can report an existing Native observation
+through `WorthQueryInstalledApplicationBridge::assemble_native_causal_report`.
+It uses the actual sealed Memory owner and preserves source refusal separately
+from envelope-construction refusal in `WorthQueryBridgeCausalReportingDenial`.
+Reporting retains the original observation; fresh application inspection still
+requires its independently admitted Query request. Authored Home owners retain
+their typed unsupported-route refusal for this reporting operation.
+
 Producer bindings can declare the bounded field scope with
 `output_equivalence()` returning
 `WorthQueryProducerOutputEquivalence::exact_u64(Field::reference())`.

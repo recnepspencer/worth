@@ -222,6 +222,42 @@ Courts held out under D13 are listed the same way, under the H item whose Home c
   - A restored court reaches its doors through the landed H capability; the frozen caller lists never grow, so any caller row a restored court would need requires a fresh boundary ruling. Rows removed with these courts (`control-callers.txt`): owner `crates/worth-relational/` for `coherent_roster.rs`, `current_history.rs`, `current_roster.rs`; owner `workspaces/worth-query/crates/worth-query-execution/` for `coherent_roster.rs`, `current_history.rs`, `parameter_inverse/adjacency_gap.rs`.
   - The Native subclaims of these courts (co-anchor closure, duplicate coupled-edge custody, current-roster corruption, codec-retirement semantics) are track H and are rebuilt as Native-owned courts through existing Native issuance; they never stand in for the Query journeys above.
 
+### Landing 2a restored-header cleanup campaigns
+
+- **C4:** restore the complete `669ac9fcd4:crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/restoration_header/` tree:
+  `mod.rs`, `cascade.rs`, `restoration.rs`, `scope.rs`, `journey.rs`, and
+  `journey/publication.rs`, with its same-SHA `relational/mod.rs` mount.
+  Preserve every individual corruption, actual source/subject, typed refusal,
+  exact detail, affected-record identity, unchanged current basis, lawful twin,
+  restored history, deliberate unwind and history-movement/commit-survival
+  observation. The ordinary source/realization retirement and full restoration
+  positives remain active in `relational/authored_retirement`. The complete
+  genuine co-anchor journey and every existing setup assertion remain active
+  under `authored_retirement/co_anchors/{journey.rs,journey/publication.rs}`;
+  its ordinary court preserves fresh restored anchor/co-anchor identities,
+  their exact handoff into the next retirement, repeated lawful inverse
+  admission and unchanged current basis. It adds no corruption door/caller.
+- **C2:** restore `restoration_header_is_validated_once_and_work_grows_linearly`
+  and `public_create_grow_retire_restore_relation_scale_report` from
+  `669ac9fcd4:crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/restoration_header.rs`,
+  including its complete same-SHA `restoration_header/{journey.rs,republication.rs}`
+  fixtures and `cost/relational/mod.rs` mount. Preserve all three scale axes,
+  once/repeated validation equality, strict monotonic work, linear differences,
+  and the actual 10-publication/720-relation create/grow/retire/undo workload.
+- **C4:** restore `missing_restoration_entity_mapping_is_refused_before_origin_lookup`
+  from that same cost file, with the complete genuine journey above and its
+  exact missing-entity refusal before origin lookup. It is an injected copied
+  roster defect, not a cost assertion.
+- Restore the complete same-SHA control closure for these campaigns:
+  `crates/worth-relational/src/history/authority/corruption_court.rs` and
+  `corruption_court/header.rs`, their authority/history/facade exports,
+  `history/data/canonical_commit_envelope/required_output_origin/{header_corruption.rs,header_work.rs}`
+  and their parent mounts, and the original begin/finish observation wrapper in
+  `required_output_origin/restoration_header.rs`. Restore the exact original
+  three `control-callers.txt` rows only through the governing boundary ruling;
+  no replacement caller was added at move-out. Ordinary validation retains its
+  full indexed algorithm, original charging, outcomes and caller signature.
+
 Landing 2a adapter closure (lane P-A, merged at `e4d3b01c8d`) moved these Native durability roots out, each with its restore reference:
 
 #### C4 - Injected faults
@@ -1160,6 +1196,29 @@ These claim-level moves preserve the independent H assertions named below. The o
   `restore from a98ed66840:crates/worth-relational/src/durability/log/native_checkpoint_codec/kind_authentication_tests.rs`.
   It complements the existing `9ed22bccaa` restore entry; merging H5 does not
   resurrect a deliberately deferred corruption court.
+
+### Landing 2a private fixture funding splits
+
+The following complete original funding campaigns remain C2 obligations. Their
+independent value semantics stay active in the same owning source modules;
+these splits do not claim equivalent funding coverage from a related public court.
+
+- **C2:** `extracted_content_snapshot_retains_original_request_bill_until_last_clone`;
+  restore `669ac9fcd4:crates/worth-relational/src/content/schema/retention_tests.rs`.
+  Preserve extracted-versus-projection charge, serialization with original custody,
+  clone ownership and final refund. The value serialization court stays on H.
+- **C2:** `exact_readmission_retains_original_compiler_funding_until_last_child`;
+  restore `669ac9fcd4:crates/worth-relational/src/branch/root_schema/readmission/tests.rs`.
+  Preserve zero-budget refusal/refund, exact compiler quote, escaped-plan child and
+  parent/registry/final-child drop sequence. Declared kind/plan counts and authority
+  equality remain on H through configuration-owned exact readmission.
+- **C2:** `controlled_patricia_refuses_exact_leaf_and_late_parent_and_refunds_children`
+  and `escaped_patricia_leaf_keeps_only_its_original_allocation_grant`, including
+  `controller_memory`; restore
+  `669ac9fcd4:crates/worth-relational/src/storage/substrate/digest_index/funding_tests.rs`.
+  Preserve both failure positions and typed fields, controlled/uncontrolled digest
+  equality, allocation ownership and exact refunds. Five-node topology, escaped
+  leaf shape and original key remain active private value evidence.
 
 ### Parallel work
 

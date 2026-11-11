@@ -72,9 +72,9 @@ pub(in crate::durability) fn bridge_decode_denial(
         Refusal::Description
         | Refusal::UnsupportedVersion { .. }
         | Refusal::RegisteredSourceRequired
-        | Refusal::UninstalledBaselineRequired
+        | Refusal::BaselineCorrespondenceRequired
         | Refusal::RecordedMeaningMismatch
-        | Refusal::SignalInitialRootRequired
+        | Refusal::SignalGraphBasisRequired
         | Refusal::CurrentBasisRequired => Medium::Frame(Frame::Malformed),
     }
 }

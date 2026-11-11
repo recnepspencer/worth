@@ -19,12 +19,6 @@ pub enum RequiredWorkPop {
     Claimed(RequiredWorkClaim),
 }
 
-impl Default for RequiredWorkQueue {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl RequiredWorkQueue {
     pub fn new() -> Self {
         Self {

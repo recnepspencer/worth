@@ -113,3 +113,45 @@ binding = "DelegatedBinding"
 posture = "domain"
 reason = "Reference-free domain value exercised by binding admission courts."
 forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/candidate_index/prefix/text_read.rs"
+binding = "Lookalike"
+posture = "domain"
+reason = "Reference-free catalog text exercised by source-field binding refusal courts."
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/candidate_index/schema.rs"
+binding = "NameBinding"
+posture = "domain"
+reason = "Reference-free catalog text exercised by source-field binding refusal courts."
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/events/prefix/text_read.rs"
+binding = "Lookalike"
+posture = "domain"
+reason = "Reference-free catalog text exercised by source-field binding refusal courts."
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/nested/prefix/text_read.rs"
+binding = "Lookalike"
+posture = "domain"
+reason = "Reference-free catalog text exercised by source-field binding refusal courts."
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/prefix/text_read.rs"
+binding = "Lookalike"
+posture = "domain"
+reason = "Reference-free catalog text exercised by source-field binding refusal courts."
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/refusing/prefix/text_read.rs"
+binding = "Lookalike"
+posture = "domain"
+reason = "Reference-free catalog text exercised by source-field binding refusal courts."
+forbidden_types = []

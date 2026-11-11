@@ -32,6 +32,14 @@ fn value_charge(value: &AspectValue, work: &mut Preparation) -> Result<Charge, D
             .retained_heap_charge(work)?
             .checked_add(value.denominator.0.retained_heap_charge(work)?),
         AspectValue::String(InternedString::Raw(value)) => value.retained_heap_charge(work),
+        AspectValue::String(InternedString::Stored(value)) => {
+            work.visit()?;
+            let bytes = worth_foundational::facade::StoredValueText::fresh_decode_allocation_bytes(
+                value.as_string().capacity(),
+            )
+            .ok_or(Denial::ChargeOverflow)?;
+            Charge::capacity::<u8>(bytes)
+        }
         AspectValue::InlineBytes(value) => {
             Charge::capacity::<u8>(value.owned_allocation_capacity_bytes())
         }

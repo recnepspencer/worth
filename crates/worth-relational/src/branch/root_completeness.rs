@@ -320,21 +320,25 @@ mod tests {
             DescriptorSemanticsVersion(1),
         )
         .into_body();
-        let request = crate::test_execution_policy::serial_request();
-        let execution = &worth_execution::ExecutionRequest::serial(&request);
-        let runtime = crate::tests::support::runtime_with_test_schema();
-        let produced = crate::tests::support::create_entity_outcome(
-            execution,
-            &runtime,
+        crate::tests::support::with_memory_record_publication(
+            crate::tests::support::test_schema_registry(),
             "completeness-semantic-source",
-        );
-        let envelope = produced.publication().envelope.clone().into_arc();
-        crate::tests::support::release_test_commit_snapshot(&runtime, &produced);
-        drop(produced);
-        drop(runtime);
-        let mut envelope = std::sync::Arc::try_unwrap(envelope)
-            .expect("actual source and result have retired their original shares");
-        *envelope.body_mut_for_test() = draft;
-        envelope
+            |world| {
+                let root = world
+                    .runtime
+                    .history
+                    .branch_cell(&BranchId("main".into()))
+                    .unwrap()
+                    .root()
+                    .unwrap();
+                let envelope = root.canonical_envelope().unwrap().clone();
+                drop(root);
+                drop(world);
+                let mut envelope = std::sync::Arc::try_unwrap(envelope)
+                    .expect("the actual Memory source has retired its Original shares");
+                *envelope.body_mut_for_test() = draft;
+                envelope
+            },
+        )
     }
 }

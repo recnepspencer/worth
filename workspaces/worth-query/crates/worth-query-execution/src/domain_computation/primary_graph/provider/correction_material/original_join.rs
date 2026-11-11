@@ -60,7 +60,7 @@ pub(super) fn admit(
         };
         if !originals.original_observations().any(|published| {
             published.identity() == original.reserved_commit()
-                && published.relational_commit() == commit.commit_id
+                && published.relational_commit() == Some(commit.commit_id)
         }) {
             return Err(Denial::OriginalMismatch);
         }

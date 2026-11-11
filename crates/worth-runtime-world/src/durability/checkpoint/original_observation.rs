@@ -29,8 +29,11 @@ impl WorldOriginalObservation<'_> {
     pub fn branch(&self) -> &DurableProductBranchIdentity {
         &self.original.open().expected.branch
     }
-    pub fn relational_commit(&self) -> worth_relational::facade::history::CommitId {
-        worth_relational::facade::history::CommitId(self.original.relational().commit)
+    /// Signal-only originals have no Native effect to correlate.
+    pub fn relational_commit(&self) -> Option<worth_relational::facade::history::CommitId> {
+        self.original
+            .relational()
+            .map(|native| worth_relational::facade::history::CommitId(native.commit))
     }
     pub fn program_revision(&self) -> CanonicalDigestId {
         CanonicalDigestId::new(self.original.open().program_revision)
@@ -130,9 +133,12 @@ impl WorldProgramActivationHistory {
             match &head.program_record().record {
                 WorldRecord::Branch { .. } => return Ok(false),
                 WorldRecord::OpenAttempt(open) => position = open.expected.commit,
+                WorldRecord::BranchCreated(created) => position = created.intent.source.commit,
                 WorldRecord::Owner { .. }
                 | WorldRecord::Occurrence { .. }
                 | WorldRecord::Released { .. }
+                | WorldRecord::CreationIntent(_)
+                | WorldRecord::CreationReleased { .. }
                 | WorldRecord::Continued { .. } => {
                     unreachable!("validated history stores only origins and original opens")
                 }

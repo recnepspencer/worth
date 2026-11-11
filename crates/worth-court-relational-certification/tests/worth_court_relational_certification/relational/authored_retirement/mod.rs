@@ -1,5 +1,6 @@
 //! Atomic source/realization retirement through the public Native boundary.
 mod application_delta;
+mod co_anchors;
 mod corruption_subjects;
 mod independent_source;
 mod legacy_history_open;

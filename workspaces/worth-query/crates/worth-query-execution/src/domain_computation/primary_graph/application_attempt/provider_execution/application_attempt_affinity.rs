@@ -110,9 +110,6 @@ impl WorthQueryApplicationAttemptAffinityView for WorthQueryProviderSessionTermi
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct WorthQueryApplicationAttemptBasisMismatch;
-
 impl WorthQueryApplicationAttemptBasis {
     pub fn capture<Schema, Operation, Input, Scope>(
         application: &super::super::super::WorthQueryPrimaryGraphApplicationRuntime<Schema>,

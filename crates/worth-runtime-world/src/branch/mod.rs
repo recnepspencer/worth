@@ -1,5 +1,3 @@
-mod inventory;
-pub use inventory::{ObservedProductBranches, ProductBranchInventoryDenial};
 mod bootstrap;
 mod durable_bootstrap;
 pub use durable_bootstrap::{WorldDurableBootstrapOutcome, WorldDurableBootstrapRefusal};

@@ -177,8 +177,6 @@ fn medium(cause: worth_runtime_world::facade::WorldDurableMediumDenial) -> Denia
             worth_relational::facade::transactions::RelationalExecutionDenialCause::MemoryOverflow,
         ),
         Medium::NativeDescription(cause) => component(*cause),
-        Medium::SignalDescription(cause) => signal(cause),
-        Medium::BridgeDescription(cause) => bridge(cause),
         Medium::NameAllocation
         | Medium::OccurrenceReopenRequired
         | Medium::Frame(_)
@@ -192,20 +190,6 @@ fn medium(cause: worth_runtime_world::facade::WorldDurableMediumDenial) -> Denia
     }
 }
 
-fn signal(cause: worth_signal::facade::branch::SignalInitialEmptyRootRefusal) -> Denial {
-    use worth_signal::facade::branch::SignalInitialEmptyRootRefusal as Signal;
-    match cause {
-        Signal::Request(cause) => idempotency_read_stop(cause.into()),
-        Signal::Description
-        | Signal::UnsupportedVersion { .. }
-        | Signal::OwnerUnavailable
-        | Signal::InitialRootRequired
-        | Signal::RecordedMeaningMismatch
-        | Signal::CurrentBasisRequired
-        | Signal::OwnerAdmissionRequired
-        | Signal::RetentionRequired => Denial::Unavailable,
-    }
-}
 fn bridge(cause: worth_runtime_bridge::facade::RuntimeWorldBaselineRefusal) -> Denial {
     use worth_runtime_bridge::facade::RuntimeWorldBaselineRefusal as Bridge;
     match cause {
@@ -259,23 +243,28 @@ mod tests {
         ))
     }
     #[test]
-    fn signal_description_cancellation_keeps_the_original_control_stop() {
+    fn component_decoder_cancellation_keeps_the_original_control_stop() {
         assert_eq!(
-            source(WorldDurableMediumDenial::SignalDescription(
-                worth_signal::facade::branch::SignalInitialEmptyRootRefusal::Request(
-                    WorkCeilingDenial::Stopped(KernelStop::Cancelled)
-                )
+            source(WorldDurableMediumDenial::Request(
+                WorkCeilingDenial::Stopped(KernelStop::Cancelled),
             )),
             idempotency_read_stop(
-                worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled
-            )
+                worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled,
+            ),
         );
     }
     #[test]
-    fn bridge_description_work_exhaustion_keeps_the_original_resource_stop() {
-        assert_eq!(source(WorldDurableMediumDenial::BridgeDescription(
-            worth_runtime_bridge::facade::RuntimeWorldBaselineRefusal::Request(WorkCeilingDenial::Stopped(KernelStop::WorkCeiling)))),
-            idempotency_read_stop(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted));
+    fn bridge_baseline_work_exhaustion_keeps_the_original_resource_stop() {
+        assert_eq!(
+            world_source(WorldReadmissionDenial::BridgeBaseline(
+                worth_runtime_bridge::facade::RuntimeWorldBaselineRefusal::Request(
+                    WorkCeilingDenial::Stopped(KernelStop::WorkCeiling),
+                ),
+            )),
+            idempotency_read_stop(
+                worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted,
+            ),
+        );
     }
     #[test]
     fn native_fork_discovery_cancellation_keeps_the_original_control_stop() {

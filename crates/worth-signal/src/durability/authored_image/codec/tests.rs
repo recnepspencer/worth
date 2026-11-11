@@ -150,6 +150,9 @@ fn literal_threshold_payloads_round_trip_without_node_result_storage() {
             CanonicalRational::new(CanonicalBigInt::new("9"), CanonicalBigInt::new("17")).unwrap(),
         ),
         AspectValue::String(InternedString::Raw("authored literal".into())),
+        AspectValue::String(InternedString::Stored(StoredValueText::new(
+            "authored literal".into(),
+        ))),
         AspectValue::String(InternedString::Symbol(Symbol(27))),
         AspectValue::Uuid([9; 16]),
         AspectValue::Date(CanonicalDate {
@@ -167,6 +170,7 @@ fn literal_threshold_payloads_round_trip_without_node_result_storage() {
         AspectValue::ContentRef(ContentRefId([7; 32])),
         AspectValue::InlineBytes(InlineBytes::try_new(vec![0, 255, 17]).unwrap()),
     ];
+    let mut literal_wire = None;
     for value in values {
         let mut bytes = Vec::new();
         threshold_value::write(
@@ -177,6 +181,16 @@ fn literal_threshold_payloads_round_trip_without_node_result_storage() {
             &value,
         )
         .unwrap();
+        if value.raw_text() == Some("authored literal") {
+            if let Some(original) = &literal_wire {
+                assert_eq!(
+                    &bytes, original,
+                    "stored text keeps Raw's existing wire grammar"
+                );
+            } else {
+                literal_wire = Some(bytes.clone());
+            }
+        }
         let mut input = Read::new(&bytes, branch());
         input.materialize = true;
         assert_eq!(threshold_value::read(&mut input).unwrap(), value);

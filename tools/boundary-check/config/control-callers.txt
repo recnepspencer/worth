@@ -2090,10 +2090,7 @@ crates/worth-execution/ workspaces/worth-query/crates/worth-query-testkit-execut
 crates/worth-foundational/ crates/worth-relational/src/runtime/state/runtime_state/court_doors_for_test.rs
 crates/worth-foundational/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/cost/schema_projection.rs
 crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/content/identity_conflict.rs
-crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/restoration_header.rs
 crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/schema_projection.rs
-crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/restoration_header/mod.rs
-crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/restoration_header/scope.rs
 crates/worth-relational/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/cold_pairing.rs
 crates/worth-relational/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/coupled/private_membership.rs
 crates/worth-relational/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/endpoint_fence.rs

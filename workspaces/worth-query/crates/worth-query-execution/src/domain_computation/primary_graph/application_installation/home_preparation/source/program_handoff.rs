@@ -205,4 +205,14 @@ impl<Schema: ApplicationSchemaComposition, Program>
             self.prepared.bootstrap.installed_native_receipt(),
         )
     }
+    pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) fn predecessor_program_roster(
+        &self,
+    ) -> &worth_query_installation::facade::WorthQueryProgramSupportRoster<Schema> {
+        &self.prepared.state.support.roster
+    }
+    pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) fn predecessor_installed_schema(
+        &self,
+    ) -> &worth_query_installation::facade::WorthQueryInstalledApplicationSchema<Schema> {
+        &self.prepared.state.installed
+    }
 }

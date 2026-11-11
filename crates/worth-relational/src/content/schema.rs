@@ -122,5 +122,5 @@ impl PartialEq for RelationalContentSchemaSnapshot {
 }
 impl Eq for RelationalContentSchemaSnapshot {}
 #[cfg(test)]
-#[path = "schema/retention_tests.rs"]
-mod retention_tests;
+#[path = "schema/serialization_tests.rs"]
+mod serialization_tests;

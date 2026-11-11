@@ -17,7 +17,6 @@ pub(crate) enum HomeJournalAdmission {
     QueryObligations,
     QueryCorrections,
     QueryDispatch,
-    RequireAbsent,
 }
 
 #[derive(Clone, Copy)]

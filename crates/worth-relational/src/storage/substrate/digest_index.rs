@@ -17,7 +17,7 @@ use construction::{build_sorted, poll};
 #[cfg(test)]
 mod carrier_tests;
 #[cfg(test)]
-mod funding_tests;
+mod leaf_retention_tests;
 #[cfg(test)]
 mod tests;
 
