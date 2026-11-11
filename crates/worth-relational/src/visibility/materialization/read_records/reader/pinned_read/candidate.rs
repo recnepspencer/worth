@@ -130,10 +130,19 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
                     };
                     checkpoint(context, slots.saturating_add(1) as u64).map_err(request_stop)?;
                 }
-                let binding = symbols.binding();
+                // Root capture admits the applied region's symbol closure into
+                // this exact dictionary owner. Carry that same owner into the
+                // pin; another detached binding loses the new admission marks
+                // and a cold dictionary then refuses its otherwise valid read.
+                let services = runtime.with_candidate_symbols(symbols).services;
                 let root = runtime
                     .history
-                    .capture_applied_candidate_root(execution, previous_root, state, &binding)
+                    .capture_applied_candidate_root(
+                        execution,
+                        previous_root,
+                        state,
+                        &services.symbols,
+                    )
                     .map_err(|failure| {
                         crate::mvcc::origin_denial(format!(
                             "applied candidate root capture failed: {failure:?}"
@@ -141,7 +150,7 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
                     })?;
                 Self::capture_root(
                     execution,
-                    &runtime.with_candidate_symbols(symbols).services,
+                    &services,
                     basis,
                     RelationalAppliedCandidateReadIdentity {
                         proposal: identity.clone(),

@@ -47,3 +47,6 @@ crates/worth-relational/src/durability/authority/checkpoint_native_capture.rs
 
 # A changed content schema authority alone admits full directory reconstruction.
 crates/worth-relational/src/content/schema_transition.rs
+
+# D1638: closed residency-only symbol placement setup over actual resident leases.
+crates/worth-relational/src/runtime/cold_symbol_placement.rs

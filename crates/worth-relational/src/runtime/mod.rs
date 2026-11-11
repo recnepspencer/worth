@@ -118,3 +118,6 @@ pub use state::{
 };
 
 pub(crate) use state::TryPartitionMutationDenied;
+
+mod cold_symbol_placement;
+pub use cold_symbol_placement::RelationalColdSymbolPlacementForTest;

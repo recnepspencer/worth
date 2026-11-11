@@ -88,6 +88,33 @@ impl<Level> RelationalResidencyLease<Level> {
         )
     }
 
+    /// D1638 closed placement setup: collect from this actual resident lease,
+    /// then admit through the dictionary owner. No mark is fabricated and the
+    /// region's records, IDs and retained history are unchanged.
+    pub(crate) fn admit_cold_placement_symbols_for_test(
+        &self,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        symbols: &crate::runtime::RuntimeSymbolTable,
+    ) -> Result<(), RelationalResidencyDemandFailure> {
+        let full = self.has_complete_history();
+        let identity = if full {
+            super::RelationalRegionSymbolAdmissionIdentity::full(self.cell())
+        } else {
+            self.head_symbol_admission_identity()
+        };
+        symbols.demand_region_symbols_incremental(execution, identity, None, || {
+            let captured = super::required_symbols::CapturedSymbolRequirements::capture(
+                lane,
+                &self.region.partition,
+                full,
+            );
+            let required = captured
+                .get(full)
+                .expect("the actual resident lease supplies its complete requested closure");
+            Ok((required.ids.clone(), required.visits))
+        })
+    }
     pub(crate) fn head_symbol_admission_identity(
         &self,
     ) -> super::RelationalRegionSymbolAdmissionIdentity {

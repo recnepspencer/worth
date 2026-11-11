@@ -224,6 +224,7 @@ pub mod runtime {
     pub use crate::runtime::builder::RelationalRuntimeBuilder;
     #[cfg(test)]
     pub use crate::runtime::HarnessAuditMode;
+    pub use crate::runtime::RelationalColdSymbolPlacementForTest;
     pub use crate::runtime::{
         custom_invariant_inventory_digest, AdjacencyStructuralRevision,
         AdjacencyStructuralRevisionDenial, BoundedFrontierReadStop,

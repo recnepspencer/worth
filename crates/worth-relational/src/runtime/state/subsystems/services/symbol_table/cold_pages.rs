@@ -91,8 +91,14 @@ impl RuntimeSymbolTable {
         &self,
         directory: &crate::durability::data::RelationalCheckpointDirectory,
     ) -> Result<(), ColdSymbolDirectoryDenial> {
-        let frontier = directory
-            .manifest
+        self.install_cold_symbol_pages(&directory.manifest, directory.source.clone())
+    }
+    pub(crate) fn install_cold_symbol_pages(
+        &self,
+        manifest: &crate::durability::data::RelationalCheckpointManifest,
+        source: std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
+    ) -> Result<(), ColdSymbolDirectoryDenial> {
+        let frontier = manifest
             .symbols
             .iter()
             .map(|page| page.last)
@@ -104,11 +110,11 @@ impl RuntimeSymbolTable {
             .ok_or(ColdSymbolDirectoryDenial::Invalid(
                 "checkpoint symbol frontier is exhausted",
             ))?;
-        let frontier = frontier.max(directory.manifest.symbol_identity_frontier);
+        let frontier = frontier.max(manifest.symbol_identity_frontier);
         let pages = RuntimeSymbolResidency::new(
-            directory.manifest.symbols.clone(),
-            directory.manifest.symbol_buckets.clone(),
-            directory.source.clone(),
+            manifest.symbols.clone(),
+            manifest.symbol_buckets.clone(),
+            source,
         )
         .map_err(ColdSymbolDirectoryDenial::StorageUnavailable)?;
         self.with_write(|symbols| symbols.reserve_frontier(frontier))
@@ -121,6 +127,21 @@ impl RuntimeSymbolTable {
         Ok(())
     }
 
+    /// Certification moves this very owner's exported pages to cold storage;
+    /// its resident dictionary and existing region-admission proofs are kept.
+    /// Recovery's install above deliberately clears proofs for a new dictionary.
+    pub(crate) fn place_exported_symbol_pages_cold_for_test(
+        &self,
+        manifest: &crate::durability::data::RelationalCheckpointManifest,
+        source: std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
+    ) -> Result<(), ColdSymbolDirectoryDenial> {
+        let admitted = self.read_state(|state| state.admissions.clone());
+        self.install_cold_symbol_pages(manifest, source)?;
+        // No meaning or region changed. Carry owner-issued proof; do not mint
+        // admission from the exported descriptor or revalidate product truth.
+        self.update(|state| state.admissions = admitted);
+        Ok(())
+    }
     pub(crate) fn checkpoint_export_sources(
         &self,
     ) -> std::collections::BTreeMap<

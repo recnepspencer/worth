@@ -203,3 +203,5 @@ mod cold;
 mod mixed;
 
 mod stages;
+
+mod cold_candidate_pin;
