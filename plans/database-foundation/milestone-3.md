@@ -1268,6 +1268,21 @@ these splits do not claim equivalent funding coverage from a related public cour
   equality, allocation ownership and exact refunds. Five-node topology, escaped
   leaf shape and original key remain active private value evidence.
 
+### Landing 2a selected-payload funding split
+
+- **C2:** restore the complete original
+  `669ac9fcd4:crates/worth-relational/src/storage/substrate/record_arena/values/tests/historical_selection_funding.rs`
+  and its `mod historical_selection_funding` mount under values/tests.rs.
+  Preserve both entity/relation kinds, absent/existing targets, zero-budget
+  request denial, unchanged slot counts, zero charge/refund, distinct allocation
+  identity, exact payload equality, reachable bounds, latest-history carrier,
+  retained-bill contrast and every source/target/installed drop observation.
+  Its source fixture closure is the original parent values/tests.rs `patch`,
+  `extra`, `expected` and `request` functions at the same SHA. Active private H
+  courts exercise the same production selection kernel, retain both payload
+  kinds and target postures, and verify latest-history carrier and retained
+  values after source and target drop. They do not claim funding coverage.
+
 ### Parallel work
 
 H items whose dependencies have merged may be built in parallel where their write scopes do not overlap. Each one merges into the integration branch when its reviewer approves and its Tier-2 run there is green. A C item may start before landing 2 only where the coordinator assigns it and it does not slow an H item.

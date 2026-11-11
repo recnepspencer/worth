@@ -246,23 +246,8 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
         .iter_mut()
         .find(|patch| patch.target == RecordRef::Relation(id))
         .unwrap();
-    let operations = patch
-        .authoritative_patch
-        .full_grammar_operations()
-        .iter()
-        .filter(|operation| {
-            !matches!(
-                operation,
-                Op::WholeAspectSet {
-                    binding: AspectBinding::RelationSourceEndpoint
-                        | AspectBinding::RelationTargetEndpoint,
-                    ..
-                }
-            )
-        })
-        .cloned()
-        .collect();
-    patch.authoritative_patch = PublishedAuthoritativePatch::new(operations);
+    patch.authoritative_patch =
+        endpoint_aspect_inputs::without_endpoint_aspects(&patch.authoritative_patch);
     assert!(
         patch.relation_birth.is_some(),
         "actual native creation publishes structural birth independently of optional aspects"
@@ -346,5 +331,59 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
     );
 }
 
-mod creation_probe;
-use creation_probe::run;
+fn run(
+    execution: &ExecutionRequest<'_, '_>,
+    state: &dyn CurrentPartitionAccess,
+    id: RelationId,
+    selected: &CanonicalRequiredOutputOrigin,
+    birth: &CanonicalCommitEnvelopeBody,
+    write: &Arc<CanonicalCommitEnvelope>,
+    owned: bool,
+) -> Result<(), Stop> {
+    execution
+        .in_scope(|lease| {
+            ExecutionWorkCeiling::new(execution.work_ceiling()).run_with_checkpoint(
+                lease,
+                None,
+                |context| {
+                    // Genuine rewritten history; hostile Body inputs mint no custody.
+                    let mut lookup = |version, _context: &mut MapKernelContext<'_, '_>| {
+                        Ok((version == write.commit.version_id).then(|| Arc::clone(write)))
+                    };
+                    let current = Some(super::super::CurrentPublicationFrame::Retiring(birth));
+                    let mut history = OutputOriginHistory::default();
+                    if owned {
+                        if !ownership_at_creation(
+                            state,
+                            id,
+                            selected,
+                            current,
+                            &mut lookup,
+                            &mut history,
+                            execution,
+                            context,
+                        )? {
+                            return Err("claimed relation was not producer-owned at birth".into());
+                        }
+                        Ok(())
+                    } else {
+                        validate(
+                            state,
+                            id,
+                            selected,
+                            current,
+                            &mut lookup,
+                            &mut history,
+                            execution,
+                            context,
+                        )
+                    }
+                },
+            )
+        })
+        .map_err(crate::history::data::codec_retirement_closure::request)?
+        .map_err(crate::history::data::codec_retirement_closure::request)?
+        .0
+}
+
+mod endpoint_aspect_inputs;

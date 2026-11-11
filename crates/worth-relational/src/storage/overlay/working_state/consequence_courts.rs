@@ -9,8 +9,6 @@ use std::collections::BTreeMap;
 
 #[test]
 fn consequence_demand_recovers_untouched_adjacency_after_sequential_promotion() {
-    let request = crate::test_execution_policy::serial_request();
-    let execution = worth_execution::ExecutionRequest::serial(&request);
     let id = PartitionId(7);
     let policy = AdjacencyPolicy {
         backend: crate::config::data::AdjacencyBackend::InlineSmallDegreeAdjacency,
@@ -38,7 +36,7 @@ fn consequence_demand_recovers_untouched_adjacency_after_sequential_promotion() 
         kind_id: KindId(2),
         version_id: VersionId(1),
         extra: {
-            let mut extra = RelationExtra::empty_for_request(&execution).unwrap();
+            let mut extra = RelationExtra::from_unbudgeted_parts(None, None);
             extra.endpoints = Some(RelationEndpoints {
                 source: EntityId::new(id, 0, 1),
                 target: EntityId::new(id, 1, 1),
@@ -68,9 +66,7 @@ fn consequence_demand_recovers_untouched_adjacency_after_sequential_promotion() 
         policy,
         PartitionCloneMode::GraphSparseEntities,
     );
-    earlier
-        .adopt_sequential_apply(later, &worth_execution::ExecutionRequest::serial(&request))
-        .unwrap();
+    earlier.adopt_sequential_apply_using(later, None).unwrap();
     assert!(earlier.partitions[&id].reverse_adjacency.get(1).is_none());
     earlier
         .materialize_consequence_records(

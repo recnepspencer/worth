@@ -1,6 +1,5 @@
 //! Original-policy payload ownership; these fixtures issue no runtime authority.
 use super::*;
-mod historical_selection_funding;
 mod shared_state_bound;
 mod wire;
 use crate::identity::data::{KindId, PartitionId, VersionId};

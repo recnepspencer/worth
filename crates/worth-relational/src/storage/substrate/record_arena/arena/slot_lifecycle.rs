@@ -193,7 +193,7 @@ impl<K: RecordKind> RecordArena<K> {
     }
 }
 
-fn set_slot_presence(
+pub(super) fn set_slot_presence(
     live_bitset: &mut crate::storage::partition::DenseSlotBitSet,
     reclaimable_bitset: &mut crate::storage::partition::DenseSlotBitSet,
     slot: usize,
