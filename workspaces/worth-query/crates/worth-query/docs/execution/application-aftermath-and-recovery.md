@@ -221,6 +221,28 @@ does not prevent later entries from being considered. The route-bound terminal
 observation on the Bank server handle is a privileged host diagnostic; it is
 not an authenticated operator inspection endpoint.
 
+## Home-level inbound source controls
+
+`retire_inbound_occurrence_source(&handle)` stops new messages from that source;
+accepted work may still finish. `revoke_inbound_occurrence_source(&handle)` also
+fences accepted work that has not entered its World attempt. The source is the
+immutable installed source identity, shared across all its operation slots.
+
+On a Directory Home, successful control records the fact in `query.dispatch`
+before returning. Graceful close settles the same original record. Reopening
+with fresh verifier objects or a different audience does not reset retirement or
+revocation. Retirement never downgrades a revoked source. A memory-only runtime
+keeps its source controls for that runtime's lifetime.
+
+A control with an unsettled physical fate fences consumption until its original
+record settles; it is not reported as a committed security fact. Retry the
+control on a fresh host request or settle it through graceful close. A refusal
+preserves the exact execution, support-policy or journal cause.
+
+This source-control support does not yet admit inbound completion on a Directory
+Home. Accepted-message, terminal and recovery-claim durability have separate
+requirements.
+
 ## Core Mental Model
 
 There are four independent owners:

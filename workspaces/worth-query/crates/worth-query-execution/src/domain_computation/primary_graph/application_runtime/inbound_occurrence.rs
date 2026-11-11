@@ -1,8 +1,8 @@
 //! Runtime installation of one verifier into its declared operation slot.
 
 use std::collections::btree_map::Entry;
-use std::sync::atomic::{AtomicU8, Ordering};
 use std::sync::Arc;
+use worth_foundational::facade::InboundSourceControl;
 
 use worth_query_installation::facade::{
     ApplicationSchema, InstalledInboundOccurrenceContract, WorthQueryInstalledApplicationOperation,
@@ -41,7 +41,7 @@ pub(in crate::domain_computation) struct WorthQueryInstalledInboundVerifier {
     pub(in crate::domain_computation) contract: InstalledInboundOccurrenceContract,
     pub(in crate::domain_computation) verifier: Arc<dyn WorthQueryInboundOccurrenceVerifier>,
     pub(in crate::domain_computation::primary_graph) cost: cost::WorthQueryInboundCostLedger,
-    source_posture: AtomicU8,
+    source_owner: std::sync::Weak<crate::domain_computation::application_aftermath::dispatch_journal::WorthQueryDispatchJournal>,
 }
 
 /// Admission state of one installed inbound source within this runtime.
@@ -50,25 +50,28 @@ pub enum WorthQueryInboundSourcePosture {
     Active,
     Retired,
     Revoked,
+    /// A requested control has no proven physical fate yet; consumption is fenced.
+    ControlPending,
 }
 
 impl WorthQueryInstalledInboundVerifier {
     pub(in crate::domain_computation) fn source_posture(&self) -> WorthQueryInboundSourcePosture {
-        match self.source_posture.load(Ordering::Acquire) {
-            0 => WorthQueryInboundSourcePosture::Active,
-            1 => WorthQueryInboundSourcePosture::Retired,
-            _ => WorthQueryInboundSourcePosture::Revoked,
+        use crate::domain_computation::application_aftermath::dispatch_journal::QueryInboundSourceControlObservation;
+        use WorthQueryInboundSourcePosture as Posture;
+        match self
+            .source_owner
+            .upgrade()
+            .map(|owner| owner.source_control(self.contract.source_identity()))
+        {
+            Some(QueryInboundSourceControlObservation::Recorded(None)) => Posture::Active,
+            Some(QueryInboundSourceControlObservation::Recorded(Some(
+                InboundSourceControl::Retired,
+            ))) => Posture::Retired,
+            Some(QueryInboundSourceControlObservation::Recorded(Some(
+                InboundSourceControl::Revoked,
+            ))) => Posture::Revoked,
+            Some(QueryInboundSourceControlObservation::Pending) | None => Posture::ControlPending,
         }
-    }
-
-    fn retire(&self) {
-        let _ = self
-            .source_posture
-            .compare_exchange(0, 1, Ordering::AcqRel, Ordering::Acquire);
-    }
-
-    fn revoke(&self) {
-        self.source_posture.store(2, Ordering::Release);
     }
 }
 
@@ -95,11 +98,8 @@ pub enum WorthQueryInboundVerifierInstallationDenial {
     AlreadyInstalled,
 }
 
-/// Why source retirement or revocation could not select this installation.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryInboundSourceControlDenial {
-    ForeignVerifier,
-}
+mod source_control;
+pub use source_control::WorthQueryInboundSourceControlDenial;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -142,7 +142,7 @@ where
             contract: contract.clone(),
             verifier,
             cost: Default::default(),
-            source_posture: AtomicU8::new(0),
+            source_owner: Arc::downgrade(&self.runtime.dispatch_journal),
         });
         entry.insert(Arc::clone(&installed));
         Ok(WorthQueryInboundVerifierHandle {
@@ -178,33 +178,6 @@ where
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .get(operation)
             .map(|installed| installed.source_posture())
-    }
-
-    /// Stop admitting new source messages. Already accepted work remains
-    /// owned by the aftermath custodian and may finish recovery.
-    pub fn retire_inbound_occurrence_source(
-        &self,
-        handle: &WorthQueryInboundVerifierHandle,
-    ) -> Result<(), WorthQueryInboundSourceControlDenial> {
-        let installed = self
-            .installed_inbound_verifier(handle)
-            .ok_or(WorthQueryInboundSourceControlDenial::ForeignVerifier)?;
-        installed.retire();
-        Ok(())
-    }
-
-    /// Security revocation fences fresh consumption, including an accepted
-    /// occurrence that has not yet reached World Performed. Custody stays live
-    /// for explicit resolution rather than being silently discarded.
-    pub fn revoke_inbound_occurrence_source(
-        &self,
-        handle: &WorthQueryInboundVerifierHandle,
-    ) -> Result<(), WorthQueryInboundSourceControlDenial> {
-        let installed = self
-            .installed_inbound_verifier(handle)
-            .ok_or(WorthQueryInboundSourceControlDenial::ForeignVerifier)?;
-        installed.revoke();
-        Ok(())
     }
 }
 

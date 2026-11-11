@@ -21,6 +21,14 @@ pub(super) fn encode(
     bytes.extend_from_slice(&predecessor);
     bytes.extend_from_slice(&generation.get().to_le_bytes());
     match &record {
+        QueryDispatchRecord::SourceControl { source, posture } => {
+            bytes.push(2);
+            bytes.extend_from_slice(source.bytes());
+            bytes.push(match posture {
+                InboundSourceControl::Retired => 1,
+                InboundSourceControl::Revoked => 2,
+            });
+        }
         QueryDispatchRecord::Attempt(attempt) => {
             bytes.push(0);
             bytes.extend_from_slice(&attempt.identity.attempt_position().get().to_le_bytes());
@@ -152,6 +160,10 @@ pub(super) fn decode(bytes: &[u8]) -> Result<QueryDispatchFrame, QueryDispatchJo
             attempt: reader.attempt(home)?,
             observation: read_observation(reader.take()?)?,
         },
+        2 => QueryDispatchRecord::SourceControl {
+            source: CanonicalDigestId::new(reader.take()?),
+            posture: read_source_control(reader.take::<1>()?[0])?,
+        },
         _ => return Err(Denial::MalformedFrame),
     };
     if !reader.0.is_empty() {
@@ -166,4 +178,12 @@ pub(super) fn decode(bytes: &[u8]) -> Result<QueryDispatchFrame, QueryDispatchJo
         bytes: bytes.to_vec(),
         digest,
     })
+}
+
+fn read_source_control(code: u8) -> Result<InboundSourceControl, QueryDispatchJournalDenial> {
+    match code {
+        1 => Ok(InboundSourceControl::Retired),
+        2 => Ok(InboundSourceControl::Revoked),
+        _ => Err(QueryDispatchJournalDenial::MalformedFrame),
+    }
 }

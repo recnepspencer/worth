@@ -53,6 +53,9 @@ where
             WorthQueryInboundSourcePosture::Active => {}
             WorthQueryInboundSourcePosture::Retired => return Err(Denial::SourceRetired),
             WorthQueryInboundSourcePosture::Revoked => return Err(Denial::SourceRevoked),
+            WorthQueryInboundSourcePosture::ControlPending => {
+                return Err(Denial::RetryBeforeAcceptance)
+            }
         }
         let correlation = ExternalEffectCorrelationIdentity::from_digest(CanonicalDigestId::new(
             claims.correlation_token,
@@ -192,6 +195,9 @@ where
                     WorthQueryInboundSourcePosture::Active => {}
                     WorthQueryInboundSourcePosture::Retired => return Err(Denial::SourceRetired),
                     WorthQueryInboundSourcePosture::Revoked => return Err(Denial::SourceRevoked),
+                    WorthQueryInboundSourcePosture::ControlPending => {
+                        return Err(Denial::RetryBeforeAcceptance)
+                    }
                 }
                 let mut custody = self
                     .runtime

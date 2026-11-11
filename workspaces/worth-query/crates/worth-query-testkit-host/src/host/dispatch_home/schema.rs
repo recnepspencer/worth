@@ -53,6 +53,7 @@ impl ApplicationSchemaContribution<DispatchHomeSchema> for DispatchSurface {
         NotifyBalanceBinding,
         super::recoverable::RecoverableNotice,
         super::recoverable::RecoverableNoticeBinding,
+        super::inbound_source::InboundSourceSlots,
     );
 }
 impl WorthQueryApplicationContribution<DispatchHomeSchema> for DispatchSurface {

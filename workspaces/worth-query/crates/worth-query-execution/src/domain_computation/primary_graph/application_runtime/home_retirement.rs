@@ -134,16 +134,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     }
 
     fn preflight_supplied_home_owners(&mut self) -> Result<(), WorthQueryHomeRetirementDenial> {
-        use WorthQueryHomeRetirementDenial::{Busy, Unsupported};
+        use WorthQueryHomeRetirementDenial::Busy;
         use WorthQueryHomeRetirementOwner as Owner;
-        let verifiers = self
-            .runtime
+        self.runtime
             .inbound_verifiers
             .get_mut()
             .map_err(|_| Busy(Owner::InboundVerifiers))?;
-        if !verifiers.is_empty() {
-            return Err(Unsupported(Owner::InboundVerifiers));
-        }
+        // Verifiers borrow the original journal weakly. Their Home-level source
+        // facts are settled above; supplied mechanisms remain inert with this runtime.
         // The supplied transport holds no Home custody. Exclusive retirement
         // access means no contact is executing, and the dispatch journal has
         // just settled: every recorded attempt owns its durable observation.

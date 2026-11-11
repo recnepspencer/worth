@@ -8,8 +8,10 @@ pub use native_checkpoint_reference::{
 };
 mod dispatch_custody;
 mod external_effect_no_effect;
+mod inbound_source_control;
 pub use dispatch_custody::DispatchAttemptIdentity;
 pub use external_effect_no_effect::ExternalEffectNoEffectCause;
+pub use inbound_source_control::InboundSourceControl;
 mod program_support;
 mod workflow_ending_actor;
 pub use program_support::{

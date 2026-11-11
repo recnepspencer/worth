@@ -414,7 +414,7 @@ pub use crate::durability::{
     HomeProgramTransitionPlanDigest, HomeProgramTransitionProgramStep,
     HomeProgramTransitionSchemaCarrierDigest, HomeProgramTransitionSchemaDigest,
     HomeProgramTransitionStepAssociation, HomeProgramTransitionStepRole,
-    HomeProgramTransitionTargetMeaning, MemoryProductBranchReference,
+    HomeProgramTransitionTargetMeaning, InboundSourceControl, MemoryProductBranchReference,
     NativeCheckpointBranchObservation, NativeCheckpointBranchReference,
     NativeCheckpointBranchTarget, ProgramSupportObligationIdentity, ProgramSupportObligationKind,
     ProgramSupportStatus, RecordedCompositePublicationAttemptIdentity,

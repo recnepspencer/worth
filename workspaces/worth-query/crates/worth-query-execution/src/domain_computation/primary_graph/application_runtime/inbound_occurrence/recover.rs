@@ -19,7 +19,6 @@ use super::super::{
 use super::receive::{
     WorthQueryInboundAdmissionDenial as Denial, WorthQueryInboundReceiptPosture as Posture,
 };
-use super::WorthQueryInboundSourcePosture;
 use crate::domain_computation::application_aftermath::{
     ExternalEffectCorrelationIdentity, WorthQueryAcceptedInboundOccurrence,
     WorthQueryInboundCustody, WorthQueryInboundPublicationClaim,
@@ -254,10 +253,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let publication_execution = *publication_execution;
         // One load fences new adoption. A concurrent revoke may follow this
         // admission point while this exact World attempt is already in flight.
-        if self.inbound_source_posture_for_operation(accepted.operation())
-            == Some(WorthQueryInboundSourcePosture::Revoked)
-        {
-            return RecoveryStep::Retain(State::Active(recovery), Err(Denial::SourceRevoked));
+        if let Some(denial) = self.inbound_source_consumption_denial(accepted.operation()) {
+            return RecoveryStep::Retain(State::Active(recovery), Err(denial));
         }
         let needs_settlement = match recovery.inspect() {
             Ok(unpublished) => unpublished.relational_requires_settlement(),

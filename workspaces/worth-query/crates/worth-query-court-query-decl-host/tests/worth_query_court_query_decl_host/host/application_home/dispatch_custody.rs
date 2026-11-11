@@ -2,6 +2,7 @@
 //! before the contact and its one observation is durable when the dispatch
 //! returns. Every recorded fate here is issued by the actual Home.
 mod recovery_admission;
+mod source_controls;
 use super::*;
 use std::collections::VecDeque;
 use std::sync::{Mutex, OnceLock, Weak};

@@ -11,12 +11,15 @@
 //! no-effect allocates another generation at the same next position. The
 //! generation is correlation only; it is never attempt identity or authority.
 use std::collections::BTreeMap;
-use worth_foundational::facade::{CanonicalDigestId, DispatchAttemptIdentity, HomeIdentity};
+use worth_foundational::facade::{
+    CanonicalDigestId, DispatchAttemptIdentity, HomeIdentity, InboundSourceControl,
+};
 mod codec;
 mod custody;
 mod generation;
 mod ledger;
 mod medium;
+pub(in crate::domain_computation) use custody::QueryInboundSourceControlObservation;
 pub use custody::WorthQueryDispatchJournal;
 use generation::QueryDispatchPublicationGenerations;
 pub use ledger::QueryDispatchCustody;
@@ -60,6 +63,10 @@ struct QueryDispatchAttempt {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum QueryDispatchRecord {
+    SourceControl {
+        source: CanonicalDigestId,
+        posture: InboundSourceControl,
+    },
     /// Recorded before the external call; never a dispatch capability.
     Attempt(QueryDispatchAttempt),
     Observation {
@@ -71,6 +78,10 @@ enum QueryDispatchRecord {
 /// A requested record. An attempt's identity is assigned by the position that records it.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum QueryDispatchRecordIntent {
+    SourceControl {
+        source: CanonicalDigestId,
+        posture: InboundSourceControl,
+    },
     Attempt {
         correlation: CanonicalDigestId,
     },

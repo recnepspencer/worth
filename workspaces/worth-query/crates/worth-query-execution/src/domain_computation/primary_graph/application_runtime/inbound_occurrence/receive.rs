@@ -156,14 +156,10 @@ where
                     ));
                 }
                 WorthQueryInboundPublicationClaim::Unpublished => {
-                    if self.inbound_source_posture_for_operation(accepted.operation())
-                        == Some(WorthQueryInboundSourcePosture::Revoked)
+                    if let Some(denial) =
+                        self.inbound_source_consumption_denial(accepted.operation())
                     {
-                        return self.accepted_progress_error(
-                            &accepted,
-                            envelope,
-                            WorthQueryInboundAdmissionDenial::SourceRevoked,
-                        );
+                        return self.accepted_progress_error(&accepted, envelope, denial);
                     }
                     let result = self.progress_unpublished_inbound_occurrence(
                         phase,

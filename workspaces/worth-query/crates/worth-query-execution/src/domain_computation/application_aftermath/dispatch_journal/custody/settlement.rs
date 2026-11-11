@@ -67,7 +67,9 @@ impl<'a> DispatchJournalDriver<'a> {
                         ),
                     );
             }
-            PendingFate::Committed(QueryDispatchRecord::Observation { .. })
+            PendingFate::Committed(
+                QueryDispatchRecord::Observation { .. } | QueryDispatchRecord::SourceControl { .. },
+            )
             | PendingFate::ProvenNoEffect
             | PendingFate::Absent => {}
         }
@@ -193,7 +195,7 @@ impl<'a> DispatchJournalDriver<'a> {
                 QueryDispatchRecord::Observation { attempt, .. } => {
                     state.unrecorded.remove(&attempt);
                 }
-                QueryDispatchRecord::Attempt(_) => {}
+                QueryDispatchRecord::Attempt(_) | QueryDispatchRecord::SourceControl { .. } => {}
             }
             state.pending = None;
             Ok(record)

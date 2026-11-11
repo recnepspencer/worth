@@ -34,7 +34,7 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
         | PublicationDiagnosticMaterial => DirectoryFamilySupport::Supported(4),
         // Phase 8's external dispatch custody is delivered for exactly an
         // emission's outbox row and its attempt journal.
-        DispatchOutbox | DispatchAttempts | OutstandingDispatch => {
+        DispatchOutbox | DispatchAttempts | OutstandingDispatch | InboundSourceControls => {
             DirectoryFamilySupport::Supported(8)
         }
         WorldConditionalDefinitionCustody
@@ -103,7 +103,6 @@ pub const fn directory_family_support(family: DurableStateFamily) -> DirectoryFa
         | InboundMessageCustody
         | InstalledTransportCompletionCustody
         | TerminalAcknowledgement
-        | InboundSourceControls
         | RecoveryClaims
         | RecoveryClaimDispositions
         | RecoveryHandleCustody

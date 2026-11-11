@@ -17,7 +17,7 @@ impl QueryDispatchCustody {
     }
 }
 
-/// Memory is O(recorded effects): one latest custody per correlation. Folding
+/// Memory is O(recorded effects + controlled sources): latest custody and monotone source facts. Folding
 /// is O(frames). Reclamation of settled history belongs to retention work.
 #[derive(Clone, Debug)]
 pub(super) struct QueryDispatchLedger {
@@ -27,6 +27,7 @@ pub(super) struct QueryDispatchLedger {
     payload_digest: [u8; 32],
     publication_generation: u64,
     effects: BTreeMap<CanonicalDigestId, QueryDispatchCustody>,
+    source_controls: BTreeMap<CanonicalDigestId, InboundSourceControl>,
     awaiting_observation: BTreeMap<DispatchAttemptIdentity, CanonicalDigestId>,
 }
 impl QueryDispatchLedger {
@@ -38,6 +39,7 @@ impl QueryDispatchLedger {
             payload_digest: [0; 32],
             publication_generation: 0,
             effects: BTreeMap::new(),
+            source_controls: BTreeMap::new(),
             awaiting_observation: BTreeMap::new(),
         }
     }
@@ -58,6 +60,12 @@ impl QueryDispatchLedger {
     }
     pub(super) fn custody(&self, correlation: &CanonicalDigestId) -> Option<QueryDispatchCustody> {
         self.effects.get(correlation).copied()
+    }
+    pub(super) fn source_control(
+        &self,
+        source: &CanonicalDigestId,
+    ) -> Option<InboundSourceControl> {
+        self.source_controls.get(source).copied()
     }
     /// The earliest attempt recorded before contact whose one observation
     /// is not yet durable, with the effect it contacts.
@@ -87,6 +95,9 @@ impl QueryDispatchLedger {
             .checked_add(1)
             .ok_or(Denial::IdentityExhausted)?;
         let record = match intent {
+            QueryDispatchRecordIntent::SourceControl { source, posture } => {
+                QueryDispatchRecord::SourceControl { source, posture }
+            }
             QueryDispatchRecordIntent::Attempt { correlation } => {
                 QueryDispatchRecord::Attempt(QueryDispatchAttempt {
                     identity: DispatchAttemptIdentity::from_recorded(
@@ -133,6 +144,9 @@ impl QueryDispatchLedger {
         self.validate(&frame.record, frame.position)?;
         let payload_digest = frame.payload_digest();
         match frame.record {
+            QueryDispatchRecord::SourceControl { source, posture } => {
+                self.source_controls.insert(source, posture);
+            }
             QueryDispatchRecord::Attempt(attempt) => {
                 self.effects.insert(
                     attempt.correlation,
@@ -171,6 +185,16 @@ impl QueryDispatchLedger {
     ) -> Result<(), QueryDispatchJournalDenial> {
         use QueryDispatchJournalDenial as Denial;
         match record {
+            QueryDispatchRecord::SourceControl { source, posture } => {
+                if self
+                    .source_control(source)
+                    .is_some_and(|old| old > *posture)
+                {
+                    Err(Denial::MalformedFrame)
+                } else {
+                    Ok(())
+                }
+            }
             QueryDispatchRecord::Attempt(attempt) => {
                 if attempt.identity.home() != self.home
                     || attempt.identity.attempt_position().get() != position

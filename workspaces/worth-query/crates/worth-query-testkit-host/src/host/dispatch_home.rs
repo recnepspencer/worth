@@ -15,6 +15,7 @@ use worth_query_host::facade::{
     WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeRequest,
 };
 
+pub mod inbound_source;
 pub mod notify;
 pub mod recoverable;
 pub mod schema;

@@ -4,7 +4,9 @@ use super::*;
 use std::sync::{Arc, Mutex, OnceLock};
 use worth_execution::ExecutionRequest;
 mod settlement;
+mod source_controls;
 use settlement::DispatchJournalDriver;
+pub(in crate::domain_computation) use source_controls::QueryInboundSourceControlObservation;
 
 /// A memory-only runtime keeps this owner unattached: its dispatch custody is
 /// process-local and every durable record request answers `JournalUnavailable`.
@@ -14,6 +16,7 @@ pub struct WorthQueryDispatchJournal {
     state: Mutex<Option<DispatchJournalState>>,
     medium: OnceLock<Arc<dyn QueryDispatchMedium>>,
     publication_driver: Mutex<()>,
+    process_local_source_controls: Mutex<BTreeMap<CanonicalDigestId, InboundSourceControl>>,
 }
 
 struct DispatchJournalState {
@@ -41,6 +44,7 @@ impl WorthQueryDispatchJournal {
             state: Mutex::new(None),
             medium: OnceLock::new(),
             publication_driver: Mutex::new(()),
+            process_local_source_controls: Mutex::new(BTreeMap::new()),
         }
     }
 
@@ -135,7 +139,7 @@ impl WorthQueryDispatchJournal {
             request,
         )? {
             QueryDispatchRecord::Attempt(attempt) => Ok(attempt.identity),
-            QueryDispatchRecord::Observation { .. } => {
+            QueryDispatchRecord::Observation { .. } | QueryDispatchRecord::SourceControl { .. } => {
                 unreachable!("an attempt intent encodes an attempt record")
             }
         }

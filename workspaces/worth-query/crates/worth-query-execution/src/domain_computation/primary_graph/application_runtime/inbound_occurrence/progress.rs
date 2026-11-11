@@ -7,7 +7,6 @@ use worth_query_installation::facade::ApplicationSchema;
 
 use super::super::{WorthQueryInboundPublicationOutcome, WorthQueryPrimaryGraphApplicationRuntime};
 use super::receive::{WorthQueryInboundAdmissionDenial, WorthQueryInboundReceiptPosture};
-use super::WorthQueryInboundSourcePosture;
 use crate::domain_computation::application_aftermath::{
     WorthQueryAcceptedInboundOccurrence, WorthQueryInboundTerminalOwnerResult,
 };
@@ -23,15 +22,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         use WorthQueryInboundReceiptPosture as Posture;
         // This load is the revocation admission point; work already admitted
         // before a concurrent revoke may finish its in-flight World attempt.
-        if self.inbound_source_posture_for_operation(accepted.operation())
-            == Some(WorthQueryInboundSourcePosture::Revoked)
-        {
+        if let Some(denial) = self.inbound_source_consumption_denial(accepted.operation()) {
             self.runtime
                 .inbound_custody
                 .lock()
                 .unwrap_or_else(|p| p.into_inner())
                 .mark_publication_retryable(&accepted);
-            return Err(WorthQueryInboundAdmissionDenial::SourceRevoked);
+            return Err(denial);
         }
         let outcome =
             self.publish_inbound_completion(execution, phase, Arc::clone(&accepted), request);
